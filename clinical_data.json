@@ -1,0 +1,20 @@
+[
+  {
+    "clinical_scenario": "Evaluation of non-cosmetic, silicone breast implants. Suspected implant rupture/complication. Any age. Initial imaging prior to Surgical review.",
+    "modality": "US",
+    "prioritisation": "P4",
+    "comment": "GP-referred US then refer for review by initial operating surgeon if abnormal/equivocal"
+  },
+  {
+    "clinical_scenario": "Female with clinically significant breast pain (focal and noncyclical) and lumpiness or other suspicious feature on exam and/or positive family history or other risk factor. Initial imaging.",
+    "modality": "DBI",
+    "prioritisation": "P2-P3",
+    "comment": "None"
+  },
+  {
+    "clinical_scenario": "Palpable mass, high or moderate suspicion of cancer clinically",
+    "modality": "CT > US",
+    "prioritisation": "P2",
+    "comment": "None"
+  }
+]
