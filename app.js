@@ -8,134 +8,204 @@ const logoSvg = `
 
 function getModalityIcon(modality) {
   if (!modality) return null;
-  const mod = modality.toUpperCase();
+  const mod = modality.toUpperCase().trim(); // Ensure trimming
   if (mod.includes("CT")) return "icons/CT.png";
   if (mod.includes("XR")) return "icons/XR.png";
-  if (mod.includes("MRI")) return "icons/MRI.png";
+  if (mod.includes("MRI") || mod.includes("MR ")) return "icons/MRI.png"; // Added "MR " for "Breast MR" etc.
   if (mod.includes("US")) return "icons/US.png";
+  // Add more specific icons if needed
+  if (mod.includes("PET")) return "icons/PET.png"; // Example for PET
+  if (mod.includes("DBI")) return "icons/DBI.png"; // Example for DBI
+  if (mod.includes("BONE SCAN")) return "icons/BoneScan.png"; // Example
+  if (mod.includes("NUC MED")) return "icons/NucMed.png"; // Example
+  if (mod.includes("MRA")) return "icons/MRA.png"; // Example
+  if (mod.includes("CTA")) return "icons/CTA.png"; // Example
+  if (mod.includes("FLUOROSCOPY")) return "icons/Fluoro.png"; // Example
+  if (mod.includes("MAMMOGRAM")) return "icons/Mammo.png"; // Example
   return null;
 }
 
+// Function to flatten the big_clin.json data
+function processBigClinData(rawData) {
+    const scenarios = [];
+    for (const sectionName in rawData) {
+        if (Object.hasOwnProperty.call(rawData, sectionName)) {
+            const section = rawData[sectionName];
+            for (const subheadingName in section) {
+                if (Object.hasOwnProperty.call(section, subheadingName)) {
+                    const scenarioList = section[subheadingName];
+                    if (Array.isArray(scenarioList)) {
+                        scenarioList.forEach(item => {
+                            // Ensure all core properties exist, providing defaults if necessary
+                            scenarios.push({
+                                section: sectionName || "Unknown Section",
+                                subheading: subheadingName || "Unknown Subheading",
+                                clinical_scenario: item.clinical_scenario || "N/A",
+                                modality: item.modality || "N/A",
+                                prioritisation_category: item.prioritisation_category || "N/A",
+                                comment: item.comment || "none"
+                            });
+                        });
+                    }
+                }
+            }
+        }
+    }
+    return scenarios;
+}
+
+
 function App() {
-  const [data, setData] = useState([]);
+  const [allData, setAllData] = useState([]); // Store flattened data
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    fetch('clinical_data.json')
+    fetch('big_clin.json') // Changed filename
       .then(res => res.json())
-      .then(setData);
+      .then(rawJsonData => {
+        const processed = processBigClinData(rawJsonData);
+        setAllData(processed);
+      });
   }, []);
 
   const filtered = query.length >= 3
-    ? data.filter(entry =>
-        entry.clinical_scenario.toLowerCase().includes(query.toLowerCase())
+    ? allData.filter(entry =>
+        (entry.section && entry.section.toLowerCase().includes(query.toLowerCase())) ||
+        (entry.subheading && entry.subheading.toLowerCase().includes(query.toLowerCase())) ||
+        (entry.clinical_scenario && entry.clinical_scenario.toLowerCase().includes(query.toLowerCase()))
       )
     : [];
 
   const groupedResults = filtered.reduce((acc, item) => {
-    const section = item.section || "Other";
-    if (!acc[section]) acc[section] = [];
-    acc[section].push(item);
+    const sectionKey = item.section || "Other"; // Use section from flattened data
+    if (!acc[sectionKey]) acc[sectionKey] = [];
+    acc[sectionKey].push(item);
     return acc;
   }, {});
 
   const badgeStyles = {
-    P1: { backgroundColor: '#FFBABA', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' },
-    P2: { backgroundColor: '#FFE2BA', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' },
-    P3: { backgroundColor: '#FFF8BA', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' },
-    'P2-P3': { backgroundColor: '#FFE2BA', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' },
-    default: { backgroundColor: '#E0E0E0', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' }
+    P1: { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
+    'P1-P2': { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
+    'P1-P2a': { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
+    P2: { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
+    'P2a': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
+    'P2a-P2': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
+    'P2-P3': { backgroundColor: '#FFF0BA', color: '#7A5C00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #7A5C00' }, // Intermediate
+    P3: { backgroundColor: '#FFF8BA', color: '#5C5000', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #5C5000' },
+    'P3 or P2': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
+    P4: { backgroundColor: '#BAE7FF', color: '#004C7A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004C7A' },
+    'P3-P4': { backgroundColor: '#D4F1FF', color: '#00416A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #00416A' }, // Intermediate
+    P5: { backgroundColor: '#D9D9D9', color: '#4F4F4F', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #4F4F4F' },
+    S2: { backgroundColor: '#D4F7DC', color: '#00591E', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #00591E' },
+    S3: { backgroundColor: '#C2F0D0', color: '#004D1A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004D1A' },
+    S4: { backgroundColor: '#B0E8C5', color: '#004015', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004015' },
+    S5: { backgroundColor: '#A0E0BA', color: '#003310', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #003310' },
+    'N/A': { backgroundColor: '#F0F0F0', color: '#555555', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #555555' },
+    'Nil': { backgroundColor: '#F0F0F0', color: '#555555', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #555555' },
+    'nil': { backgroundColor: '#F0F0F0', color: '#555555', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #555555' },
+    default: { backgroundColor: '#E0E0E0', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #777' }
   };
+  
 
   const styles = {
-    container: { padding: '1em', fontFamily: 'Arial, sans-serif', backgroundColor: '#FFFFFF', minHeight: '100vh', boxSizing: 'border-box' },
-    header: { color: '#005EB8', fontSize: '1.4em', marginBottom: '0.75em', lineHeight: '1.2' },
-    input: { width: '100%', padding: '0.75em', fontSize: '1em', border: '1px solid #ccc', borderRadius: '6px', marginBottom: '1em', boxSizing: 'border-box', position: 'sticky', top: 0, backgroundColor: '#F2F2F2', zIndex: 1000 },
-    sectionHeader: { marginTop: '2em', fontSize: '1.1em', color: '#003B5C', borderBottom: '2px solid #00A9A0', paddingBottom: '0.25em' },
-    result: { backgroundColor: '#FFFFFF', borderLeft: '5px solid #00A9A0', padding: '0.75em', marginBottom: '1em', borderRadius: '4px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
-    label: { fontWeight: 'bold', color: '#003B5C', fontSize: '0.95em' },
-    text: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4' },
-    commentText: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4', color: '#666666' }
+    container: { padding: '1em', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#F4F7F9', minHeight: '100vh', boxSizing: 'border-box' },
+    headerWrapper: { display: 'flex', alignItems: 'center', marginBottom: '1.5em', borderBottom: '3px solid #007A86', paddingBottom: '1em' },
+    logoInline: { width: '150px', height: 'auto', marginRight: '1em' }, // Adjusted for aspect ratio
+    header: { color: '#005EB8', fontSize: '1.8em', margin: '0', lineHeight: '1.2', fontWeight: '600' },
+    input: { width: '100%', padding: '0.85em', fontSize: '1em', border: '1px solid #B0BEC5', borderRadius: '6px', marginBottom: '1.5em', boxSizing: 'border-box', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 1000, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
+    sectionHeader: { marginTop: '2em', fontSize: '1.3em', color: '#005EB8', borderBottom: '2px solid #00A9A0', paddingBottom: '0.3em', fontWeight: '600' },
+    result: { backgroundColor: '#FFFFFF', borderLeft: '6px solid #00A9A0', padding: '1em', marginBottom: '1.2em', borderRadius: '5px', boxShadow: '0 3px 8px rgba(0,0,0,0.08)' },
+    label: { fontWeight: 'bold', color: '#003B5C', fontSize: '0.98em' },
+    text: { fontSize: '0.98em', marginBottom: '0.6em', lineHeight: '1.5', color: '#333333' },
+    subheadingText: { fontSize: '1.05em', marginBottom: '0.5em', lineHeight: '1.4', color: '#007A86', fontWeight: '500'},
+    commentText: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4', color: '#555555', backgroundColor: '#F0F2F5', padding: '0.5em', borderRadius: '4px', border: '1px dashed #D0D0D0' }
   };
 
   return React.createElement('div', { style: styles.container }, [
-      
     React.createElement(
-  'div',
-  {
-    key: 'headerWrapper',
-    className: 'header-wrapper'
-  },
-  [
-    React.createElement('span', {
-      key: 'logoInline',
-      className: 'logo-inline',
-      dangerouslySetInnerHTML: { __html: logoSvg }
-    }),
-    React.createElement(
-      'h2',
-      { style: styles.header, key: 'title' },
-      'Radiology Triage Helper'
-    )
-  ]
-),
+      'div',
+      {
+        key: 'headerWrapper',
+        style: styles.headerWrapper // Apply styles to the wrapper
+      },
+      [
+        React.createElement('div', { // Changed span to div for proper SVG rendering
+          key: 'logoInline',
+          style: styles.logoInline, // Apply styles
+          dangerouslySetInnerHTML: { __html: logoSvg }
+        }),
+        React.createElement(
+          'h1', // Changed h2 to h1 for semantic heading
+          { style: styles.header, key: 'title' },
+          'Radiology Triage Helper'
+        )
+      ]
+    ),
     
     React.createElement('input', {
       key: 'input',
       type: 'text',
-      placeholder: 'Search clinical scenarios...',
+      placeholder: 'Search by section, subheading, or clinical scenario (min. 3 characters)...',
       value: query,
       onChange: e => setQuery(e.target.value),
       style: styles.input
     }),
     query.length >= 3
-      ? Object.keys(groupedResults).map(section =>
-          React.createElement('div', { key: section }, [
-            React.createElement('h3', { style: styles.sectionHeader, key: 'sh-' + section }, section),
-            ...groupedResults[section].map((entry, i) =>
-              React.createElement('div', { key: section + '-' + i, style: styles.result }, [
-                // Scenario
-                React.createElement('div', { style: styles.text }, [
-                  React.createElement('span', { style: styles.label }, 'Scenario:'),
-                  ' ' + entry.clinical_scenario
-                ]),
-                // Modality icons (supports multiple separated by comma, slash, or >)
-                React.createElement('div', { style: styles.text }, [
-  React.createElement('span', { style: styles.label }, 'Modality:'),
-  ' ',
-  // Split on comma, slash, or '>', then only emit an <img> if there’s an icon URL
-  ...entry.modality.split(/[,>/]/).flatMap((mod, idx) => {
-    const iconUrl = getModalityIcon(mod.trim());
-    return iconUrl
-      ? [
-          React.createElement('img', {
-            key: `icon-${idx}-${section}-${i}`,
-            src: iconUrl,
-            alt: mod.trim(),
-            style: { height: '32px', marginRight: '6px', verticalAlign: 'middle' }
-          })
-        ]
-      : [];
-  }),
-  ' ' + entry.modality
-                ]),
-                // Priority badge
-                React.createElement('div', { style: styles.text }, [
-                  React.createElement('span', { style: styles.label }, 'Priority:'),
-                  ' ',
-                  React.createElement('span', { style: badgeStyles[entry.prioritisation] || badgeStyles.default }, entry.prioritisation)
-                ]),
-                // Comments
-
-									React.createElement('div', { style: styles.commentText }, [
-  									React.createElement('span', { style: styles.label }, 'Comments:'),
- 									 ' ' + entry.comment
-])
-              ])
-            )
-          ])
-        )
-      : React.createElement('p', { style: { color: '#888', marginTop: '1em' } },
+      ? Object.keys(groupedResults).length > 0 
+        ? Object.keys(groupedResults).map(section =>
+            React.createElement('div', { key: section }, [
+              React.createElement('h2', { style: styles.sectionHeader, key: 'sh-' + section }, section), // Changed h3 to h2
+              ...groupedResults[section].map((entry, i) =>
+                React.createElement('div', { key: section + '-' + i, style: styles.result }, [
+                  // Subheading
+                  entry.subheading && React.createElement('div', { style: styles.subheadingText }, [
+                    React.createElement('span', { style: styles.label }, 'Category:'),
+                    ' ' + entry.subheading
+                  ]),
+                  // Scenario
+                  React.createElement('div', { style: styles.text }, [
+                    React.createElement('span', { style: styles.label }, 'Scenario:'),
+                    ' ' + entry.clinical_scenario
+                  ]),
+                  // Modality icons
+                  React.createElement('div', { style: styles.text }, [
+                    React.createElement('span', { style: styles.label }, 'Modality:'),
+                    ' ',
+                    ... (entry.modality || "N/A").split(/[,>/]/).flatMap((mod, idx) => {
+                      const iconUrl = getModalityIcon(mod.trim());
+                      const modalityName = mod.trim();
+                      return iconUrl
+                        ? [
+                            React.createElement('img', {
+                              key: `icon-${idx}-${section}-${i}`,
+                              src: iconUrl,
+                              alt: modalityName,
+                              title: modalityName, // Add title for hover text
+                              style: { height: '32px', marginRight: '6px', verticalAlign: 'middle' }
+                            })
+                          ]
+                        : []; // Don't render if no icon and just show text below
+                    }),
+                    ' ' + (entry.modality || "N/A") // Always show the text
+                  ]),
+                  // Priority badge
+                  React.createElement('div', { style: styles.text }, [
+                    React.createElement('span', { style: styles.label }, 'Priority:'),
+                    ' ',
+                    React.createElement('span', { style: badgeStyles[entry.prioritisation_category] || badgeStyles.default }, entry.prioritisation_category)
+                  ]),
+                  // Comments
+                  (entry.comment && entry.comment.toLowerCase() !== 'none' && entry.comment.toLowerCase() !== 'n/a') && 
+                    React.createElement('div', { style: styles.commentText }, [
+                      React.createElement('span', { style: styles.label }, 'Comments:'),
+                      ' ' + entry.comment
+                    ])
+                ])
+              )
+            ])
+          )
+        : React.createElement('p', { style: { color: '#555', marginTop: '1em', textAlign: 'center', fontSize: '1.1em' } }, 'No matching scenarios found.')
+      : React.createElement('p', { style: { color: '#888', marginTop: '1em', textAlign: 'center', fontSize: '1.1em' } },
           'Please enter at least 3 characters to begin searching.'
         )
   ]);
