@@ -1,0 +1,3086 @@
+Okay, I understand. While I can't directly create a downloadable file link for you, I can provide the complete JSON content again in a single block.
+
+You can then:
+
+1.  **Copy** the entire block of JSON text below.
+2.  **Open** a plain text editor on your computer (like Notepad on Windows, TextEdit on Mac – making sure TextEdit is in "Plain Text" mode, or any code editor like VS Code, Sublime Text, etc.).
+3.  **Paste** the copied text into the editor.
+4.  **Save** the file. When saving:
+    *   Name it something like `clinical_scenarios.json` (the `.json` extension is important).
+    *   If using Notepad, make sure to change "Save as type" from "Text Documents (\*.txt)" to "All Files (\*.\*)" before saving, otherwise it might save as `clinical_scenarios.json.txt`.
+
+Here is the complete JSON content:
+
+```json
+{
+  "Breast": {
+    "Breast implant evaluation": [
+      {
+        "clinical_scenario": "Evaluation of saline breast implants. Any age. Initial imaging.",
+        "modality": "None",
+        "prioritisation_category": "N/A",
+        "comment": "US cannot detect saline leakage. Intervention is purely on clinical grounds"
+      },
+      {
+        "clinical_scenario": "Evaluation of cosmetic silicone breast implants Suspected implant rupture/complication.",
+        "modality": "N/A",
+        "prioritisation_category": "N/A",
+        "comment": "Refer for privately funded imaging/surgical review -DHB specialist review/imaging not routinely accepted"
+      },
+      {
+        "clinical_scenario": "Evaluation of non-cosmetic, silicone breast implants. Suspected implant rupture/complication. Any age. Initial imaging prior to Surgical review.",
+        "modality": "US",
+        "prioritisation_category": "P4",
+        "comment": "GP-referred US then refer for review by initial operating surgeon if abnormal/equivocal"
+      },
+      {
+        "clinical_scenario": "Suspected breast implant associated anaplastic large-cell lymphoma (BIA-ALCL) (delayed seroma, swelling, mass, pain but no erythema, warmth or skin changes that would raise concern for inflammatory breast cancer or mastitis). Any age. Breast implant of any type. Initial imaging.",
+        "modality": "US +/- MR C- / US guided aspiration",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Breast pain": [
+      {
+        "clinical_scenario": "Female with breast pain but no other suspicious clinical features or risk factors in history. Any age.",
+        "modality": "None",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Female with clinically significant breast pain (focal and noncyclical) and lumpiness or other suspicious feature on exam and/or positive family history or other risk factor. Initial imaging.",
+        "modality": "DBI",
+        "prioritisation_category": "P2-P3",
+        "comment": "none"
+      }
+    ],
+    "Evaluation of the symptomatic male breast": [
+      {
+        "clinical_scenario": "Male patient any age with symptoms of gynecomastia and physical examination consistent with gynecomastia or pseudo-gynecomastia. No focal abnormality on exam",
+        "modality": "None",
+        "prioritisation_category": "N/A",
+        "comment": "Follow gynaecomastia pathway and plastics- referral criteria"
+      },
+      {
+        "clinical_scenario": "Male any age with focal unilateral abnormality /indeterminate palpable breast mass. Initial imaging following breast specialist review",
+        "modality": "DBI",
+        "prioritisation_category": "P3",
+        "comment": "Breast specialist review first"
+      },
+      {
+        "clinical_scenario": "Male of any age with indeterminate palpable breast mass/ focal unilateral abnormality cancer (suspicious palpable breast mass, axillary adenopathy, nipple discharge, or nipple retraction). Initial imaging.",
+        "modality": "DBI",
+        "prioritisation_category": "P2",
+        "comment": "As per breast symptoms pathway"
+      }
+    ],
+    "Imaging after mastectomy and breast reconstruction": [
+      {
+        "clinical_scenario": "Clinically significant pain on the side of the mastectomy with or without reconstruction (autologous or non-autologous). Initial imaging.",
+        "modality": "N/A",
+        "prioritisation_category": "N/A",
+        "comment": "Any imaging done should be based on breast specialist review"
+      },
+      {
+        "clinical_scenario": "Palpable lump on the side of the mastectomy with or without reconstruction (autologous or non-autologous). Initial imaging.",
+        "modality": "US",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Palpable breast masses": [
+      {
+        "clinical_scenario": "Palpable breast mass. Female, <40 years of age, initial evaluation.",
+        "modality": "DBI",
+        "prioritisation_category": "P3 or P2",
+        "comment": "P3 unless >1mth duration or associated with another clinical/risk feature (e.g. If fixed, hard, FHx or palpable LNs) and then P2. (as per FCT criteria)"
+      },
+      {
+        "clinical_scenario": "Palpable breast mass. Female, 40 years of age or older, initial evaluation.",
+        "modality": "DBI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Palpable breast mass. Female, younger than 30 years of age, initial evaluation.",
+        "modality": "US",
+        "prioritisation_category": "P3 or P2",
+        "comment": "Upgrade to P2 if clinically suspicious"
+      }
+    ],
+    "Evaluation of nipple discharge": [
+      {
+        "clinical_scenario": "Physiologic nipple discharge. Female of any age. Initial imaging examination.",
+        "modality": "None",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pathologic nipple discharge (bloody or serous). Female younger than 30 years of age. Initial imaging examination.",
+        "modality": "US",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pathologic nipple discharge. Male younger than 30 years of age. Initial imaging examination.",
+        "modality": "DBI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pathologic nipple discharge (bloody or serous). Male or female 30 to 39 years of age. Initial imaging examination.",
+        "modality": "DBI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pathologic nipple discharge (bloody or serous). Male or female 40 years of age or older. Initial imaging examination.",
+        "modality": "DBI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Monitoring response to neoadjuvant systemic therapy for breast cancer": [
+      {
+        "clinical_scenario": "Known breast cancer. Axillary evaluation prior to neoadjuvant chemotherapy. Initial imaging examination.",
+        "modality": "US",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Known breast cancer with clinical suspicion of metastatic disease. Staging or assessment of response to neoadjuvant chemotherapy. Initial imaging examination.",
+        "modality": "CT CAP +/- bone scan +/- PET",
+        "prioritisation_category": "P2 or S2",
+        "comment": "none"
+      }
+    ],
+    "Staging known breast cancer": [
+      {
+        "clinical_scenario": "Breast Multidisciplinary group recommends staging",
+        "modality": "CT CAP + bone scan or CT PET",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Surveillance, history of breast cancer": [
+      {
+        "clinical_scenario": "Surveillance. Personal history of breast cancer. Asymptomatic. Rule out local recurrence.",
+        "modality": "Screening mammogram",
+        "prioritisation_category": "S3",
+        "comment": "According to regional guidelines"
+      }
+    ],
+    "Clinical suspicion of inflammatory breast cancer": [
+      {
+        "clinical_scenario": "Clinical suspicion of inflammatory breast cancer",
+        "modality": "DBI",
+        "prioritisation_category": "P2a-P2",
+        "comment": "For review next available clinic"
+      }
+    ],
+    "Follow up of findings on other imaging modalities": [
+      {
+        "clinical_scenario": "2nd look imaging for findings on MRI or CT",
+        "modality": "DBI",
+        "prioritisation_category": "P2-P3",
+        "comment": "Triage based on radiologist review"
+      }
+    ],
+    "Work up recommended by an MDM": [
+      {
+        "clinical_scenario": "Further work up, biopsy or imaging recommended by the Breast Multidisciplinary meeting",
+        "modality": "as specified",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Post op seroma": [
+      {
+        "clinical_scenario": "Post operative seroma unable to be drained without imaging guidance",
+        "modality": "US-guided aspiration",
+        "prioritisation_category": "P1- P2",
+        "comment": "none"
+      }
+    ],
+    "Follow up": [
+      {
+        "clinical_scenario": "Follow up imaging recommended on previous breast imaging",
+        "modality": "DBI",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      }
+    ],
+    "Recommended biopsy": [
+      {
+        "clinical_scenario": "Previous breast imaging recommended biopsy for probably malignant or indeterminate lesion (including papilloma)",
+        "modality": "DBI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Previous breast imaging recommended biopsy for probably benign lesion (suspected fibrocystic changes or fibroadenoma)",
+        "modality": "DBI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Breast MR Referral Indications": [],
+    "New diagnosis breast cancer": [
+      {
+        "clinical_scenario": "New diagnosis breast cancer with high background risk of undetected disease (e.g. BRCA-1; dense breasts) AND as recommended by MDM",
+        "modality": "Breast MR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Invasive ductal cancer where the extent IS clear on mammogram and/or US",
+        "modality": "Nil",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Invasive ductal cancer where the extent IS NOT clear on mammogram or US and MR recommended by MDM",
+        "modality": "Breast MR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Non-calcified (typically high grade) DCIS to define extent for surgical planning and where recommended by MDM e.g. particularly with dense breasts",
+        "modality": "Breast MR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Invasive lobular carcinoma (ILC) where breast conserving surgery is being considered",
+        "modality": "Breast MR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pre-and post- neoadjuvant chemotherapy, with a view to downstaging the lesion and allowing breast conserving surgery",
+        "modality": "Breast MR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Lumpectomy with a positive margin. If multiple positive margins, to move straight to mastectomy and nil MR",
+        "modality": "Breast MR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Fixed tumour, ?Invasion to deep fascia and neoadjuvant chemo or radiotherapy to establish a clear margin prior to surgery is being considered. Recommended by MDM",
+        "modality": "Breast MR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Breast symptoms evaluation": [
+      {
+        "clinical_scenario": "Pathologic nipple discharge (bloody or serous). No cause identified on DBI and ongoing concerns",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspected breast implant associated anaplastic large-cell lymphoma (BIA-ALCL) (delayed seroma, swelling, mass, pain but no erythema, warmth or skin changes that would raise concern for inflammatory breast cancer or mastitis). Any age. Breast implant of any type. Initial imaging.",
+        "modality": "US +/- MR C- / US guided aspiration",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Positive axillary node, ?occult breast primary",
+        "modality": "Breast MR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Presentation post treatment": [
+      {
+        "clinical_scenario": "Recurrence, ?Invasion to deep fascia",
+        "modality": "Breast MR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Complications of breast reconstruction (non-implant)",
+        "modality": "Breast MR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Silicone implant (non-cosmetic) complications where the US is equivocal",
+        "modality": "Breast MR",
+        "prioritisation_category": "P4",
+        "comment": "Radiologist or clinician may indicate P3- non-deferrable"
+      }
+    ],
+    "Surveillance, screening": [
+      {
+        "clinical_scenario": "High risk screening (BRCAs etc.)",
+        "modality": "Breast MR",
+        "prioritisation_category": "S4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Follow-up MRI surveillance of women could be considered, where initial presentation with palpable mass (biopsy positive) was occult on mammogram and ultrasound, but visible on MRI.",
+        "modality": "Breast MR",
+        "prioritisation_category": "S4",
+        "comment": "Specific timeframe preferred, deferrable"
+      }
+    ]
+  },
+  "Cardiology": {
+    "Acute chest pain": [
+      {
+        "clinical_scenario": "Chest pain syndrome - not clear ACS/intermediate probability of CAD",
+        "modality": "XR/CCTA",
+        "prioritisation_category": "P1- P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Low probability coronary artery disease",
+        "modality": "XR/CCTA",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Congestive heart failure": [
+      {
+        "clinical_scenario": "New presentation cardiomyopathy",
+        "modality": "MR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Previous CHF, currently stable",
+        "modality": "XR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Suspected/new diagnosis of congenital heart disease": [
+      {
+        "clinical_scenario": "Suspected/new diagnosis of congenital heart disease",
+        "modality": "XR ECHO MRI CTA IF CORO",
+        "prioritisation_category": "P3/protocol",
+        "comment": "none"
+      }
+    ],
+    "Follow up congenital heart disease in the adult": [
+      {
+        "clinical_scenario": "Follow up congenital heart disease in the adult",
+        "modality": "CT MRI",
+        "prioritisation_category": "P4/protocol",
+        "comment": "none"
+      }
+    ],
+    "Hypertension": [
+      {
+        "clinical_scenario": "Moderate or severe hypertension: diastolic pressure",
+        "modality": "XR",
+        "prioritisation_category": "P4/protocol",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "High index of suspicion of renovascular hypertension and normal renal function",
+        "modality": "MRA=CTA",
+        "prioritisation_category": "P4/protocol",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "High index of suspicion of renovascular hypertension and diminished renal function",
+        "modality": "MRA=US",
+        "prioritisation_category": "P4/protocol",
+        "comment": "none"
+      }
+    ],
+    "Pre-Operative": [
+      {
+        "clinical_scenario": "Cardiac valve surgery, non-urgent non-cardiac surgery",
+        "modality": "MRI/CCTA",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Urgent non-cardiac surgery e.g. cancer. Possible IHD",
+        "modality": "CCTA",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Operative": [
+      {
+        "clinical_scenario": "Cardiac tumour",
+        "modality": "MRI/CCTA",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Dilated aorta, prior dissection, prior aortic surgery or stent",
+        "modality": "MRI/CCTA",
+        "prioritisation_category": "",
+        "comment": "As per local protocol"
+      }
+    ],
+    "Miscellaneous": [
+      {
+        "clinical_scenario": "Pericardial constriction / disease",
+        "modality": "CT/MR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Cardiomyopathy": [
+      {
+        "clinical_scenario": "New presentation cardiomyopathy",
+        "modality": "MR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Non-ischaemic/Infiltration suspected",
+        "modality": "MR",
+        "prioritisation_category": "P1-P2",
+        "comment": "Largely dependent on patient location"
+      },
+      {
+        "clinical_scenario": "Ischaemic - viability",
+        "modality": "MR",
+        "prioritisation_category": "P1 - P3",
+        "comment": "Largely dependent on patient location"
+      }
+    ],
+    "Ischaemia": [
+      {
+        "clinical_scenario": "Ischaemia",
+        "modality": "Stress perfusion MRI, NM",
+        "prioritisation_category": "P1 - P3",
+        "comment": "Largely dependent on patient location"
+      }
+    ],
+    "Non-acute chest pain": [
+      {
+        "clinical_scenario": "Chest pain clinic/CTO planning/graft patency",
+        "modality": "CCTA",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ]
+  },
+  "Colorectal": {
+    "Left lower quadrant pain": [
+      {
+        "clinical_scenario": "Chronic, intermittent, or low grade",
+        "modality": "CT",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Woman of childbearing age",
+        "modality": "CT > US",
+        "prioritisation_category": "P3",
+        "comment": "CT first unless pain suggests pelvic origin more likely"
+      },
+      {
+        "clinical_scenario": "Obese patient",
+        "modality": "CT",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Palpable abdominal mass": [
+      {
+        "clinical_scenario": "Palpable mass, high or moderate suspicion of cancer clinically",
+        "modality": "CT > US",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Palpable mass, low clinical suspicion for cancer or pulsatile and painless",
+        "modality": "CT > US",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Colorectal screening": [
+      {
+        "clinical_scenario": "Average-risk individual after positive faecal occult blood test (FOBT), indicating a relative elevation in risk",
+        "modality": "CTC",
+        "prioritisation_category": "Screening P3 if done",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Average-risk, moderate-risk or high-risk individual after incomplete colonoscopy",
+        "modality": "CTC",
+        "prioritisation_category": "Screening P3 if done",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Moderate-risk individual: personal history or adenoma or carcinoma or first-degree family history of cancer or adenoma",
+        "modality": "CTC",
+        "prioritisation_category": "Screening P3 if done",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "High-risk individual: hereditary nonpolyposis colorectal cancer (HNPCC)",
+        "modality": "CTC",
+        "prioritisation_category": "Screening P3 if done",
+        "comment": "none"
+      }
+    ],
+    "Pre-treatment staging of colorectal cancer": [
+      {
+        "clinical_scenario": "Rectal cancer",
+        "modality": "Staging CT & MRI",
+        "prioritisation_category": "P2a-P2",
+        "comment": "Deferrable only while having pre-op chemo"
+      },
+      {
+        "clinical_scenario": "Colon cancer (other than rectum)",
+        "modality": "CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Colorectal MDM review recommends PET-CT",
+        "modality": "CTPET",
+        "prioritisation_category": "P2",
+        "comment": "Deferrable only while having pre-op chemo"
+      }
+    ],
+    "Miscellaneous": [
+      {
+        "clinical_scenario": "Mesenteric ischaemia, subacute to chronic",
+        "modality": "CTA",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Constipation",
+        "modality": "CTC",
+        "prioritisation_category": "P4 or P2 if red flags",
+        "comment": "none"
+      }
+    ]
+  },
+  "Endocrinology": {
+    "Neuroendocrine": [
+      {
+        "clinical_scenario": "Hypopituitarism",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P4",
+        "comment": "P1 if visual fields abnormal, P4 if normal"
+      },
+      {
+        "clinical_scenario": "Obesity/eating disorder",
+        "modality": "MRI>CT",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Hyperthyroidism (high TSH)",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Cushing's syndrome (high ACTH)",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Hyperprolactinemia",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P4",
+        "comment": "P1 if visual fields abnormal, P4 if normal"
+      },
+      {
+        "clinical_scenario": "Acromegaly/gigantism",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P4",
+        "comment": "P1 if visual fields abnormal, P4 if normal"
+      },
+      {
+        "clinical_scenario": "Growth hormone deficiency, growth deceleration, panhypopituitarism",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P4",
+        "comment": "P1 if visual fields abnormal, P4 if normal"
+      },
+      {
+        "clinical_scenario": "Diabetes insipidus",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Postoperative sella",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Precocious puberty",
+        "modality": "MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      }
+    ],
+    "Thyroid": [
+      {
+        "clinical_scenario": "Palpable thyroid nodule, suspicious features (e.g. painless rapid growth over 2-3 months, history of voice change +/or stridor, youth/child, family history of MEN, neck nodes), euthyroid, initial imaging",
+        "modality": "US",
+        "prioritisation_category": "P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Palpable thyroid nodule, no suspicious features for thyroid cancer, euthyroid, initial imaging",
+        "modality": "US",
+        "prioritisation_category": "P3-P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Incidental thyroid nodule on CT or MR. TSH normal or elevated and >1.5cm if >35y and >1.0cm if <35y",
+        "modality": "US",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Incidental thyroid nodule on CT or MR. TSH reduced.",
+        "modality": "TCO4 scan",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Incidental FDG-avid nodule on PET CT",
+        "modality": "US/FNA",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspected goitre. Initial imaging. Obstructive symptoms",
+        "modality": "CT",
+        "prioritisation_category": "P2a- P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Thyrotoxicosis. Initial imaging",
+        "modality": "Nil routine",
+        "prioritisation_category": "nil",
+        "comment": "nil"
+      },
+      {
+        "clinical_scenario": "Primary hypothyroidism. Initial Imaging",
+        "modality": "Nil routine",
+        "prioritisation_category": "nil",
+        "comment": "nil"
+      },
+      {
+        "clinical_scenario": "Medullary thyroid cancer on biopsy",
+        "modality": "CTPET",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Thyroid cancer, surgery considered, anaplastic ca or metastatic disease suspected",
+        "modality": "CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Adrenal lesion": [
+      {
+        "clinical_scenario": "No history of malignancy; mass 1-4 cm in diameter. Initial evaluation.",
+        "modality": "CT, MRI if required for further evaluation.",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "No history of malignancy; mass 1-4 cm in diameter. Follow-up evaluation in 12 months.",
+        "modality": "CT, MRI if required for further evaluation.",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "No history of malignancy; mass >4 cm in diameter. (If not typical for adenoma, myelolipoma, haemorrhage or simple cyst, consider resection). Clinical review pre-biopsy.",
+        "modality": "CT, MRI if required for further evaluation.",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "History of malignancy; mass > 4 cm in diameter. Clinical review pre-biopsy.",
+        "modality": "BX CTPET",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "General": [
+      {
+        "clinical_scenario": "Imaging recommended by MDM",
+        "modality": "",
+        "prioritisation_category": "P2 or S2, S3",
+        "comment": "According to MDM recommendation"
+      },
+      {
+        "clinical_scenario": "Post op care/complications",
+        "modality": "",
+        "prioritisation_category": "P2 or S2,S3",
+        "comment": "According to surgeon recommendation"
+      }
+    ]
+  },
+  "Musculoskeletal": {
+    "Acute shoulder pain": [
+      {
+        "clinical_scenario": "Any aetiology; best initial study, (septic arthritis not-suspected clinically)",
+        "modality": "XR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-ray non-contributory. Persistent significant pain. Physical examination and history nonspecific. Next study.",
+        "modality": "US>MRI >CT",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-ray non-contributory. Age less than 35 years, suspect labral tear with or without instability on physical examination.",
+        "modality": "MR ARTHRO",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-ray non-contributory. Questionable bursitis or long head of biceps tenosynovitis based on clinical findings including physical examination.",
+        "modality": "US>MRI",
+        "prioritisation_category": "P4",
+        "comment": "????"
+      },
+      {
+        "clinical_scenario": "Normal x-ray or x-ray demonstrates coracoacromial arch osteophytes/syndesmophytes. Suspect rotator cuff tear/ impingement, over 35 years.",
+        "modality": "US>MRI",
+        "prioritisation_category": "P4 or P3",
+        "comment": "US first investigation. If concern of complete tendon tear especially subscapularis and especially in younger patients, then P3 or less is better"
+      },
+      {
+        "clinical_scenario": "X-ray non-contributory. Previous total shoulder arthroplasty. Suspect rotator cuff tear.",
+        "modality": "US",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-ray non-contributory. Status post prior rotator cuff repair. Suspect re-tear.",
+        "modality": "US>MRI",
+        "prioritisation_category": "P3",
+        "comment": "P3. Earlier timeframe better for potential surgical repair. US first"
+      }
+    ],
+    "Chronic shoulder pain": [
+      {
+        "clinical_scenario": "?arthritis ?other",
+        "modality": "XR, then US if normal XR and cuff tear suspected",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      }
+    ],
+    "Acute elbow pain": [
+      {
+        "clinical_scenario": "Suspect intra-articular osteocartilaginous body; ossicles on x-ray",
+        "modality": "CT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect intra-articular osteocartilaginous body; X-rays NAD",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect occult injury e.g. osteochondral injury; radiographs nondiagnostic.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect unstable osteochondral injury; radiographs nondiagnostic.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect mass; radiographs nondiagnostic.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect chronic epicondylitis, radiographs nondiagnostic.",
+        "modality": "US>MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect collateral ligament tear; radiographs nondiagnostic.",
+        "modality": "MRI",
+        "prioritisation_category": "P4 or rarely P1",
+        "comment": "In rare situation of grossly unstable elbow and considering acute ligament repair/reconstructive surgery then MRI within 2 days appropriate. Otherwise all ligament investigations by specialist only and category P 4 and deferrable"
+      },
+      {
+        "clinical_scenario": "Suspect biceps tendon tear and/or bursitis; radiographs non-diagnostic.",
+        "modality": "US>MRI",
+        "prioritisation_category": "P2 (US) -P3 (MRI)",
+        "comment": "if distal biceps tear should be P2. U/S first if suspect complete tear. MRI for query partial tear or if diagnosis uncertain"
+      },
+      {
+        "clinical_scenario": "Suspect nerve abnormality; radiographs nondiagnostic.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Chronic elbow pain": [
+      {
+        "clinical_scenario": "?arthritis ?other",
+        "modality": "XR>US",
+        "prioritisation_category": "P5",
+        "comment": "XR first- further imaging e.g. US, based on clinician review"
+      }
+    ],
+    "Acute hand and wrist trauma": [
+      {
+        "clinical_scenario": "Suspect acute distal radius fracture. Radiographs normal. Next procedure.",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Comminuted, intra-articular distal radius fracture on radiographs. Surgical planning.",
+        "modality": "CT",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect acute scaphoid fracture. X-rays normal. Next procedure.",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspected occult scaphoid fracture. Initial and repeat x-rays after 10-14 days of casting normal. Continued clinical suspicion of scaphoid fracture. Next procedure.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "P2 i.e. patient already in cast"
+      },
+      {
+        "clinical_scenario": "Suspect distal radioulnar joint subluxation.",
+        "modality": "XR>CT",
+        "prioritisation_category": "P1-P2a",
+        "comment": "XR and then consider CT"
+      },
+      {
+        "clinical_scenario": "Suspect hook of the hamate fracture. Initial radiographs normal or equivocal.",
+        "modality": "CT>MRI",
+        "prioritisation_category": "P1-P2a",
+        "comment": "CT first and then MRI if occult fracture still suspected"
+      },
+      {
+        "clinical_scenario": "Suspect metacarpal fracture or dislocation.",
+        "modality": "XR>CT",
+        "prioritisation_category": "P1-P2a",
+        "comment": "XR and then consider CT"
+      },
+      {
+        "clinical_scenario": "Suspect gamekeeper injury (thumb MCP ulnar collateral ligament injury).",
+        "modality": "XR then US if normal XR",
+        "prioritisation_category": "P1 (XR)>P2-P3 (US)",
+        "comment": "XR P1 if NAD, then US P2>P3"
+      }
+    ],
+    "Chronic wrist pain": [
+      {
+        "clinical_scenario": "With or without prior injury. Best initial study.",
+        "modality": "XR",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Routine x-rays normal or nondiagnostic. Persistent symptoms. Next study.",
+        "modality": "MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Routine x-rays normal or nondiagnostic. Suspect arthritis ( other than septic). Next study.",
+        "modality": "MRI",
+        "prioritisation_category": "P3-P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Nonspecific arthritis on x-ray. Exclude infection. Next study.",
+        "modality": "MRI then aspirate",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pain on ulnar side, suspect triangular fibrocartilage or lunotriquetral ligament tear. Radiographs normal. Next study.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-rays show positive ulnar variance and irregularity in proximal lunate articular surfaces. Next study.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-rays normal or equivocal. Suspect Kienbock's disease. Next study.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Kienbock's disease on x-rays. Next study.",
+        "modality": "MRI +/- CT",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pain for more than 3 weeks. Suspect occult fracture. Radiographs nondiagnostic. Next study.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect carpal tunnel syndrome.",
+        "modality": "Usually none/ XR only if concern of contributory arthritis",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      }
+    ],
+    "Avascular necrosis (osteonecrosis) of the hip": [
+      {
+        "clinical_scenario": "Avascular necrosis is suspected clinically.",
+        "modality": "XR>MRI",
+        "prioritisation_category": "P3",
+        "comment": "MRI if XR normal or inconclusive"
+      },
+      {
+        "clinical_scenario": "Avascular necrosis with femoral head collapse on x-ray of the painful hip",
+        "modality": "None (MRI)",
+        "prioritisation_category": "P4",
+        "comment": "MRI only if requested by subspecialty hip surgeon. Deferrable if no surgery contemplated."
+      }
+    ],
+    "Chronic hip pain": [
+      {
+        "clinical_scenario": "Initial evaluation for chronic hip pain. First test.",
+        "modality": "XR",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Rapidly increasing hip pain, not typical for usual OA progression",
+        "modality": "XR,MRI",
+        "prioritisation_category": "P2",
+        "comment": "e.g. active inflammatory arthritis and rapid destruction and collapse of the femoral head"
+      },
+      {
+        "clinical_scenario": "X-rays negative, suspect osseous or surrounding soft-tissue abnormality, excluding osteoid osteoma.",
+        "modality": "MRI",
+        "prioritisation_category": "P3- P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-rays negative, suspect osteonecrosis. Includes circumstances in which hip is asymptomatic but osteonecrosis is suspected due to known predisposing factors.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-rays negative. Suspect osteoid osteoma.",
+        "modality": "MRI>CT & NM",
+        "prioritisation_category": "P3",
+        "comment": "MRI first and if negative consider CT and bone scan"
+      },
+      {
+        "clinical_scenario": "X-rays negative, suspect labral tear with or without clinical findings consistent with or suggestive or femoro-acetabular impingement.",
+        "modality": "MR ARTHRO",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-rays negative or mild osteoarthritis. Suspect referred pain but wish to exclude hip.",
+        "modality": "XR INJECT",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-rays positive, arthritis uncertain type. Infection not a consideration.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Radiographs positive, suggestive of pigmented villo-nodular synovitis or osteochondromatosis.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Non traumatic knee pain": [
+      {
+        "clinical_scenario": "Child or adult: patellofemoral (anterior) symptoms. Mandatory minimal initial examination.",
+        "modality": "XR",
+        "prioritisation_category": "P2",
+        "comment": "Check hip too"
+      },
+      {
+        "clinical_scenario": "Adult: non-trauma, non-tumour, non-localised pain. Mandatory minimal initial examination.",
+        "modality": "XR",
+        "prioritisation_category": "P3",
+        "comment": "Weight-bearing XR incl Rosenberg view"
+      },
+      {
+        "clinical_scenario": "Child or adult: patellofemoral (anterior) symptoms. Initial knee x-rays nondiagnostic (demonstrate normal findings or a joint effusion).",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Adult: non-trauma, non-tumour, non-localised pain. Initial knee x-rays nondiagnostic (demonstrate normal findings or a joint effusion).",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Adult: patellofemoral (anterior) symptoms. Initial knee x-rays demonstrate degenerative joint disease and/or chondrocalcinosis.",
+        "modality": "NIL",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Adult: non-tumour, non-localised pain. Initial knee x-rays demonstrate inflammatory, crystalline, or degenerative joint disease (uni- to tri-compartmental sclerosis, hypertrophic spurs, joint space narrowing, and/or subchondral cysts).",
+        "modality": "NIL",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Adult: non-tumour, non-localised pain. Initial knee x-rays demonstrate avascular necrosis.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Adult: non-tumour, non-localised pain. Initial knee radiographs x-rays evidence of internal derangement (e.g. Segond fracture, deep lateral femoral notch sign).",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Imaging after Total Knee arthroplasty": [
+      {
+        "clinical_scenario": "Pain after TKA: initial evaluation.",
+        "modality": "XR",
+        "prioritisation_category": "P2-P3",
+        "comment": "Dependent on clinical presentation (outpatient)"
+      },
+      {
+        "clinical_scenario": "Pain after TKA: positive aspiration for infection.",
+        "modality": "NIL",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pain after TKA: positive x-ray for loosening. Negative aspiration for infection.",
+        "modality": "NIL",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pain after TKA: negative x-ray for loosening. Negative aspiration for infection.",
+        "modality": "CT SPECT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Routine follow-up of asymptomatic patients with TKA.",
+        "modality": "XR",
+        "prioritisation_category": "S4",
+        "comment": "none"
+      }
+    ],
+    "Chronic ankle pain": [
+      {
+        "clinical_scenario": "Chronic ankle pain of any origin - best initial study.",
+        "modality": "XR",
+        "prioritisation_category": "P3-P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Multiple sites of degenerative joint disease by ankle x-rays. Next study.",
+        "modality": "CT > MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Ankle x-rays normal, suspected osteochondral injury. Next study.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Ankle x-rays normal, suspected tendon abnormality. Next study.",
+        "modality": "US>MRI , if required",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Arthropathy presentation": [
+      {
+        "clinical_scenario": "Acute presentation, flare, or surveillance",
+        "modality": "XR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Acute ? bone tumour": [
+      {
+        "clinical_scenario": "Screening, first study.",
+        "modality": "XR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Persistent symptoms, but x-ray negative.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Definitively benign on x-rays (excluding osteoid osteoma).",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "(unless risk of # and aggressive benign appearance and then P2)"
+      },
+      {
+        "clinical_scenario": "Clinically suspected osteoid osteoma.",
+        "modality": "CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspicious for malignant characteristics on x-ray",
+        "modality": "MRI",
+        "prioritisation_category": "P2a",
+        "comment": "none"
+      }
+    ],
+    "Acute ? soft tissue tumour": [
+      {
+        "clinical_scenario": "Clinically suspected soft-tissue mass: general.",
+        "modality": "XR MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Mass palpated at a joint.",
+        "modality": "XR MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Soft-tissue mass: limb.",
+        "modality": "XR MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Soft-tissue mass: abdominal or chest wall.",
+        "modality": "XR CT MRI",
+        "prioritisation_category": "P2",
+        "comment": "Often CT first to confirm lesion, then MRI for further characterisation"
+      },
+      {
+        "clinical_scenario": "Calcified soft-tissue mass not definitely benign seen on x-rays.",
+        "modality": "MRI CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Negative or nonspecific findings on x-rays in area of palpated mass.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Follow-up of spontaneous soft-tissue haemorrhage in older adults.",
+        "modality": "XR +MRI",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      }
+    ],
+    "Follow up of malignant or aggressive MSK tumours": [
+      {
+        "clinical_scenario": "Lower-risk patient (low grade). Evaluation for metastatic disease to the lung from musculoskeletal primary.",
+        "modality": "CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Higher-risk patient (high grade). Evaluation for metastatic disease to the lung from musculoskeletal primary.",
+        "modality": "CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Evaluation for osseous metastatic disease from musculoskeletal primary.",
+        "modality": "MRI / Nuc Med",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Surveillance for local recurrence.",
+        "modality": "MRI CT",
+        "prioritisation_category": "S3",
+        "comment": "According to protocol"
+      },
+      {
+        "clinical_scenario": "Osseous tumour Local recurrence.",
+        "modality": "XR MRI CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Soft-tissue tumour. Local recurrence.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ]
+  },
+  "Neurology": {
+    "Ataxia": [
+      {
+        "clinical_scenario": "Slowly progressive ataxia, or ataxia of long duration (adult or child).",
+        "modality": "MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      }
+    ],
+    "Cerebrovascular disease": [
+      {
+        "clinical_scenario": "Asymptomatic. Structural lesion on physical examination (cervical bruit) and/or risk factors.",
+        "modality": "Nil",
+        "prioritisation_category": "N/A",
+        "comment": "Asymptomatic carotid bruit not routinely imaged"
+      }
+    ],
+    "Epilepsy": [
+      {
+        "clinical_scenario": "Chronic epilepsy, poor therapeutic response. Surgery candidate.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "New onset seizure. ETOH, and/or drug related.",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "New onset seizure. Aged 18 - 40 years.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "New onset seizure. Older than age 40.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Focal neurological deficit": [
+      {
+        "clinical_scenario": "Single or multiple focal neurologic deficits.",
+        "modality": "MRI=CT",
+        "prioritisation_category": "P2a,P2",
+        "comment": "none"
+      }
+    ],
+    "Headache": [
+      {
+        "clinical_scenario": "Chronic headache. No new features.",
+        "modality": "MRI=CT",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Chronic headache with new features.",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "New headache in patients older than age 60. Sedimentation rate higher than 55, temporal tenderness. Suspected temporal arteritis.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "May be nil imaging if clinically confident of the diagnosis"
+      }
+    ],
+    "Neurodegenerative Disorders": [
+      {
+        "clinical_scenario": "Possible/probable Alzheimer's disease.",
+        "modality": "CT, MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspected vascular dementia or rapidly progressive dementia or mixed vascular dementia and Alzheimer's disease.",
+        "modality": "CT, MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Frontotemporal dementia.",
+        "modality": "CT, MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Dementia with Lewy bodies.",
+        "modality": "CT, MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspected prion disease (Creutzfeldt-Jakob, iatrogenic CJ, or variant CJ)",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspected normal pressure hydrocephalus.",
+        "modality": "CT, MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "Depends on clinical setting. In the subacute setting, CT may be helpful for immediate management, with MRI only if needed."
+      },
+      {
+        "clinical_scenario": "Suspected Huntington disease",
+        "modality": "MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Clinical features suggestive of neurodegeneration with brain iron accumulation (NBIA).",
+        "modality": "MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Parkinson's disease: typical clinical features and responds to levodopa.",
+        "modality": "NONE",
+        "prioritisation_category": "N/A",
+        "comment": "N/A"
+      },
+      {
+        "clinical_scenario": "Parkinsonian syndrome: atypical clinical features not responsive to levodopa.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Motor neuron disease.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "P3, not deferrable (can be useful occasionally), given the nature of this condition should be done <6 weeks. Spine may be required also."
+      }
+    ],
+    "Demyelination/MS": [
+      {
+        "clinical_scenario": "Routine 12-month follow up, on medication for MS",
+        "modality": "MRI",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Follow up of MS with ?new relapse",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ]
+  },
+  "Neurosurgery": {
+    "Cerebrovascular": [
+      {
+        "clinical_scenario": "Risk for unruptured aneurysm. Positive family history.",
+        "modality": "MRA>CTA",
+        "prioritisation_category": "P4",
+        "comment": "MRA>CTA due to radiation and better to have same baselines for follow up"
+      },
+      {
+        "clinical_scenario": "Proven SAH, negative angiogram, follow-up.",
+        "modality": "DSA=CTA=MRA",
+        "prioritisation_category": "P4",
+        "comment": "Case by case, some should have repeat DSA in a week, others just MRA or longer interval"
+      }
+    ],
+    "Space occupying lesion": [
+      {
+        "clinical_scenario": "No neurological deficit",
+        "modality": "CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Routine follow up glioma/GBM",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Follow up of glioma/GBM and considering treatment (e.g. is nodular enhancement enlarging)",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Follow up of glioma/GBM with new/worsening symptoms",
+        "modality": "MRI",
+        "prioritisation_category": "P1 -P2",
+        "comment": "none"
+      }
+    ],
+    "Congenital disorders": [
+      {
+        "clinical_scenario": "Routine follow up",
+        "modality": "CT, MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      }
+    ],
+    "Hydrocephalus, shunt function": [
+      {
+        "clinical_scenario": "Routine surveillance",
+        "modality": "XR, CT",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      }
+    ]
+  },
+  "Obstetrics & Gynaecology": {
+    "Abnormal vaginal bleeding": [
+      {
+        "clinical_scenario": "Postmenopausal vaginal bleeding. First study.",
+        "modality": "US",
+        "prioritisation_category": "P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Postmenopausal vaginal bleeding, follow up.",
+        "modality": "US",
+        "prioritisation_category": "S3",
+        "comment": "Follow up scan would be at referring clinician’s discretion and time accordingly however would be non-deferable from the specified time."
+      },
+      {
+        "clinical_scenario": "Premenopausal vaginal bleeding. First study.",
+        "modality": "US",
+        "prioritisation_category": "P3",
+        "comment": "This is a large cohort of pts and individual consideration to cases is needed to determine time frame. If any high-risk clinical factors may need to be triaged P2."
+      },
+      {
+        "clinical_scenario": "Premenopausal vaginal bleeding, follow up.",
+        "modality": "US",
+        "prioritisation_category": "P3- P4",
+        "comment": "Follow up scan post endometrial sampling or other management may not always be mandatory e.g. after removal of endo polyp. If high clinical risk, then triage 3 or even P2 if symptomatic anaemia."
+      },
+      {
+        "clinical_scenario": "Premenopausal vaginal bleeding, follow up of multi-fibroid uterus as per clinician/ radiologist recommendation",
+        "modality": "US",
+        "prioritisation_category": "S4",
+        "comment": "Relatively low risk , e.g. on clinical discretion a follow up of multi-fibroid uterus is required S4."
+      }
+    ],
+    "Palpable adnexal mass": [
+      {
+        "clinical_scenario": "Reproductive age female (not pregnant). Initial evaluation.",
+        "modality": "US",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Clinically suspected adnexal mass": [
+      {
+        "clinical_scenario": "Reproductive age female (not pregnant). Initial evaluation.",
+        "modality": "US",
+        "prioritisation_category": "P2-P3",
+        "comment": "If a suspected mass with pain or bleeding then P2, otherwise P3."
+      },
+      {
+        "clinical_scenario": "Reproductive age female (not pregnant) with complex or solid mass detected by pelvic sonography; NOT clearly malignant. Follow-up recommendations.",
+        "modality": "US",
+        "prioritisation_category": "S3",
+        "comment": "Can be planned triage as either 6 weeks or 3 months follow up ultrasound depending on clinician recommendation or MDM review."
+      },
+      {
+        "clinical_scenario": "Reproductive age female (not pregnant) with complex or solid mass detected by pelvic sonography getting smaller at short-term follow-up. (If resolved, no further imaging necessary).",
+        "modality": "US",
+        "prioritisation_category": "S3-4",
+        "comment": "Could defer to a 4 depending on symptoms, clinical risk and tumour markers. Clinician to indicate."
+      },
+      {
+        "clinical_scenario": "Reproductive age female (not pregnant) with complex or solid mass that is persistent or enlarging on pelvic sonography at short-term follow-up.",
+        "modality": "USS, MRI, CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Reproductive age female (not pregnant). Initial sonography demonstrates a large and apparently simple cyst >6 cm in diameter.",
+        "modality": "US",
+        "prioritisation_category": "S3-4",
+        "comment": "Could defer to a P4 depending on symptoms. Clinician to indicate."
+      },
+      {
+        "clinical_scenario": "Postmenopausal female (>12 months amenorrhea). Initial evaluation.",
+        "modality": "US",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Postmenopausal female (>12 months amenorrhea) with a simple ovarian cyst >5 cm in diameter by pelvic sonography.",
+        "modality": "US",
+        "prioritisation_category": "S3-4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Postmenopausal female (>12 months amenorrhea) with a simple ovarian cyst 3-5 cm in diameter seen by pelvic sonography.",
+        "modality": "US",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Postmenopausal female (>12 months amenorrhea) with a complex or solid adnexal mass seen by pelvic sonography.",
+        "modality": "US or CT",
+        "prioritisation_category": "S2-S3",
+        "comment": "According to clinician request."
+      }
+    ],
+    "Staging of gynaecological cancers": [
+      {
+        "clinical_scenario": "Pre-treatment of ovarian cancer or rule out recurrence",
+        "modality": "CT, +/- PET",
+        "prioritisation_category": "P2",
+        "comment": "According to clinician request."
+      },
+      {
+        "clinical_scenario": "Invasive cancer of the cervix, FIGO stage 1b1 or greater",
+        "modality": "MRI, CT +/- PET",
+        "prioritisation_category": "P2",
+        "comment": "According to clinician request."
+      },
+      {
+        "clinical_scenario": "Endometrial cancer of the uterus",
+        "modality": "CT MRI",
+        "prioritisation_category": "P2",
+        "comment": "According to clinician request."
+      }
+    ],
+    "Acute pelvic pain in the reproductive age group": [
+      {
+        "clinical_scenario": "Gynaecological aetiology suspected, serum β-hCG positive",
+        "modality": "US",
+        "prioritisation_category": "P1-P2a",
+        "comment": "If ectopic pregnancy suspected - same day imaging"
+      },
+      {
+        "clinical_scenario": "Gynaecological aetiology suspected, serum β-hCG negative.",
+        "modality": "US +/- CT",
+        "prioritisation_category": "P2a (P2)",
+        "comment": "Triage depends on clinical indication: acute versus chronic pain, associated bleeding. For example, acute pain ovarian torsion, haemorrhagic cyst etc will need triage P1. However, other pain non-specified could be triage P2. Clinician to indicate urgency."
+      },
+      {
+        "clinical_scenario": "Non Gynaecological aetiology suspected, serum β-hCG positive.",
+        "modality": "US",
+        "prioritisation_category": "P1-P2a",
+        "comment": "Early pregnancy causes of pain not related to pregnancy i.e. UTI, appendicitis, ovarian, gallbladder."
+      }
+    ],
+    "Pain in pregnancy": [
+      {
+        "clinical_scenario": "2nd or 3rd trimester",
+        "modality": "US",
+        "prioritisation_category": "P1-P2a",
+        "comment": "Scan to be tailored to location of pain i.e. Maternal adnexa, gallbladder, kidneys, appendix, placenta (abruption) etc. Assessment of foetal wellbeing is always required at a minimum as well unless pain is clearly renal or GB in origin."
+      }
+    ],
+    "Bleeding in pregnancy": [
+      {
+        "clinical_scenario": "1st trimester, positive pregnancy test",
+        "modality": "US",
+        "prioritisation_category": "P1-P2a",
+        "comment": "According to HealthPathways, urgency depends on clinical risk factors - if ectopic suspected or bleeding severe may need to be within 24 hours"
+      },
+      {
+        "clinical_scenario": "2nd or 3rd trimester, no other signs or symptoms.",
+        "modality": "US",
+        "prioritisation_category": "P1-P2a",
+        "comment": "Scan to determine cause of APH i.e. Placenta praevia, vasa praevia, placental abruption may need vaginal ultrasound. Growth assessment can be performed if due."
+      },
+      {
+        "clinical_scenario": "2nd or 3rd trimester, no other signs or symptoms. Placenta previa diagnosed before 32 weeks.",
+        "modality": "US",
+        "prioritisation_category": "P2a",
+        "comment": "Any longer wait-time e.g. P2 should be at clinical discretion - including where already excluded vasa praevia on previous scan or already diagnosed placenta praevia or low-lying placenta at anatomy scan."
+      },
+      {
+        "clinical_scenario": "2nd or 3rd trimester, no other signs or symptoms. Uterine contractions, pain, > 20 weeks",
+        "modality": "US",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "2nd or 3rd trimester, no other signs or symptoms. Persistent low-lying placenta.",
+        "modality": "US",
+        "prioritisation_category": "P1-P2a",
+        "comment": "Deferral to P2 at clinical discretion only"
+      },
+      {
+        "clinical_scenario": "2nd or 3rd trimester, no other signs or symptoms. Placenta previa, history of caesarean delivery.",
+        "modality": "US",
+        "prioritisation_category": "P1-P2a",
+        "comment": "Need to exclude placenta accreta. May need transvaginal scan. If first scan triage P1. If placenta accreta already known from a previous scan, then can triage P2 or tailored/planned/32 weeks follow up based on clinician recommendation from previous MDM or other earlier discussions."
+      }
+    ],
+    "Growth disturbance (risk IUGR)": [
+      {
+        "clinical_scenario": "Risk of IUGR initial evaluation",
+        "modality": "US",
+        "prioritisation_category": "P1-P2a",
+        "comment": "Risk of foetal demise if severe and poorly managed."
+      },
+      {
+        "clinical_scenario": "Small foetus, low or low normal fluid, follow-up studies",
+        "modality": "US",
+        "prioritisation_category": "P2-P2a",
+        "comment": "Follow up as per SGA pathway, to be advised by referring clinician.."
+      },
+      {
+        "clinical_scenario": "Very small foetus, normal fluid, follow-up studies",
+        "modality": "US",
+        "prioritisation_category": "P2-P2a",
+        "comment": "Follow up as per SGA pathway, to be advised by referring clinician. Non deferable."
+      },
+      {
+        "clinical_scenario": "Normal sized foetus, low or absent fluid, follow-up studies",
+        "modality": "US",
+        "prioritisation_category": "P2-P2a",
+        "comment": "Follow up to be advised by referring clinician. Non deferrable."
+      }
+    ],
+    "Assessment of gravid cervix": [
+      {
+        "clinical_scenario": "Patient at risk for preterm delivery: 16-24 weeks gestation: cervical length ≥3cm on transvaginal ultrasound scan",
+        "modality": "US",
+        "prioritisation_category": "P2",
+        "comment": "standard 2 week follow up screening scan for cervical length 16-24 weeks or as advised by PTB clinic"
+      },
+      {
+        "clinical_scenario": "Patient at risk for preterm delivery (history of prior preterm birth or multiple gestations): 16-24 weeks gestation: cervix ≤3 cm long by transvaginal ultrasound scan",
+        "modality": "US",
+        "prioritisation_category": "P2",
+        "comment": "May need a follow up scan sooner than standard 2-week interval at clinician discretion"
+      },
+      {
+        "clinical_scenario": "2nd or third trimester assessment of cervix after 24 weeks",
+        "modality": "US",
+        "prioritisation_category": "P2a - P2",
+        "comment": "Assessment of cervical cerclage or monitoring of open cervix after 24 weeks gestation. Scan timing at clinician discretion depending on indication."
+      }
+    ]
+  },
+  "ORL": {
+    "Neck mass/lymphadenopathy": [
+      {
+        "clinical_scenario": "Adult presenting with a non-pulsatile solitary neck mass (afebrile).",
+        "modality": "US > CT",
+        "prioritisation_category": "P2-P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Adult presenting with multiple neck masses.",
+        "modality": "CT > MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Adult with a history of treatment for cancer presenting with a neck mass.",
+        "modality": "CT, PET>MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Sino-nasal disease": [
+      {
+        "clinical_scenario": "Uncomplicated rhinosinusitis.",
+        "modality": "CBCT, CT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Recurrent acute or chronic rhinosinusitis (possible surgical candidate).",
+        "modality": "CT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Bilateral sino-nasal polyposis",
+        "modality": "CT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Sino-nasal obstruction, suspected mass lesion.",
+        "modality": "MRI > CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Vertigo and hearing loss": [
+      {
+        "clinical_scenario": "Sensorineural hearing loss, acute and intermittent vertigo.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Sensorineural hearing loss, no vertigo.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Conductive hearing loss, to rule out petrous bone abnormality.",
+        "modality": "CT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Total deafness, cochlear implant candidate, surgical planning.",
+        "modality": "CT",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Fluctuating hearing loss, history of meningitis or to rule out congenital anomaly.",
+        "modality": "CT > MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Vertigo, no hearing loss, normal neurological examination.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Cranial neuropathy": [
+      {
+        "clinical_scenario": "Anosmia and abnormalities of the sense of smell.",
+        "modality": "MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Weakness or paralysis of the muscles of mastication; sensory abnormalities of the head and neck.",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "If no red flags"
+      },
+      {
+        "clinical_scenario": "Weakness or paralysis of facial expression.",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "If no red flags"
+      },
+      {
+        "clinical_scenario": "Palate weakness.",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "If no red flags"
+      },
+      {
+        "clinical_scenario": "Vocal cord paralysis.",
+        "modality": "MRI=CT",
+        "prioritisation_category": "P2-P3",
+        "comment": "If no red flags"
+      },
+      {
+        "clinical_scenario": "Weakness or paralysis of the sternocleidomastoid and trapezius muscles.",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "If no red flags"
+      },
+      {
+        "clinical_scenario": "Weakness or paralysis of the tongue.",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "If no red flags"
+      },
+      {
+        "clinical_scenario": "Perineural spread of tumour.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "TMJ dysfunction": [
+      {
+        "clinical_scenario": "No response to non-operative treatment",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      }
+    ],
+    "Dysphagia": [
+      {
+        "clinical_scenario": "Unexplained oropharyngeal dysphagia.",
+        "modality": "Fluoroscopy",
+        "prioritisation_category": "P2-P3",
+        "comment": "If no red flags"
+      },
+      {
+        "clinical_scenario": "Oropharyngeal dysphagia with an attributable cause.",
+        "modality": "Fluoroscopy",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ]
+  },
+  "Paediatrics": {
+    "General neurology": [
+      {
+        "clinical_scenario": "Neurocognitive regression",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Developmental delay, cerebral palsy, spinal dysraphism",
+        "modality": "MRI",
+        "prioritisation_category": "P3-P4",
+        "comment": "Clinical scenario dependent"
+      },
+      {
+        "clinical_scenario": "Macrocephaly-stable, in otherwise normal child",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Progressive macrocephaly",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Microcephaly",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      }
+    ],
+    "Seizures": [
+      {
+        "clinical_scenario": "Focal/partial seizure",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Seizures with regression or arrest in development",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Generalised seizures, no neurology, even if intractable",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Headache": [
+      {
+        "clinical_scenario": "Progressive headache without neurological signs or symptoms of raised ICP",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Chronic headache with no neurological signs",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "none"
+      }
+    ],
+    "Ataxia": [
+      {
+        "clinical_scenario": "Slowly progressive ataxia, or ataxia of long duration (adult or child)",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "none"
+      }
+    ],
+    "Focal neurological deficits": [
+      {
+        "clinical_scenario": "Multiple focal neurologic deficits",
+        "modality": "MRI>CT",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Single focal neurologic deficit, sudden onset, stable, or incompletely resolving",
+        "modality": "MRI=CT",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Single focal neurologic deficit, sudden onset, progressive",
+        "modality": "MRI=CT",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Single focal neurologic deficit, completely resolving",
+        "modality": "MRI=CT",
+        "prioritisation_category": "P1-P2a",
+        "comment": "Clinical scenario dependant"
+      }
+    ],
+    "Neuroendocrine": [
+      {
+        "clinical_scenario": "Hypopituitarism",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P3",
+        "comment": "P1 if visual field abnormal, P3 if visual fields normal"
+      },
+      {
+        "clinical_scenario": "Obesity/eating disorder",
+        "modality": "LOW 4 MRI>CT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Hyperthyroidism (high TSH)",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "Aim for within 4 weeks, non-deferrable"
+      },
+      {
+        "clinical_scenario": "Cushing's syndrome (high ACTH)",
+        "modality": "MRI",
+        "prioritisation_category": "P2-3",
+        "comment": "Aim for within 4 weeks, non-deferrable"
+      },
+      {
+        "clinical_scenario": "Hyperprolactinemia",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P3",
+        "comment": "P1 if abnormal visual fields or ↑prolactin otherwise P3"
+      },
+      {
+        "clinical_scenario": "Acromegaly/gigantism",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Variant 7 - Growth hormone deficiency, growth deceleration, panhypopituitarism",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P3",
+        "comment": "P1 if visual field abnormal, P3 if visual fields normal"
+      },
+      {
+        "clinical_scenario": "Diabetes insipidus",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pituitary apoplexy",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Postoperative sella",
+        "modality": "MRI",
+        "prioritisation_category": "S3",
+        "comment": "Neurosurgical protocol driven"
+      },
+      {
+        "clinical_scenario": "Precocious puberty",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P3",
+        "comment": "Aim for within 4 weeks, non-deferrable"
+      }
+    ],
+    "ENT": [
+      {
+        "clinical_scenario": "Child (up to age 14) presenting with a solitary neck mass or multiple neck masses (afebrile)",
+        "modality": "US>CT>MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Children with uncomplicated acute sinusitis": [
+      {
+        "clinical_scenario": "Children with uncomplicated acute sinusitis",
+        "modality": "None",
+        "prioritisation_category": "None",
+        "comment": "none"
+      }
+    ],
+    "Children with persistent (acute sinusitis that does not respond to treatment), recurrent, or chronic sinusitis": [
+      {
+        "clinical_scenario": "Children with persistent (acute sinusitis that does not respond to treatment), recurrent, or chronic sinusitis",
+        "modality": "CT",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Children with sinusitis with orbital or intracranial complications": [
+      {
+        "clinical_scenario": "Children with sinusitis with orbital or intracranial complications",
+        "modality": "MRI>CT",
+        "prioritisation_category": "P1",
+        "comment": "none"
+      }
+    ],
+    "Musculoskeletal": [
+      {
+        "clinical_scenario": "DDH - Child younger than 4 months of age, hip instability or dislocation detected or suspected on exam.",
+        "modality": "US",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "DDH - Child younger than 4 months of age, breech presentation or positive family history, stable hips on exam",
+        "modality": "XR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "DDH - Patient 4 months of age or older, clinically suspicious for DDH (limited abduction or abnormal gait)",
+        "modality": "XR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Limp - Non-focal clinical examination",
+        "modality": "XR",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Limp - Focal clinical examination (not septic arthritis)",
+        "modality": "XR",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      }
+    ],
+    "Respiratory": [
+      {
+        "clinical_scenario": "Cystic Fibrosis",
+        "modality": "XR",
+        "prioritisation_category": "S4",
+        "comment": "Annual + prn CXR. US for portal hypertension age 5 then annual or prn. HRCT age 6."
+      },
+      {
+        "clinical_scenario": "Bronchiectasis",
+        "modality": "XR",
+        "prioritisation_category": "S4",
+        "comment": "Annual CXR"
+      }
+    ],
+    "Gastrointestinal": [
+      {
+        "clinical_scenario": "IBD work up",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "Clinical scenario dependent"
+      },
+      {
+        "clinical_scenario": "IBD extension of disease or symptomatic",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "Clinical scenario dependent"
+      },
+      {
+        "clinical_scenario": "IBD perianal region",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "Clinical scenario dependent"
+      },
+      {
+        "clinical_scenario": "IBD collection or phlegmon suspected",
+        "modality": "US or MRI",
+        "prioritisation_category": "P1-P2a",
+        "comment": "Clinical scenario dependent"
+      },
+      {
+        "clinical_scenario": "Intermittent nonbilious vomiting since birth.",
+        "modality": "BAS",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "New onset projectile nonbilious vomiting.",
+        "modality": "US",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      }
+    ],
+    "Urology and Nephrology": [
+      {
+        "clinical_scenario": "UTI",
+        "modality": "US",
+        "prioritisation_category": "P3",
+        "comment": "Protocol"
+      },
+      {
+        "clinical_scenario": "Antenatal renal dilatation",
+        "modality": "US",
+        "prioritisation_category": "P2-3",
+        "comment": "Protocol"
+      }
+    ],
+    "Oncology": [
+      {
+        "clinical_scenario": "Post treatment",
+        "modality": "CT>MRI,US",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      }
+    ],
+    "Urology": [
+      {
+        "clinical_scenario": "Uncomplicated UTI, age <6 months, first episode",
+        "modality": "US",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Recurrent infections (>/=2 episodes of culture positive UTI or high suspicion previous episode/s missed)",
+        "modality": "US",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Gross, painless haematuria and no evident cause",
+        "modality": "US",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Persistent, isolated microscopic haematuria on urine microscopy (>1 year) without proteinuria and increased urinary calcium or calcium creatinine ratio",
+        "modality": "US",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Dipstick positive proteinuria and confirmed on PCR on early morning sample, when child is well",
+        "modality": "US",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Enuresis - secondary",
+        "modality": "US",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ]
+  },
+  "Respiratory": {
+    "Acute respiratory illness": [
+      {
+        "clinical_scenario": "CXR pneumonia follow up.",
+        "modality": "XR",
+        "prioritisation_category": "P3 or P4",
+        "comment": "P3 if CXR showed mass like pneumonia, looked like pneumonia but with no signs of infection, or looked like a pneumonia with pleural fluid. P4 if standard typical pneumonia (AV)"
+      }
+    ],
+    "Chronic dyspnoea- suspected pulmonary origin": [
+      {
+        "clinical_scenario": "Any age, positive physical examination.",
+        "modality": "XR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Older than age 40, negative physical examination.",
+        "modality": "XR",
+        "prioritisation_category": "P4 or P3",
+        "comment": "Clinical scenario (severity) dependent"
+      },
+      {
+        "clinical_scenario": "Younger than age 40, negative physical exam. Positive with other symptoms, severe dyspnoea, or other risk factors.",
+        "modality": "XR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Younger than age 40, negative physical examination.",
+        "modality": "XR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Any age, non-revealing or non-diagnostic clinical, standard radiography, and laboratory studies.",
+        "modality": "CT (HRCT and /or /?CTPA)",
+        "prioritisation_category": "P3 or P4",
+        "comment": "Duration and severity dependant. P3 if symptoms <2 months or >2months if progressive. P4 if >2 months"
+      },
+      {
+        "clinical_scenario": "Suspected ILD",
+        "modality": "CT",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Chronic cough": [
+      {
+        "clinical_scenario": "Suspected bronchiectasis",
+        "modality": "XR>HRCT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      }
+    ],
+    "Haemoptysis": [
+      {
+        "clinical_scenario": "Persistent/recurrent haemoptysis >40 years old +/- smoking history",
+        "modality": "XR>CT",
+        "prioritisation_category": "P2",
+        "comment": "P2 CXR first then P3 CT if CXR normal"
+      }
+    ],
+    "?Rib fracture": [
+      {
+        "clinical_scenario": "Adult - any age",
+        "modality": "Nil",
+        "prioritisation_category": "Nil routine",
+        "comment": "CXR only if surgical emphysema or asymmetrical signs"
+      }
+    ],
+    "Solitary pulmonary nodule on CXR": [
+      {
+        "clinical_scenario": "Nodule ≥ 1 cm and </= 3cms, low clinical suspicion for cancer.",
+        "modality": "CT +/-BX",
+        "prioritisation_category": "P3 or P4",
+        "comment": "P3 if no previous imaging P4 if stable"
+      },
+      {
+        "clinical_scenario": "Nodule ≥ 1 cm and </= 3cms, moderate to high clinical suspicion for cancer.",
+        "modality": "CT=PETCT +/-BX",
+        "prioritisation_category": "P2",
+        "comment": "Consider direct referral for CT PET if resectable on CXR"
+      },
+      {
+        "clinical_scenario": "Nodule ≤ 1 cm, low clinical suspicion for cancer.",
+        "modality": "CT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Nodule ≤ 1 cm, moderate to high clinical suspicion for cancer.",
+        "modality": "CT",
+        "prioritisation_category": "P3-P2",
+        "comment": "none"
+      }
+    ],
+    "Lung cancer staging": [
+      {
+        "clinical_scenario": "Lung mass on CXR (or other imaging modality) and imaging appearances suggest curative",
+        "modality": "PET-CT>BX",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Lung mass on CXR (or other imaging modality) and imaging appearances suggest non-curative",
+        "modality": "CT>BX +/- PET-CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Routine admission and pre-operative chest radiography": [
+      {
+        "clinical_scenario": "Asymptomatic; history and physical unremarkable.",
+        "modality": "NONE",
+        "prioritisation_category": "Anaesthetics protocol driven",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Acute cardiopulmonary findings by history or physical.",
+        "modality": "XR",
+        "prioritisation_category": "Anaesthetics protocol driven",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Chronic cardiopulmonary disease in the elderly (age >70), previous chest radiograph within 6 months available.",
+        "modality": "XR",
+        "prioritisation_category": "Anaesthetics protocol driven",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Chronic cardiopulmonary disease in the elderly (age >70), previous chest radiograph within 6 months not available.",
+        "modality": "XR",
+        "prioritisation_category": "Anaesthetics protocol driven",
+        "comment": "none"
+      }
+    ],
+    "Pleural disease": [
+      {
+        "clinical_scenario": "Pleural effusion, probably benign",
+        "modality": "CT or f/up XR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pleural effusion, possibly malignant",
+        "modality": "CXR, +/-US and drainage, +/- CT (as per comment)",
+        "prioritisation_category": "P2",
+        "comment": "Large effusion- P2 CXR, and , US and drainage Small effusion or PHx of cancer -. P2 CXR + CT"
+      }
+    ]
+  },
+  "Spine": {
+    "Low back pain": [
+      {
+        "clinical_scenario": "Uncomplicated acute low back pain and/or radiculopathy, nonsurgical presentation. No red flags*",
+        "modality": "No imaging or XR",
+        "prioritisation_category": "Nil or P5 if persists >3-6/12",
+        "comment": "(See Red flags below as per ACR update 2021 -systematic review based)."
+      },
+      {
+        "clinical_scenario": "Low velocity trauma, osteoporosis, and /or age > 70 years, X-ray NAD or nil unexpected",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspicion of cancer, infection, or immunosuppression, XR NAD/ non-contributory.",
+        "modality": "MRI",
+        "prioritisation_category": "P1-P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Low back pain and/or radiculopathy, surgery or intervention candidate, XR NAD or nil unexpected.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Prior lumbar surgery, XR NAD or nil unexpected.",
+        "modality": "MRI",
+        "prioritisation_category": "P4 -P5",
+        "comment": "none"
+      }
+    ],
+    "Spinal infection": [
+      {
+        "clinical_scenario": "Follow up, new symptoms",
+        "modality": "MRI",
+        "prioritisation_category": "P2-P1",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Follow up, routine, no new symptoms",
+        "modality": "MRI",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      }
+    ],
+    "Spinal stenosis": [
+      {
+        "clinical_scenario": "Follow up, no red flags*",
+        "modality": "MRI",
+        "prioritisation_category": "P4/S4",
+        "comment": "none"
+      }
+    ],
+    "Plexopathy": [
+      {
+        "clinical_scenario": "Brachial - acute onset or chronic plexopathy without trauma, XR NAD or nil unexpected findings",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Brachial - entrapment syndromes, XR NAD or nil unexpected findings",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Brachial - post-treatment syndrome, XR NAD or nil unexpected findings",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Lumbosacral - acute onset or chronic plexopathy without trauma, XR NAD or nil unexpected findings",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Lumbosacral - entrapment syndrome, XR NAD or nil unexpected findings",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Lumbosacral - post-treatment syndrome, XR NAD or nil unexpected findings",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      }
+    ],
+    "Myelopathy (see neuro also)": [
+      {
+        "clinical_scenario": "Painful",
+        "modality": "MRI>CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Stepwise progressive",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Slowly progressive, XR NAD or nil unexpected findings",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Oncology patient",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Stress insufficiency fractures including sacrum": [
+      {
+        "clinical_scenario": "Suspect stress/insufficiency fracture. First imaging modality.",
+        "modality": "XR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect stress fracture in patient with need-to-know diagnosis, not hip or sacrum. X-rays normal.",
+        "modality": "XR+MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect stress fracture, not hip or sacrum. X-rays normal. Bone scan positive and nonspecific.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect stress fracture in otherwise normal patient. X-rays and bone scan or MRI normal.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Clinical differential insufficiency fracture versus metastasis in sacrum. X-rays normal, bone scan hot but nonspecific.",
+        "modality": "CT>MRI",
+        "prioritisation_category": "P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect insufficiency fracture in sacrum/pelvis; elderly patient. X-rays normal. Bone scan hot in a linear pattern typical for fracture.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect insufficiency fracture in osteoporotic patient or patient on long-term corticosteroid therapy, not hip. X-rays normal.",
+        "modality": "XR MRI NMED",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect insufficiency fracture in osteoporotic patient or patient on long-term corticosteroid therapy; not hip. X-rays and bone scan or MRI normal at 48 hours.",
+        "modality": "XR MRI",
+        "prioritisation_category": "P5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspect sub-acute insufficiency fracture of hip in osteoporotic patient or patient on corticosteroid therapy. X-rays normal.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Chronic neck pain": [
+      {
+        "clinical_scenario": "Patient of any age, without a history of previous trauma, first study.",
+        "modality": "XR",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Patient of any age, history of previous malignancy, first study.",
+        "modality": "XR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Patient of any age, history of previous neck surgery, no red flags, first study.",
+        "modality": "XR",
+        "prioritisation_category": "P4",
+        "comment": "If any red flags, then P2"
+      },
+      {
+        "clinical_scenario": "X-rays normal. No neurologic findings.",
+        "modality": "NONE",
+        "prioritisation_category": "Nil",
+        "comment": "N/A"
+      },
+      {
+        "clinical_scenario": "X-rays normal. Neurologic signs or symptoms present.",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-rays show spondylosis. No neurologic findings.",
+        "modality": "NONE",
+        "prioritisation_category": "Nil",
+        "comment": "N/A"
+      },
+      {
+        "clinical_scenario": "X-rays show spondylosis. Neurologic signs or symptoms present.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-rays show old trauma. No neurologic findings.",
+        "modality": "NONE",
+        "prioritisation_category": "Nil",
+        "comment": "N/A"
+      },
+      {
+        "clinical_scenario": "X-rays show old trauma. Neurologic signs or symptoms present.",
+        "modality": "MRI",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "X-rays show bone or disc margin destruction.",
+        "modality": "MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ]
+  },
+  "Gastrointestinal – Upper GI/Liver": {
+    "Right upper quadrant pain": [
+      {
+        "clinical_scenario": "No fever, normal WBC",
+        "modality": "US",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "No fever, normal WBC, ultrasound shows only gallstones",
+        "modality": "Nuc Med /CT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      }
+    ],
+    "Palpable abdominal mass": [
+      {
+        "clinical_scenario": "Palpable mass, high suspicion of cancer clinically",
+        "modality": "CT>US",
+        "prioritisation_category": "P2a",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Palpable mass, low-mod clinical suspicion for cancer or pulsatile and painless",
+        "modality": "CT>US",
+        "prioritisation_category": "P2-P3",
+        "comment": "none"
+      }
+    ],
+    "Jaundice": [
+      {
+        "clinical_scenario": "Painless, one or more of the following: weight loss, fatigue, anorexia, duration of symptoms greater than 3 months. Patient otherwise healthy.",
+        "modality": "CT>US",
+        "prioritisation_category": "P2a-P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Painless, one or more of the following: weight loss, fatigue, anorexia, duration of symptoms greater than 3 months. Patients who will not tolerate radical surgical procedure.",
+        "modality": "CT>US",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Clinical condition and laboratory examination make mechanical obstruction unlikely.",
+        "modality": "US>CT>MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Confusing clinical picture, patient not described in previous scenarios.",
+        "modality": "US>CT>MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Liver lesion characterisation": [
+      {
+        "clinical_scenario": "Typical benign on initial imaging, no history of malignancy",
+        "modality": "NONE",
+        "prioritisation_category": "NA",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Typical benign on initial imaging, known history of extrahepatic malignancy",
+        "modality": "NONE",
+        "prioritisation_category": "NA",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Typical malignant hepatic mass on initial imaging",
+        "modality": "CT",
+        "prioritisation_category": "P2a -P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Indeterminate on initial imaging, 1cm, no suspicion or evidence of extrahepatic malignancy or liver disease",
+        "modality": "MRI=CT",
+        "prioritisation_category": "P2-P3",
+        "comment": "MDM review and clinical risk assessment for target date and type of imaging tailored"
+      },
+      {
+        "clinical_scenario": "Indeterminate solitary mass on initial imaging, >1cm, known history of extrahepatic malignancy",
+        "modality": "CT=MRI",
+        "prioritisation_category": "P2",
+        "comment": "but MDM review and clinical risk assessment for target date and type of imaging tailored"
+      },
+      {
+        "clinical_scenario": "Indeterminate mass on initial imaging, >1cm, known or suspected liver disease associated with a high risk of hepatocellular carcinoma (chronic hepatitis, cirrhosis, hemochromatosis, etc)",
+        "modality": "MRI=CT",
+        "prioritisation_category": "P2",
+        "comment": "but MDM review and clinical risk assessment for target date and type of imaging tailored"
+      },
+      {
+        "clinical_scenario": "Small lesion on initial imaging, <1cm",
+        "modality": "FUP US",
+        "prioritisation_category": "S4",
+        "comment": "MDM review and clinical risk assessment for target date and type of imaging tailored"
+      }
+    ],
+    "Suspected liver metastases": [
+      {
+        "clinical_scenario": "Initial imaging test following detection of primary tumour",
+        "modality": "CT>MRI",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Surveillance following treatment of primary tumour",
+        "modality": "CT>MRI",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Abnormal surveillance US, CT or MRI, or PVP: high suspicion of malignancy",
+        "modality": "CT=MRI",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      }
+    ],
+    "Crohn's disease": [
+      {
+        "clinical_scenario": "Adult with known Crohn's disease and fever, increasing pain, leucocytosis etc",
+        "modality": "MRE>CT",
+        "prioritisation_category": "P2",
+        "comment": "MR Enterography>CT depending on how unwell and may be <4 weeks"
+      },
+      {
+        "clinical_scenario": "Adult with known Crohn's disease; stable, mild symptoms",
+        "modality": "MRE or CT",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Dysphagia": [
+      {
+        "clinical_scenario": "Oropharyngeal dysphagia with an attributable cause",
+        "modality": "Scope",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Unexplained oropharyngeal dysphagia",
+        "modality": "Scope",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Retrosternal dysphagia in immunocompetent patients",
+        "modality": "Scope",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Retrosternal dysphagia in immunocompromised patients",
+        "modality": "Scope",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Dysmotility",
+        "modality": "BAS",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      }
+    ],
+    "Miscellaneous": [
+      {
+        "clinical_scenario": "Malabsorption",
+        "modality": "CT",
+        "prioritisation_category": "P2 if HSC or P4",
+        "comment": "Vs scope"
+      },
+      {
+        "clinical_scenario": "Cirrhosis",
+        "modality": "US",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pancreatic tumour",
+        "modality": "CT",
+        "prioritisation_category": "P2a-P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Oesophageal tumour",
+        "modality": "CT",
+        "prioritisation_category": "P2a-P2",
+        "comment": "none"
+      }
+    ]
+  },
+  "Nephrology & Urology": {
+    "Scrotum/ testicular": [
+      {
+        "clinical_scenario": "Testis tumour (diagnosed by orchidectomy)",
+        "modality": "CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Acute pyelonephritis": [
+      {
+        "clinical_scenario": "Uncomplicated episode in female patient",
+        "modality": "NONE",
+        "prioritisation_category": "N/A",
+        "comment": "none"
+      }
+    ],
+    "Urinary tract calculi": [
+      {
+        "clinical_scenario": "Follow-up small stones < 4mm",
+        "modality": "KUB XR / CT-KUB (LD)",
+        "prioritisation_category": "S3",
+        "comment": "Dependent on symptoms and renal function and according to protocol"
+      }
+    ],
+    "Male UTI": [
+      {
+        "clinical_scenario": "Adult male who has a recurrent or persistent infection, or a single episode of pyelonephritis",
+        "modality": "US",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      }
+    ],
+    "Female UTI": [
+      {
+        "clinical_scenario": "Adult females who are non-responders to prophylactic antibiotics AND get frequent reinfections (≥2 in 6 months OR ≥ 3 in 1 year)",
+        "modality": "US",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      }
+    ],
+    "Haematuria": [
+      {
+        "clinical_scenario": "Patients >40 years and <85 years with painless macroscopic haematuria and eGFR >45",
+        "modality": "CT",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Patients >40 years and <85 years with lab-confirmed microscopic haematuria on >2 occasions and in absence of proteinuria, pyuria and eGFR>45",
+        "modality": "CT / US",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Patients <40 years or >85 years with macroscopic haematuria or confirmed microscopic haematuria",
+        "modality": "US",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Renal failure": [
+      {
+        "clinical_scenario": "Chronic renal failure and eGFR <30 or <45 with diabetes, or progressive drop in eGFR>5 over 12 months or with significant proteinuria (urine ACR>30) or associated haematuria.",
+        "modality": "US",
+        "prioritisation_category": "P4",
+        "comment": "Not deferrable if acute on chronic"
+      }
+    ],
+    "Obstructed voiding secondary to prostate disease": [
+      {
+        "clinical_scenario": "Normal renal function",
+        "modality": "Nil",
+        "prioritisation_category": "Nil",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Reduced eGFR, suspected urinary retention",
+        "modality": "US if residual > 400",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      }
+    ],
+    "Renal lesions": [
+      {
+        "clinical_scenario": "Cyst or hyperdense cyst characterisation",
+        "modality": "CT",
+        "prioritisation_category": "P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "RCC ≤ 3 cm characterisation + stage",
+        "modality": "CT + CXR",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "RCC > 3 cm characterisation + stage",
+        "modality": "CT + CXR",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Post-surgical RCC, asymptomatic patient; no known metastases",
+        "modality": "US",
+        "prioritisation_category": "P4",
+        "comment": "For annual surveillance, if < annual interval, rank 2"
+      }
+    ],
+    "Bladder lesions": [
+      {
+        "clinical_scenario": "Pre-treatment TCC",
+        "modality": "CT/ MRI",
+        "prioritisation_category": "P2- P3/4",
+        "comment": "Depends on cystoscopy P3 or P4 non deferrable may be OK"
+      },
+      {
+        "clinical_scenario": "F/U Superficial TCC; no invasion or risk factors.",
+        "modality": "CT",
+        "prioritisation_category": "S4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "F/U Invasive TCC with or without cystectomy.",
+        "modality": "CT",
+        "prioritisation_category": "S3",
+        "comment": "For annual surveillance, if < annual interval, rank 2"
+      },
+      {
+        "clinical_scenario": "F/U Superficial TCC; no invasion; with risk factors.",
+        "modality": "CT",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      }
+    ],
+    "Pre-treatment staging prostate cancer": [
+      {
+        "clinical_scenario": "PSA elevated but <20",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "PSA>20 and clinical T3",
+        "modality": "MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Staging of high-risk prostate cancer",
+        "modality": "PSMA PETCT",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Biochemical recurrence post radical therapy": [
+      {
+        "clinical_scenario": "Biochemical recurrence post radical therapy",
+        "modality": "PSMA PETCT",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      }
+    ],
+    "Renal transplant": [
+      {
+        "clinical_scenario": "CTA for donor transplant",
+        "modality": "CT",
+        "prioritisation_category": "S5",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Recipient",
+        "modality": "US",
+        "prioritisation_category": "S3",
+        "comment": "none"
+      }
+    ],
+    "Miscellaneous": [
+      {
+        "clinical_scenario": "F/U hydronephrosis",
+        "modality": "US/CT",
+        "prioritisation_category": "S3-S4",
+        "comment": "Dependent on age, severity and renal function"
+      }
+    ]
+  },
+  "Vascular and Diabetic Foot": {
+    "Vascular": [
+      {
+        "clinical_scenario": "Sudden onset of cold, painful leg",
+        "modality": "CTA/MRA",
+        "prioritisation_category": "P1",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Suspected symptomatic AAA",
+        "modality": "CT",
+        "prioritisation_category": "P1",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Pulsatile abdominal mass, suspected asymptomatic AAA",
+        "modality": "CT",
+        "prioritisation_category": "P3",
+        "comment": "US is a validated investigation especially for community referrals"
+      },
+      {
+        "clinical_scenario": "Claudication - suspected vascular aetiology, failed conservative management (exercise program)",
+        "modality": "CTA/MRA and SMO review",
+        "prioritisation_category": "P4",
+        "comment": "US by vascular sonographer may be considered if not already performed"
+      },
+      {
+        "clinical_scenario": "Follow-up of lower limb arterial bypass surgery",
+        "modality": "DUS (Duplex US)",
+        "prioritisation_category": "S3",
+        "comment": "NB Lengthy deferrals may put grafts at risk"
+      },
+      {
+        "clinical_scenario": "Recurrent symptoms following lower limb angioplasty - claudication",
+        "modality": "DUS (Duplex US), clinical review",
+        "prioritisation_category": "P3/P4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Recurrent symptoms following lower limb angioplasty - threatened limb",
+        "modality": "MRA/CTA",
+        "prioritisation_category": "P1",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Neurological event suspected carotid disease",
+        "modality": "Carotid US /CTA/MRA",
+        "prioritisation_category": "P1",
+        "comment": "CTA as alternative if vascular US expertise not available."
+      },
+      {
+        "clinical_scenario": "Aneurysm/graft surveillance - AAA, visceral, iliac or popliteal",
+        "modality": "US",
+        "prioritisation_category": "S4",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "US detected abnormality on stent surveillance",
+        "modality": "CTA/MRA",
+        "prioritisation_category": "P1-P3",
+        "comment": "- highly variable depending on severity of stenosis"
+      },
+      {
+        "clinical_scenario": "Dialysis fistula - complication suspected including occlusion, steal, stenosis",
+        "modality": "US/fistulography",
+        "prioritisation_category": "P1/P2/P3",
+        "comment": "depending on clinical scenario"
+      },
+      {
+        "clinical_scenario": "Venous incompetence",
+        "modality": "US vein mapping",
+        "prioritisation_category": "P4-P5",
+        "comment": "none"
+      }
+    ],
+    "Diabetic foot": [
+      {
+        "clinical_scenario": "Soft-tissue oedema without ulcer/cellulitis/neuroarthropathy",
+        "modality": "XR + MRI",
+        "prioritisation_category": "P4 or P5 or nil",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Neuroarthropathy without ulceration",
+        "modality": "XR + MRI",
+        "prioritisation_category": "P3",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Neuroarthropathy with ulceration but no infection",
+        "modality": "XR + MRI/MRA",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Deteriorating ulceration with evidence of arterial disease",
+        "modality": "CTA/MRA",
+        "prioritisation_category": "P2",
+        "comment": "none"
+      },
+      {
+        "clinical_scenario": "Ulcer with cellulitis/discharging pus/necrosis",
+        "modality": "XR + MRI +/- CTA/MRA",
+        "prioritisation_category": "P1-P2a",
+        "comment": "none"
+      }
+    ]
+  }
+}
+```
