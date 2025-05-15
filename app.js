@@ -49,7 +49,7 @@ function App() {
     result: { backgroundColor: '#FFFFFF', borderLeft: '5px solid #00A9A0', padding: '0.75em', marginBottom: '1em', borderRadius: '4px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
     label: { fontWeight: 'bold', color: '#003B5C', fontSize: '0.95em' },
     text: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4' },
-    commentText: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4', color: '#666666'  // grey for comments }
+    commentText: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4', color: '#666666' }
   };
 
   return React.createElement('div', { style: styles.container }, [
@@ -114,10 +114,10 @@ React.createElement(
                   React.createElement('span', { style: badgeStyles[entry.prioritisation] || badgeStyles.default }, entry.prioritisation)
                 ]),
                 // Comments
-                // After:
-React.createElement('div', { style: styles.commentText }, [
-  React.createElement('span', { style: styles.label }, 'Comments:'),
-  ' ' + entry.comment
+
+									React.createElement('div', { style: styles.commentText }, [
+  									React.createElement('span', { style: styles.label }, 'Comments:'),
+ 									 ' ' + entry.comment
 ])
               ])
             )
