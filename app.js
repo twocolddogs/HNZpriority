@@ -6,6 +6,7 @@ const logoSvg = `
 `;
 
 
+
 function getModalityIcon(modality) {
   if (!modality) return null;
   const mod = modality.toUpperCase().trim(); // Ensure trimming
@@ -39,7 +40,7 @@ function processBigClinData(rawData) {
                             // Ensure all core properties exist, providing defaults if necessary
                             scenarios.push({
                                 section: sectionName || "Unknown Section",
-                                subheading: subheadingName || "Unknown Subheading",
+                                subheading: subheadingName || "General", // Default subheading if empty
                                 clinical_scenario: item.clinical_scenario || "N/A",
                                 modality: item.modality || "N/A",
                                 prioritisation_category: item.prioritisation_category || "N/A",
@@ -76,10 +77,18 @@ function App() {
       )
     : [];
 
+  // Modified grouping: Section -> Subheading -> [Items]
   const groupedResults = filtered.reduce((acc, item) => {
-    const sectionKey = item.section || "Other"; // Use section from flattened data
-    if (!acc[sectionKey]) acc[sectionKey] = [];
-    acc[sectionKey].push(item);
+    const sectionKey = item.section || "Uncategorized Section";
+    const subheadingKey = item.subheading || "General"; // Use the default from processing
+
+    if (!acc[sectionKey]) {
+        acc[sectionKey] = {};
+    }
+    if (!acc[sectionKey][subheadingKey]) {
+        acc[sectionKey][subheadingKey] = [];
+    }
+    acc[sectionKey][subheadingKey].push(item);
     return acc;
   }, {});
 
@@ -110,14 +119,16 @@ function App() {
   const styles = {
     container: { padding: '1em', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#F4F7F9', minHeight: '100vh', boxSizing: 'border-box' },
     headerWrapper: { display: 'flex', alignItems: 'center', marginBottom: '1.5em', borderBottom: '3px solid #007A86', paddingBottom: '1em' },
-    logoInline: { width: '150px', height: 'auto', marginRight: '1em' }, // Adjusted for aspect ratio
+    logoInline: { width: '150px', height: 'auto', marginRight: '1em' },
     header: { color: '#005EB8', fontSize: '1.8em', margin: '0', lineHeight: '1.2', fontWeight: '600' },
     input: { width: '100%', padding: '0.85em', fontSize: '1em', border: '1px solid #B0BEC5', borderRadius: '6px', marginBottom: '1.5em', boxSizing: 'border-box', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 1000, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
     sectionHeader: { marginTop: '2em', fontSize: '1.3em', color: '#005EB8', borderBottom: '2px solid #00A9A0', paddingBottom: '0.3em', fontWeight: '600' },
+    // New style for subheadings outside cards
+    subheadingHeader: { marginTop: '1.5em', marginBottom: '0.8em', fontSize: '1.15em', color: '#007A86', fontWeight: '500' },
     result: { backgroundColor: '#FFFFFF', borderLeft: '6px solid #00A9A0', padding: '1em', marginBottom: '1.2em', borderRadius: '5px', boxShadow: '0 3px 8px rgba(0,0,0,0.08)' },
     label: { fontWeight: 'bold', color: '#003B5C', fontSize: '0.98em' },
     text: { fontSize: '0.98em', marginBottom: '0.6em', lineHeight: '1.5', color: '#333333' },
-    subheadingText: { fontSize: '1.05em', marginBottom: '0.5em', lineHeight: '1.4', color: '#007A86', fontWeight: '500'},
+    // subheadingText (inside card) is no longer needed, replaced by subheadingHeader
     commentText: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4', color: '#555555', backgroundColor: '#F0F2F5', padding: '0.5em', borderRadius: '4px', border: '1px dashed #D0D0D0' }
   };
 
@@ -126,16 +137,16 @@ function App() {
       'div',
       {
         key: 'headerWrapper',
-        style: styles.headerWrapper // Apply styles to the wrapper
+        style: styles.headerWrapper
       },
       [
-        React.createElement('div', { // Changed span to div for proper SVG rendering
+        React.createElement('div', {
           key: 'logoInline',
-          style: styles.logoInline, // Apply styles
+          style: styles.logoInline,
           dangerouslySetInnerHTML: { __html: logoSvg }
         }),
         React.createElement(
-          'h1', // Changed h2 to h1 for semantic heading
+          'h1',
           { style: styles.header, key: 'title' },
           'Radiology Triage Helper'
         )
@@ -152,54 +163,59 @@ function App() {
     }),
     query.length >= 3
       ? Object.keys(groupedResults).length > 0 
-        ? Object.keys(groupedResults).map(section =>
-            React.createElement('div', { key: section }, [
-              React.createElement('h2', { style: styles.sectionHeader, key: 'sh-' + section }, section), // Changed h3 to h2
-              ...groupedResults[section].map((entry, i) =>
-                React.createElement('div', { key: section + '-' + i, style: styles.result }, [
-                  // Subheading
-                  entry.subheading && React.createElement('div', { style: styles.subheadingText }, [
-                    React.createElement('span', { style: styles.label }, 'Category:'),
-                    ' ' + entry.subheading
-                  ]),
-                  // Scenario
-                  React.createElement('div', { style: styles.text }, [
-                    React.createElement('span', { style: styles.label }, 'Scenario:'),
-                    ' ' + entry.clinical_scenario
-                  ]),
-                  // Modality icons
-                  React.createElement('div', { style: styles.text }, [
-                    React.createElement('span', { style: styles.label }, 'Modality:'),
-                    ' ',
-                    ... (entry.modality || "N/A").split(/[,>/]/).flatMap((mod, idx) => {
-                      const iconUrl = getModalityIcon(mod.trim());
-                      const modalityName = mod.trim();
-                      return iconUrl
-                        ? [
-                            React.createElement('img', {
-                              key: `icon-${idx}-${section}-${i}`,
-                              src: iconUrl,
-                              alt: modalityName,
-                              title: modalityName, // Add title for hover text
-                              style: { height: '32px', marginRight: '6px', verticalAlign: 'middle' }
-                            })
-                          ]
-                        : []; // Don't render if no icon and just show text below
-                    }),
-                    ' ' + (entry.modality || "N/A") // Always show the text
-                  ]),
-                  // Priority badge
-                  React.createElement('div', { style: styles.text }, [
-                    React.createElement('span', { style: styles.label }, 'Priority:'),
-                    ' ',
-                    React.createElement('span', { style: badgeStyles[entry.prioritisation_category] || badgeStyles.default }, entry.prioritisation_category)
-                  ]),
-                  // Comments
-                  (entry.comment && entry.comment.toLowerCase() !== 'none' && entry.comment.toLowerCase() !== 'n/a') && 
-                    React.createElement('div', { style: styles.commentText }, [
-                      React.createElement('span', { style: styles.label }, 'Comments:'),
-                      ' ' + entry.comment
+        ? Object.keys(groupedResults).map(sectionName => // Iterate over sections
+            React.createElement('div', { key: sectionName }, [
+              React.createElement('h2', { style: styles.sectionHeader, key: 'sh-' + sectionName }, sectionName),
+              
+              Object.keys(groupedResults[sectionName]).map(subheadingName => // Iterate over subheadings in this section
+                React.createElement('div', { key: `${sectionName}-${subheadingName}-group`}, [ // Group for subheading and its cards
+                  // Display subheading if it's not "General" or if it's the only one (even if "General")
+                  // This logic can be refined based on how you want to display "General" subheadings
+                  (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1) &&
+                    React.createElement('h3', { style: styles.subheadingHeader, key: 'subh-' + subheadingName }, subheadingName),
+                  
+                  ...groupedResults[sectionName][subheadingName].map((entry, i) => // Iterate over cards for this subheading
+                    React.createElement('div', { key: `${sectionName}-${subheadingName}-${i}`, style: styles.result }, [
+                      // Scenario (Subheading is no longer here)
+                      React.createElement('div', { style: styles.text }, [
+                        React.createElement('span', { style: styles.label }, 'Scenario:'),
+                        ' ' + entry.clinical_scenario
+                      ]),
+                      // Modality icons
+                      React.createElement('div', { style: styles.text }, [
+                        React.createElement('span', { style: styles.label }, 'Modality:'),
+                        ' ',
+                        ... (entry.modality || "N/A").split(/[,>/]/).flatMap((mod, idx) => {
+                          const iconUrl = getModalityIcon(mod.trim());
+                          const modalityName = mod.trim();
+                          return iconUrl
+                            ? [
+                                React.createElement('img', {
+                                  key: `icon-${idx}-${sectionName}-${subheadingName}-${i}`,
+                                  src: iconUrl,
+                                  alt: modalityName,
+                                  title: modalityName,
+                                  style: { height: '32px', marginRight: '6px', verticalAlign: 'middle' }
+                                })
+                              ]
+                            : [];
+                        }),
+                        ' ' + (entry.modality || "N/A")
+                      ]),
+                      // Priority badge
+                      React.createElement('div', { style: styles.text }, [
+                        React.createElement('span', { style: styles.label }, 'Priority:'),
+                        ' ',
+                        React.createElement('span', { style: badgeStyles[entry.prioritisation_category] || badgeStyles.default }, entry.prioritisation_category)
+                      ]),
+                      // Comments
+                      (entry.comment && entry.comment.toLowerCase() !== 'none' && entry.comment.toLowerCase() !== 'n/a') && 
+                        React.createElement('div', { style: styles.commentText }, [
+                          React.createElement('span', { style: styles.label }, 'Comments:'),
+                          ' ' + entry.comment
+                        ])
                     ])
+                  )
                 ])
               )
             ])
