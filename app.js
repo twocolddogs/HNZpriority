@@ -38,7 +38,7 @@ function App() {
     P1: { backgroundColor: '#FFBABA', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' },
     P2: { backgroundColor: '#FFE2BA', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' },
     P3: { backgroundColor: '#FFF8BA', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' },
-    P2-P3: { backgroundColor: '#FFE2BA', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' },
+    'P2-P3': { backgroundColor: '#FFE2BA', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' },
     default: { backgroundColor: '#E0E0E0', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block' }
   };
 
