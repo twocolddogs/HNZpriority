@@ -156,7 +156,7 @@ function App() {
     React.createElement('input', {
       key: 'input',
       type: 'text',
-      placeholder: 'Search by section, subheading, or clinical scenario (min. 3 characters)...',
+      placeholder: 'Search by section or clinical scenario (min. 3 characters)...',
       value: query,
       onChange: e => setQuery(e.target.value),
       style: styles.input
@@ -221,7 +221,7 @@ function App() {
             ])
           )
         : React.createElement('p', { style: { color: '#555', marginTop: '1em', textAlign: 'center', fontSize: '1.1em' } }, 'No matching scenarios found.')
-      : React.createElement('p', { style: { color: '#888', marginTop: '1em', textAlign: 'center', fontSize: '1.1em' } },
+      : React.createElement('p', { style: { color: '#888', marginTop: '1em', textAlign: 'center', fontSize: '0.9em' } },
           'Please enter at least 3 characters to begin searching.'
         )
   ]);
