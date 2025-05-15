@@ -184,7 +184,7 @@
       {
         "clinical_scenario": "Post operative seroma unable to be drained without imaging guidance",
         "modality": "US-guided aspiration",
-        "prioritisation_category": "P1- P2",
+        "prioritisation_category": "P1-P2",
         "comment": "none"
       }
     ],
@@ -321,7 +321,7 @@
       {
         "clinical_scenario": "Chest pain syndrome - not clear ACS/intermediate probability of CAD",
         "modality": "XR/CCTA",
-        "prioritisation_category": "P1- P2",
+        "prioritisation_category": "P1-P2",
         "comment": "none"
       },
       {
