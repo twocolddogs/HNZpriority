@@ -61,21 +61,24 @@ function App() {
   return React.createElement('div', { style: styles.container }, [
       
     React.createElement(
-      'div',
-      { key: 'headerWrapper', style: { display: 'flex', alignItems: 'center', marginBottom: '1em' } },
-      [
-        React.createElement('span', {
-          key: 'logoInline',
-          style: { height: '40px', width:'auto', marginRight: '10px', display: 'inline-block', overflow: 'visible'},
-          dangerouslySetInnerHTML: { __html: logoSvg }
-        }),
-        React.createElement(
-          'h2',
-          { style: styles.header, key: 'title' },
-          'Radiology Triage Helper'
-        )
-      ]
-    ),
+  'div',
+  {
+    key: 'headerWrapper',
+    className: 'header-wrapper'
+  },
+  [
+    React.createElement('span', {
+      key: 'logoInline',
+      className: 'logo-inline',
+      dangerouslySetInnerHTML: { __html: logoSvg }
+    }),
+    React.createElement(
+      'h2',
+      { style: styles.header, key: 'title' },
+      'Radiology Triage Helper'
+    )
+  ]
+),
     
     React.createElement('input', {
       key: 'input',
