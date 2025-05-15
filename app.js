@@ -59,7 +59,7 @@ function App() {
   };
 
   return React.createElement('div', { style: styles.container }, [
-      Inline SVG in your header
+      
     React.createElement(
       'div',
       { key: 'headerWrapper', style: { display: 'flex', alignItems: 'center', marginBottom: '1em' } },
