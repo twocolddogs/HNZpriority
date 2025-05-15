@@ -120,11 +120,11 @@ function App() {
     container: { padding: '1em', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#F4F7F9', minHeight: '100vh', boxSizing: 'border-box' },
     headerWrapper: { display: 'flex', alignItems: 'center', marginBottom: '1.5em', borderBottom: '3px solid #007A86', paddingBottom: '1em' },
     logoInline: { width: '180px', height: 'auto', marginRight: '1em' },
-    header: { color: '#005EB8', fontSize: '1.2em', margin: '0', lineHeight: '1.2', fontWeight: '600' },
+    header: { color: '#0d828f', fontSize: '1.2em', margin: '0', lineHeight: '1.2', fontWeight: '600' },
     input: { width: '100%', padding: '0.85em', fontSize: '1em', border: '1px solid #B0BEC5', borderRadius: '6px', marginBottom: '1.5em', boxSizing: 'border-box', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 1000, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
     sectionHeader: { marginTop: '2em', fontSize: '1.3em', color: '#005EB8', borderBottom: '2px solid #00A9A0', paddingBottom: '0.3em', fontWeight: '600' },
     // New style for subheadings outside cards
-    subheadingHeader: { marginTop: '1.5em', marginBottom: '0.8em', fontSize: '1.15em', color: '#007A86', fontWeight: '500' },
+    subheadingHeader: { marginTop: '1.5em', marginBottom: '0.8em', fontSize: '1.15em', color: '#0d828f', fontWeight: '500' },
     result: { backgroundColor: '#FFFFFF', borderLeft: '6px solid #00A9A0', padding: '1em', marginBottom: '1.2em', borderRadius: '5px', boxShadow: '0 3px 8px rgba(0,0,0,0.08)' },
     label: { fontWeight: 'bold', color: '#003B5C', fontSize: '0.98em' },
     text: { fontSize: '0.98em', marginBottom: '0.6em', lineHeight: '1.5', color: '#333333' },
