@@ -52,7 +52,27 @@ function App() {
   };
 
   return React.createElement('div', { style: styles.container }, [
-    React.createElement('h2', { style: styles.header, key: 'header' }, 'Clinical Imaging Search'),
+  // Logo + title wrapper
+React.createElement(
+  'div',
+  {
+    key: 'headerWrapper',
+    style: { display: 'flex', alignItems: 'center', marginBottom: '1em' }
+  },
+  [
+    React.createElement('img', {
+      key: 'logo',
+      src: 'logo.png',
+      alt: 'Health NZ Te Whatu Ora',
+      style: { height: '40px', marginRight: '10px' }
+    }),
+    React.createElement(
+      'h2',
+      { style: styles.header, key: 'title' },
+      'Radiology Triage Helper'
+    )
+  ]
+),
     React.createElement('input', {
       key: 'input',
       type: 'text',
