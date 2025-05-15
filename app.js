@@ -95,17 +95,23 @@ React.createElement(
                 ]),
                 // Modality icons (supports multiple separated by comma, slash, or >)
                 React.createElement('div', { style: styles.text }, [
-                  React.createElement('span', { style: styles.label }, 'Modality:'),
-                  ' ',
-                  ...entry.modality.split(/[,>/]/).map((mod, idx) =>
-                    React.createElement('img', {
-                      key: mod.trim() + idx,
-                      src: getModalityIcon(mod.trim()),
-                      alt: mod.trim(),
-                      style: { height: '32px', marginRight: '6px', verticalAlign: 'middle' }
-                    })
-                  ),
-                  ' ' + entry.modality
+  React.createElement('span', { style: styles.label }, 'Modality:'),
+  ' ',
+  // Split on comma, slash, or '>', then only emit an <img> if there’s an icon URL
+  ...entry.modality.split(/[,>/]/).flatMap((mod, idx) => {
+    const iconUrl = getModalityIcon(mod.trim());
+    return iconUrl
+      ? [
+          React.createElement('img', {
+            key: `icon-${idx}-${section}-${i}`,
+            src: iconUrl,
+            alt: mod.trim(),
+            style: { height: '32px', marginRight: '6px', verticalAlign: 'middle' }
+          })
+        ]
+      : [];
+  }),
+  ' ' + entry.modality
                 ]),
                 // Priority badge
                 React.createElement('div', { style: styles.text }, [
