@@ -42,13 +42,14 @@ function App() {
   };
 
   const styles = {
-    container: { padding: '1em', fontFamily: 'Arial, sans-serif', backgroundColor: '#F2F2F2', minHeight: '100vh', boxSizing: 'border-box' },
+    container: { padding: '1em', fontFamily: 'Arial, sans-serif', backgroundColor: '#FFFFFF', minHeight: '100vh', boxSizing: 'border-box' },
     header: { color: '#005EB8', fontSize: '1.4em', marginBottom: '0.75em', lineHeight: '1.2' },
     input: { width: '100%', padding: '0.75em', fontSize: '1em', border: '1px solid #ccc', borderRadius: '6px', marginBottom: '1em', boxSizing: 'border-box', position: 'sticky', top: 0, backgroundColor: '#F2F2F2', zIndex: 1000 },
     sectionHeader: { marginTop: '2em', fontSize: '1.1em', color: '#003B5C', borderBottom: '2px solid #00A9A0', paddingBottom: '0.25em' },
     result: { backgroundColor: '#FFFFFF', borderLeft: '5px solid #00A9A0', padding: '0.75em', marginBottom: '1em', borderRadius: '4px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
     label: { fontWeight: 'bold', color: '#003B5C', fontSize: '0.95em' },
-    text: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4' }
+    text: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4' },
+    commentText: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4', color: '#666666'  // grey for comments }
   };
 
   return React.createElement('div', { style: styles.container }, [
@@ -113,10 +114,11 @@ React.createElement(
                   React.createElement('span', { style: badgeStyles[entry.prioritisation] || badgeStyles.default }, entry.prioritisation)
                 ]),
                 // Comments
-                React.createElement('div', { style: styles.text }, [
-                  React.createElement('span', { style: styles.label }, 'Comments:'),
-                  ' ' + entry.comment
-                ])
+                // After:
+React.createElement('div', { style: styles.commentText }, [
+  React.createElement('span', { style: styles.label }, 'Comments:'),
+  ' ' + entry.comment
+])
               ])
             )
           ])
