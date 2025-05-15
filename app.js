@@ -17,7 +17,7 @@ function App() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    fetch('./clinical_data.json')
+    fetch('clinical_data.json')
       .then(res => res.json())
       .then(setData);
   }, []);
@@ -88,39 +88,50 @@ function App() {
     }
   };
 
-  return (
-    <div style={styles.container}>
-      <h2 style={styles.header}>Clinical Imaging Search</h2>
-      <input
-        type="text"
-        placeholder="Search clinical scenarios..."
-        value={query}
-        onChange={e => setQuery(e.target.value)}
-        style={styles.input}
-      />
-      {query.length >= 3 ? (
-        Object.keys(groupedResults).map(section => (
-          <div key={section}>
-            <h3 style={styles.sectionHeader}>{section}</h3>
-            {groupedResults[section].map((entry, i) => (
-              <div key={i} style={styles.result}>
-                <div style={styles.text}><span style={styles.label}>Scenario:</span> {entry.clinical_scenario}</div>
-                <div style={styles.text}>
-                  <span style={styles.label}>Modality:</span>
-                  <img src={getModalityIcon(entry.modality)} alt="" style={{ height: '20px', marginRight: '8px', verticalAlign: 'middle' }} />
-                  {entry.modality}
-                </div>
-                <div style={styles.text}><span style={styles.label}>Priority:</span> {entry.prioritisation}</div>
-                <div style={styles.text}><span style={styles.label}>Comments:</span> {entry.comment}</div>
-              </div>
-            ))}
-          </div>
-        ))
-      ) : (
-        <p style={{ color: '#888', marginTop: '1em' }}>Please enter at least 3 characters to begin searching.</p>
-      )}
-    </div>
-  );
+  return React.createElement('div', { style: styles.container }, [
+    React.createElement('h2', { style: styles.header, key: 'header' }, 'Clinical Imaging Search'),
+    React.createElement('input', {
+      key: 'input',
+      type: 'text',
+      placeholder: 'Search clinical scenarios...',
+      value: query,
+      onChange: e => setQuery(e.target.value),
+      style: styles.input
+    }),
+    query.length >= 3
+      ? Object.keys(groupedResults).map(section =>
+          React.createElement('div', { key: section }, [
+            React.createElement('h3', { style: styles.sectionHeader, key: 'sh-' + section }, section),
+            ...groupedResults[section].map((entry, i) =>
+              React.createElement('div', { key: section + '-' + i, style: styles.result }, [
+                React.createElement('div', { style: styles.text }, [
+                  React.createElement('span', { style: styles.label }, 'Scenario:'),
+                  ' ' + entry.clinical_scenario
+                ]),
+                React.createElement('div', { style: styles.text }, [
+                  React.createElement('span', { style: styles.label }, 'Modality:'),
+                  ' ',
+                  React.createElement('img', {
+                    src: getModalityIcon(entry.modality),
+                    alt: '',
+                    style: { height: '32px', marginRight: '10px', verticalAlign: 'middle' }
+                  }),
+                  entry.modality
+                ]),
+                React.createElement('div', { style: styles.text }, [
+                  React.createElement('span', { style: Object.assign({}, styles.label, { fontWeight: '900', fontSize: '1.1em' }) }, 'Priority:'),
+                  ' ' + entry.prioritisation
+                ]),
+                React.createElement('div', { style: styles.text }, [
+                  React.createElement('span', { style: styles.label }, 'Comments:'),
+                  ' ' + entry.comment
+                ])
+              ])
+            )
+          ])
+        )
+      : React.createElement('p', { style: { color: '#888', marginTop: '1em' } }, 'Please enter at least 3 characters to begin searching.')
+  ]);
 }
 
-createRoot(document.getElementById('root')).render(<App />);
+createRoot(document.getElementById('root')).render(React.createElement(App));
