@@ -66,7 +66,7 @@ function App() {
       [
         React.createElement('span', {
           key: 'logoInline',
-          style: { height: '40px', width: 'auto', marginRight: '10px', display: 'inline-block' },
+          style: { height: '40px',marginRight: '10px', display: 'inline-block' },
           dangerouslySetInnerHTML: { __html: logoSvg }
         }),
         React.createElement(
