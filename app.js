@@ -299,7 +299,7 @@ function App() {
         React.createElement(
           'h1',
           { style: styles.header, key: 'title' }, // This style is now updated
-          'Clinical Scenario Prioritisation'
+          'Radiology Triage Tool'
         )
       ]
     ),
