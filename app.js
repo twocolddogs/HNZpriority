@@ -177,7 +177,7 @@ function App() {
     React.createElement('input', {
       key: 'input',
       type: 'text',
-      placeholder: 'Search by section or clinical scenario (min. 3 characters)...',
+      placeholder: 'Search by section or clinical scenario...',
       value: query,
       onChange: e => setQuery(e.target.value),
       style: styles.input
