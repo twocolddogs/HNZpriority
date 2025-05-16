@@ -183,7 +183,7 @@ function App() {
     },
     sectionHeader: { marginTop: '2em', fontSize: '1.3em', color: '#184761', borderBottom: '2px solid #00A9A0', paddingBottom: '0.3em', fontWeight: '600' },
     subheadingGroupContainer: {
-        backgroundColor: '#EAE6F0', // Purple tint: #EAE6F0 or #EDE7F6
+        backgroundColor: '#c2d8e8', // blue tint
         padding: '1em',
         borderRadius: '8px',
         marginTop: '1em',
@@ -194,7 +194,7 @@ function App() {
         marginTop: '0',
         marginBottom: '1em',
         fontSize: '1.15em', 
-        color: '#0d828f', 
+        color: '#184761', 
         fontWeight: '600' 
     },
     result: { 
@@ -234,7 +234,7 @@ function App() {
     React.createElement('input', {
       key: 'input',
       type: 'text',
-      placeholder: 'Search or select a section below (min. 3 chars for search)...',
+      placeholder: 'Search or select a section below...',
       value: query,
       onChange: handleSearchInputChange, // Use new handler
       onFocus: handleSearchInputFocus,   // Use new handler
