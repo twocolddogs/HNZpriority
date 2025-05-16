@@ -209,8 +209,8 @@
         "prioritisation_category": "P3",
         "comment": "none"
       }
-    ],
-    "Breast MR Referral Indications": [],
+    ]},
+    "Breast MR Referral Indications": {
     "New diagnosis breast cancer": [
       {
         "clinical_scenario": "New diagnosis breast cancer with high background risk of undetected disease (e.g. BRCA-1; dense breasts) AND as recommended by MDM",
