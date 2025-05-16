@@ -126,7 +126,7 @@ function App() {
     
     // Style for the container that groups a subheading and its cards
     subheadingGroupContainer: {
-        backgroundColor: '#DDD8E8', // Subtle teal tint
+        backgroundColor: '#c2d8e8', // Subtle blue tint
         padding: '1em',
         borderRadius: '8px',
         marginTop: '1em', // Space above the group
