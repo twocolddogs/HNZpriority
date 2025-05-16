@@ -126,12 +126,12 @@ function App() {
     
     // Style for the container that groups a subheading and its cards
     subheadingGroupContainer: {
-        backgroundColor: '#EBF7F7', // Subtle teal tint
+        backgroundColor: '#DDD8E8', // Subtle teal tint
         padding: '1em',
         borderRadius: '8px',
         marginTop: '1em', // Space above the group
         marginBottom: '1.5em', // Space below the group
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)' // Very light shadow for depth
+        boxShadow: '0 2px 4px rgba(0,0,0,0.06)' //  light shadow for depth
     },
     subheadingHeader: { 
         marginTop: '0', // Adjusted as it's now inside a padded container
@@ -146,7 +146,7 @@ function App() {
         padding: '1em', 
         marginBottom: '1em', // Space between cards
         borderRadius: '5px', 
-        boxShadow: '0 3px 8px rgba(0,0,0,0.08)' 
+        boxShadow: '0 4px 10px rgba(0,0,0,0.1)' 
     },
     label: { fontWeight: 'bold', color: '#003B5C', fontSize: '0.98em' },
     text: { fontSize: '0.98em', marginBottom: '0.6em', lineHeight: '1.5', color: '#333333' },
