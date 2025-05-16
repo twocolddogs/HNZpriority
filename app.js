@@ -56,12 +56,13 @@ function processBigClinData(rawData) {
 }
 
 
+
 function App() {
-  const [allData, setAllData] = useState([]); // Store flattened data
+  const [allData, setAllData] = useState([]);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    fetch('big_clin.json') // Changed filename
+    fetch('big_clin.json')
       .then(res => res.json())
       .then(rawJsonData => {
         const processed = processBigClinData(rawJsonData);
@@ -77,10 +78,9 @@ function App() {
       )
     : [];
 
-  // Modified grouping: Section -> Subheading -> [Items]
   const groupedResults = filtered.reduce((acc, item) => {
     const sectionKey = item.section || "Uncategorized Section";
-    const subheadingKey = item.subheading || "General"; // Use the default from processing
+    const subheadingKey = item.subheading || "General";
 
     if (!acc[sectionKey]) {
         acc[sectionKey] = {};
@@ -99,11 +99,11 @@ function App() {
     P2: { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
     'P2a': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
     'P2a-P2': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
-    'P2-P3': { backgroundColor: '#FFE2BA', color: '#7A5C00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #7A5C00' }, // Intermediate
+    'P2-P3': { backgroundColor: '#FFE2BA', color: '#7A5C00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #7A5C00' },
     P3: { backgroundColor: '#FFF8BA', color: '#5C5000', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #5C5000' },
     'P3 or P2': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
     P4: { backgroundColor: '#BAE7FF', color: '#004C7A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004C7A' },
-    'P3-P4': { backgroundColor: '#FFF8BA', color: '#00416A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #00416A' }, // Intermediate
+    'P3-P4': { backgroundColor: '#FFF8BA', color: '#00416A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #00416A' },
     P5: { backgroundColor: '#D9D9D9', color: '#4F4F4F', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #4F4F4F' },
     S2: { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #00591E' },
     S3: { backgroundColor: '#FFF8BA', color: '#5C5000', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004D1A' },
@@ -119,16 +119,37 @@ function App() {
   const styles = {
     container: { padding: '1em', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#F4F7F9', minHeight: '100vh', boxSizing: 'border-box' },
     headerWrapper: { display: 'flex', alignItems: 'center', marginBottom: '1.5em', borderBottom: '3px solid #007A86', paddingBottom: '1em' },
-    logoInline: { width: '180px', height: 'auto', marginRight: '1em' },
-    header: { color: '#184761', fontSize: '1.2em', margin: '0', lineHeight: '1.2', fontWeight: '600' },
+    logoInline: { width: '180px', height: 'auto', marginRight: '1em' }, // Use 'auto' for height to maintain aspect ratio
+    header: { color: '#184761', fontSize: '1.2em', margin: '0', lineHeight: '1.2', fontWeight: '600' }, // Title style
     input: { width: '100%', padding: '0.85em', fontSize: '1em', border: '1px solid #B0BEC5', borderRadius: '6px', marginBottom: '1.5em', boxSizing: 'border-box', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 1000, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
     sectionHeader: { marginTop: '2em', fontSize: '1.3em', color: '#184761', borderBottom: '2px solid #00A9A0', paddingBottom: '0.3em', fontWeight: '600' },
-    // New style for subheadings outside cards
-    subheadingHeader: { marginTop: '1.5em', marginBottom: '0.8em', fontSize: '1.15em', color: '#0d828f', fontWeight: '600' },
-    result: { backgroundColor: '#FFFFFF', borderLeft: '6px solid #00A9A0', padding: '1em', marginBottom: '1.2em', borderRadius: '5px', boxShadow: '0 3px 8px rgba(0,0,0,0.08)' },
+    
+    // Style for the container that groups a subheading and its cards
+    subheadingGroupContainer: {
+        backgroundColor: '#EBF7F7', // Subtle teal tint
+        padding: '1em',
+        borderRadius: '8px',
+        marginTop: '1em', // Space above the group
+        marginBottom: '1.5em', // Space below the group
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)' // Very light shadow for depth
+    },
+    subheadingHeader: { 
+        marginTop: '0', // Adjusted as it's now inside a padded container
+        marginBottom: '1em', // Space between subheading title and first card
+        fontSize: '1.15em', 
+        color: '#0d828f', 
+        fontWeight: '600' 
+    },
+    result: { 
+        backgroundColor: '#FFFFFF', 
+        borderLeft: '6px solid #00A9A0', 
+        padding: '1em', 
+        marginBottom: '1em', // Space between cards
+        borderRadius: '5px', 
+        boxShadow: '0 3px 8px rgba(0,0,0,0.08)' 
+    },
     label: { fontWeight: 'bold', color: '#003B5C', fontSize: '0.98em' },
     text: { fontSize: '0.98em', marginBottom: '0.6em', lineHeight: '1.5', color: '#333333' },
-    // subheadingText (inside card) is no longer needed, replaced by subheadingHeader
     commentText: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4', color: '#555555', backgroundColor: '#F0F2F5', padding: '0.5em', borderRadius: '4px', border: '1px dashed #D0D0D0' }
   };
 
@@ -156,32 +177,36 @@ function App() {
     React.createElement('input', {
       key: 'input',
       type: 'text',
-      placeholder: 'Search by section or clinical scenario...',
+      placeholder: 'Search by section or clinical scenario (min. 3 characters)...',
       value: query,
       onChange: e => setQuery(e.target.value),
       style: styles.input
     }),
     query.length >= 3
       ? Object.keys(groupedResults).length > 0 
-        ? Object.keys(groupedResults).map(sectionName => // Iterate over sections
+        ? Object.keys(groupedResults).map(sectionName =>
             React.createElement('div', { key: sectionName }, [
               React.createElement('h2', { style: styles.sectionHeader, key: 'sh-' + sectionName }, sectionName),
               
-              Object.keys(groupedResults[sectionName]).map(subheadingName => // Iterate over subheadings in this section
-                React.createElement('div', { key: `${sectionName}-${subheadingName}-group`}, [ // Group for subheading and its cards
-                  // Display subheading if it's not "General" or if it's the only one (even if "General")
-                  // This logic can be refined based on how you want to display "General" subheadings
+              Object.keys(groupedResults[sectionName]).map(subheadingName =>
+                // Apply the new group container style here
+                React.createElement('div', { 
+                    key: `${sectionName}-${subheadingName}-group`, 
+                    style: styles.subheadingGroupContainer // Apply the new style
+                }, [ 
                   (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1) &&
                     React.createElement('h3', { style: styles.subheadingHeader, key: 'subh-' + subheadingName }, subheadingName),
                   
-                  ...groupedResults[sectionName][subheadingName].map((entry, i) => // Iterate over cards for this subheading
-                    React.createElement('div', { key: `${sectionName}-${subheadingName}-${i}`, style: styles.result }, [
-                      // Scenario (Subheading is no longer here)
+                  ...groupedResults[sectionName][subheadingName].map((entry, i) =>
+                    React.createElement('div', { 
+                        // Ensure the last card in a group doesn't have extra bottom margin if the container has padding
+                        style: { ...styles.result, marginBottom: i === groupedResults[sectionName][subheadingName].length - 1 ? '0' : '1em' },
+                        key: `${sectionName}-${subheadingName}-${i}` 
+                    }, [
                       React.createElement('div', { style: styles.text }, [
                         React.createElement('span', { style: styles.label }, 'Scenario:'),
                         ' ' + entry.clinical_scenario
                       ]),
-                      // Modality icons
                       React.createElement('div', { style: styles.text }, [
                         React.createElement('span', { style: styles.label }, 'Modality:'),
                         ' ',
@@ -202,13 +227,11 @@ function App() {
                         }),
                         ' ' + (entry.modality || "N/A")
                       ]),
-                      // Priority badge
                       React.createElement('div', { style: styles.text }, [
                         React.createElement('span', { style: styles.label }, 'Priority:'),
                         ' ',
                         React.createElement('span', { style: badgeStyles[entry.prioritisation_category] || badgeStyles.default }, entry.prioritisation_category)
                       ]),
-                      // Comments
                       (entry.comment && entry.comment.toLowerCase() !== 'none' && entry.comment.toLowerCase() !== 'n/a') && 
                         React.createElement('div', { style: styles.commentText }, [
                           React.createElement('span', { style: styles.label }, 'Comments:'),
