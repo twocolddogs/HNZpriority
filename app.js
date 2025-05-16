@@ -60,6 +60,8 @@ function processBigClinData(rawData) {
 function App() {
   const [allData, setAllData] = useState([]);
   const [query, setQuery] = useState("");
+  const [selectedSection, setSelectedSection] = useState(null); // New state for selected section
+  const [uniqueSections, setUniqueSections] = useState([]);
 
   useEffect(() => {
     fetch('big_clin.json')
@@ -67,16 +69,51 @@ function App() {
       .then(rawJsonData => {
         const processed = processBigClinData(rawJsonData);
         setAllData(processed);
+        // Extract unique sections for buttons
+        const sections = [...new Set(processed.map(item => item.section))].sort();
+        setUniqueSections(sections);
       });
   }, []);
 
-  const filtered = query.length >= 3
-    ? allData.filter(entry =>
+  const handleSectionButtonClick = (sectionName) => {
+    setQuery(""); // Clear search query
+    setSelectedSection(sectionName); // Set the selected section
+  };
+
+  const handleSearchInputChange = (e) => {
+    setQuery(e.target.value);
+    if (selectedSection) { // If a section was selected, clear it when user types
+        setSelectedSection(null);
+    }
+  };
+
+  const handleSearchInputFocus = () => {
+    // Optionally, clear section when search bar is focused,
+    // or only when user starts typing (handled by onChange)
+    // For now, we'll rely on onChange to clear the section.
+    // If you want to clear on focus:
+    // setSelectedSection(null);
+  };
+  
+  const handleSearchInputClick = () => {
+    // Clear selected section when search input is clicked to allow fresh search
+    setSelectedSection(null);
+  };
+
+
+  let filtered = [];
+  if (selectedSection) {
+    // Filter by selected section if one is active
+    filtered = allData.filter(entry => entry.section === selectedSection);
+  } else if (query.length >= 3) {
+    // Filter by search query if no section is selected and query is long enough
+    filtered = allData.filter(entry =>
         (entry.section && entry.section.toLowerCase().includes(query.toLowerCase())) ||
         (entry.subheading && entry.subheading.toLowerCase().includes(query.toLowerCase())) ||
         (entry.clinical_scenario && entry.clinical_scenario.toLowerCase().includes(query.toLowerCase()))
-      )
-    : [];
+      );
+  }
+
 
   const groupedResults = filtered.reduce((acc, item) => {
     const sectionKey = item.section || "Uncategorized Section";
@@ -119,34 +156,54 @@ function App() {
   const styles = {
     container: { padding: '1em', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#F4F7F9', minHeight: '100vh', boxSizing: 'border-box' },
     headerWrapper: { display: 'flex', alignItems: 'center', marginBottom: '1.5em', borderBottom: '3px solid #007A86', paddingBottom: '1em' },
-    logoInline: { width: '180px', height: 'auto', marginRight: '1em' }, // Use 'auto' for height to maintain aspect ratio
-    header: { color: '#184761', fontSize: '1.2em', margin: '0', lineHeight: '1.2', fontWeight: '600' }, // Title style
-    input: { width: '100%', padding: '0.85em', fontSize: '1em', border: '1px solid #B0BEC5', borderRadius: '6px', marginBottom: '1.5em', boxSizing: 'border-box', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 1000, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
+    logoInline: { width: '180px', height: 'auto', marginRight: '1em' },
+    header: { color: '#184761', fontSize: '1.2em', margin: '0', lineHeight: '1.2', fontWeight: '600' },
+    input: { width: '100%', padding: '0.85em', fontSize: '1em', border: '1px solid #B0BEC5', borderRadius: '6px', marginBottom: '0.5em', boxSizing: 'border-box', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 1000, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
+    // New styles for section buttons
+    sectionButtonsContainer: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '0.5em',
+        marginBottom: '1.5em',
+        paddingTop: '0.5em'
+    },
+    sectionButton: {
+        padding: '0.5em 1em',
+        fontSize: '0.9em',
+        border: '1px solid #007A86',
+        backgroundColor: '#FFFFFF',
+        color: '#007A86',
+        borderRadius: '20px',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s, color 0.2s',
+    },
+    sectionButtonActive: {
+        backgroundColor: '#007A86',
+        color: '#FFFFFF',
+    },
     sectionHeader: { marginTop: '2em', fontSize: '1.3em', color: '#184761', borderBottom: '2px solid #00A9A0', paddingBottom: '0.3em', fontWeight: '600' },
-    
-    // Style for the container that groups a subheading and its cards
     subheadingGroupContainer: {
-        backgroundColor: '#c2d8e8', // Subtle blue tint
+        backgroundColor: '#EAE6F0', // Purple tint: #EAE6F0 or #EDE7F6
         padding: '1em',
         borderRadius: '8px',
-        marginTop: '1em', // Space above the group
-        marginBottom: '1.5em', // Space below the group
-        boxShadow: '0 2px 4px rgba(0,0,0,0.06)' //  light shadow for depth
+        marginTop: '1em',
+        marginBottom: '1.5em',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.06)' // Slightly more shadow
     },
     subheadingHeader: { 
-        marginTop: '0', // Adjusted as it's now inside a padded container
-        marginBottom: '1em', // Space between subheading title and first card
+        marginTop: '0',
+        marginBottom: '1em',
         fontSize: '1.15em', 
-        color: '#184761', 
+        color: '#0d828f', 
         fontWeight: '600' 
     },
     result: { 
         backgroundColor: '#FFFFFF', 
         borderLeft: '6px solid #00A9A0', 
         padding: '1em', 
-        marginBottom: '1em', // Space between cards
+        marginBottom: '1em',
         borderRadius: '5px', 
-        boxShadow: '0 4px 10px rgba(0,0,0,0.1)' 
+        boxShadow: '0 4px 10px rgba(0,0,0,0.1)' // Slightly more shadow for cards
     },
     label: { fontWeight: 'bold', color: '#003B5C', fontSize: '0.98em' },
     text: { fontSize: '0.98em', marginBottom: '0.6em', lineHeight: '1.5', color: '#333333' },
@@ -177,29 +234,45 @@ function App() {
     React.createElement('input', {
       key: 'input',
       type: 'text',
-      placeholder: 'Search by section or clinical scenario...',
+      placeholder: 'Search or select a section below (min. 3 chars for search)...',
       value: query,
-      onChange: e => setQuery(e.target.value),
+      onChange: handleSearchInputChange, // Use new handler
+      onFocus: handleSearchInputFocus,   // Use new handler
+      onClick: handleSearchInputClick,  // Add click handler to clear section
       style: styles.input
     }),
-    query.length >= 3
+
+    // Render Section Buttons
+    React.createElement('div', { style: styles.sectionButtonsContainer, key: 'section-buttons' },
+      uniqueSections.map(sectionName => 
+        React.createElement('button', {
+          key: sectionName,
+          onClick: () => handleSectionButtonClick(sectionName),
+          style: {
+            ...styles.sectionButton,
+            ...(selectedSection === sectionName ? styles.sectionButtonActive : {})
+          }
+        }, sectionName)
+      )
+    ),
+
+    // Conditional rendering of results or messages
+    (selectedSection || query.length >= 3) // Show results if a section is selected OR query is valid
       ? Object.keys(groupedResults).length > 0 
         ? Object.keys(groupedResults).map(sectionName =>
             React.createElement('div', { key: sectionName }, [
               React.createElement('h2', { style: styles.sectionHeader, key: 'sh-' + sectionName }, sectionName),
               
               Object.keys(groupedResults[sectionName]).map(subheadingName =>
-                // Apply the new group container style here
                 React.createElement('div', { 
                     key: `${sectionName}-${subheadingName}-group`, 
-                    style: styles.subheadingGroupContainer // Apply the new style
+                    style: styles.subheadingGroupContainer
                 }, [ 
                   (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1) &&
                     React.createElement('h3', { style: styles.subheadingHeader, key: 'subh-' + subheadingName }, subheadingName),
                   
                   ...groupedResults[sectionName][subheadingName].map((entry, i) =>
                     React.createElement('div', { 
-                        // Ensure the last card in a group doesn't have extra bottom margin if the container has padding
                         style: { ...styles.result, marginBottom: i === groupedResults[sectionName][subheadingName].length - 1 ? '0' : '1em' },
                         key: `${sectionName}-${subheadingName}-${i}` 
                     }, [
@@ -243,9 +316,12 @@ function App() {
               )
             ])
           )
-        : React.createElement('p', { style: { color: '#555', marginTop: '1em', textAlign: 'center', fontSize: '1.1em' } }, 'No matching scenarios found.')
+        : React.createElement('p', { style: { color: '#555', marginTop: '1em', textAlign: 'center', fontSize: '1.1em' } }, 
+            query.length >= 3 ? 'No matching scenarios found for your search.' : 
+            selectedSection ? `No scenarios found in section: ${selectedSection}.` : ''
+          )
       : React.createElement('p', { style: { color: '#888', marginTop: '1em', textAlign: 'center', fontSize: '0.9em' } },
-          'Please enter at least 3 characters to begin searching.'
+          query.length > 0 && query.length < 3 ? 'Please enter at least 3 characters to search.' : 'Please search or select a section above.'
         )
   ]);
 }
