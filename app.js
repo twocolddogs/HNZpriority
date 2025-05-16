@@ -282,7 +282,7 @@ function App() {
       [
         React.createElement('img', { // Use an img tag
           key: 'logoImage',
-          src: '/images/HealthNZ_logo_V2.svg', // Path to your SVG file
+          src: '/images/HealthNZ_logo_v2.svg', // Path to your SVG file
           alt: 'Health New Zealand Logo', // Important for accessibility
           style: { // Apply styles directly or through a class if preferred
             width: '200px', // Adjust as needed
