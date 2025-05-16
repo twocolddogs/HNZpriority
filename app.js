@@ -154,60 +154,128 @@ function App() {
   
 
   const styles = {
-    container: { padding: '1em', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#F4F7F9', minHeight: '100vh', boxSizing: 'border-box' },
-    headerWrapper: { display: 'flex', alignItems: 'center', marginBottom: '1.5em', borderBottom: '3px solid #007A86', paddingBottom: '1em' },
-    logoInline: { width: '180px', height: 'auto', marginRight: '1em' },
-    header: { color: '#184761', fontSize: '1.2em', margin: '0', lineHeight: '1.2', fontWeight: '600' },
-    input: { width: '100%', padding: '0.85em', fontSize: '1em', border: '1px solid #B0BEC5', borderRadius: '6px', marginBottom: '0.5em', boxSizing: 'border-box', position: 'sticky', top: 0, backgroundColor: '#FFFFFF', zIndex: 1000, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
-    // New styles for section buttons
+    container: { padding: '1em', fontFamily: "'Open Sans', Arial, sans-serif", backgroundColor: '#F9FAFB', minHeight: '100vh', boxSizing: 'border-box' },
+  
+    headerWrapper: {
+        display: 'flex',
+        alignItems: 'center',
+        marginBottom: '1.5em',
+        // Applied gradient background
+        background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
+        padding: '1em 1.5em', // Added some horizontal padding
+        borderRadius: '6px', // Optional: slightly rounded corners for the header
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // Optional: subtle shadow
+    },
+    logoInline: { 
+        width: '200px', // Slightly adjusted for better fit with text
+        height: 'auto', 
+        marginRight: '1.5em' // Space before the separator
+    },
+    headerSeparator: { // --- NEW STYLE FOR THE VERTICAL LINE ---
+        width: '1px',
+        height: '40px', // Adjust height as needed to align well
+        backgroundColor: 'rgba(255, 255, 255, 0.5)', // Semi-transparent white
+        marginRight: '1.5em' // Space after the separator
+    },
+    header: { // App Title
+        color: '#FFFFFF', // White text
+        fontSize: '1.4em', // Adjusted for better balance with logo
+        margin: '0', 
+        lineHeight: '1.2', 
+        fontWeight: '600' 
+    },
+
+    input: { 
+        width: '100%', 
+        padding: '0.75em 1em', 
+        fontSize: '1em', 
+        border: `1px solid #D1D5DB`, 
+        borderRadius: '6px', 
+        marginBottom: '0.5em', 
+        boxSizing: 'border-box', 
+        position: 'sticky', 
+        top: '10px', 
+        backgroundColor: '#FFFFFF', 
+        zIndex: 1000, 
+        boxShadow: '0 2px 5px rgba(0,0,0,0.07)',
+        outlineOffset: '2px',
+    },
     sectionButtonsContainer: {
         display: 'flex',
         flexWrap: 'wrap',
-        gap: '0.5em',
-        marginBottom: '1.5em',
-        paddingTop: '0.5em'
+        gap: '0.6em',
+        marginBottom: '2em',
+        paddingTop: '0.5em',
+        position: 'sticky',
+        top: 'calc(0.75em + 1em + 0.75em + 1em + 10px + 10px + 10px)', // Adjusted sticky top slightly more
+        backgroundColor: '#F9FAFB',
+        paddingBottom: '0.5em',
+        zIndex: 999,
+        borderBottom: `1px solid #F0F0F0`
     },
     sectionButton: {
-        padding: '0.5em 1em',
+        padding: '0.6em 1.2em',
         fontSize: '0.9em',
-        border: '1px solid #007A86',
+        border: `1px solid #00549F`,
         backgroundColor: '#FFFFFF',
-        color: '#007A86',
+        color: '#00549F',
         borderRadius: '20px',
         cursor: 'pointer',
-        transition: 'background-color 0.2s, color 0.2s',
+        fontWeight: '600',
+        transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
     },
     sectionButtonActive: {
-        backgroundColor: '#007A86',
+        backgroundColor: '#00549F',
         color: '#FFFFFF',
+        boxShadow: '0 2px 4px rgba(0, 84, 159, 0.3)',
     },
-    sectionHeader: { marginTop: '2em', fontSize: '1.3em', color: '#184761', borderBottom: '2px solid #00A9A0', paddingBottom: '0.3em', fontWeight: '600' },
+    sectionHeader: { 
+        marginTop: '1em',
+        fontSize: '1.4em', 
+        color: '#00549F', 
+        borderBottom: `2px solid #007A86`, 
+        paddingBottom: '0.4em', 
+        fontWeight: '700',
+        marginBottom: '1em',
+    },
     subheadingGroupContainer: {
-        backgroundColor: '#c2d8e8', // blue tint
-        padding: '1em',
+        backgroundColor: '#FFFFFF',
+        border: `1px solid #D1D5DB`,
+        padding: '1.2em',
         borderRadius: '8px',
         marginTop: '1em',
-        marginBottom: '1.5em',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.06)' // Slightly more shadow
+        marginBottom: '1.8em',
+        boxShadow: '0 3px 7px rgba(0,0,0,0.07)' 
     },
     subheadingHeader: { 
         marginTop: '0',
-        marginBottom: '1em',
-        fontSize: '1.15em', 
-        color: '#184761', 
-        fontWeight: '600' 
+        marginBottom: '1.2em',
+        fontSize: '1.2em', 
+        color: '#007A86', 
+        fontWeight: '600',
+        paddingBottom: '0.3em',
+        borderBottom: `1px dashed #E6F3FA`
     },
     result: { 
-        backgroundColor: '#FFFFFF', 
-        borderLeft: '6px solid #00A9A0', 
+        backgroundColor: '#E6F3FA',
+        borderLeft: `5px solid #007A86`, 
         padding: '1em', 
         marginBottom: '1em',
-        borderRadius: '5px', 
-        boxShadow: '0 4px 10px rgba(0,0,0,0.1)' // Slightly more shadow for cards
+        borderRadius: '6px', 
+        boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
     },
-    label: { fontWeight: 'bold', color: '#003B5C', fontSize: '0.98em' },
-    text: { fontSize: '0.98em', marginBottom: '0.6em', lineHeight: '1.5', color: '#333333' },
-    commentText: { fontSize: '0.95em', marginBottom: '0.5em', lineHeight: '1.4', color: '#555555', backgroundColor: '#F0F2F5', padding: '0.5em', borderRadius: '4px', border: '1px dashed #D0D0D0' }
+    label: { fontWeight: 'bold', color: '#00549F', fontSize: '0.95em' },
+    text: { fontSize: '0.95em', marginBottom: '0.6em', lineHeight: '1.5', color: '#4B5563' },
+    commentText: { 
+        fontSize: '0.9em', 
+        marginBottom: '0.5em', 
+        lineHeight: '1.4', 
+        color: '#52525B',
+        backgroundColor: '#F8F8F9',
+        padding: '0.6em', 
+        borderRadius: '4px', 
+        border: `1px solid #D1D5DB` 
+    }
   };
 
   return React.createElement('div', { style: styles.container }, [
@@ -215,7 +283,7 @@ function App() {
       'div',
       {
         key: 'headerWrapper',
-        style: styles.headerWrapper
+        style: styles.headerWrapper // This style is now updated
       },
       [
         React.createElement('div', {
@@ -223,26 +291,31 @@ function App() {
           style: styles.logoInline,
           dangerouslySetInnerHTML: { __html: logoSvg }
         }),
+        // --- ADDED SEPARATOR ELEMENT ---
+        React.createElement('div', {
+            key: 'headerSeparator',
+            style: styles.headerSeparator
+        }),
         React.createElement(
           'h1',
-          { style: styles.header, key: 'title' },
-          'Radiology Triage Helper'
+          { style: styles.header, key: 'title' }, // This style is now updated
+          'Clinical Scenario Prioritisation'
         )
       ]
     ),
     
+// ... (rest of the rendering logic for input, buttons, results remains the same)
     React.createElement('input', {
       key: 'input',
       type: 'text',
-      placeholder: 'Search or select a section below...',
+      placeholder: 'Search scenarios or select a section below...',
       value: query,
-      onChange: handleSearchInputChange, // Use new handler
-      onFocus: handleSearchInputFocus,   // Use new handler
-      onClick: handleSearchInputClick,  // Add click handler to clear section
+      onChange: handleSearchInputChange,
+      onFocus: handleSearchInputFocus,
+      onClick: handleSearchInputClick,
       style: styles.input
     }),
 
-    // Render Section Buttons
     React.createElement('div', { style: styles.sectionButtonsContainer, key: 'section-buttons' },
       uniqueSections.map(sectionName => 
         React.createElement('button', {
@@ -256,8 +329,7 @@ function App() {
       )
     ),
 
-    // Conditional rendering of results or messages
-    (selectedSection || query.length >= 3) // Show results if a section is selected OR query is valid
+    (selectedSection || query.length >= 3)
       ? Object.keys(groupedResults).length > 0 
         ? Object.keys(groupedResults).map(sectionName =>
             React.createElement('div', { key: sectionName }, [
@@ -268,7 +340,7 @@ function App() {
                     key: `${sectionName}-${subheadingName}-group`, 
                     style: styles.subheadingGroupContainer
                 }, [ 
-                  (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1) &&
+                  (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1 || selectedSection) &&
                     React.createElement('h3', { style: styles.subheadingHeader, key: 'subh-' + subheadingName }, subheadingName),
                   
                   ...groupedResults[sectionName][subheadingName].map((entry, i) =>
@@ -293,7 +365,7 @@ function App() {
                                   src: iconUrl,
                                   alt: modalityName,
                                   title: modalityName,
-                                  style: { height: '32px', marginRight: '6px', verticalAlign: 'middle' }
+                                  style: { height: '28px', marginRight: '5px', verticalAlign: 'middle' }
                                 })
                               ]
                             : [];
@@ -316,12 +388,12 @@ function App() {
               )
             ])
           )
-        : React.createElement('p', { style: { color: '#555', marginTop: '1em', textAlign: 'center', fontSize: '1.1em' } }, 
+        : React.createElement('p', { style: { color: '#4B5563', marginTop: '2em', textAlign: 'center', fontSize: '1.05em' } }, 
             query.length >= 3 ? 'No matching scenarios found for your search.' : 
             selectedSection ? `No scenarios found in section: ${selectedSection}.` : ''
           )
-      : React.createElement('p', { style: { color: '#888', marginTop: '1em', textAlign: 'center', fontSize: '0.9em' } },
-          query.length > 0 && query.length < 3 ? 'Please enter at least 3 characters to search.' : 'Please search or select a section above.'
+      : React.createElement('p', { style: { color: '#4B5563', marginTop: '2em', textAlign: 'center', fontSize: '1em' } }, 
+          query.length > 0 && query.length < 3 ? 'Please enter at least 3 characters to search.' : 'Please use the search bar or select a section to view clinical scenarios.'
         )
   ]);
 }
