@@ -137,7 +137,7 @@ function App() {
         marginTop: '0', // Adjusted as it's now inside a padded container
         marginBottom: '1em', // Space between subheading title and first card
         fontSize: '1.15em', 
-        color: '#0d828f', 
+        color: '#184761', 
         fontWeight: '600' 
     },
     result: { 
