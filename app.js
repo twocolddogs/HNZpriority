@@ -248,6 +248,7 @@ const isMobile = useIsMobile();
             // This marginTop pushes the main scrollable content down to clear ALL sticky elements
             margin: '0 auto',
             maxWidth: '90%',
+            top: '130px',
             
         },
         sectionHeader: { 
@@ -260,7 +261,7 @@ const isMobile = useIsMobile();
             fontWeight: '700',
             marginBottom: '1em',
             position: 'sticky',
-            top: '130px',
+      
             backgroundColor: '#F9FAFB',
         },
         subheadingGroupContainer: {
@@ -348,7 +349,7 @@ const isMobile = useIsMobile();
                 React.createElement('input', {
                     key: 'input',
                     type: 'text',
-                    placeholder: 'Search scenarios or select a section below...',
+                    placeholder: 'Search clinical scenarios...',
                     value: query,
                     onChange: handleSearchInputChange,
                     onFocus: handleSearchInputFocus,
@@ -382,7 +383,7 @@ const isMobile = useIsMobile();
         null,
 
         // --- MAIN CONTENT AREA ---
-        // This div is pushed down by the combined height of the sticky elements
+        
         React.createElement('div', {
             key: 'main-content',
             style: styles.mainContentArea
