@@ -261,7 +261,7 @@ const isMobile = useIsMobile();
             fontWeight: '700',
             marginBottom: '1em',
             position: 'sticky',
-      top: '126px'
+      top: '126px',
             backgroundColor: '#F9FAFB',
         },
         subheadingGroupContainer: {
