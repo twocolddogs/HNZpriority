@@ -170,8 +170,8 @@ function App() {
             alignItems: 'center',
             background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
             padding: '0.75em 1.5em',
-            // borderRadius: '6px 6px 0 0', // Top corners, if search bar is directly below
-            // No margin bottom here, search bar will be directly below
+            borderRadius: '6px', 
+            
         },
         logoInline: {
             marginRight: '1.5em'
@@ -190,7 +190,7 @@ function App() {
             fontWeight: '600'
         },
         searchInputWrapper: { // Wrapper for the search input for its own styling
-            backgroundColor: '#FFFFFF', // Background for the search bar area
+            
             padding: '0.75em 1em', // Padding around the search input
             boxShadow: '0 2px 4px rgba(0,0,0,0.07)', // Shadow to separate from content below
             // borderBottom: '1px solid #E5E7EB', // Optional subtle border
