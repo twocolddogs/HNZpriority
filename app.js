@@ -152,6 +152,14 @@ function App() {
   const styles = {
     container: { padding: '1em', fontFamily: "'Open Sans', Arial, sans-serif", backgroundColor: '#F9FAFB', minHeight: '100vh', boxSizing: 'border-box' },
   
+    headerStickyWrapper: {
+    position: 'sticky',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1002,       // above everything else
+    overflow: 'hidden', // hide any scrolling content beneath
+  },
     headerWrapper: {
         display: 'flex',
         alignItems: 'center',
@@ -281,12 +289,12 @@ function App() {
      zIndex:   selectedSection ? undefined : styles.sectionButtonsContainer.zIndex,
   };
   return React.createElement('div', { style: styles.container }, [
-    React.createElement(
+     React.createElement(
       'div',
-      {
-        key: 'headerWrapper',
-        style: styles.headerWrapper // This style is now updated
-      },
+      { style: styles.headerStickyWrapper, key: 'header-sticky' },
+      React.createElement(
+        'div',
+        { style: styles.headerWrapper, key: 'header-wrapper' },
       [
         React.createElement('img', { // Use an img tag
           key: 'logoImage',
