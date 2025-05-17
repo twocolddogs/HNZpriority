@@ -1,25 +1,30 @@
-import React, { useState, useEffect } from 'https://esm.sh/react';
-import { createRoot } from 'https://esm.sh/react-dom/client';
+import React, {
+    useState,
+    useEffect
+} from 'https://esm.sh/react';
+import {
+    createRoot
+} from 'https://esm.sh/react-dom/client';
 
 
 
 function getModalityIcon(modality) {
-  if (!modality) return null;
-  const mod = modality.toUpperCase().trim(); // Ensure trimming
-  if (mod.includes("CT")) return "icons/CT.png";
-  if (mod.includes("XR")) return "icons/XR.png";
-  if (mod.includes("MRI") || mod.includes("MR ")) return "icons/MRI.png"; // Added "MR " for "Breast MR" etc.
-  if (mod.includes("US")) return "icons/US.png";
-  // Add more specific icons if needed
-  if (mod.includes("PET")) return "icons/PET.png"; // Example for PET
-  if (mod.includes("DBI")) return "icons/DBI.png"; // Example for DBI
-  if (mod.includes("BONE SCAN")) return "icons/BoneScan.png"; // Example
-  if (mod.includes("NUC MED")) return "icons/NucMed.png"; // Example
-  if (mod.includes("MRA")) return "icons/MRA.png"; // Example
-  if (mod.includes("CTA")) return "icons/CTA.png"; // Example
-  if (mod.includes("FLUOROSCOPY")) return "icons/Fluoro.png"; // Example
-  if (mod.includes("MAMMOGRAM")) return "icons/Mammo.png"; // Example
-  return null;
+    if (!modality) return null;
+    const mod = modality.toUpperCase().trim(); // Ensure trimming
+    if (mod.includes("CT")) return "icons/CT.png";
+    if (mod.includes("XR")) return "icons/XR.png";
+    if (mod.includes("MRI") || mod.includes("MR ")) return "icons/MRI.png"; // Added "MR " for "Breast MR" etc.
+    if (mod.includes("US")) return "icons/US.png";
+    // Add more specific icons if needed
+    if (mod.includes("PET")) return "icons/PET.png"; // Example for PET
+    if (mod.includes("DBI")) return "icons/DBI.png"; // Example for DBI
+    if (mod.includes("BONE SCAN")) return "icons/BoneScan.png"; // Example
+    if (mod.includes("NUC MED")) return "icons/NucMed.png"; // Example
+    if (mod.includes("MRA")) return "icons/MRA.png"; // Example
+    if (mod.includes("CTA")) return "icons/CTA.png"; // Example
+    if (mod.includes("FLUOROSCOPY")) return "icons/Fluoro.png"; // Example
+    if (mod.includes("MAMMOGRAM")) return "icons/Mammo.png"; // Example
+    return null;
 }
 
 // Function to flatten the big_clin.json data
@@ -54,370 +59,599 @@ function processBigClinData(rawData) {
 
 
 function App() {
-  const [allData, setAllData] = useState([]);
-  const [query, setQuery] = useState("");
-  const [selectedSection, setSelectedSection] = useState(null); // New state for selected section
-  const [uniqueSections, setUniqueSections] = useState([]);
+    const [allData, setAllData] = useState([]);
+    const [query, setQuery] = useState("");
+    const [selectedSection, setSelectedSection] = useState(null); // New state for selected section
+    const [uniqueSections, setUniqueSections] = useState([]);
 
-  useEffect(() => {
-    fetch('big_clin.json')
-      .then(res => res.json())
-      .then(rawJsonData => {
-        const processed = processBigClinData(rawJsonData);
-        setAllData(processed);
-        // Extract unique sections for buttons
-        const sections = [...new Set(processed.map(item => item.section))].sort();
-        setUniqueSections(sections);
-      });
-  }, []);
+    useEffect(() => {
+        fetch('big_clin.json')
+            .then(res => res.json())
+            .then(rawJsonData => {
+                const processed = processBigClinData(rawJsonData);
+                setAllData(processed);
+                // Extract unique sections for buttons
+                const sections = [...new Set(processed.map(item => item.section))].sort();
+                setUniqueSections(sections);
+            });
+    }, []);
 
-  const handleSectionButtonClick = (sectionName) => {
-    setQuery(""); // Clear search query
-    setSelectedSection(sectionName); // Set the selected section
-  };
+    const handleSectionButtonClick = (sectionName) => {
+        setQuery(""); // Clear search query
+        setSelectedSection(sectionName); // Set the selected section
+    };
 
-  const handleSearchInputChange = (e) => {
-    setQuery(e.target.value);
-    if (selectedSection) { // If a section was selected, clear it when user types
+    const handleSearchInputChange = (e) => {
+        setQuery(e.target.value);
+        if (selectedSection) { // If a section was selected, clear it when user types
+            setSelectedSection(null);
+        }
+    };
+
+    const handleSearchInputFocus = () => {
+        // Optionally, clear section when search bar is focused,
+        // or only when user starts typing (handled by onChange)
+        // For now, we'll rely on onChange to clear the section.
+        // If you want to clear on focus:
+        // setSelectedSection(null);
+    };
+
+    const handleSearchInputClick = () => {
+        // Clear selected section when search input is clicked to allow fresh search
         setSelectedSection(null);
+    };
+
+
+    let filtered = [];
+    if (selectedSection) {
+        // Filter by selected section if one is active
+        filtered = allData.filter(entry => entry.section === selectedSection);
+    } else if (query.length >= 3) {
+        // Filter by search query if no section is selected and query is long enough
+        filtered = allData.filter(entry =>
+            (entry.section && entry.section.toLowerCase().includes(query.toLowerCase())) ||
+            (entry.subheading && entry.subheading.toLowerCase().includes(query.toLowerCase())) ||
+            (entry.clinical_scenario && entry.clinical_scenario.toLowerCase().includes(query.toLowerCase()))
+        );
     }
-  };
-
-  const handleSearchInputFocus = () => {
-    // Optionally, clear section when search bar is focused,
-    // or only when user starts typing (handled by onChange)
-    // For now, we'll rely on onChange to clear the section.
-    // If you want to clear on focus:
-    // setSelectedSection(null);
-  };
-  
-  const handleSearchInputClick = () => {
-    // Clear selected section when search input is clicked to allow fresh search
-    setSelectedSection(null);
-  };
 
 
-  let filtered = [];
-  if (selectedSection) {
-    // Filter by selected section if one is active
-    filtered = allData.filter(entry => entry.section === selectedSection);
-  } else if (query.length >= 3) {
-    // Filter by search query if no section is selected and query is long enough
-    filtered = allData.filter(entry =>
-        (entry.section && entry.section.toLowerCase().includes(query.toLowerCase())) ||
-        (entry.subheading && entry.subheading.toLowerCase().includes(query.toLowerCase())) ||
-        (entry.clinical_scenario && entry.clinical_scenario.toLowerCase().includes(query.toLowerCase()))
-      );
-  }
+    const groupedResults = filtered.reduce((acc, item) => {
+        const sectionKey = item.section || "Uncategorized Section";
+        const subheadingKey = item.subheading || "General";
+
+        if (!acc[sectionKey]) {
+            acc[sectionKey] = {};
+        }
+        if (!acc[sectionKey][subheadingKey]) {
+            acc[sectionKey][subheadingKey] = [];
+        }
+        acc[sectionKey][subheadingKey].push(item);
+        return acc;
+    }, {});
+
+    const badgeStyles = {
+        P1: {
+            backgroundColor: '#FFBABA',
+            color: '#D8000C',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #D8000C'
+        },
+        'P1-P2': {
+            backgroundColor: '#FFBABA',
+            color: '#D8000C',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #D8000C'
+        },
+        'P1-P2a': {
+            backgroundColor: '#FFBABA',
+            color: '#D8000C',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #D8000C'
+        },
+        P2: {
+            backgroundColor: '#FFE2BA',
+            color: '#AA5F00',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #AA5F00'
+        },
+        'P2a': {
+            backgroundColor: '#FFE2BA',
+            color: '#AA5F00',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #AA5F00'
+        },
+        'P2a-P2': {
+            backgroundColor: '#FFE2BA',
+            color: '#AA5F00',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #AA5F00'
+        },
+        'P2-P3': {
+            backgroundColor: '#FFE2BA',
+            color: '#7A5C00',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #7A5C00'
+        },
+        P3: {
+            backgroundColor: '#FFF8BA',
+            color: '#5C5000',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #5C5000'
+        },
+        'P3 or P2': {
+            backgroundColor: '#FFE2BA',
+            color: '#AA5F00',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #AA5F00'
+        },
+        P4: {
+            backgroundColor: '#BAE7FF',
+            color: '#004C7A',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #004C7A'
+        },
+        'P3-P4': {
+            backgroundColor: '#FFF8BA',
+            color: '#00416A',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #00416A'
+        },
+        P5: {
+            backgroundColor: '#D9D9D9',
+            color: '#4F4F4F',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #4F4F4F'
+        },
+        S2: {
+            backgroundColor: '#FFE2BA',
+            color: '#AA5F00',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #00591E'
+        },
+        S3: {
+            backgroundColor: '#FFF8BA',
+            color: '#5C5000',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #004D1A'
+        },
+        S4: {
+            backgroundColor: '#BAE7FF',
+            color: '#004C7A',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #004015'
+        },
+        S5: {
+            backgroundColor: '#D9D9D9',
+            color: '#4F4F4F',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #003310'
+        },
+        'N/A': {
+            backgroundColor: '#F0F0F0',
+            color: '#555555',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #555555'
+        },
+        'Nil': {
+            backgroundColor: '#F0F0F0',
+            color: '#555555',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #555555'
+        },
+        'nil': {
+            backgroundColor: '#F0F0F0',
+            color: '#555555',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #555555'
+        },
+        default: {
+            backgroundColor: '#E0E0E0',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            display: 'inline-block',
+            border: '1px solid #777'
+        }
+    };
 
 
-  const groupedResults = filtered.reduce((acc, item) => {
-    const sectionKey = item.section || "Uncategorized Section";
-    const subheadingKey = item.subheading || "General";
+    const styles = {
+        container: {
+            padding: '1em',
+            fontFamily: "'Open Sans', Arial, sans-serif",
+            backgroundColor: '#F9FAFB',
+            minHeight: '100vh',
+            boxSizing: 'border-box'
+        },
 
-    if (!acc[sectionKey]) {
-        acc[sectionKey] = {};
-    }
-    if (!acc[sectionKey][subheadingKey]) {
-        acc[sectionKey][subheadingKey] = [];
-    }
-    acc[sectionKey][subheadingKey].push(item);
-    return acc;
-  }, {});
+        headerStickyWrapper: {
+            position: 'sticky',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1002, // above everything else
+            overflow: 'hidden', // hide any scrolling content beneath
+        },
+        headerWrapper: {
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '1.5em',
+            // Applied gradient background
+            background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
+            padding: '1em 1.5em', // Added some horizontal padding
+            borderRadius: '6px', // Optional: slightly rounded corners for the header
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // Optional: subtle shadow
+            position: 'sticky',
+            top: '0',
+            zIndex: 1002,
+        },
+        logoInline: {
+            marginRight: '1.5em' // Space before the separator
+        },
+        headerSeparator: { // --- NEW STYLE FOR THE VERTICAL LINE ---
+            width: '1px',
+            height: '40px', // Adjust height as needed to align well
+            backgroundColor: 'rgba(255, 255, 255, 0.5)', // Semi-transparent white
+            marginRight: '1.5em' // Space after the separator
+        },
+        header: { // App Title
+            color: '#FFFFFF', // White text
+            fontSize: '1.4em', // Adjusted for better balance with logo
+            margin: '0',
+            lineHeight: '1.2',
+            fontWeight: '600'
+        },
 
-  const badgeStyles = {
-    P1: { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
-    'P1-P2': { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
-    'P1-P2a': { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
-    P2: { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
-    'P2a': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
-    'P2a-P2': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
-    'P2-P3': { backgroundColor: '#FFE2BA', color: '#7A5C00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #7A5C00' },
-    P3: { backgroundColor: '#FFF8BA', color: '#5C5000', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #5C5000' },
-    'P3 or P2': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
-    P4: { backgroundColor: '#BAE7FF', color: '#004C7A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004C7A' },
-    'P3-P4': { backgroundColor: '#FFF8BA', color: '#00416A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #00416A' },
-    P5: { backgroundColor: '#D9D9D9', color: '#4F4F4F', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #4F4F4F' },
-    S2: { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #00591E' },
-    S3: { backgroundColor: '#FFF8BA', color: '#5C5000', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004D1A' },
-    S4: { backgroundColor: '#BAE7FF', color: '#004C7A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004015' },
-    S5: { backgroundColor: '#D9D9D9', color: '#4F4F4F', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #003310' },
-    'N/A': { backgroundColor: '#F0F0F0', color: '#555555', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #555555' },
-    'Nil': { backgroundColor: '#F0F0F0', color: '#555555', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #555555' },
-    'nil': { backgroundColor: '#F0F0F0', color: '#555555', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #555555' },
-    default: { backgroundColor: '#E0E0E0', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #777' }
-  };
-  
-
-  const styles = {
-    container: { padding: '1em', fontFamily: "'Open Sans', Arial, sans-serif", backgroundColor: '#F9FAFB', minHeight: '100vh', boxSizing: 'border-box' },
-  
-    headerStickyWrapper: {
-    position: 'sticky',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1002,       // above everything else
-    overflow: 'hidden', // hide any scrolling content beneath
-  },
-    headerWrapper: {
-        display: 'flex',
-        alignItems: 'center',
-        marginBottom: '1.5em',
-        // Applied gradient background
-        background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
-        padding: '1em 1.5em', // Added some horizontal padding
-        borderRadius: '6px', // Optional: slightly rounded corners for the header
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // Optional: subtle shadow
-        position: 'sticky',
-   top: '0',
-    zIndex: 1002,
-    },
-    logoInline: { 
-        marginRight: '1.5em' // Space before the separator
-    },
-    headerSeparator: { // --- NEW STYLE FOR THE VERTICAL LINE ---
-        width: '1px',
-        height: '40px', // Adjust height as needed to align well
-        backgroundColor: 'rgba(255, 255, 255, 0.5)', // Semi-transparent white
-        marginRight: '1.5em' // Space after the separator
-    },
-    header: { // App Title
-        color: '#FFFFFF', // White text
-        fontSize: '1.4em', // Adjusted for better balance with logo
-        margin: '0', 
-        lineHeight: '1.2', 
-        fontWeight: '600' 
-    },
-
-    input: { 
-        width: '100%', 
-        padding: '0.75em 1em', 
-        fontSize: '1em', 
-        border: `1px solid #D1D5DB`, 
-        borderRadius: '6px', 
-        marginBottom: '0.5em', 
-        boxSizing: 'border-box', 
-        position: 'sticky', 
-        top: '10px', 
-        backgroundColor: '#FFFFFF', 
-        zIndex: 1000, 
-        boxShadow: '0 2px 5px rgba(0,0,0,0.07)',
-        outlineOffset: '2px',
-    },
-    sectionButtonsContainer: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.6em',
-        marginBottom: '2em',
-        paddingTop: '0.5em',
-        position: 'sticky',
-        top: 'calc(0.75em + 1em + 0.75em + 1em + 10px + 10px + 10px)', // Adjusted sticky top slightly more
-        backgroundColor: '#F9FAFB',
-        paddingBottom: '0.5em',
-        zIndex: 999,
-        borderBottom: `1px solid #F0F0F0`
-    },
-    sectionButton: {
-        padding: '0.6em 1.2em',
-        fontSize: '0.9em',
-        border: `1px solid #00549F`,
-        backgroundColor: '#FFFFFF',
-        color: '#00549F',
-        borderRadius: '20px',
-        cursor: 'pointer',
-        fontWeight: '600',
-        transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
-    },
-    sectionButtonActive: {
-        backgroundColor: '#00549F',
-        color: '#FFFFFF',
-        boxShadow: '0 2px 4px rgba(0, 84, 159, 0.3)',
-    },
-    sectionHeader: { 
-        marginTop: '1em',
-        fontSize: '1.4em', 
-        color: '#00549F', 
-        borderBottom: `2px solid #007A86`, 
-        paddingBottom: '0.4em', 
-        fontWeight: '700',
-        marginBottom: '1em',
-    },
-    subheadingGroupContainer: {
-        backgroundColor: '#FFFFFF',
-        border: `1px solid #D1D5DB`,
-        padding: '1.2em',
-        borderRadius: '8px',
-        marginTop: '1em',
-        marginBottom: '1.8em',
-        boxShadow: '0 3px 7px rgba(0,0,0,0.07)' 
-    },
-    subheadingHeader: { 
-        marginTop: '0',
-        marginBottom: '1.2em',
-        fontSize: '1.2em', 
-        color: '#007A86', 
-        fontWeight: '600',
-        paddingBottom: '0.3em',
-        borderBottom: `1px dashed #E6F3FA`
-    },
-    result: { 
-        backgroundColor: '#E6F3FA',
-        borderLeft: `5px solid #007A86`, 
-        padding: '1em', 
-        marginBottom: '1em',
-        borderRadius: '6px', 
-        boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
-    },
-    label: { fontWeight: 'bold', color: '#00549F', fontSize: '0.95em' },
-    text: { fontSize: '0.95em', marginBottom: '0.6em', lineHeight: '1.5', color: '#4B5563' },
-    commentText: { 
-        fontSize: '0.9em', 
-        marginBottom: '0.5em', 
-        lineHeight: '1.4', 
-        color: '#52525B',
-        backgroundColor: '#F8F8F9',
-        padding: '0.6em', 
-        borderRadius: '4px', 
-        border: `1px solid #D1D5DB` 
-    }
-  };
-   const sectionButtonsStyle = {
-   ...styles.sectionButtonsContainer,
-  position: selectedSection ? 'static' : styles.sectionButtonsContainer.position,
-   top:      selectedSection ? undefined : styles.sectionButtonsContainer.top,
-     zIndex:   selectedSection ? undefined : styles.sectionButtonsContainer.zIndex,
-  };
-  return React.createElement('div', { style: styles.container }, [
-     React.createElement(
-      'div',
-      { style: styles.headerStickyWrapper, key: 'header-sticky' },
-      React.createElement(
-        'div',
-        { style: styles.headerWrapper, key: 'header-wrapper' },
-      [
-        React.createElement('img', { // Use an img tag
-          key: 'logoImage',
-          src: '/images/HealthNZ_logo_v2.svg', // Path to your SVG file
-          alt: 'Health New Zealand Logo', // Important for accessibility
-          style: { // Apply styles directly or through a class if preferred
-            width: '200px', // Adjust as needed
-            height: 'auto', // Maintain aspect ratio
-            marginRight: '1.5em'
-          }
-        }),
-        React.createElement('div', {
-            key: 'headerSeparator',
-            style: styles.headerSeparator
-        }),
+        input: {
+            width: '100%',
+            padding: '0.75em 1em',
+            fontSize: '1em',
+            border: `1px solid #D1D5DB`,
+            borderRadius: '6px',
+            marginBottom: '0.5em',
+            boxSizing: 'border-box',
+            position: 'sticky',
+            top: '10px',
+            backgroundColor: '#FFFFFF',
+            zIndex: 1000,
+            boxShadow: '0 2px 5px rgba(0,0,0,0.07)',
+            outlineOffset: '2px',
+        },
+        sectionButtonsContainer: {
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.6em',
+            marginBottom: '2em',
+            paddingTop: '0.5em',
+            position: 'sticky',
+            top: 'calc(0.75em + 1em + 0.75em + 1em + 10px + 10px + 10px)', // Adjusted sticky top slightly more
+            backgroundColor: '#F9FAFB',
+            paddingBottom: '0.5em',
+            zIndex: 999,
+            borderBottom: `1px solid #F0F0F0`
+        },
+        sectionButton: {
+            padding: '0.6em 1.2em',
+            fontSize: '0.9em',
+            border: `1px solid #00549F`,
+            backgroundColor: '#FFFFFF',
+            color: '#00549F',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
+        },
+        sectionButtonActive: {
+            backgroundColor: '#00549F',
+            color: '#FFFFFF',
+            boxShadow: '0 2px 4px rgba(0, 84, 159, 0.3)',
+        },
+        sectionHeader: {
+            marginTop: '1em',
+            fontSize: '1.4em',
+            color: '#00549F',
+            borderBottom: `2px solid #007A86`,
+            paddingBottom: '0.4em',
+            fontWeight: '700',
+            marginBottom: '1em',
+        },
+        subheadingGroupContainer: {
+            backgroundColor: '#FFFFFF',
+            border: `1px solid #D1D5DB`,
+            padding: '1.2em',
+            borderRadius: '8px',
+            marginTop: '1em',
+            marginBottom: '1.8em',
+            boxShadow: '0 3px 7px rgba(0,0,0,0.07)'
+        },
+        subheadingHeader: {
+            marginTop: '0',
+            marginBottom: '1.2em',
+            fontSize: '1.2em',
+            color: '#007A86',
+            fontWeight: '600',
+            paddingBottom: '0.3em',
+            borderBottom: `1px dashed #E6F3FA`
+        },
+        result: {
+            backgroundColor: '#E6F3FA',
+            borderLeft: `5px solid #007A86`,
+            padding: '1em',
+            marginBottom: '1em',
+            borderRadius: '6px',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+        },
+        label: {
+            fontWeight: 'bold',
+            color: '#00549F',
+            fontSize: '0.95em'
+        },
+        text: {
+            fontSize: '0.95em',
+            marginBottom: '0.6em',
+            lineHeight: '1.5',
+            color: '#4B5563'
+        },
+        commentText: {
+            fontSize: '0.9em',
+            marginBottom: '0.5em',
+            lineHeight: '1.4',
+            color: '#52525B',
+            backgroundColor: '#F8F8F9',
+            padding: '0.6em',
+            borderRadius: '4px',
+            border: `1px solid #D1D5DB`
+        }
+    };
+    const sectionButtonsStyle = {
+        ...styles.sectionButtonsContainer,
+        position: selectedSection ? 'static' : styles.sectionButtonsContainer.position,
+        top: selectedSection ? undefined : styles.sectionButtonsContainer.top,
+        zIndex: selectedSection ? undefined : styles.sectionButtonsContainer.zIndex,
+    };
+    return React.createElement('div', {
+        style: styles.container
+    }, [
         React.createElement(
-          'h1',
-          { style: styles.header, key: 'title' }, // This style is now updated
-          'Radiology Triage Tool'
-        )
-      ]
-    )
-       ),
-    
+            'div', {
+                style: styles.headerStickyWrapper,
+                key: 'header-sticky'
+            },
+            React.createElement(
+                'div', {
+                    style: styles.headerWrapper,
+                    key: 'header-wrapper'
+                }, [
+                    React.createElement('img', { // Use an img tag
+                        key: 'logoImage',
+                        src: '/images/HealthNZ_logo_v2.svg', // Path to your SVG file
+                        alt: 'Health New Zealand Logo', // Important for accessibility
+                        style: { // Apply styles directly or through a class if preferred
+                            width: '200px', // Adjust as needed
+                            height: 'auto', // Maintain aspect ratio
+                            marginRight: '1.5em'
+                        }
+                    }),
+                    React.createElement('div', {
+                        key: 'headerSeparator',
+                        style: styles.headerSeparator
+                    }),
+                    React.createElement(
+                        'h1', {
+                            style: styles.header,
+                            key: 'title'
+                        }, // This style is now updated
+                        'Radiology Triage Tool'
+                    )
+                ]
+            )
+        ),
 
-    React.createElement('input', {
-      key: 'input',
-      type: 'text',
-      placeholder: 'Search scenarios or select a section below...',
-      value: query,
-      onChange: handleSearchInputChange,
-      onFocus: handleSearchInputFocus,
-      onClick: handleSearchInputClick,
-      style: styles.input
-    }),
 
-    // only show buttons when not actively searching
-    query.length < 3
-     ? React.createElement(
-          'div',
-         { style: sectionButtonsStyle, key: 'section-buttons' },
-        uniqueSections.map(sectionName =>
-          React.createElement('button', {
-              key: sectionName,
-              onClick: () => handleSectionButtonClick(sectionName),
-              style: {
-                ...styles.sectionButton,
-                ...(selectedSection === sectionName
-                    ? styles.sectionButtonActive
-                    : {})
-              }
-            }, sectionName)
-          )
-        )
-      : null,
+        React.createElement('input', {
+            key: 'input',
+            type: 'text',
+            placeholder: 'Search scenarios or select a section below...',
+            value: query,
+            onChange: handleSearchInputChange,
+            onFocus: handleSearchInputFocus,
+            onClick: handleSearchInputClick,
+            style: styles.input
+        }),
 
-    (selectedSection || query.length >= 3)
-      ? Object.keys(groupedResults).length > 0 
-        ? Object.keys(groupedResults).map(sectionName =>
-            React.createElement('div', { key: sectionName }, [
-              React.createElement('h2', { style: styles.sectionHeader, key: 'sh-' + sectionName }, sectionName),
-              
-              Object.keys(groupedResults[sectionName]).map(subheadingName =>
-                React.createElement('div', { 
-                    key: `${sectionName}-${subheadingName}-group`, 
-                    style: styles.subheadingGroupContainer
-                }, [ 
-                  (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1 || selectedSection) &&
-                    React.createElement('h3', { style: styles.subheadingHeader, key: 'subh-' + subheadingName }, subheadingName),
-                  
-                  ...groupedResults[sectionName][subheadingName].map((entry, i) =>
-                    React.createElement('div', { 
-                        style: { ...styles.result, marginBottom: i === groupedResults[sectionName][subheadingName].length - 1 ? '0' : '1em' },
-                        key: `${sectionName}-${subheadingName}-${i}` 
+        // only show buttons when not actively searching
+        query.length < 3 ?
+        React.createElement(
+            'div', {
+                style: sectionButtonsStyle,
+                key: 'section-buttons'
+            },
+            uniqueSections.map(sectionName =>
+                React.createElement('button', {
+                    key: sectionName,
+                    onClick: () => handleSectionButtonClick(sectionName),
+                    style: {
+                        ...styles.sectionButton,
+                        ...(selectedSection === sectionName ?
+                            styles.sectionButtonActive :
+                            {})
+                    }
+                }, sectionName)
+            )
+        ) :
+        null,
+
+        (selectedSection || query.length >= 3) ?
+        Object.keys(groupedResults).length > 0 ?
+        Object.keys(groupedResults).map(sectionName =>
+            React.createElement('div', {
+                key: sectionName
+            }, [
+                React.createElement('h2', {
+                    style: styles.sectionHeader,
+                    key: 'sh-' + sectionName
+                }, sectionName),
+
+                Object.keys(groupedResults[sectionName]).map(subheadingName =>
+                    React.createElement('div', {
+                        key: `${sectionName}-${subheadingName}-group`,
+                        style: styles.subheadingGroupContainer
                     }, [
-                      React.createElement('div', { style: styles.text }, [
-                        React.createElement('span', { style: styles.label }, 'Scenario:'),
-                        ' ' + entry.clinical_scenario
-                      ]),
-                      React.createElement('div', { style: styles.text }, [
-                        React.createElement('span', { style: styles.label }, 'Modality:'),
-                        ' ',
-                        ... (entry.modality || "N/A").split(/[,>/]/).flatMap((mod, idx) => {
-                          const iconUrl = getModalityIcon(mod.trim());
-                          const modalityName = mod.trim();
-                          return iconUrl
-                            ? [
-                                React.createElement('img', {
-                                  key: `icon-${idx}-${sectionName}-${subheadingName}-${i}`,
-                                  src: iconUrl,
-                                  alt: modalityName,
-                                  title: modalityName,
-                                  style: { height: '28px', marginRight: '5px', verticalAlign: 'middle' }
-                                })
-                              ]
-                            : [];
-                        }),
-                        ' ' + (entry.modality || "N/A")
-                      ]),
-                      React.createElement('div', { style: styles.text }, [
-                        React.createElement('span', { style: styles.label }, 'Priority:'),
-                        ' ',
-                        React.createElement('span', { style: badgeStyles[entry.prioritisation_category] || badgeStyles.default }, entry.prioritisation_category)
-                      ]),
-                      (entry.comment && entry.comment.toLowerCase() !== 'none' && entry.comment.toLowerCase() !== 'n/a') && 
-                        React.createElement('div', { style: styles.commentText }, [
-                          React.createElement('span', { style: styles.label }, 'Comments:'),
-                          ' ' + entry.comment
-                        ])
+                        (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1 || selectedSection) &&
+                        React.createElement('h3', {
+                            style: styles.subheadingHeader,
+                            key: 'subh-' + subheadingName
+                        }, subheadingName),
+
+                        ...groupedResults[sectionName][subheadingName].map((entry, i) =>
+                            React.createElement('div', {
+                                style: {...styles.result,
+                                    marginBottom: i === groupedResults[sectionName][subheadingName].length - 1 ? '0' : '1em'
+                                },
+                                key: `${sectionName}-${subheadingName}-${i}`
+                            }, [
+                                React.createElement('div', {
+                                    style: styles.text
+                                }, [
+                                    React.createElement('span', {
+                                        style: styles.label
+                                    }, 'Scenario:'),
+                                    ' ' + entry.clinical_scenario
+                                ]),
+                                React.createElement('div', {
+                                    style: styles.text
+                                }, [
+                                    React.createElement('span', {
+                                        style: styles.label
+                                    }, 'Modality:'),
+                                    ' ',
+                                    ...(entry.modality || "N/A").split(/[,>/]/).flatMap((mod, idx) => {
+                                        const iconUrl = getModalityIcon(mod.trim());
+                                        const modalityName = mod.trim();
+                                        return iconUrl ?
+                                            [
+                                                React.createElement('img', {
+                                                    key: `icon-${idx}-${sectionName}-${subheadingName}-${i}`,
+                                                    src: iconUrl,
+                                                    alt: modalityName,
+                                                    title: modalityName,
+                                                    style: {
+                                                        height: '28px',
+                                                        marginRight: '5px',
+                                                        verticalAlign: 'middle'
+                                                    }
+                                                })
+                                            ] :
+                                            [];
+                                    }),
+                                    ' ' + (entry.modality || "N/A")
+                                ]),
+                                React.createElement('div', {
+                                    style: styles.text
+                                }, [
+                                    React.createElement('span', {
+                                        style: styles.label
+                                    }, 'Priority:'),
+                                    ' ',
+                                    React.createElement('span', {
+                                        style: badgeStyles[entry.prioritisation_category] || badgeStyles.default
+                                    }, entry.prioritisation_category)
+                                ]),
+                                (entry.comment && entry.comment.toLowerCase() !== 'none' && entry.comment.toLowerCase() !== 'n/a') &&
+                                React.createElement('div', {
+                                    style: styles.commentText
+                                }, [
+                                    React.createElement('span', {
+                                        style: styles.label
+                                    }, 'Comments:'),
+                                    ' ' + entry.comment
+                                ])
+                            ])
+                        )
                     ])
-                  )
-                ])
-              )
+                )
             ])
-          )
-        : React.createElement('p', { style: { color: '#4B5563', marginTop: '2em', textAlign: 'center', fontSize: '1.05em' } }, 
-            query.length >= 3 ? 'No matching scenarios found for your search.' : 
+        ) :
+        React.createElement('p', {
+                style: {
+                    color: '#4B5563',
+                    marginTop: '2em',
+                    textAlign: 'center',
+                    fontSize: '1.05em'
+                }
+            },
+            query.length >= 3 ? 'No matching scenarios found for your search.' :
             selectedSection ? `No scenarios found in section: ${selectedSection}.` : ''
-          )
-      : React.createElement('p', { style: { color: '#4B5563', marginTop: '2em', textAlign: 'center', fontSize: '1em' } }, 
-          query.length > 0 && query.length < 3 ? 'Please enter at least 3 characters to search.' : 'Please use the search bar or select a section to view clinical scenarios.'
+        ) :
+        React.createElement('p', {
+                style: {
+                    color: '#4B5563',
+                    marginTop: '2em',
+                    textAlign: 'center',
+                    fontSize: '1em'
+                }
+            },
+            query.length > 0 && query.length < 3 ? 'Please enter at least 3 characters to search.' : 'Please use the search bar or select a section to view clinical scenarios.'
         )
-  ]);
+    ]);
 }
 
 createRoot(document.getElementById('root')).render(React.createElement(App));
