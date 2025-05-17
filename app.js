@@ -256,6 +256,7 @@ const isMobile = useIsMobile();
             color: '#00549F', 
             borderBottom: `2px solid #007A86`, 
             paddingBottom: '0.4em', 
+            paddingTop: '0.2em',
             fontWeight: '700',
             marginBottom: '1em',
             position: 'sticky',
