@@ -316,9 +316,10 @@ function App() {
           'Radiology Triage Tool'
         )
       ]
-    ),
+    )
+       ),
     
-// ... (rest of the rendering logic for input, buttons, results remains the same)
+
     React.createElement('input', {
       key: 'input',
       type: 'text',
@@ -416,7 +417,7 @@ function App() {
       : React.createElement('p', { style: { color: '#4B5563', marginTop: '2em', textAlign: 'center', fontSize: '1em' } }, 
           query.length > 0 && query.length < 3 ? 'Please enter at least 3 characters to search.' : 'Please use the search bar or select a section to view clinical scenarios.'
         )
-  ]));
+  ]);
 }
 
 createRoot(document.getElementById('root')).render(React.createElement(App));
