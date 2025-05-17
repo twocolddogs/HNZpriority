@@ -6,7 +6,8 @@ import {
     createRoot
 } from 'https://esm.sh/react-dom/client';
 
-
+// NOTE: The SVG for the logo is loaded via an <img> tag now, so the large logoSvg constant is not needed here.
+// Make sure you have /images/HealthNZ_logo_v2.svg in your public/project structure.
 
 function getModalityIcon(modality) {
     if (!modality) return null;
@@ -61,8 +62,16 @@ function processBigClinData(rawData) {
 function App() {
     const [allData, setAllData] = useState([]);
     const [query, setQuery] = useState("");
-    const [selectedSection, setSelectedSection] = useState(null); // New state for selected section
+    const [selectedSection, setSelectedSection] = useState(null);
     const [uniqueSections, setUniqueSections] = useState([]);
+
+    // --- ESTIMATED HEIGHTS FOR STICKY POSITIONING ---
+    // IMPORTANT: Adjust these pixel values after inspecting your rendered elements in browser dev tools
+    // These values determine the `top` offset for the search bar (if sticky separately)
+    // and the `marginTop` for the main content area to clear all sticky elements.
+    const brandingHeaderRenderedHeightPx = 70; // Approximate height of the gradient header (e.g., 60px to 80px)
+    const searchInputWrapperRenderedHeightPx = 60; // Approximate height of the search bar wrapper (e.g., 50px to 70px)
+
 
     useEffect(() => {
         fetch('big_clin.json')
@@ -70,44 +79,35 @@ function App() {
             .then(rawJsonData => {
                 const processed = processBigClinData(rawJsonData);
                 setAllData(processed);
-                // Extract unique sections for buttons
                 const sections = [...new Set(processed.map(item => item.section))].sort();
                 setUniqueSections(sections);
             });
     }, []);
 
     const handleSectionButtonClick = (sectionName) => {
-        setQuery(""); // Clear search query
-        setSelectedSection(sectionName); // Set the selected section
+        setQuery("");
+        setSelectedSection(sectionName);
     };
 
     const handleSearchInputChange = (e) => {
         setQuery(e.target.value);
-        if (selectedSection) { // If a section was selected, clear it when user types
+        if (selectedSection) {
             setSelectedSection(null);
         }
     };
 
     const handleSearchInputFocus = () => {
-        // Optionally, clear section when search bar is focused,
-        // or only when user starts typing (handled by onChange)
-        // For now, we'll rely on onChange to clear the section.
-        // If you want to clear on focus:
-        // setSelectedSection(null);
+        // Optional: setSelectedSection(null);
     };
 
     const handleSearchInputClick = () => {
-        // Clear selected section when search input is clicked to allow fresh search
         setSelectedSection(null);
     };
 
-
     let filtered = [];
     if (selectedSection) {
-        // Filter by selected section if one is active
         filtered = allData.filter(entry => entry.section === selectedSection);
     } else if (query.length >= 3) {
-        // Filter by search query if no section is selected and query is long enough
         filtered = allData.filter(entry =>
             (entry.section && entry.section.toLowerCase().includes(query.toLowerCase())) ||
             (entry.subheading && entry.subheading.toLowerCase().includes(query.toLowerCase())) ||
@@ -115,275 +115,103 @@ function App() {
         );
     }
 
-
     const groupedResults = filtered.reduce((acc, item) => {
         const sectionKey = item.section || "Uncategorized Section";
         const subheadingKey = item.subheading || "General";
-
-        if (!acc[sectionKey]) {
-            acc[sectionKey] = {};
-        }
-        if (!acc[sectionKey][subheadingKey]) {
-            acc[sectionKey][subheadingKey] = [];
-        }
+        if (!acc[sectionKey]) acc[sectionKey] = {};
+        if (!acc[sectionKey][subheadingKey]) acc[sectionKey][subheadingKey] = [];
         acc[sectionKey][subheadingKey].push(item);
         return acc;
     }, {});
 
     const badgeStyles = {
-        P1: {
-            backgroundColor: '#FFBABA',
-            color: '#D8000C',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #D8000C'
-        },
-        'P1-P2': {
-            backgroundColor: '#FFBABA',
-            color: '#D8000C',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #D8000C'
-        },
-        'P1-P2a': {
-            backgroundColor: '#FFBABA',
-            color: '#D8000C',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #D8000C'
-        },
-        P2: {
-            backgroundColor: '#FFE2BA',
-            color: '#AA5F00',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #AA5F00'
-        },
-        'P2a': {
-            backgroundColor: '#FFE2BA',
-            color: '#AA5F00',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #AA5F00'
-        },
-        'P2a-P2': {
-            backgroundColor: '#FFE2BA',
-            color: '#AA5F00',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #AA5F00'
-        },
-        'P2-P3': {
-            backgroundColor: '#FFE2BA',
-            color: '#7A5C00',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #7A5C00'
-        },
-        P3: {
-            backgroundColor: '#FFF8BA',
-            color: '#5C5000',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #5C5000'
-        },
-        'P3 or P2': {
-            backgroundColor: '#FFE2BA',
-            color: '#AA5F00',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #AA5F00'
-        },
-        P4: {
-            backgroundColor: '#BAE7FF',
-            color: '#004C7A',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #004C7A'
-        },
-        'P3-P4': {
-            backgroundColor: '#FFF8BA',
-            color: '#00416A',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #00416A'
-        },
-        P5: {
-            backgroundColor: '#D9D9D9',
-            color: '#4F4F4F',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #4F4F4F'
-        },
-        S2: {
-            backgroundColor: '#FFE2BA',
-            color: '#AA5F00',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #00591E'
-        },
-        S3: {
-            backgroundColor: '#FFF8BA',
-            color: '#5C5000',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #004D1A'
-        },
-        S4: {
-            backgroundColor: '#BAE7FF',
-            color: '#004C7A',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #004015'
-        },
-        S5: {
-            backgroundColor: '#D9D9D9',
-            color: '#4F4F4F',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #003310'
-        },
-        'N/A': {
-            backgroundColor: '#F0F0F0',
-            color: '#555555',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #555555'
-        },
-        'Nil': {
-            backgroundColor: '#F0F0F0',
-            color: '#555555',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #555555'
-        },
-        'nil': {
-            backgroundColor: '#F0F0F0',
-            color: '#555555',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #555555'
-        },
-        default: {
-            backgroundColor: '#E0E0E0',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            display: 'inline-block',
-            border: '1px solid #777'
-        }
+        P1: { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
+        'P1-P2': { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
+        'P1-P2a': { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
+        P2: { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
+        'P2a': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
+        'P2a-P2': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
+        'P2-P3': { backgroundColor: '#FFE2BA', color: '#7A5C00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #7A5C00' },
+        P3: { backgroundColor: '#FFF8BA', color: '#5C5000', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #5C5000' },
+        'P3 or P2': { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #AA5F00' },
+        P4: { backgroundColor: '#BAE7FF', color: '#004C7A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004C7A' },
+        'P3-P4': { backgroundColor: '#FFF8BA', color: '#00416A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #00416A' },
+        P5: { backgroundColor: '#D9D9D9', color: '#4F4F4F', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #4F4F4F' },
+        S2: { backgroundColor: '#FFE2BA', color: '#AA5F00', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #00591E' },
+        S3: { backgroundColor: '#FFF8BA', color: '#5C5000', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004D1A' },
+        S4: { backgroundColor: '#BAE7FF', color: '#004C7A', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #004015' },
+        S5: { backgroundColor: '#D9D9D9', color: '#4F4F4F', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #003310' },
+        'N/A': { backgroundColor: '#F0F0F0', color: '#555555', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #555555' },
+        'Nil': { backgroundColor: '#F0F0F0', color: '#555555', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #555555' },
+        'nil': { backgroundColor: '#F0F0F0', color: '#555555', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #555555' },
+        default: { backgroundColor: '#E0E0E0', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #777' }
     };
-
 
     const styles = {
         container: {
             padding: '1em',
             fontFamily: "'Open Sans', Arial, sans-serif",
-            backgroundColor: '#F9FAFB',
+            backgroundColor: '#F9FAFB', // Main page background
             minHeight: '100vh',
             boxSizing: 'border-box'
         },
-
-        headerStickyWrapper: {
+        // This div wraps ONLY the sticky elements: branding header and search bar
+        stickyHeaderArea: {
             position: 'sticky',
             top: 0,
             left: 0,
             right: 0,
-            zIndex: 1002, // above everything else
-            overflow: 'hidden', // hide any scrolling content beneath
+            zIndex: 1001, // High z-index for the entire sticky block
+            // Background for this area will be shown if elements inside are transparent or have gaps
+            // For this setup, the children (brandingHeader, searchInputWrapper) will have their own backgrounds.
         },
-        headerWrapper: {
+        brandingHeader: { // This is the gradient part
             display: 'flex',
             alignItems: 'center',
-            marginBottom: '1.5em',
-            // Applied gradient background
             background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
-            padding: '1em 1.5em', // Added some horizontal padding
-            borderRadius: '6px', // Optional: slightly rounded corners for the header
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // Optional: subtle shadow
-            position: 'sticky',
-            top: '0',
-            zIndex: 1002,
+            padding: '0.75em 1.5em',
+            // borderRadius: '6px 6px 0 0', // Top corners, if search bar is directly below
+            // No margin bottom here, search bar will be directly below
         },
         logoInline: {
-            marginRight: '1.5em' // Space before the separator
+            marginRight: '1.5em'
         },
-        headerSeparator: { // --- NEW STYLE FOR THE VERTICAL LINE ---
+        headerSeparator: {
             width: '1px',
-            height: '40px', // Adjust height as needed to align well
-            backgroundColor: 'rgba(255, 255, 255, 0.5)', // Semi-transparent white
-            marginRight: '1.5em' // Space after the separator
+            height: '40px',
+            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+            marginRight: '1.5em'
         },
-        header: { // App Title
-            color: '#FFFFFF', // White text
-            fontSize: '1.4em', // Adjusted for better balance with logo
+        headerTitle: { // Renamed for clarity from 'header'
+            color: '#FFFFFF',
+            fontSize: '1.4em',
             margin: '0',
             lineHeight: '1.2',
             fontWeight: '600'
         },
-
-input: {
-      width: '100%',
-      padding: '0.75em 1em',
-      fontSize: '1em',
-        border: '1px solid #D1D5DB',
-        borderRadius: '6px',
-        marginBottom: '0.5em',
-        boxSizing: 'border-box',
-        backgroundColor: '#FFFFFF',
-    },
-        sectionButtonsContainer: {
+        searchInputWrapper: { // Wrapper for the search input for its own styling
+            backgroundColor: '#FFFFFF', // Background for the search bar area
+            padding: '0.75em 1em', // Padding around the search input
+            boxShadow: '0 2px 4px rgba(0,0,0,0.07)', // Shadow to separate from content below
+            // borderBottom: '1px solid #E5E7EB', // Optional subtle border
+        },
+        input: { // Search Bar itself
+            width: '100%',
+            padding: '0.6em 1em',
+            fontSize: '1em',
+            border: '1px solid #D1D5DB',
+            borderRadius: '6px',
+            boxSizing: 'border-box',
+        },
+        sectionButtonsContainer: { // Non-sticky
             display: 'flex',
             flexWrap: 'wrap',
             gap: '0.6em',
-            marginBottom: '2em',
-            paddingTop: '0.5em',
-            position: 'sticky',
-            top: 'calc(0.75em + 1em + 0.75em + 1em + 10px + 10px + 10px)', // Adjusted sticky top slightly more
-            backgroundColor: '#F9FAFB',
-            paddingBottom: '0.5em',
-            zIndex: 999,
-            borderBottom: `1px solid #F0F0F0`
+            padding: '1em 0.5em', // Add some padding around buttons
+            backgroundColor: '#F9FAFB', // Match page background if desired, or remove for transparency
+            marginBottom: '1em', // Space before main content starts
         },
-        sectionButton: {
+        sectionButton: { 
             padding: '0.6em 1.2em',
             fontSize: '0.9em',
             border: `1px solid #00549F`,
@@ -394,17 +222,21 @@ input: {
             fontWeight: '600',
             transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
         },
-        sectionButtonActive: {
+        sectionButtonActive: { 
             backgroundColor: '#00549F',
             color: '#FFFFFF',
             boxShadow: '0 2px 4px rgba(0, 84, 159, 0.3)',
         },
-        sectionHeader: {
-            marginTop: '1em',
-            fontSize: '1.4em',
-            color: '#00549F',
-            borderBottom: `2px solid #007A86`,
-            paddingBottom: '0.4em',
+        mainContentArea: {
+            // This marginTop pushes the main scrollable content down to clear ALL sticky elements
+            marginTop: `${brandingHeaderRenderedHeightPx + searchInputWrapperRenderedHeightPx}px`,
+        },
+        sectionHeader: { 
+            marginTop: '1em', // Since mainContentArea now has a large top margin, this can be smaller
+            fontSize: '1.4em', 
+            color: '#00549F', 
+            borderBottom: `2px solid #007A86`, 
+            paddingBottom: '0.4em', 
             fontWeight: '700',
             marginBottom: '1em',
         },
@@ -415,75 +247,65 @@ input: {
             borderRadius: '8px',
             marginTop: '1em',
             marginBottom: '1.8em',
-            boxShadow: '0 3px 7px rgba(0,0,0,0.07)'
+            boxShadow: '0 3px 7px rgba(0,0,0,0.07)' 
         },
-        subheadingHeader: {
+        subheadingHeader: { 
             marginTop: '0',
             marginBottom: '1.2em',
-            fontSize: '1.2em',
-            color: '#007A86',
+            fontSize: '1.2em', 
+            color: '#007A86', 
             fontWeight: '600',
             paddingBottom: '0.3em',
             borderBottom: `1px dashed #E6F3FA`
         },
-        result: {
+        result: { 
             backgroundColor: '#E6F3FA',
-            borderLeft: `5px solid #007A86`,
-            padding: '1em',
+            borderLeft: `5px solid #007A86`, 
+            padding: '1em', 
             marginBottom: '1em',
-            borderRadius: '6px',
+            borderRadius: '6px', 
             boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
         },
-        label: {
-            fontWeight: 'bold',
-            color: '#00549F',
-            fontSize: '0.95em'
+        label: { 
+            fontWeight: 'bold', 
+            color: '#00549F', 
+            fontSize: '0.95em' 
         },
-        text: {
-            fontSize: '0.95em',
-            marginBottom: '0.6em',
-            lineHeight: '1.5',
-            color: '#4B5563'
+        text: { 
+            fontSize: '0.95em', 
+            marginBottom: '0.6em', 
+            lineHeight: '1.5', 
+            color: '#4B5563' 
         },
-        commentText: {
-            fontSize: '0.9em',
-            marginBottom: '0.5em',
-            lineHeight: '1.4',
+        commentText: { 
+            fontSize: '0.9em', 
+            marginBottom: '0.5em', 
+            lineHeight: '1.4', 
             color: '#52525B',
             backgroundColor: '#F8F8F9',
-            padding: '0.6em',
-            borderRadius: '4px',
-            border: `1px solid #D1D5DB`
+            padding: '0.6em', 
+            borderRadius: '4px', 
+            border: `1px solid #D1D5DB` 
         }
     };
-    const sectionButtonsStyle = {
-        ...styles.sectionButtonsContainer,
-        position: selectedSection ? 'static' : styles.sectionButtonsContainer.position,
-        top: selectedSection ? undefined : styles.sectionButtonsContainer.top,
-        zIndex: selectedSection ? undefined : styles.sectionButtonsContainer.zIndex,
-    };
-    return React.createElement('div', {
-        style: styles.container
-    }, [
-        React.createElement(
-            'div', {
-                style: styles.headerStickyWrapper,
-                key: 'header-sticky'
-            },
+
+    return React.createElement('div', { style: styles.container }, [
+        // --- WRAPPER FOR ALL STICKY ELEMENTS AT THE TOP ---
+        React.createElement('div', {
+            key: 'app-sticky-header-area',
+            style: styles.stickyHeaderArea // This div becomes the sticky container
+        }, [
+            // 1. Branding Header (Gradient part) - inside the sticky container
             React.createElement(
                 'div', {
-                    style: styles.headerWrapper,
-                    key: 'header-wrapper'
+                    style: styles.brandingHeader,
+                    key: 'branding-header-div'
                 }, [
-                    React.createElement('img', { // Use an img tag
+                    React.createElement('img', {
                         key: 'logoImage',
-                        src: '/images/HealthNZ_logo_v2.svg', // Path to your SVG file
-                        alt: 'Health New Zealand Logo', // Important for accessibility
-                        style: { // Apply styles directly or through a class if preferred
-                            width: '200px', // Adjust as needed
-                            height: 'auto', // Maintain aspect ratio
-                            marginRight: '1.5em'
-                        }
+                        src: '/images/HealthNZ_logo_v2.svg',
+                        alt: 'Health New Zealand Logo',
+                        style: { width: '200px', height: 'auto', marginRight: '1.5em' }
                     }),
                     React.createElement('div', {
                         key: 'headerSeparator',
@@ -491,33 +313,34 @@ input: {
                     }),
                     React.createElement(
                         'h1', {
-                            style: styles.header,
+                            style: styles.headerTitle,
                             key: 'title'
-                        }, // This style is now updated
+                        },
                         'Radiology Triage Tool'
                     ),
-                      React.createElement('input', {
-            key: 'input',
-            type: 'text',
-            placeholder: 'Search scenarios or select a section below...',
-            value: query,
-            onChange: handleSearchInputChange,
-            onFocus: handleSearchInputFocus,
-            onClick: handleSearchInputClick,
-            style: styles.input
-        }),
                 ]
+            ),
+            // 2. Search Input Wrapper (also inside the sticky container, below branding)
+            React.createElement('div', { style: styles.searchInputWrapper, key: 'search-wrapper' },
+                React.createElement('input', {
+                    key: 'input',
+                    type: 'text',
+                    placeholder: 'Search scenarios or select a section below...',
+                    value: query,
+                    onChange: handleSearchInputChange,
+                    onFocus: handleSearchInputFocus,
+                    onClick: handleSearchInputClick,
+                    style: styles.input // Input style itself
+                })
             )
-        ),
+        ]),
 
-
-      
-
-        // only show buttons when not actively searching
+        // --- NON-STICKY SECTION BUTTONS ---
+        // (Rendered after the sticky block, so they will scroll with main content)
         query.length < 3 ?
         React.createElement(
             'div', {
-                style: sectionButtonsStyle,
+                style: styles.sectionButtonsContainer,
                 key: 'section-buttons'
             },
             uniqueSections.map(sectionName =>
@@ -535,118 +358,67 @@ input: {
         ) :
         null,
 
-        (selectedSection || query.length >= 3) ?
-        Object.keys(groupedResults).length > 0 ?
-        Object.keys(groupedResults).map(sectionName =>
-            React.createElement('div', {
-                key: sectionName
-            }, [
-                React.createElement('h2', {
-                    style: styles.sectionHeader,
-                    key: 'sh-' + sectionName
-                }, sectionName),
+        // --- MAIN CONTENT AREA ---
+        // This div is pushed down by the combined height of the sticky elements
+        React.createElement('div', {
+            key: 'main-content',
+            style: styles.mainContentArea
+        }, [
+            (selectedSection || query.length >= 3) ?
+            Object.keys(groupedResults).length > 0 ?
+            Object.keys(groupedResults).map(sectionName =>
+                React.createElement('div', {
+                    key: sectionName
+                }, [
+                    React.createElement('h2', {
+                        style: styles.sectionHeader,
+                        key: 'sh-' + sectionName
+                    }, sectionName),
 
-                Object.keys(groupedResults[sectionName]).map(subheadingName =>
-                    React.createElement('div', {
-                        key: `${sectionName}-${subheadingName}-group`,
-                        style: styles.subheadingGroupContainer
-                    }, [
-                        (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1 || selectedSection) &&
-                        React.createElement('h3', {
-                            style: styles.subheadingHeader,
-                            key: 'subh-' + subheadingName
-                        }, subheadingName),
+                    Object.keys(groupedResults[sectionName]).map(subheadingName =>
+                        React.createElement('div', {
+                            key: `${sectionName}-${subheadingName}-group`,
+                            style: styles.subheadingGroupContainer
+                        }, [
+                            (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1 || selectedSection) &&
+                            React.createElement('h3', {
+                                style: styles.subheadingHeader,
+                                key: 'subh-' + subheadingName
+                            }, subheadingName),
 
-                        ...groupedResults[sectionName][subheadingName].map((entry, i) =>
-                            React.createElement('div', {
-                                style: {...styles.result,
-                                    marginBottom: i === groupedResults[sectionName][subheadingName].length - 1 ? '0' : '1em'
-                                },
-                                key: `${sectionName}-${subheadingName}-${i}`
-                            }, [
+                            ...groupedResults[sectionName][subheadingName].map((entry, i) =>
                                 React.createElement('div', {
-                                    style: styles.text
+                                    style: {...styles.result,
+                                        marginBottom: i === groupedResults[sectionName][subheadingName].length - 1 ? '0' : '1em'
+                                    },
+                                    key: `${sectionName}-${subheadingName}-${i}`
                                 }, [
-                                    React.createElement('span', {
-                                        style: styles.label
-                                    }, 'Scenario:'),
-                                    ' ' + entry.clinical_scenario
-                                ]),
-                                React.createElement('div', {
-                                    style: styles.text
-                                }, [
-                                    React.createElement('span', {
-                                        style: styles.label
-                                    }, 'Modality:'),
-                                    ' ',
-                                    ...(entry.modality || "N/A").split(/[,>/]/).flatMap((mod, idx) => {
-                                        const iconUrl = getModalityIcon(mod.trim());
-                                        const modalityName = mod.trim();
-                                        return iconUrl ?
-                                            [
-                                                React.createElement('img', {
-                                                    key: `icon-${idx}-${sectionName}-${subheadingName}-${i}`,
-                                                    src: iconUrl,
-                                                    alt: modalityName,
-                                                    title: modalityName,
-                                                    style: {
-                                                        height: '28px',
-                                                        marginRight: '5px',
-                                                        verticalAlign: 'middle'
-                                                    }
-                                                })
-                                            ] :
-                                            [];
-                                    }),
-                                    ' ' + (entry.modality || "N/A")
-                                ]),
-                                React.createElement('div', {
-                                    style: styles.text
-                                }, [
-                                    React.createElement('span', {
-                                        style: styles.label
-                                    }, 'Priority:'),
-                                    ' ',
-                                    React.createElement('span', {
-                                        style: badgeStyles[entry.prioritisation_category] || badgeStyles.default
-                                    }, entry.prioritisation_category)
-                                ]),
-                                (entry.comment && entry.comment.toLowerCase() !== 'none' && entry.comment.toLowerCase() !== 'n/a') &&
-                                React.createElement('div', {
-                                    style: styles.commentText
-                                }, [
-                                    React.createElement('span', {
-                                        style: styles.label
-                                    }, 'Comments:'),
-                                    ' ' + entry.comment
+                                    React.createElement('div', { style: styles.text }, [ React.createElement('span', { style: styles.label }, 'Scenario:'), ' ' + entry.clinical_scenario ]),
+                                    React.createElement('div', { style: styles.text }, [
+                                        React.createElement('span', { style: styles.label }, 'Modality:'), ' ',
+                                        ...(entry.modality || "N/A").split(/[,>/]/).flatMap((mod, idx) => {
+                                            const iconUrl = getModalityIcon(mod.trim());
+                                            const modalityName = mod.trim();
+                                            return iconUrl ? [ React.createElement('img', { key: `icon-${idx}-${sectionName}-${subheadingName}-${i}`, src: iconUrl, alt: modalityName, title: modalityName, style: { height: '28px', marginRight: '5px', verticalAlign: 'middle' } }) ] : [];
+                                        }), ' ' + (entry.modality || "N/A")
+                                    ]),
+                                    React.createElement('div', { style: styles.text }, [ React.createElement('span', { style: styles.label }, 'Priority:'), ' ', React.createElement('span', { style: badgeStyles[entry.prioritisation_category] || badgeStyles.default }, entry.prioritisation_category) ]),
+                                    (entry.comment && entry.comment.toLowerCase() !== 'none' && entry.comment.toLowerCase() !== 'n/a') &&
+                                    React.createElement('div', { style: styles.commentText }, [ React.createElement('span', { style: styles.label }, 'Comments:'), ' ' + entry.comment ])
                                 ])
-                            ])
-                        )
-                    ])
-                )
-            ])
-        ) :
-        React.createElement('p', {
-                style: {
-                    color: '#4B5563',
-                    marginTop: '2em',
-                    textAlign: 'center',
-                    fontSize: '1.05em'
-                }
-            },
-            query.length >= 3 ? 'No matching scenarios found for your search.' :
-            selectedSection ? `No scenarios found in section: ${selectedSection}.` : ''
-        ) :
-        React.createElement('p', {
-                style: {
-                    color: '#4B5563',
-                    marginTop: '2em',
-                    textAlign: 'center',
-                    fontSize: '1em'
-                }
-            },
-            query.length > 0 && query.length < 3 ? 'Please enter at least 3 characters to search.' : 'Please use the search bar or select a section to view clinical scenarios.'
-        )
+                            )
+                        ])
+                    )
+                ])
+            ) :
+            React.createElement('p', { style: { color: '#4B5563', marginTop: '2em', textAlign: 'center', fontSize: '1.05em' } },
+                query.length >= 3 ? 'No matching scenarios found for your search.' :
+                selectedSection ? `No scenarios found in section: ${selectedSection}.` : ''
+            ) :
+            React.createElement('p', { style: { color: '#4B5563', marginTop: '2em', textAlign: 'center', fontSize: '1em' } },
+                query.length > 0 && query.length < 3 ? 'Please enter at least 3 characters to search.' : 'Please use the search bar or select a section to view clinical scenarios.'
+            )
+        ])
     ]);
 }
 
