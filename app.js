@@ -161,6 +161,9 @@ function App() {
         padding: '1em 1.5em', // Added some horizontal padding
         borderRadius: '6px', // Optional: slightly rounded corners for the header
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // Optional: subtle shadow
+      position: 'sticky',
+   top: '0',
+ zIndex: 1002,
     },
     logoInline: { 
         marginRight: '1.5em' // Space before the separator
@@ -271,7 +274,12 @@ function App() {
         border: `1px solid #D1D5DB` 
     }
   };
-
+   const sectionButtonsStyle = {
+   ...styles.sectionButtonsContainer,
+  position: selectedSection ? 'static' : styles.sectionButtonsContainer.position,
+   top:      selectedSection ? undefined : styles.sectionButtonsContainer.top,
+     zIndex:   selectedSection ? undefined : styles.sectionButtonsContainer.zIndex,
+  };
   return React.createElement('div', { style: styles.container }, [
     React.createElement(
       'div',
@@ -314,18 +322,25 @@ function App() {
       style: styles.input
     }),
 
-    React.createElement('div', { style: styles.sectionButtonsContainer, key: 'section-buttons' },
-      uniqueSections.map(sectionName => 
-        React.createElement('button', {
-          key: sectionName,
-          onClick: () => handleSectionButtonClick(sectionName),
-          style: {
-            ...styles.sectionButton,
-            ...(selectedSection === sectionName ? styles.sectionButtonActive : {})
-          }
-        }, sectionName)
-      )
-    ),
+    // only show buttons when not actively searching
+    query.length < 3
+     ? React.createElement(
+          'div',
+         { style: sectionButtonsStyle, key: 'section-buttons' },
+        uniqueSections.map(sectionName =>
+          React.createElement('button', {
+              key: sectionName,
+              onClick: () => handleSectionButtonClick(sectionName),
+              style: {
+                ...styles.sectionButton,
+                ...(selectedSection === sectionName
+                    ? styles.sectionButtonActive
+                    : {})
+              }
+            }, sectionName)
+          )
+        )
+      : null,
 
     (selectedSection || query.length >= 3)
       ? Object.keys(groupedResults).length > 0 
