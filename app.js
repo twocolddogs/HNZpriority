@@ -244,6 +244,8 @@ function App() {
             fontWeight: '700',
             marginBottom: '1em',
             position: 'sticky',
+            top: '130px',
+            backgroundColor: '#F9FAFB',
         },
         subheadingGroupContainer: {
             backgroundColor: '#FFFFFF',
