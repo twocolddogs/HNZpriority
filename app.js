@@ -272,7 +272,7 @@ const isMobile = useIsMobile();
             marginTop: '1em',
             marginBottom: '1.8em',
             boxShadow: '0 3px 7px rgba(0,0,0,0.07)' 
-            width: '95%',
+            maxWidth: '95%',
             marginRight: 'auto',
             marginLeft: 'auto',
         },
