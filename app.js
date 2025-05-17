@@ -159,7 +159,7 @@ function App() {
         stickyHeaderArea: {
             position: 'sticky',
             backgroundColor: '#F9FAFB',
-            top: 15,
+            top: 0,
             left: 0,
             right: 0,
             zIndex: 1001, // High z-index for the entire sticky block
