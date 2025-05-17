@@ -192,7 +192,7 @@ function App() {
         searchInputWrapper: { // Wrapper for the search input for its own styling
             
             padding: '0.75em 1em', // Padding around the search input
-            boxShadow: '0 2px 4px rgba(0,0,0,0.07)', // Shadow to separate from content below
+            // boxShadow: '0 2px 4px rgba(0,0,0,0.07)', // Shadow to separate from content below
             // borderBottom: '1px solid #E5E7EB', // Optional subtle border
         },
         input: { // Search Bar itself
@@ -202,6 +202,7 @@ function App() {
             border: '1px solid #D1D5DB',
             borderRadius: '6px',
             boxSizing: 'border-box',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.07)',
         },
         sectionButtonsContainer: { // Non-sticky
             display: 'flex',
@@ -239,6 +240,7 @@ function App() {
             paddingBottom: '0.4em', 
             fontWeight: '700',
             marginBottom: '1em',
+            position: 'sticky',
         },
         subheadingGroupContainer: {
             backgroundColor: '#FFFFFF',
