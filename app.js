@@ -153,19 +153,18 @@ function App() {
     container: { padding: '1em', fontFamily: "'Open Sans', Arial, sans-serif", backgroundColor: '#F9FAFB', minHeight: '100vh', boxSizing: 'border-box' },
   
     headerWrapper: {
-  position: 'sticky',
-  top: 0,
-  left: '50%',
-  transform: 'translateX(-50%)',
-  width: '100vw',
-  zIndex: 1002,
-  overflow: 'hidden',
-  display: 'flex',
-  alignItems: 'center',
-  padding: '1em 1.5em',
-  background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
-  // you may drop borderRadius here if you want the gradient to truly span edge-to-edge
-},
+        display: 'flex',
+        alignItems: 'center',
+        marginBottom: '1.5em',
+        // Applied gradient background
+        background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
+        padding: '1em 1.5em', // Added some horizontal padding
+        borderRadius: '6px', // Optional: slightly rounded corners for the header
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // Optional: subtle shadow
+        position: 'sticky',
+   top: '0',
+    zIndex: 1002,
+    },
     logoInline: { 
         marginRight: '1.5em' // Space before the separator
     },
