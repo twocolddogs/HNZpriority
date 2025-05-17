@@ -9,6 +9,19 @@ import {
 // NOTE: The SVG for the logo is loaded via an <img> tag now, so the large logoSvg constant is not needed here.
 // Make sure you have /images/HealthNZ_logo_v2.svg in your public/project structure.
 
+
+function useIsMobile(breakpoint = 600) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= breakpoint);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [breakpoint]);
+
+  return isMobile;
+}
+
 function getModalityIcon(modality) {
     if (!modality) return null;
     const mod = modality.toUpperCase().trim(); // Ensure trimming
@@ -147,6 +160,8 @@ function App() {
         default: { backgroundColor: '#E0E0E0', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #777' }
     };
 
+const isMobile = useIsMobile();
+
     const styles = {
         container: {
             padding: '1em',
@@ -183,12 +198,12 @@ function App() {
             backgroundColor: 'rgba(255, 255, 255, 0.5)',
             marginRight: '1.5em'
         },
-        headerTitle: { // Renamed for clarity from 'header'
-            color: '#FFFFFF',
-            fontSize: '1.4em',
-            margin: '0',
-            lineHeight: '1.2',
-            fontWeight: '600'
+        headerTitle: {
+    color: '#FFFFFF',
+    fontSize: isMobile ? '1em' : '1.4em',
+    margin: '0',
+    lineHeight: '1.2',
+    fontWeight: '600'
         },
         searchInputWrapper: { // Wrapper for the search input for its own styling
             
