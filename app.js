@@ -69,8 +69,8 @@ function App() {
     // IMPORTANT: Adjust these pixel values after inspecting your rendered elements in browser dev tools
     // These values determine the `top` offset for the search bar (if sticky separately)
     // and the `marginTop` for the main content area to clear all sticky elements.
-    const brandingHeaderRenderedHeightPx = 70; // Approximate height of the gradient header (e.g., 60px to 80px)
-    const searchInputWrapperRenderedHeightPx = 60; // Approximate height of the search bar wrapper (e.g., 50px to 70px)
+    const brandingHeaderRenderedHeightPx = 0; // Approximate height of the gradient header (e.g., 60px to 80px)
+    const searchInputWrapperRenderedHeightPx = 0; // Approximate height of the search bar wrapper (e.g., 50px to 70px)
 
 
     useEffect(() => {
