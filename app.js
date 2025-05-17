@@ -271,7 +271,7 @@ const isMobile = useIsMobile();
             borderRadius: '8px',
             marginTop: '1em',
             marginBottom: '1.8em',
-            boxShadow: '0 3px 7px rgba(0,0,0,0.07)' 
+            boxShadow: '0 3px 7px rgba(0,0,0,0.07)',
             maxWidth: '95%',
             marginRight: 'auto',
             marginLeft: 'auto',
