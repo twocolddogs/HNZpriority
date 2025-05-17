@@ -158,6 +158,7 @@ function App() {
         // This div wraps ONLY the sticky elements: branding header and search bar
         stickyHeaderArea: {
             position: 'sticky',
+            backgroundColor: '#F9FAFB',
             top: 0,
             left: 0,
             right: 0,
