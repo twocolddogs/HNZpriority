@@ -251,7 +251,7 @@ const isMobile = useIsMobile();
             
         },
         sectionHeader: { 
-            marginTop: '1em', // Since mainContentArea now has a large top margin, this can be smaller
+             
             fontSize: '1.4em', 
             color: '#00549F', 
             borderBottom: `2px solid #007A86`, 
