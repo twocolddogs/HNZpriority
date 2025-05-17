@@ -360,21 +360,16 @@ function App() {
             fontWeight: '600'
         },
 
-        input: {
-            width: '100%',
-            padding: '0.75em 1em',
-            fontSize: '1em',
-            border: `1px solid #D1D5DB`,
-            borderRadius: '6px',
-            marginBottom: '0.5em',
-            boxSizing: 'border-box',
-            position: 'sticky',
-            top: '10px',
-            backgroundColor: '#FFFFFF',
-            zIndex: 1000,
-            boxShadow: '0 2px 5px rgba(0,0,0,0.07)',
-            outlineOffset: '2px',
-        },
+input: {
+      width: '100%',
+      padding: '0.75em 1em',
+      fontSize: '1em',
+        border: '1px solid #D1D5DB',
+        borderRadius: '6px',
+        marginBottom: '0.5em',
+        boxSizing: 'border-box',
+        backgroundColor: '#FFFFFF',
+    },
         sectionButtonsContainer: {
             display: 'flex',
             flexWrap: 'wrap',
