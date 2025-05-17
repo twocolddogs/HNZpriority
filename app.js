@@ -247,7 +247,7 @@ const isMobile = useIsMobile();
         mainContentArea: {
             // This marginTop pushes the main scrollable content down to clear ALL sticky elements
             margin: '0 auto',
-            maxWidth: '90%',
+            maxWidth: '95%',
             top: '130px',
             
         },
@@ -272,6 +272,9 @@ const isMobile = useIsMobile();
             marginTop: '1em',
             marginBottom: '1.8em',
             boxShadow: '0 3px 7px rgba(0,0,0,0.07)' 
+            width: '95%',
+            marginRight: 'auto',
+            marginLeft: 'auto',
         },
         subheadingHeader: { 
             marginTop: '0',
