@@ -495,13 +495,8 @@ input: {
                             key: 'title'
                         }, // This style is now updated
                         'Radiology Triage Tool'
-                    )
-                ]
-            )
-        ),
-
-
-        React.createElement('input', {
+                    ),
+                      React.createElement('input', {
             key: 'input',
             type: 'text',
             placeholder: 'Search scenarios or select a section below...',
@@ -511,6 +506,12 @@ input: {
             onClick: handleSearchInputClick,
             style: styles.input
         }),
+                ]
+            )
+        ),
+
+
+      
 
         // only show buttons when not actively searching
         query.length < 3 ?
