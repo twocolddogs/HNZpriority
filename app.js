@@ -231,7 +231,9 @@ function App() {
         },
         mainContentArea: {
             // This marginTop pushes the main scrollable content down to clear ALL sticky elements
-            marginTop: `${brandingHeaderRenderedHeightPx + searchInputWrapperRenderedHeightPx}px`,
+            margin: '0 auto',
+            maxWidth: '90%',
+            
         },
         sectionHeader: { 
             marginTop: '1em', // Since mainContentArea now has a large top margin, this can be smaller
