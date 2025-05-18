@@ -272,7 +272,7 @@ const isMobile = useIsMobile();
             border: `1px solid #D1D5DB`,
             padding: '1.2em',
             borderRadius: '8px',
-            margin: '1em 0.4em',
+            margin: '1em auto',
             boxShadow: '0 3px 7px rgba(0,0,0,0.07)',
             maxWidth: '90%',
         
