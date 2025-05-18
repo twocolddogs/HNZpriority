@@ -177,7 +177,7 @@ const isMobile = useIsMobile();
             top: 0,
             left: 0,
             right: 0,
-            width: '100vw',
+            
             zIndex: 1001, // High z-index for the entire sticky block
             // Background for this area will be shown if elements inside are transparent or have gaps
             // For this setup, the children (brandingHeader, searchInputWrapper) will have their own backgrounds.
@@ -188,7 +188,7 @@ const isMobile = useIsMobile();
             background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
             padding: '0.75em 1.5em',
             borderRadius: '6px', 
-            margin: '0.5em 1em',
+            margin: '0.5em .5em',
             
         },
         logoInline: {
@@ -226,9 +226,9 @@ const isMobile = useIsMobile();
             display: 'flex',
             flexWrap: 'wrap',
             gap: '0.6em',
-            padding: '1em 0.5em', // Add some padding around buttons
+            padding: '.5em 0.5em', // Add some padding around buttons
             backgroundColor: '#F9FAFB', // Match page background if desired, or remove for transparency
-            margin: '1em 2em', // Space before main content starts and side padding
+            margin: '.5em 2em', // Space before main content starts and side padding
         },
         sectionButton: { 
             padding: '0.6em 1.2em',
