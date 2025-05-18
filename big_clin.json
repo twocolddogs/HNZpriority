@@ -21,7 +21,7 @@
       },
       {
         "clinical_scenario": "Suspected breast implant associated anaplastic large-cell lymphoma (BIA-ALCL) (delayed seroma, swelling, mass, pain but no erythema, warmth or skin changes that would raise concern for inflammatory breast cancer or mastitis). Any age. Breast implant of any type. Initial imaging.",
-        "modality": "US +/- MR C- / US guided aspiration",
+        "modality": "US +/- MRI C- / US guided aspiration",
         "prioritisation_category": "P2",
         "comment": "none"
       }
@@ -214,7 +214,7 @@
     "New diagnosis breast cancer": [
       {
         "clinical_scenario": "New diagnosis breast cancer with high background risk of undetected disease (e.g. BRCA-1; dense breasts) AND as recommended by MDM",
-        "modality": "Breast MR",
+        "modality": "Breast MRI",
         "prioritisation_category": "P2",
         "comment": "none"
       },
@@ -270,7 +270,7 @@
       },
       {
         "clinical_scenario": "Suspected breast implant associated anaplastic large-cell lymphoma (BIA-ALCL) (delayed seroma, swelling, mass, pain but no erythema, warmth or skin changes that would raise concern for inflammatory breast cancer or mastitis). Any age. Breast implant of any type. Initial imaging.",
-        "modality": "US +/- MR C- / US guided aspiration",
+        "modality": "US +/- MRI C- / US guided aspiration",
         "prioritisation_category": "P2",
         "comment": "none"
       },
@@ -334,7 +334,7 @@
     "Congestive heart failure": [
       {
         "clinical_scenario": "New presentation cardiomyopathy",
-        "modality": "MR",
+        "modality": "MRI",
         "prioritisation_category": "P3",
         "comment": "none"
       },
@@ -412,7 +412,7 @@
     "Miscellaneous": [
       {
         "clinical_scenario": "Pericardial constriction / disease",
-        "modality": "CT/MR",
+        "modality": "CT or MRI",
         "prioritisation_category": "P3",
         "comment": "none"
       }
@@ -420,19 +420,19 @@
     "Cardiomyopathy": [
       {
         "clinical_scenario": "New presentation cardiomyopathy",
-        "modality": "MR",
+        "modality": "MRI",
         "prioritisation_category": "P2",
         "comment": "none"
       },
       {
         "clinical_scenario": "Non-ischaemic/Infiltration suspected",
-        "modality": "MR",
+        "modality": "MRI",
         "prioritisation_category": "P1-P2",
         "comment": "Largely dependent on patient location"
       },
       {
         "clinical_scenario": "Ischaemic - viability",
-        "modality": "MR",
+        "modality": "MRI",
         "prioritisation_category": "P1 - P3",
         "comment": "Largely dependent on patient location"
       }
