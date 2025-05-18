@@ -286,7 +286,7 @@ const isMobile = useIsMobile();
             color: '#007A86', 
             fontWeight: '600',
             paddingBottom: '0.3em',
-            borderBottom: `1px dashed #E6F3FA`
+            borderBottom: `1.5px dotted #E6F3FA`
         },
         result: { 
             backgroundColor: '#E6F3FA',
