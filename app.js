@@ -215,7 +215,7 @@ const isMobile = useIsMobile();
         },
         input: { // Search Bar itself
             width: '100%',
-            padding: '0.6em 2em',
+            padding: '0.6em 1em',
             fontSize: '1em',
             border: '1px solid #D1D5DB',
             borderRadius: '6px',
