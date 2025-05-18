@@ -30,14 +30,15 @@ function getModalityIcon(modality) {
     if (mod.includes("MRI") || mod.includes("MR ")) return "icons/MRI.png"; // Added "MR " for "Breast MR" etc.
     if (mod.includes("US")) return "icons/US.png";
     // Add more specific icons if needed
-    if (mod.includes("PET")) return "icons/PET.png"; // Example for PET
-    if (mod.includes("DBI")) return "icons/DBI.png"; // Example for DBI
-    if (mod.includes("BONE SCAN")) return "icons/BS.png"; // Example
-    if (mod.includes("NUC MED")) return "icons/NM.png"; // Example
-    if (mod.includes("MRA")) return "icons/MR.png"; // Example
-    if (mod.includes("CTA")) return "icons/CT.png"; // Example
-    if (mod.includes("FLUOROSCOPY")) return "icons/XR.png"; // Example
-    if (mod.includes("MAMMOGRAM")) return "icons/MAM.png"; // Example
+    if (mod.includes("PET")) return "icons/PET.png"; 
+    if (mod.includes("DBI")) return "icons/DBI.png"; 
+    if (mod.includes("BONE SCAN")) return "icons/BS.png"; 
+    if (mod.includes("NUC MED")) return "icons/NM.png"; 
+    if (mod.includes("MRA")) return "icons/MR.png"; 
+    if (mod.includes("CTA")) return "icons/CT.png";
+    if (mod.includes("FLUOROSCOPY")) return "icons/XR.png"; 
+    if (mod.includes("MAMMOGRAM")) return "icons/MAM.png";
+    if (mod.includes("aspiration")) return "icons/MAMASP.png";
     return null;
 }
 
