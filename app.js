@@ -186,9 +186,9 @@ const isMobile = useIsMobile();
             display: 'flex',
             alignItems: 'center',
             background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
-            padding: '0.75em 1.5em',
+            padding: '0.75em 1.0em',
             borderRadius: '6px', 
-            margin: '0.5em .5em',
+            margin: '0.5em .2em',
             
         },
         logoInline: {
@@ -228,7 +228,7 @@ const isMobile = useIsMobile();
             gap: '0.6em',
             padding: '.5em 0.5em', // Add some padding around buttons
             backgroundColor: '#F9FAFB', // Match page background if desired, or remove for transparency
-            margin: '.5em 2em', // Space before main content starts and side padding
+            margin: '.5em 1em', // Space before main content starts and side padding
         },
         sectionButton: { 
             padding: '0.6em 1.2em',
@@ -260,6 +260,8 @@ const isMobile = useIsMobile();
             borderBottom: `2px solid #007A86`, 
             paddingBottom: '0.4em', 
             paddingTop: '0.2em',
+            paddingLeft: '-0.05em',
+            paddingRight: '-0.05em',
             fontWeight: '700',
             marginBottom: '1em',
             position: 'sticky',
