@@ -188,7 +188,7 @@ const isMobile = useIsMobile();
             background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
             padding: '0.75em 1.5em',
             borderRadius: '6px', 
-            margin: '0 auto',
+            margin: '0 1em',
             
         },
         logoInline: {
@@ -215,7 +215,7 @@ const isMobile = useIsMobile();
         },
         input: { // Search Bar itself
             width: '100%',
-            padding: '0.6em 1em',
+            padding: '0.6em 2em',
             fontSize: '1em',
             border: '1px solid #D1D5DB',
             borderRadius: '6px',
@@ -228,7 +228,7 @@ const isMobile = useIsMobile();
             gap: '0.6em',
             padding: '1em 0.5em', // Add some padding around buttons
             backgroundColor: '#F9FAFB', // Match page background if desired, or remove for transparency
-            marginBottom: '1em', // Space before main content starts
+            margin: '1em 2em', // Space before main content starts and side padding
         },
         sectionButton: { 
             padding: '0.6em 1.2em',
