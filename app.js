@@ -209,9 +209,8 @@ const isMobile = useIsMobile();
         },
         searchInputWrapper: { // Wrapper for the search input for its own styling
             
-            padding: '0.75em 1em', // Padding around the search input
-            // boxShadow: '0 2px 4px rgba(0,0,0,0.07)', // Shadow to separate from content below
-            // borderBottom: '1px solid #E5E7EB', // Optional subtle border
+            padding: '0.75em .5em', // Padding around the search input
+           
         },
         input: { // Search Bar itself
             width: '100%',
@@ -232,11 +231,11 @@ const isMobile = useIsMobile();
         },
         sectionButton: { 
             padding: '0.6em 1.2em',
-            fontSize: isMobile ? '0.7em' : '0.9em',
+            fontSize: isMobile ? '0.8em' : '0.9em',
             border: `1px solid #00549F`,
             backgroundColor: '#FFFFFF',
             color: '#00549F',
-            borderRadius: '16px',
+            borderRadius: '10px',
             cursor: 'pointer',
             fontWeight: '600',
             transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
