@@ -177,6 +177,7 @@ const isMobile = useIsMobile();
             top: 0,
             left: 0,
             right: 0,
+            width: '100vw',
             zIndex: 1001, // High z-index for the entire sticky block
             // Background for this area will be shown if elements inside are transparent or have gaps
             // For this setup, the children (brandingHeader, searchInputWrapper) will have their own backgrounds.
