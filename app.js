@@ -188,6 +188,7 @@ const isMobile = useIsMobile();
             background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
             padding: '0.75em 1.5em',
             borderRadius: '6px', 
+            margin: '0 auto',
             
         },
         logoInline: {
