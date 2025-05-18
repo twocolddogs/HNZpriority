@@ -299,7 +299,7 @@ const isMobile = useIsMobile();
         label: { 
             fontWeight: 'bold', 
             color: '#00549F', 
-            fontSize: '0.95em' 
+            fontSize: '1em' 
         },
         text: { 
             fontSize: '0.95em', 
