@@ -27,7 +27,7 @@ function getModalityIcon(modality) {
     const mod = modality.toUpperCase().trim(); // Ensure trimming
     if (mod.includes("CT")) return "icons/CT.png";
     if (mod.includes("XR")) return "icons/XR.png";
-    if (mod.includes("MRI") || mod.includes("MR ")) return "icons/MRI.png";
+    if (mod.includes("MRI") return "icons/MRI.png";
     if (mod.includes("US") && mod.includes("ASPIRATION")) return "icons/MAMASP.png";
     if (mod.includes("US")) return "icons/US.png";
     // Add more specific icons if needed
