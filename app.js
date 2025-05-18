@@ -276,7 +276,7 @@ const isMobile = useIsMobile();
             borderRadius: '8px',
             margin: '1em auto',
             boxShadow: '0 3px 7px rgba(0,0,0,0.07)',
-            maxWidth: '91%',
+            
         
         },
         subheadingHeader: { 
