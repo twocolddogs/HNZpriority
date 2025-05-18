@@ -32,12 +32,12 @@ function getModalityIcon(modality) {
     // Add more specific icons if needed
     if (mod.includes("PET")) return "icons/PET.png"; // Example for PET
     if (mod.includes("DBI")) return "icons/DBI.png"; // Example for DBI
-    if (mod.includes("BONE SCAN")) return "icons/BoneScan.png"; // Example
-    if (mod.includes("NUC MED")) return "icons/NucMed.png"; // Example
-    if (mod.includes("MRA")) return "icons/MRA.png"; // Example
-    if (mod.includes("CTA")) return "icons/CTA.png"; // Example
-    if (mod.includes("FLUOROSCOPY")) return "icons/Fluoro.png"; // Example
-    if (mod.includes("MAMMOGRAM")) return "icons/Mammo.png"; // Example
+    if (mod.includes("BONE SCAN")) return "icons/BS.png"; // Example
+    if (mod.includes("NUC MED")) return "icons/NM.png"; // Example
+    if (mod.includes("MRA")) return "icons/MR.png"; // Example
+    if (mod.includes("CTA")) return "icons/CT.png"; // Example
+    if (mod.includes("FLUOROSCOPY")) return "icons/XR.png"; // Example
+    if (mod.includes("MAMMOGRAM")) return "icons/MAM.png"; // Example
     return null;
 }
 
