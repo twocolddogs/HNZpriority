@@ -232,11 +232,11 @@ const isMobile = useIsMobile();
         },
         sectionButton: { 
             padding: '0.6em 1.2em',
-            fontSize: '0.9em',
+            fontSize: isMobile ? '0.7em' : '0.9em',
             border: `1px solid #00549F`,
             backgroundColor: '#FFFFFF',
             color: '#00549F',
-            borderRadius: '20px',
+            borderRadius: '16px',
             cursor: 'pointer',
             fontWeight: '600',
             transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
