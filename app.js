@@ -229,7 +229,7 @@ const isMobile = useIsMobile();
             gap: '0.6em',
             padding: '.5em 0.5em', // Add some padding around buttons
             backgroundColor: '#F9FAFB', // Match page background if desired, or remove for transparency
-            margin: '.5em 1em', // Space before main content starts and side padding
+            margin: '.5em .5em', // Space before main content starts and side padding
         },
         sectionButton: { 
             padding: '0.6em 1.2em',
