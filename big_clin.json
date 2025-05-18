@@ -4,13 +4,13 @@
       {
         "clinical_scenario": "Evaluation of saline breast implants. Any age. Initial imaging.",
         "modality": "None",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "US cannot detect saline leakage. Intervention is purely on clinical grounds"
       },
       {
         "clinical_scenario": "Evaluation of cosmetic silicone breast implants Suspected implant rupture/complication.",
         "modality": "N/A",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "Refer for privately funded imaging/surgical review -DHB specialist review/imaging not routinely accepted"
       },
       {
@@ -30,7 +30,7 @@
       {
         "clinical_scenario": "Female with breast pain but no other suspicious clinical features or risk factors in history. Any age.",
         "modality": "None",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
@@ -44,7 +44,7 @@
       {
         "clinical_scenario": "Male patient any age with symptoms of gynecomastia and physical examination consistent with gynecomastia or pseudo-gynecomastia. No focal abnormality on exam",
         "modality": "None",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "Follow gynaecomastia pathway and plastics- referral criteria"
       },
       {
@@ -64,7 +64,7 @@
       {
         "clinical_scenario": "Clinically significant pain on the side of the mastectomy with or without reconstruction (autologous or non-autologous). Initial imaging.",
         "modality": "N/A",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "Any imaging done should be based on breast specialist review"
       },
       {
@@ -98,7 +98,7 @@
       {
         "clinical_scenario": "Physiologic nipple discharge. Female of any age. Initial imaging examination.",
         "modality": "None",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
@@ -221,7 +221,7 @@
       {
         "clinical_scenario": "Invasive ductal cancer where the extent IS clear on mammogram and/or US",
         "modality": "Nil",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
@@ -1043,13 +1043,13 @@
       {
         "clinical_scenario": "Adult: patellofemoral (anterior) symptoms. Initial knee x-rays demonstrate degenerative joint disease and/or chondrocalcinosis.",
         "modality": "NIL",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
         "clinical_scenario": "Adult: non-tumour, non-localised pain. Initial knee x-rays demonstrate inflammatory, crystalline, or degenerative joint disease (uni- to tri-compartmental sclerosis, hypertrophic spurs, joint space narrowing, and/or subchondral cysts).",
         "modality": "NIL",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
@@ -1075,13 +1075,13 @@
       {
         "clinical_scenario": "Pain after TKA: positive aspiration for infection.",
         "modality": "NIL",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
         "clinical_scenario": "Pain after TKA: positive x-ray for loosening. Negative aspiration for infection.",
         "modality": "NIL",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
@@ -1259,7 +1259,7 @@
       {
         "clinical_scenario": "Asymptomatic. Structural lesion on physical examination (cervical bruit) and/or risk factors.",
         "modality": "Nil",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "Asymptomatic carotid bruit not routinely imaged"
       }
     ],
@@ -1369,7 +1369,7 @@
       {
         "clinical_scenario": "Parkinson's disease: typical clinical features and responds to levodopa.",
         "modality": "NONE",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "N/A"
       },
       {
@@ -2719,25 +2719,25 @@
       {
         "clinical_scenario": "Oropharyngeal dysphagia with an attributable cause",
         "modality": "Scope",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
         "clinical_scenario": "Unexplained oropharyngeal dysphagia",
         "modality": "Scope",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
         "clinical_scenario": "Retrosternal dysphagia in immunocompetent patients",
         "modality": "Scope",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
         "clinical_scenario": "Retrosternal dysphagia in immunocompromised patients",
         "modality": "Scope",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       },
       {
@@ -2787,7 +2787,7 @@
       {
         "clinical_scenario": "Uncomplicated episode in female patient",
         "modality": "NONE",
-        "prioritisation_category": "N/A",
+        "prioritisation_category": "HNZ imaging not indicated",
         "comment": "none"
       }
     ],
