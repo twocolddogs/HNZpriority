@@ -38,7 +38,7 @@ function getModalityIcon(modality) {
     if (mod.includes("CTA")) return "icons/CT.png";
     if (mod.includes("FLUOROSCOPY")) return "icons/XR.png"; 
     if (mod.includes("MAMMOGRAM")) return "icons/MAM.png";
-    if (mod.includes("aspiration")) return "icons/MAMASP.png";
+    if (mod.includes("ASPIRATION")) return "icons/MAMASP.png";
     return null;
 }
 
