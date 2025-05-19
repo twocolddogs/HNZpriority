@@ -1,26 +1,27 @@
 import React, {
     useState,
     useEffect,
-    useRef // Added useRef
+    useRef
 } from 'https://esm.sh/react';
 import {
     createRoot
 } from 'https://esm.sh/react-dom/client';
-
+ 
 // Make sure you have /images/HealthNZ_logo_v2.svg in your public/project structure.
-
+// Make sure you have /icons/info.png in your public/project structure.
+ 
 function useIsMobile(breakpoint = 600) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= breakpoint);
-
+ 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= breakpoint);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [breakpoint]);
-
+ 
   return isMobile;
 }
-
+ 
 function getModalityIcon(modality) {
     if (!modality) return null;
     const mod = modality.toUpperCase().trim(); // Ensure trimming
@@ -40,7 +41,7 @@ function getModalityIcon(modality) {
     if (mod.includes("ASPIRATION")) return "icons/MAMASP.png";
     return null;
 }
-
+ 
 function processBigClinData(rawData) {
     const scenarios = [];
     for (const sectionName in rawData) {
@@ -70,10 +71,10 @@ function processBigClinData(rawData) {
     }
     return scenarios;
 }
-
+ 
 function AuthorPopover({ content, position, onClose }) {
     if (!position.visible || !content) return null;
-
+ 
     const popoverStyle = {
         position: 'absolute',
         top: `${position.top}px`,
@@ -86,17 +87,17 @@ function AuthorPopover({ content, position, onClose }) {
         zIndex: 1002,
         minWidth: '280px',
         maxWidth: '400px',
-        color: '#4B5563', // Default text color for popover
+        color: '#4B5563',
     };
-
+ 
     const leadBlockStyle = { marginBottom: '1.2em' };
     const leadHeaderStyle = {
         fontSize: '1.1em',
-        fontWeight: 'bold', // Bolder for lead type
-        color: '#00549F', // Primary accent color
+        fontWeight: 'bold',
+        color: '#00549F',
         marginBottom: '0.6em',
         paddingBottom: '0.4em',
-        borderBottom: `1.5px solid #E6F3FA`, // Subtle separator
+        borderBottom: `1.5px solid #E6F3FA`,
     };
     const authorEntryStyle = {
         fontSize: '0.95em',
@@ -104,34 +105,34 @@ function AuthorPopover({ content, position, onClose }) {
         lineHeight: '1.4',
     };
     const authorNameStyle = {
-        fontWeight: '500', // Slightly bolder for names
+        fontWeight: '500',
     };
     const regionStyle = {
         fontSize: '0.85em',
-        color: '#6B7280', // Softer color for region
+        color: '#6B7280',
     };
-
+ 
     const closeButtonStyle = {
         position: 'absolute',
         top: '10px',
         right: '15px',
         background: 'none',
         border: 'none',
-        fontSize: '1.5em', // Larger close button
+        fontSize: '1.5em',
         cursor: 'pointer',
-        color: '#6B7280', // Standard icon color
+        color: '#6B7280',
         padding: '0',
         lineHeight: '1'
     };
-
+ 
     const renderLeads = (leads, title) => {
         if (!leads || leads.length === 0) {
-            return React.createElement('div', { style: leadBlockStyle }, [
+            return React.createElement('div', { style: leadBlockStyle, key: title + '-block-empty' }, [
                 React.createElement('h4', { style: leadHeaderStyle, key: title + '-header' }, title),
                 React.createElement('p', { style: {...authorEntryStyle, fontStyle: 'italic'} , key: title + '-empty'}, 'No leads listed.')
             ]);
         }
-        return React.createElement('div', { style: leadBlockStyle }, [
+        return React.createElement('div', { style: leadBlockStyle, key: title + '-block-content' }, [
             React.createElement('h4', { style: leadHeaderStyle, key: title + '-header' }, title),
             ...leads.map((lead, index) =>
                 React.createElement('p', { style: authorEntryStyle, key: title + '-' + index },
@@ -141,39 +142,38 @@ function AuthorPopover({ content, position, onClose }) {
             )
         ]);
     };
-
+ 
     return React.createElement('div', { style: popoverStyle, 'data-popover-id': 'author-popover' }, [
         React.createElement('button', { onClick: onClose, style: closeButtonStyle, key: 'close-popover', title: 'Close' }, '×'),
         renderLeads(content.authors['Radiology Leads'], 'Radiology Leads'),
         renderLeads(content.authors['Clinical Leads'], 'Clinical Leads')
     ]);
 }
-
-
+ 
+ 
 function App() {
     const [allData, setAllData] = useState([]);
-    const [rawJsonData, setRawJsonData] = useState(null); // For authors
+    const [rawJsonData, setRawJsonData] = useState(null);
     const [query, setQuery] = useState("");
     const [selectedSection, setSelectedSection] = useState(null);
     const [uniqueSections, setUniqueSections] = useState([]);
-
+ 
     const [popoverContent, setPopoverContent] = useState(null);
     const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0, visible: false });
-
+ 
     const [stickyHeaderAreaHeight, setStickyHeaderAreaHeight] = useState(0);
     const stickyHeaderAreaRef = useRef(null);
-
+ 
     useEffect(() => {
         if (stickyHeaderAreaRef.current) {
-            // Delay slightly to ensure all styles are applied
             requestAnimationFrame(() => {
                  if (stickyHeaderAreaRef.current) {
                     setStickyHeaderAreaHeight(stickyHeaderAreaRef.current.offsetHeight);
                  }
             });
         }
-    }, [query, selectedSection, rawJsonData]); // Re-evaluate if query/section changes, or data loads
-
+    }, [query, selectedSection, rawJsonData]);
+ 
     useEffect(() => {
         fetch('big_clin.json')
             .then(res => res.json())
@@ -185,27 +185,26 @@ function App() {
                 setUniqueSections(sections);
             });
     }, []);
-
+ 
     const handleSectionButtonClick = (sectionName) => {
         setQuery("");
         setSelectedSection(sectionName);
-        setPopoverPosition(prev => ({ ...prev, visible: false })); // Close popover on section change
+        setPopoverPosition(prev => ({ ...prev, visible: false }));
     };
-
+ 
     const handleSearchInputChange = (e) => {
         setQuery(e.target.value);
         if (selectedSection) {
             setSelectedSection(null);
         }
-        setPopoverPosition(prev => ({ ...prev, visible: false })); // Close popover on search
+        setPopoverPosition(prev => ({ ...prev, visible: false }));
     };
-    
+   
     const handleSearchInputClick = () => {
         setSelectedSection(null);
-        setPopoverPosition(prev => ({ ...prev, visible: false })); // Close popover on search click
+        setPopoverPosition(prev => ({ ...prev, visible: false }));
     };
-
-
+ 
     const handleInfoIconClick = (event, sectionName) => {
         event.stopPropagation();
  
@@ -215,39 +214,25 @@ function App() {
         } else {
             if (rawJsonData && rawJsonData[sectionName] && rawJsonData[sectionName].authors) {
                 const rect = event.target.getBoundingClientRect();
-                const popoverWidthEstimate = 300; // Approximate width, adjust as needed
-                const popoverHeightEstimate = 200; // Approximate height, adjust as needed
-                const viewportPadding = 15; // Padding from viewport edges
+                const popoverWidthEstimate = 300;
+                const popoverHeightEstimate = 200;
+                const viewportPadding = 15;
  
-                // Attempt to position slightly below and to the right of the icon
-                let newTop = rect.bottom + window.scrollY + 8; // 8px below the icon
-                let newLeft = rect.left + window.scrollX;   // Align left edge of popover with left edge of icon
+                let newTop = rect.bottom + window.scrollY + 8;
+                let newLeft = rect.left + window.scrollX;
  
-                // --- Boundary Checks ---
- 
-                // If popover goes off the right edge of the screen
                 if (newLeft + popoverWidthEstimate > window.innerWidth - viewportPadding) {
                     newLeft = window.innerWidth - popoverWidthEstimate - viewportPadding;
                 }
- 
-                // If popover goes off the left edge of the screen (should be less common with left-align)
                 if (newLeft < viewportPadding) {
                     newLeft = viewportPadding;
                 }
- 
-                // If popover goes off the bottom edge of the screen
                 if (newTop + popoverHeightEstimate > window.innerHeight + window.scrollY - viewportPadding) {
-                    // Try to position it above the icon instead
-                    newTop = rect.top + window.scrollY - popoverHeightEstimate - 8; // 8px above icon
+                    newTop = rect.top + window.scrollY - popoverHeightEstimate - 8;
                 }
-               
-                // If popover (now possibly above) goes off the top edge of the screen
                 if (newTop < window.scrollY + viewportPadding) {
                     newTop = window.scrollY + viewportPadding;
-                     // If it's still too tall after moving to top, it might be a large popover on small screen.
-                     // Consider reducing popoverHeightEstimate or making popover scrollable internally.
                 }
- 
  
                 setPopoverContent({
                     sectionName: sectionName,
@@ -264,31 +249,31 @@ function App() {
             }
         }
     };
-
+ 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (popoverPosition.visible) {
                 const popoverElement = document.querySelector('[data-popover-id="author-popover"]');
                 const clickedInfoIcon = event.target.closest('[data-info-icon-section]');
-
+ 
                 if (clickedInfoIcon) {
-                    return; // Let the icon click handler manage this
+                    return;
                 }
-
+ 
                 if (popoverElement && !popoverElement.contains(event.target)) {
                     setPopoverPosition(prev => ({ ...prev, visible: false }));
                     setPopoverContent(null);
                 }
             }
         };
-
+ 
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [popoverPosition.visible]);
-
-
+ 
+ 
     let filtered = [];
     if (selectedSection) {
         filtered = allData.filter(entry => entry.section === selectedSection);
@@ -299,7 +284,7 @@ function App() {
             (entry.clinical_scenario && entry.clinical_scenario.toLowerCase().includes(query.toLowerCase()))
         );
     }
-
+ 
     const groupedResults = filtered.reduce((acc, item) => {
         const sectionKey = item.section || "Uncategorized Section";
         const subheadingKey = item.subheading || "General";
@@ -308,7 +293,7 @@ function App() {
         acc[sectionKey][subheadingKey].push(item);
         return acc;
     }, {});
-
+ 
     const badgeStyles = {
         P1: { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
         'P1-P2': { backgroundColor: '#FFBABA', color: '#D8000C', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #D8000C' },
@@ -331,9 +316,9 @@ function App() {
         'nil': { backgroundColor: '#F0F0F0', color: '#555555', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #555555' },
         default: { backgroundColor: '#E0E0E0', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #777' }
     };
-
+ 
     const isMobile = useIsMobile();
-
+ 
     const styles = {
         container: {
             padding: '1em',
@@ -344,7 +329,7 @@ function App() {
         },
         stickyHeaderArea: {
             position: 'sticky',
-            backgroundColor: '#F9FAFB', // Ensure background for sticky area
+            backgroundColor: '#F9FAFB',
             top: 0,
             left: 0,
             right: 0,
@@ -421,23 +406,20 @@ function App() {
             fontWeight: '700',
             marginBottom: '1em',
             position: 'sticky',
-            top: `${stickyHeaderAreaHeight}px`, // Use dynamic height
-            backgroundColor: '#F9FAFB', // Match page background
-            zIndex: 1000, // Below main sticky header but above content
-            display: 'flex', // For aligning title and icon
+            top: `${stickyHeaderAreaHeight}px`,
+            backgroundColor: '#F9FAFB',
+            zIndex: 1000,
+            display: 'flex',
             alignItems: 'center'
         },
         infoIcon: {
             marginLeft: '10px',
             cursor: 'pointer',
-            color: '#007A86',
-            fontWeight: 'bold',
-            fontSize: '0.8em', // Smaller than header
-            padding: '2px 5px',
-            borderRadius: '50%',
-            border: '1px solid #007A86',
+            width: '20px',    // Adjusted for image
+            height: '20px',   // Adjusted for image
+            verticalAlign: 'middle',
             userSelect: 'none',
-            transition: 'background-color 0.2s, color 0.2s'
+            transition: 'opacity 0.2s'
         },
         subheadingGroupContainer: {
             backgroundColor: '#FFFFFF',
@@ -486,24 +468,8 @@ function App() {
             border: `1px solid #D1D5DB`
         }
     };
-    
-    // Effect for info icon hover (optional enhancement)
-    useEffect(() => {
-        document.querySelectorAll('[data-info-icon-section]').forEach(icon => {
-            const originalColor = styles.infoIcon.color;
-            const originalBg = 'transparent'; // Assuming default
-            icon.onmouseenter = () => {
-                icon.style.backgroundColor = '#007A86';
-                icon.style.color = '#FFFFFF';
-            };
-            icon.onmouseleave = () => {
-                icon.style.backgroundColor = originalBg;
-                icon.style.color = originalColor;
-            };
-        });
-    }, [uniqueSections]); // Re-apply if sections change (though icons are fairly static once rendered)
-
-
+   
+ 
     return React.createElement('div', { style: styles.container }, [
         React.createElement('div', {
             key: 'app-sticky-header-area',
@@ -512,7 +478,7 @@ function App() {
         }, [
             React.createElement(
                 'div', { style: styles.brandingHeader, key: 'branding-header-div' },
-                [
+               [
                     React.createElement('img', {
                         key: 'logoImage',
                         src: '/images/HealthNZ_logo_v2.svg',
@@ -535,7 +501,7 @@ function App() {
                 })
             )
         ]),
-
+ 
         query.length < 3 ?
         React.createElement(
             'div', { style: styles.sectionButtonsContainer, key: 'section-buttons' },
@@ -547,7 +513,7 @@ function App() {
                 }, sectionName)
             )
         ) : null,
-        
+       
         React.createElement(AuthorPopover, {
             key: 'author-popover',
             content: popoverContent,
@@ -557,7 +523,7 @@ function App() {
                 setPopoverContent(null);
             }
         }),
-
+ 
         React.createElement('div', { key: 'main-content', style: styles.mainContentArea }, [
             (selectedSection || query.length >= 3) ?
             Object.keys(groupedResults).length > 0 ?
@@ -567,17 +533,19 @@ function App() {
                         style: styles.sectionHeader,
                         key: 'sh-' + sectionName
                     }, [
-                        React.createElement('span', { key: sectionName + '-title-text'}, sectionName), // Title text
-                        (rawJsonData && rawJsonData[sectionName] && rawJsonData[sectionName].authors) ? // Only show icon if authors exist
-                            React.createElement('span', { // Info icon
+                        React.createElement('span', { key: sectionName + '-title-text'}, sectionName),
+                        (rawJsonData && rawJsonData[sectionName] && rawJsonData[sectionName].authors) ?
+                            React.createElement('img', {
                                 key: 'info-icon-' + sectionName,
+                                src: 'icons/info.png',
+                                alt: `Info for ${sectionName}`,
                                 onClick: (e) => handleInfoIconClick(e, sectionName),
                                 style: styles.infoIcon,
                                 title: `Show leads for ${sectionName}`,
-                                'data-info-icon-section': sectionName // For click outside logic
-                            }, 'ⓘ') : null
+                                'data-info-icon-section': sectionName
+                            }) : null
                     ]),
-
+ 
                     Object.keys(groupedResults[sectionName]).map(subheadingName =>
                         React.createElement('div', {
                             key: `${sectionName}-${subheadingName}-group`,
@@ -585,7 +553,7 @@ function App() {
                         }, [
                             (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1 || selectedSection) &&
                             React.createElement('h3', { style: styles.subheadingHeader, key: 'subh-' + subheadingName }, subheadingName),
-
+ 
                             ...groupedResults[sectionName][subheadingName].map((entry, i) =>
                                 React.createElement('div', {
                                     style: {...styles.result, marginBottom: i === groupedResults[sectionName][subheadingName].length - 1 ? '0' : '1em' },
@@ -619,5 +587,3 @@ function App() {
         ])
     ]);
 }
-
-createRoot(document.getElementById('root')).render(React.createElement(App));
