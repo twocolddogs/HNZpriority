@@ -208,36 +208,47 @@ function App() {
 
     const handleInfoIconClick = (event, sectionName) => {
         event.stopPropagation();
-
+ 
         if (popoverPosition.visible && popoverContent && popoverContent.sectionName === sectionName) {
             setPopoverPosition(prev => ({ ...prev, visible: false }));
             setPopoverContent(null);
         } else {
             if (rawJsonData && rawJsonData[sectionName] && rawJsonData[sectionName].authors) {
                 const rect = event.target.getBoundingClientRect();
-                const popoverWidthEstimate = 300; // Approximate width
-                const popoverHeightEstimate = 200; // Approximate height
-
-                let newTop = rect.bottom + window.scrollY + 8;
-                let newLeft = rect.left + window.scrollX - (popoverWidthEstimate / 2) + (rect.width / 2) ; // Center below icon
-
-                // Adjust if too far right
-                if (newLeft + popoverWidthEstimate > window.innerWidth - 15) {
-                    newLeft = window.innerWidth - popoverWidthEstimate - 15;
+                const popoverWidthEstimate = 300; // Approximate width, adjust as needed
+                const popoverHeightEstimate = 200; // Approximate height, adjust as needed
+                const viewportPadding = 15; // Padding from viewport edges
+ 
+                // Attempt to position slightly below and to the right of the icon
+                let newTop = rect.bottom + window.scrollY + 8; // 8px below the icon
+                let newLeft = rect.left + window.scrollX;   // Align left edge of popover with left edge of icon
+ 
+                // --- Boundary Checks ---
+ 
+                // If popover goes off the right edge of the screen
+                if (newLeft + popoverWidthEstimate > window.innerWidth - viewportPadding) {
+                    newLeft = window.innerWidth - popoverWidthEstimate - viewportPadding;
                 }
-                // Adjust if too far left
-                if (newLeft < 15) {
-                    newLeft = 15;
+ 
+                // If popover goes off the left edge of the screen (should be less common with left-align)
+                if (newLeft < viewportPadding) {
+                    newLeft = viewportPadding;
                 }
-                // Adjust if too low (though less common for click-below)
-                if (newTop + popoverHeightEstimate > window.innerHeight + window.scrollY - 15) {
-                    newTop = rect.top + window.scrollY - popoverHeightEstimate - 8; // Position above icon
+ 
+                // If popover goes off the bottom edge of the screen
+                if (newTop + popoverHeightEstimate > window.innerHeight + window.scrollY - viewportPadding) {
+                    // Try to position it above the icon instead
+                    newTop = rect.top + window.scrollY - popoverHeightEstimate - 8; // 8px above icon
                 }
-                if (newTop < window.scrollY + 5) { // Ensure it's not above the very top of viewport
-                    newTop = window.scrollY + 5;
+               
+                // If popover (now possibly above) goes off the top edge of the screen
+                if (newTop < window.scrollY + viewportPadding) {
+                    newTop = window.scrollY + viewportPadding;
+                     // If it's still too tall after moving to top, it might be a large popover on small screen.
+                     // Consider reducing popoverHeightEstimate or making popover scrollable internally.
                 }
-
-
+ 
+ 
                 setPopoverContent({
                     sectionName: sectionName,
                     authors: rawJsonData[sectionName].authors
@@ -414,7 +425,6 @@ function App() {
             backgroundColor: '#F9FAFB', // Match page background
             zIndex: 1000, // Below main sticky header but above content
             display: 'flex', // For aligning title and icon
-            justifyContent: 'space-between',
             alignItems: 'center'
         },
         infoIcon: {
