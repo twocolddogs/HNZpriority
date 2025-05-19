@@ -337,7 +337,7 @@ function App() {
         },
         brandingHeader: {
             display: 'flex',
-            alignItems: 'center',
+           alignItems: 'center',
             background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
             padding: '0.75em 1.0em',
             borderRadius: '6px',
@@ -587,3 +587,6 @@ function App() {
         ])
     ]);
 }
+ 
+createRoot(document.getElementById('root')).render(React.createElement(App));
+ 
