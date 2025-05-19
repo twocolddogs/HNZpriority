@@ -1,14 +1,13 @@
 import React, {
     useState,
-    useEffect
+    useEffect,
+    useRef // Added useRef
 } from 'https://esm.sh/react';
 import {
     createRoot
 } from 'https://esm.sh/react-dom/client';
 
-// NOTE: The SVG for the logo is loaded via an <img> tag now, so the large logoSvg constant is not needed here.
 // Make sure you have /images/HealthNZ_logo_v2.svg in your public/project structure.
-
 
 function useIsMobile(breakpoint = 600) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= breakpoint);
@@ -30,34 +29,34 @@ function getModalityIcon(modality) {
     if (mod.includes("MRI")) return "icons/MRI.png";
     if (mod.includes("US") && mod.includes("ASPIRATION")) return "icons/MAMASP.png";
     if (mod.includes("US")) return "icons/US.png";
-    // Add more specific icons if needed
-    if (mod.includes("PET")) return "icons/PET.png"; 
-    if (mod.includes("DBI")) return "icons/DBI.png"; 
-    if (mod.includes("BONE SCAN")) return "icons/BS.png"; 
-    if (mod.includes("NUC MED")) return "icons/NM.png"; 
-    if (mod.includes("MRA")) return "icons/MR.png"; 
+    if (mod.includes("PET")) return "icons/PET.png";
+    if (mod.includes("DBI")) return "icons/DBI.png";
+    if (mod.includes("BONE SCAN")) return "icons/BS.png";
+    if (mod.includes("NUC MED")) return "icons/NM.png";
+    if (mod.includes("MRA")) return "icons/MR.png";
     if (mod.includes("CTA")) return "icons/CT.png";
-    if (mod.includes("FLUOROSCOPY")) return "icons/XR.png"; 
+    if (mod.includes("FLUOROSCOPY")) return "icons/XR.png";
     if (mod.includes("MAMMOGRAM")) return "icons/MAM.png";
     if (mod.includes("ASPIRATION")) return "icons/MAMASP.png";
     return null;
 }
 
-// Function to flatten the big_clin.json data
 function processBigClinData(rawData) {
     const scenarios = [];
     for (const sectionName in rawData) {
         if (Object.hasOwnProperty.call(rawData, sectionName)) {
             const section = rawData[sectionName];
             for (const subheadingName in section) {
+                if (subheadingName === "authors") { // Skip the authors key
+                    continue;
+                }
                 if (Object.hasOwnProperty.call(section, subheadingName)) {
                     const scenarioList = section[subheadingName];
                     if (Array.isArray(scenarioList)) {
                         scenarioList.forEach(item => {
-                            // Ensure all core properties exist, providing defaults if necessary
                             scenarios.push({
                                 section: sectionName || "Unknown Section",
-                                subheading: subheadingName || "General", // Default subheading if empty
+                                subheading: subheadingName || "General",
                                 clinical_scenario: item.clinical_scenario || "N/A",
                                 modality: item.modality || "N/A",
                                 prioritisation_category: item.prioritisation_category || "N/A",
@@ -72,29 +71,117 @@ function processBigClinData(rawData) {
     return scenarios;
 }
 
+function AuthorPopover({ content, position, onClose }) {
+    if (!position.visible || !content) return null;
+
+    const popoverStyle = {
+        position: 'absolute',
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        backgroundColor: '#FFFFFF',
+        border: `1px solid #D1D5DB`,
+        borderRadius: '8px',
+        padding: '1.5em',
+        boxShadow: '0 5px 15px rgba(0,0,0,0.15)',
+        zIndex: 1002,
+        minWidth: '280px',
+        maxWidth: '400px',
+        color: '#4B5563', // Default text color for popover
+    };
+
+    const leadBlockStyle = { marginBottom: '1.2em' };
+    const leadHeaderStyle = {
+        fontSize: '1.1em',
+        fontWeight: 'bold', // Bolder for lead type
+        color: '#00549F', // Primary accent color
+        marginBottom: '0.6em',
+        paddingBottom: '0.4em',
+        borderBottom: `1.5px solid #E6F3FA`, // Subtle separator
+    };
+    const authorEntryStyle = {
+        fontSize: '0.95em',
+        marginBottom: '0.4em',
+        lineHeight: '1.4',
+    };
+    const authorNameStyle = {
+        fontWeight: '500', // Slightly bolder for names
+    };
+    const regionStyle = {
+        fontSize: '0.85em',
+        color: '#6B7280', // Softer color for region
+    };
+
+    const closeButtonStyle = {
+        position: 'absolute',
+        top: '10px',
+        right: '15px',
+        background: 'none',
+        border: 'none',
+        fontSize: '1.5em', // Larger close button
+        cursor: 'pointer',
+        color: '#6B7280', // Standard icon color
+        padding: '0',
+        lineHeight: '1'
+    };
+
+    const renderLeads = (leads, title) => {
+        if (!leads || leads.length === 0) {
+            return React.createElement('div', { style: leadBlockStyle }, [
+                React.createElement('h4', { style: leadHeaderStyle, key: title + '-header' }, title),
+                React.createElement('p', { style: {...authorEntryStyle, fontStyle: 'italic'} , key: title + '-empty'}, 'No leads listed.')
+            ]);
+        }
+        return React.createElement('div', { style: leadBlockStyle }, [
+            React.createElement('h4', { style: leadHeaderStyle, key: title + '-header' }, title),
+            ...leads.map((lead, index) =>
+                React.createElement('p', { style: authorEntryStyle, key: title + '-' + index },
+                    React.createElement('span', { style: authorNameStyle }, lead.name),
+                    lead.region ? React.createElement('span', { style: regionStyle }, ` (${lead.region})`) : ''
+                )
+            )
+        ]);
+    };
+
+    return React.createElement('div', { style: popoverStyle, 'data-popover-id': 'author-popover' }, [
+        React.createElement('button', { onClick: onClose, style: closeButtonStyle, key: 'close-popover', title: 'Close' }, '×'),
+        renderLeads(content.authors['Radiology Leads'], 'Radiology Leads'),
+        renderLeads(content.authors['Clinical Leads'], 'Clinical Leads')
+    ]);
+}
 
 
 function App() {
     const [allData, setAllData] = useState([]);
+    const [rawJsonData, setRawJsonData] = useState(null); // For authors
     const [query, setQuery] = useState("");
     const [selectedSection, setSelectedSection] = useState(null);
     const [uniqueSections, setUniqueSections] = useState([]);
 
-    // --- ESTIMATED HEIGHTS FOR STICKY POSITIONING ---
-    // IMPORTANT: Adjust these pixel values after inspecting your rendered elements in browser dev tools
-    // These values determine the `top` offset for the search bar (if sticky separately)
-    // and the `marginTop` for the main content area to clear all sticky elements.
-    const brandingHeaderRenderedHeightPx = 0; // Approximate height of the gradient header (e.g., 60px to 80px)
-    const searchInputWrapperRenderedHeightPx = 0; // Approximate height of the search bar wrapper (e.g., 50px to 70px)
+    const [popoverContent, setPopoverContent] = useState(null);
+    const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0, visible: false });
 
+    const [stickyHeaderAreaHeight, setStickyHeaderAreaHeight] = useState(0);
+    const stickyHeaderAreaRef = useRef(null);
+
+    useEffect(() => {
+        if (stickyHeaderAreaRef.current) {
+            // Delay slightly to ensure all styles are applied
+            requestAnimationFrame(() => {
+                 if (stickyHeaderAreaRef.current) {
+                    setStickyHeaderAreaHeight(stickyHeaderAreaRef.current.offsetHeight);
+                 }
+            });
+        }
+    }, [query, selectedSection, rawJsonData]); // Re-evaluate if query/section changes, or data loads
 
     useEffect(() => {
         fetch('big_clin.json')
             .then(res => res.json())
-            .then(rawJsonData => {
-                const processed = processBigClinData(rawJsonData);
-                setAllData(processed);
-                const sections = [...new Set(processed.map(item => item.section))].sort();
+            .then(data => {
+                setRawJsonData(data);
+                const processedScenarios = processBigClinData(data);
+                setAllData(processedScenarios);
+                const sections = [...new Set(processedScenarios.map(item => item.section))].sort();
                 setUniqueSections(sections);
             });
     }, []);
@@ -102,6 +189,7 @@ function App() {
     const handleSectionButtonClick = (sectionName) => {
         setQuery("");
         setSelectedSection(sectionName);
+        setPopoverPosition(prev => ({ ...prev, visible: false })); // Close popover on section change
     };
 
     const handleSearchInputChange = (e) => {
@@ -109,15 +197,86 @@ function App() {
         if (selectedSection) {
             setSelectedSection(null);
         }
+        setPopoverPosition(prev => ({ ...prev, visible: false })); // Close popover on search
     };
-
-    const handleSearchInputFocus = () => {
-        // Optional: setSelectedSection(null);
-    };
-
+    
     const handleSearchInputClick = () => {
         setSelectedSection(null);
+        setPopoverPosition(prev => ({ ...prev, visible: false })); // Close popover on search click
     };
+
+
+    const handleInfoIconClick = (event, sectionName) => {
+        event.stopPropagation();
+
+        if (popoverPosition.visible && popoverContent && popoverContent.sectionName === sectionName) {
+            setPopoverPosition(prev => ({ ...prev, visible: false }));
+            setPopoverContent(null);
+        } else {
+            if (rawJsonData && rawJsonData[sectionName] && rawJsonData[sectionName].authors) {
+                const rect = event.target.getBoundingClientRect();
+                const popoverWidthEstimate = 300; // Approximate width
+                const popoverHeightEstimate = 200; // Approximate height
+
+                let newTop = rect.bottom + window.scrollY + 8;
+                let newLeft = rect.left + window.scrollX - (popoverWidthEstimate / 2) + (rect.width / 2) ; // Center below icon
+
+                // Adjust if too far right
+                if (newLeft + popoverWidthEstimate > window.innerWidth - 15) {
+                    newLeft = window.innerWidth - popoverWidthEstimate - 15;
+                }
+                // Adjust if too far left
+                if (newLeft < 15) {
+                    newLeft = 15;
+                }
+                // Adjust if too low (though less common for click-below)
+                if (newTop + popoverHeightEstimate > window.innerHeight + window.scrollY - 15) {
+                    newTop = rect.top + window.scrollY - popoverHeightEstimate - 8; // Position above icon
+                }
+                if (newTop < window.scrollY + 5) { // Ensure it's not above the very top of viewport
+                    newTop = window.scrollY + 5;
+                }
+
+
+                setPopoverContent({
+                    sectionName: sectionName,
+                    authors: rawJsonData[sectionName].authors
+                });
+                setPopoverPosition({
+                    top: newTop,
+                    left: newLeft,
+                    visible: true
+                });
+            } else {
+                setPopoverPosition(prev => ({ ...prev, visible: false }));
+                setPopoverContent(null);
+            }
+        }
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (popoverPosition.visible) {
+                const popoverElement = document.querySelector('[data-popover-id="author-popover"]');
+                const clickedInfoIcon = event.target.closest('[data-info-icon-section]');
+
+                if (clickedInfoIcon) {
+                    return; // Let the icon click handler manage this
+                }
+
+                if (popoverElement && !popoverElement.contains(event.target)) {
+                    setPopoverPosition(prev => ({ ...prev, visible: false }));
+                    setPopoverContent(null);
+                }
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [popoverPosition.visible]);
+
 
     let filtered = [];
     if (selectedSection) {
@@ -162,40 +321,33 @@ function App() {
         default: { backgroundColor: '#E0E0E0', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-block', border: '1px solid #777' }
     };
 
-const isMobile = useIsMobile();
+    const isMobile = useIsMobile();
 
     const styles = {
         container: {
             padding: '1em',
             fontFamily: "'Open Sans', Arial, sans-serif",
-            backgroundColor: '#F9FAFB', // Main page background
+            backgroundColor: '#F9FAFB',
             minHeight: '100vh',
             boxSizing: 'border-box'
         },
-        // This div wraps ONLY the sticky elements: branding header and search bar
         stickyHeaderArea: {
             position: 'sticky',
-            backgroundColor: '#F9FAFB',
+            backgroundColor: '#F9FAFB', // Ensure background for sticky area
             top: 0,
             left: 0,
             right: 0,
-            
-            zIndex: 1001, // High z-index for the entire sticky block
-            // Background for this area will be shown if elements inside are transparent or have gaps
-            // For this setup, the children (brandingHeader, searchInputWrapper) will have their own backgrounds.
+            zIndex: 1001,
         },
-        brandingHeader: { // This is the gradient part
+        brandingHeader: {
             display: 'flex',
             alignItems: 'center',
             background: 'linear-gradient(90deg, #143345 44.5%, #41236a 100%)',
             padding: '0.75em 1.0em',
-            borderRadius: '6px', 
+            borderRadius: '6px',
             margin: '0.5em .2em',
-            
         },
-        logoInline: {
-            marginRight: '1.5em'
-        },
+        logoInline: { marginRight: '1.5em' },
         headerSeparator: {
             width: '1px',
             height: '40px',
@@ -203,18 +355,14 @@ const isMobile = useIsMobile();
             marginRight: '1.5em'
         },
         headerTitle: {
-    color: '#FFFFFF',
-    fontSize: isMobile ? '1em' : '1.4em',
-    margin: '0',
-    lineHeight: '1.2',
-    fontWeight: '600'
+            color: '#FFFFFF',
+            fontSize: isMobile ? '1em' : '1.4em',
+            margin: '0',
+            lineHeight: '1.2',
+            fontWeight: '600'
         },
-        searchInputWrapper: { // Wrapper for the search input for its own styling
-            
-            padding: '0.75em .5em', // Padding around the search input
-           
-        },
-        input: { // Search Bar itself
+        searchInputWrapper: { padding: '0.75em .5em' },
+        input: {
             width: '100%',
             padding: '0.6em 1em',
             fontSize: '1em',
@@ -223,15 +371,15 @@ const isMobile = useIsMobile();
             boxSizing: 'border-box',
             boxShadow: '0 2px 4px rgba(0,0,0,0.07)',
         },
-        sectionButtonsContainer: { // Non-sticky
+        sectionButtonsContainer: {
             display: 'flex',
             flexWrap: 'wrap',
             gap: '0.6em',
-            padding: '.5em 0.5em', // Add some padding around buttons
-            backgroundColor: '#F9FAFB', // Match page background if desired, or remove for transparency
-            margin: '.5em .5em', // Space before main content starts and side padding
+            padding: '.5em 0.5em',
+            backgroundColor: '#F9FAFB',
+            margin: '.5em .5em',
         },
-        sectionButton: { 
+        sectionButton: {
             padding: '0.6em 1.2em',
             fontSize: isMobile ? '0.8em' : '0.9em',
             border: `1px solid #00549F`,
@@ -242,32 +390,44 @@ const isMobile = useIsMobile();
             fontWeight: '600',
             transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
         },
-        sectionButtonActive: { 
+        sectionButtonActive: {
             backgroundColor: '#00549F',
             color: '#FFFFFF',
             boxShadow: '0 2px 4px rgba(0, 84, 159, 0.3)',
         },
         mainContentArea: {
-            // This marginTop pushes the main scrollable content down to clear ALL sticky elements
             margin: '0 auto',
             maxWidth: '95%',
-            top: '130px',
-            
         },
-        sectionHeader: { 
-             
-            fontSize: '1.4em', 
-            color: '#00549F', 
-            borderBottom: `2px solid #007A86`, 
-            paddingBottom: '0.4em', 
+        sectionHeader: {
+            fontSize: '1.4em',
+            color: '#00549F',
+            borderBottom: `2px solid #007A86`,
+            paddingBottom: '0.4em',
             paddingTop: '0.5em',
             marginLeft: '-0.2em',
             marginRight: '-0.2em',
             fontWeight: '700',
             marginBottom: '1em',
             position: 'sticky',
-      top: '128px',
-            backgroundColor: '#F9FAFB',
+            top: `${stickyHeaderAreaHeight}px`, // Use dynamic height
+            backgroundColor: '#F9FAFB', // Match page background
+            zIndex: 1000, // Below main sticky header but above content
+            display: 'flex', // For aligning title and icon
+            justifyContent: 'space-between',
+            alignItems: 'center'
+        },
+        infoIcon: {
+            marginLeft: '10px',
+            cursor: 'pointer',
+            color: '#007A86',
+            fontWeight: 'bold',
+            fontSize: '0.8em', // Smaller than header
+            padding: '2px 5px',
+            borderRadius: '50%',
+            border: '1px solid #007A86',
+            userSelect: 'none',
+            transition: 'background-color 0.2s, color 0.2s'
         },
         subheadingGroupContainer: {
             backgroundColor: '#FFFFFF',
@@ -276,81 +436,83 @@ const isMobile = useIsMobile();
             borderRadius: '8px',
             margin: '1em auto',
             boxShadow: '0 3px 7px rgba(0,0,0,0.07)',
-            
-        
         },
-        subheadingHeader: { 
+        subheadingHeader: {
             marginTop: '0',
             marginBottom: '1.2em',
-            fontSize: '1.2em', 
-            color: '#007A86', 
+            fontSize: '1.2em',
+            color: '#007A86',
             fontWeight: '600',
             paddingBottom: '0.3em',
             borderBottom: `1.5px dotted #E6F3FA`
         },
-        result: { 
+        result: {
             backgroundColor: '#E6F3FA',
-            borderLeft: `5px solid #007A86`, 
-            padding: '1em', 
+            borderLeft: `5px solid #007A86`,
+            padding: '1em',
             marginBottom: '1em',
-            borderRadius: '6px', 
+            borderRadius: '6px',
             boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
         },
-        label: { 
-            fontWeight: 'bold', 
-            color: '#00549F', 
-            fontSize: '1em' 
+        label: {
+            fontWeight: 'bold',
+            color: '#00549F',
+            fontSize: '1em'
         },
-        text: { 
-            fontSize: '0.95em', 
-            marginBottom: '0.6em', 
-            lineHeight: '1.5', 
-            color: '#4B5563' 
+        text: {
+            fontSize: '0.95em',
+            marginBottom: '0.6em',
+            lineHeight: '1.5',
+            color: '#4B5563'
         },
-        commentText: { 
-            fontSize: '0.9em', 
-            marginBottom: '0.5em', 
-            lineHeight: '1.4', 
+        commentText: {
+            fontSize: '0.9em',
+            marginBottom: '0.5em',
+            lineHeight: '1.4',
             color: '#52525B',
             backgroundColor: '#F8F8F9',
-            padding: '0.6em', 
-            borderRadius: '4px', 
-            border: `1px solid #D1D5DB` 
+            padding: '0.6em',
+            borderRadius: '4px',
+            border: `1px solid #D1D5DB`
         }
     };
+    
+    // Effect for info icon hover (optional enhancement)
+    useEffect(() => {
+        document.querySelectorAll('[data-info-icon-section]').forEach(icon => {
+            const originalColor = styles.infoIcon.color;
+            const originalBg = 'transparent'; // Assuming default
+            icon.onmouseenter = () => {
+                icon.style.backgroundColor = '#007A86';
+                icon.style.color = '#FFFFFF';
+            };
+            icon.onmouseleave = () => {
+                icon.style.backgroundColor = originalBg;
+                icon.style.color = originalColor;
+            };
+        });
+    }, [uniqueSections]); // Re-apply if sections change (though icons are fairly static once rendered)
+
 
     return React.createElement('div', { style: styles.container }, [
-        // --- WRAPPER FOR ALL STICKY ELEMENTS AT THE TOP ---
         React.createElement('div', {
             key: 'app-sticky-header-area',
-            style: styles.stickyHeaderArea // This div becomes the sticky container
+            ref: stickyHeaderAreaRef,
+            style: styles.stickyHeaderArea
         }, [
-            // 1. Branding Header (Gradient part) - inside the sticky container
             React.createElement(
-                'div', {
-                    style: styles.brandingHeader,
-                    key: 'branding-header-div'
-                }, [
+                'div', { style: styles.brandingHeader, key: 'branding-header-div' },
+                [
                     React.createElement('img', {
                         key: 'logoImage',
                         src: '/images/HealthNZ_logo_v2.svg',
                         alt: 'Health New Zealand Logo',
                         style: { width: '200px', height: 'auto', marginRight: '1.5em' }
                     }),
-                    React.createElement('div', {
-                        key: 'headerSeparator',
-                        style: styles.headerSeparator
-                    }),
-                    React.createElement(
-                        'h1', {
-                            style: styles.headerTitle,
-                            key: 'title'
-                        },
-                        'Radiology Triage Tool'
-                    ),
+                    React.createElement('div', { key: 'headerSeparator', style: styles.headerSeparator }),
+                    React.createElement('h1', { style: styles.headerTitle, key: 'title' }, 'Radiology Triage Tool'),
                 ]
             ),
-            // 2. Search Input Wrapper (also inside the sticky container, below branding)
             React.createElement('div', { style: styles.searchInputWrapper, key: 'search-wrapper' },
                 React.createElement('input', {
                     key: 'input',
@@ -358,52 +520,53 @@ const isMobile = useIsMobile();
                     placeholder: 'Search clinical scenarios...',
                     value: query,
                     onChange: handleSearchInputChange,
-                    onFocus: handleSearchInputFocus,
                     onClick: handleSearchInputClick,
-                    style: styles.input // Input style itself
+                    style: styles.input
                 })
             )
         ]),
 
-        // --- NON-STICKY SECTION BUTTONS ---
-        // (Rendered after the sticky block, so they will scroll with main content)
         query.length < 3 ?
         React.createElement(
-            'div', {
-                style: styles.sectionButtonsContainer,
-                key: 'section-buttons'
-            },
+            'div', { style: styles.sectionButtonsContainer, key: 'section-buttons' },
             uniqueSections.map(sectionName =>
                 React.createElement('button', {
                     key: sectionName,
                     onClick: () => handleSectionButtonClick(sectionName),
-                    style: {
-                        ...styles.sectionButton,
-                        ...(selectedSection === sectionName ?
-                            styles.sectionButtonActive :
-                            {})
-                    }
+                    style: { ...styles.sectionButton, ...(selectedSection === sectionName ? styles.sectionButtonActive : {}) }
                 }, sectionName)
             )
-        ) :
-        null,
-
-        // --- MAIN CONTENT AREA ---
+        ) : null,
         
-        React.createElement('div', {
-            key: 'main-content',
-            style: styles.mainContentArea
-        }, [
+        React.createElement(AuthorPopover, {
+            key: 'author-popover',
+            content: popoverContent,
+            position: popoverPosition,
+            onClose: () => {
+                setPopoverPosition(prev => ({ ...prev, visible: false }));
+                setPopoverContent(null);
+            }
+        }),
+
+        React.createElement('div', { key: 'main-content', style: styles.mainContentArea }, [
             (selectedSection || query.length >= 3) ?
             Object.keys(groupedResults).length > 0 ?
             Object.keys(groupedResults).map(sectionName =>
-                React.createElement('div', {
-                    key: sectionName
-                }, [
+                React.createElement('div', { key: sectionName + '-section-content' }, [
                     React.createElement('h2', {
                         style: styles.sectionHeader,
                         key: 'sh-' + sectionName
-                    }, sectionName),
+                    }, [
+                        React.createElement('span', { key: sectionName + '-title-text'}, sectionName), // Title text
+                        (rawJsonData && rawJsonData[sectionName] && rawJsonData[sectionName].authors) ? // Only show icon if authors exist
+                            React.createElement('span', { // Info icon
+                                key: 'info-icon-' + sectionName,
+                                onClick: (e) => handleInfoIconClick(e, sectionName),
+                                style: styles.infoIcon,
+                                title: `Show leads for ${sectionName}`,
+                                'data-info-icon-section': sectionName // For click outside logic
+                            }, 'ⓘ') : null
+                    ]),
 
                     Object.keys(groupedResults[sectionName]).map(subheadingName =>
                         React.createElement('div', {
@@ -411,16 +574,11 @@ const isMobile = useIsMobile();
                             style: styles.subheadingGroupContainer
                         }, [
                             (subheadingName !== "General" || Object.keys(groupedResults[sectionName]).length === 1 || selectedSection) &&
-                            React.createElement('h3', {
-                                style: styles.subheadingHeader,
-                                key: 'subh-' + subheadingName
-                            }, subheadingName),
+                            React.createElement('h3', { style: styles.subheadingHeader, key: 'subh-' + subheadingName }, subheadingName),
 
                             ...groupedResults[sectionName][subheadingName].map((entry, i) =>
                                 React.createElement('div', {
-                                    style: {...styles.result,
-                                        marginBottom: i === groupedResults[sectionName][subheadingName].length - 1 ? '0' : '1em'
-                                    },
+                                    style: {...styles.result, marginBottom: i === groupedResults[sectionName][subheadingName].length - 1 ? '0' : '1em' },
                                     key: `${sectionName}-${subheadingName}-${i}`
                                 }, [
                                     React.createElement('div', { style: styles.text }, [ React.createElement('span', { style: styles.label }, 'Scenario:'), ' ' + entry.clinical_scenario ]),
