@@ -214,22 +214,42 @@ function App() {
         } else {
             if (rawJsonData && rawJsonData[sectionName] && rawJsonData[sectionName].authors) {
                 const rect = event.target.getBoundingClientRect();
-                const popoverWidthEstimate = 300;
-                const popoverHeightEstimate = 200;
-                const viewportPadding = 15;
+                const popoverWidthEstimate = 300; // Approximate width, adjust if your popover is wider/narrower
+                const popoverHeightEstimate = 200; // Approximate height
+                const viewportPadding = 15; // Padding from viewport edges
  
-                let newTop = rect.bottom + window.scrollY + 8;
-                let newLeft = rect.left + window.scrollX;
+                let newTop = rect.bottom + window.scrollY + 8; // Default: 8px below the icon
+                let newLeft;
  
-                if (newLeft + popoverWidthEstimate > window.innerWidth - viewportPadding) {
-                    newLeft = window.innerWidth - popoverWidthEstimate - viewportPadding;
+                if (isMobile) {
+                    // Center horizontally on mobile
+                    // Calculate the left position to center the popover in the viewport
+                    newLeft = (window.innerWidth - popoverWidthEstimate) / 2 + window.scrollX;
+                } else {
+                    // Original desktop positioning: Align left edge of popover with left edge of icon
+                    newLeft = rect.left + window.scrollX;
                 }
-                if (newLeft < viewportPadding) {
-                    newLeft = viewportPadding;
+ 
+                // --- Boundary Checks (apply to both mobile and desktop for safety) ---
+ 
+                // Ensure popover doesn't go off the left edge of the screen
+                if (newLeft < viewportPadding + window.scrollX) { // Added window.scrollX for absolute comparison
+                    newLeft = viewportPadding + window.scrollX;
+               }
+ 
+                // Ensure popover doesn't go off the right edge of the screen
+                if (newLeft + popoverWidthEstimate > window.innerWidth + window.scrollX - viewportPadding) {
+                    newLeft = window.innerWidth + window.scrollX - popoverWidthEstimate - viewportPadding;
                 }
+               
+                // --- Vertical Boundary Checks (same as before) ---
+                // If popover goes off the bottom edge of the screen
                 if (newTop + popoverHeightEstimate > window.innerHeight + window.scrollY - viewportPadding) {
-                    newTop = rect.top + window.scrollY - popoverHeightEstimate - 8;
+                    // Try to position it above the icon instead
+                    newTop = rect.top + window.scrollY - popoverHeightEstimate - 8; // 8px above icon
                 }
+               
+                // If popover (now possibly above) goes off the top edge of the screen
                 if (newTop < window.scrollY + viewportPadding) {
                     newTop = window.scrollY + viewportPadding;
                 }
