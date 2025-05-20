@@ -18,6 +18,10 @@
         { "name": "Michael Puttick (ADHB)", "region": "Northern region" }
       ]
     },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Breast implant evaluation": [
       {
         "clinical_scenario": "Evaluation of saline breast implants. Any age. Initial imaging.",
@@ -234,6 +238,10 @@
       "Radiology Leads": [],
       "Clinical Leads": []
     },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "New diagnosis breast cancer": [
       {
         "clinical_scenario": "New diagnosis breast cancer with high background risk of undetected disease (e.g. BRCA-1; dense breasts) AND as recommended by MDM",
@@ -342,7 +350,7 @@
   "Cardiology": {
     "authors": {
       "Radiology Leads": [
-        { "name": "Sharyn McDonald", "region": "Waitaha Canterbury" },
+        { "name": "Sharyn MacDonald", "region": "Waitaha Canterbury" },
         { "name": "Nil", "region": "Te Toka Tumai Auckland" },
         { "name": "Chris Tregonning", "region": "Waitemata" },
         { "name": "Budresh Joshi", "region": "Counties Manukau" },
@@ -354,6 +362,10 @@
         { "name": "John Lainchbury", "region": "Waitaha Canterbury" },
         { "name": "Ruvin Gabriel (CMDHB)", "region": "Northern North Island" }
       ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
     },
     "Acute chest pain": [
       {
@@ -513,6 +525,10 @@
         { "name": "Siraj Rajaratnam (WDHB)", "region": "Northern North Island" }
       ]
     },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Left lower quadrant pain": [
       {
         "clinical_scenario": "Chronic, intermittent, or low grade",
@@ -625,6 +641,10 @@
         { "name": "Magda Biggar (CMDHB)", "region": "Northern North Island" },
         { "name": "Simon Young (WDHB)", "region": "Northern North Island" }
       ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
     },
     "Neuroendocrine": [
       {
@@ -811,6 +831,10 @@
         { "name": "Peter Chapman (Rheumatology)", "region": "Waitaha Canterbury" },
         { "name": "Matt Walker (Hip, Knee)", "region": "Northern North Island" }
       ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
     },
     "Acute shoulder pain": [
       {
@@ -1363,6 +1387,10 @@
         { "name": "Yu-Min Lin (Geriatrics)", "region": "Northern North Island" }
       ]
     },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Ataxia": [
       {
         "clinical_scenario": "Slowly progressive ataxia, or ataxia of long duration (adult or child).",
@@ -1532,6 +1560,10 @@
         { "name": "Nick Child (Neurology)", "region": "Northern North Island" }
       ]
     },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Cerebrovascular": [
       {
         "clinical_scenario": "Risk for unruptured aneurysm. Positive family history.",
@@ -1606,6 +1638,10 @@
         { "name": "Sarah Tout (O&G)", "region": "Northern North Island" }
       ]
     },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Abnormal vaginal bleeding": [
       {
         "clinical_scenario": "Postmenopausal vaginal bleeding. First study.",
@@ -1617,7 +1653,7 @@
         "clinical_scenario": "Postmenopausal vaginal bleeding, follow up.",
         "modality": "US",
         "prioritisation_category": "S3",
-        "comment": "Follow up scan would be at referring clinicianâs discretion and time accordingly however would be non-deferable from the specified time."
+        "comment": "Follow up scan would be at referring clinician’s discretion and time accordingly however would be non-deferable from the specified time."
       },
       {
         "clinical_scenario": "Premenopausal vaginal bleeding. First study.",
@@ -1724,19 +1760,19 @@
     ],
     "Acute pelvic pain in the reproductive age group": [
       {
-        "clinical_scenario": "Gynaecological aetiology suspected, serum Î²-hCG positive",
+        "clinical_scenario": "Gynaecological aetiology suspected, serum β-hCG positive",
         "modality": "US",
         "prioritisation_category": "P1-P2a",
         "comment": "If ectopic pregnancy suspected - same day imaging"
       },
       {
-        "clinical_scenario": "Gynaecological aetiology suspected, serum Î²-hCG negative.",
+        "clinical_scenario": "Gynaecological aetiology suspected, serum β-hCG negative.",
         "modality": "US +/- CT",
         "prioritisation_category": "P2a (P2)",
         "comment": "Triage depends on clinical indication: acute versus chronic pain, associated bleeding. For example, acute pain ovarian torsion, haemorrhagic cyst etc will need triage P1. However, other pain non-specified could be triage P2. Clinician to indicate urgency."
       },
       {
-        "clinical_scenario": "Non Gynaecological aetiology suspected, serum Î²-hCG positive.",
+        "clinical_scenario": "Non Gynaecological aetiology suspected, serum β-hCG positive.",
         "modality": "US",
         "prioritisation_category": "P1-P2a",
         "comment": "Early pregnancy causes of pain not related to pregnancy i.e. UTI, appendicitis, ovarian, gallbladder."
@@ -1816,13 +1852,13 @@
     ],
     "Assessment of gravid cervix": [
       {
-        "clinical_scenario": "Patient at risk for preterm delivery: 16-24 weeks gestation: cervical length â¥3cm on transvaginal ultrasound scan",
+        "clinical_scenario": "Patient at risk for preterm delivery: 16-24 weeks gestation: cervical length ≥3cm on transvaginal ultrasound scan",
         "modality": "US",
         "prioritisation_category": "P2",
         "comment": "standard 2 week follow up screening scan for cervical length 16-24 weeks or as advised by PTB clinic"
       },
       {
-        "clinical_scenario": "Patient at risk for preterm delivery (history of prior preterm birth or multiple gestations): 16-24 weeks gestation: cervix â¤3 cm long by transvaginal ultrasound scan",
+        "clinical_scenario": "Patient at risk for preterm delivery (history of prior preterm birth or multiple gestations): 16-24 weeks gestation: cervix ≤3 cm long by transvaginal ultrasound scan",
         "modality": "US",
         "prioritisation_category": "P2",
         "comment": "May need a follow up scan sooner than standard 2-week interval at clinician discretion"
@@ -1850,6 +1886,10 @@
         { "name": "Alan T. Keast", "region": "Waitaha Canterbury" },
         { "name": "Mike Davison (ORL)", "region": "Northern North Island" }
       ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
     },
     "Neck mass/lymphadenopathy": [
       {
@@ -2032,6 +2072,10 @@
         { "name": "SSH Paediatrician Group", "region": "Northern North Island" }
       ]
     },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "General neurology": [
       {
         "clinical_scenario": "Neurocognitive regression",
@@ -2161,7 +2205,7 @@
         "clinical_scenario": "Hyperprolactinemia",
         "modality": "MRI",
         "prioritisation_category": "P1-P3",
-        "comment": "P1 if abnormal visual fields or âprolactin otherwise P3"
+        "comment": "P1 if abnormal visual fields or ↑prolactin otherwise P3"
       },
       {
         "clinical_scenario": "Acromegaly/gigantism",
@@ -2394,6 +2438,10 @@
         { "name": "Andy Veale (Respiratory)", "region": "Northern North Island" }
       ]
     },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Acute respiratory illness": [
       {
         "clinical_scenario": "CXR pneumonia follow up.",
@@ -2466,25 +2514,25 @@
     ],
     "Solitary pulmonary nodule on CXR": [
       {
-        "clinical_scenario": "Nodule â¥ 1 cm and </= 3cms, low clinical suspicion for cancer.",
+        "clinical_scenario": "Nodule ≥ 1 cm and </= 3cms, low clinical suspicion for cancer.",
         "modality": "CT +/-BX",
         "prioritisation_category": "P3 or P4",
         "comment": "P3 if no previous imaging P4 if stable"
       },
       {
-        "clinical_scenario": "Nodule â¥ 1 cm and </= 3cms, moderate to high clinical suspicion for cancer.",
+        "clinical_scenario": "Nodule ≥ 1 cm and </= 3cms, moderate to high clinical suspicion for cancer.",
         "modality": "CT=PETCT +/-BX",
         "prioritisation_category": "P2",
         "comment": "Consider direct referral for CT PET if resectable on CXR"
       },
       {
-        "clinical_scenario": "Nodule â¤ 1 cm, low clinical suspicion for cancer.",
+        "clinical_scenario": "Nodule ≤ 1 cm, low clinical suspicion for cancer.",
         "modality": "CT",
         "prioritisation_category": "P4",
         "comment": "none"
       },
       {
-        "clinical_scenario": "Nodule â¤ 1 cm, moderate to high clinical suspicion for cancer.",
+        "clinical_scenario": "Nodule ≤ 1 cm, moderate to high clinical suspicion for cancer.",
         "modality": "CT",
         "prioritisation_category": "P3-P2",
         "comment": "none"
@@ -2570,6 +2618,10 @@
         { "name": "Ed Yee", "region": "Northern North Island" },
         { "name": "Phil Insul (Ortho WDHB)", "region": "Northern North Island" }
       ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
     },
     "Low back pain": [
       {
@@ -2808,7 +2860,7 @@
       }
     ]
   },
-  "Gastrointestinal - Upper GI/Liver": {
+  "Gastrointestinal – Upper GI/Liver": {
     "authors": {
       "Radiology Leads": [
         { "name": "Nick Griffin", "region": "Waitaha Canterbury" },
@@ -2828,6 +2880,10 @@
         { "name": "Jonathan Koea", "region": "Northern North Island" },
         { "name": "Andrew MacCormick (Gen Surg)", "region": "Northern North Island" }
       ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
     },
     "Right upper quadrant pain": [
       {
@@ -3037,6 +3093,10 @@
         { "name": "Jason Du (Urology)", "region": "Northern North Island" }
       ]
     },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Scrotum/ testicular": [
       {
         "clinical_scenario": "Testis tumour (diagnosed by orchidectomy)",
@@ -3071,7 +3131,7 @@
     ],
     "Female UTI": [
       {
-        "clinical_scenario": "Adult females who are non-responders to prophylactic antibiotics AND get frequent reinfections (â¥2 in 6 months OR â¥ 3 in 1 year)",
+        "clinical_scenario": "Adult females who are non-responders to prophylactic antibiotics AND get frequent reinfections (≥2 in 6 months OR ≥ 3 in 1 year)",
         "modality": "US",
         "prioritisation_category": "P4",
         "comment": "none"
@@ -3127,7 +3187,7 @@
         "comment": "none"
       },
       {
-        "clinical_scenario": "RCC â¤ 3 cm characterisation + stage",
+        "clinical_scenario": "RCC ≤ 3 cm characterisation + stage",
         "modality": "CT + CXR",
         "prioritisation_category": "P3",
         "comment": "none"
@@ -3243,6 +3303,10 @@
         { "name": "Stuart Caldwell (Vascular Surgery)", "region": "Northern North Island" }
       ]
     },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Vascular": [
       {
         "clinical_scenario": "Sudden onset of cold, painful leg",
@@ -3351,3 +3415,5 @@
     ]
   }
 }
+
+
