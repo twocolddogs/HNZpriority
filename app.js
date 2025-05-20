@@ -214,17 +214,17 @@ function App() {
         } else {
             if (rawJsonData && rawJsonData[sectionName] && rawJsonData[sectionName].authors) {
                 const rect = event.target.getBoundingClientRect();
-                const popoverWidthEstimate = 300; // Approximate width, adjust if your popover is wider/narrower
-                const popoverHeightEstimate = 200; // Approximate height
-                const viewportPadding = 15; // Padding from viewport edges
+                const popoverWidthEstimate = 300;
+                const popoverHeightEstimate = 200;
+                const viewportPadding = 15; // General padding from viewport edges
+                const mobileLeftMargin = 15; // Specific left margin for mobile
  
                 let newTop = rect.bottom + window.scrollY + 8; // Default: 8px below the icon
                 let newLeft;
  
                 if (isMobile) {
-                    // Center horizontally on mobile
-                    // Calculate the left position to center the popover in the viewport
-                    newLeft = (window.innerWidth - popoverWidthEstimate) / 2 + window.scrollX;
+                    // Left-align with a margin on mobile
+                    newLeft = mobileLeftMargin + window.scrollX;
                 } else {
                     // Original desktop positioning: Align left edge of popover with left edge of icon
                     newLeft = rect.left + window.scrollX;
@@ -232,24 +232,28 @@ function App() {
  
                 // --- Boundary Checks (apply to both mobile and desktop for safety) ---
  
-                // Ensure popover doesn't go off the left edge of the screen
-                if (newLeft < viewportPadding + window.scrollX) { // Added window.scrollX for absolute comparison
-                    newLeft = viewportPadding + window.scrollX;
-               }
- 
                 // Ensure popover doesn't go off the right edge of the screen
+                // If it does, try to shift it left, but not beyond the mobileLeftMargin or viewportPadding
                 if (newLeft + popoverWidthEstimate > window.innerWidth + window.scrollX - viewportPadding) {
                     newLeft = window.innerWidth + window.scrollX - popoverWidthEstimate - viewportPadding;
+                    // After shifting, ensure it doesn't violate the left margin on mobile
+                    if (isMobile && newLeft < mobileLeftMargin + window.scrollX) {
+                        newLeft = mobileLeftMargin + window.scrollX;
+                    } else if (!isMobile && newLeft < viewportPadding + window.scrollX) {
+                        newLeft = viewportPadding + window.scrollX;
+                    }
+                }
+               
+                // This check is mostly for desktop, or if the above right-edge adjustment made it too far left
+                if (newLeft < (isMobile ? mobileLeftMargin : viewportPadding) + window.scrollX) {
+                    newLeft = (isMobile ? mobileLeftMargin : viewportPadding) + window.scrollX;
                 }
                
                 // --- Vertical Boundary Checks (same as before) ---
-                // If popover goes off the bottom edge of the screen
                 if (newTop + popoverHeightEstimate > window.innerHeight + window.scrollY - viewportPadding) {
-                    // Try to position it above the icon instead
-                    newTop = rect.top + window.scrollY - popoverHeightEstimate - 8; // 8px above icon
+                    newTop = rect.top + window.scrollY - popoverHeightEstimate - 8;
                 }
                
-                // If popover (now possibly above) goes off the top edge of the screen
                 if (newTop < window.scrollY + viewportPadding) {
                     newTop = window.scrollY + viewportPadding;
                 }
@@ -269,6 +273,7 @@ function App() {
             }
         }
     };
+ 
  
     useEffect(() => {
         const handleClickOutside = (event) => {
