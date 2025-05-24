@@ -18,9 +18,7 @@
         { "name": "Michael Puttick (ADHB)", "region": "Northern region" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Breast implant evaluation": [
       {
         "clinical_scenario": "Evaluation of saline breast implants. Any age. Initial imaging.",
@@ -237,9 +235,7 @@
       "Radiology Leads": [],
       "Clinical Leads": []
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "New diagnosis breast cancer": [
       {
         "clinical_scenario": "New diagnosis breast cancer with high background risk of undetected disease (e.g. BRCA-1; dense breasts) AND as recommended by MDM",
@@ -361,9 +357,7 @@
         { "name": "Ruvin Gabriel (CMDHB)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Acute chest pain": [
       {
         "clinical_scenario": "Chest pain syndrome - not clear ACS/intermediate probability of CAD",
@@ -522,9 +516,7 @@
         { "name": "Siraj Rajaratnam (WDHB)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Left lower quadrant pain": [
       {
         "clinical_scenario": "Chronic, intermittent, or low grade",
@@ -638,9 +630,7 @@
         { "name": "Simon Young (WDHB)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Neuroendocrine": [
       {
         "clinical_scenario": "Hypopituitarism",
@@ -827,9 +817,7 @@
         { "name": "Matt Walker (Hip, Knee)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Acute shoulder pain": [
       {
         "clinical_scenario": "Any aetiology; best initial study, (septic arthritis not-suspected clinically)",
@@ -1381,9 +1369,7 @@
         { "name": "Yu-Min Lin (Geriatrics)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Ataxia": [
       {
         "clinical_scenario": "Slowly progressive ataxia, or ataxia of long duration (adult or child).",
@@ -1553,9 +1539,7 @@
         { "name": "Nick Child (Neurology)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Cerebrovascular": [
       {
         "clinical_scenario": "Risk for unruptured aneurysm. Positive family history.",
@@ -1630,9 +1614,7 @@
         { "name": "Sarah Tout (O&G)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Abnormal vaginal bleeding": [
       {
         "clinical_scenario": "Postmenopausal vaginal bleeding. First study.",
@@ -1878,9 +1860,7 @@
         { "name": "Mike Davison (ORL)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Neck mass/lymphadenopathy": [
       {
         "clinical_scenario": "Adult presenting with a non-pulsatile solitary neck mass (afebrile).",
@@ -2062,9 +2042,7 @@
         { "name": "SSH Paediatrician Group", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "General neurology": [
       {
         "clinical_scenario": "Neurocognitive regression",
@@ -2427,9 +2405,7 @@
         { "name": "Andy Veale (Respiratory)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Acute respiratory illness": [
       {
         "clinical_scenario": "CXR pneumonia follow up.",
@@ -2607,9 +2583,7 @@
         { "name": "Phil Insul (Ortho WDHB)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Low back pain": [
       {
         "clinical_scenario": "Uncomplicated acute low back pain and/or radiculopathy, nonsurgical presentation. No red flags*",
@@ -2868,9 +2842,7 @@
         { "name": "Andrew MacCormick (Gen Surg)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Right upper quadrant pain": [
       {
         "clinical_scenario": "No fever, normal WBC",
@@ -3079,9 +3051,7 @@
         { "name": "Jason Du (Urology)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Scrotum/ testicular": [
       {
         "clinical_scenario": "Testis tumour (diagnosed by orchidectomy)",
@@ -3288,9 +3258,7 @@
         { "name": "Stuart Caldwell (Vascular Surgery)", "region": "Northern North Island" }
       ]
     },
-    "last_updated": {
-      "date": "2025-05-23"
-    },
+    "last_updated": "2025-05-23",
     "Vascular": [
       {
         "clinical_scenario": "Sudden onset of cold, painful leg",
