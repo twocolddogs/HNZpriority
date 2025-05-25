@@ -518,7 +518,7 @@ function App() {
 
   useEffect(() => {
     console.log("[useEffect fetchInitialData] Firing");
-    fetch(priority_data_set.json) // Production local
+    fetch('priority_data_set.json') // Production local
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
         return r.json();
