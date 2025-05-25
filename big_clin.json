@@ -1,5 +1,27 @@
 {
   "Breast": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Shelley Boyd", "region": "CDHB" },
+        { "name": "Anthony Doyle", "region": "ADHB" },
+        { "name": "Jeremy Whitlock", "region": "ADHB" },
+        { "name": "Trevor Chan", "region": "WDHB" },
+        { "name": "Richard Beedie", "region": "WDHB" },
+        { "name": "Gill Beveridge", "region": "CMDHB" },
+        { "name": "Kim Shepherd", "region": "NDHB" }
+      ],
+      "Clinical Leads": [
+        { "name": "N/A", "region": "Canterbury" },
+        { "name": "Josie Todd", "region": "Canterbury" },
+        { "name": "Magda Biggar (CMDHB)", "region": "Northern region" },
+        { "name": "Sue Gerred (WDHB)", "region": "Northern region" },
+        { "name": "Michael Puttick (ADHB)", "region": "Northern region" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Breast implant evaluation": [
       {
         "clinical_scenario": "Evaluation of saline breast implants. Any age. Initial imaging.",
@@ -209,8 +231,17 @@
         "prioritisation_category": "P3",
         "comment": "none"
       }
-    ]},
-    "Breast MR Referral Indications": {
+    ]
+  },
+  "Breast MR Referral Indications": {
+    "authors": {
+      "Radiology Leads": [],
+      "Clinical Leads": []
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "New diagnosis breast cancer": [
       {
         "clinical_scenario": "New diagnosis breast cancer with high background risk of undetected disease (e.g. BRCA-1; dense breasts) AND as recommended by MDM",
@@ -317,6 +348,25 @@
     ]
   },
   "Cardiology": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Sharyn MacDonald", "region": "Waitaha Canterbury" },
+        { "name": "Nil", "region": "Te Toka Tumai Auckland" },
+        { "name": "Chris Tregonning", "region": "Waitemata" },
+        { "name": "Budresh Joshi", "region": "Counties Manukau" },
+        { "name": "Neil Dawber", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "David Smyth", "region": "Waitaha Canterbury" },
+        { "name": "John Lainchbury", "region": "Waitaha Canterbury" },
+        { "name": "John Lainchbury", "region": "Waitaha Canterbury" },
+        { "name": "Ruvin Gabriel (CMDHB)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Acute chest pain": [
       {
         "clinical_scenario": "Chest pain syndrome - not clear ACS/intermediate probability of CAD",
@@ -455,6 +505,30 @@
     ]
   },
   "Colorectal": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Nick Griffin", "region": "Waitaha Canterbury" },
+        { "name": "Helen Moore", "region": "Te Toka Tumai Auckland" },
+        { "name": "David Duncan", "region": "Te Toka Tumai Auckland" },
+        { "name": "Chris McKee", "region": "Waitemata" },
+        { "name": "Jash Agraval", "region": "Waitemata" },
+        { "name": "Simon Bodicoat", "region": "Waitemata" },
+        { "name": "Ajay Mehta", "region": "Counties Manukau" },
+        { "name": "Carla Morkel", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Steve Kelly (Gen Surg)", "region": "Waitaha Canterbury" },
+        { "name": "Mike Burt (Gastro)", "region": "Waitaha Canterbury" },
+        { "name": "Gary Lim (Gastro)", "region": "Waitaha Canterbury" },
+        { "name": "Grant Coulter (Gen Surg)", "region": "Waitaha Canterbury" },
+        { "name": "Sze-Lin Peng (CMDHB)", "region": "Northern North Island" },
+        { "name": "Siraj Rajaratnam (WDHB)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Left lower quadrant pain": [
       {
         "clinical_scenario": "Chronic, intermittent, or low grade",
@@ -551,6 +625,27 @@
     ]
   },
   "Endocrinology": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Anthony Lim", "region": "Waitaha Canterbury" },
+        { "name": "Kate O'Connor", "region": "Te Toka Tumai Auckland" },
+        { "name": "Christine Koch", "region": "Waitemata" },
+        { "name": "Kurt Smoliner", "region": "Counties Manukau" },
+        { "name": "Chris Bowles", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Helen Lunt", "region": "Waitaha Canterbury" },
+        { "name": "Steven Soule", "region": "Waitaha Canterbury" },
+        { "name": "Steven Soule", "region": "Waitaha Canterbury" },
+        { "name": "Penny Hunt", "region": "Waitaha Canterbury" },
+        { "name": "Magda Biggar (CMDHB)", "region": "Northern North Island" },
+        { "name": "Simon Young (WDHB)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Neuroendocrine": [
       {
         "clinical_scenario": "Hypopituitarism",
@@ -717,6 +812,30 @@
     ]
   },
   "Musculoskeletal": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Thomas Moritz", "region": "Waitaha Canterbury" },
+        { "name": "Mark Coates", "region": "Waitaha Canterbury" },
+        { "name": "Anthony Doyle", "region": "Te Toka Tumai Auckland" },
+        { "name": "Neal Stewart", "region": "Te Toka Tumai Auckland" },
+        { "name": "Adam Worthington", "region": "Waitemata" },
+        { "name": "Barnaby Clark", "region": "Waitemata" },
+        { "name": "Damien Hoon", "region": "Counties Manukau" },
+        { "name": "Lucy Bolalailai", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Tom Sharpe", "region": "Waitaha Canterbury" },
+        { "name": "Gordon Beadel (Orthopaedics)", "region": "Waitaha Canterbury" },
+        { "name": "Peter Chapman (Rheumatology)", "region": "Waitaha Canterbury" },
+        { "name": "Gordon Beadel (Orthopaedics)", "region": "Waitaha Canterbury" },
+        { "name": "Peter Chapman (Rheumatology)", "region": "Waitaha Canterbury" },
+        { "name": "Matt Walker (Hip, Knee)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Acute shoulder pain": [
       {
         "clinical_scenario": "Any aetiology; best initial study, (septic arthritis not-suspected clinically)",
@@ -1247,6 +1366,31 @@
     ]
   },
   "Neurology": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Mike Hurrell", "region": "Waitaha Canterbury" },
+        { "name": "Ben McGuinness", "region": "Te Toka Tumai Auckland" },
+        { "name": "Robert Mitchell", "region": "Waitemata" },
+        { "name": "Francis Wu", "region": "Counties Manukau" },
+        { "name": "Felix Chingoli", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Deborah Mason", "region": "Waitaha Canterbury" },
+        { "name": "Philip Parkin (Neurology)", "region": "Waitaha Canterbury" },
+        { "name": "Martin MacFarlane (Neurosurg)", "region": "Waitaha Canterbury" },
+        { "name": "Deborah Mason", "region": "Waitaha Canterbury" },
+        { "name": "Campbell Le Heron", "region": "Waitaha Canterbury" },
+        { "name": "John Fink", "region": "Waitaha Canterbury" },
+        { "name": "Rod Duncan", "region": "Waitaha Canterbury" },
+        { "name": "Teddy Wu", "region": "Waitaha Canterbury" },
+        { "name": "Nick Child (Neurology)", "region": "Northern North Island" },
+        { "name": "Yu-Min Lin (Geriatrics)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Ataxia": [
       {
         "clinical_scenario": "Slowly progressive ataxia, or ataxia of long duration (adult or child).",
@@ -1401,6 +1545,25 @@
     ]
   },
   "Neurosurgery": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Mike Hurrell", "region": "Waitaha Canterbury" },
+        { "name": "Ben McGuinness", "region": "Te Toka Tumai Auckland" },
+        { "name": "Robert Mitchell", "region": "Waitemata" },
+        { "name": "Francis Wu", "region": "Counties Manukau" },
+        { "name": "Felix Chingoli", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Martin MacFarlane", "region": "Waitaha Canterbury" },
+        { "name": "Suzanne Jackson", "region": "Waitaha Canterbury" },
+        { "name": "Simon John", "region": "Waitaha Canterbury" },
+        { "name": "Nick Child (Neurology)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Cerebrovascular": [
       {
         "clinical_scenario": "Risk for unruptured aneurysm. Positive family history.",
@@ -1459,6 +1622,26 @@
     ]
   },
   "Obstetrics & Gynaecology": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Rachel Belsham", "region": "Waitaha Canterbury" },
+        { "name": "Carol Bagnall", "region": "Te Toka Tumai Auckland" },
+        { "name": "Penny Symes (Gynae)", "region": "Waitemata" },
+        { "name": "Darshna Kasabia", "region": "Counties Manukau" },
+        { "name": "Ria Minne", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Bryony Simcock", "region": "Waitaha Canterbury" },
+        { "name": "Emma Jackson", "region": "Waitaha Canterbury" },
+        { "name": "Bryony Simcock", "region": "Waitaha Canterbury" },
+        { "name": "Catherine Sowden", "region": "Northern North Island" },
+        { "name": "Sarah Tout (O&G)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Abnormal vaginal bleeding": [
       {
         "clinical_scenario": "Postmenopausal vaginal bleeding. First study.",
@@ -1689,6 +1872,25 @@
     ]
   },
   "ORL": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Tony Goh", "region": "Waitaha Canterbury" },
+        { "name": "Kate O'Connor", "region": "Te Toka Tumai Auckland" },
+        { "name": "Nina Umaria", "region": "Waitemata" },
+        { "name": "Sonal Amin", "region": "Counties Manukau" },
+        { "name": "Adeline Lo", "region": "Counties Manukau" },
+        { "name": "Chris Bowles", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Scott Stevenson", "region": "Waitaha Canterbury" },
+        { "name": "Alan T. Keast", "region": "Waitaha Canterbury" },
+        { "name": "Mike Davison (ORL)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Neck mass/lymphadenopathy": [
       {
         "clinical_scenario": "Adult presenting with a non-pulsatile solitary neck mass (afebrile).",
@@ -1847,6 +2049,33 @@
     ]
   },
   "Paediatrics": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Philippa Depree", "region": "Waitaha Canterbury" },
+        { "name": "Sally Vogel", "region": "Te Toka Tumai Auckland" },
+        { "name": "Sally Vogel", "region": "Waitemata" },
+        { "name": "Sally Vogel", "region": "Counties Manukau" },
+        { "name": "Innocent Ncube", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Clare Doocey", "region": "Waitaha Canterbury" },
+        { "name": "Andrew Day", "region": "Waitaha Canterbury" },
+        { "name": "Cameron Dickson", "region": "Waitaha Canterbury" },
+        { "name": "Paul Shillito", "region": "Waitaha Canterbury" },
+        { "name": "James Hector-Taylor", "region": "Waitaha Canterbury" },
+        { "name": "Philip Pattemore", "region": "Waitaha Canterbury" },
+        { "name": "Clare Doocey", "region": "Waitaha Canterbury" },
+        { "name": "Andrew Day", "region": "Waitaha Canterbury" },
+        { "name": "Paul Shillito", "region": "Waitaha Canterbury" },
+        { "name": "Martin de Bock", "region": "Waitaha Canterbury" },
+        { "name": "Karen Mackenzie", "region": "Waitaha Canterbury" },
+        { "name": "SSH Paediatrician Group", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "General neurology": [
       {
         "clinical_scenario": "Neurocognitive regression",
@@ -2193,6 +2422,26 @@
     ]
   },
   "Respiratory": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Frith Collbear", "region": "Waitaha Canterbury" },
+        { "name": "Jo Fenwick", "region": "Waitaha Canterbury" },
+        { "name": "David Milne", "region": "Te Toka Tumai Auckland" },
+        { "name": "Chris Tregonning", "region": "Waitemata" },
+        { "name": "Jennifer Donald", "region": "Counties Manukau" },
+        { "name": "Innocent Ncube", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Richard Laing", "region": "Waitaha Canterbury" },
+        { "name": "Greg Frazer", "region": "Waitaha Canterbury" },
+        { "name": "Greg Frazer", "region": "Waitaha Canterbury" },
+        { "name": "Andy Veale (Respiratory)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Acute respiratory illness": [
       {
         "clinical_scenario": "CXR pneumonia follow up.",
@@ -2345,6 +2594,35 @@
     ]
   },
   "Spine": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Jon Crighton", "region": "Waitaha Canterbury" },
+        { "name": "Neal Stewart", "region": "Te Toka Tumai Auckland" },
+        { "name": "Adam Worthington", "region": "Waitemata" },
+        { "name": "Damien Hoon", "region": "Counties Manukau" },
+        { "name": "Lucy Bolalailai", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Tom Sharpe", "region": "Waitaha Canterbury" },
+        { "name": "Jeremy Evison (Ortho)", "region": "Waitaha Canterbury" },
+        { "name": "Peter Chapman (Rheum)", "region": "Waitaha Canterbury" },
+        { "name": "Alan Pithie (Infectious Diseases)", "region": "Waitaha Canterbury" },
+        { "name": "Deborah Mason", "region": "Waitaha Canterbury" },
+        { "name": "Philip Parkin (Neurology)", "region": "Waitaha Canterbury" },
+        { "name": "Martin MacFarlane (Neurosurgery)", "region": "Waitaha Canterbury" },
+        { "name": "Gordon Beadel (Ortho)", "region": "Waitaha Canterbury" },
+        { "name": "Alan Pithie (Infectious Diseases)", "region": "Waitaha Canterbury" },
+        { "name": "Deborah Mason (Neurology)", "region": "Waitaha Canterbury" },
+        { "name": "Suzanne Jackson (Neurosurgery)", "region": "Waitaha Canterbury" },
+        { "name": "Andrew Irving (Ortho CMDHB)", "region": "Northern North Island" },
+        { "name": "Ed Yee", "region": "Northern North Island" },
+        { "name": "Phil Insul (Ortho WDHB)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Low back pain": [
       {
         "clinical_scenario": "Uncomplicated acute low back pain and/or radiculopathy, nonsurgical presentation. No red flags*",
@@ -2583,6 +2861,30 @@
     ]
   },
   "Gastrointestinal – Upper GI/Liver": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Nick Griffin", "region": "Waitaha Canterbury" },
+        { "name": "Helen Moore", "region": "Te Toka Tumai Auckland" },
+        { "name": "David Duncan", "region": "Te Toka Tumai Auckland" },
+        { "name": "Chris McKee", "region": "Waitemata" },
+        { "name": "Jash Agraval", "region": "Waitemata" },
+        { "name": "Simon Bodicoat", "region": "Waitemata" },
+        { "name": "Ajay Mehta", "region": "Counties Manukau" },
+        { "name": "Carla Morkel", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Steve Kelly (Gen Surg)", "region": "Waitaha Canterbury" },
+        { "name": "Mike Burt (Gastro)", "region": "Waitaha Canterbury" },
+        { "name": "Gary Lim (Gastro)", "region": "Waitaha Canterbury" },
+        { "name": "Grant Coulter (Gen Surg)", "region": "Waitaha Canterbury" },
+        { "name": "Jonathan Koea", "region": "Northern North Island" },
+        { "name": "Andrew MacCormick (Gen Surg)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Right upper quadrant pain": [
       {
         "clinical_scenario": "No fever, normal WBC",
@@ -2775,6 +3077,26 @@
     ]
   },
   "Nephrology & Urology": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Andrew Laing", "region": "Waitaha Canterbury" },
+        { "name": "Remy Lim", "region": "Te Toka Tumai Auckland" },
+        { "name": "Jash Agraval", "region": "Waitemata" },
+        { "name": "Stewart Hawkins", "region": "Counties Manukau" },
+        { "name": "Neil Dawber", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Peter Davidson (Urology)", "region": "Waitaha Canterbury" },
+        { "name": "David McGregor (Nephrology)", "region": "Waitaha Canterbury" },
+        { "name": "Giovanni Losco (Urology)", "region": "Waitaha Canterbury" },
+        { "name": "David McGregor (Nephrology)", "region": "Waitaha Canterbury" },
+        { "name": "Jason Du (Urology)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Scrotum/ testicular": [
       {
         "clinical_scenario": "Testis tumour (diagnosed by orchidectomy)",
@@ -2961,6 +3283,30 @@
     ]
   },
   "Vascular and Diabetic Foot": {
+    "authors": {
+      "Radiology Leads": [
+        { "name": "Martin Kraus", "region": "Waitaha Canterbury" },
+        { "name": "Andrew Holden", "region": "Te Toka Tumai Auckland" },
+        { "name": "Andrew Holden", "region": "Waitemata" },
+        { "name": "Stewart Hawkins", "region": "Counties Manukau" },
+        { "name": "Alisher Tashbayev", "region": "Te Tai Tokerau" }
+      ],
+      "Clinical Leads": [
+        { "name": "Justin Roache (Vascular Surgery)", "region": "Waitaha Canterbury" },
+        { "name": "Helen Lunt ( Endocrine)", "region": "Waitaha Canterbury" },
+        { "name": "Tom Sharpe (Orthopaedics)", "region": "Waitaha Canterbury" },
+        { "name": "Peter Chapman (Rheumatology)", "region": "Waitaha Canterbury" },
+        { "name": "Alan Pithie (Infectious Diseases)", "region": "Waitaha Canterbury" },
+        { "name": "Tim Buckenham (Radiology)", "region": "Waitaha Canterbury" },
+        { "name": "Tim Beresford", "region": "Waitaha Canterbury" },
+        { "name": "Andrew Hill", "region": "Northern North Island" },
+        { "name": "Stuart Caldwell (Vascular Surgery)", "region": "Northern North Island" }
+      ]
+    },
+    "last_updated": {
+      "date": "20 May 2025",
+      "update_author": "Placeholder Author"
+    },
     "Vascular": [
       {
         "clinical_scenario": "Sudden onset of cold, painful leg",
@@ -3069,4 +3415,5 @@
     ]
   }
 }
+
 
