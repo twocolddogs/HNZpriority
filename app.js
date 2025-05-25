@@ -710,7 +710,7 @@ function App() {
     headerDivider: { width: "1px", height: "30px", background: "rgba(255,255,255,0.3)", margin: mobile ? "0 0.8em" : "0 1.5em", flexShrink: 0 },
     headerControls: { display: "flex", alignItems: "center", gap: mobile ? "0.5em" : "0.8em" },
     sidebar: { position: mobile ? "relative" : "sticky", top: mobile ? "auto" : `${calculatedStickyHeaderTopOffsetDesktopEM}em`, alignSelf: "start", height: mobile ? "auto" : "fit-content", maxHeight: mobile ? "auto" : `calc(100vh - ${calculatedStickyHeaderTopOffsetDesktopEM}em - 2em)`, overflowY: "auto", background: "#fff", borderRadius: "8px", padding: "1em", border: "1px solid #E5EAF0", boxShadow: "0 1px 3px rgba(0,0,0,0.03)", zIndex: 500 },
-    mainContent: { background: "#F5F7FA", borderRadius: "10px", padding: mobile ? "1em" : "1.5em", border: "1px solid #E5EAF0", boxShadow: "0 1px 3px rgba(0,0,0,0.03)", position: "relative", zIndex: 1 },
+    mainContent: { background: "#F5F7FA", borderRadius: "10px", padding: mobile ? "1em" : "0em 1.5em 1.5em 1.5em", border: "1px solid #E5EAF0", boxShadow: "0 1px 3px rgba(0,0,0,0.03)", position: "relative", zIndex: 1 },
     sectionButtonsContainer: { display: "flex", flexDirection: "column", gap: "0.4em" },
     sectionBtn: { padding: "0.5em 1em", fontSize: "0.85em", textAlign: "left", border: "1px solid #00549F", background: "#fff", color: "#00549F", borderRadius: "6px", cursor: "pointer", fontWeight: 600, transition: "all .2s", width: "100%", fontFamily: "'Poppins', Arial, sans-serif" },
     sectionActive: { background: "#00549F", color: "#fff" },
