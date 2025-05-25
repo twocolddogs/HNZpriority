@@ -1,0 +1,23 @@
+@font-face {
+  font-family: 'PublicSans';
+  src: url('PublicSans-Regular.woff') format('woff'),
+    url('PublicSans-Regular.woff') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'PublicSans';
+  src: url('PublicSans-SemiBold.woff') format('woff')
+  url('PublicSans-SemiBold.woff') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'PublicSans';
+  src: url('PublicSans-Bold.woff') format('woff'),
+  url('PublicSans-Bold.woff') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}

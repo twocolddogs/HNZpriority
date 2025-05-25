@@ -518,7 +518,7 @@ function App() {
 
   useEffect(() => {
     console.log("[useEffect fetchInitialData] Firing");
-    fetch("https://hnzradtools.nz/priority_data_set.json") // Or your local view-only data source
+    fetch('priority_data_set.json') // Production local
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
         return r.json();
