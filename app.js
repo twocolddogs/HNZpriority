@@ -696,13 +696,14 @@ function App() {
   const styles = {
     container: { padding: mobile ? "0.5em" : "1em", fontFamily: "'Public Sans', Arial, sans-serif", background: "#F9FAFB", minHeight: "100vh" },
     appLayout: { display: "grid", gridTemplateColumns: mobile ? "1fr" : "250px 1fr", gap: mobile ? "0.5em" : "1em", maxWidth: "1400px", margin: "0 auto" },
-    stickyHeader: { 
+    stickyHeader: { // Main App Bar
       position: "sticky",
       top: 0,
-      zIndex: 1002,
-      background: "#F9FAFB",
-      paddingBottom: `${headerPaddingBottomEM}em`,
-      boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+      zIndex: 1002, // Highest
+      background: "#F5F7FA",
+      paddingBottom: `${headerPaddingBottomEM}em`, // Its own padding
+      // No margin-bottom, as the next sticky element will be positioned relative to this.
+      // boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
     },
     brandBar: { display: "flex", alignItems: "center", justifyContent: "space-between", background: "linear-gradient(90deg,#143345 45%,#41236a 100%)", padding: mobile ? `${topBarPaddingMobileEM}em 1.2em` : `${topBarPaddingDesktopEM}em 1em`, borderRadius: "6px", maxWidth: "1400px", margin: "0 auto" },
     title: { color: "#fff", fontSize: mobile ? "1em" : "1.3em", margin: 0, fontWeight: 600, fontFamily: "'Poppins', Arial, sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
@@ -717,10 +718,11 @@ function App() {
       position: "sticky",
       top: STICKY_TOP_FOR_SECTION_HEADER, 
       zIndex: 1001, 
-      background: "#F9FAFB", 
+      background: "#F5F7FA", 
       paddingTop: "1em",      
       paddingBottom: "1em",   
       boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+      // willChange: "top", // Optional: for performance tuning
     },
     sectionHeaderContainer: { 
       display: "flex",
