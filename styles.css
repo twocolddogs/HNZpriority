@@ -784,101 +784,83 @@
   animation: slideOut 0.3s ease-in;
 }
 
-/* Styles for the Helper Page */
+/* Helper Page Styles */
+
 .rtt-helper-page-container {
-  max-width: 900px;
-  margin: 1.5em auto;
-  background: #fff;
-  padding: 1.5em;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  font-family: 'Public Sans', Arial, sans-serif;
-  line-height: 1.6;
-  color: #4B5563; /* Match app text */
+  /* For full width when sidebar is hidden */
+  /* This will be applied by App.js when currentPage is 'helper' on the main layout's child */
 }
 
-.rtt-helper-page-container h1,
-.rtt-helper-page-container h2,
-.rtt-helper-page-container h3 {
-  font-family: 'Poppins', Arial, sans-serif;
-  color: #00549F; /* App primary color */
+/* Style for the main content area when helper page is active (full width) */
+.rtt-app-layout-full-width {
+  grid-template-columns: 1fr !important; /* Override the two-column layout */
+}
+.rtt-main-content-full-width {
+  /* If any specific padding or margin adjustments are needed for full width */
 }
 
-.rtt-helper-page-container h1 {
-  text-align: center;
-  border-bottom: 2px solid #00549F;
-  padding-bottom: 0.75em;
-  margin-top: 0;
-  margin-bottom: 1.25em;
-  font-size: 2em;
-}
 
-.rtt-helper-page-document-meta {
-  text-align: center;
-  margin-bottom: 1.5em;
-  font-size: 0.9em;
-  color: #6B7280; /* App secondary text color */
-}
-.rtt-helper-page-document-meta p {
-  margin: 0.2em 0;
-}
-
-/* Collapsible Sections (Accordion) for Helper Page */
 .rtt-helper-collapsible-section {
   margin-bottom: 1em;
   border: 1px solid #E0E6ED; /* Match rtt-subheading-card border */
-  border-radius: 6px;
+  border-radius: 12px; /* Match rtt-subheading-card border-radius */
   overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04); /* Match rtt-subheading-card */
 }
 
 .rtt-helper-collapsible-section summary {
   cursor: pointer;
-  padding: 0.75em 1.1em; /* Match rtt-subheading-header padding */
-  background-color: #E8F0F6; /* Match rtt-subheading-header background */
-  border-bottom: 1px solid #D1D9E1; /* Match rtt-subheading-header border */
+  padding: 0.75em 1.1em; /* Match rtt-subheading-header */
+  background: #E8F0F6;    /* Match rtt-subheading-header */
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  transition: background-color 0.2s ease;
+  justify-content: space-between;
+  color: #00549F;         /* Match rtt-subheading-header */
+  font-weight: 600;
+  font-family: 'Poppins', Arial, sans-serif; /* Match rtt-subheading-header */
+  font-size: 0.95em;      /* Match rtt-subheading-header */
+  transition: background 0.3s ease;
+  border-bottom: 1px solid #D1D9E1; /* Match rtt-subheading-header */
 }
-.rtt-helper-collapsible-section summary:hover {
-  background-color: #D6E4EE; /* Match rtt-subheading-header-hover */
+.app-mobile .rtt-helper-collapsible-section summary {
+  padding: 0.6em 0.9em;
+  font-size: 0.9em;
 }
 
-.rtt-helper-collapsible-section summary h2 {
+.rtt-helper-collapsible-section summary:hover {
+  background: #D6E4EE;    /* Match rtt-subheading-header-hover */
+}
+
+.rtt-helper-collapsible-section summary h2 { /* h2 inside summary */
   margin: 0;
-  font-size: 1.1em;
-  font-weight: 600;
-  color: #00549F; /* Match rtt-subheading-header color */
+  /* font-size inherit from summary or slightly larger if needed */
+  font-weight: 600; /* Already set on summary, ensure it's what you want */
+  color: inherit; /* Inherit color from summary (changes when open) */
 }
 
 .rtt-helper-collapsible-section[open] summary {
-  background-color: #00549F;
+  background-color: #00549F; /* Darker blue for open state */
   color: white;
-  border-bottom-color: #004085;
+  border-bottom-color: #004085; /* Darker border for open summary */
 }
-.rtt-helper-collapsible-section[open] summary h2 {
-  color: white;
-}
+/* h2 color will be white due to color:white on [open] summary */
 
-.rtt-helper-collapsible-section summary::after {
+.rtt-helper-collapsible-section summary::after { /* Disclosure arrow */
   content: '+';
   font-size: 1.5em;
   font-weight: bold;
-  color: #00549F;
+  color: #00549F; /* Match summary text color */
   transition: transform 0.2s ease-in-out;
   margin-left: 0.5em;
 }
 .rtt-helper-collapsible-section[open] summary::after {
   content: '−';
-  color: white;
+  color: white; /* Match open summary text color */
 }
 
 .rtt-helper-collapsible-content {
-  padding: 1em 1.25em;
-  background-color: #FAFBFC; /* Match rtt-subheading-content */
-}
-.rtt-helper-collapsible-section[open] .rtt-helper-collapsible-content {
+  padding: 1em;            /* Match rtt-subheading-content */
+  background: #FAFBFC;     /* Match rtt-subheading-content */
   border-top: 1px solid #E0E6ED; /* Match rtt-subheading-content border */
 }
 
@@ -893,19 +875,21 @@
 .rtt-helper-page-container table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 600px;
+  min-width: 600px; /* Adjust as needed */
+  font-size: 0.85em; /* Smaller font for table content */
 }
 .rtt-helper-page-container th,
 .rtt-helper-page-container td {
   border: 1px solid #E0E6ED;
-  padding: 0.6em 0.75em;
+  padding: 0.5em 0.6em; /* Reduced padding */
   text-align: left;
   vertical-align: top;
 }
 .rtt-helper-page-container th {
   background-color: #F5F7FA;
-  font-weight: 600;
+  font-weight: 600; /* Already Poppins from summary */
   color: #4B5563;
+  white-space: nowrap; /* Attempt to prevent header wrapping */
 }
 .rtt-helper-page-container td ul {
   margin-top: 0.3em;
@@ -913,19 +897,17 @@
   padding-left: 1.1em;
 }
 
-/* Helper Page Notes and Explanations */
+/* Helper Page Notes and Explanations (already styled well) */
 .rtt-helper-note,
 .rtt-helper-explanation-point {
-  background-color: #FFF7E6; /* Match rtt-add-inline-btn background */
-  border-left: 4px solid #FFA726; /* Match rtt-add-inline-btn border */
+  background-color: #FFF7E6;
+  border-left: 4px solid #FFA726;
   padding: 0.75em 1em;
   margin: 1em 0;
   border-radius: 0 4px 4px 0;
 }
 .rtt-helper-note p,
-.rtt-helper-explanation-point p {
-  margin: 0.5em 0;
-}
+.rtt-helper-explanation-point p { margin: 0.5em 0; }
 .rtt-helper-note p:first-child,
 .rtt-helper-explanation-point p:first-child { margin-top: 0; }
 .rtt-helper-note p:last-child,
@@ -934,34 +916,31 @@
 .rtt-helper-page-container ul { padding-left: 1.25em; margin-top: 0.5em; margin-bottom: 1em; }
 .rtt-helper-page-container li { margin-bottom: 0.5em; }
 
-/* Helper Page Priority Impact Table Styling */
 .rtt-helper-priority-impact-table th,
 .rtt-helper-priority-impact-table td { text-align: center; }
 .rtt-helper-priority-impact-table td.yes { background-color: #D1FAE5; color: #065F46; font-weight: bold; }
 .rtt-helper-priority-impact-table td.if-possible { background-color: #FFF8BA; color: #5C5000; }
 .rtt-helper-priority-impact-table td.x { background-color: #FFBABA; color: #D8000C; font-weight: bold; }
 
-/* Styling for P and S codes within the Helper Page tables to match badges */
-.rtt-helper-p-code { /* Common style for all helper page codes */
+.rtt-helper-p-code {
   display: inline-block;
-  padding: 3px 7px; /* Slightly more padding than rtt-compact-badge */
-  font-size: 0.9em;
-  border-radius: 4px; /* Slightly larger radius */
+  padding: 3px 7px;
+  font-size: 0.95em; /* Slightly larger than table font for emphasis */
+  border-radius: 4px;
   font-weight: bold;
   text-align: center;
-  min-width: 3em;   /* Ensure a decent width */
+  min-width: 3em;
   margin-right: 0.3em;
-  line-height: 1.3; /* Adjust line height for better vertical centering */
+  line-height: 1.3;
 }
 
-/* Specific badge colors for helper page codes - these match rtt-badge- styles */
 .rtt-helper-p1 { background-color: #FFBABA; color: #D8000C; border: 1px solid #D8000C; }
 .rtt-helper-p2 { background-color: #FFE2BA; color: #AA5F00; border: 1px solid #AA5F00; }
 .rtt-helper-p3 { background-color: #FFF8BA; color: #5C5000; border: 1px solid #5C5000; }
 .rtt-helper-p4 { background-color: #BAE7FF; color: #004C7A; border: 1px solid #004C7A; }
 .rtt-helper-p5 { background-color: #D9D9D9; color: #4F4F4F; border: 1px solid #4F4F4F; }
-.rtt-helper-petct { background-color: #E0E0E0; color: #333333; border: 1px solid #777; } /* Using default badge style for PET-CT */
-.rtt-helper-na_overdue { background-color: #F0F0F0; color: #555555; border: 1px solid #555555; } /* Using N/A badge style */
+.rtt-helper-petct { background-color: #E0E0E0; color: #333333; border: 1px solid #777; }
+.rtt-helper-na_overdue { background-color: #F0F0F0; color: #555555; border: 1px solid #555555; } /* Specific for this NA */
 
 .rtt-helper-s1 { background-color: #D1FAE5; color: #065F46; border: 1px solid #065F46; }
 .rtt-helper-s2 { background-color: #FFE2BA; color: #AA5F00; border: 1px solid #AA5F00; }
@@ -969,37 +948,23 @@
 .rtt-helper-s4 { background-color: #BAE7FF; color: #004C7A; border: 1px solid #004C7A; }
 .rtt-helper-s5 { background-color: #D9D9D9; color: #4F4F4F; border: 1px solid #4F4F4F; }
 
-
-/* Helper Page Responsive Adjustments - Using app-mobile class for consistency */
+/* Helper Page Responsive Adjustments */
 .app-mobile .rtt-helper-page-container {
-  margin: 0.5em;
-  padding: 1em;
-  font-size: 0.95em;
+  margin: 0.5em; padding: 1em; font-size: 0.95em;
 }
 .app-mobile .rtt-helper-page-container h1 { font-size: 1.5em; }
 .app-mobile .rtt-helper-page-container h2 { font-size: 1.1em; }
 .app-mobile .rtt-helper-page-container th,
-.app-mobile .rtt-helper-page-container td { padding: 0.5em 0.6em; }
+.app-mobile .rtt-helper-page-container td { padding: 0.5em 0.6em; font-size: 0.9em; /* Smaller font for table content on mobile */ }
+.app-mobile .rtt-helper-page-container th { white-space: normal; } /* Allow headers to wrap on mobile */
+
 .app-mobile .rtt-helper-collapsible-section summary { padding: 0.6em 0.9em; }
 .app-mobile .rtt-helper-collapsible-content { padding: 0.75em 1em; }
 
-/* New class for the Helper Page Link in Brand Bar */
-.rtt-header-helper-link {
-  color: #fff;
-  text-decoration: none;
-  font-size: 0.9em;
-  font-weight: 500;
-  padding: 0.3em 0.6em;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-  margin-left: 1em;
-  cursor: pointer; /* Make it look clickable */
+.rtt-header-helper-link.rtt-edit-btn { /* For the back button */
+    color: #fff; /* Ensure text is white if using dark background from rtt-edit-btn */
+    background: #007A86; /* A neutral but visible color for back button */
 }
-.rtt-header-helper-link:hover {
-  background-color: rgba(255, 255, 255, 0.15); /* Slightly more visible hover */
-}
-.app-mobile .rtt-header-helper-link {
-  font-size: 0.85em; /* Slightly larger on mobile for touch */
-  padding: 0.4em 0.5em; /* Adjust padding for mobile */
-  margin-left: 0.5em;
+.rtt-header-helper-link.rtt-edit-btn:hover {
+    background: #005f69;
 }
