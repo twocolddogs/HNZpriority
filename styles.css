@@ -247,7 +247,7 @@
 
 /* App Component - Main Styles Object */
 .rtt-container {
-  font-family: 'publicsans', Arial, sans-serif;
+  font-family: 'PublicSans', Arial, sans-serif;
   background: #F9FAFB;
   min-height: 100vh;
   padding: 1em; /* Default (desktop) */
