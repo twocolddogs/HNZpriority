@@ -247,7 +247,7 @@
 
 /* App Component - Main Styles Object */
 .rtt-container {
-  font-family: 'PublicSans', Arial, sans-serif;
+  font-family: 'Public-Sans', Arial, sans-serif;
   background: #F9FAFB;
   min-height: 100vh;
   padding: 1em; /* Default (desktop) */
@@ -784,84 +784,87 @@
   animation: slideOut 0.3s ease-in;
 }
 
-/* Helper Page Styles */
+/* styles.css - UPDATES AND ADDITIONS */
 
+/* ... (all your existing rtt- styles from previous steps) ... */
+
+/* Helper Page Styles */
 .rtt-helper-page-container {
-  /* For full width when sidebar is hidden */
-  /* This will be applied by App.js when currentPage is 'helper' on the main layout's child */
+  max-width: 1350px; /* Slightly less than 1400px of brand-bar, adjust as needed */
+  margin: 1.5em auto;
+  background: #fff;
+  padding: 1.5em;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-family: 'Public-Sans', Arial, sans-serif;
+  line-height: 1.6;
+  color: #4B5563;
 }
 
 /* Style for the main content area when helper page is active (full width) */
-.rtt-app-layout-full-width {
-  grid-template-columns: 1fr !important; /* Override the two-column layout */
-}
-.rtt-main-content-full-width {
-  /* If any specific padding or margin adjustments are needed for full width */
-}
+/* No specific class needed if rtt-helper-page-container handles its own max-width */
 
 
+/* Collapsible Sections (Accordion) for Helper Page */
 .rtt-helper-collapsible-section {
   margin-bottom: 1em;
-  border: 1px solid #E0E6ED; /* Match rtt-subheading-card border */
-  border-radius: 12px; /* Match rtt-subheading-card border-radius */
+  border: 1px solid #E0E6ED;
+  border-radius: 8px; /* Slightly smaller radius than subheading-card for a tighter feel */
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.04); /* Match rtt-subheading-card */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03); /* Softer shadow */
 }
 
 .rtt-helper-collapsible-section summary {
   cursor: pointer;
-  padding: 0.75em 1.1em; /* Match rtt-subheading-header */
-  background: #E8F0F6;    /* Match rtt-subheading-header */
+  padding: 0.6em 1em; /* REDUCED PADDING for smaller height */
+  background: #E8F0F6;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #00549F;         /* Match rtt-subheading-header */
-  font-weight: 600;
-  font-family: 'Poppins', Arial, sans-serif; /* Match rtt-subheading-header */
-  font-size: 0.95em;      /* Match rtt-subheading-header */
+  color: #00549F;
+  font-family: 'Poppins', Arial, sans-serif;
+  /* font-size: 0.9em; REMOVED - h2 will control its size */
   transition: background 0.3s ease;
-  border-bottom: 1px solid #D1D9E1; /* Match rtt-subheading-header */
+  border-bottom: 1px solid #D1D9E1;
 }
 .app-mobile .rtt-helper-collapsible-section summary {
-  padding: 0.6em 0.9em;
-  font-size: 0.9em;
+  padding: 0.5em 0.8em; /* Further reduce for mobile */
 }
 
 .rtt-helper-collapsible-section summary:hover {
-  background: #D6E4EE;    /* Match rtt-subheading-header-hover */
+  background: #D6E4EE;
 }
 
-.rtt-helper-collapsible-section summary h2 { /* h2 inside summary */
+.rtt-helper-collapsible-section summary h2 {
   margin: 0;
-  /* font-size inherit from summary or slightly larger if needed */
-  font-weight: 600; /* Already set on summary, ensure it's what you want */
-  color: inherit; /* Inherit color from summary (changes when open) */
+  font-size: 1em; /* REDUCED FONT SIZE for h2 in summary */
+  font-weight: 600;
+  color: inherit;
 }
 
 .rtt-helper-collapsible-section[open] summary {
-  background-color: #00549F; /* Darker blue for open state */
+  background-color: #00549F;
   color: white;
-  border-bottom-color: #004085; /* Darker border for open summary */
+  border-bottom-color: #004085;
 }
-/* h2 color will be white due to color:white on [open] summary */
 
 .rtt-helper-collapsible-section summary::after { /* Disclosure arrow */
   content: '+';
-  font-size: 1.5em;
+  font-size: 1.3em; /* REDUCED size of arrow */
   font-weight: bold;
-  color: #00549F; /* Match summary text color */
+  color: #00549F;
   transition: transform 0.2s ease-in-out;
   margin-left: 0.5em;
 }
 .rtt-helper-collapsible-section[open] summary::after {
   content: '−';
-  color: white; /* Match open summary text color */
+  color: white;
 }
 
 .rtt-helper-collapsible-content {
-  padding: 1em;            /* Match rtt-subheading-content */
-  background: #FAFBFC;     /* Match rtt-subheading-content */
-  border-top: 1px solid #E0E6ED; /* Match rtt-subheading-content border */
+  padding: 1em 1.25em;
+  background: #FAFBFC;
+  border-top: 1px solid #E0E6ED;
 }
 
 /* Helper Page Tables */
@@ -875,47 +878,63 @@
 .rtt-helper-page-container table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 600px; /* Adjust as needed */
-  font-size: 0.85em; /* Smaller font for table content */
+  min-width: 600px;
+  font-size: 0.85em;
 }
 .rtt-helper-page-container th,
 .rtt-helper-page-container td {
   border: 1px solid #E0E6ED;
-  padding: 0.5em 0.6em; /* Reduced padding */
+  padding: 0.5em 0.6em;
   text-align: left;
   vertical-align: top;
 }
 .rtt-helper-page-container th {
   background-color: #F5F7FA;
-  font-weight: 600; /* Already Poppins from summary */
+  font-weight: 600;
   color: #4B5563;
-  white-space: nowrap; /* Attempt to prevent header wrapping */
+  white-space: normal; /* Allow header text to wrap if needed, but try to keep it minimal */
 }
+/* NEW: Styling for subtitles in table cells */
+.rtt-table-cell-subtitle {
+  display: block;
+  font-size: 0.85em; /* Smaller than cell text */
+  color: #6B7280; /* Dimmer color */
+  margin-top: 0.2em;
+}
+
 .rtt-helper-page-container td ul {
   margin-top: 0.3em;
   margin-bottom: 0;
   padding-left: 1.1em;
 }
 
-/* Helper Page Notes and Explanations (already styled well) */
-.rtt-helper-note,
-.rtt-helper-explanation-point {
+/* Helper Page Notes and Explanations */
+.rtt-helper-note { /* Only one style needed now */
   background-color: #FFF7E6;
   border-left: 4px solid #FFA726;
   padding: 0.75em 1em;
   margin: 1em 0;
   border-radius: 0 4px 4px 0;
 }
-.rtt-helper-note p,
-.rtt-helper-explanation-point p { margin: 0.5em 0; }
-.rtt-helper-note p:first-child,
-.rtt-helper-explanation-point p:first-child { margin-top: 0; }
-.rtt-helper-note p:last-child,
-.rtt-helper-explanation-point p:last-child { margin-bottom: 0; }
+/* REMOVED .rtt-helper-explanation-point specific style to make it less distinct */
+.rtt-helper-explanation-content { /* New class for the div wrapping S category explanations */
+    font-size: 0.9em; /* Smaller font */
+    color: #4B5563; /* Standard text color */
+    line-height: 1.5;
+}
+.rtt-helper-explanation-content p {
+    margin: 0.5em 0;
+}
+.rtt-helper-explanation-content ul {
+    padding-left: 1.2em; /* Adjust padding for smaller font */
+    margin-top: 0.3em;
+}
+.rtt-helper-explanation-content li {
+    margin-bottom: 0.3em;
+}
 
-.rtt-helper-page-container ul { padding-left: 1.25em; margin-top: 0.5em; margin-bottom: 1em; }
-.rtt-helper-page-container li { margin-bottom: 0.5em; }
 
+/* ... (Priority Impact Table and Badge styles remain the same as previous response) ... */
 .rtt-helper-priority-impact-table th,
 .rtt-helper-priority-impact-table td { text-align: center; }
 .rtt-helper-priority-impact-table td.yes { background-color: #D1FAE5; color: #065F46; font-weight: bold; }
@@ -923,25 +942,16 @@
 .rtt-helper-priority-impact-table td.x { background-color: #FFBABA; color: #D8000C; font-weight: bold; }
 
 .rtt-helper-p-code {
-  display: inline-block;
-  padding: 3px 7px;
-  font-size: 0.95em; /* Slightly larger than table font for emphasis */
-  border-radius: 4px;
-  font-weight: bold;
-  text-align: center;
-  min-width: 3em;
-  margin-right: 0.3em;
-  line-height: 1.3;
+  display: inline-block; padding: 3px 7px; font-size: 0.95em; border-radius: 4px;
+  font-weight: bold; text-align: center; min-width: 3em; margin-right: 0.3em; line-height: 1.3;
 }
-
 .rtt-helper-p1 { background-color: #FFBABA; color: #D8000C; border: 1px solid #D8000C; }
 .rtt-helper-p2 { background-color: #FFE2BA; color: #AA5F00; border: 1px solid #AA5F00; }
 .rtt-helper-p3 { background-color: #FFF8BA; color: #5C5000; border: 1px solid #5C5000; }
 .rtt-helper-p4 { background-color: #BAE7FF; color: #004C7A; border: 1px solid #004C7A; }
 .rtt-helper-p5 { background-color: #D9D9D9; color: #4F4F4F; border: 1px solid #4F4F4F; }
 .rtt-helper-petct { background-color: #E0E0E0; color: #333333; border: 1px solid #777; }
-.rtt-helper-na_overdue { background-color: #F0F0F0; color: #555555; border: 1px solid #555555; } /* Specific for this NA */
-
+.rtt-helper-na_overdue { background-color: #F0F0F0; color: #555555; border: 1px solid #555555; }
 .rtt-helper-s1 { background-color: #D1FAE5; color: #065F46; border: 1px solid #065F46; }
 .rtt-helper-s2 { background-color: #FFE2BA; color: #AA5F00; border: 1px solid #AA5F00; }
 .rtt-helper-s3 { background-color: #FFF8BA; color: #5C5000; border: 1px solid #5C5000; }
@@ -950,21 +960,49 @@
 
 /* Helper Page Responsive Adjustments */
 .app-mobile .rtt-helper-page-container {
+  max-width: 100%; /* Full width on mobile */
   margin: 0.5em; padding: 1em; font-size: 0.95em;
 }
-.app-mobile .rtt-helper-page-container h1 { font-size: 1.5em; }
-.app-mobile .rtt-helper-page-container h2 { font-size: 1.1em; }
-.app-mobile .rtt-helper-page-container th,
-.app-mobile .rtt-helper-page-container td { padding: 0.5em 0.6em; font-size: 0.9em; /* Smaller font for table content on mobile */ }
-.app-mobile .rtt-helper-page-container th { white-space: normal; } /* Allow headers to wrap on mobile */
+.app-mobile .rtt-helper-collapsible-section summary h2 { font-size: 0.95em; }
+.app-mobile .rtt-helper-collapsible-section summary::after { font-size: 1.2em; }
+/* ... (other mobile styles for helper page remain) ... */
 
-.app-mobile .rtt-helper-collapsible-section summary { padding: 0.6em 0.9em; }
-.app-mobile .rtt-helper-collapsible-content { padding: 0.75em 1em; }
 
-.rtt-header-helper-link.rtt-edit-btn { /* For the back button */
-    color: #fff; /* Ensure text is white if using dark background from rtt-edit-btn */
-    background: #007A86; /* A neutral but visible color for back button */
+/* Header Button Styling Adjustments */
+.rtt-header-button-link { /* NEW base class for header buttons that are links/actions */
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.9em;
+  font-weight: 600; /* Match rtt-edit-btn */
+  padding: 0.4em 0.8em; /* Consistent padding */
+  border-radius: 6px; /* Match rtt-edit-btn */
+  transition: background-color 0.2s ease;
+  border: none; /* Ensure no default button border */
+  cursor: pointer;
+  background-color: transparent; /* Default transparent background */
+  white-space: nowrap;
+  font-family: 'Poppins', Arial, sans-serif; /* Match rtt-edit-btn */
 }
-.rtt-header-helper-link.rtt-edit-btn:hover {
-    background: #005f69;
+.rtt-header-button-link:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Specific for Priority Guide link when on triage page */
+.rtt-priority-guide-nav-link {
+  /* Inherits from rtt-header-button-link */
+  /* Add any specific overrides if needed, e.g., margin */
+}
+
+/* Specific for Back to Triage button when on helper page */
+.rtt-back-to-triage-link {
+  /* Inherits from rtt-header-button-link */
+  background-color: #007A86; /* A distinct but harmonious color */
+}
+.rtt-back-to-triage-link:hover {
+  background-color: #005f69;
+}
+
+.app-mobile .rtt-header-button-link {
+  font-size: 0.8em;
+  padding: 0.3em 0.6em;
 }
