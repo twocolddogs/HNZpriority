@@ -1,5 +1,5 @@
 @font-face {
-  font-family: 'PublicSans';
+  font-family: 'Public-Sans';
   src: url('PublicSans-Regular.woff') format('woff'),
     url('PublicSans-Regular.woff') format('woff2');
   font-weight: 400;
@@ -7,7 +7,7 @@
 }
 
 @font-face {
-  font-family: 'PublicSans';
+  font-family: 'Public-Sans';
   src: url('PublicSans-SemiBold.woff') format('woff')
   url('PublicSans-SemiBold.woff') format('woff2');
   font-weight: 600;
@@ -15,7 +15,7 @@
 }
 
 @font-face {
-  font-family: 'PublicSans';
+  font-family: 'Public-Sans';
   src: url('PublicSans-Bold.woff') format('woff'),
   url('PublicSans-Bold.woff') format('woff2');
   font-weight: 700;
