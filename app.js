@@ -960,10 +960,14 @@ const addSubheadingInternal = (sec, name) => {
           e("div", { className: "rtt-flex-spacer" }), // flex: 1
           e( "div", { className: "rtt-header-controls" },
             Object.keys(dirty).length > 0 && e( "button", { onClick: downloadJson, className: "rtt-download-btn" }, mobile ? "Save" : "Save & Download Updates"),
+           
+            /* ------- VIEW ONLY MODE ---------
+            
             selected && e( "button", { 
                 onClick: () => setEdit(!edit), 
                 className: `rtt-edit-btn ${edit ? "rtt-edit-btn-active" : "rtt-edit-btn-inactive"}`
             }, mobile ? (edit ? "Exit" : "Edit") : (edit ? "Exit Edit Mode" : "Switch to Edit Mode")),
+        */
           ),
         )
     ),
