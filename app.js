@@ -8,12 +8,11 @@ import React, {
   useMemo,
 } from "https://esm.sh/react";
 import { createRoot } from "https://esm.sh/react-dom/client";
-import { HelperPage } from "./HelperPage.js";
+import { HelperPage } from "./HelperPage.js"; // Ensure HelperPage.js is in the same directory
 
 const e = React.createElement;
 const deepClone = (o) => JSON.parse(JSON.stringify(o));
 
-// ... (scenarioToIdHash, useIsMobile, getModalityIcon, getBadgeClass functions remain the same) ...
 // HELPER FUNCTION for generating a hash from a card's clinical_scenario string
 const scenarioToIdHash = (clinicalScenarioStr) => {
   const str = String(clinicalScenarioStr || '');
@@ -68,7 +67,6 @@ const getBadgeClass = (category) => {
 
 
 /* ---------- AuthorPopOver Component ---------- */
-// ... (AuthorPopover component remains the same)
 function AuthorPopover({ content, position, onClose, isEdit, onSave }) {
   const [localAuthors, setLocalAuthors] = React.useState(content.authors || {});
   React.useEffect(() => {
@@ -163,7 +161,6 @@ function AuthorPopover({ content, position, onClose, isEdit, onSave }) {
 
 
 /* ---------- ScenarioCard Component ---------- */
-// ... (ScenarioCard component remains the same)
 const PRIORITY_CHOICES = [
   "P1", "P2", "P3", "P4", "P5",
   "S1", "S2", "S3", "S4", "S5",
@@ -384,7 +381,6 @@ function ScenarioCard({
 
 
 /* ---------- SubheadingSection Component ---------- */
-// ... (SubheadingSection component remains the same)
 function SubheadingSection({
   selected,
   sub,
@@ -527,7 +523,6 @@ function SubheadingSection({
     ]
   );
 }
-
 
 /* ---------- App Component ---------- */
 function App() {
@@ -1041,7 +1036,7 @@ function App() {
     'This tool provides guidance only and does not replace clinical judgment.'
   ];
   const currentQuickGuidePoints = isEditorMode ? editorQuickGuidePoints : viewerQuickGuidePoints;
-  const quickGuideTitleText = isEditorMode ? "Editor Quick Guide:" : "Quick Guide:"; // Renamed to avoid conflict
+  const quickGuideTitleText = isEditorMode ? "Editor Quick Guide:" : "Quick Guide:";
   
   const pageTitleBase = isEditorMode ? "Radiology Triage Tool - Editor" : "Radiology Triage Tool";
   const pageTitleMobileBase = isEditorMode ? "Triage Tool Editor" : "Triage Tool";
@@ -1050,7 +1045,7 @@ function App() {
   if (currentPage === 'triage' && isEditorMode && edit && selected) {
     currentHeaderTitle = `Editing: ${selected}`;
   } else if (currentPage === 'helper') {
-    currentHeaderTitle = mobile ? "Priority Guide" : "National Prioritisation Helper Guide";
+    currentHeaderTitle = mobile ? "Priority Guide" : "National Prioritisation Guide";
   }
 
 
@@ -1061,33 +1056,39 @@ function App() {
           e("img", { src: "/images/HealthNZ_logo_v2.svg", alt: "Health NZ Logo", className: "rtt-app-logo" }),
           e("div", { className: "rtt-header-divider" }),
           e( "h1", { className: "rtt-title" }, currentHeaderTitle),
-          currentPage === 'triage' && e( "a", { 
-                href: "#helper", 
-                className: "rtt-header-helper-link",
-                onClick: (ev) => {
-                    ev.preventDefault(); 
-                    navigateToHelperPage();
-                }
+          e("div", { style: { flexGrow: 1 } }), // Spacer pushes controls to the right
+          
+          e( "div", { className: "rtt-header-controls" }, // Container for all right-aligned controls
+            currentPage === 'triage' && e( "button", { 
+                className: "rtt-header-button-link rtt-priority-guide-nav-link",
+                onClick: navigateToHelperPage,
+                title: "View Priority Guide"
             }, "Priority Guide"),
-          currentPage === 'helper' && e( "button", {
-                className: "rtt-header-helper-link rtt-edit-btn", // Re-use some button styling
-                style: { marginLeft: 'auto', marginRight: '0.5em'}, // Push to right
-                onClick: navigateToTriagePage
+            
+            currentPage === 'helper' && e( "button", {
+                className: "rtt-header-button-link rtt-back-to-triage-link",
+                onClick: navigateToTriagePage,
+                title: "Back to Triage Tool"
             }, "← Back to Triage Tool"),
-          e("div", { className: currentPage === 'helper' ? '' : "rtt-flex-spacer" }), // Only flex space if not helper page with button
-          e( "div", { className: "rtt-header-controls" },
-            isEditorMode && currentPage === 'triage' && Object.keys(dirty).length > 0 && e( "button", { onClick: downloadJson, className: "rtt-download-btn" }, mobile ? "Save" : "Save & Download Updates"),
+
             isEditorMode && currentPage === 'triage' && selected && e( "button", {
                 onClick: () => setEdit(!edit),
-                className: `rtt-edit-btn ${edit ? "rtt-edit-btn-active" : "rtt-edit-btn-inactive"}`
+                className: `rtt-edit-btn ${edit ? "rtt-edit-btn-active" : "rtt-edit-btn-inactive"}`,
+                title: edit ? "Exit Edit Mode" : "Switch to Edit Mode"
             }, mobile ? (edit ? "Exit" : "Edit") : (edit ? "Exit Edit Mode" : "Switch to Edit Mode")),
+            
+            isEditorMode && currentPage === 'triage' && Object.keys(dirty).length > 0 && e( "button", { 
+                onClick: downloadJson, 
+                className: "rtt-download-btn",
+                title: "Save and Download Updates"
+            }, mobile ? "Save" : "Save & Download Updates"),
           ),
         )
     ),
     currentPage === 'helper'
-      ? e(HelperPage, { /* No onNavigateToTriage needed here anymore as button is in header */ })
-      : e( "div", { className: `rtt-app-layout ${currentPage === 'helper' ? 'rtt-app-layout-full-width' : ''}` }, 
-          currentPage === 'triage' && e( "aside", { className: "rtt-sidebar" }, // Only show sidebar on triage page
+      ? e(HelperPage, { /* Props can be added if HelperPage needs them */ })
+      : e( "div", { className: "rtt-app-layout" }, 
+          e( "aside", { className: "rtt-sidebar" },
             e( "div", { className: "rtt-section-buttons-container" },
               isEditorMode && edit && e('button',{ key: 'add-section-top', onClick: addSection, className: "rtt-add-btn rtt-add-btn-specific" }, '+ Add Section'),
               sections.map((sec) => {
@@ -1105,8 +1106,8 @@ function App() {
               }),
             )
           ),
-          e( "main", { className: `rtt-main-content ${currentPage === 'helper' ? 'rtt-main-content-full-width' : ''}`, ref: mainContentRef },
-            currentPage === 'triage' && !selected
+          e( "main", { className: "rtt-main-content", ref: mainContentRef },
+            !selected
               ? e( "div", { className: "rtt-welcome-screen" },
                   e( "h2", { className: "rtt-section-header rtt-welcome-title" },
                      isEditorMode ? "Welcome to the Radiology Triage Tool Editor" : "Welcome to the Radiology Triage Tool"
@@ -1127,7 +1128,7 @@ function App() {
                     ],
                   ),
                 )
-              : currentPage === 'triage' && selected && e("div", { key: selected || 'selected-section-content' }, [ // Ensure this only renders for triage
+              : e("div", { key: selected || 'selected-section-content' }, [
                   e("div", { className: "rtt-sticky-section-header-wrapper" }, [
                     e( 'div', { className: "rtt-section-header-container" },
                       e('div', { className: "rtt-section-title-group" },
