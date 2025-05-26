@@ -170,11 +170,10 @@ function ScenarioCard({
   sub,
   originalIdx,
   isEdit,
-  // styles, badgeStyles, compactBadgeStyle are now implicitly handled by global classes
   saveScenario,
   removeScenario,
-  compactMode, // This will be handled by a global .app-compact-mode class
-  mobile, // This will be handled by a global .app-mobile class
+  compactMode,
+  mobile,
   hasChanges,
 }) {
   const [local, setLocal] = useState({ ...item });
@@ -190,7 +189,7 @@ function ScenarioCard({
   const cardAnchorId = `scenario-${scenarioHash}-${originalIdx}`;
 
   const cardClasses = [
-    "rtt-result", // Base class for results/cards
+    "rtt-result",
     compactMode ? "rtt-scenario-card-padding-compact" : "rtt-scenario-card-padding-default",
     hasChanges ? "rtt-scenario-card-has-changes" : ""
   ].filter(Boolean).join(" ");
@@ -387,7 +386,6 @@ function SubheadingSection({
   actualIsEmpty,
   edit,
   searchTerm,
-  // styles, badgeStyles, compactBadgeStyle - removed, handled by global CSS
   newlyAddedSubheading,
   subheadingHasChanges,
   toggleSubSection,
@@ -397,10 +395,9 @@ function SubheadingSection({
   removeScenario,
   scenarioHasChanges,
   keyOf,
-  compactMode, // Will be on app root
-  mobile, // Will be on app root
+  compactMode,
+  mobile,
 }) {
-  // isHovered state is removed, hover handled by CSS :hover on .rtt-subheading-header
   const subKeyForId = `${selected}-${sub}`;
   const hasSubChanges = subheadingHasChanges(selected, sub);
   const showRemoveSubButton = edit && actualIsEmpty && searchTerm.length < 3 && sub !== "General";
@@ -409,11 +406,10 @@ function SubheadingSection({
   
   const disclosureArrowClasses = [
     "rtt-disclosure-arrow",
-    mobile ? "" : "rtt-disclosure-arrow-desktop", // Mobile doesn't need this specific desktop class
+    mobile ? "" : "rtt-disclosure-arrow-desktop",
     !mobile && isExpanded ? "rtt-disclosure-arrow-desktop-expanded" : "",
     !mobile && !isExpanded ? "rtt-disclosure-arrow-desktop-collapsed" : ""
   ].filter(Boolean).join(" ");
-  // Note: .app-mobile .rtt-disclosure-arrow handles mobile specific font size/weight
 
   const subheadingCardClasses = [
     "rtt-subheading-card",
@@ -431,9 +427,8 @@ function SubheadingSection({
       e(
         "div",
         {
-          className: "rtt-subheading-header", // Hover handled by CSS
+          className: "rtt-subheading-header",
           onClick: () => toggleSubSection(selected, sub),
-          // onMouseEnter/Leave removed
         },
         [
           e(
@@ -445,7 +440,7 @@ function SubheadingSection({
                 { className: disclosureArrowClasses },
                 arrowChar
               ),
-              e("span", { style: { fontWeight: 600 } }, sub), // Keeping fontWeight inline as it's simple and specific
+              e("span", { style: { fontWeight: 600 } }, sub),
               hasSubChanges && e( "span", { className: "rtt-subheading-changed-indicator" }),
             ]
           ),
@@ -500,7 +495,6 @@ function SubheadingSection({
                     sub,
                     originalIdx: item._originalIdx,
                     isEdit: edit,
-                    // styles, badgeStyles, compactBadgeStyle removed
                     saveScenario,
                     removeScenario,
                     compactMode,
@@ -513,7 +507,7 @@ function SubheadingSection({
             )
           : e(
               "p",
-              null, // No custom style, rely on parent .rtt-empty-subheading-content
+              null,
               searchTerm.length >= 3 && list.length === 0 && !actualIsEmpty
                 ? `No items match "${searchTerm}" in this sub-heading.`
                 : edit && actualIsEmpty && searchTerm.length < 3
@@ -529,11 +523,16 @@ function SubheadingSection({
 
 /* ---------- App ---------- */
 function App() {
-  console.log("[App] Component body start / Re-render start");
+  // Determine mode based on hostname
+  const isEditorMode = window.location.hostname === 'editor.hnzradtools.nz' ||
+                       window.location.hostname === 'localhost'; // Added localhost for local editor testing
+
+  console.log(`[App] Mode: ${isEditorMode ? 'Editor' : 'View-Only'} | Hostname: ${window.location.hostname}`);
   const mobile = useIsMobile();
   const [data, setData] = useState(null);
   const [sections, setSections] = useState([]);
   const [selected, setSelected] = useState(null);
+  // Initial edit state is always false. `isEditorMode` controls if it *can* be turned on.
   const [edit, setEdit] = useState(false);
   const [dirty, setDirty] = useState({});
   const [rawJsonData, setRawJsonData] = useState(null);
@@ -545,19 +544,13 @@ function App() {
     visible: false, top: 0, left: 0,
   });
   const [collapsedSubs, setCollapsedSubs] = useState({});
-  const [compactMode, setCompactMode] = useState(false); // For .app-compact-mode
+  const [compactMode, setCompactMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeepLinking, setIsDeepLinking] = useState(false);
   const [initialHashProcessed, setInitialHashProcessed] = useState(false);
 
-  // --- Constants for Sticky Header Offsets ---
-  // These are now reflected in CSS classes like .rtt-sticky-section-header-wrapper
-  // const APP_BAR_HEIGHT_DESKTOP = "3.2em";
-  // const APP_BAR_HEIGHT_MOBILE = "3.5em";
-  // const STICKY_TOP_FOR_SECTION_HEADER = mobile ? APP_BAR_HEIGHT_MOBILE : APP_BAR_HEIGHT_DESKTOP;
-  // --- End Constants ---
 
-  console.log("[App STATE] selected:", selected, "newlyAddedSubheading:", newlyAddedSubheading, "edit:", edit);
+  console.log("[App STATE] selected:", selected, "newlyAddedSubheading:", newlyAddedSubheading, "edit:", edit, "isEditorMode:", isEditorMode);
 
   const markDirtyKey = (k, v = true) => setDirty((p) => ({ ...p, [k]: v }));
 
@@ -609,7 +602,7 @@ function App() {
 
   useEffect(() => {
     console.log("[useEffect fetchInitialData] Firing");
-    fetch("https://hnzradtools.nz/priority_data_set.json")
+    fetch("https://hnzradtools.nz/priority_data_set.json") // Consider making this URL configurable if needed
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
         return r.json();
@@ -671,7 +664,7 @@ function App() {
           const element = document.getElementById(fragment);
           if (element) {
             console.log(`[DeepLink] Element '${fragment}' found. Applying subtle highlight and clearing hash.`);
-            const originalBgColor = element.style.backgroundColor; // Reading inline style, might be empty
+            const originalBgColor = element.style.backgroundColor;
             element.style.transition = 'background-color 2s ease-in-out'; element.style.backgroundColor = '#f3e1f7';
             const rect = element.getBoundingClientRect();
             const isCentered = (rect.top >= 0) && (rect.left >= 0) && (rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)) && (rect.right <= (window.innerWidth || document.documentElement.clientWidth)) && (rect.top > window.innerHeight * 0.2 && rect.bottom < window.innerHeight * 0.8);
@@ -693,11 +686,14 @@ function App() {
 
   useEffect(() => {
     console.log("[useEffect selectedOrEditChange] Firing. Selected:", selected, "Edit:", edit);
-    if (!selected && edit) {
-      console.log("[useEffect selectedOrEditChange] No section selected but in edit mode, turning edit mode off.");
+    // If not in editor mode, edit should always be false.
+    // If it somehow gets set to true, turn it off.
+    // Also, if no section is selected and we are in edit mode, turn it off.
+    if ((!isEditorMode && edit) || (!selected && edit)) {
+      console.log("[useEffect selectedOrEditChange] Forcing edit mode off due to invalid state (not editor mode or no selection).");
       setEdit(false);
     }
-  }, [selected, edit]);
+  }, [selected, edit, isEditorMode]);
 
   useEffect(() => {
     console.log("[useEffect popoverManagement] Firing. authorPopoverPosition.visible:", authorPopoverPosition.visible);
@@ -779,15 +775,18 @@ function App() {
   const keyOf = (s, sub, originalIdx) => `${s}|${sub}|${originalIdx}`;
 
   const saveScenario = (sec, sub, originalIdx, obj) => {
+    if (!isEditorMode) return; // Prevent saving in view-only mode
     setData((p) => { const c = deepClone(p); c[sec][sub][originalIdx] = obj; return c; });
     markDirtyKey(keyOf(sec, sub, originalIdx), true);
   };
   const removeScenario = (sec, sub, originalIdx) => {
+    if (!isEditorMode) return; // Prevent removing in view-only mode
     if (!confirm("Remove scenario?")) return;
     setData((p) => { const c = deepClone(p); c[sec][sub].splice(originalIdx, 1); return c; });
     markDirtyKey(keyOf(sec, sub, originalIdx) + "_removed", true);
   };
   const addScenario = (sec, sub = "General") => {
+    if (!isEditorMode) return; // Prevent adding in view-only mode
     const txt = prompt("Scenario:");
     if (!txt || !txt.trim()) return;
     setData((p) => {
@@ -802,6 +801,7 @@ function App() {
   };
 
 const addSubheadingInternal = (sec, name) => {
+    if (!isEditorMode) return false; // Prevent adding in view-only mode
     if (!data || !data[sec]) { alert(`Error: Section '${sec}' not found.`); return false; }
     if (name === "authors" || name === "last_updated") { alert("The names 'authors' and 'last_updated' are reserved."); return false; }
     if (data[sec][name] && Array.isArray(data[sec][name])) { alert(`The sub-heading "${name}" already exists.`); return false; }
@@ -822,13 +822,13 @@ const addSubheadingInternal = (sec, name) => {
   };
 
   const addSubheadingViaPrompt = (sec) => {
+    if (!isEditorMode) return; // Prevent adding in view-only mode
     const n = prompt("New sub-heading name:");
     if (!n || !n.trim()) return;
     const trimmedName = n.trim();
     if (addSubheadingInternal(sec, trimmedName)) {
       const successMsg = document.createElement('div');
       successMsg.textContent = `Sub-heading "${trimmedName}" created successfully!`;
-      // Using CSS classes for the toast message
       successMsg.className = 'rtt-success-toast';
       document.body.appendChild(successMsg);
       setTimeout(() => {
@@ -838,11 +838,13 @@ const addSubheadingInternal = (sec, name) => {
     }
   };
   const removeSubheading = (sec, subToRemove) => {
+    if (!isEditorMode) return; // Prevent removing in view-only mode
     if (!confirm(`Remove "${subToRemove}"?`)) return;
     setData((p) => { const c = deepClone(p); if (c[sec] && c[sec][subToRemove]) delete c[sec][subToRemove]; return c; });
     markDirtyKey(`${sec}_subheading_removed_${subToRemove}`, true);
   };
   const addSection = () => {
+    if (!isEditorMode) return; // Prevent adding in view-only mode
     const n = prompt("New section:");
     if (!n || !n.trim()) return;
     if (data[n]) { alert("Exists."); return; }
@@ -850,12 +852,13 @@ const addSubheadingInternal = (sec, name) => {
     setData((p) => ({ ...p, [n]: nSD }));
     setSections((p) => [...p, n].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })));
     setSelected(n);
-    setEdit(true);
+    setEdit(true); // This is safe because addSection is gated by isEditorMode
     markDirtyKey("new_section_" + n, true);
     setCollapsedSubs((p) => ({ ...p, [`${n}-General`]: false }));
   };
 
   const downloadJson = () => {
+    if (!isEditorMode) return; // Prevent downloading in view-only mode
     if (!Object.keys(dirty).length) { alert("No changes."); return; }
     const uD = deepClone(data);
     const today = new Date().toISOString().split("T")[0];
@@ -886,7 +889,6 @@ const addSubheadingInternal = (sec, name) => {
   };
 
   const generateChangelog = (dK, oD, cD, date) => {
-    // ... (changelog generation logic remains the same)
     let l = `LOG\nDate: ${date}\nTime: ${new Date().toLocaleTimeString()}\n===\n\n`;
     const C = { s: { a: [], m: new Set() }, h: { a: [], r: [] }, x: { a: [], r: [], m: [] }, u: [] };
     Object.keys(dK).forEach((k) => {
@@ -922,6 +924,7 @@ const addSubheadingInternal = (sec, name) => {
     }
   };
   const handleSaveAuthors = (uA) => {
+    if (!isEditorMode) return; // Prevent saving in view-only mode
     if (!authorPopoverContent || !authorPopoverContent._sectionName) return;
     const sU = authorPopoverContent._sectionName;
     setData((pD) => { const nD = deepClone(pD); if (!nD[sU]) nD[sU] = {}; nD[sU].authors = uA; return nD; });
@@ -936,9 +939,6 @@ const addSubheadingInternal = (sec, name) => {
     }
   };
 
-  // The `styles` and `badgeStyles` objects are now converted to CSS classes.
-  // Their definitions are removed from here.
-
   if (!data) {
     return e( "p", { className: "rtt-app-loading-message" }, "Loading application data…");
   }
@@ -947,8 +947,34 @@ const addSubheadingInternal = (sec, name) => {
     "rtt-container",
     mobile ? "app-mobile" : "",
     compactMode ? "app-compact-mode" : "",
-    edit ? "app-edit-mode" : ""
+    isEditorMode && edit ? "app-edit-mode" : "" // Only add app-edit-mode if both are true
   ].filter(Boolean).join(" ");
+
+  // Define Quick Guide content based on mode
+  const editorQuickGuidePoints = [
+    'Choose a Section from the left panel.',
+    'Click "Switch to Edit Mode" in the top right to enable editing for the selected section.',
+    'Use the "+ Sub-heading" or "+ Scenario" buttons to add new content.',
+    'Click on existing scenarios or author details to modify them in edit mode.',
+    'Orange indicators highlight unsaved changes to sections or items.',
+    'Click "Save & Download Updates" when finished. This will download two files: the updated data (JSON) and a changelog (TXT).',
+    'Email both downloaded files to HNZRadTools@TeWhatuOra.govt.nz for the changes to be applied to the live tool.'
+  ];
+
+  const viewerQuickGuidePoints = [
+    'Select a clinical area from the list on the left to view relevant triage scenarios.',
+    'Expand sub-headings using the arrow or by clicking the sub-heading title.',
+    'Use the search bar to filter scenarios within the selected clinical area by keywords (e.g., "headache", "CT", "P2").',
+    'Click the info icon next to a section title to view the Clinical and Radiology leads for that area.',
+    'This tool provides guidance only and does not replace clinical judgment.'
+  ];
+
+  const currentQuickGuidePoints = isEditorMode ? editorQuickGuidePoints : viewerQuickGuidePoints;
+  const quickGuideTitle = isEditorMode ? "Editor Quick Guide:" : "Quick Guide:";
+  
+  const pageTitle = isEditorMode
+    ? (mobile ? "Triage Tool Editor" : (edit && selected ? `Editing: ${selected}` : "Radiology Triage Tool - Editor"))
+    : (mobile ? "Triage Tool" : "Radiology Triage Tool");
 
   return e(
     "div", { className: appRootClasses },
@@ -956,27 +982,23 @@ const addSubheadingInternal = (sec, name) => {
       e( "div", { className: "rtt-brand-bar" },
           e("img", { src: "/images/HealthNZ_logo_v2.svg", alt: "Health NZ Logo", className: "rtt-app-logo" }),
           e("div", { className: "rtt-header-divider" }),
-          e( "h1", { className: "rtt-title" }, mobile ? "Triage Tool Editor" : (edit && selected ? `Editing: ${selected}` : "Radiology Triage Tool - Editor")),
-          e("div", { className: "rtt-flex-spacer" }), // flex: 1
+          e( "h1", { className: "rtt-title" }, pageTitle),
+          e("div", { className: "rtt-flex-spacer" }),
           e( "div", { className: "rtt-header-controls" },
-            Object.keys(dirty).length > 0 && e( "button", { onClick: downloadJson, className: "rtt-download-btn" }, mobile ? "Save" : "Save & Download Updates"),
-           
-            /* ------- VIEW ONLY MODE ---------
-            
-            selected && e( "button", { 
-                onClick: () => setEdit(!edit), 
+            isEditorMode && Object.keys(dirty).length > 0 && e( "button", { onClick: downloadJson, className: "rtt-download-btn" }, mobile ? "Save" : "Save & Download Updates"),
+            isEditorMode && selected && e( "button", {
+                onClick: () => setEdit(!edit),
                 className: `rtt-edit-btn ${edit ? "rtt-edit-btn-active" : "rtt-edit-btn-inactive"}`
             }, mobile ? (edit ? "Exit" : "Edit") : (edit ? "Exit Edit Mode" : "Switch to Edit Mode")),
-        */
           ),
         )
     ),
     e( "div", { className: "rtt-app-layout" },
       e( "aside", { className: "rtt-sidebar" },
         e( "div", { className: "rtt-section-buttons-container" },
-          edit && e('button',{ key: 'add-section-top', onClick: addSection, className: "rtt-add-btn rtt-add-btn-specific" }, '+ Add Section'),
+          isEditorMode && edit && e('button',{ key: 'add-section-top', onClick: addSection, className: "rtt-add-btn rtt-add-btn-specific" }, '+ Add Section'),
           sections.map((sec) => {
-            const hasChanges = sectionHasChanges(sec);
+            const hasChanges = isEditorMode && sectionHasChanges(sec); // Changes only relevant in editor mode
             const sectionButtonClasses = [
                 "rtt-section-btn",
                 selected === sec ? "rtt-section-btn-active" : "",
@@ -993,22 +1015,26 @@ const addSubheadingInternal = (sec, name) => {
       e( "main", { className: "rtt-main-content", ref: mainContentRef },
         !selected
           ? e( "div", { className: "rtt-welcome-screen" },
-              e( "h2", { className: "rtt-section-header rtt-welcome-title" }, "Welcome to the Radiology Triage Tool Editor"),
+              e( "h2", { className: "rtt-section-header rtt-welcome-title" },
+                 isEditorMode ? "Welcome to the Radiology Triage Tool Editor" : "Welcome to the Radiology Triage Tool"
+              ),
               e( "div", { className: "rtt-welcome-text-container" },
                 [
-                  e( "p", { className: "rtt-welcome-intro-text" }, "Select a section to view or edit scenarios."),
+                  e( "p", { className: "rtt-welcome-intro-text" },
+                    isEditorMode ? "Select a section to view or edit scenarios." : "Select a section to view scenarios."
+                  ),
                   e( "div", { className: "rtt-quick-guide-box" },
                     [
-                      e( "h3", { className: "rtt-quick-guide-title" }, "Quick Guide:"),
+                      e( "h3", { className: "rtt-quick-guide-title" }, quickGuideTitle),
                       e( "ul", { className: "rtt-quick-guide-list" },
-                        ['Choose a Section', 'Click "Switch to Edit Mode" to enable editing', "Add, modify or remove items", "Orange indicators show unsaved changes", 'Click "Save & Download Updates" when done', 'Email both files to HNZRadTools@TeWhatuOra.govt.nz'].map((s) => e("li", {key: s}, s)),
+                        currentQuickGuidePoints.map((s, index) => e("li", {key: `guide-${index}`}, s)),
                       ),
                     ],
                   ),
                 ],
               ),
             )
-          : e("div", { key: selected || 'selected-section-content' }, [ // No specific class, just a wrapper
+          : e("div", { key: selected || 'selected-section-content' }, [
               e("div", { className: "rtt-sticky-section-header-wrapper" }, [
                 e( 'div', { className: "rtt-section-header-container" },
                   e('div', { className: "rtt-section-title-group" },
@@ -1016,10 +1042,10 @@ const addSubheadingInternal = (sec, name) => {
                       e('h2', { className: "rtt-section-header" }, selected),
                       e('img', { src: 'icons/info.png', alt: `Authors for ${selected}`, onClick: (ev) => handleInfoIconClick(ev, selected), className: "rtt-info-icon", title: `Show/Edit leads for ${selected}`})
                     ),
-                    data[selected]?.last_updated && e( "div", { className: "rtt-section-last-updated" }, `Updated - ${sectionHasChanges(selected) ? "Today (unsaved)" : formatLastUpdated(data[selected].last_updated)}`),
+                    data[selected]?.last_updated && e( "div", { className: "rtt-section-last-updated" }, `Updated - ${isEditorMode && sectionHasChanges(selected) ? "Today (unsaved)" : formatLastUpdated(data[selected].last_updated)}`),
                   ),
                   e("div", { className: "rtt-flex-spacer" }),
-                  e( "div", { className: "rtt-section-header-actions" }, edit && e( "button", { className: "rtt-add-inline-btn", onClick: () => addSubheadingViaPrompt(selected) }, "+ Sub-heading")),
+                  e( "div", { className: "rtt-section-header-actions" }, isEditorMode && edit && e( "button", { className: "rtt-add-inline-btn", onClick: () => addSubheadingViaPrompt(selected) }, "+ Sub-heading")),
                 ),
                 e("input", {
                   type: "search",
@@ -1032,17 +1058,17 @@ const addSubheadingInternal = (sec, name) => {
 
               authorPopoverPosition.visible && authorPopoverContent && e(AuthorPopover, {
                 content: authorPopoverContent,
-                position: authorPopoverPosition, // Position prop might be unused if popover CSS handles it
+                position: authorPopoverPosition,
                 onClose: closeAuthorPopover,
-                isEdit: edit && authorPopoverContent._sectionName === selected,
+                isEdit: isEditorMode && edit && authorPopoverContent._sectionName === selected,
                 onSave: handleSaveAuthors
               }),
 
               (Object.keys(displayableSubHeadings).length === 0 && searchTerm.length < 3 && (!data[selected] || Object.keys(data[selected]).filter((k) => Array.isArray(data[selected][k])).length === 0))
                 ? e( "div", { className: "rtt-no-subheadings-message" },
                     e("p", null, "No sub-headings or scenarios yet."),
-                    edit && e( "button", { className: "rtt-add-inline-btn rtt-add-subheading-inline-btn", onClick: () => addSubheadingViaPrompt(selected) }, "+ Add Sub-heading"),
-                    edit && data[selected] && (!data[selected]["General"] || (Array.isArray(data[selected]["General"]) && !data[selected]["General"].length)) &&
+                    isEditorMode && edit && e( "button", { className: "rtt-add-inline-btn rtt-add-subheading-inline-btn", onClick: () => addSubheadingViaPrompt(selected) }, "+ Add Sub-heading"),
+                    isEditorMode && edit && data[selected] && (!data[selected]["General"] || (Array.isArray(data[selected]["General"]) && !data[selected]["General"].length)) &&
                       e( "button", { className: "rtt-add-inline-btn rtt-add-scenario-general-inline-btn",
                           onClick: () => { if (!data[selected]["General"]) { const ok = addSubheadingInternal(selected, "General"); if (ok) setTimeout(() => addScenario(selected, "General"), 0); else alert("Error creating 'General'."); } else addScenario(selected, "General"); },
                         }, "+ Scenario to 'General'"),
@@ -1052,10 +1078,15 @@ const addSubheadingInternal = (sec, name) => {
                   : Object.entries(displayableSubHeadings).map(
                       ([sub, { list, isExpanded, actualIsEmpty }]) => {
                         return e(SubheadingSection, {
-                          key: `${selected}-${sub}`, selected, sub, list, isExpanded, actualIsEmpty, edit, searchTerm, 
-                          // styles, badgeStyles, compactBadgeStyle removed
-                          newlyAddedSubheading, subheadingHasChanges, toggleSubSection,
-                          removeSubheading, addScenario, saveScenario, removeScenario, scenarioHasChanges, keyOf, compactMode, mobile,
+                          key: `${selected}-${sub}`, selected, sub, list, isExpanded, actualIsEmpty, 
+                          edit: isEditorMode && edit, // Pass down the combined edit status
+                          searchTerm, 
+                          newlyAddedSubheading, 
+                          subheadingHasChanges: (s, sub) => isEditorMode && subheadingHasChanges(s, sub), // Changes only relevant in editor mode
+                          toggleSubSection,
+                          removeSubheading, addScenario, saveScenario, removeScenario, 
+                          scenarioHasChanges: (s, sub, idx) => isEditorMode && scenarioHasChanges(s, sub, idx), // Changes only relevant in editor mode
+                          keyOf, compactMode, mobile,
                         });
                       }
                     ),
