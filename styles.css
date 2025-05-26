@@ -323,10 +323,10 @@
 }
 .rtt-welcome-screen { text-align: center; margin-top: 3em; color: #6B7280; }
 .rtt-welcome-title { font-size: 1.8em; margin-bottom: 1em; color: #4B5563; }
-.rtt-welcome-text-container { max-width: 600px; margin: 0 auto; line-height: 1.8; }
+.rtt-welcome-text-container { max-width: 800px; margin: 0 auto; line-height: 1.8; }
 .rtt-welcome-intro-text { font-size: 1.1em; margin-bottom: 1.5em; }
 .rtt-quick-guide-box {
-  text-align: left; background: #F8F9FA; padding: 1.5em;
+  text-align: left; background: #F8F9FA; padding: .5em 1.5em .5em 1.5em;
   border-radius: 8px; border: 1px solid #E5E7EB;
 }
 .rtt-quick-guide-title {
