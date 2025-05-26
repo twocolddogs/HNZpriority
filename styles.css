@@ -200,6 +200,10 @@
 }
 .app-mobile .rtt-section-header { font-size: 1.1em; }
 
+.rtt-flex-spacer {
+  flex-grow: 1;
+}
+
 .rtt-section-header-actions { display: flex; align-items: center; gap: 0.6em; }
 .app-mobile .rtt-section-header-actions { width: 100%; justify-content: flex-end; }
 
