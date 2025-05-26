@@ -1,5 +1,5 @@
 /* ===============================================================
-   app.js  –  Radiology Triage Tool
+   app.js  –  Radiology Triage Tool (Editor-enabled)
    =============================================================== */
 import React, {
   useState,
@@ -8,11 +8,12 @@ import React, {
   useMemo,
 } from "https://esm.sh/react";
 import { createRoot } from "https://esm.sh/react-dom/client";
-import { HelperPage } from "./HelperPage.js"; // IMPORT THE NEW COMPONENT
+import { HelperPage } from "./HelperPage.js";
 
 const e = React.createElement;
 const deepClone = (o) => JSON.parse(JSON.stringify(o));
 
+// ... (scenarioToIdHash, useIsMobile, getModalityIcon, getBadgeClass functions remain the same) ...
 // HELPER FUNCTION for generating a hash from a card's clinical_scenario string
 const scenarioToIdHash = (clinicalScenarioStr) => {
   const str = String(clinicalScenarioStr || '');
@@ -67,6 +68,7 @@ const getBadgeClass = (category) => {
 
 
 /* ---------- AuthorPopOver Component ---------- */
+// ... (AuthorPopover component remains the same)
 function AuthorPopover({ content, position, onClose, isEdit, onSave }) {
   const [localAuthors, setLocalAuthors] = React.useState(content.authors || {});
   React.useEffect(() => {
@@ -161,6 +163,7 @@ function AuthorPopover({ content, position, onClose, isEdit, onSave }) {
 
 
 /* ---------- ScenarioCard Component ---------- */
+// ... (ScenarioCard component remains the same)
 const PRIORITY_CHOICES = [
   "P1", "P2", "P3", "P4", "P5",
   "S1", "S2", "S3", "S4", "S5",
@@ -381,6 +384,7 @@ function ScenarioCard({
 
 
 /* ---------- SubheadingSection Component ---------- */
+// ... (SubheadingSection component remains the same)
 function SubheadingSection({
   selected,
   sub,
@@ -524,6 +528,7 @@ function SubheadingSection({
   );
 }
 
+
 /* ---------- App Component ---------- */
 function App() {
   const isEditorMode = window.location.hostname === 'editor.hnzradtools.nz' ||
@@ -539,7 +544,7 @@ function App() {
   const [rawJsonData, setRawJsonData] = useState(null);
   const [newlyAddedSubheading, setNewlyAddedSubheading] = useState(null);
   const mainContentRef = React.useRef(null);
-  const [currentPage, setCurrentPage] = useState('triage'); // 'triage' or 'helper'
+  const [currentPage, setCurrentPage] = useState('triage');
 
   const [authorPopoverContent, setAuthorPopoverContent] = useState(null);
   const [authorPopoverPosition, setAuthorPopoverPosition] = useState({
@@ -638,23 +643,21 @@ function App() {
         setEdit(false);
     }
     if (currentPage === 'triage' && window.location.hash === '#helper') {
-      // If user navigated back to triage page but hash is still #helper, clear it.
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
     } else if (currentPage === 'helper' && window.location.hash.startsWith('#scenario-')) {
-      // If on helper page and hash is for a scenario, clear it.
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
     }
   }, [currentPage, edit]);
 
 
   useEffect(() => { // Deep linking logic
-    if (!data || isDeepLinking ) return; // Removed initialHashProcessed from here to allow re-processing
+    if (!data || isDeepLinking ) return;
 
     const processHash = () => {
         const fragment = window.location.hash.substring(1);
         console.log("[DeepLink] Processing hash:", fragment, " initialHashProcessed:", initialHashProcessed);
 
-        if (initialHashProcessed && !fragment) { // Hash was cleared, no further processing needed for this cycle
+        if (initialHashProcessed && !fragment) { 
             return;
         }
 
@@ -1038,7 +1041,7 @@ function App() {
     'This tool provides guidance only and does not replace clinical judgment.'
   ];
   const currentQuickGuidePoints = isEditorMode ? editorQuickGuidePoints : viewerQuickGuidePoints;
-  const quickGuideTitle = isEditorMode ? "Editor Quick Guide:" : "Quick Guide:";
+  const quickGuideTitleText = isEditorMode ? "Editor Quick Guide:" : "Quick Guide:"; // Renamed to avoid conflict
   
   const pageTitleBase = isEditorMode ? "Radiology Triage Tool - Editor" : "Radiology Triage Tool";
   const pageTitleMobileBase = isEditorMode ? "Triage Tool Editor" : "Triage Tool";
@@ -1058,7 +1061,7 @@ function App() {
           e("img", { src: "/images/HealthNZ_logo_v2.svg", alt: "Health NZ Logo", className: "rtt-app-logo" }),
           e("div", { className: "rtt-header-divider" }),
           e( "h1", { className: "rtt-title" }, currentHeaderTitle),
-          e( "a", { 
+          currentPage === 'triage' && e( "a", { 
                 href: "#helper", 
                 className: "rtt-header-helper-link",
                 onClick: (ev) => {
@@ -1066,7 +1069,12 @@ function App() {
                     navigateToHelperPage();
                 }
             }, "Priority Guide"),
-          e("div", { className: "rtt-flex-spacer" }),
+          currentPage === 'helper' && e( "button", {
+                className: "rtt-header-helper-link rtt-edit-btn", // Re-use some button styling
+                style: { marginLeft: 'auto', marginRight: '0.5em'}, // Push to right
+                onClick: navigateToTriagePage
+            }, "← Back to Triage Tool"),
+          e("div", { className: currentPage === 'helper' ? '' : "rtt-flex-spacer" }), // Only flex space if not helper page with button
           e( "div", { className: "rtt-header-controls" },
             isEditorMode && currentPage === 'triage' && Object.keys(dirty).length > 0 && e( "button", { onClick: downloadJson, className: "rtt-download-btn" }, mobile ? "Save" : "Save & Download Updates"),
             isEditorMode && currentPage === 'triage' && selected && e( "button", {
@@ -1077,9 +1085,9 @@ function App() {
         )
     ),
     currentPage === 'helper'
-      ? e(HelperPage, { onNavigateToTriage: navigateToTriagePage })
-      : e( "div", { className: "rtt-app-layout" }, 
-          e( "aside", { className: "rtt-sidebar" },
+      ? e(HelperPage, { /* No onNavigateToTriage needed here anymore as button is in header */ })
+      : e( "div", { className: `rtt-app-layout ${currentPage === 'helper' ? 'rtt-app-layout-full-width' : ''}` }, 
+          currentPage === 'triage' && e( "aside", { className: "rtt-sidebar" }, // Only show sidebar on triage page
             e( "div", { className: "rtt-section-buttons-container" },
               isEditorMode && edit && e('button',{ key: 'add-section-top', onClick: addSection, className: "rtt-add-btn rtt-add-btn-specific" }, '+ Add Section'),
               sections.map((sec) => {
@@ -1097,8 +1105,8 @@ function App() {
               }),
             )
           ),
-          e( "main", { className: "rtt-main-content", ref: mainContentRef },
-            !selected
+          e( "main", { className: `rtt-main-content ${currentPage === 'helper' ? 'rtt-main-content-full-width' : ''}`, ref: mainContentRef },
+            currentPage === 'triage' && !selected
               ? e( "div", { className: "rtt-welcome-screen" },
                   e( "h2", { className: "rtt-section-header rtt-welcome-title" },
                      isEditorMode ? "Welcome to the Radiology Triage Tool Editor" : "Welcome to the Radiology Triage Tool"
@@ -1110,7 +1118,7 @@ function App() {
                       ),
                       e( "div", { className: "rtt-quick-guide-box" },
                         [
-                          e( "h3", { className: "rtt-quick-guide-title" }, quickGuideTitle),
+                          e( "h3", { className: "rtt-quick-guide-title" }, quickGuideTitleText),
                           e( "ul", { className: "rtt-quick-guide-list" },
                             currentQuickGuidePoints.map((s, index) => e("li", {key: `guide-${index}`}, s)),
                           ),
@@ -1119,7 +1127,7 @@ function App() {
                     ],
                   ),
                 )
-              : e("div", { key: selected || 'selected-section-content' }, [
+              : currentPage === 'triage' && selected && e("div", { key: selected || 'selected-section-content' }, [ // Ensure this only renders for triage
                   e("div", { className: "rtt-sticky-section-header-wrapper" }, [
                     e( 'div', { className: "rtt-section-header-container" },
                       e('div', { className: "rtt-section-title-group" },
