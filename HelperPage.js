@@ -2,20 +2,18 @@
 import React from "https://esm.sh/react";
 const e = React.createElement;
 
-export function HelperPage({ onNavigateToTriage }) {
+export function HelperPage() { // Removed onNavigateToTriage prop
   // Helper for creating table rows with priority codes
   const createPriorityRow = (code, definition, overall, reportWithin) => {
     let normalizedCodeForClass = code.toUpperCase();
     if (normalizedCodeForClass === "PET-CT") {
         normalizedCodeForClass = "petct";
     } else if (normalizedCodeForClass === "NA (OVERDUE REPORTING)") {
-        normalizedCodeForClass = "na_overdue"; // Use a specific class for this
+        normalizedCodeForClass = "na_overdue";
     } else {
         normalizedCodeForClass = normalizedCodeForClass.replace(/[^A-Z0-9]/g, '').toLowerCase();
     }
-    
     const codeClassName = `rtt-helper-p-code rtt-helper-${normalizedCodeForClass}`;
-
     return e('tr', null,
       e('td', null, e('span', { className: codeClassName }, code)),
       e('td', null, definition),
@@ -32,49 +30,11 @@ export function HelperPage({ onNavigateToTriage }) {
     );
   };
 
-  return e('div', { className: 'rtt-helper-page-container' },
-    e('button', { 
-        onClick: onNavigateToTriage, 
-        className: 'rtt-section-btn', 
-        style: { marginBottom: '1.5em', display: 'inline-block', width: 'auto', padding: '0.5em 1.2em' } 
-    }, '← Back to Triage Tool'),
-    e('h1', null, 'National Prioritisation Guideline for Imaging and Reporting'),
-    e('div', { className: 'rtt-helper-page-document-meta' },
-      e('p', null, 'Health New Zealand, National Radiology Network'),
-      e('p', null, 'Date: 25/05/2025') 
-    ),
+  return e('div', { className: 'rtt-helper-page-container' }, // Main container for content
+    // No h1 or document meta here anymore
 
-    // Acute Radiology Patient Priority
-    e('details', { className: 'rtt-helper-collapsible-section', open: true },
-      e('summary', null, e('h2', null, 'Acute Radiology Patient Priority')),
-      e('div', { className: 'rtt-helper-collapsible-content' },
-        e('div', { className: 'rtt-helper-table-responsive-wrapper' },
-          e('table', null,
-            e('thead', null,
-              e('tr', null,
-                e('th', null, 'Patient Priority'),
-                e('th', null, 'Definition'),
-                e('th', null, 'Turnaround Time Target (Referral to Review or Report Distribution)')
-              )
-            ),
-            e('tbody', null,
-              createAcutePriorityRow('< 30 minutes', 'Immediate life-threatening presentations. Image immediately.', '30 minutes*'),
-              createAcutePriorityRow('< 1 hr', 'All ED patients and inpatients that are clinically unwell. Ideally services should have capacity to image other ED and acute assessment patients in < 1 hr to support risk management, decision making and patient flow.', '1 hr*'),
-              createAcutePriorityRow('< 4 hrs', 'Most inpatient imaging. Imaging in < 4 hrs supports decision making and patient flow.', '4 hrs*'),
-              createAcutePriorityRow('< 24 hrs', 'Lower acuity inpatients and outpatients (including acute demand type primary care patients) that can wait up to 24 hrs.', '24 hrs'),
-              createAcutePriorityRow('< 2 days', 'Non-deferrable typically outpatient imaging that must be completed within 2 days.', '2 days')
-            )
-          )
-        ),
-        e('div', { className: 'rtt-helper-note' },
-          e('p', null, 'It is expected that the majority of ED imaging will be non-deferrable time sensitive imaging. In hospital settings, if ED and inpatient demand exceeds capacity, clinical triage across all patients waiting may trump any flow-based ED targets or priority pathways.'),
-          e('p', null, '*Out of hours, emergency and inpatient imaging may receive a preliminary report or be reviewed by on-call medical staff, with final reports being completed in normal working hours.')
-        )
-      )
-    ),
-
-    // Radiology Patient Priority (P)
-    e('details', { className: 'rtt-helper-collapsible-section' },
+    // Radiology Patient Priority (P) - MOVED FIRST
+    e('details', { className: 'rtt-helper-collapsible-section', open: true }, // P categories open by default
       e('summary', null, e('h2', null, 'Radiology Patient Priority (P categories)')),
       e('div', { className: 'rtt-helper-collapsible-content' },
         e('div', { className: 'rtt-helper-table-responsive-wrapper' },
@@ -104,7 +64,7 @@ export function HelperPage({ onNavigateToTriage }) {
       )
     ),
 
-    // Specified Date Patient Priority (S)
+    // Specified Date Patient Priority (S) - MOVED SECOND
      e('details', { className: 'rtt-helper-collapsible-section' },
       e('summary', null, e('h2', null, 'Specified Date Patient Priority (S categories)')),
       e('div', { className: 'rtt-helper-collapsible-content' },
@@ -152,7 +112,37 @@ export function HelperPage({ onNavigateToTriage }) {
         )
       )
     ),
+    
+    // Acute Radiology Patient Priority - MOVED THIRD
+    e('details', { className: 'rtt-helper-collapsible-section' }, 
+      e('summary', null, e('h2', null, 'Acute Radiology Patient Priority')),
+      e('div', { className: 'rtt-helper-collapsible-content' },
+        e('div', { className: 'rtt-helper-table-responsive-wrapper' },
+          e('table', null,
+            e('thead', null,
+              e('tr', null,
+                e('th', null, 'Patient Priority'),
+                e('th', null, 'Definition'),
+                e('th', null, 'Turnaround Time Target (Referral to Review or Report Distribution)')
+              )
+            ),
+            e('tbody', null,
+              createAcutePriorityRow('< 30 minutes', 'Immediate life-threatening presentations. Image immediately.', '30 minutes*'),
+              createAcutePriorityRow('< 1 hr', 'All ED patients and inpatients that are clinically unwell. Ideally services should have capacity to image other ED and acute assessment patients in < 1 hr to support risk management, decision making and patient flow.', '1 hr*'),
+              createAcutePriorityRow('< 4 hrs', 'Most inpatient imaging. Imaging in < 4 hrs supports decision making and patient flow.', '4 hrs*'),
+              createAcutePriorityRow('< 24 hrs', 'Lower acuity inpatients and outpatients (including acute demand type primary care patients) that can wait up to 24 hrs.', '24 hrs'),
+              createAcutePriorityRow('< 2 days', 'Non-deferrable typically outpatient imaging that must be completed within 2 days.', '2 days')
+            )
+          )
+        ),
+        e('div', { className: 'rtt-helper-note' },
+          e('p', null, 'It is expected that the majority of ED imaging will be non-deferrable time sensitive imaging. In hospital settings, if ED and inpatient demand exceeds capacity, clinical triage across all patients waiting may trump any flow-based ED targets or priority pathways.'),
+          e('p', null, '*Out of hours, emergency and inpatient imaging may receive a preliminary report or be reviewed by on-call medical staff, with final reports being completed in normal working hours.')
+        )
+      )
+    ),
 
+    // ... (Service Disruption, Reset and Restore, Planned Care sections remain the same structure as before)
     // Service Disruption Levels
     e('details', { className: 'rtt-helper-collapsible-section' },
       e('summary', null, e('h2', null, 'Service Disruption Levels')),
