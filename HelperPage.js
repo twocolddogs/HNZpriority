@@ -3,7 +3,6 @@ import React from "https://esm.sh/react";
 const e = React.createElement;
 
 export function HelperPage() {
-  // Helper for creating table cell content with main text and subtitle
   const createTableCellContent = (mainText, subText) => {
     return e(React.Fragment, null,
       mainText,
@@ -12,6 +11,7 @@ export function HelperPage() {
   };
 
   const createPriorityRow = (code, definition, overall, overallSub, reportWithin, reportWithinSub) => {
+    // ... (normalization logic from before)
     let normalizedCodeForClass = code.toUpperCase();
     if (normalizedCodeForClass === "PET-CT") {
         normalizedCodeForClass = "petct";
@@ -32,14 +32,14 @@ export function HelperPage() {
 
    const createAcutePriorityRow = (priority, definition, turnaround, turnaroundSub) => {
     return e('tr', null,
-      e('td', null, priority),
+      e('td', null, priority), // This is "Patient Priority" in the Acute table
       e('td', null, definition),
       e('td', null, createTableCellContent(turnaround, turnaroundSub))
     );
   };
 
   return e('div', { className: 'rtt-helper-page-container' },
-    // Radiology Patient Priority (P) - FIRST
+    // Radiology Patient Priority (P)
     e('details', { className: 'rtt-helper-collapsible-section', open: true },
       e('summary', null, e('h2', null, 'Radiology Patient Priority (P categories)')),
       e('div', { className: 'rtt-helper-collapsible-content' },
@@ -47,12 +47,13 @@ export function HelperPage() {
           e('table', null,
             e('thead', null,
               e('tr', null,
-                e('th', null, 'Patient Priority'),
+                e('th', { className: 'rtt-th-nowrap' }, 'Patient Priority'), // Applied nowrap
                 e('th', null, 'Definition'),
-                e('th', null, createTableCellContent('Overall Turnaround', '(Referral to Imaging)')),
+                e('th', { className: 'rtt-th-nowrap' }, createTableCellContent('Overall Turnaround', '(Referral to Imaging)')), // Applied nowrap
                 e('th', null, createTableCellContent('Report within', '(Imaging to Report Distribution)'))
               )
             ),
+            // ... tbody for P categories
             e('tbody', null,
               createPriorityRow('P1', 'Non-deferrable time sensitive imaging or intervention that must be completed within 1 week of receiving referral.', '< 1 week', null, '24 hrs', null),
               createPriorityRow('P2', 'Non-deferrable imaging or intervention that must be completed within 2 weeks of receiving referral.', '< 2 weeks', null, '24 hrs', null),
@@ -70,7 +71,7 @@ export function HelperPage() {
       )
     ),
 
-    // Specified Date Patient Priority (S) - SECOND
+    // Specified Date Patient Priority (S)
      e('details', { className: 'rtt-helper-collapsible-section' },
       e('summary', null, e('h2', null, 'Specified Date Patient Priority (S categories)')),
       e('div', { className: 'rtt-helper-collapsible-content' },
@@ -78,13 +79,14 @@ export function HelperPage() {
           e('table', null,
             e('thead', null,
               e('tr', null,
-                e('th', null, 'Patient Priority'),
+                e('th', { className: 'rtt-th-nowrap' }, 'Patient Priority'), // Applied nowrap
                 e('th', null, 'Definition'),
-                e('th', null, createTableCellContent('Overall Turnaround', '(to Imaging)')),
+                e('th', { className: 'rtt-th-nowrap' }, createTableCellContent('Overall Turnaround', '(to Imaging)')), // Applied nowrap
                 e('th', null, createTableCellContent('Report within', '(Imaging to Report Distribution)'))
               )
             ),
-            e('tbody', null,
+            // ... tbody for S categories
+             e('tbody', null,
               createPriorityRow('S1', 'Non-deferrable time sensitive imaging or intervention that must be completed within 1 week of a specified target date.', 'Within 1 week of specified target date', null, '24 hrs', null),
               createPriorityRow('S2', 'Non-deferrable time sensitive imaging or intervention that must be completed within 2 weeks of a specified target date.', 'Within 1 week of specified target date', null, '24 hrs', null),
               createPriorityRow('S3', 'Non-deferrable time sensitive imaging or intervention. If capacity is constrained could wait up to 6 weeks after a specified target date.', 'Within 1 week of specified target date', null, '48 hrs', null),
@@ -93,12 +95,12 @@ export function HelperPage() {
             )
           )
         ),
+        // ... rest of S category content
         e('div', { className: 'rtt-helper-note' },
           e('p', null, 'Specified date imaging (S) refers to imaging that must be completed on a specific date or within a specified date range for clinical reasons based on a known diagnosis. Examples are protocols or guidelines that specify when imaging must occur to assess for treatment response or growth or progression of an incidental finding such as a pulmonary nodule.'),
           e('p', null, 'The S categories should not be used to drive meeting patient flow related targets such as FSA or MDM or clinic dates. Access to imaging and interventional services for any referrals not meeting the definition of specified date imaging should be based on the national by clinical indication recommended triage categories. These describe maximum reasonable waiting times based on the clinical indication/suspected diagnosis and associated risk.')
         ),
         e('h3', null, 'Detailed Explanation for S Categories'),
-        // Apply rtt-helper-explanation-content to the wrapper div
         e('div', { className: 'rtt-helper-explanation-content' }, 
           e('p', null, 'Specified date imaging (S) refers to imaging that must be completed on a specific date or within a specified date range for clinical reasons based on a known diagnosis.'),
           e('ul', null, e('li', null, 'Examples are Health Pathways or clinical protocols or guidelines that specify when imaging must occur to assess for treatment response or growth or progression of an incidental finding such as a pulmonary nodule.')),
@@ -112,7 +114,7 @@ export function HelperPage() {
       )
     ),
     
-    // Acute Radiology Patient Priority - THIRD
+    // Acute Radiology Patient Priority
     e('details', { className: 'rtt-helper-collapsible-section' }, 
       e('summary', null, e('h2', null, 'Acute Radiology Patient Priority')),
       e('div', { className: 'rtt-helper-collapsible-content' },
@@ -120,12 +122,13 @@ export function HelperPage() {
           e('table', null,
             e('thead', null,
               e('tr', null,
-                e('th', null, 'Patient Priority'),
+                e('th', { className: 'rtt-th-nowrap' }, 'Patient Priority'), // Applied nowrap
                 e('th', null, 'Definition'),
                 e('th', null, createTableCellContent('Turnaround Time Target', '(Referral to Review or Report Distribution)'))
               )
             ),
-            e('tbody', null,
+            // ... tbody for Acute categories
+             e('tbody', null,
               createAcutePriorityRow('< 30 minutes', 'Immediate life-threatening presentations. Image immediately.', '30 minutes*', null),
               createAcutePriorityRow('< 1 hr', 'All ED patients and inpatients that are clinically unwell. Ideally services should have capacity to image other ED and acute assessment patients in < 1 hr to support risk management, decision making and patient flow.', '1 hr*', null),
               createAcutePriorityRow('< 4 hrs', 'Most inpatient imaging. Imaging in < 4 hrs supports decision making and patient flow.', '4 hrs*', null),
@@ -134,6 +137,7 @@ export function HelperPage() {
             )
           )
         ),
+        // ... rest of Acute category content
         e('div', { className: 'rtt-helper-note' },
           e('p', null, 'It is expected that the majority of ED imaging will be non-deferrable time sensitive imaging. In hospital settings, if ED and inpatient demand exceeds capacity, clinical triage across all patients waiting may trump any flow-based ED targets or priority pathways.'),
           e('p', null, '*Out of hours, emergency and inpatient imaging may receive a preliminary report or be reviewed by on-call medical staff, with final reports being completed in normal working hours.')
@@ -141,7 +145,6 @@ export function HelperPage() {
       )
     ),
     // ... (Service Disruption, Reset and Restore, Planned Care sections remain the same)
-     // Service Disruption Levels
     e('details', { className: 'rtt-helper-collapsible-section' },
       e('summary', null, e('h2', null, 'Service Disruption Levels')),
       e('div', { className: 'rtt-helper-collapsible-content' },
