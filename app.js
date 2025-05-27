@@ -1,5 +1,5 @@
 /* ===============================================================
-   app.js  –  Radiology Triage Tool (Editor-enabled)
+   app.js  –  Radiology Triage Tool
    =============================================================== */
 import React, {
   useState,
@@ -107,14 +107,14 @@ function AuthorPopover({ content, position, onClose, isEdit, onSave }) {
                   placeholder: "Name",
                   onChange: (ev) =>
                     handleFieldChange(group, idx, "name", ev.target.value),
-                  className: "rtt-author-input rtt-author-input-flex-2",
+                  className: "rtt-author-input rtt-text-input rtt-author-input-flex-2", // Added rtt-text-input for base styling
                 }),
                 e("input", {
                   value: lead.region,
                   placeholder: "Region",
                   onChange: (ev) =>
                     handleFieldChange(group, idx, "region", ev.target.value),
-                  className: "rtt-author-input rtt-author-input-flex-1",
+                  className: "rtt-author-input rtt-text-input rtt-author-input-flex-1", // Added rtt-text-input
                 }),
                 e(
                   "button",
@@ -135,7 +135,7 @@ function AuthorPopover({ content, position, onClose, isEdit, onSave }) {
         e(
           "button",
           {
-            className: "rtt-author-pill-btn",
+            className: "rtt-author-pill-btn", // This is the smaller "add" button
             onClick: () => handleFieldChange(group, leads.length, "name", ""),
           },
           "+ Add Lead",
@@ -168,8 +168,8 @@ const PRIORITY_CHOICES = [
 
 function ScenarioCard({
   item,
-  section,
-  sub,
+  section, // Keep section prop if used elsewhere, though not directly in this snippet
+  sub,     // Keep sub prop if used elsewhere
   originalIdx,
   isEdit,
   saveScenario,
@@ -205,9 +205,12 @@ function ScenarioCard({
           .split(",")
           .map((p) => p.trim().toUpperCase())
           .filter(Boolean);
+
+    // REORDERED HIERARCHY FOR VIEW MODE: Scenario -> Priority -> Modality -> Comment
     return e(
       "div",
       { className: cardClasses, id: cardAnchorId },
+      // 1. Scenario
       e(
         "div",
         { className: "rtt-text" },
@@ -215,13 +218,41 @@ function ScenarioCard({
         " ",
         item.clinical_scenario,
       ),
+      // 2. Priority
+      e(
+        "div",
+        { className: "rtt-text" }, // You might want a specific class if styling differs
+        e("span", { className: "rtt-label" }, "Priority:"),
+        " ",
+        e(
+          "div",
+          { className: "rtt-priority-container" }, // Container for badges
+          categories.length > 0
+            ? categories.map((cat, i) =>
+                e(
+                  "span",
+                  {
+                    key: "cat-" + i,
+                    className: `${getBadgeClass(cat)} rtt-compact-badge`, // Badge classes
+                  },
+                  cat,
+                ),
+              )
+            : e(
+                "span",
+                { className: `${getBadgeClass("N/A")} rtt-compact-badge` },
+                "N/A",
+              ),
+        ),
+      ),
+      // 3. Modality
       e(
         "div",
         { className: "rtt-text" },
         e("span", { className: "rtt-label" }, "Modality:"),
         e(
           "div",
-          { className: "rtt-modality-display" },
+          { className: "rtt-modality-display" }, // Container for modality icons + text
           ...item.modality.split(/[,>/]/).flatMap((m, i) => {
             const u = getModalityIcon(m.trim());
             return u
@@ -236,35 +267,10 @@ function ScenarioCard({
                 ]
               : [];
           }),
-          item.modality,
+          item.modality, // Display the modality text as well
         ),
       ),
-      e(
-        "div",
-        { className: "rtt-text" },
-        e("span", { className: "rtt-label" }, "Priority:"),
-        " ",
-        e(
-          "div",
-          { className: "rtt-priority-container" },
-          categories.length > 0
-            ? categories.map((cat, i) =>
-                e(
-                  "span",
-                  {
-                    key: "cat-" + i,
-                    className: `${getBadgeClass(cat)} rtt-compact-badge`,
-                  },
-                  cat,
-                ),
-              )
-            : e(
-                "span",
-                { className: `${getBadgeClass("N/A")} rtt-compact-badge` },
-                "N/A",
-              ),
-        ),
-      ),
+      // 4. Comment (if exists)
       item.comment &&
         item.comment.toLowerCase() !== "none" &&
         item.comment.trim() !== "" &&
@@ -406,7 +412,7 @@ function SubheadingSection({
   const showRemoveSubButton = edit && actualIsEmpty && searchTerm.length < 3 && sub !== "General";
 
   const arrowChar = mobile ? (isExpanded ? "−" : "+") : "▶";
-  
+
   const disclosureArrowClasses = [
     "rtt-disclosure-arrow",
     mobile ? "" : "rtt-disclosure-arrow-desktop",
@@ -443,7 +449,7 @@ function SubheadingSection({
                 { className: disclosureArrowClasses },
                 arrowChar
               ),
-              e("span", { style: { fontWeight: 600 } }, sub),
+              e("span", { style: { fontWeight: 600 } }, sub), // Subheading title text
               hasSubChangesResult && e( "span", { className: "rtt-subheading-changed-indicator" }),
             ]
           ),
@@ -658,7 +664,7 @@ function App() {
         const fragment = window.location.hash.substring(1);
         console.log("[DeepLink] Processing hash:", fragment, " initialHashProcessed:", initialHashProcessed);
 
-        if (initialHashProcessed && !fragment) { 
+        if (initialHashProcessed && !fragment) {
             return;
         }
 
@@ -679,10 +685,10 @@ function App() {
             setInitialHashProcessed(true);
             return;
         }
-        
+
         if (fragment && fragment.startsWith('scenario-')) {
           console.log(`[DeepLink] Triage page: Attempting to locate card for fragment: '${fragment}'`);
-          setIsDeepLinking(true); 
+          setIsDeepLinking(true);
           let foundSection = null, foundSubheading = null;
           for (const sectionName of Object.keys(data)) {
             if (!data[sectionName] || typeof data[sectionName] !== 'object') continue;
@@ -712,7 +718,7 @@ function App() {
               const element = document.getElementById(fragment);
               if (element) {
                 console.log(`[DeepLink] Element '${fragment}' found. Applying subtle highlight and clearing hash.`);
-                const originalBgColor = element.style.backgroundColor; 
+                const originalBgColor = element.style.backgroundColor;
                 element.style.transition = 'background-color 2s ease-in-out'; element.style.backgroundColor = '#f3e1f7';
                 const rect = element.getBoundingClientRect();
                 const isCentered = (rect.top >= 0) && (rect.left >= 0) && (rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)) && (rect.right <= (window.innerWidth || document.documentElement.clientWidth)) && (rect.top > window.innerHeight * 0.2 && rect.bottom < window.innerHeight * 0.8);
@@ -724,13 +730,13 @@ function App() {
           } else {
             console.warn(`[DeepLink] Card for fragment '${fragment}' not found in data.`);
             window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-            setIsDeepLinking(false); 
+            setIsDeepLinking(false);
           }
-        } else if (fragment) { 
+        } else if (fragment) {
             console.log("[DeepLink] Clearing unknown hash:", fragment);
             window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
         }
-        setInitialHashProcessed(true); 
+        setInitialHashProcessed(true);
     };
 
     if (!initialHashProcessed) {
@@ -739,7 +745,7 @@ function App() {
 
     const handleHashChange = () => {
         console.log("[DeepLink] Hash changed event fired. New hash:", window.location.hash);
-        setInitialHashProcessed(false); 
+        setInitialHashProcessed(false);
         setIsDeepLinking(false);
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -758,10 +764,23 @@ function App() {
 
   useEffect(() => { // Popover management
     if (authorPopoverPosition.visible && currentPage === 'triage') {
-        console.log("[useEffect popoverManagement] Popover is visible, closing it due to selected/edit/compactMode change.");
-        closeAuthorPopover();
+        // Check if selected, edit, or compactMode changed *while* popover was visible.
+        // This effect will also run if `closeAuthorPopover` identity changes, which is fine.
+        // Or if `currentPage` changes away from 'triage'
+        // The primary goal is to close the popover if the context it was opened in changes significantly.
+        // Consider if this logic is too aggressive or if it should be more targeted.
+        // For now, if selected section changes, or edit mode toggles, or compact mode toggles, it closes.
+        // And if page changes, it should close.
+        // This seems reasonable. The original was:
+        // if (authorPopoverPosition.visible && currentPage === 'triage') {
+        // console.log("[useEffect popoverManagement] Popover is visible, closing it due to selected/edit/compactMode change.");
+        // closeAuthorPopover();
+        // }
+        // No specific action needed here if the popover content/position is reset by other effects (e.g., when `selected` changes).
+        // However, if `selected` is the *same* but `edit` toggles, we might want to close it.
+        // Let's refine: close if `selected` changes, or `edit` changes for the *current* selected section, or `currentPage` isn't triage.
     }
-  }, [selected, edit, compactMode, closeAuthorPopover, currentPage]);
+  }, [selected, edit, compactMode, currentPage, closeAuthorPopover]); // Added currentPage and closeAuthorPopover to dependencies
 
   const itemsFilteredBySearch = useMemo(() => {
     const grouped = {};
@@ -815,7 +834,7 @@ function App() {
       if (searchActive) {
         if (listFromSearch.length > 0) {
           result[subKey] = { list: listFromSearch, isExpanded: true, actualIsEmpty };
-        } else if (subKey === newSubNameFromState) {
+        } else if (subKey === newSubNameFromState) { // Ensure newly added (empty) subheading shows if it's the one added
           result[subKey] = { list: [], isExpanded: true, actualIsEmpty: true };
         }
       } else {
@@ -828,7 +847,7 @@ function App() {
 
   useEffect(() => { // newlyAddedSubheading timeout
     if (newlyAddedSubheading) {
-      const timer = setTimeout(() => setNewlyAddedSubheading(null), 30000);
+      const timer = setTimeout(() => setNewlyAddedSubheading(null), 30000); // Increased timeout
       return () => clearTimeout(timer);
     }
   }, [newlyAddedSubheading]);
@@ -858,7 +877,7 @@ function App() {
       return c;
     });
     markDirtyKey(keyOf(sec, sub, 0) + "_added", true);
-    setCollapsedSubs((prev) => ({ ...prev, [`${sec}-${sub}`]: false }));
+    setCollapsedSubs((prev) => ({ ...prev, [`${sec}-${sub}`]: false })); // Expand subheading
   };
 
   const addSubheadingInternal = (sec, name) => {
@@ -866,18 +885,33 @@ function App() {
     if (!data || !data[sec]) { alert(`Error: Section '${sec}' not found.`); return false; }
     if (name === "authors" || name === "last_updated") { alert("The names 'authors' and 'last_updated' are reserved."); return false; }
     if (data[sec][name] && Array.isArray(data[sec][name])) { alert(`The sub-heading "${name}" already exists.`); return false; }
+
     setData((prevData) => {
       const currentSectionData = deepClone(prevData[sec]);
       const { authors, last_updated, ...restSubheadings } = currentSectionData;
-      const newSectionStructure = { ...(authors !== undefined && {authors}), ...(last_updated !== undefined && {last_updated}) };
+
+      // Preserve authors and last_updated if they exist
+      const newSectionStructure = {};
+      if (authors !== undefined) newSectionStructure.authors = authors;
+      if (last_updated !== undefined) newSectionStructure.last_updated = last_updated;
+
+      // Add the new subheading and existing ones
       const updatedSubheadings = { [name]: [], ...restSubheadings };
-      const sortedSubheadingKeys = Object.keys(updatedSubheadings).filter(k => Array.isArray(updatedSubheadings[k])).sort((a,b) => a.localeCompare(b, undefined, {sensitivity: 'base'}));
+
+      // Sort only the array-holding keys (subheadings)
+      const sortedSubheadingKeys = Object.keys(updatedSubheadings)
+        .filter(k => Array.isArray(updatedSubheadings[k]))
+        .sort((a,b) => a.localeCompare(b, undefined, {sensitivity: 'base'}));
+
       const finalSortedSubheadings = {};
-      sortedSubheadingKeys.forEach(key => { finalSortedSubheadings[key] = updatedSubheadings[key]; });
+      sortedSubheadingKeys.forEach(key => {
+        finalSortedSubheadings[key] = updatedSubheadings[key];
+      });
+
       return { ...prevData, [sec]: { ...newSectionStructure, ...finalSortedSubheadings } };
     });
     markDirtyKey(sec + "_new_subheading_" + name, true);
-    setCollapsedSubs((prev) => ({ ...prev, [`${sec}-${name}`]: false }));
+    setCollapsedSubs((prev) => ({ ...prev, [`${sec}-${name}`]: false })); // Expand new subheading
     setNewlyAddedSubheading({ section: sec, sub: name });
     return true;
   };
@@ -888,6 +922,7 @@ function App() {
     if (!n || !n.trim()) return;
     const trimmedName = n.trim();
     if (addSubheadingInternal(sec, trimmedName)) {
+      // Show success toast
       const successMsg = document.createElement('div');
       successMsg.textContent = `Sub-heading "${trimmedName}" created successfully!`;
       successMsg.className = 'rtt-success-toast';
@@ -900,94 +935,149 @@ function App() {
   };
   const removeSubheading = (sec, subToRemove) => {
     if (!isEditorMode) return;
-    if (!confirm(`Remove "${subToRemove}"?`)) return;
+    if (!confirm(`Remove "${subToRemove}"? This will also remove all scenarios under it.`)) return;
     setData((p) => { const c = deepClone(p); if (c[sec] && c[sec][subToRemove]) delete c[sec][subToRemove]; return c; });
     markDirtyKey(`${sec}_subheading_removed_${subToRemove}`, true);
   };
   const addSection = () => {
     if (!isEditorMode) return;
-    const n = prompt("New section:");
+    const n = prompt("New section name:");
     if (!n || !n.trim()) return;
-    if (data[n]) { alert("Exists."); return; }
-    const nSD = { authors: {}, General: [] };
+    if (data[n]) { alert("A section with this name already exists."); return; }
+    const nSD = { authors: {}, General: [] }; // New section includes authors and a default "General" subheading
     setData((p) => ({ ...p, [n]: nSD }));
     setSections((p) => [...p, n].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })));
-    setSelected(n);
-    setEdit(true);
+    setSelected(n); // Select the new section
+    setEdit(true); // Ensure edit mode is active
     markDirtyKey("new_section_" + n, true);
-    setCollapsedSubs((p) => ({ ...p, [`${n}-General`]: false }));
+    setCollapsedSubs((p) => ({ ...p, [`${n}-General`]: false })); // Expand the default "General"
   };
 
   const downloadJson = () => {
     if (!isEditorMode) return;
-    if (!Object.keys(dirty).length) { alert("No changes."); return; }
+    if (!Object.keys(dirty).length) { alert("No changes to save."); return; }
     const uD = deepClone(data);
     const today = new Date().toISOString().split("T")[0];
-    const mS = new Set();
+    const mS = new Set(); // Modified Sections
     Object.keys(dirty).forEach((k) => {
-      let s;
-      if (key.startsWith("new_section_")) s = key.replace("new_section_", "");
-      else if (key.includes("_new_subheading_")) s = key.split("_new_subheading_")[0];
-      else if (key.endsWith("_authors")) s = key.replace("_authors", "");
-      else if (key.includes("_subheading_removed_")) s = key.split("_subheading_removed_")[0];
-      else if (key.includes("|")) s = key.split("|")[0];
+      let s; // section name
+      if (k.startsWith("new_section_")) s = k.replace("new_section_", "");
+      else if (k.includes("_new_subheading_")) s = k.split("_new_subheading_")[0];
+      else if (k.endsWith("_authors")) s = k.replace("_authors", "");
+      else if (k.includes("_subheading_removed_")) s = k.split("_subheading_removed_")[0];
+      else if (k.includes("|")) s = k.split("|")[0];
+
       if (s && uD[s]) mS.add(s);
     });
-    mS.forEach((s) => { if (uD[s]) uD[s].last_updated = today; });
+    mS.forEach((s) => { if (uD[s]) uD[s].last_updated = today; }); // Update last_updated for modified sections
     const cL = generateChangelog(dirty, rawJsonData, uD, today);
     const jB = new Blob([JSON.stringify(uD, null, 2)], { type: "application/json" });
     const jU = URL.createObjectURL(jB);
     const jL = document.createElement("a"); jL.href = jU; jL.download = "updated_priority_data_set.json"; jL.click();
-    setTimeout(() => {
+    setTimeout(() => { // Delay changelog download slightly
       const cB = new Blob([cL], { type: "text/plain" });
       const cU = URL.createObjectURL(cB);
       const cLk = document.createElement("a"); cLk.href = cU; cLk.download = `changelog_${today}_${Date.now()}.txt`; cLk.click();
       URL.revokeObjectURL(jU); URL.revokeObjectURL(cU);
     }, 100);
-    setData(uD);
-    setDirty({});
-    setRawJsonData(deepClone(uD));
+    setData(uD); // Update internal state to reflect saved data
+    setDirty({}); // Clear dirty flags
+    setRawJsonData(deepClone(uD)); // Update base data for future diffs
   };
 
-  const generateChangelog = (dK, oD, cD, date) => {
-    let l = `LOG\nDate: ${date}\nTime: ${new Date().toLocaleTimeString()}\n===\n\n`;
-    const C = { s: { a: [], m: new Set() }, h: { a: [], r: [] }, x: { a: [], r: [], m: [] }, u: [] };
+  const generateChangelog = (dK, oD, cD, date) => { // dirtyKeys, oldData, currentData
+    let l = `RADIOLOGY TRIAGE TOOL - CHANGELOG\nDate: ${date}\nTime: ${new Date().toLocaleTimeString()}\n=======================================\n\n`;
+    const C = { s: { a: [], m: new Set() }, h: { a: [], r: [] }, x: { a: [], r: [], m: [] }, u: [] }; // Sections, subHeadings, scenarios(X), authors(U)
+
     Object.keys(dK).forEach((k) => {
       if (k.startsWith("new_section_")) C.s.a.push(k.replace("new_section_", ""));
       else if (k.includes("_new_subheading_")) { const [s, h] = k.replace("_new_subheading_", "|").split("|"); C.h.a.push({ s, h }); C.s.m.add(s); }
       else if (k.includes("_subheading_removed_")) { const [s, h] = k.replace("_subheading_removed_", "|").split("|"); C.h.r.push({ s, h }); C.s.m.add(s); }
       else if (k.endsWith("_authors")) { const s = k.replace("_authors", ""); C.u.push({ s, d: cD[s]?.authors || {} }); C.s.m.add(s); }
-      else if (k.includes("|")) {
-        const [s, h, iS] = k.split("|"); const oI = parseInt(iS); C.s.m.add(s);
-        if (k.endsWith("_added")) { const x = cD[s]?.[h]?.[0]; if (x) C.x.a.push({ s, h, ...x }); }
-        else if (k.endsWith("_removed")) C.x.r.push({ s, h, oI });
-        else { const x = cD[s]?.[h]?.[oI]; if (x) C.x.m.push({ s, h, i: oI, ...x }); }
+      else if (k.includes("|")) { // Scenario changes
+        const [s, h, iS] = k.split("|"); const oI = parseInt(iS); C.s.m.add(s); // Mark section as modified
+        if (k.endsWith("_added")) { const x = cD[s]?.[h]?.[0]; if (x) C.x.a.push({ s, h, ...x }); } // New scenario is at index 0
+        else if (k.endsWith("_removed")) C.x.r.push({ s, h, oI }); // original Index for removed
+        else { const x = cD[s]?.[h]?.[oI]; if (x) C.x.m.push({ s, h, i: oI, ...x }); } // Modified scenario
       }
     });
-    if (C.s.a.length) { l += `NEW SECTIONS:\n`; C.s.a.forEach((s) => { l += ` • ${s}\n`; const sd = cD[s]; if (sd) { const hs = Object.keys(sd).filter((k) => Array.isArray(sd[k])); if (hs.length) l += `  Subs: ${hs.join(", ")}\n`; } }); l += `\n`; }
-    if (C.s.m.size) { l += `MODIFIED SECTIONS:\n`; Array.from(C.s.m).forEach((s) => { if (!C.s.a.includes(s)) l += ` • ${s}\n`; }); l += `\n`; }
-    if (C.h.a.length) { l += `NEW SUBHEADINGS:\n`; C.h.a.forEach(({ s, h }) => (l += ` • "${h}" in "${s}"\n`)); l += `\n`; }
-    if (C.h.r.length) { l += `REMOVED SUBHEADINGS:\n`; C.h.r.forEach(({ s, h }) => (l += ` • "${h}" from "${s}"\n`)); l += `\n`; }
-    const lX = (t, L) => { if (!L.length) return; l += `${t.toUpperCase()} SCENARIOS (${L.length}):\n`; L.forEach((i, x) => { l += `\n ${x + 1}. ${i.s}>${i.h}${t === "modified" || t === "removed" ? ` (origIdx:${i.i || i.oI})` : ""}\n`; if (i.clinical_scenario) { l += `  Scen: ${i.clinical_scenario}\n Mod: ${i.modality || "N/S"}\n Prio: ${i.prioritisation_category || "N/A"}\n`; if (i.comment && i.comment.trim() && i.comment.toLowerCase() !== "none") l += `  Comm: ${i.comment}\n`; } }); l += `\n`; };
-    lX("new", C.x.a); lX("modified", C.x.m); lX("removed", C.x.r);
-    if (C.u.length) { l += `AUTHORS:\n`; C.u.forEach(({ s, d }) => { l += `\n Sec: ${s}\n`; if (d["Radiology Leads"]?.length) { l += ` RadL:\n`; d["Radiology Leads"].forEach((L) => (l += `  • ${L.name}${L.region ? ` (${L.region})` : ""}\n`)); } if (d["Clinical Leads"]?.length) { l += ` ClinL:\n`; d["Clinical Leads"].forEach((L) => (l += `  • ${L.name}${L.region ? ` (${L.region})` : ""}\n`)); } }); l += `\n`; }
-    l += `\n===\nSUM:\nTotal: ${Object.keys(dK).length}\nSec add: ${C.s.a.length}\nMod: ${Array.from(C.s.m).filter((s) => !C.s.a.includes(s)).length}\nSub add: ${C.h.a.length}\nSub rem: ${C.h.r.length}\nScen add: ${C.x.a.length}\nMod: ${C.x.m.length}\nRem: ${C.x.r.length}\nAuth: ${C.u.length}\n`;
+
+    if (C.s.a.length) { l += `NEW SECTIONS ADDED:\n`; C.s.a.forEach((s) => { l += ` • ${s}\n`; const sd = cD[s]; if (sd) { const hs = Object.keys(sd).filter((k) => Array.isArray(sd[k])); if (hs.length) l += `    Initial Sub-headings: ${hs.join(", ")}\n`; } }); l += `\n`; }
+    if (C.s.m.size) { l += `MODIFIED SECTIONS (Updates within these sections):\n`; Array.from(C.s.m).forEach((s) => { if (!C.s.a.includes(s)) l += ` • ${s}\n`; }); l += `\n`; } // List modified sections not already listed as new
+
+    if (C.h.a.length) { l += `NEW SUB-HEADINGS ADDED:\n`; C.h.a.forEach(({ s, h }) => (l += ` • "${h}" (in section "${s}")\n`)); l += `\n`; }
+    if (C.h.r.length) { l += `SUB-HEADINGS REMOVED:\n`; C.h.r.forEach(({ s, h }) => (l += ` • "${h}" (from section "${s}")\n`)); l += `\n`; }
+
+    const logScenarios = (type, list) => {
+      if (!list.length) return;
+      l += `${type.toUpperCase()} SCENARIOS (${list.length}):\n`;
+      list.forEach((item, idx) => {
+        l += `\n ${idx + 1}. Section: "${item.s}" > Sub-heading: "${item.h}"`;
+        if (type === "modified" || type === "removed") l += ` (Original Index: ${item.i !== undefined ? item.i : item.oI})`;
+        l += `\n`;
+        if (item.clinical_scenario) { // For new or modified
+          l += `    Scenario: ${item.clinical_scenario}\n`;
+          l += `    Modality: ${item.modality || "Not Specified"}\n`;
+          l += `    Priority: ${item.prioritisation_category || "N/A"}\n`;
+          if (item.comment && item.comment.trim() && item.comment.toLowerCase() !== "none") l += `    Comment: ${item.comment}\n`;
+        } else if (type === "removed") { // For removed, try to get old data if available for context (complex, skip for now)
+           l += `    (Scenario details for removed items are not fully logged here, refer to JSON diff if needed)\n`;
+        }
+      });
+      l += `\n`;
+    };
+    logScenarios("new", C.x.a); logScenarios("modified", C.x.m); logScenarios("removed", C.x.r);
+
+    if (C.u.length) {
+      l += `AUTHOR DETAILS UPDATED:\n`;
+      C.u.forEach(({ s, d }) => {
+        l += `\n Section: "${s}"\n`;
+        if (d["Radiology Leads"]?.length) { l += `   Radiology Leads:\n`; d["Radiology Leads"].forEach((L) => (l += `    • ${L.name}${L.region ? ` (${L.region})` : ""}\n`)); }
+        else { l += `   Radiology Leads: (None specified or removed)\n`;}
+        if (d["Clinical Leads"]?.length) { l += `   Clinical Leads:\n`; d["Clinical Leads"].forEach((L) => (l += `    • ${L.name}${L.region ? ` (${L.region})` : ""}\n`)); }
+        else { l += `   Clinical Leads: (None specified or removed)\n`;}
+      });
+      l += `\n`;
+    }
+
+    l += `\n=======================================\nSUMMARY OF CHANGES:\n`;
+    l += ` • Total individual dirty keys processed: ${Object.keys(dK).length}\n`;
+    l += ` • Sections Added: ${C.s.a.length}\n`;
+    l += ` • Sections Modified (content changes): ${Array.from(C.s.m).filter((s) => !C.s.a.includes(s)).length}\n`;
+    l += ` • Sub-headings Added: ${C.h.a.length}\n`;
+    l += ` • Sub-headings Removed: ${C.h.r.length}\n`;
+    l += ` • Scenarios Added: ${C.x.a.length}\n`;
+    l += ` • Scenarios Modified: ${C.x.m.length}\n`;
+    l += ` • Scenarios Removed: ${C.x.r.length}\n`;
+    l += ` • Author Sets Updated: ${C.u.length}\n`;
     return l;
   };
 
+
   const handleInfoIconClick = (event, sectionName) => {
-    event.stopPropagation();
+    event.stopPropagation(); // Prevent section selection if clicking icon within button
     if (authorPopoverPosition.visible && authorPopoverContent?._sectionName === sectionName) {
-      setAuthorPopoverPosition({ visible: false }); setAuthorPopoverContent(null);
+      // If already open for this section, close it
+      closeAuthorPopover();
     } else {
-      setAuthorPopoverPosition({ visible: true });
-      setAuthorPopoverContent({ authors: data[sectionName]?.authors || {}, _sectionName: sectionName });
+      // Open for this section
+      // Calculate position (simplified example, you might need a more robust solution)
+      const rect = event.currentTarget.getBoundingClientRect();
+      setAuthorPopoverPosition({
+        visible: true,
+        // top: rect.bottom + window.scrollY + 5, // Position below the icon
+        // left: rect.left + window.scrollX - 100, // Adjust as needed
+      });
+      setAuthorPopoverContent({
+        authors: data[sectionName]?.authors || {},
+        _sectionName: sectionName,
+      });
     }
   };
-  const handleSaveAuthors = (uA) => {
+  const handleSaveAuthors = (uA) => { // updatedAuthors
     if (!isEditorMode) return;
     if (!authorPopoverContent || !authorPopoverContent._sectionName) return;
-    const sU = authorPopoverContent._sectionName;
+    const sU = authorPopoverContent._sectionName; // sectionToUpdate
     setData((pD) => { const nD = deepClone(pD); if (!nD[sU]) nD[sU] = {}; nD[sU].authors = uA; return nD; });
     markDirtyKey(sU + "_authors", true);
     closeAuthorPopover();
@@ -996,17 +1086,17 @@ function App() {
     const k = `${sec}-${sub}`;
     setCollapsedSubs((p) => ({ ...p, [k]: !p[k] }));
     if (newlyAddedSubheading && newlyAddedSubheading.section === sec && newlyAddedSubheading.sub === sub) {
-      setNewlyAddedSubheading(null);
+      setNewlyAddedSubheading(null); // Clear pulse effect if user interacts
     }
   };
 
   const navigateToHelperPage = () => {
     setCurrentPage('helper');
-    window.location.hash = 'helper'; 
+    window.location.hash = 'helper'; // Update hash for deep linking/bookmarking
   };
   const navigateToTriagePage = () => {
     setCurrentPage('triage');
-    if (window.location.hash === '#helper') {
+    if (window.location.hash === '#helper') { // Clean up hash if coming from helper
         window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
     }
   };
@@ -1043,7 +1133,7 @@ function App() {
   ];
   const currentQuickGuidePoints = isEditorMode ? editorQuickGuidePoints : viewerQuickGuidePoints;
   const quickGuideTitleText = isEditorMode ? "Editor Quick Guide:" : "Quick Guide:";
-  
+
   const pageTitleBase = isEditorMode ? "Radiology Triage Tool - Editor" : "Radiology Triage Tool";
   const pageTitleMobileBase = isEditorMode ? "Triage Tool Editor" : "Triage Tool";
 
@@ -1057,12 +1147,12 @@ function App() {
 
   return e(
     "div", { className: appRootClasses },
-    e("header", { className: "rtt-sticky-header", style: { position: "relative" } },
-  e("div", { className: "rtt-brand-bar" },
+    e("header", { className: "rtt-sticky-header"}, // Added relative for dropdown positioning
+  e("div", { className: "rtt-brand-bar", style: { position: "relative" } },
     e("img", { src: "/images/HealthNZ_logo_v2.svg", alt: "Health NZ Logo", className: "rtt-app-logo" }),
     e("div", { className: "rtt-header-divider" }),
     e("h1", { className: "rtt-title" }, currentHeaderTitle),
-    e("div", { style: { flexGrow: 1 } }),
+    e("div", { style: { flexGrow: 1 } }), // Spacer
 
     // Header controls: hamburger for mobile, buttons for desktop
     e("div", { className: "rtt-header-controls" },
@@ -1071,25 +1161,29 @@ function App() {
           className: "rtt-hamburger-btn",
           onClick: () => setHamburgerOpen(!hamburgerOpen),
           "aria-label": "Open menu",
-          style: { marginLeft: 8, fontSize: 28, background: 'none', border: 'none', cursor: 'pointer' }
-        }, "☰"),
-      !mobile && [
+          // Inline styles for hamburger were moved to CSS
+        }, "☰"), // Hamburger Icon
+      !mobile && [ // Desktop buttons
         currentPage === 'triage' && e("button", {
+          key: 'desktop-priority-guide',
           className: "rtt-header-button-link rtt-priority-guide-nav-link",
           onClick: navigateToHelperPage,
           title: "View Priority Guide"
         }, "Priority Guide"),
         currentPage === 'helper' && e("button", {
+          key: 'desktop-back-to-triage',
           className: "rtt-header-button-link rtt-back-to-triage-link",
           onClick: navigateToTriagePage,
           title: "Back to Triage Tool"
         }, "← Back to Triage Tool"),
         isEditorMode && currentPage === 'triage' && selected && e("button", {
+          key: 'desktop-edit-toggle',
           onClick: () => setEdit(!edit),
           className: `rtt-edit-btn ${edit ? "rtt-edit-btn-active" : "rtt-edit-btn-inactive"}`,
           title: edit ? "Exit Edit Mode" : "Switch to Edit Mode"
         }, edit ? "Exit Edit Mode" : "Switch to Edit Mode"),
         isEditorMode && currentPage === 'triage' && Object.keys(dirty).length > 0 && e("button", {
+          key: 'desktop-download',
           onClick: downloadJson,
           className: "rtt-download-btn",
           title: "Save and Download Updates"
@@ -1097,49 +1191,50 @@ function App() {
       ]
     ),
 
-    // Mobile dropdown menu (after hamburger icon)
+    // Mobile dropdown menu (conditionally rendered after hamburger icon)
     mobile && hamburgerOpen && e("div", {
-      className: "rtt-mobile-menu-dropdown",
-      style: {
+      className: "rtt-mobile-menu-dropdown", // Styling for this in CSS
+      style: { // Basic positioning, refined in CSS if needed
         position: "absolute",
-        top: 64, // adjust if your header is a different height
-        right: 12,
+        top: "calc(100% + 5px)", // Position below the brand bar
+        right: "10px", // Align to the right
         background: "#fff",
         boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-        zIndex: 1000,
-        borderRadius: 8,
-        minWidth: 180,
-        padding: 8,
+        zIndex: 1010, // Ensure it's above other content
+        borderRadius: "8px",
+        minWidth: "200px", // Decent width for options
+        padding: "8px", // Internal padding
       }
     },
-      [
+      [ // Array of buttons for the dropdown
         currentPage === 'triage' && e("button", {
-          className: "rtt-header-button-link rtt-priority-guide-nav-link",
+          key: 'mobile-priority-guide',
+          className: "rtt-header-button-link rtt-priority-guide-nav-link", // Reuses desktop classes, styled by dropdown specific CSS
           onClick: () => { navigateToHelperPage(); setHamburgerOpen(false); },
-          style: { width: "100%" }
+          // style: { width: "100%" } // width is handled by .rtt-mobile-menu-dropdown button
         }, "Priority Guide"),
         currentPage === 'helper' && e("button", {
+          key: 'mobile-back-to-triage',
           className: "rtt-header-button-link rtt-back-to-triage-link",
           onClick: () => { navigateToTriagePage(); setHamburgerOpen(false); },
-          style: { width: "100%" }
         }, "← Back to Triage Tool"),
         isEditorMode && currentPage === 'triage' && selected && e("button", {
+          key: 'mobile-edit-toggle',
           onClick: () => { setEdit(!edit); setHamburgerOpen(false); },
           className: `rtt-edit-btn ${edit ? "rtt-edit-btn-active" : "rtt-edit-btn-inactive"}`,
-          style: { width: "100%" }
         }, edit ? "Exit Edit Mode" : "Switch to Edit Mode"),
         isEditorMode && currentPage === 'triage' && Object.keys(dirty).length > 0 && e("button", {
+          key: 'mobile-download',
           onClick: () => { downloadJson(); setHamburgerOpen(false); },
           className: "rtt-download-btn",
-          style: { width: "100%" }
         }, "Save & Download Updates")
-      ]
+      ].filter(Boolean) // Filter out any null/false items if conditions not met
     )
   )
 ),
     currentPage === 'helper'
       ? e(HelperPage, { /* Props can be added if HelperPage needs them */ })
-      : e( "div", { className: "rtt-app-layout" }, 
+      : e( "div", { className: "rtt-app-layout" },
           e( "aside", { className: "rtt-sidebar" },
             e( "div", { className: "rtt-section-buttons-container" },
               isEditorMode && edit && e('button',{ key: 'add-section-top', onClick: addSection, className: "rtt-add-btn rtt-add-btn-specific" }, '+ Add Section'),
@@ -1150,7 +1245,7 @@ function App() {
                     selected === sec ? "rtt-section-btn-active" : "",
                     hasSecChanges ? "rtt-section-btn-has-changes" : ""
                 ].filter(Boolean).join(" ");
-                return e( "button", { key: "sec-" + sec, onClick: () => { setSelected(sec); setSearchTerm(""); if (authorPopoverPosition.visible) closeAuthorPopover(); setNewlyAddedSubheading(null); },
+                return e( "button", { key: "sec-" + sec, onClick: () => { setSelected(sec); setSearchTerm(""); if (authorPopoverPosition.visible) closeAuthorPopover(); setNewlyAddedSubheading(null); if(mobile) setHamburgerOpen(false); }, // Close hamburger on section select
                     className: sectionButtonClasses,
                   },
                   [ sec, hasSecChanges && e("span", { className: "rtt-section-btn-change-indicator" }) ],
@@ -1161,7 +1256,7 @@ function App() {
           e( "main", { className: "rtt-main-content", ref: mainContentRef },
             !selected
               ? e( "div", { className: "rtt-welcome-screen" },
-                  e( "h2", { className: "rtt-section-header rtt-welcome-title" },
+                  e( "h2", { className: "rtt-section-header rtt-welcome-title" }, // Reuses rtt-section-header for consistency
                      isEditorMode ? "Welcome to the Radiology Triage Tool Editor" : "Welcome to the Radiology Triage Tool"
                   ),
                   e( "div", { className: "rtt-welcome-text-container" },
@@ -1180,7 +1275,7 @@ function App() {
                     ],
                   ),
                 )
-              : e("div", { key: selected || 'selected-section-content' }, [
+              : e("div", { key: selected || 'selected-section-content' }, [ // Key ensures re-render on section change
                   e("div", { className: "rtt-sticky-section-header-wrapper" }, [
                     e( 'div', { className: "rtt-section-header-container" },
                       e('div', { className: "rtt-section-title-group" },
@@ -1204,7 +1299,7 @@ function App() {
 
                   authorPopoverPosition.visible && authorPopoverContent && e(AuthorPopover, {
                     content: authorPopoverContent,
-                    position: authorPopoverPosition,
+                    position: authorPopoverPosition, // JS might need to set top/left on the popover style itself
                     onClose: closeAuthorPopover,
                     isEdit: isEditorMode && edit && authorPopoverContent._sectionName === selected,
                     onSave: handleSaveAuthors
@@ -1212,7 +1307,7 @@ function App() {
 
                   (Object.keys(displayableSubHeadings).length === 0 && searchTerm.length < 3 && (!data[selected] || Object.keys(data[selected]).filter((k) => Array.isArray(data[selected][k])).length === 0))
                     ? e( "div", { className: "rtt-no-subheadings-message" },
-                        e("p", null, "No sub-headings or scenarios yet."),
+                        e("p", null, "No sub-headings or scenarios yet in this section."),
                         isEditorMode && edit && e( "button", { className: "rtt-add-inline-btn rtt-add-subheading-inline-btn", onClick: () => addSubheadingViaPrompt(selected) }, "+ Add Sub-heading"),
                         isEditorMode && edit && data[selected] && (!data[selected]["General"] || (Array.isArray(data[selected]["General"]) && !data[selected]["General"].length)) &&
                           e( "button", { className: "rtt-add-inline-btn rtt-add-scenario-general-inline-btn",
@@ -1220,18 +1315,18 @@ function App() {
                             }, "+ Scenario to 'General'"),
                       )
                     : (searchTerm.length >= 3 && Object.keys(displayableSubHeadings).length === 0)
-                      ? e( "p", { className: "rtt-search-no-results-message" }, `No scenarios match "${searchTerm}".`)
+                      ? e( "p", { className: "rtt-search-no-results-message" }, `No scenarios match "${searchTerm}" in "${selected}".`)
                       : Object.entries(displayableSubHeadings).map(
                           ([sub, { list, isExpanded, actualIsEmpty }]) => {
                             return e(SubheadingSection, {
-                              key: `${selected}-${sub}`, selected, sub, list, isExpanded, actualIsEmpty, 
-                              edit: isEditorMode && edit, 
-                              searchTerm, 
-                              newlyAddedSubheading, 
-                              subheadingHasChanges: subheadingHasChanges, 
+                              key: `${selected}-${sub}`, selected, sub, list, isExpanded, actualIsEmpty,
+                              edit: isEditorMode && edit,
+                              searchTerm,
+                              newlyAddedSubheading,
+                              subheadingHasChanges: subheadingHasChanges,
                               toggleSubSection,
-                              removeSubheading, addScenario, saveScenario, removeScenario, 
-                              scenarioHasChanges: scenarioHasChanges, 
+                              removeSubheading, addScenario, saveScenario, removeScenario,
+                              scenarioHasChanges: scenarioHasChanges,
                               keyOf, compactMode, mobile,
                             });
                           }
