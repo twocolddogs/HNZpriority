@@ -1045,7 +1045,7 @@ function App() {
   const quickGuideTitleText = isEditorMode ? "Editor Quick Guide:" : "Quick Guide:";
   
   const pageTitleBase = isEditorMode ? "Radiology Triage Tool - Editor" : "Radiology Triage Tool";
-  const pageTitleMobileBase = isEditorMode ? "Triage Tool Editor" : "Triage Tool";
+  const pageTitleMobileBase = isEditorMode ? "Radiology Triage Tool - Editor" : "Radiology Triage Tool";
 
   let currentHeaderTitle = mobile ? pageTitleMobileBase : pageTitleBase;
   if (currentPage === 'triage' && isEditorMode && edit && selected) {
