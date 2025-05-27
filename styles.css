@@ -1,4 +1,8 @@
-/* styles.css - FULL CONSOLIDATED VERSION */
+/* styles.css - Radiology Triage Tool - FULL CONSOLIDATED VERSION */
+
+/* ==========================================================================
+   1. Global Styles & Keyframes
+   ========================================================================== */
 
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
@@ -14,352 +18,919 @@
   100% { box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
 }
 
-/* Styles from AuthorPopover */
-.rtt-author-pill-btn {
-  padding: .28em .8em; font-size: .75em; border: 1px dashed #FFA726; background: #FFF7E6;
-  color: #FF8C00; border-radius: 6px; font-weight: 600; cursor: pointer;
-}
-.rtt-author-popover {
-  position: relative; background: #fff; border: 1px solid #E0E6ED; border-radius: 8px;
-  padding: 1em 1.5em; min-width: 280px; max-width: 100%; color: #4B5563;
-  margin-top: 1em; margin-bottom: 1em; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1005;
-}
-.rtt-author-lead-group-header {
-  font-size: 1em; font-weight: 600; color: #00549F; padding-bottom: 0.3em;
-  margin-bottom: 0.8em; font-family: 'Poppins', Arial, sans-serif;
-}
-.rtt-author-input {
-  padding: 0.3em 0.5em; border: 1px solid #D1D5DB; border-radius: 4px;
-  font-size: 0.9em; width: 100%;
-}
-.rtt-author-leads-group { margin-bottom: 1.5em; }
-.rtt-author-lead-item-edit { display: flex; gap: 0.4em; margin-bottom: 0.5em; align-items: center; }
-.rtt-author-input-flex-2 { flex: 2; }
-.rtt-author-input-flex-1 { flex: 1; }
-.rtt-author-lead-delete-btn {
-  padding: 0.2em 0.5em; font-size: .75em; border-radius: 6px; font-weight: 600;
-  cursor: pointer; background: #FFECEC; border-color: #D94A4A; color: #D94A4A; line-height: 1;
-}
-.rtt-author-lead-item-view { font-size: .9em; margin: 0 0 0.35em 0; }
-.rtt-author-popover-close-btn {
-  position: absolute; top: 10px; right: 10px; border: none; background: none;
-  font-size: 1.4em; color: #6B7280; cursor: pointer;
-}
-.rtt-author-save-actions { text-align: right; margin-top: 1em; }
-.rtt-author-save-btn {
-  background: #007A86; color: #fff; border: none; border-radius: 6px;
-  padding: 0.5em 1.2em; cursor: pointer; font-weight: 600;
-}
+/* ==========================================================================
+   2. Core App Structure & Layout
+   ========================================================================== */
 
-/* Styles from ScenarioCard */
-.rtt-scenario-card-has-changes {
-  border-color: #FFA726; border-left-color: #FFA726; border-width: 2px;
-  border-left-width: 4px; box-shadow: 0 2px 8px rgba(255, 167, 38, 0.25);
-}
-.rtt-scenario-edit-textarea { width: 100%; min-height: 60px; }
-.rtt-scenario-edit-input { width: 100%; }
-.rtt-scenario-edit-comment-textarea { background: #fff; }
-.rtt-priority-label-wrapper { margin: .4em 0; }
-.rtt-priority-label { margin-right: 0.6em; margin-bottom: 0.3em; }
-.rtt-priority-choice-btn {
-  opacity: 0.4; cursor: pointer; border-width: 1px;
-  margin-right: 0.25em; margin-bottom: 0.25em;
-}
-.rtt-priority-choice-btn-selected { opacity: 1; border-width: 2px; }
-.rtt-scenario-remove-actions { margin-top: .5em; }
-.rtt-scenario-remove-btn {
-  padding: .4em 1em; border-radius: 6px; background: #d14949;
-  color: #fff; border: none; cursor: pointer;
-}
-
-/* Styles from SubheadingSection */
-.rtt-subheading-remove-btn {
-  background: #FFEBEE; border: 1px solid #EF9A9A; color: #C62828; padding: 0.3em 0.8em;
-  font-size: 0.75em; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
-}
-.rtt-subheading-add-scenario-btn {
-  background: #E3F2FD; border: 1px solid #90CAF9; color: #1565C0; padding: 0.3em 0.8em;
-  font-size: 0.75em; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
-}
-.rtt-disclosure-arrow {
-  margin-right: 0.5em; display: inline-block; width: 1.1em; text-align: center; line-height: 1;
-}
-.app-mobile .rtt-disclosure-arrow { font-size: 1.2em; font-weight: bold; }
-.rtt-disclosure-arrow-desktop { font-size: 1.1em; font-weight: normal; transition: transform 0.3s ease; }
-.rtt-disclosure-arrow-desktop-expanded { transform: rotate(90deg); }
-.rtt-disclosure-arrow-desktop-collapsed { transform: rotate(0deg); }
-
-.rtt-subheading-card-pulsing { animation: pulse 2s ease-in-out infinite; }
-.rtt-subheading-title-wrapper { display: flex; align-items: center; flex: 1; }
-.rtt-subheading-changed-indicator {
-  margin-left: 0.8em; width: 8px; height: 8px; background-color: #FFA726;
-  border-radius: 50%; display: inline-block; box-shadow: 0 0 0 3px rgba(255, 167, 38, 0.2);
-}
-.rtt-subheading-actions { display: flex; align-items: center; gap: 0.6em; margin-left: 1em; }
-.rtt-scenario-item-wrapper { position: relative; }
-.rtt-scenario-item-wrapper.is-last-scenario-item .rtt-result { margin-bottom: 0; }
-.rtt-scenario-connector-line {
-  position: absolute; left: 2em; bottom: 0; width: 2px; height: 0.75em;
-  background: linear-gradient(to bottom, #E0E6ED 0%, transparent 100%);
-}
-
-
-/* App Component - Main Styles */
 .rtt-container {
-  font-family: 'Public-Sans', Arial, sans-serif; background: #F9FAFB; min-height: 100vh; padding: 1em;
+  font-family: 'Public-Sans', Arial, sans-serif;
+  background: #F9FAFB;
+  min-height: 100vh;
+  padding: 1em;
 }
 .app-mobile .rtt-container { padding: 0.5em; }
 
 .rtt-app-layout {
-  display: grid; gap: 1em; grid-template-columns: 250px 1fr; max-width: 1400px; margin: 0 auto;
+  display: grid;
+  gap: 1em;
+  grid-template-columns: 250px 1fr;
+  max-width: 1400px;
+  margin: 0 auto;
 }
-.app-mobile .rtt-app-layout { grid-template-columns: 1fr; gap: 0.5em; }
+.app-mobile .rtt-app-layout {
+  grid-template-columns: 1fr;
+  gap: 0.5em;
+}
 
+/* --- App Header --- */
 .rtt-sticky-header {
-  position: sticky; top: 0; z-index: 1002; background: #F5F7FA; padding-bottom: 0.4em;
+  position: sticky;
+  top: 0;
+  z-index: 1002;
+  background: #F5F7FA; /* Matches main content background for seamless scroll */
+  padding-bottom: 0.4em; /* Space below brand bar if content scrolls under */
 }
+
 .rtt-brand-bar {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   background: linear-gradient(90deg,#143345 45%,#41236a 100%);
-  padding: 0.6em 1em; border-radius: 6px; max-width: 1400px; margin: 0 auto;
+  padding: 0.6em 1em;
+  border-radius: 6px;
+  max-width: 1400px; /* Consistent with app layout max-width */
+  margin: 0 auto; /* Center the brand bar itself */
 }
 .app-mobile .rtt-brand-bar { padding: 0.8em 1.2em; }
 
-.rtt-app-logo { height: auto; margin-right: 1em; width: 160px; }
-.app-mobile .rtt-app-logo { width: 80px; margin-right: 0.5em; }
+.rtt-app-logo {
+  height: auto;
+  margin-right: 1em;
+  width: 160px;
+}
+.app-mobile .rtt-app-logo {
+  width: 80px;
+  margin-right: 0.5em;
+}
 
 .rtt-title {
-  color: #fff; font-size: 1.3em; margin: 0; font-weight: 600;
-  font-family: 'Poppins', Arial, sans-serif; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
+  color: #fff;
+  font-size: 1.3em;
+  margin: 0;
+  font-weight: 600;
+  font-family: 'Poppins', Arial, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .app-mobile .rtt-title { font-size: 1em; }
 
 .rtt-header-divider {
-  width: 1px; height: 30px; background: rgba(255,255,255,0.3); margin: 0 1.5em; flex-shrink: 0;
+  width: 1px;
+  height: 30px;
+  background: rgba(255,255,255,0.3);
+  margin: 0 1.5em;
+  flex-shrink: 0;
 }
 .app-mobile .rtt-header-divider { margin: 0 0.8em; }
 
-.rtt-header-controls { /* This contains all buttons on the right of the header */
+.rtt-header-controls {
   display: flex;
   align-items: center;
   gap: 0.8em;
 }
 .app-mobile .rtt-header-controls { gap: 0.5em; }
 
-
+/* --- Sidebar --- */
 .rtt-sidebar {
-  align-self: start; background: #fff; border-radius: 8px; padding: 1em;
-  border: 1px solid #E5EAF0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); z-index: 500;
-  position: sticky; top: calc(0.6em * 2 + 0.4em + 0.5em); height: fit-content;
-  max-height: calc(100vh - (0.6em * 2 + 0.4em + 0.5em) - 2em); overflow-y: auto;
+  align-self: start;
+  background: #fff;
+  border-radius: 8px;
+  padding: 1em;
+  border: 1px solid #E5EAF0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  z-index: 500;
+  position: sticky;
+  /* Sticky position calculation based on brand bar height and padding */
+  top: calc( (0.6em * 2) /* brand bar padding */ + 30px /* approx brand bar content height */ + 0.4em /* sticky header padding-bottom */ + 0.5em /* desired gap */ );
+  height: fit-content;
+  max-height: calc(100vh - ( (0.6em * 2) + 30px + 0.4em + 0.5em ) - 2em /* container padding */);
+  overflow-y: auto;
 }
 .app-mobile .rtt-sidebar {
-  position: relative; top: auto; height: auto; max-height: auto; overflow-y: visible;
+  position: relative;
+  top: auto;
+  height: auto;
+  max-height: none;
+  overflow-y: visible;
 }
 
+/* --- Main Content Area --- */
 .rtt-main-content {
-  background: #F5F7FA; border-radius: 10px; border: 1px solid #E5EAF0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.03); position: relative; z-index: 1;
-  padding: 0em 1.5em 1.5em 1.5em;
+  background: #F5F7FA;
+  border-radius: 10px;
+  border: 1px solid #E5EAF0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  position: relative;
+  z-index: 1;
+  padding: 0em 1.5em 1.5em 1.5em; /* Top padding handled by sticky section header */
 }
 .app-mobile .rtt-main-content { padding: 1em; }
 
-.rtt-section-buttons-container { display: flex; flex-direction: column; gap: 0.4em; }
-.rtt-section-btn {
-  padding: 0.5em 1em; font-size: 0.85em; text-align: left; border: 1px solid #00549F;
-  background: #fff; color: #00549F; border-radius: 6px; cursor: pointer;
-  font-weight: 600; transition: all .2s; width: 100%;
-  font-family: 'Poppins', Arial, sans-serif; position: relative;
+
+/* ==========================================================================
+   3. Header Elements & Navigation
+   ========================================================================== */
+
+/* --- Desktop Header Buttons (Shared Base) --- */
+.rtt-header-button-link,
+.rtt-edit-btn {
+  font-family: 'Poppins', Arial, sans-serif;
+  font-size: 0.9em;
+  font-weight: 600;
+  padding: 0.4em 0.8em;
+  border-radius: 6px;
+  border: 1px solid; /* Color specified by variants */
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-decoration: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
-.rtt-section-btn-active { background: #00549F; color: #fff; }
+
+/* Specifics for .rtt-header-button-link (e.g., Priority Guide) */
+.rtt-header-button-link {
+  color: #fff;
+  border-color: rgba(255,255,255,0.5);
+  background-color: rgba(255,255,255,0.08);
+}
+.rtt-header-button-link:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255,255,255,0.7);
+}
+
+/* Specifics for .rtt-back-to-triage-link */
+.rtt-back-to-triage-link { /* Also has .rtt-header-button-link */
+  background-color: #007A86;
+  border-color: #005f69;
+  color: #fff;
+}
+.rtt-back-to-triage-link:hover {
+  background-color: #005f69;
+  border-color: #004c53;
+}
+
+/* Specifics for .rtt-edit-btn states */
+.rtt-edit-btn-active {
+  background: #e0e0e0;
+  color: #143345;
+  border-color: #c0c0c0;
+}
+.rtt-edit-btn-active:hover {
+  background: #d0d0d0;
+  border-color: #b0b0b0;
+}
+
+.rtt-edit-btn-inactive {
+  background: #FFA726;
+  color: #fff;
+  border-color: #e09015;
+}
+.rtt-edit-btn-inactive:hover {
+  background: #f09706;
+  border-color: #d08005;
+}
+
+/* Download button (often in header) */
+.rtt-download-btn {
+  font-family: 'Poppins', Arial, sans-serif; /* Ensure consistency if not covered by .rtt-header-button-link */
+  font-size: .8em; /* Keep slightly smaller for visual distinction if desired */
+  font-weight: 600;
+  padding: 0.4em 1em;
+  border: 1px solid #3a5c24; /* Matching border */
+  border-radius: 6px;
+  background: #4c7a30;
+  color: #fff;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.rtt-download-btn:hover {
+  background: #3e6326;
+  border-color: #2f4a1c;
+}
+
+
+/* --- Mobile Hamburger Menu --- */
+.rtt-hamburger-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #fff; /* White icon */
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+/* Base style for ALL buttons inside the mobile dropdown */
+.app-mobile .rtt-mobile-menu-dropdown button, /* Increased specificity */
+.rtt-mobile-menu-dropdown button {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  text-align: left;
+  font-family: 'Poppins', Arial, sans-serif;
+  font-size: 15px !important; /* Consistent pixel font size, overrides ems */
+  font-weight: 600;
+  padding: 10px 12px;
+  line-height: 1.4;
+  border-radius: 4px;
+  border: 1px solid #ddd; /* Default subtle border */
+  color: #333; /* Default text color */
+  background-color: transparent; /* Default background */
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.app-mobile .rtt-mobile-menu-dropdown button:hover {
+  background-color: #f0f0f0;
+  border-color: #ccc;
+}
+
+/* Specific overrides for themed buttons within the mobile dropdown */
+.app-mobile .rtt-mobile-menu-dropdown .rtt-priority-guide-nav-link {
+  /* Uses base dropdown styles which are appropriate */
+}
+
+.app-mobile .rtt-mobile-menu-dropdown .rtt-back-to-triage-link {
+  background-color: #007A86;
+  color: #fff;
+  border-color: #005f69;
+}
+.app-mobile .rtt-mobile-menu-dropdown .rtt-back-to-triage-link:hover {
+  background-color: #005f69;
+  border-color: #004c53;
+}
+
+.app-mobile .rtt-mobile-menu-dropdown .rtt-edit-btn-active {
+  background: #e0e0e0;
+  color: #143345;
+  border-color: #c0c0c0;
+}
+.app-mobile .rtt-mobile-menu-dropdown .rtt-edit-btn-active:hover {
+  background: #d0d0d0;
+  border-color: #b0b0b0;
+}
+
+.app-mobile .rtt-mobile-menu-dropdown .rtt-edit-btn-inactive {
+  background: #FFA726;
+  color: #fff;
+  border-color: #e09015;
+}
+.app-mobile .rtt-mobile-menu-dropdown .rtt-edit-btn-inactive:hover {
+  background: #f09706;
+  border-color: #d08005;
+}
+
+.app-mobile .rtt-mobile-menu-dropdown .rtt-download-btn {
+  background: #4c7a30;
+  color: #fff;
+  border-color: #3e6326;
+  font-size: 15px !important; /* Ensure consistency with other dropdown buttons */
+  padding: 10px 12px; /* Ensure consistency */
+}
+.app-mobile .rtt-mobile-menu-dropdown .rtt-download-btn:hover {
+  background: #3e6326;
+  border-color: #2f4a1c;
+}
+
+/* Mobile specific adjustments for buttons IF they were directly in header (not dropdown) */
+/* Keep this minimal if most mobile buttons are in dropdown */
+.app-mobile .rtt-header-button-link,
+.app-mobile .rtt-edit-btn {
+  /* font-size: 0.8em; */ /* Example: only if needed for non-dropdown context */
+  /* padding: 0.3em 0.6em; */
+}
+
+
+/* ==========================================================================
+   4. Section & Subheading Navigation/Display (Main Content Area)
+   ========================================================================== */
+
+/* --- Section Buttons (Sidebar) --- */
+.rtt-section-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+.rtt-section-btn {
+  padding: 0.5em 1em;
+  font-size: 0.85em;
+  text-align: left;
+  border: 1px solid #00549F;
+  background: #fff;
+  color: #00549F;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all .2s;
+  width: 100%;
+  font-family: 'Poppins', Arial, sans-serif;
+  position: relative; /* For change indicator positioning */
+}
+.rtt-section-btn-active {
+  background: #00549F;
+  color: #fff;
+}
 .rtt-section-btn-has-changes {
-  border-color: #FFA726; border-width: 2px; box-shadow: 0 0 3px rgba(255,167,38,0.5);
+  border-color: #FFA726;
+  border-width: 2px;
+  box-shadow: 0 0 3px rgba(255,167,38,0.5);
 }
 .rtt-section-btn-change-indicator {
-  position: absolute; top: -6px; right: -6px; width: 12px; height: 12px;
-  background-color: #FFA726; border-radius: 50%; border: 2px solid #fff;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 12px;
+  height: 12px;
+  background-color: #FFA726;
+  border-radius: 50%;
+  border: 2px solid #fff;
 }
 
+/* --- Sticky Section Header (in Main Content) --- */
 .rtt-sticky-section-header-wrapper {
-  position: sticky; z-index: 1001; background: #F5F7FA;
-  padding-top: 1em; padding-bottom: 1em; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-  top: 3.2em; /* APP_BAR_HEIGHT_DESKTOP */
+  position: sticky;
+  z-index: 1001;
+  background: #F5F7FA; /* Match main content background */
+  padding-top: 1em;
+  padding-bottom: 1em;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  /* Desktop: Needs to be below the main app sticky header */
+  top: calc( (0.6em * 2) + 30px + 0.4em ); /* Brand bar p Y + content H + sticky header p B */
 }
-.app-mobile .rtt-sticky-section-header-wrapper { top: 3.5em; /* APP_BAR_HEIGHT_MOBILE */ }
+.app-mobile .rtt-sticky-section-header-wrapper {
+  /* Mobile: simpler calculation if brand bar height is more predictable */
+  top: calc( (0.8em * 2) + 24px + 0.4em ); /* Mobile brand bar p Y + logo H + sticky header p B */
+}
 
 .rtt-section-header-container {
-  display: flex; align-items: center; gap: 0.0em; margin-bottom: 1em;
+  display: flex;
+  align-items: center;
+  gap: 1em; /* Adjusted gap for better spacing */
+  margin-bottom: 1em;
 }
 .app-mobile .rtt-section-header-container {
-  flex-direction: column; align-items: flex-start; gap: 0.5em;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5em;
 }
+
 .rtt-section-header {
-  font-size: 1.25em; color: #00549F; font-weight: 700; margin: 0;
+  font-size: 1.25em;
+  color: #00549F;
+  font-weight: 700;
+  margin: 0;
   font-family: 'Poppins', Arial, sans-serif;
 }
 .app-mobile .rtt-section-header { font-size: 1.1em; }
 
-.rtt-flex-spacer {
-  flex-grow: 1;
+.rtt-flex-spacer { flex-grow: 1; }
+
+.rtt-section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+.app-mobile .rtt-section-header-actions {
+  width: 100%;
+  justify-content: flex-end;
 }
 
-.rtt-section-header-actions { display: flex; align-items: center; gap: 0.6em; }
-.app-mobile .rtt-section-header-actions { width: 100%; justify-content: flex-end; }
+.rtt-section-title-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2em;
+}
+.rtt-section-title-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.rtt-info-icon {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.rtt-section-last-updated {
+  font-size: 0.8em;
+  color: #6B7280;
+  margin-top: -0.2em;
+}
 
+/* --- Search Bar --- */
 .rtt-search-bar {
-  width: 100%; padding: 0.6em 1em; border: 1px solid #D1D5DB; border-radius: 6px;
-  font-size: 0.9em; background-color: #fff; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  width: 100%;
+  padding: 0.6em 1em;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 0.9em;
+  background-color: #fff;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
 }
+
+/* --- Subheading Cards --- */
+.rtt-subheading-card {
+  background: #fff;
+  border: 1px solid #E0E6ED;
+  border-radius: 12px;
+  margin-bottom: 1.2em;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  transition: all 0.3s ease;
+}
+.rtt-subheading-card-highlighted {
+  border-color: #FFA726;
+  border-width: 2px;
+  box-shadow: 0 4px 12px rgba(255, 167, 38, 0.15);
+}
+.rtt-subheading-card-pulsing { animation: pulse 2s ease-in-out infinite; }
 
 .rtt-subheading-header {
-  background: #E8F0F6; padding: 0.75em 1.1em; display: flex; align-items: center;
-  justify-content: space-between; cursor: pointer; color: #00549F; font-weight: 600;
-  font-family: 'Poppins', Arial, sans-serif; font-size: 0.95em;
-  transition: background 0.3s ease; border-bottom: 1px solid #D1D9E1;
+  background: #E8F0F6;
+  padding: 0.75em 1.1em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: #00549F;
+  font-weight: 600;
+  font-family: 'Poppins', Arial, sans-serif;
+  font-size: 0.95em;
+  transition: background 0.3s ease;
+  border-bottom: 1px solid #D1D9E1;
 }
 .app-mobile .rtt-subheading-header { padding: 0.6em 0.9em; font-size: 0.9em; }
 .rtt-subheading-header:hover { background: #D6E4EE; }
 
-.rtt-result {
-  background: #fff; border: 1px solid #E5EAF0; border-left: 4px solid #007A86;
-  border-radius: 6px; margin-bottom: 0.75em; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  transition: all 0.2s ease; position: relative; padding: 1em 1.2em;
+.rtt-subheading-title-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1; /* Allow title to take available space */
+  gap: 0.5em; /* Space between arrow and title */
 }
-.app-compact-mode .rtt-result { padding: 0.8em 1em; }
+.rtt-subheading-changed-indicator {
+  margin-left: 0.8em; /* Keep consistent spacing from title text */
+  width: 8px;
+  height: 8px;
+  background-color: #FFA726;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 3px rgba(255, 167, 38, 0.2);
+}
+
+.rtt-disclosure-arrow {
+  /* margin-right: 0.5em; Removed, using gap on parent */
+  display: inline-block;
+  width: 1.1em;
+  text-align: center;
+  line-height: 1;
+}
+.app-mobile .rtt-disclosure-arrow {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+.rtt-disclosure-arrow-desktop {
+  font-size: 1.1em;
+  font-weight: normal;
+  transition: transform 0.3s ease;
+}
+.rtt-disclosure-arrow-desktop-expanded { transform: rotate(90deg); }
+.rtt-disclosure-arrow-desktop-collapsed { transform: rotate(0deg); }
+
+.rtt-subheading-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-left: 1em; /* Space between title group and actions */
+}
+.rtt-subheading-remove-btn {
+  background: #FFEBEE;
+  border: 1px solid #EF9A9A;
+  color: #C62828;
+  padding: 0.3em 0.8em;
+  font-size: 0.75em;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.rtt-subheading-add-scenario-btn {
+  background: #E3F2FD;
+  border: 1px solid #90CAF9;
+  color: #1565C0;
+  padding: 0.3em 0.8em;
+  font-size: 0.75em;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rtt-subheading-content {
+  padding: 1em;
+  background: #FAFBFC;
+  border-top: 1px solid #E0E6ED;
+  min-height: 60px;
+}
+.rtt-empty-subheading-content {
+  padding: 2em;
+  text-align: center;
+  color: #9CA3AF;
+  font-style: italic;
+  background: #FAFBFC; /* Consistent background */
+}
+
+
+/* ==========================================================================
+   5. Scenario Cards & Content Display
+   ========================================================================== */
+
+.rtt-result { /* Base for ScenarioCard */
+  background: #fff;
+  border: 1px solid #E5EAF0;
+  border-left: 4px solid #007A86;
+  border-radius: 6px;
+  margin-bottom: 0.75em;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  transition: all 0.2s ease;
+  position: relative;
+  /* Padding defined by variants */
+}
+.app-compact-mode .rtt-result { padding: 0.8em 1em; } /* General compact padding */
+
 .rtt-scenario-card-padding-default { padding: 0.9em 1.1em; }
 .rtt-scenario-card-padding-compact { padding: 0.6em 0.8em; }
 
+.rtt-scenario-card-has-changes { /* Highlight for changed scenario card */
+  border-color: #FFA726; /* Right, top, bottom borders */
+  border-left-color: #FFA726; /* Ensure left border also changes */
+  border-width: 2px;
+  border-left-width: 4px; /* Keep left border prominent */
+  box-shadow: 0 2px 8px rgba(255, 167, 38, 0.25);
+}
+
+.rtt-scenario-item-wrapper {
+  position: relative;
+}
+.rtt-scenario-item-wrapper.is-last-scenario-item .rtt-result {
+  margin-bottom: 0; /* Remove margin for last item in a subheading */
+}
+.rtt-scenario-connector-line {
+  position: absolute;
+  left: 2em; /* Align with content indentation, adjust as needed */
+  bottom: 0;
+  width: 2px;
+  height: 0.75em; /* Height of the margin-bottom of .rtt-result */
+  background: linear-gradient(to bottom, #E0E6ED 0%, transparent 100%);
+}
+
+/* --- Scenario Card Content --- */
 .rtt-label {
-  font-weight: 700; color: #00549F; display: block; margin-bottom: 0.25em;
+  font-weight: 700;
+  color: #00549F;
+  display: block;
+  margin-bottom: 0.25em;
 }
 .rtt-text {
-  font-size: 0.95em; margin-bottom: 0.55em; display: block; word-break: break-word;
-}
-.rtt-text-input {
-  padding: 0.3em 0.5em; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9em;
+  font-size: 0.95em;
+  margin-bottom: 0.55em;
+  display: block;
+  word-break: break-word;
 }
 .rtt-comment-text {
-  font-size: 0.9em; background: #F8F9FA; padding: 0.55em; border-radius: 4px;
-  border: 1px solid #D1D5DB; margin-top: 0.3em; word-break: break-word; display: block;
+  font-size: 0.9em;
+  background: #F8F9FA;
+  padding: 0.55em;
+  border-radius: 4px;
+  border: 1px solid #D1D5DB;
+  margin-top: 0.3em;
+  word-break: break-word;
+  display: block;
 }
 .app-mobile.app-compact-mode .rtt-comment-text-conditional-hide { display: none; }
 
-.rtt-info-icon { width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; }
-.rtt-add-btn {
-  padding: .55em 1.3em; font-size: .8em; border: 2px dashed #FFA726; background: #FFF7E6;
-  color: #FF8C00; border-radius: 10px; font-weight: 700; cursor: pointer;
-  margin-top: 0.5em; font-family: 'Poppins', Arial, sans-serif;
-}
-.rtt-add-btn-specific { margin-bottom: 0.6em; }
-
-.rtt-add-inline-btn {
-  padding: .28em .8em; font-size: .75em; border: 1px dashed #FFA726; background: #FFF7E6;
-  color: #FF8C00; border-radius: 6px; font-weight: 600; cursor: pointer;
-  font-family: 'Poppins', Arial, sans-serif;
-}
-.rtt-download-btn {
-  padding: 0.4em 1em; border: none; border-radius: 6px; background: #4c7a30;
-  color: #fff; font-weight: 600; font-size: .8em; white-space: nowrap;
-  font-family: 'Poppins', Arial, sans-serif;
-}
-.rtt-edit-btn {
-  padding: .5em 1em; border: none; border-radius: 6px; font-weight: 600;
-  cursor: pointer; font-size: .8em; white-space: nowrap;
-  font-family: 'Poppins', Arial, sans-serif;
-}
-.rtt-edit-btn-active { background: #e0e0e0; color: #143345; }
-.rtt-edit-btn-inactive { background: #FFA726; color: #fff; }
-
 .rtt-modality-display {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 0.3em; margin-top: 0.2em;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3em;
+  margin-top: 0.2em;
 }
 .rtt-modality-icon {
-  height: 24px; margin-right: 3px; vertical-align: middle; opacity: 0.9;
+  height: 24px;
+  margin-right: 3px;
+  vertical-align: middle;
+  opacity: 0.9;
 }
+
 .rtt-priority-container {
-  display: flex; flex-wrap: wrap; gap: 0.25em; margin-top: 0.2em;
-}
-.rtt-compact-badge {
-  padding: 2px 6px; font-size: 0.8em; border-radius: 3px; display: inline-block;
-}
-.rtt-subheading-card {
-  background: #fff; border: 1px solid #E0E6ED; border-radius: 12px;
-  margin-bottom: 1.2em; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-  transition: all 0.3s ease;
-}
-.rtt-subheading-card-highlighted {
-  border-color: #FFA726; border-width: 2px; box-shadow: 0 4px 12px rgba(255, 167, 38, 0.15);
-}
-.rtt-subheading-content {
-  padding: 1em; background: #FAFBFC; border-top: 1px solid #E0E6ED; min-height: 60px;
-}
-.rtt-empty-subheading-content {
-  padding: 2em; text-align: center; color: #9CA3AF; font-style: italic;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em;
+  margin-top: 0.2em;
 }
 
-/* Badge Styles */
-.rtt-badge-p1 { background-color: #FFBABA; color: #D8000C; font-weight: bold; border: 1px solid #D8000C; }
-/* ... (all other rtt-badge- variants) ... */
-.rtt-badge-p1-p2 { background-color: #FFBABA; color: #D8000C; font-weight: bold; border: 1px solid #D8000C; }
-.rtt-badge-p1-p2a { background-color: #FFBABA; color: #D8000C; font-weight: bold; border: 1px solid #D8000C; }
-.rtt-badge-p2 { background-color: #FFE2BA; color: #AA5F00; font-weight: bold; border: 1px solid #AA5F00; }
-.rtt-badge-p2a { background-color: #FFE2BA; color: #AA5F00; font-weight: bold; border: 1px solid #AA5F00; }
-.rtt-badge-p2a-p2 { background-color: #FFE2BA; color: #AA5F00; font-weight: bold; border: 1px solid #AA5F00; }
-.rtt-badge-p2-p3 { background-color: #FFE2BA; color: #7A5C00; font-weight: bold; border: 1px solid #7A5C00; }
-.rtt-badge-p3 { background-color: #FFF8BA; color: #5C5000; font-weight: bold; border: 1px solid #5C5000; }
-.rtt-badge-p3-or-p2 { background-color: #FFE2BA; color: #AA5F00; font-weight: bold; border: 1px solid #AA5F00; }
-.rtt-badge-p4 { background-color: #BAE7FF; color: #004C7A; font-weight: bold; border: 1px solid #004C7A; }
-.rtt-badge-p3-p4 { background-color: #FFF8BA; color: #00416A; font-weight: bold; border: 1px solid #00416A; }
-.rtt-badge-p5 { background-color: #D9D9D9; color: #4F4F4F; font-weight: bold; border: 1px solid #4F4F4F; }
-.rtt-badge-s1 { background-color: #D1FAE5; color: #065F46; font-weight: bold; border: 1px solid #065F46; }
-.rtt-badge-s2 { background-color: #FFE2BA; color: #AA5F00; font-weight: bold; border: 1px solid #AA5F00; }
-.rtt-badge-s3 { background-color: #FFF8BA; color: #5C5000; font-weight: bold; border: 1px solid #5C5000; }
-.rtt-badge-s4 { background-color: #BAE7FF; color: #004C7A; font-weight: bold; border: 1px solid #004C7A; }
-.rtt-badge-s5 { background-color: #D9D9D9; color: #4F4F4F; font-weight: bold; border: 1px solid #4F4F4F; }
-.rtt-badge-n-a { background-color: #F0F0F0; color: #555555; font-weight: bold; border: 1px solid #555555; }
-.rtt-badge-nil { background-color: #F0F0F0; color: #555555; font-weight: bold; border: 1px solid #555555; }
-.rtt-badge-default { background-color: #E0E0E0; color: #333333; font-weight: bold; border: 1px solid #777; }
+/* --- Scenario Card Edit Mode --- */
+.rtt-text-input { /* Generic text input, used by ScenarioCard and AuthorPopover */
+  padding: 0.3em 0.5em;
+  border: 1px solid #D1D5DB; /* Updated for consistency */
+  border-radius: 4px;
+  font-size: 0.9em;
+  width: 100%; /* Default to full width */
+}
+.rtt-scenario-edit-textarea { min-height: 60px; }
+.rtt-scenario-edit-input { /* No specific style needed if .rtt-text-input is sufficient */ }
+.rtt-scenario-edit-comment-textarea { background: #fff; } /* For comments in edit mode */
 
-/* Generic / Fallback Styles from App rendering */
-.rtt-app-loading-message {
-  text-align: center; margin-top: 2em; font-size: 1.2em; color: #555;
+.rtt-priority-label-wrapper { margin: .4em 0; }
+.rtt-priority-label { margin-right: 0.6em; margin-bottom: 0.3em; }
+
+.rtt-priority-choice-btn { /* Used for priority selection in edit mode */
+  opacity: 0.4;
+  cursor: pointer;
+  border-width: 1px; /* Base border width */
+  margin-right: 0.25em;
+  margin-bottom: 0.25em;
+  /* Badge styles will provide background, color, and specific border color */
 }
-.rtt-welcome-screen { text-align: center; margin-top: 3em; color: #6B7280; }
-.rtt-welcome-title { font-size: 1.8em; margin-bottom: 1em; color: #4B5563; }
-.rtt-welcome-text-container { max-width: 800px; margin: 0 auto; line-height: 1.8; }
-.rtt-welcome-intro-text { font-size: 1.1em; margin-bottom: 1.5em; }
-.rtt-quick-guide-box {
-  text-align: left; background: #F8F9FA; padding: .5em 1.5em .5em 1.5em;
-  border-radius: 8px; border: 1px solid #E5E7EB;
+.rtt-priority-choice-btn-selected {
+  opacity: 1;
+  border-width: 2px; /* Thicker border for selected */
 }
-.rtt-quick-guide-title {
-  font-family: 'Poppins', Arial, sans-serif; font-size: 1.1em;
-  margin-bottom: 0.8em; color: #00549F;
+
+.rtt-scenario-remove-actions { margin-top: .5em; }
+.rtt-scenario-remove-btn {
+  padding: .4em 1em;
+  border-radius: 6px;
+  background: #d14949;
+  color: #fff;
+  border: none;
+  cursor: pointer;
 }
-.rtt-quick-guide-list { padding-left: 1.5em; line-height: 2; }
-.rtt-section-title-group { display: flex; flex-direction: column; align-items: flex-start; gap: 0.2em; }
-.rtt-section-title-line { display: flex; align-items: center; gap: 0.5em; }
-.rtt-section-last-updated { font-size: 0.8em; color: #6B7280; margin-top: -0.2em; }
-.rtt-no-subheadings-message {
-  text-align: left; margin-top: 1em; font-style: italic; color: #6B7280;
+
+/* ==========================================================================
+   6. Author Popover
+   ========================================================================== */
+
+.rtt-author-pill-btn { /* Small button style, e.g., "Add Lead" */
+  padding: .28em .8em;
+  font-size: .75em;
+  border: 1px dashed #FFA726;
+  background: #FFF7E6;
+  color: #FF8C00;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rtt-author-popover {
+  position: relative; /* Or absolute if positioned by JS */
+  background: #fff;
+  border: 1px solid #E0E6ED;
+  border-radius: 8px;
+  padding: 1em 1.5em;
+  min-width: 280px;
+  max-width: 100%;
+  color: #4B5563;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 1005;
+}
+
+.rtt-author-popover-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: none;
+  background: none;
+  font-size: 1.4em;
+  color: #6B7280;
+  cursor: pointer;
+}
+
+.rtt-author-lead-group-header {
+  font-size: 1em;
+  font-weight: 600;
+  color: #00549F;
+  padding-bottom: 0.3em;
+  margin-bottom: 0.8em;
+  font-family: 'Poppins', Arial, sans-serif;
+}
+.rtt-author-leads-group { margin-bottom: 1.5em; }
+
+.rtt-author-lead-item-edit { /* Container for edit fields of one lead */
+  display: flex;
+  gap: 0.4em;
+  margin-bottom: 0.5em;
+  align-items: center;
+}
+.rtt-author-input { /* Uses .rtt-text-input as base, specific overrides here */
+  /* width: 100%; Inherited from .rtt-text-input */
+}
+.rtt-author-input-flex-2 { flex: 2; }
+.rtt-author-input-flex-1 { flex: 1; }
+
+.rtt-author-lead-delete-btn {
+  padding: 0.2em 0.5em;
+  font-size: .75em;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #FFECEC;
+  border: 1px solid #D94A4A; /* Added border for consistency */
+  color: #D94A4A;
+  line-height: 1; /* Prevent extra height */
+}
+.rtt-author-lead-item-view { /* Displaying lead in view mode */
+  font-size: .9em;
+  margin: 0 0 0.35em 0;
+}
+
+.rtt-author-save-actions {
+  text-align: right;
+  margin-top: 1em;
+}
+.rtt-author-save-btn {
+  background: #007A86;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5em 1.2em;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+
+/* ==========================================================================
+   7. Badges & Indicators
+   ========================================================================== */
+
+.rtt-compact-badge { /* Base for small priority/category badges */
+  padding: 2px 6px;
+  font-size: 0.8em;
+  border-radius: 3px;
+  display: inline-block;
+  font-weight: bold; /* Common to most badge types */
+  border: 1px solid; /* Border color set by specific badge type */
+  /* Background and text color set by specific badge type */
+}
+
+/* --- Priority/Category Badge Variants --- */
+/* P-Codes */
+.rtt-badge-p1, .rtt-badge-p1-p2, .rtt-badge-p1-p2a { background-color: #FFBABA; color: #D8000C; border-color: #D8000C; }
+.rtt-badge-p2, .rtt-badge-p2a, .rtt-badge-p2a-p2, .rtt-badge-p3-or-p2 { background-color: #FFE2BA; color: #AA5F00; border-color: #AA5F00; }
+.rtt-badge-p2-p3 { background-color: #FFE2BA; color: #7A5C00; border-color: #7A5C00; } /* Slightly different text for range */
+.rtt-badge-p3 { background-color: #FFF8BA; color: #5C5000; border-color: #5C5000; }
+.rtt-badge-p4 { background-color: #BAE7FF; color: #004C7A; border-color: #004C7A; }
+.rtt-badge-p3-p4 { background-color: #FFF8BA; color: #00416A; border-color: #00416A; } /* Slightly different text for range */
+.rtt-badge-p5 { background-color: #D9D9D9; color: #4F4F4F; border-color: #4F4F4F; }
+
+/* S-Codes */
+.rtt-badge-s1 { background-color: #D1FAE5; color: #065F46; border-color: #065F46; }
+.rtt-badge-s2 { background-color: #FFE2BA; color: #AA5F00; border-color: #AA5F00; } /* Same as P2 */
+.rtt-badge-s3 { background-color: #FFF8BA; color: #5C5000; border-color: #5C5000; } /* Same as P3 */
+.rtt-badge-s4 { background-color: #BAE7FF; color: #004C7A; border-color: #004C7A; } /* Same as P4 */
+.rtt-badge-s5 { background-color: #D9D9D9; color: #4F4F4F; border-color: #4F4F4F; } /* Same as P5 */
+
+/* Other/Default */
+.rtt-badge-n-a, .rtt-badge-nil { background-color: #F0F0F0; color: #555555; border-color: #555555; }
+.rtt-badge-default { background-color: #E0E0E0; color: #333333; border-color: #777; }
+
+
+/* ==========================================================================
+   8. General Use Buttons (Not Header/Component Specific)
+   ========================================================================== */
+
+.rtt-add-btn { /* Large "Add Section" type button */
+  padding: .55em 1.3em;
+  font-size: .8em;
+  border: 2px dashed #FFA726;
+  background: #FFF7E6;
+  color: #FF8C00;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.5em;
+  font-family: 'Poppins', Arial, sans-serif;
+}
+.rtt-add-btn-specific { margin-bottom: 0.6em; } /* If needed for specific placement */
+
+.rtt-add-inline-btn { /* Smaller inline "Add X" buttons */
+  padding: .28em .8em;
+  font-size: .75em;
+  border: 1px dashed #FFA726;
+  background: #FFF7E6;
+  color: #FF8C00;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Poppins', Arial, sans-serif;
 }
 .rtt-add-subheading-inline-btn { margin-top: 0.5em; font-size: 0.8em; }
 .rtt-add-scenario-general-inline-btn { margin-left: 1em; font-size: 0.8em; margin-top: 0.5em; }
-.rtt-search-no-results-message {
-  font-style: italic; text-align: center; padding-top: 1em; color: #6B7280;
+
+
+/* ==========================================================================
+   9. Welcome Screen, Helper Messages & Toasts
+   ========================================================================== */
+
+.rtt-app-loading-message {
+  text-align: center;
+  margin-top: 2em;
+  font-size: 1.2em;
+  color: #555;
 }
+
+.rtt-welcome-screen {
+  text-align: center;
+  margin-top: 3em;
+  color: #6B7280;
+}
+.rtt-welcome-title {
+  font-size: 1.8em;
+  margin-bottom: 1em;
+  color: #4B5563;
+  /* font-family: 'Poppins', Arial, sans-serif; Provided by .rtt-section-header */
+}
+.rtt-welcome-text-container {
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+.rtt-welcome-intro-text {
+  font-size: 1.1em;
+  margin-bottom: 1.5em;
+}
+
+.rtt-quick-guide-box {
+  text-align: left;
+  background: #F8F9FA;
+  padding: .5em 1.5em .5em 1.5em;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+}
+.rtt-quick-guide-title {
+  font-family: 'Poppins', Arial, sans-serif;
+  font-size: 1.1em;
+  margin-bottom: 0.8em;
+  color: #00549F;
+}
+.rtt-quick-guide-list {
+  padding-left: 1.5em;
+  line-height: 2;
+}
+
+.rtt-no-subheadings-message {
+  text-align: left;
+  margin-top: 1em;
+  font-style: italic;
+  color: #6B7280;
+}
+.rtt-search-no-results-message {
+  font-style: italic;
+  text-align: center;
+  padding-top: 1em;
+  color: #6B7280;
+}
+
 .rtt-success-toast {
-  position: fixed; top: 20px; right: 20px; background: #28a745; color: white;
-  padding: 1em 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 9999; font-weight: 600; animation: slideIn 0.3s ease-out;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #28a745;
+  color: white;
+  padding: 1em 1.5em;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 9999;
+  font-weight: 600;
+  animation: slideIn 0.3s ease-out;
 }
 .rtt-success-toast-slideout { animation: slideOut 0.3s ease-in; }
 
 
-/* Styles for the Helper Page */
+/* ==========================================================================
+   10. Helper Page Specific Styles
+   ========================================================================== */
+
 .rtt-helper-page-container {
-  max-width: 1350px; /* Slightly less than 1400px of brand-bar */
+  max-width: 1350px;
   margin: 1.5em auto;
   background: #fff;
   padding: 1.5em;
@@ -370,75 +941,70 @@
   color: #4B5563;
 }
 
-.rtt-helper-page-container h1, /* This h1 is removed from HelperPage.js but kept for potential future use */
+.rtt-helper-page-container h1, /* h1 potentially unused, kept for consistency */
 .rtt-helper-page-container h2,
 .rtt-helper-page-container h3 {
   font-family: 'Poppins', Arial, sans-serif;
   color: #00549F;
 }
 
-/* Collapsible Sections (Accordion) for Helper Page */
+/* --- Helper Page: Collapsible Sections (Accordion) --- */
 .rtt-helper-collapsible-section {
   margin-bottom: 1em;
   border: 1px solid #E0E6ED;
-  border-radius: 8px; 
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
 
 .rtt-helper-collapsible-section summary {
   cursor: pointer;
-  padding: 0.6em 1em; /* REDUCED PADDING */
+  padding: 0.6em 1em;
   background: #E8F0F6;
   display: flex;
   align-items: center;
   justify-content: space-between;
   color: #00549F;
   font-family: 'Poppins', Arial, sans-serif;
-  transition: background 0.3s ease;
+  transition: background 0.3s ease, color 0.3s ease; /* Added color transition */
   border-bottom: 1px solid #D1D9E1;
 }
-.app-mobile .rtt-helper-collapsible-section summary {
-  padding: 0.5em 0.8em;
-}
-
 .rtt-helper-collapsible-section summary:hover {
   background: #D6E4EE;
 }
-
-.rtt-helper-collapsible-section summary h2 {
-  margin: 0;
-  font-size: 1em; /* REDUCED FONT SIZE */
-  font-weight: 600;
-  color: inherit;
-}
-
 .rtt-helper-collapsible-section[open] summary {
   background-color: #00549F;
   color: white;
   border-bottom-color: #004085;
 }
 
-.rtt-helper-collapsible-section summary::after {
+.rtt-helper-collapsible-section summary h2 {
+  margin: 0;
+  font-size: 1em;
+  font-weight: 600;
+  color: inherit; /* Inherits from summary for open/closed states */
+}
+
+.rtt-helper-collapsible-section summary::after { /* Accordion arrow/symbol */
   content: '+';
-  font-size: 1.3em; /* REDUCED size */
+  font-size: 1.3em;
   font-weight: bold;
-  color: #00549F;
-  transition: transform 0.2s ease-in-out;
+  color: #00549F; /* Matches summary text color */
+  transition: transform 0.2s ease-in-out, color 0.3s ease; /* Added color transition */
   margin-left: 0.5em;
 }
 .rtt-helper-collapsible-section[open] summary::after {
   content: '−';
-  color: white;
+  color: white; /* Matches open summary text color */
 }
 
 .rtt-helper-collapsible-content {
   padding: 1em 1.25em;
   background: #FAFBFC;
-  border-top: 1px solid #E0E6ED;
+  border-top: 1px solid #E0E6ED; /* Separates from summary when open */
 }
 
-/* Helper Page Tables */
+/* --- Helper Page: Tables --- */
 .rtt-helper-table-responsive-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -450,7 +1016,7 @@
   width: 100%;
   border-collapse: collapse;
   min-width: 600px;
-  font-size: 0.8em; /* SMALLER FONT for table content */
+  font-size: 0.8em; /* Smaller font for table content */
 }
 .rtt-helper-page-container th,
 .rtt-helper-page-container td {
@@ -464,17 +1030,15 @@
   font-weight: 600;
   color: #4B5563;
 }
-.rtt-th-nowrap { /* For specific headers to resist wrapping */
-  white-space: nowrap;
-}
+.rtt-th-nowrap { white-space: nowrap; }
 .rtt-table-cell-subtitle {
   display: block;
-  font-size: 0.9em; /* Relative to parent cell's smaller font */
+  font-size: 0.9em;
   color: #6B7280;
   margin-top: 0.2em;
 }
 
-/* Helper Page Notes and Explanations */
+/* --- Helper Page: Notes & Explanations --- */
 .rtt-helper-note {
   background-color: #FFF7E6;
   border-left: 4px solid #FFA726;
@@ -482,11 +1046,11 @@
   margin: 1em 0;
   border-radius: 0 4px 4px 0;
 }
-.rtt-helper-explanation-content { /* For S Category explanation paragraphs */
-    font-size: 0.9em; /* Slightly smaller than main helper text */
-    color: #4B5563; 
-    line-height: 1.5;
-    margin: 0.8em 0; /* Add some spacing around the block */
+.rtt-helper-explanation-content {
+  font-size: 0.9em;
+  color: #4B5563;
+  line-height: 1.5;
+  margin: 0.8em 0;
 }
 .rtt-helper-explanation-content p { margin: 0.5em 0; }
 .rtt-helper-explanation-content ul { padding-left: 1.2em; margin-top: 0.3em; }
@@ -495,170 +1059,65 @@
 .rtt-helper-page-container ul { padding-left: 1.25em; margin-top: 0.5em; margin-bottom: 1em; }
 .rtt-helper-page-container li { margin-bottom: 0.5em; }
 
+/* --- Helper Page: Priority Impact Table Specifics --- */
 .rtt-helper-priority-impact-table th,
 .rtt-helper-priority-impact-table td { text-align: center; }
 .rtt-helper-priority-impact-table td.yes { background-color: #D1FAE5; color: #065F46; font-weight: bold; }
 .rtt-helper-priority-impact-table td.if-possible { background-color: #FFF8BA; color: #5C5000; }
 .rtt-helper-priority-impact-table td.x { background-color: #FFBABA; color: #D8000C; font-weight: bold; }
 
-.rtt-helper-p-code {
-  display: inline-block; padding: 3px 7px; font-size: 0.95em; border-radius: 4px;
-  font-weight: bold; text-align: center; min-width: 3em; margin-right: 0.3em; line-height: 1.3;
-}
-.rtt-helper-p1 { background-color: #FFBABA; color: #D8000C; border: 1px solid #D8000C; }
-.rtt-helper-p2 { background-color: #FFE2BA; color: #AA5F00; border: 1px solid #AA5F00; }
-.rtt-helper-p3 { background-color: #FFF8BA; color: #5C5000; border: 1px solid #5C5000; }
-.rtt-helper-p4 { background-color: #BAE7FF; color: #004C7A; border: 1px solid #004C7A; }
-.rtt-helper-p5 { background-color: #D9D9D9; color: #4F4F4F; border: 1px solid #4F4F4F; }
-.rtt-helper-petct { background-color: #E0E0E0; color: #333333; border: 1px solid #777; }
-.rtt-helper-na_overdue { background-color: #F0F0F0; color: #555555; border: 1px solid #555555; }
-.rtt-helper-s1 { background-color: #D1FAE5; color: #065F46; border: 1px solid #065F46; }
-.rtt-helper-s2 { background-color: #FFE2BA; color: #AA5F00; border: 1px solid #AA5F00; }
-.rtt-helper-s3 { background-color: #FFF8BA; color: #5C5000; border: 1px solid #5C5000; }
-.rtt-helper-s4 { background-color: #BAE7FF; color: #004C7A; border: 1px solid #004C7A; }
-.rtt-helper-s5 { background-color: #D9D9D9; color: #4F4F4F; border: 1px solid #4F4F4F; }
-
-/* Helper Page Responsive Adjustments */
-.app-mobile .rtt-helper-page-container {
-  max-width: 100%; margin: 0.5em; padding: 1em; font-size: 0.95em;
-}
-.app-mobile .rtt-helper-collapsible-section summary h2 { font-size: 0.95em; }
-.app-mobile .rtt-helper-collapsible-section summary::after { font-size: 1.2em; }
-.app-mobile .rtt-helper-page-container th,
-.app-mobile .rtt-helper-page-container td { padding: 0.5em 0.6em; font-size: 0.85em; /* Slightly smaller for mobile table */ }
-.app-mobile .rtt-helper-page-container th { white-space: normal; } /* Allow headers to wrap on mobile */
-.app-mobile .rtt-helper-collapsible-section summary { padding: 0.6em 0.9em; }
-.app-mobile .rtt-helper-collapsible-content { padding: 0.75em 1em; }
-
-/* Header Button Styling */
-.rtt-header-button-link {
-  color: #fff; text-decoration: none; font-size: 0.9em; font-weight: 600;
-  padding: 0.4em 0.8em; border-radius: 6px; transition: background-color 0.2s ease;
-  border: 1px solid rgba(255,255,255,0.5); /* Add a subtle border to make it more button like */
-  background-color: rgba(255,255,255,0.08); /* Slight background tint */
-  cursor: pointer; white-space: nowrap; font-family: 'Poppins', Arial, sans-serif;
-  display: inline-flex; /* Helps with vertical alignment if there were icons */
-  align-items: center;
-  justify-content: center;
-}
-.rtt-header-button-link:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255,255,255,0.7);
-}
-
-.rtt-priority-guide-nav-link {
-  /* Default state already has a button-like appearance from .rtt-header-button-link */
-}
-
-.rtt-back-to-triage-link {
-  background-color: #007A86; /* Specific background for Back button */
-  border-color: #005f69;
-}
-.rtt-back-to-triage-link:hover {
-  background-color: #005f69;
-  border-color: #004c53;
-}
-
-.app-mobile .rtt-header-button-link {
-  font-size: 0.8em; padding: 0.3em 0.6em;
-}
-
-.rtt-hamburger-btn {
-  background: none;
-  border: none;
-  font-size: 28px; /* As per inline style in JS */
-  cursor: pointer;
-  color: #fff; /* FIX: Make the hamburger icon white */
-  padding: 0; /* To prevent default button padding from misaligning the icon */
-  line-height: 1; /* Helps center the text icon vertically */
-  /* marginLeft: 8px; is handled by inline style in JS */
-}
-
-/* Base style for ALL buttons inside the mobile dropdown */
-.rtt-mobile-menu-dropdown button {
-  display: block;
-  width: 100%;
-  margin: 8px 0; /* Space between buttons */
-  text-align: left;
-  background: none; /* Clears background from reused classes like rtt-header-button-link */
-  border: none;     /* Clears border from reused classes */
-
-  /* ---- START: Enforce Consistent Sizing and Typography ---- */
-  font-family: 'Poppins', Arial, sans-serif; /* Use a consistent font, matches header buttons */
-  font-size: 15px;      /* A fixed pixel size for all dropdown buttons */
-  font-weight: 600;   /* Consistent font weight */
-  padding: 10px 12px;   /* Consistent internal padding for the button */
-  line-height: 1.4;     /* Consistent line height for text within the button */
-  /* ---- END: Enforce Consistent Sizing and Typography ---- */
-
-  color: #333;     /* Default text color, visible on white dropdown background */
+/* --- Helper Page: Priority Code Badges --- */
+.rtt-helper-p-code { /* Base for badge-like display of P-codes */
+  display: inline-block;
+  padding: 3px 7px;
+  font-size: 0.95em;
   border-radius: 4px;
-  transition: background-color 0.2s ease, color 0.2s ease; /* Added color transition */
-  cursor: pointer;
-  box-sizing: border-box; /* Ensures padding and border are included in width/height */
+  font-weight: bold;
+  text-align: center;
+  min-width: 3em;
+  margin-right: 0.3em;
+  line-height: 1.3;
+  border: 1px solid; /* Border color from specific types */
+}
+.rtt-helper-p1 { background-color: #FFBABA; color: #D8000C; border-color: #D8000C; }
+.rtt-helper-p2 { background-color: #FFE2BA; color: #AA5F00; border-color: #AA5F00; }
+.rtt-helper-p3 { background-color: #FFF8BA; color: #5C5000; border-color: #5C5000; }
+.rtt-helper-p4 { background-color: #BAE7FF; color: #004C7A; border-color: #004C7A; }
+.rtt-helper-p5 { background-color: #D9D9D9; color: #4F4F4F; border-color: #4F4F4F; }
+.rtt-helper-petct { background-color: #E0E0E0; color: #333333; border-color: #777; }
+.rtt-helper-na_overdue { background-color: #F0F0F0; color: #555555; border-color: #555555; }
+.rtt-helper-s1 { background-color: #D1FAE5; color: #065F46; border-color: #065F46; }
+.rtt-helper-s2 { background-color: #FFE2BA; color: #AA5F00; border-color: #AA5F00; }
+.rtt-helper-s3 { background-color: #FFF8BA; color: #5C5000; border-color: #5C5000; }
+.rtt-helper-s4 { background-color: #BAE7FF; color: #004C7A; border-color: #004C7A; }
+.rtt-helper-s5 { background-color: #D9D9D9; color: #4F4F4F; border-color: #4F4F4F; }
+
+/* --- Helper Page: Mobile Responsive Adjustments --- */
+.app-mobile .rtt-helper-page-container {
+  max-width: 100%;
+  margin: 0.5em;
+  padding: 1em;
+  font-size: 0.95em;
+}
+.app-mobile .rtt-helper-collapsible-section summary {
+  padding: 0.6em 0.9em; /* Slightly reduced padding */
+}
+.app-mobile .rtt-helper-collapsible-section summary h2 {
+  font-size: 0.95em;
+}
+.app-mobile .rtt-helper-collapsible-section summary::after {
+  font-size: 1.2em;
+}
+.app-mobile .rtt-helper-collapsible-content {
+  padding: 0.75em 1em;
+}
+.app-mobile .rtt-helper-page-container th,
+.app-mobile .rtt-helper-page-container td {
+  padding: 0.5em 0.6em;
+  font-size: 0.85em; /* Slightly smaller for mobile table */
+}
+.app-mobile .rtt-helper-page-container th {
+  white-space: normal; /* Allow headers to wrap */
 }
 
-/* Generic hover for items that don't have specific colored backgrounds (like Priority Guide by default) */
-.rtt-mobile-menu-dropdown button:hover {
-  background-color: #f0f0f0;
-}
-
-/* Specific styles for buttons within the dropdown that need to retain their characteristic look */
-/* These primarily change background-color and text color, inheriting sizing from the base rule above. */
-
-/* For "Priority Guide" which uses .rtt-header-button-link.rtt-priority-guide-nav-link */
-.rtt-mobile-menu-dropdown .rtt-priority-guide-nav-link {
-  /* It will use the base style's color: #333 and background: none. */
-  /* If you want a slightly different look for this specific link-like button: */
-  /* color: #00549F; */ /* Example: Make it look more like a link */
-}
-.rtt-mobile-menu-dropdown .rtt-priority-guide-nav-link:hover {
-  /* background-color: #e3f2fd; */ /* Example: Light blue hover for link-like items */
-  /* color: #1565C0; */
-}
-
-
-/* For "Back to Triage Tool" which uses .rtt-header-button-link.rtt-back-to-triage-link */
-.rtt-mobile-menu-dropdown .rtt-back-to-triage-link {
-  background-color: #007A86;
-  color: #fff;
-}
-.rtt-mobile-menu-dropdown .rtt-back-to-triage-link:hover {
-  background-color: #005f69;
-  color: #fff; /* Ensure text color remains white on hover */
-}
-
-/* For "Edit Mode" toggle buttons which use .rtt-edit-btn and .rtt-edit-btn-active/inactive */
-.rtt-mobile-menu-dropdown .rtt-edit-btn-active {
-  background: #e0e0e0;
-  color: #143345;
-}
-.rtt-mobile-menu-dropdown .rtt-edit-btn-active:hover {
-  background: #d0d0d0;
-  color: #143345;
-}
-
-.rtt-mobile-menu-dropdown .rtt-edit-btn-inactive {
-  background: #FFA726;
-  color: #fff;
-}
-.rtt-mobile-menu-dropdown .rtt-edit-btn-inactive:hover {
-  background: #f09706;
-  color: #fff;
-}
-
-/* For "Save & Download Updates" button which uses .rtt-download-btn */
-.rtt-mobile-menu-dropdown .rtt-download-btn {
-  background: #4c7a30;
-  color: #fff;
-}
-.rtt-mobile-menu-dropdown .rtt-download-btn:hover {
-  background: #3e6326;
-  color: #fff;
-}
-
-/* This can be removed if the above are comprehensive, or kept as a final fallback */
-/* if any button only has .rtt-header-button-link and no other specific class in the dropdown. */
-/* .rtt-mobile-menu-dropdown .rtt-header-button-link { */
-  /* It will inherit color: #333 and background: none from the base rule above by default. */
-/* } */
+/* End of styles.css */
