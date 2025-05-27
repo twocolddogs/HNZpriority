@@ -611,6 +611,7 @@
   margin-bottom: 0.55em;
   display: block;
   word-break: break-word;
+  color: #4d5660;
 }
 .rtt-comment-text {
   font-size: 0.9em;
@@ -621,6 +622,7 @@
   margin-top: 0.3em;
   word-break: break-word;
   display: block;
+  color: #4d5660;
 }
 .app-mobile.app-compact-mode .rtt-comment-text-conditional-hide { display: none; }
 
