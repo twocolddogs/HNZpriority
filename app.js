@@ -1147,8 +1147,8 @@ function App() {
 
   return e(
     "div", { className: appRootClasses },
-    e("header", { className: "rtt-sticky-header", style: { position: "relative" } }, // Added relative for dropdown positioning
-  e("div", { className: "rtt-brand-bar" },
+    e("header", { className: "rtt-sticky-header"}, // Added relative for dropdown positioning
+  e("div", { className: "rtt-brand-bar", style: { position: "relative" } },
     e("img", { src: "/images/HealthNZ_logo_v2.svg", alt: "Health NZ Logo", className: "rtt-app-logo" }),
     e("div", { className: "rtt-header-divider" }),
     e("h1", { className: "rtt-title" }, currentHeaderTitle),
