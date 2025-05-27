@@ -562,3 +562,91 @@
 .app-mobile .rtt-header-button-link {
   font-size: 0.8em; padding: 0.3em 0.6em;
 }
+
+.rtt-hamburger-btn {
+  background: none;
+  border: none;
+  font-size: 28px; /* As per inline style in JS */
+  cursor: pointer;
+  color: #fff; /* FIX: Make the hamburger icon white */
+  padding: 0; /* To prevent default button padding from misaligning the icon */
+  line-height: 1; /* Helps center the text icon vertically */
+  /* marginLeft: 8px; is handled by inline style in JS */
+}
+
+/* Base style for ALL buttons inside the mobile dropdown */
+.rtt-mobile-menu-dropdown button {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  text-align: left;
+  background: none; /* Clears background from reused classes like rtt-header-button-link */
+  border: none;     /* Clears border from reused classes */
+  font-size: 16px;
+  padding: 10px 12px; /* Slightly increased padding for better touchability */
+  color: #333;     /* FIX: Default text color, visible on white dropdown background */
+  font-weight: 600; /* Gives items a bit more emphasis */
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+.rtt-mobile-menu-dropdown button:hover {
+  background-color: #f0f0f0; /* Generic hover for items that don't have specific colored backgrounds */
+}
+
+/* Specific styles for buttons within the dropdown that need to retain their characteristic look */
+
+/* For "Priority Guide" which uses .rtt-header-button-link.rtt-priority-guide-nav-link */
+.rtt-mobile-menu-dropdown .rtt-priority-guide-nav-link {
+  /* Inherits color: #333 and background: none from the base rule above, which is fine. */
+  /* If you want it to look more like a plain link: */
+  /* color: #00549F; */
+  /* background-color: transparent !important; */ /* Ensure no accidental background */
+}
+/* No specific hover needed if generic is fine for this one */
+
+
+/* For "Back to Triage Tool" which uses .rtt-header-button-link.rtt-back-to-triage-link */
+.rtt-mobile-menu-dropdown .rtt-back-to-triage-link {
+  background-color: #007A86; /* Restore original background */
+  color: #fff;             /* Restore original text color */
+}
+.rtt-mobile-menu-dropdown .rtt-back-to-triage-link:hover {
+  background-color: #005f69; /* Darker hover */
+}
+
+/* For "Edit Mode" toggle buttons which use .rtt-edit-btn and .rtt-edit-btn-active/inactive */
+.rtt-mobile-menu-dropdown .rtt-edit-btn-active {
+  background: #e0e0e0;     /* Restore original background */
+  color: #143345;        /* Restore original text color */
+}
+.rtt-mobile-menu-dropdown .rtt-edit-btn-active:hover {
+  background: #d0d0d0;
+}
+
+.rtt-mobile-menu-dropdown .rtt-edit-btn-inactive {
+  background: #FFA726;    /* Restore original background */
+  color: #fff;             /* Restore original text color */
+}
+.rtt-mobile-menu-dropdown .rtt-edit-btn-inactive:hover {
+  background: #f09706;
+}
+
+/* For "Save & Download Updates" button which uses .rtt-download-btn */
+.rtt-mobile-menu-dropdown .rtt-download-btn {
+  background: #4c7a30;    /* Restore original background */
+  color: #fff;             /* Restore original text color */
+}
+.rtt-mobile-menu-dropdown .rtt-download-btn:hover {
+  background: #3e6326;
+}
+
+/* Ensure that the general .rtt-header-button-link, if used alone in dropdown, is styled appropriately */
+.rtt-mobile-menu-dropdown .rtt-header-button-link {
+    /* This is a catch-all. If a button only has .rtt-header-button-link and no specific class like */
+    /* .rtt-priority-guide-nav-link, it will use this. */
+    /* It will inherit color: #333 and background: none from the base rule above by default. */
+}
+
+/* The original .rtt-mobile-menu-dropdown button rule at the end of your file can be removed */
+/* as its contents are now incorporated and expanded above. */

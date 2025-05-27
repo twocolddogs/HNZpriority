@@ -541,6 +541,12 @@ function App() {
   const mainContentRef = React.useRef(null);
   const [currentPage, setCurrentPage] = useState('triage');
 
+   const [hamburgerOpen, setHamburgerOpen] = useState(false);
+
+      useEffect(() => {
+        if (!mobile) setHamburgerOpen(false);
+         }, [mobile, currentPage, selected, edit]);
+
   const [authorPopoverContent, setAuthorPopoverContent] = useState(null);
   const [authorPopoverPosition, setAuthorPopoverPosition] = useState({
     visible: false, top: 0, left: 0,
@@ -1051,40 +1057,86 @@ function App() {
 
   return e(
     "div", { className: appRootClasses },
-    e( "header", { className: "rtt-sticky-header" },
-      e( "div", { className: "rtt-brand-bar" },
-          e("img", { src: "/images/HealthNZ_logo_v2.svg", alt: "Health NZ Logo", className: "rtt-app-logo" }),
-          e("div", { className: "rtt-header-divider" }),
-          e( "h1", { className: "rtt-title" }, currentHeaderTitle),
-          e("div", { style: { flexGrow: 1 } }), // Spacer pushes controls to the right
-          
-          e( "div", { className: "rtt-header-controls" }, // Container for all right-aligned controls
-            currentPage === 'triage' && e( "button", { 
-                className: "rtt-header-button-link rtt-priority-guide-nav-link",
-                onClick: navigateToHelperPage,
-                title: "View Priority Guide"
-            }, "Priority Guide"),
-            
-            currentPage === 'helper' && e( "button", {
-                className: "rtt-header-button-link rtt-back-to-triage-link",
-                onClick: navigateToTriagePage,
-                title: "Back to Triage Tool"
-            }, "← Back to Triage Tool"),
+    e("header", { className: "rtt-sticky-header", style: { position: "relative" } },
+  e("div", { className: "rtt-brand-bar" },
+    e("img", { src: "/images/HealthNZ_logo_v2.svg", alt: "Health NZ Logo", className: "rtt-app-logo" }),
+    e("div", { className: "rtt-header-divider" }),
+    e("h1", { className: "rtt-title" }, currentHeaderTitle),
+    e("div", { style: { flexGrow: 1 } }),
 
-            isEditorMode && currentPage === 'triage' && selected && e( "button", {
-                onClick: () => setEdit(!edit),
-                className: `rtt-edit-btn ${edit ? "rtt-edit-btn-active" : "rtt-edit-btn-inactive"}`,
-                title: edit ? "Exit Edit Mode" : "Switch to Edit Mode"
-            }, mobile ? (edit ? "Exit" : "Edit") : (edit ? "Exit Edit Mode" : "Switch to Edit Mode")),
-            
-            isEditorMode && currentPage === 'triage' && Object.keys(dirty).length > 0 && e( "button", { 
-                onClick: downloadJson, 
-                className: "rtt-download-btn",
-                title: "Save and Download Updates"
-            }, mobile ? "Save" : "Save & Download Updates"),
-          ),
-        )
+    // Header controls: hamburger for mobile, buttons for desktop
+    e("div", { className: "rtt-header-controls" },
+      mobile &&
+        e("button", {
+          className: "rtt-hamburger-btn",
+          onClick: () => setHamburgerOpen(!hamburgerOpen),
+          "aria-label": "Open menu",
+          style: { marginLeft: 8, fontSize: 28, background: 'none', border: 'none', cursor: 'pointer' }
+        }, "☰"),
+      !mobile && [
+        currentPage === 'triage' && e("button", {
+          className: "rtt-header-button-link rtt-priority-guide-nav-link",
+          onClick: navigateToHelperPage,
+          title: "View Priority Guide"
+        }, "Priority Guide"),
+        currentPage === 'helper' && e("button", {
+          className: "rtt-header-button-link rtt-back-to-triage-link",
+          onClick: navigateToTriagePage,
+          title: "Back to Triage Tool"
+        }, "← Back to Triage Tool"),
+        isEditorMode && currentPage === 'triage' && selected && e("button", {
+          onClick: () => setEdit(!edit),
+          className: `rtt-edit-btn ${edit ? "rtt-edit-btn-active" : "rtt-edit-btn-inactive"}`,
+          title: edit ? "Exit Edit Mode" : "Switch to Edit Mode"
+        }, edit ? "Exit Edit Mode" : "Switch to Edit Mode"),
+        isEditorMode && currentPage === 'triage' && Object.keys(dirty).length > 0 && e("button", {
+          onClick: downloadJson,
+          className: "rtt-download-btn",
+          title: "Save and Download Updates"
+        }, "Save & Download Updates")
+      ]
     ),
+
+    // Mobile dropdown menu (after hamburger icon)
+    mobile && hamburgerOpen && e("div", {
+      className: "rtt-mobile-menu-dropdown",
+      style: {
+        position: "absolute",
+        top: 64, // adjust if your header is a different height
+        right: 12,
+        background: "#fff",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+        zIndex: 1000,
+        borderRadius: 8,
+        minWidth: 180,
+        padding: 8,
+      }
+    },
+      [
+        currentPage === 'triage' && e("button", {
+          className: "rtt-header-button-link rtt-priority-guide-nav-link",
+          onClick: () => { navigateToHelperPage(); setHamburgerOpen(false); },
+          style: { width: "100%" }
+        }, "Priority Guide"),
+        currentPage === 'helper' && e("button", {
+          className: "rtt-header-button-link rtt-back-to-triage-link",
+          onClick: () => { navigateToTriagePage(); setHamburgerOpen(false); },
+          style: { width: "100%" }
+        }, "← Back to Triage Tool"),
+        isEditorMode && currentPage === 'triage' && selected && e("button", {
+          onClick: () => { setEdit(!edit); setHamburgerOpen(false); },
+          className: `rtt-edit-btn ${edit ? "rtt-edit-btn-active" : "rtt-edit-btn-inactive"}`,
+          style: { width: "100%" }
+        }, edit ? "Exit Edit Mode" : "Switch to Edit Mode"),
+        isEditorMode && currentPage === 'triage' && Object.keys(dirty).length > 0 && e("button", {
+          onClick: () => { downloadJson(); setHamburgerOpen(false); },
+          className: "rtt-download-btn",
+          style: { width: "100%" }
+        }, "Save & Download Updates")
+      ]
+    )
+  )
+),
     currentPage === 'helper'
       ? e(HelperPage, { /* Props can be added if HelperPage needs them */ })
       : e( "div", { className: "rtt-app-layout" }, 
