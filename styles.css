@@ -562,3 +562,21 @@
 .app-mobile .rtt-header-button-link {
   font-size: 0.8em; padding: 0.3em 0.6em;
 }
+
+.rtt-hamburger-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.rtt-mobile-menu-dropdown button {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 16px;
+  padding: 8px 12px;
+}
