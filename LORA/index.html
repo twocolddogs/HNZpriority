@@ -2,142 +2,153 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Scenario Baseline Viewer</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <title>Scenario Configurator</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    h2, h3, h4 { margin-top: 30px; }
-    .modality { margin-bottom: 40px; border: 1px solid #ccc; padding: 10px; border-radius: 6px; background: #fdfdfd; }
-    .archetype { margin: 15px 0; border: 1px solid #bbb; border-radius: 5px; overflow: hidden; }
-    .archetype-header { background: #eee; padding: 10px; cursor: pointer; font-weight: bold; }
-    .archetype-content { display: none; padding: 10px; background: #fff; }
-    table { border-collapse: collapse; margin-top: 10px; width: 100%; font-size: 0.9em; }
-    th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
-    th { background-color: #f9f9f9; }
-    .section-label { font-weight: bold; margin-top: 20px; margin-bottom: 5px; font-size: 1em; }
-    .metric-label { text-align: left; font-weight: bold; background: #fcfcfc; }
+    body { font-family: sans-serif; margin: 20px; }
+    h1 { margin-bottom: 10px; }
+    input[type="file"] { margin-bottom: 20px; }
+    details { margin-bottom: 10px; border: 1px solid #ccc; padding: 10px; }
+    summary { font-weight: bold; cursor: pointer; }
+    .archetype { margin-left: 20px; }
+    .baseline-fields { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+    .field { flex: 1 1 200px; }
+    .projection-table { border-collapse: collapse; margin-left: 20px; }
+    .projection-table th, .projection-table td { border: 1px solid #ccc; padding: 4px 8px; text-align: right; }
+    input[type="text"] { width: 80px; }
+    .error { color: red; }
   </style>
 </head>
 <body>
 
-<h2>Baseline Scenario Viewer</h2>
-<p>Select the <strong>input_configuration.xlsx</strong> file:</p>
-<input type="file" id="fileInput" accept=".xlsx" />
-
-<div id="output"></div>
+<h1>Scenario Configurator</h1>
+<input type="file" id="upload" accept=".csv" />
+<div id="error" class="error"></div>
+<div id="viewer"></div>
 
 <script>
-document.getElementById('fileInput').addEventListener('change', function(event) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const data = new Uint8Array(e.target.result);
-    const workbook = XLSX.read(data, { type: 'array' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(sheet);
-    const baseline = json.slice(1, 21); // rows 2–21
-    renderGroupedView(baseline);
-  };
-  reader.readAsArrayBuffer(event.target.files[0]);
-});
+const baselineFields = [
+  "Routine machine hours", "OOH machine hours", "RA's per list",
+  "MIT shift length", "MIT weeks lost", "Session length",
+  "Clinical requirement", "Radiologist weeks lost"
+];
 
-function renderGroupedView(data) {
-  const container = document.getElementById('output');
-  container.innerHTML = '';
+const yearFields = [];  // e.g., ["IP volume step y0", ..., "IP volume step y10"]
+const yearGroups = {};  // { "IP volume step": { y0: colname, ... } }
 
-  const grouped = {};
-  for (const row of data) {
-    const modality = row['Modality'] || 'UNKNOWN';
-    const archetype = row['Archetype'] || 'UNKNOWN';
-    if (!grouped[modality]) grouped[modality] = {};
-    grouped[modality][archetype] = row;
+function parseYearHeaders(headers) {
+  yearFields.length = 0;
+  Object.keys(yearGroups).forEach(k => delete yearGroups[k]);
+  headers.forEach(h => {
+    const match = h.match(/^(.*) y(\d{1,2})$/);
+    if (match) {
+      const metric = match[1].trim();
+      const year = "y" + match[2];
+      yearFields.push(h);
+      if (!yearGroups[metric]) yearGroups[metric] = {};
+      yearGroups[metric][year] = h;
+    }
+  });
+}
+
+function createInput(value) {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = value;
+  return input;
+}
+
+function buildUI(data) {
+  const container = document.getElementById("viewer");
+  container.innerHTML = "";
+
+  const byModality = {};
+  for (let row of data) {
+    const modality = row["Modality"];
+    const archetype = row["Archetype"];
+    if (!byModality[modality]) byModality[modality] = {};
+    if (!byModality[modality][archetype]) byModality[modality][archetype] = [];
+    byModality[modality][archetype].push(row);
   }
 
-  for (const [modality, archetypes] of Object.entries(grouped)) {
-    const modDiv = document.createElement('div');
-    modDiv.className = 'modality';
-    modDiv.innerHTML = `<h3>${modality}</h3>`;
+  for (let modality in byModality) {
+    const modWrap = document.createElement("details");
+    modWrap.open = true;
+    modWrap.innerHTML = `<summary>${modality}</summary>`;
 
-    for (const [arch, row] of Object.entries(archetypes)) {
-      const archDiv = document.createElement('div');
-      archDiv.className = 'archetype';
+    for (let archetype in byModality[modality]) {
+      const archetypeWrap = document.createElement("details");
+      archetypeWrap.className = "archetype";
+      archetypeWrap.innerHTML = `<summary>${archetype}</summary>`;
+      const row = byModality[modality][archetype][0];
 
-      const header = document.createElement('div');
-      header.className = 'archetype-header';
-      header.textContent = `Archetype: ${arch}`;
-      header.addEventListener('click', () => {
-        content.style.display = content.style.display === 'none' ? 'block' : 'none';
-      });
+      // Baseline fields
+      const baselineDiv = document.createElement("div");
+      baselineDiv.className = "baseline-fields";
+      for (let field of baselineFields) {
+        const val = row[field] || "";
+        const box = document.createElement("div");
+        box.className = "field";
+        box.innerHTML = `<label>${field}<br/></label>`;
+        box.querySelector("label").appendChild(createInput(val));
+        baselineDiv.appendChild(box);
+      }
+      archetypeWrap.appendChild(baselineDiv);
 
-      const content = document.createElement('div');
-      content.className = 'archetype-content';
+      // Projection matrix
+      const table = document.createElement("table");
+      table.className = "projection-table";
 
-      // ===== Baseline y0 table =====
-      const y0Table = document.createElement('table');
-      const y0Header = document.createElement('tr');
-      y0Header.innerHTML = '<th>Metric</th><th>y0 Value</th>';
-      y0Table.appendChild(y0Header);
+      const headerRow = document.createElement("tr");
+      headerRow.innerHTML = "<th>Metric</th>" + Array.from({ length: 11 }, (_, i) => `<th>y${i}</th>`).join("");
+      table.appendChild(headerRow);
 
-      const y0Fields = [
-        ['IP volume y0', row['IP volume step y0']],
-        ['OP volume y0', row['OP volume step y0']],
-        ['Scan rate y0', row['Scan rate y0']],
-        ['Report rate y0', row['Report rate y0']],
-        ['MITs/hour y0', row['MITs per routine machine hour y0']],
-        ['MITs/hour y0.1', row['MITs per routine machine hour y0.1']],
-        ['Routine machine hours', row['Routine machine hours']],
-        ['MITs per machine hours', row['MITs per machine hours']],
-        ['Scenario', row['Scenario']],
-        ['Baseyear', row['Baseyear']]
-      ];
-
-      for (const [label, value] of y0Fields) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td class="metric-label">${label}</td><td>${value ?? ''}</td>`;
-        y0Table.appendChild(tr);
+      for (let metric in yearGroups) {
+        const rowEl = document.createElement("tr");
+        rowEl.innerHTML = `<td>${metric}</td>`;
+        for (let i = 0; i <= 10; i++) {
+          const colName = yearGroups[metric]["y" + i];
+          const val = row[colName] || "";
+          const cell = document.createElement("td");
+          cell.appendChild(createInput(val));
+          rowEl.appendChild(cell);
+        }
+        table.appendChild(rowEl);
       }
 
-      const baselineLabel = document.createElement('div');
-      baselineLabel.className = 'section-label';
-      baselineLabel.textContent = 'Baseline (y0)';
-      content.appendChild(baselineLabel);
-      content.appendChild(y0Table);
-
-      // ===== Projections y1–y10 table =====
-      const projLabel = document.createElement('div');
-      projLabel.className = 'section-label';
-      projLabel.textContent = 'Projections (y1 to y10)';
-
-      const projTable = document.createElement('table');
-      const projHeader = document.createElement('tr');
-      projHeader.innerHTML = '<th>Metric</th>' +
-        [...Array(10)].map((_, i) => `<th>y${i + 1}</th>`).join('');
-      projTable.appendChild(projHeader);
-
-      const metrics = [
-        { label: 'IP Volume', prefix: 'IP volume step y' },
-        { label: 'OP Volume', prefix: 'OP volume step y' },
-        { label: 'Scan Rate', prefix: 'Scan rate y' },
-        { label: 'Report Rate', prefix: 'Report rate y' },
-        { label: 'MITs/hr', prefix: 'MITs per routine machine hour y' }
-      ];
-
-      for (const metric of metrics) {
-        const rowEl = document.createElement('tr');
-        rowEl.innerHTML = `<td class="metric-label">${metric.label}</td>` +
-          [...Array(10)].map((_, i) => `<td>${row[`${metric.prefix}${i + 1}`] ?? ''}</td>`).join('');
-        projTable.appendChild(rowEl);
-      }
-
-      content.appendChild(projLabel);
-      content.appendChild(projTable);
-      archDiv.appendChild(header);
-      archDiv.appendChild(content);
-      modDiv.appendChild(archDiv);
+      archetypeWrap.appendChild(table);
+      modWrap.appendChild(archetypeWrap);
     }
-
-    container.appendChild(modDiv);
+    container.appendChild(modWrap);
   }
 }
+
+document.getElementById("upload").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      const data = results.data;
+      const headers = results.meta.fields;
+      const requiredCols = ["Modality", "Archetype", ...baselineFields];
+      const missing = requiredCols.filter(h => !headers.includes(h));
+      if (missing.length) {
+        document.getElementById("error").textContent = "Missing columns: " + missing.join(", ");
+        return;
+      }
+
+      parseYearHeaders(headers);
+      buildUI(data);
+      document.getElementById("error").textContent = "";
+    },
+    error: function(err) {
+      document.getElementById("error").textContent = "Parse error: " + err.message;
+    }
+  });
+});
 </script>
 
 </body>
