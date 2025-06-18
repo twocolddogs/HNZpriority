@@ -2,148 +2,79 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Scenario Projection Configurator</title>
+  <title>Baseline Scenario View</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    table { border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 5px 10px; text-align: center; }
-    .controls { margin: 20px 0; }
-    input[type="number"] { width: 70px; }
-    .hidden { display: none; }
+    h2, h3, h4 { margin-top: 30px; }
+    .modality { margin-bottom: 40px; border: 1px solid #aaa; padding: 10px; border-radius: 8px; }
+    .archetype { margin: 20px 0; }
+    table { border-collapse: collapse; width: 100%; margin-top: 5px; font-size: 0.9em; }
+    th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
+    th { background-color: #f0f0f0; }
+    .label { font-weight: bold; }
   </style>
 </head>
 <body>
 
-<h2>Scenario Configuration Tool</h2>
+<h2>Baseline Configuration Viewer</h2>
 <input type="file" id="fileInput" accept=".xlsx" />
-<div id="ui" class="hidden">
-  <h3 id="scenarioTitle"></h3>
-  <div>
-    <label>
-      <input type="checkbox" id="sameAllYears" />
-      Use same values for all years (copy from y0)
-    </label>
-  </div>
-  <table id="editTable"></table>
-  <div class="controls">
-    <button onclick="prevScenario()">⬅ Prev</button>
-    <button onclick="nextScenario()">Next ➡</button>
-    <button onclick="exportCSV()">Download CSV</button>
-  </div>
-</div>
+
+<div id="output"></div>
 
 <script>
-let workbook, sheetName, data, scenarioIndex = 0, editableFields = [], staticFields = [];
-
-const metrics = ['IP volume step', 'OP volume step', 'Scan rate', 'Report rate'];
-const years = Array.from({length: 11}, (_, i) => 'y' + i);
-
 document.getElementById('fileInput').addEventListener('change', handleFile);
 
-function handleFile(e) {
+function handleFile(event) {
   const reader = new FileReader();
-  reader.onload = function(event) {
-    const workbookRaw = XLSX.read(event.target.result, {type: 'binary'});
-    sheetName = workbookRaw.SheetNames[0];
-    const sheet = workbookRaw.Sheets[sheetName];
-    data = XLSX.utils.sheet_to_json(sheet);
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const json = XLSX.utils.sheet_to_json(sheet);
 
-    const allCols = Object.keys(data[0]);
-    editableFields = allCols.filter(col => 
-      metrics.some(m => col.startsWith(m + ' y'))
-    );
-    staticFields = allCols.filter(col => !editableFields.includes(col));
+    const baseline = json.slice(1, 21); // rows 2–21 (1-indexed)
+    const grouped = {};
 
-    document.getElementById('ui').classList.remove('hidden');
-    renderScenario();
+    for (const row of baseline) {
+      const modality = row['Modality'] || 'UNKNOWN';
+      const archetype = row['Archetype'] || 'UNKNOWN';
+      if (!grouped[modality]) grouped[modality] = {};
+      grouped[modality][archetype] = row;
+    }
+
+    render(grouped);
   };
-  reader.readAsBinaryString(e.target.files[0]);
+  reader.readAsArrayBuffer(event.target.files[0]);
 }
 
-function renderScenario() {
-  const scenario = data[scenarioIndex];
-  document.getElementById('scenarioTitle').textContent = `Scenario ${scenarioIndex + 1} of ${data.length}: ${scenario['Scenario'] || ''}`;
+function render(data) {
+  const container = document.getElementById('output');
+  container.innerHTML = '';
 
-  const table = document.getElementById('editTable');
-  table.innerHTML = '';
+  for (const [modality, archetypes] of Object.entries(data)) {
+    const modDiv = document.createElement('div');
+    modDiv.className = 'modality';
+    modDiv.innerHTML = `<h3>Modality: ${modality}</h3>`;
 
-  // Header
-  const header = document.createElement('tr');
-  header.innerHTML = '<th>Metric</th>' + years.map(y => `<th>${y}</th>`).join('');
-  table.appendChild(header);
+    for (const [arch, row] of Object.entries(archetypes)) {
+      const archDiv = document.createElement('div');
+      archDiv.className = 'archetype';
+      archDiv.innerHTML = `<h4>Archetype: ${arch}</h4>`;
+      const table = document.createElement('table');
 
-  metrics.forEach(metric => {
-    const row = document.createElement('tr');
-    row.innerHTML = `<td>${metric}</td>` + years.map(y => {
-      const field = `${metric} ${y}`;
-      const value = scenario[field] ?? '';
-      return `<td><input type="number" step="any" value="${value}" data-field="${field}" /></td>`;
-    }).join('');
-    table.appendChild(row);
-  });
-
-  document.getElementById('sameAllYears').checked = false;
-}
-
-document.getElementById('sameAllYears').addEventListener('change', function() {
-  if (this.checked) {
-    const table = document.getElementById('editTable');
-    metrics.forEach((metric, mIdx) => {
-      const y0Input = table.rows[mIdx + 1].cells[1].querySelector('input');
-      const y0Val = y0Input.value;
-      years.forEach((y, yIdx) => {
-        const input = table.rows[mIdx + 1].cells[yIdx + 1].querySelector('input');
-        input.value = y0Val;
-      });
-    });
-  }
-});
-
-function saveEdits() {
-  const inputs = document.querySelectorAll('#editTable input');
-  inputs.forEach(input => {
-    const field = input.dataset.field;
-    const val = parseFloat(input.value);
-    if (!isNaN(val)) {
-      data[scenarioIndex][field] = val;
+      const headers = Object.keys(row);
+      const body = headers.map(key => `
+        <tr><th>${key}</th><td>${row[key]}</td></tr>
+      `).join('');
+      table.innerHTML = `<tbody>${body}</tbody>`;
+      archDiv.appendChild(table);
+      modDiv.appendChild(archDiv);
     }
-  });
 
-  // Copy static MIT fields from y0
-  for (const field of Object.keys(data[scenarioIndex])) {
-    if (field.includes('MITs per routine machine hour y') && !field.includes('.1')) {
-      const base = field.split(' y')[0];
-      const y0Val = data[scenarioIndex][`${base} y0`];
-      for (let i = 1; i <= 10; i++) {
-        data[scenarioIndex][`${base} y${i}`] = y0Val;
-      }
-    }
+    container.appendChild(modDiv);
   }
-}
-
-function nextScenario() {
-  saveEdits();
-  if (scenarioIndex < data.length - 1) {
-    scenarioIndex++;
-    renderScenario();
-  }
-}
-
-function prevScenario() {
-  saveEdits();
-  if (scenarioIndex > 0) {
-    scenarioIndex--;
-    renderScenario();
-  }
-}
-
-function exportCSV() {
-  saveEdits();
-  const ws = XLSX.utils.json_to_sheet(data, {header: Object.keys(data[0])});
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-  XLSX.writeFile(wb, 'updated_configuration.csv');
 }
 </script>
 
