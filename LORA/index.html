@@ -133,8 +133,27 @@ document.getElementById("upload").addEventListener("change", function(e) {
     complete: function(results) {
       const data = results.data;
       const headers = results.meta.fields;
-      const requiredCols = ["Modality", "Archetype", ...baselineFields];
-      const missing = requiredCols.filter(h => !headers.includes(h));
+      function normalize(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+const requiredCols = [
+  "Modality", "Archetype",
+  "Routine machine hours", "OOH machine hours", "RA's per list",
+  "MIT shift length", "MIT weeks lost", "Session length",
+  "Clinical requirement", "Radiologist weeks lost"
+];
+
+const normalizedHeaders = headers.map(normalize);
+
+const missing = requiredCols.filter(req => {
+  return !normalizedHeaders.includes(normalize(req));
+});
+
+if (missing.length) {
+  document.getElementById("error").textContent = "Missing columns: " + missing.join(", ");
+  return;
+}
       if (missing.length) {
         document.getElementById("error").textContent = "Missing columns: " + missing.join(", ");
         return;
