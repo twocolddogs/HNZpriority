@@ -4,37 +4,147 @@
   <meta charset="UTF-8">
   <title>Scenario Configurator</title>
   <style>
+    /* General Body & Font Styling */
     body {
-      font-family: Arial, sans-serif;
-      padding: 1rem;
-      background: #f9f9f9;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 2rem;
+      background-color: #f4f7f9;
+      color: #333;
     }
-    h2, h3 {
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    h2 {
+      margin: 0;
+      color: #34495e;
+      font-size: 1.5rem;
+    }
+    h3 {
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 0.5rem;
       margin-top: 1.5rem;
-    }
-    summary {
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .archetype-section {
-      margin-left: 2rem;
       margin-bottom: 1rem;
-      background: #fff;
-      border: 1px solid #ccc;
-      padding: 0.5rem;
+      color: #34495e;
+      font-weight: 600;
+    }
+
+    /* File Upload Styling */
+    #upload {
+      display: block;
+      margin: 0 auto 2rem auto;
+    }
+
+    /* Modality Container (Card) */
+    .modality-container {
+      background: #ffffff;
+      border: 1px solid #e1e8ed;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      overflow: hidden; /* Ensures child borders don't poke out */
+    }
+
+    /* Header within the card (Holds Title and Buttons) */
+    .modality-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #e1e8ed;
+    }
+
+    /* Archetype Button Styling */
+    .archetype-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .archetype-button {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 1px solid #bdc3c7;
       border-radius: 5px;
+      background-color: #ffffff;
+      color: #2c3e50;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
     }
+    .archetype-button:hover {
+      background-color: #ecf0f1;
+      border-color: #3498db;
+    }
+    .archetype-button.active {
+      background-color: #3498db;
+      color: #ffffff;
+      border-color: #3498db;
+    }
+
+    /* Content Area for the active archetype */
+    .archetype-content-panel {
+      padding: 1.5rem;
+      display: none; /* Hidden by default */
+    }
+    .archetype-content-panel.active {
+      display: block; /* Shown when active */
+    }
+
+    /* Grid layout for Static Fields */
+    .static-fields-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+      align-items: center;
+    }
+    .static-field {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+    .static-field label {
+      color: #555;
+      margin-right: 1rem;
+    }
+
+    /* Table Styling */
     table {
+      width: 100%;
       border-collapse: collapse;
-      margin-top: 0.5rem;
+      margin-top: 1rem;
+      font-size: 0.9rem;
     }
-    td, th {
-      border: 1px solid #ccc;
-      padding: 0.3rem 0.5rem;
+    th, td {
+      border: 1px solid #e0e0e0;
+      padding: 0.6rem 0.5rem;
       text-align: center;
     }
-    input {
+    th {
+      background-color: #f2f2f2;
+      font-weight: 600;
+    }
+    tbody tr:nth-child(odd) {
+      background-color: #fdfdfd;
+    }
+    td:first-child {
+      text-align: left;
+      font-weight: 500;
+      background-color: #f8f8f8;
+    }
+
+    /* Input Field Styling */
+    input[type="text"] {
       width: 6rem;
+      padding: 0.4rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #3498db;
     }
   </style>
 </head>
@@ -43,7 +153,7 @@
   <input type="file" id="upload" accept=".csv"><br><br>
   <div id="app"></div>
 
-      <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
     const staticFields = [
       "non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day",
@@ -57,6 +167,7 @@
     ];
 
     const years = Array.from({length: 11}, (_, i) => `y${i}`);
+    const app = document.getElementById("app");
 
     document.getElementById("upload").addEventListener("change", (e) => {
       const file = e.target.files[0];
@@ -69,10 +180,27 @@
       });
     });
 
-    function renderUI(data) {
-      const app = document.getElementById("app");
-      app.innerHTML = "";
+    // Event Delegation for handling clicks on archetype buttons
+    app.addEventListener('click', (e) => {
+      if (!e.target.matches('.archetype-button')) return;
 
+      const button = e.target;
+      const targetPanelId = button.dataset.target;
+      const contentPanel = document.querySelector(targetPanelId);
+
+      // Remove active class from sibling buttons and panels
+      const parentContainer = button.closest('.modality-container');
+      parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
+      parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
+
+      // Activate the clicked button and its corresponding panel
+      button.classList.add('active');
+      contentPanel.classList.add('active');
+    });
+
+
+    function renderUI(data) {
+      app.innerHTML = "";
       const grouped = {};
 
       for (const row of data) {
@@ -83,58 +211,111 @@
       }
 
       for (const modality of Object.keys(grouped)) {
-        const modDetails = document.createElement("details");
-        // modDetails.open = true; // <-- THIS LINE HAS BEEN REMOVED
-        const modSummary = document.createElement("summary");
-        modSummary.textContent = modality;
-        modDetails.appendChild(modSummary);
+        // Main container for the modality
+        const modalityContainer = document.createElement("div");
+        modalityContainer.className = "modality-container";
+        modalityContainer.dataset.modality = modality;
+
+        // Header with title and buttons
+        const header = document.createElement("div");
+        header.className = "modality-header";
+        
+        const title = document.createElement("h2");
+        title.textContent = modality;
+        
+        const buttonGroup = document.createElement("div");
+        buttonGroup.className = "archetype-buttons";
+
+        // Content area for all archetype panels
+        const contentArea = document.createElement("div");
+        contentArea.className = "modality-content";
+
+        header.appendChild(title);
+        header.appendChild(buttonGroup);
+        modalityContainer.appendChild(header);
+        modalityContainer.appendChild(contentArea);
+
+        // Track the first archetype to make it active by default
+        let isFirstArchetype = true;
 
         for (const archetype of Object.keys(grouped[modality])) {
           const row = grouped[modality][archetype];
-          const archDetails = document.createElement("details");
-          // archDetails.open = true; // <-- THIS LINE HAS BEEN REMOVED
-          archDetails.className = "archetype-section";
+          const contentPanelId = `content-${modality.replace(/\s+/g, '-')}-${archetype.replace(/\s+/g, '-')}`;
 
-          const archSummary = document.createElement("summary");
-          archSummary.textContent = archetype;
-          archDetails.appendChild(archSummary);
+          // Create the button
+          const button = document.createElement("button");
+          button.className = "archetype-button";
+          button.textContent = archetype;
+          button.dataset.target = `#${contentPanelId}`;
+          buttonGroup.appendChild(button);
+
+          // Create the content panel
+          const panel = document.createElement("div");
+          panel.className = "archetype-content-panel";
+          panel.id = contentPanelId;
+
+          if (isFirstArchetype) {
+              button.classList.add('active');
+              panel.classList.add('active');
+              isFirstArchetype = false;
+          }
 
           // Static Fields Section
-          const staticDiv = document.createElement("div");
+          const staticHeader = document.createElement("h3");
+          staticHeader.textContent = "Static Fields";
+          panel.appendChild(staticHeader);
+
+          const staticGrid = document.createElement("div");
+          staticGrid.className = "static-fields-grid";
           staticFields.forEach(field => {
+            const fieldDiv = document.createElement("div");
+            fieldDiv.className = "static-field";
             const label = document.createElement("label");
-            label.textContent = field + ": ";
+            label.textContent = field.replace(/_/g, ' ') + ":";
             const input = document.createElement("input");
+            input.type = "text";
             input.value = row[field] || "";
             input.dataset.field = field;
-            input.dataset.id = row["id"]; // optional: add row id if needed
-            label.appendChild(input);
-            staticDiv.appendChild(label);
+            input.dataset.id = row["id"];
+            fieldDiv.appendChild(label);
+            fieldDiv.appendChild(input);
+            staticGrid.appendChild(fieldDiv);
           });
-          archDetails.appendChild(staticDiv);
+          panel.appendChild(staticGrid);
 
           // Dynamic Projections Table
-          const table = document.createElement("table");
-          const headerRow = document.createElement("tr");
-          headerRow.innerHTML = "<th>Metric</th>" + years.map(y => `<th>${y}</th>`).join("");
-          table.appendChild(headerRow);
+          const tableHeader = document.createElement("h3");
+          tableHeader.textContent = "Yearly Projections";
+          panel.appendChild(tableHeader);
 
+          const table = document.createElement("table");
+          const thead = table.createTHead();
+          const tbody = table.createTBody();
+
+          const headerRow = thead.insertRow();
+          headerRow.innerHTML = "<th>Metric</th>" + years.map(y => `<th>${y.toUpperCase()}</th>`).join("");
+          
           projectionMetrics.forEach(metric => {
-            const tr = document.createElement("tr");
-            const label = `<td>${metric}</td>`;
-            const cells = years.map(y => {
+            const tr = tbody.insertRow();
+            const labelCell = tr.insertCell();
+            labelCell.textContent = metric.replace(/_/g, ' ');
+
+            years.forEach(y => {
               const key = `${metric}_${y}`;
-              return `<td><input data-field="${key}" value="${row[key] || ""}"></td>`;
-            }).join("");
-            tr.innerHTML = label + cells;
-            table.appendChild(tr);
+              const cell = tr.insertCell();
+              const input = document.createElement("input");
+              input.type = "text";
+              input.dataset.field = key;
+              input.value = row[key] || "";
+              cell.appendChild(input);
+            });
           });
 
-          archDetails.appendChild(table);
-          modDetails.appendChild(archDetails);
+          panel.appendChild(table);
+          contentArea.appendChild(panel);
         }
 
-        app.appendChild(modDetails);
+        app.appendChild(modalityContainer);
       }
     }
   </script>
