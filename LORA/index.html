@@ -24,17 +24,18 @@
     }
     h4 { margin: 0 0 0.75rem 0; color: #34495e; }
 
-    /* Scenario Controls */
+    /* Controls Container */
     .controls-container {
       text-align: center;
       margin-bottom: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5rem;
     }
     .scenario-controls {
       display: inline-flex;
-      justify-content: center;
-      align-items: center;
       gap: 1rem;
-      margin-top: 1rem;
       background-color: #eaf0f4;
       padding: 0.5rem;
       border-radius: 8px;
@@ -52,8 +53,24 @@
       color: white;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
+    
+    /* NEW: Export Button */
+    #export-button {
+      padding: 0.6rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      background-color: #27ae60;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #export-button:hover {
+      background-color: #2ecc71;
+    }
 
-    /* Modality Container (Card) */
+    /* Modality Cards */
     .modality-container {
       background: #ffffff; border: 1px solid #e1e8ed;
       border-radius: 8px; margin-bottom: 2rem;
@@ -66,7 +83,7 @@
       border-bottom: 1px solid #e1e8ed;
     }
 
-    /* Archetype Button Styling */
+    /* Archetype Buttons */
     .archetype-buttons { display: flex; gap: 0.5rem; }
     .archetype-button {
       padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600;
@@ -77,18 +94,15 @@
     .archetype-button:hover { background-color: #ecf0f1; border-color: #3498db; }
     .archetype-button.active { background-color: #3498db; color: #ffffff; border-color: #3498db; }
 
-    /* Content Panels */
+    /* Content Panels & Grids */
     .archetype-content-panel { padding: 0.5rem 1.5rem 1.5rem 1.5rem; display: none; }
     .archetype-content-panel.active { display: block; }
-
-    /* Field Grids */
     .static-fields-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
       gap: 1rem; align-items: center;
     }
     .static-field { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
     .static-field label { color: #555; margin-right: 1rem; white-space: nowrap; }
-
     .projections-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
       gap: 1.5rem;
@@ -101,7 +115,7 @@
     .year-input-item { display: flex; flex-direction: column; }
     .year-input-item label { font-size: 0.75rem; color: #666; margin-bottom: 0.2rem; text-align: center; }
     
-    /* Input Field Styling */
+    /* Input Fields */
     input[type="text"] {
       width: 5rem; padding: 0.4rem; border: 1px solid #ccc;
       border-radius: 4px; transition: border-color 0.2s, background-color 0.2s;
@@ -122,6 +136,7 @@
       <input type="radio" id="source-scenario" name="data-source" value="scenario">
       <label for="source-scenario">Scenario</label>
     </div>
+    <button id="export-button" style="display: none;">Export CSV</button>
   </div>
 
   <div id="app"></div>
@@ -137,15 +152,14 @@
     
     const app = document.getElementById("app");
     const scenarioToggle = document.getElementById("scenario-toggle");
+    const exportButton = document.getElementById("export-button");
 
     let baselineData = [];
     let scenarioData = [];
-    let activePanelIds = new Set(); // NEW: To store the IDs of open panels
+    let activePanelIds = new Set();
 
     // --- INITIALIZATION ---
-    document.addEventListener('DOMContentLoaded', () => {
-      loadAndInitializeData();
-    });
+    document.addEventListener('DOMContentLoaded', loadAndInitializeData);
 
     async function loadAndInitializeData() {
       try {
@@ -160,6 +174,7 @@
             baselineData = results.data;
             scenarioData = JSON.parse(JSON.stringify(baselineData));
             renderUI(baselineData, false);
+            exportButton.style.display = 'inline-block'; // Show export button
           }
         });
       } catch (error) {
@@ -169,45 +184,84 @@
 
     // --- EVENT LISTENERS ---
     scenarioToggle.addEventListener('change', (e) => {
-      // NEW: Capture the state of open panels before re-rendering
       activePanelIds.clear();
-      document.querySelectorAll('.archetype-content-panel.active').forEach(panel => {
-        activePanelIds.add(panel.id);
-      });
+      document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
       
-      if (e.target.value === 'baseline') {
-        renderUI(baselineData, false);
-      } else if (e.target.value === 'scenario') {
-        renderUI(scenarioData, true);
-      }
+      const isBaseline = e.target.value === 'baseline';
+      renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
     });
 
     app.addEventListener('click', (e) => {
       if (!e.target.matches('.archetype-button')) return;
-
       const button = e.target;
-      // This is the only change here: check if the button is already active
       const isAlreadyActive = button.classList.contains('active');
       const targetPanelId = button.dataset.target;
       const contentPanel = document.querySelector(targetPanelId);
       const parentContainer = button.closest('.modality-container');
       
-      // Always clear previous state within the same modality group
       parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
       parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
 
-      // If it wasn't active, make it active. This allows toggling off.
       if (!isAlreadyActive) {
         button.classList.add('active');
         contentPanel.classList.add('active');
       }
     });
 
+    // NEW: Live-update scenarioData as user types
+    app.addEventListener('input', (e) => {
+      if (!e.target.matches('input[type="text"]') || e.target.readOnly) return;
+      
+      const fieldKey = e.target.dataset.field;
+      const rowId = e.target.dataset.id;
+      const newValue = e.target.value;
+
+      const rowToUpdate = scenarioData.find(row => row.id === rowId);
+      if (rowToUpdate) {
+        rowToUpdate[fieldKey] = newValue;
+      }
+    });
+    
+    // NEW: Export button listener
+    exportButton.addEventListener('click', () => {
+      if (baselineData.length === 0) {
+        alert("No data loaded to export.");
+        return;
+      }
+
+      // 1. Create a deep copy of the scenario data to modify for export
+      const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
+
+      // 2. Identify the header of the first column from the original data
+      const firstColumnHeader = Object.keys(baselineData[0])[0];
+
+      // 3. Modify the first column of the scenario data
+      scenarioExportData.forEach(row => {
+        row[firstColumnHeader] = "Scenario - Transforming Radiology";
+      });
+
+      // 4. Combine original baseline and modified scenario data
+      const dataForExport = [...baselineData, ...scenarioExportData];
+
+      // 5. Unparse data to a CSV string
+      const csvString = Papa.unparse(dataForExport);
+
+      // 6. Trigger download
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "scenario_export.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
     // --- UI RENDERING LOGIC ---
     function renderUI(dataToRender, isEditable) {
       app.innerHTML = "";
       const grouped = {};
-
       for (const row of dataToRender) {
         const modality = row["modality"];
         const archetype = row["archetype"];
@@ -216,7 +270,6 @@
       }
 
       for (const modality of Object.keys(grouped)) {
-        // ... (The entire UI building loop is unchanged)
         const modalityContainer = document.createElement("div");
         modalityContainer.className = "modality-container";
         const header = document.createElement("div");
@@ -259,6 +312,8 @@
             const input = document.createElement("input");
             input.type = "text";
             input.value = row[field] || "";
+            input.dataset.id = row.id;
+            input.dataset.field = field;
             if (!isEditable) input.readOnly = true;
             fieldDiv.appendChild(label);
             fieldDiv.appendChild(input);
@@ -289,6 +344,8 @@
               const input = document.createElement("input");
               input.type = "text";
               input.value = row[key] || "";
+              input.dataset.id = row.id;
+              input.dataset.field = key;
               if (!isEditable) input.readOnly = true;
               yearItem.appendChild(input);
               inputsContainer.appendChild(yearItem);
@@ -302,15 +359,12 @@
         app.appendChild(modalityContainer);
       }
 
-      // NEW: Apply the saved state after the UI has been built
       activePanelIds.forEach(panelId => {
         const panelToActivate = document.getElementById(panelId);
         if (panelToActivate) {
           const buttonToActivate = document.querySelector(`button[data-target="#${panelId}"]`);
           panelToActivate.classList.add('active');
-          if (buttonToActivate) {
-            buttonToActivate.classList.add('active');
-          }
+          if (buttonToActivate) buttonToActivate.classList.add('active');
         }
       });
     }
