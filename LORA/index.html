@@ -100,11 +100,52 @@
     let activePanelIds = new Set();
     let editedRowIds = new Set();
 
+    // Try to load local file first, fall back to file upload
+    document.addEventListener('DOMContentLoaded', loadAndInitializeData);
+
     // File upload handling
     fileInput.addEventListener('change', handleFileSelect);
     fileUploadArea.addEventListener('dragover', handleDragOver);
     fileUploadArea.addEventListener('dragleave', handleDragLeave);
     fileUploadArea.addEventListener('drop', handleFileDrop);
+
+    async function loadAndInitializeData() {
+      try {
+        const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const csvText = await response.text();
+        
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            if (results.errors.length > 0) {
+              throw new Error('Parse error: ' + results.errors[0].message);
+            }
+            
+            // Add ID field if missing
+            results.data.forEach((row, index) => {
+              if (!row.id) {
+                row.id = `row_${index}`;
+              }
+            });
+            
+            baselineData = results.data;
+            scenarioData = JSON.parse(JSON.stringify(baselineData));
+            
+            fileUploadArea.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            renderUI(baselineData, false);
+            showMessage('CSV loaded successfully!', 'success');
+            setTimeout(() => statusMessage.innerHTML = '', 3000);
+          }
+        });
+      } catch (error) {
+        // If local file loading fails, show upload interface
+        showMessage('Local CSV file not found. Please upload your configuration file.', 'info');
+        console.log('File loading failed:', error.message);
+      }
+    }
 
     function handleFileSelect(event) {
       const file = event.target.files[0];
