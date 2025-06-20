@@ -1,15 +1,19 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Scenario Configurator</title>
   <style>
-    /* All CSS styles are correct and remain unchanged */
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 2rem; background-color: #f4f7f9; color: #333; }
     h1 { color: #2c3e50; text-align: center; margin-bottom: 0.5rem; }
     h2 { margin: 0; color: #34495e; font-size: 1.5rem; }
     h3 { border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem; margin-top: 2rem; margin-bottom: 1rem; color: #34495e; font-weight: 600; }
     h4 { margin: 0 0 0.75rem 0; color: #34495e; }
+    .file-upload { text-align: center; margin-bottom: 2rem; padding: 2rem; background: white; border: 2px dashed #bdc3c7; border-radius: 8px; }
+    .file-upload.drag-over { border-color: #3498db; background-color: #ecf0f1; }
+    .file-input { margin: 1rem 0; }
+    .file-input input[type="file"] { padding: 0.5rem; }
     .controls-container { text-align: center; margin-bottom: 2rem; display: flex; justify-content: center; align-items: center; gap: 1.5rem; }
     .scenario-controls { display: inline-flex; gap: 1rem; background-color: #eaf0f4; padding: 0.5rem; border-radius: 8px; }
     .scenario-controls input[type="radio"] { display: none; }
@@ -37,24 +41,45 @@
     input[type="text"] { width: 5rem; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px; transition: border-color 0.2s, background-color 0.2s; text-align: center; }
     input[type="text"]:focus { outline: none; border-color: #3498db; }
     input[readonly] { background-color: #f1f3f4; color: #555; cursor: not-allowed; border-color: #ddd; }
+    .hidden { display: none; }
+    .error { color: #e74c3c; text-align: center; margin: 1rem 0; }
+    .success { color: #27ae60; text-align: center; margin: 1rem 0; }
+    .info { color: #3498db; text-align: center; margin: 1rem 0; }
   </style>
 </head>
 <body>
   <h1>Scenario Configurator</h1>
-  
-  <div class="controls-container">
-    <div class="scenario-controls" id="scenario-toggle">
-      <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
-      <label for="source-baseline">Baseline</label>
-      <input type="radio" id="source-scenario" name="data-source" value="scenario">
-      <label for="source-scenario">Scenario</label>
+
+  <div class="file-upload" id="file-upload-area">
+    <h3>Load Configuration Data</h3>
+    <p>Upload your CSV file to get started</p>
+    <div class="file-input">
+      <input type="file" id="csv-file-input" accept=".csv" />
     </div>
-    <button id="export-button" style="display: none;">Export CSV</button>
+    <p><small>Or drag and drop a CSV file here</small></p>
   </div>
 
-  <div id="app"></div>
+  <div id="main-content" class="hidden">
+    <div class="controls-container">
+      <div class="scenario-controls" id="scenario-toggle">
+        <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
+        <label for="source-baseline">Baseline</label>
+        <input type="radio" id="source-scenario" name="data-source" value="scenario">
+        <label for="source-scenario">Scenario</label>
+      </div>
+      <button id="export-button">Export CSV</button>
+    </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+```
+<div id="app"></div>
+```
+
+  </div>
+
+  <div id="status-message"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
   <script>
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost"};
@@ -65,34 +90,88 @@
     const app = document.getElementById("app");
     const scenarioToggle = document.getElementById("scenario-toggle");
     const exportButton = document.getElementById("export-button");
+    const fileInput = document.getElementById("csv-file-input");
+    const fileUploadArea = document.getElementById("file-upload-area");
+    const mainContent = document.getElementById("main-content");
+    const statusMessage = document.getElementById("status-message");
 
     let baselineData = [];
     let scenarioData = [];
     let activePanelIds = new Set();
     let editedRowIds = new Set();
 
-    document.addEventListener('DOMContentLoaded', loadAndInitializeData);
+    // File upload handling
+    fileInput.addEventListener('change', handleFileSelect);
+    fileUploadArea.addEventListener('dragover', handleDragOver);
+    fileUploadArea.addEventListener('dragleave', handleDragLeave);
+    fileUploadArea.addEventListener('drop', handleFileDrop);
 
-    async function loadAndInitializeData() {
-      try {
-        const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const csvText = await response.text();
-        
-        Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          // REMOVED `dynamicTyping: true` to ensure all data, including IDs, are strings.
-          complete: (results) => {
-            baselineData = results.data;
-            scenarioData = JSON.parse(JSON.stringify(baselineData));
-            renderUI(baselineData, false);
-            exportButton.style.display = 'inline-block';
-          }
-        });
-      } catch (error) {
-        app.innerHTML = `<p style="color: red; text-align: center;">Error: Could not load configuration file.</p>`;
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file && file.type === 'text/csv') {
+        loadCSVFile(file);
+      } else {
+        showMessage('Please select a valid CSV file.', 'error');
       }
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+      fileUploadArea.classList.add('drag-over');
+    }
+
+    function handleDragLeave(event) {
+      event.preventDefault();
+      fileUploadArea.classList.remove('drag-over');
+    }
+
+    function handleFileDrop(event) {
+      event.preventDefault();
+      fileUploadArea.classList.remove('drag-over');
+      const files = event.dataTransfer.files;
+      if (files.length > 0 && files[0].type === 'text/csv') {
+        loadCSVFile(files[0]);
+      } else {
+        showMessage('Please drop a valid CSV file.', 'error');
+      }
+    }
+
+    function loadCSVFile(file) {
+      showMessage('Loading CSV file...', 'info');
+      
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          if (results.errors.length > 0) {
+            showMessage('Error parsing CSV: ' + results.errors[0].message, 'error');
+            return;
+          }
+          
+          // Add ID field if missing
+          results.data.forEach((row, index) => {
+            if (!row.id) {
+              row.id = `row_${index}`;
+            }
+          });
+          
+          baselineData = results.data;
+          scenarioData = JSON.parse(JSON.stringify(baselineData));
+          
+          fileUploadArea.classList.add('hidden');
+          mainContent.classList.remove('hidden');
+          renderUI(baselineData, false);
+          showMessage('CSV loaded successfully!', 'success');
+          setTimeout(() => statusMessage.innerHTML = '', 3000);
+        },
+        error: (error) => {
+          showMessage('Error reading file: ' + error.message, 'error');
+        }
+      });
+    }
+
+    function showMessage(message, type) {
+      statusMessage.innerHTML = `<p class="${type}">${message}</p>`;
     }
 
     // --- EVENT LISTENERS ---
@@ -109,21 +188,34 @@
       const { id: rowId, field: fieldKey } = e.target.dataset;
       const { value: newValue } = e.target;
 
-      // Now we are comparing a STRING from the dataset with a STRING from the data model.
-      const rowToUpdate = scenarioData.find(row => row.id === rowId);
+      // Ensure rowId is a string for consistent comparison
+      const normalizedRowId = String(rowId);
+      const rowToUpdate = scenarioData.find(row => String(row.id) === normalizedRowId);
       
       if (rowToUpdate) {
-        // 1. Update the data model. THIS NOW WORKS.
+        // Check if the value actually changed from baseline
+        const baselineRow = baselineData.find(row => String(row.id) === normalizedRowId);
+        const baselineValue = baselineRow ? baselineRow[fieldKey] : '';
+        
         rowToUpdate[fieldKey] = newValue;
         
-        // 2. Mark the row as edited.
-        if (!editedRowIds.has(rowId)) {
-          editedRowIds.add(rowId);
-          // 3. Update the button in the current view immediately for instant feedback.
-          const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
+        // Only mark as edited if different from baseline
+        if (String(newValue) !== String(baselineValue)) {
+          if (!editedRowIds.has(normalizedRowId)) {
+            editedRowIds.add(normalizedRowId);
+            const button = document.querySelector(`.archetype-button[data-id="${normalizedRowId}"]`);
+            if (button) {
+              button.classList.add('has-changes');
+              button.title = "Contains scenario edits";
+            }
+          }
+        } else {
+          // Value reverted to baseline, remove from edited set
+          editedRowIds.delete(normalizedRowId);
+          const button = document.querySelector(`.archetype-button[data-id="${normalizedRowId}"]`);
           if (button) {
-            button.classList.add('has-changes');
-            button.title = "Contains scenario edits";
+            button.classList.remove('has-changes');
+            button.title = "";
           }
         }
       }
@@ -203,8 +295,8 @@
           button.dataset.target = `#${contentPanelId}`;
           button.dataset.id = row.id;
 
-          // This check is now robust because `editedRowIds` and `row.id` are both strings.
-          if (editedRowIds.has(row.id)) {
+          // Show changes indicator only in scenario view and only for edited rows
+          if (isEditable && editedRowIds.has(String(row.id))) {
             button.classList.add('has-changes');
             button.title = "Contains scenario edits";
           }
@@ -285,5 +377,6 @@
       });
     }
   </script>
+
 </body>
 </html>
