@@ -14,164 +14,177 @@
     h1 {
       color: #2c3e50;
       text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    h2 { margin: 0; color: #34495e; font-size: 1.5rem; }
+    h3 {
+      border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem;
+      margin-top: 2rem; margin-bottom: 1rem;
+      color: #34495e; font-weight: 600;
+    }
+    h4 { margin: 0 0 0.75rem 0; color: #34495e; }
+
+    /* Scenario Controls */
+    .controls-container {
+      text-align: center;
       margin-bottom: 2rem;
     }
-    h2 {
-      margin: 0;
-      color: #34495e;
-      font-size: 1.5rem;
+    .scenario-controls {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1rem;
+      background-color: #eaf0f4;
+      padding: 0.5rem;
+      border-radius: 8px;
     }
-    h3 {
-      border-bottom: 2px solid #e0e0e0;
-      padding-bottom: 0.5rem;
-      margin-top: 2rem;
-      margin-bottom: 1rem;
-      color: #34495e;
-      font-weight: 600;
+    .scenario-controls input[type="radio"] { display: none; }
+    .scenario-controls label {
+      padding: 0.5rem 1.25rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      font-weight: 500;
     }
-    h4 {
-      margin: 0 0 0.75rem 0;
-      color: #34495e;
-    }
-
-    /* File Upload Styling */
-    #upload {
-      display: block;
-      margin: 0 auto 2rem auto;
+    .scenario-controls input[type="radio"]:checked + label {
+      background-color: #3498db;
+      color: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
     /* Modality Container (Card) */
     .modality-container {
-      background: #ffffff;
-      border: 1px solid #e1e8ed;
-      border-radius: 8px;
-      margin-bottom: 2rem;
+      background: #ffffff; border: 1px solid #e1e8ed;
+      border-radius: 8px; margin-bottom: 2rem;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       overflow: hidden;
     }
-
-    /* Header within the card */
     .modality-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 1.5rem;
-      background-color: #f8f9fa;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 1.5rem; background-color: #f8f9fa;
       border-bottom: 1px solid #e1e8ed;
     }
 
     /* Archetype Button Styling */
     .archetype-buttons { display: flex; gap: 0.5rem; }
     .archetype-button {
-      padding: 0.5rem 1rem;
-      font-size: 0.9rem;
-      font-weight: 600;
-      border: 1px solid #bdc3c7;
-      border-radius: 5px;
-      background-color: #ffffff;
-      color: #2c3e50;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
+      padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600;
+      border: 1px solid #bdc3c7; border-radius: 5px;
+      background-color: #ffffff; color: #2c3e50;
+      cursor: pointer; transition: all 0.2s ease-in-out;
     }
     .archetype-button:hover { background-color: #ecf0f1; border-color: #3498db; }
     .archetype-button.active { background-color: #3498db; color: #ffffff; border-color: #3498db; }
 
-    /* Content Area for the active archetype */
+    /* Content Panels */
     .archetype-content-panel { padding: 0.5rem 1.5rem 1.5rem 1.5rem; display: none; }
     .archetype-content-panel.active { display: block; }
 
-    /* Grid layout for Static Fields */
+    /* Field Grids */
     .static-fields-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-      gap: 1rem;
-      align-items: center;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 1rem; align-items: center;
     }
-    .static-field {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.9rem;
-    }
+    .static-field { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
     .static-field label { color: #555; margin-right: 1rem; white-space: nowrap; }
 
-    /* --- NEW STYLES FOR PROJECTIONS --- */
     .projections-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
       gap: 1.5rem;
     }
     .projection-metric-card {
-      background-color: #fdfdfd;
-      border: 1px solid #e8e8e8;
-      border-radius: 6px;
-      padding: 1rem;
+      background-color: #fdfdfd; border: 1px solid #e8e8e8;
+      border-radius: 6px; padding: 1rem;
     }
-    .year-inputs-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-    .year-input-item {
-      display: flex;
-      flex-direction: column;
-    }
-    .year-input-item label {
-      font-size: 0.75rem;
-      color: #666;
-      margin-bottom: 0.2rem;
-      text-align: center;
-    }
+    .year-inputs-container { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+    .year-input-item { display: flex; flex-direction: column; }
+    .year-input-item label { font-size: 0.75rem; color: #666; margin-bottom: 0.2rem; text-align: center; }
     
     /* Input Field Styling */
     input[type="text"] {
-      width: 5rem;
-      padding: 0.4rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      transition: border-color 0.2s;
+      width: 5rem; padding: 0.4rem; border: 1px solid #ccc;
+      border-radius: 4px; transition: border-color 0.2s, background-color 0.2s;
       text-align: center;
     }
     input[type="text"]:focus { outline: none; border-color: #3498db; }
+    
+    /* NEW: Read-only input styling */
+    input[readonly] {
+      background-color: #f1f3f4;
+      color: #555;
+      cursor: not-allowed;
+      border-color: #ddd;
+    }
   </style>
 </head>
 <body>
   <h1>Scenario Configurator</h1>
-  <input type="file" id="upload" accept=".csv"><br><br>
+  
+  <div class="controls-container">
+    <div class="scenario-controls" id="scenario-toggle">
+      <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
+      <label for="source-baseline">Baseline</label>
+
+      <input type="radio" id="source-scenario" name="data-source" value="scenario">
+      <label for="source-scenario">Scenario</label>
+    </div>
+  </div>
+
   <div id="app"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
-    // --- DATA DEFINITIONS ---
-    const staticFields = [
-      "non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day",
-      "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length",
-      "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"
-    ];
-    const staticFieldLabels = {
-      "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours",
-      "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines",
-      "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length",
-      "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)",
-      "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost"
-    };
-    const projectionMetrics = [
-      "ip_volume_step", "op_volume_step", "scan_rate", "report_rate",
-      "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"
-    ];
-    const projectionMetricLabels = {
-      "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate",
-      "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour",
-      "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour"
-    };
+    // --- DATA DEFINITIONS AND STATE ---
+    const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
+    const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost"};
+    const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
+    const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour"};
     const years = Array.from({length: 11}, (_, i) => `y${i}`);
+    
     const app = document.getElementById("app");
+    const scenarioToggle = document.getElementById("scenario-toggle");
+
+    let baselineData = [];
+    let scenarioData = [];
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAndInitializeData();
+    });
+
+    async function loadAndInitializeData() {
+      try {
+        const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const csvText = await response.text();
+        
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            baselineData = results.data;
+            // Create a deep copy for the scenario data
+            scenarioData = JSON.parse(JSON.stringify(baselineData));
+            
+            // Initial render with Baseline data (non-editable)
+            renderUI(baselineData, false);
+          }
+        });
+      } catch (error) {
+        app.innerHTML = `<p style="color: red; text-align: center;">Error: Could not load or parse the configuration file. Please ensure 'input_configuration_snowflake_baseline_2025.csv' is in the correct directory.</p><p style="text-align: center; color: #666;">${error.message}</p>`;
+      }
+    }
 
     // --- EVENT LISTENERS ---
-    document.getElementById("upload").addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      Papa.parse(file, { header: true, skipEmptyLines: true, complete: ({ data }) => renderUI(data) });
+    scenarioToggle.addEventListener('change', (e) => {
+      if (e.target.value === 'baseline') {
+        renderUI(baselineData, false); // Baseline is NOT editable
+      } else if (e.target.value === 'scenario') {
+        renderUI(scenarioData, true);  // Scenario IS editable
+      }
     });
 
     app.addEventListener('click', (e) => {
@@ -187,11 +200,11 @@
     });
 
     // --- UI RENDERING LOGIC ---
-    function renderUI(data) {
+    function renderUI(dataToRender, isEditable) {
       app.innerHTML = "";
       const grouped = {};
 
-      for (const row of data) {
+      for (const row of dataToRender) {
         const modality = row["modality"];
         const archetype = row["archetype"];
         if (!grouped[modality]) grouped[modality] = {};
@@ -228,7 +241,7 @@
           panel.className = "archetype-content-panel";
           panel.id = contentPanelId;
           
-          // --- Static Fields Section ---
+          // Static Fields
           const staticHeader = document.createElement("h3");
           staticHeader.textContent = "Static Fields";
           panel.appendChild(staticHeader);
@@ -242,55 +255,44 @@
             const input = document.createElement("input");
             input.type = "text";
             input.value = row[field] || "";
-            input.dataset.field = field;
-            input.dataset.id = row["id"];
+            if (!isEditable) input.readOnly = true; // Set readonly
             fieldDiv.appendChild(label);
             fieldDiv.appendChild(input);
             staticGrid.appendChild(fieldDiv);
           });
           panel.appendChild(staticGrid);
 
-          // --- Yearly Projections Section (REBUILT) ---
+          // Yearly Projections
           const tableHeader = document.createElement("h3");
           tableHeader.textContent = "Yearly Projections";
           panel.appendChild(tableHeader);
-
           const projectionsGrid = document.createElement("div");
           projectionsGrid.className = "projections-grid";
-
           projectionMetrics.forEach(metric => {
             const metricCard = document.createElement("div");
             metricCard.className = "projection-metric-card";
-
             const metricTitle = document.createElement("h4");
             metricTitle.textContent = projectionMetricLabels[metric] || metric;
             metricCard.appendChild(metricTitle);
-
             const inputsContainer = document.createElement("div");
             inputsContainer.className = "year-inputs-container";
-
             years.forEach(y => {
               const key = `${metric}_${y}`;
               const yearItem = document.createElement("div");
               yearItem.className = "year-input-item";
-
               const yearLabel = document.createElement("label");
               yearLabel.textContent = y.toUpperCase();
               yearItem.appendChild(yearLabel);
-
               const input = document.createElement("input");
               input.type = "text";
-              input.dataset.field = key;
               input.value = row[key] || "";
+              if (!isEditable) input.readOnly = true; // Set readonly
               yearItem.appendChild(input);
-
               inputsContainer.appendChild(yearItem);
             });
-
             metricCard.appendChild(inputsContainer);
             projectionsGrid.appendChild(metricCard);
           });
-          
           panel.appendChild(projectionsGrid);
           contentArea.appendChild(panel);
         }
