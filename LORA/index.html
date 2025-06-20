@@ -108,14 +108,7 @@
       text-align: center;
     }
     input[type="text"]:focus { outline: none; border-color: #3498db; }
-    
-    /* NEW: Read-only input styling */
-    input[readonly] {
-      background-color: #f1f3f4;
-      color: #555;
-      cursor: not-allowed;
-      border-color: #ddd;
-    }
+    input[readonly] { background-color: #f1f3f4; color: #555; cursor: not-allowed; border-color: #ddd; }
   </style>
 </head>
 <body>
@@ -147,6 +140,7 @@
 
     let baselineData = [];
     let scenarioData = [];
+    let activePanelIds = new Set(); // NEW: To store the IDs of open panels
 
     // --- INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', () => {
@@ -156,9 +150,7 @@
     async function loadAndInitializeData() {
       try {
         const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const csvText = await response.text();
         
         Papa.parse(csvText, {
@@ -166,37 +158,49 @@
           skipEmptyLines: true,
           complete: (results) => {
             baselineData = results.data;
-            // Create a deep copy for the scenario data
             scenarioData = JSON.parse(JSON.stringify(baselineData));
-            
-            // Initial render with Baseline data (non-editable)
             renderUI(baselineData, false);
           }
         });
       } catch (error) {
-        app.innerHTML = `<p style="color: red; text-align: center;">Error: Could not load or parse the configuration file. Please ensure 'input_configuration_snowflake_baseline_2025.csv' is in the correct directory.</p><p style="text-align: center; color: #666;">${error.message}</p>`;
+        app.innerHTML = `<p style="color: red; text-align: center;">Error: Could not load configuration file. Please ensure 'input_configuration_snowflake_baseline_2025.csv' is in the correct directory.</p><p style="text-align: center; color: #666;">${error.message}</p>`;
       }
     }
 
     // --- EVENT LISTENERS ---
     scenarioToggle.addEventListener('change', (e) => {
+      // NEW: Capture the state of open panels before re-rendering
+      activePanelIds.clear();
+      document.querySelectorAll('.archetype-content-panel.active').forEach(panel => {
+        activePanelIds.add(panel.id);
+      });
+      
       if (e.target.value === 'baseline') {
-        renderUI(baselineData, false); // Baseline is NOT editable
+        renderUI(baselineData, false);
       } else if (e.target.value === 'scenario') {
-        renderUI(scenarioData, true);  // Scenario IS editable
+        renderUI(scenarioData, true);
       }
     });
 
     app.addEventListener('click', (e) => {
       if (!e.target.matches('.archetype-button')) return;
+
       const button = e.target;
+      // This is the only change here: check if the button is already active
+      const isAlreadyActive = button.classList.contains('active');
       const targetPanelId = button.dataset.target;
       const contentPanel = document.querySelector(targetPanelId);
       const parentContainer = button.closest('.modality-container');
+      
+      // Always clear previous state within the same modality group
       parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
       parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
-      button.classList.add('active');
-      contentPanel.classList.add('active');
+
+      // If it wasn't active, make it active. This allows toggling off.
+      if (!isAlreadyActive) {
+        button.classList.add('active');
+        contentPanel.classList.add('active');
+      }
     });
 
     // --- UI RENDERING LOGIC ---
@@ -212,6 +216,7 @@
       }
 
       for (const modality of Object.keys(grouped)) {
+        // ... (The entire UI building loop is unchanged)
         const modalityContainer = document.createElement("div");
         modalityContainer.className = "modality-container";
         const header = document.createElement("div");
@@ -241,7 +246,6 @@
           panel.className = "archetype-content-panel";
           panel.id = contentPanelId;
           
-          // Static Fields
           const staticHeader = document.createElement("h3");
           staticHeader.textContent = "Static Fields";
           panel.appendChild(staticHeader);
@@ -255,14 +259,13 @@
             const input = document.createElement("input");
             input.type = "text";
             input.value = row[field] || "";
-            if (!isEditable) input.readOnly = true; // Set readonly
+            if (!isEditable) input.readOnly = true;
             fieldDiv.appendChild(label);
             fieldDiv.appendChild(input);
             staticGrid.appendChild(fieldDiv);
           });
           panel.appendChild(staticGrid);
 
-          // Yearly Projections
           const tableHeader = document.createElement("h3");
           tableHeader.textContent = "Yearly Projections";
           panel.appendChild(tableHeader);
@@ -286,7 +289,7 @@
               const input = document.createElement("input");
               input.type = "text";
               input.value = row[key] || "";
-              if (!isEditable) input.readOnly = true; // Set readonly
+              if (!isEditable) input.readOnly = true;
               yearItem.appendChild(input);
               inputsContainer.appendChild(yearItem);
             });
@@ -298,6 +301,18 @@
         }
         app.appendChild(modalityContainer);
       }
+
+      // NEW: Apply the saved state after the UI has been built
+      activePanelIds.forEach(panelId => {
+        const panelToActivate = document.getElementById(panelId);
+        if (panelToActivate) {
+          const buttonToActivate = document.querySelector(`button[data-target="#${panelId}"]`);
+          panelToActivate.classList.add('active');
+          if (buttonToActivate) {
+            buttonToActivate.classList.add('active');
+          }
+        }
+      });
     }
   </script>
 </body>
