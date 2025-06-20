@@ -83,7 +83,7 @@
     /* Archetype Buttons */
     .archetype-buttons { display: flex; gap: 0.5rem; }
     .archetype-button {
-      position: relative; /* Crucial for the indicator positioning */
+      position: relative;
       padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600;
       border: 1px solid #bdc3c7; border-radius: 5px;
       background-color: #ffffff; color: #2c3e50;
@@ -91,15 +91,13 @@
     }
     .archetype-button:hover { background-color: #ecf0f1; border-color: #3498db; }
     .archetype-button.active { background-color: #3498db; color: #ffffff; border-color: #3498db; }
-
-    /* NEW: Indicator for edited scenarios */
     .archetype-button.has-changes::after {
       content: '●';
       position: absolute;
       top: 3px;
       right: 5px;
       font-size: 10px;
-      color: #f39c12; /* A nice amber color */
+      color: #f39c12;
     }
 
     /* Content Panels & Grids */
@@ -163,11 +161,11 @@
     let baselineData = [];
     let scenarioData = [];
     let activePanelIds = new Set();
+    let editedRowIds = new Set(); // CORRECT WAY: Track user edits here
 
     document.addEventListener('DOMContentLoaded', loadAndInitializeData);
 
     async function loadAndInitializeData() {
-      // ... initialization logic ...
       try {
         const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -204,36 +202,67 @@
       const rowId = e.target.dataset.id;
       const newValue = e.target.value;
 
+      // Update the live scenario data model
       const rowToUpdate = scenarioData.find(row => row.id === rowId);
       if (rowToUpdate) {
         rowToUpdate[fieldKey] = newValue;
-        // No need to re-render the whole UI on every keystroke
+      }
+      
+      // Add the ID to our set of edited rows
+      if (!editedRowIds.has(rowId)) {
+        editedRowIds.add(rowId);
+        // Find the button and add the indicator class immediately
+        const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
+        if (button) {
+            button.classList.add('has-changes');
+            button.title = "Contains scenario edits";
+        }
+      }
+    });
+    
+    // RESTORED: Click handler for expanding/collapsing content
+    app.addEventListener('click', (e) => {
+      if (!e.target.matches('.archetype-button')) return;
+      
+      const button = e.target;
+      const isAlreadyActive = button.classList.contains('active');
+      const targetPanelId = button.dataset.target;
+      const contentPanel = document.querySelector(targetPanelId);
+      const parentContainer = button.closest('.modality-container');
+      
+      // Always clear previous state within the same modality group
+      parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
+      parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
+
+      // If it wasn't active, make it active. This allows toggling off.
+      if (!isAlreadyActive) {
+        button.classList.add('active');
+        contentPanel.classList.add('active');
       }
     });
 
     exportButton.addEventListener('click', () => {
-      // ... export logic (unchanged) ...
-    });
-
-    app.addEventListener('click', (e) => {
-      // ... click logic (unchanged) ...
-    });
-
-    // --- NEW HELPER FUNCTION ---
-    function areRowsDifferent(baselineRow, scenarioRow) {
-      // Compare static fields
-      for (const field of staticFields) {
-        if (baselineRow[field] !== scenarioRow[field]) return true;
+      if (baselineData.length === 0) {
+        alert("No data loaded to export.");
+        return;
       }
-      // Compare projection metrics for all years
-      for (const metric of projectionMetrics) {
-        for (const year of years) {
-          const key = `${metric}_${year}`;
-          if (baselineRow[key] !== scenarioRow[key]) return true;
-        }
-      }
-      return false;
-    }
+      const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
+      const firstColumnHeader = Object.keys(baselineData[0])[0];
+      scenarioExportData.forEach(row => {
+        row[firstColumnHeader] = "Scenario - Transforming Radiology";
+      });
+      const dataForExport = [...baselineData, ...scenarioExportData];
+      const csvString = Papa.unparse(dataForExport);
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "scenario_export.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
 
     // --- UI RENDERING LOGIC ---
     function renderUI(dataToRender, isEditable) {
@@ -247,7 +276,6 @@
       }
 
       for (const modality of Object.keys(grouped)) {
-        // ... (modality container creation is unchanged) ...
         const modalityContainer = document.createElement("div");
         modalityContainer.className = "modality-container";
         const header = document.createElement("div");
@@ -265,34 +293,27 @@
 
         for (const archetype of Object.keys(grouped[modality])) {
           const row = grouped[modality][archetype];
-          
-          // --- MODIFIED PART: Check for edits before creating button ---
-          let hasChanges = false;
-          if (isEditable) { // Only check for changes when in scenario mode
-            const baselineRow = baselineData.find(br => br.id === row.id);
-            if (baselineRow) {
-              hasChanges = areRowsDifferent(baselineRow, row);
-            }
-          }
-          
           const contentPanelId = `content-${modality.replace(/\s+/g, '-')}-${archetype.replace(/\s+/g, '-')}`;
+          
           const button = document.createElement("button");
           button.className = "archetype-button";
           button.textContent = archetype;
           button.dataset.target = `#${contentPanelId}`;
+          button.dataset.id = row.id; // Add row ID to button for easier selection
 
-          if (hasChanges) {
+          // NEW LOGIC: Check our set of edited IDs. This works for both views.
+          if (editedRowIds.has(row.id)) {
             button.classList.add('has-changes');
             button.title = "Contains scenario edits";
           }
           
           buttonGroup.appendChild(button);
 
-          // ... (The rest of the rendering for panels, inputs, etc., is unchanged)
           const panel = document.createElement("div");
           panel.className = "archetype-content-panel";
           panel.id = contentPanelId;
           
+          // ... The rest of the panel and input rendering is unchanged
           const staticHeader = document.createElement("h3");
           staticHeader.textContent = "Static Fields";
           panel.appendChild(staticHeader);
@@ -353,7 +374,6 @@
         app.appendChild(modalityContainer);
       }
 
-      // Restore active state
       activePanelIds.forEach(panelId => {
         const panelToActivate = document.getElementById(panelId);
         if (panelToActivate) {
