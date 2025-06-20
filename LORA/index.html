@@ -24,10 +24,14 @@
     h3 {
       border-bottom: 2px solid #e0e0e0;
       padding-bottom: 0.5rem;
-      margin-top: 1.5rem;
+      margin-top: 2rem;
       margin-bottom: 1rem;
       color: #34495e;
       font-weight: 600;
+    }
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: #34495e;
     }
 
     /* File Upload Styling */
@@ -43,10 +47,10 @@
       border-radius: 8px;
       margin-bottom: 2rem;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      overflow: hidden; /* Ensures child borders don't poke out */
+      overflow: hidden;
     }
 
-    /* Header within the card (Holds Title and Buttons) */
+    /* Header within the card */
     .modality-header {
       display: flex;
       justify-content: space-between;
@@ -57,10 +61,7 @@
     }
 
     /* Archetype Button Styling */
-    .archetype-buttons {
-      display: flex;
-      gap: 0.5rem;
-    }
+    .archetype-buttons { display: flex; gap: 0.5rem; }
     .archetype-button {
       padding: 0.5rem 1rem;
       font-size: 0.9rem;
@@ -72,24 +73,12 @@
       cursor: pointer;
       transition: all 0.2s ease-in-out;
     }
-    .archetype-button:hover {
-      background-color: #ecf0f1;
-      border-color: #3498db;
-    }
-    .archetype-button.active {
-      background-color: #3498db;
-      color: #ffffff;
-      border-color: #3498db;
-    }
+    .archetype-button:hover { background-color: #ecf0f1; border-color: #3498db; }
+    .archetype-button.active { background-color: #3498db; color: #ffffff; border-color: #3498db; }
 
     /* Content Area for the active archetype */
-    .archetype-content-panel {
-      padding: 1.5rem;
-      display: none; /* Hidden by default */
-    }
-    .archetype-content-panel.active {
-      display: block; /* Shown when active */
-    }
+    .archetype-content-panel { padding: 0.5rem 1.5rem 1.5rem 1.5rem; display: none; }
+    .archetype-content-panel.active { display: block; }
 
     /* Grid layout for Static Fields */
     .static-fields-grid {
@@ -104,51 +93,46 @@
       align-items: center;
       font-size: 0.9rem;
     }
-    .static-field label {
-      color: #555;
-      margin-right: 1rem;
-      white-space: nowrap;
-    }
+    .static-field label { color: #555; margin-right: 1rem; white-space: nowrap; }
 
-    /* Table Styling */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-      font-size: 0.9rem;
+    /* --- NEW STYLES FOR PROJECTIONS --- */
+    .projections-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 1.5rem;
     }
-    th, td {
-      border: 1px solid #e0e0e0;
-      padding: 0.6rem 0.5rem;
+    .projection-metric-card {
+      background-color: #fdfdfd;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      padding: 1rem;
+    }
+    .year-inputs-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .year-input-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .year-input-item label {
+      font-size: 0.75rem;
+      color: #666;
+      margin-bottom: 0.2rem;
       text-align: center;
     }
-    th {
-      background-color: #f2f2f2;
-      font-weight: 600;
-    }
-    tbody tr:nth-child(odd) {
-      background-color: #fdfdfd;
-    }
-    td:first-child {
-      text-align: left;
-      font-weight: 500;
-      background-color: #f8f8f8;
-      width: 250px; /* Give the label column a fixed width */
-    }
-
+    
     /* Input Field Styling */
     input[type="text"] {
-      width: 6rem;
+      width: 5rem;
       padding: 0.4rem;
       border: 1px solid #ccc;
       border-radius: 4px;
       transition: border-color 0.2s;
       text-align: center;
     }
-    input[type="text"]:focus {
-      outline: none;
-      border-color: #3498db;
-    }
+    input[type="text"]:focus { outline: none; border-color: #3498db; }
   </style>
 </head>
 <body>
@@ -159,73 +143,50 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
     // --- DATA DEFINITIONS ---
-
     const staticFields = [
       "non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day",
       "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length",
       "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"
     ];
-
     const staticFieldLabels = {
-      "non_demographic_growth": "Non-Demographic Growth",
-      "routine_machine_hours": "Routine Machine Hours",
-      "share_of_scans_during_day": "Share of Scans During Day",
-      "ooh_machines": "Out-of-Hours (OOH) Machines",
-      "ras_per_routine_machine_hour": "RAs per Routine Machine Hour",
-      "mit_shift_length": "MIT Shift Length",
-      "mit_weeks_lost": "MIT Weeks Lost",
-      "session_length_hours": "Session Length (Hours)",
-      "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad",
-      "rad_weeks_lost": "Radiologist Weeks Lost"
+      "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours",
+      "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines",
+      "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length",
+      "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)",
+      "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost"
     };
-
     const projectionMetrics = [
       "ip_volume_step", "op_volume_step", "scan_rate", "report_rate",
       "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"
     ];
-
     const projectionMetricLabels = {
-      "ip_volume_step": "Inpatient Volume Step",
-      "op_volume_step": "Outpatient Volume Step",
-      "scan_rate": "Scan Rate",
-      "report_rate": "Report Rate",
-      "mits_per_routine_machine_hour": "MITs per Routine Machine Hour",
+      "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate",
+      "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour",
       "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour"
     };
-
     const years = Array.from({length: 11}, (_, i) => `y${i}`);
     const app = document.getElementById("app");
 
     // --- EVENT LISTENERS ---
-
     document.getElementById("upload").addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: ({ data }) => renderUI(data)
-      });
+      Papa.parse(file, { header: true, skipEmptyLines: true, complete: ({ data }) => renderUI(data) });
     });
 
     app.addEventListener('click', (e) => {
       if (!e.target.matches('.archetype-button')) return;
-
       const button = e.target;
       const targetPanelId = button.dataset.target;
       const contentPanel = document.querySelector(targetPanelId);
-
       const parentContainer = button.closest('.modality-container');
       parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
       parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
-
       button.classList.add('active');
       contentPanel.classList.add('active');
     });
 
     // --- UI RENDERING LOGIC ---
-
     function renderUI(data) {
       app.innerHTML = "";
       const grouped = {};
@@ -240,26 +201,18 @@
       for (const modality of Object.keys(grouped)) {
         const modalityContainer = document.createElement("div");
         modalityContainer.className = "modality-container";
-        modalityContainer.dataset.modality = modality;
-
         const header = document.createElement("div");
         header.className = "modality-header";
-        
         const title = document.createElement("h2");
         title.textContent = modality;
-        
         const buttonGroup = document.createElement("div");
         buttonGroup.className = "archetype-buttons";
-
         const contentArea = document.createElement("div");
         contentArea.className = "modality-content";
-
         header.appendChild(title);
         header.appendChild(buttonGroup);
         modalityContainer.appendChild(header);
         modalityContainer.appendChild(contentArea);
-
-        // REMOVED: `let isFirstArchetype = true;`
 
         for (const archetype of Object.keys(grouped[modality])) {
           const row = grouped[modality][archetype];
@@ -274,13 +227,11 @@
           const panel = document.createElement("div");
           panel.className = "archetype-content-panel";
           panel.id = contentPanelId;
-
-          // REMOVED: The `if (isFirstArchetype)` block that auto-opened the first panel.
           
+          // --- Static Fields Section ---
           const staticHeader = document.createElement("h3");
           staticHeader.textContent = "Static Fields";
           panel.appendChild(staticHeader);
-
           const staticGrid = document.createElement("div");
           staticGrid.className = "static-fields-grid";
           staticFields.forEach(field => {
@@ -299,37 +250,50 @@
           });
           panel.appendChild(staticGrid);
 
+          // --- Yearly Projections Section (REBUILT) ---
           const tableHeader = document.createElement("h3");
           tableHeader.textContent = "Yearly Projections";
           panel.appendChild(tableHeader);
 
-          const table = document.createElement("table");
-          const thead = table.createTHead();
-          const tbody = table.createTBody();
+          const projectionsGrid = document.createElement("div");
+          projectionsGrid.className = "projections-grid";
 
-          const headerRow = thead.insertRow();
-          headerRow.innerHTML = "<th>Metric</th>" + years.map(y => `<th>${y.toUpperCase()}</th>`).join("");
-          
           projectionMetrics.forEach(metric => {
-            const tr = tbody.insertRow();
-            const labelCell = tr.insertCell();
-            labelCell.textContent = projectionMetricLabels[metric] || metric;
+            const metricCard = document.createElement("div");
+            metricCard.className = "projection-metric-card";
+
+            const metricTitle = document.createElement("h4");
+            metricTitle.textContent = projectionMetricLabels[metric] || metric;
+            metricCard.appendChild(metricTitle);
+
+            const inputsContainer = document.createElement("div");
+            inputsContainer.className = "year-inputs-container";
 
             years.forEach(y => {
               const key = `${metric}_${y}`;
-              const cell = tr.insertCell();
+              const yearItem = document.createElement("div");
+              yearItem.className = "year-input-item";
+
+              const yearLabel = document.createElement("label");
+              yearLabel.textContent = y.toUpperCase();
+              yearItem.appendChild(yearLabel);
+
               const input = document.createElement("input");
               input.type = "text";
               input.dataset.field = key;
               input.value = row[key] || "";
-              cell.appendChild(input);
-            });
-          });
+              yearItem.appendChild(input);
 
-          panel.appendChild(table);
+              inputsContainer.appendChild(yearItem);
+            });
+
+            metricCard.appendChild(inputsContainer);
+            projectionsGrid.appendChild(metricCard);
+          });
+          
+          panel.appendChild(projectionsGrid);
           contentArea.appendChild(panel);
         }
-
         app.appendChild(modalityContainer);
       }
     }
