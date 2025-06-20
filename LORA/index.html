@@ -161,7 +161,7 @@
     let baselineData = [];
     let scenarioData = [];
     let activePanelIds = new Set();
-    let editedRowIds = new Set(); // CORRECT WAY: Track user edits here
+    let editedRowIds = new Set(); // Tracks row IDs that have been edited by the user
 
     document.addEventListener('DOMContentLoaded', loadAndInitializeData);
 
@@ -208,10 +208,10 @@
         rowToUpdate[fieldKey] = newValue;
       }
       
-      // Add the ID to our set of edited rows
+      // Add the ID to our set of edited rows, triggering the indicator
       if (!editedRowIds.has(rowId)) {
         editedRowIds.add(rowId);
-        // Find the button and add the indicator class immediately
+        // Find the button in the current view and add the indicator class immediately
         const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
         if (button) {
             button.classList.add('has-changes');
@@ -220,7 +220,7 @@
       }
     });
     
-    // RESTORED: Click handler for expanding/collapsing content
+    // RESTORED: This listener handles expanding/collapsing archetype panels
     app.addEventListener('click', (e) => {
       if (!e.target.matches('.archetype-button')) return;
       
@@ -230,11 +230,9 @@
       const contentPanel = document.querySelector(targetPanelId);
       const parentContainer = button.closest('.modality-container');
       
-      // Always clear previous state within the same modality group
       parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
       parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
 
-      // If it wasn't active, make it active. This allows toggling off.
       if (!isAlreadyActive) {
         button.classList.add('active');
         contentPanel.classList.add('active');
@@ -242,10 +240,7 @@
     });
 
     exportButton.addEventListener('click', () => {
-      if (baselineData.length === 0) {
-        alert("No data loaded to export.");
-        return;
-      }
+      if (baselineData.length === 0) return;
       const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
       const firstColumnHeader = Object.keys(baselineData[0])[0];
       scenarioExportData.forEach(row => {
@@ -299,9 +294,9 @@
           button.className = "archetype-button";
           button.textContent = archetype;
           button.dataset.target = `#${contentPanelId}`;
-          button.dataset.id = row.id; // Add row ID to button for easier selection
+          button.dataset.id = row.id; // Add row ID to button
 
-          // NEW LOGIC: Check our set of edited IDs. This works for both views.
+          // This logic now works universally
           if (editedRowIds.has(row.id)) {
             button.classList.add('has-changes');
             button.title = "Contains scenario edits";
@@ -313,7 +308,6 @@
           panel.className = "archetype-content-panel";
           panel.id = contentPanelId;
           
-          // ... The rest of the panel and input rendering is unchanged
           const staticHeader = document.createElement("h3");
           staticHeader.textContent = "Static Fields";
           panel.appendChild(staticHeader);
