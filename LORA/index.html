@@ -161,7 +161,7 @@
     let baselineData = [];
     let scenarioData = [];
     let activePanelIds = new Set();
-    let editedRowIds = new Set(); // Tracks row IDs that have been edited by the user
+    let editedRowIds = new Set();
 
     document.addEventListener('DOMContentLoaded', loadAndInitializeData);
 
@@ -174,6 +174,7 @@
         Papa.parse(csvText, {
           header: true,
           skipEmptyLines: true,
+          dynamicTyping: true, // Let PapaParse infer types (numbers, booleans)
           complete: (results) => {
             baselineData = results.data;
             scenarioData = JSON.parse(JSON.stringify(baselineData));
@@ -190,7 +191,6 @@
     scenarioToggle.addEventListener('change', (e) => {
       activePanelIds.clear();
       document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
-      
       const isBaseline = e.target.value === 'baseline';
       renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
     });
@@ -202,28 +202,24 @@
       const rowId = e.target.dataset.id;
       const newValue = e.target.value;
 
-      // Update the live scenario data model
-      const rowToUpdate = scenarioData.find(row => row.id === rowId);
+      // THE FIX IS HERE: Use loose equality (==) to match string from dataset with number from data
+      const rowToUpdate = scenarioData.find(row => row.id == rowId);
+      
       if (rowToUpdate) {
         rowToUpdate[fieldKey] = newValue;
-      }
-      
-      // Add the ID to our set of edited rows, triggering the indicator
-      if (!editedRowIds.has(rowId)) {
-        editedRowIds.add(rowId);
-        // Find the button in the current view and add the indicator class immediately
-        const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
-        if (button) {
-            button.classList.add('has-changes');
-            button.title = "Contains scenario edits";
+        if (!editedRowIds.has(rowId)) {
+          editedRowIds.add(rowId);
+          const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
+          if (button) {
+              button.classList.add('has-changes');
+              button.title = "Contains scenario edits";
+          }
         }
       }
     });
     
-    // RESTORED: This listener handles expanding/collapsing archetype panels
     app.addEventListener('click', (e) => {
       if (!e.target.matches('.archetype-button')) return;
-      
       const button = e.target;
       const isAlreadyActive = button.classList.contains('active');
       const targetPanelId = button.dataset.target;
@@ -294,10 +290,9 @@
           button.className = "archetype-button";
           button.textContent = archetype;
           button.dataset.target = `#${contentPanelId}`;
-          button.dataset.id = row.id; // Add row ID to button
+          button.dataset.id = row.id;
 
-          // This logic now works universally
-          if (editedRowIds.has(row.id)) {
+          if (editedRowIds.has(String(row.id))) { // Compare as strings for safety
             button.classList.add('has-changes');
             button.title = "Contains scenario edits";
           }
@@ -320,7 +315,7 @@
             label.textContent = staticFieldLabels[field] || field;
             const input = document.createElement("input");
             input.type = "text";
-            input.value = row[field] || "";
+            input.value = row[field] != null ? row[field] : ""; // Handle null/undefined values
             input.dataset.id = row.id;
             input.dataset.field = field;
             if (!isEditable) input.readOnly = true;
@@ -352,7 +347,7 @@
               yearItem.appendChild(yearLabel);
               const input = document.createElement("input");
               input.type = "text";
-              input.value = row[key] || "";
+              input.value = row[key] != null ? row[key] : ""; // Handle null/undefined values
               input.dataset.id = row.id;
               input.dataset.field = key;
               if (!isEditable) input.readOnly = true;
