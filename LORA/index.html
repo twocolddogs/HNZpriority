@@ -1,174 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Scenario Configurator</title>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    body { font-family: sans-serif; margin: 20px; }
-    h1 { margin-bottom: 10px; }
-    input[type="file"] { margin-bottom: 20px; }
-    details { margin-bottom: 10px; border: 1px solid #ccc; padding: 10px; }
-    summary { font-weight: bold; cursor: pointer; }
-    .archetype { margin-left: 20px; }
-    .baseline-fields { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
-    .field { flex: 1 1 200px; }
-    .projection-table { border-collapse: collapse; margin-left: 20px; }
-    .projection-table th, .projection-table td { border: 1px solid #ccc; padding: 4px 8px; text-align: right; }
-    input[type="text"] { width: 80px; }
-    .error { color: red; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      background: #f9f9f9;
+    }
+    h2, h3 {
+      margin-top: 1.5rem;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .archetype-section {
+      margin-left: 2rem;
+      margin-bottom: 1rem;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      border-radius: 5px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+    td, th {
+      border: 1px solid #ccc;
+      padding: 0.3rem 0.5rem;
+      text-align: center;
+    }
+    input {
+      width: 6rem;
+    }
   </style>
 </head>
 <body>
+  <h1>Scenario Configurator</h1>
+  <input type="file" id="upload" accept=".csv"><br><br>
+  <div id="app"></div>
 
-<h1>Scenario Configurator</h1>
-<input type="file" id="upload" accept=".csv" />
-<div id="error" class="error"></div>
-<div id="viewer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    const staticFields = [
+      "non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day",
+      "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length",
+      "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"
+    ];
 
-<script>
-const baselineFields = [
-  "Routine machine hours", "OOH machine hours", "RA's per list",
-  "MIT shift length", "MIT weeks lost", "Session length",
-  "Clinical requirement", "Radiologist weeks lost"
-];
+    const projectionMetrics = [
+      "ip_volume_step", "op_volume_step", "scan_rate", "report_rate",
+      "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"
+    ];
 
-const yearFields = [];  // e.g., ["IP volume step y0", ..., "IP volume step y10"]
-const yearGroups = {};  // { "IP volume step": { y0: colname, ... } }
+    const years = Array.from({length: 11}, (_, i) => `y${i}`);
 
-function parseYearHeaders(headers) {
-  yearFields.length = 0;
-  Object.keys(yearGroups).forEach(k => delete yearGroups[k]);
-  headers.forEach(h => {
-    const match = h.match(/^(.*) y(\d{1,2})$/);
-    if (match) {
-      const metric = match[1].trim();
-      const year = "y" + match[2];
-      yearFields.push(h);
-      if (!yearGroups[metric]) yearGroups[metric] = {};
-      yearGroups[metric][year] = h;
-    }
-  });
-}
+    document.getElementById("upload").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-function createInput(value) {
-  const input = document.createElement("input");
-  input.type = "text";
-  input.value = value;
-  return input;
-}
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: ({ data }) => renderUI(data)
+      });
+    });
 
-function buildUI(data) {
-  const container = document.getElementById("viewer");
-  container.innerHTML = "";
+    function renderUI(data) {
+      const app = document.getElementById("app");
+      app.innerHTML = "";
 
-  const byModality = {};
-  for (let row of data) {
-    const modality = row["Modality"];
-    const archetype = row["Archetype"];
-    if (!byModality[modality]) byModality[modality] = {};
-    if (!byModality[modality][archetype]) byModality[modality][archetype] = [];
-    byModality[modality][archetype].push(row);
-  }
+      const grouped = {};
 
-  for (let modality in byModality) {
-    const modWrap = document.createElement("details");
-    modWrap.open = true;
-    modWrap.innerHTML = `<summary>${modality}</summary>`;
-
-    for (let archetype in byModality[modality]) {
-      const archetypeWrap = document.createElement("details");
-      archetypeWrap.className = "archetype";
-      archetypeWrap.innerHTML = `<summary>${archetype}</summary>`;
-      const row = byModality[modality][archetype][0];
-
-      // Baseline fields
-      const baselineDiv = document.createElement("div");
-      baselineDiv.className = "baseline-fields";
-      for (let field of baselineFields) {
-        const val = row[field] || "";
-        const box = document.createElement("div");
-        box.className = "field";
-        box.innerHTML = `<label>${field}<br/></label>`;
-        box.querySelector("label").appendChild(createInput(val));
-        baselineDiv.appendChild(box);
+      for (const row of data) {
+        const modality = row["modality"];
+        const archetype = row["archetype"];
+        if (!grouped[modality]) grouped[modality] = {};
+        grouped[modality][archetype] = row;
       }
-      archetypeWrap.appendChild(baselineDiv);
 
-      // Projection matrix
-      const table = document.createElement("table");
-      table.className = "projection-table";
+      for (const modality of Object.keys(grouped)) {
+        const modDetails = document.createElement("details");
+        modDetails.open = true;
+        const modSummary = document.createElement("summary");
+        modSummary.textContent = modality;
+        modDetails.appendChild(modSummary);
 
-      const headerRow = document.createElement("tr");
-      headerRow.innerHTML = "<th>Metric</th>" + Array.from({ length: 11 }, (_, i) => `<th>y${i}</th>`).join("");
-      table.appendChild(headerRow);
+        for (const archetype of Object.keys(grouped[modality])) {
+          const row = grouped[modality][archetype];
+          const archDetails = document.createElement("details");
+          archDetails.className = "archetype-section";
 
-      for (let metric in yearGroups) {
-        const rowEl = document.createElement("tr");
-        rowEl.innerHTML = `<td>${metric}</td>`;
-        for (let i = 0; i <= 10; i++) {
-          const colName = yearGroups[metric]["y" + i];
-          const val = row[colName] || "";
-          const cell = document.createElement("td");
-          cell.appendChild(createInput(val));
-          rowEl.appendChild(cell);
+          const archSummary = document.createElement("summary");
+          archSummary.textContent = archetype;
+          archDetails.appendChild(archSummary);
+
+          // Static Fields Section
+          const staticDiv = document.createElement("div");
+          staticFields.forEach(field => {
+            const label = document.createElement("label");
+            label.textContent = field + ": ";
+            const input = document.createElement("input");
+            input.value = row[field] || "";
+            input.dataset.field = field;
+            input.dataset.id = row["id"]; // optional: add row id if needed
+            label.appendChild(input);
+            staticDiv.appendChild(label);
+          });
+          archDetails.appendChild(staticDiv);
+
+          // Dynamic Projections Table
+          const table = document.createElement("table");
+          const headerRow = document.createElement("tr");
+          headerRow.innerHTML = "<th>Metric</th>" + years.map(y => `<th>${y}</th>`).join("");
+          table.appendChild(headerRow);
+
+          projectionMetrics.forEach(metric => {
+            const tr = document.createElement("tr");
+            const label = `<td>${metric}</td>`;
+            const cells = years.map(y => {
+              const key = `${metric}_${y}`;
+              return `<td><input data-field="${key}" value="${row[key] || ""}"></td>`;
+            }).join("");
+            tr.innerHTML = label + cells;
+            table.appendChild(tr);
+          });
+
+          archDetails.appendChild(table);
+          modDetails.appendChild(archDetails);
         }
-        table.appendChild(rowEl);
+
+        app.appendChild(modDetails);
       }
-
-      archetypeWrap.appendChild(table);
-      modWrap.appendChild(archetypeWrap);
     }
-    container.appendChild(modWrap);
-  }
-}
-
-document.getElementById("upload").addEventListener("change", function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  Papa.parse(file, {
-    header: true,
-    skipEmptyLines: true,
-    complete: function(results) {
-      const data = results.data;
-      const headers = results.meta.fields;
-      function normalize(str) {
-  return str.toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-const requiredCols = [
-  "Modality", "Archetype",
-  "Routine machine hours", "OOH machine hours", "RA's per list",
-  "MIT shift length", "MIT weeks lost", "Session length",
-  "Clinical requirement", "Radiologist weeks lost"
-];
-
-const normalizedHeaders = headers.map(normalize);
-
-const missing = requiredCols.filter(req => {
-  return !normalizedHeaders.includes(normalize(req));
-});
-
-if (missing.length) {
-  document.getElementById("error").textContent = "Missing columns: " + missing.join(", ");
-  return;
-}
-      if (missing.length) {
-        document.getElementById("error").textContent = "Missing columns: " + missing.join(", ");
-        return;
-      }
-
-      parseYearHeaders(headers);
-      buildUI(data);
-      document.getElementById("error").textContent = "";
-    },
-    error: function(err) {
-      document.getElementById("error").textContent = "Parse error: " + err.message;
-    }
-  });
-});
-</script>
-
+  </script>
 </body>
 </html>
