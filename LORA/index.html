@@ -166,7 +166,6 @@
       "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"
     ];
 
-    // NEW: Mapping for static field labels
     const staticFieldLabels = {
       "non_demographic_growth": "Non-Demographic Growth",
       "routine_machine_hours": "Routine Machine Hours",
@@ -185,7 +184,6 @@
       "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"
     ];
 
-    // NEW: Mapping for projection metric labels
     const projectionMetricLabels = {
       "ip_volume_step": "Inpatient Volume Step",
       "op_volume_step": "Outpatient Volume Step",
@@ -261,7 +259,7 @@
         modalityContainer.appendChild(header);
         modalityContainer.appendChild(contentArea);
 
-        let isFirstArchetype = true;
+        // REMOVED: `let isFirstArchetype = true;`
 
         for (const archetype of Object.keys(grouped[modality])) {
           const row = grouped[modality][archetype];
@@ -277,12 +275,8 @@
           panel.className = "archetype-content-panel";
           panel.id = contentPanelId;
 
-          if (isFirstArchetype) {
-              button.classList.add('active');
-              panel.classList.add('active');
-              isFirstArchetype = false;
-          }
-
+          // REMOVED: The `if (isFirstArchetype)` block that auto-opened the first panel.
+          
           const staticHeader = document.createElement("h3");
           staticHeader.textContent = "Static Fields";
           panel.appendChild(staticHeader);
@@ -293,12 +287,11 @@
             const fieldDiv = document.createElement("div");
             fieldDiv.className = "static-field";
             const label = document.createElement("label");
-            // MODIFIED: Use the label from the mapping object
-            label.textContent = staticFieldLabels[field] || field; // Fallback to raw key
+            label.textContent = staticFieldLabels[field] || field;
             const input = document.createElement("input");
             input.type = "text";
             input.value = row[field] || "";
-            input.dataset.field = field; // Keep the original key for data purposes
+            input.dataset.field = field;
             input.dataset.id = row["id"];
             fieldDiv.appendChild(label);
             fieldDiv.appendChild(input);
@@ -320,8 +313,7 @@
           projectionMetrics.forEach(metric => {
             const tr = tbody.insertRow();
             const labelCell = tr.insertCell();
-            // MODIFIED: Use the label from the mapping object
-            labelCell.textContent = projectionMetricLabels[metric] || metric; // Fallback to raw key
+            labelCell.textContent = projectionMetricLabels[metric] || metric;
 
             years.forEach(y => {
               const key = `${metric}_${y}`;
