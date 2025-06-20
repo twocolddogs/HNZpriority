@@ -94,7 +94,7 @@
     /* Grid layout for Static Fields */
     .static-fields-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
       gap: 1rem;
       align-items: center;
     }
@@ -107,6 +107,7 @@
     .static-field label {
       color: #555;
       margin-right: 1rem;
+      white-space: nowrap;
     }
 
     /* Table Styling */
@@ -132,6 +133,7 @@
       text-align: left;
       font-weight: 500;
       background-color: #f8f8f8;
+      width: 250px; /* Give the label column a fixed width */
     }
 
     /* Input Field Styling */
@@ -141,6 +143,7 @@
       border: 1px solid #ccc;
       border-radius: 4px;
       transition: border-color 0.2s;
+      text-align: center;
     }
     input[type="text"]:focus {
       outline: none;
@@ -155,19 +158,47 @@
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
+    // --- DATA DEFINITIONS ---
+
     const staticFields = [
       "non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day",
       "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length",
       "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"
     ];
 
+    // NEW: Mapping for static field labels
+    const staticFieldLabels = {
+      "non_demographic_growth": "Non-Demographic Growth",
+      "routine_machine_hours": "Routine Machine Hours",
+      "share_of_scans_during_day": "Share of Scans During Day",
+      "ooh_machines": "Out-of-Hours (OOH) Machines",
+      "ras_per_routine_machine_hour": "RAs per Routine Machine Hour",
+      "mit_shift_length": "MIT Shift Length",
+      "mit_weeks_lost": "MIT Weeks Lost",
+      "session_length_hours": "Session Length (Hours)",
+      "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad",
+      "rad_weeks_lost": "Radiologist Weeks Lost"
+    };
+
     const projectionMetrics = [
       "ip_volume_step", "op_volume_step", "scan_rate", "report_rate",
       "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"
     ];
 
+    // NEW: Mapping for projection metric labels
+    const projectionMetricLabels = {
+      "ip_volume_step": "Inpatient Volume Step",
+      "op_volume_step": "Outpatient Volume Step",
+      "scan_rate": "Scan Rate",
+      "report_rate": "Report Rate",
+      "mits_per_routine_machine_hour": "MITs per Routine Machine Hour",
+      "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour"
+    };
+
     const years = Array.from({length: 11}, (_, i) => `y${i}`);
     const app = document.getElementById("app");
+
+    // --- EVENT LISTENERS ---
 
     document.getElementById("upload").addEventListener("change", (e) => {
       const file = e.target.files[0];
@@ -180,7 +211,6 @@
       });
     });
 
-    // Event Delegation for handling clicks on archetype buttons
     app.addEventListener('click', (e) => {
       if (!e.target.matches('.archetype-button')) return;
 
@@ -188,16 +218,15 @@
       const targetPanelId = button.dataset.target;
       const contentPanel = document.querySelector(targetPanelId);
 
-      // Remove active class from sibling buttons and panels
       const parentContainer = button.closest('.modality-container');
       parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
       parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
 
-      // Activate the clicked button and its corresponding panel
       button.classList.add('active');
       contentPanel.classList.add('active');
     });
 
+    // --- UI RENDERING LOGIC ---
 
     function renderUI(data) {
       app.innerHTML = "";
@@ -211,12 +240,10 @@
       }
 
       for (const modality of Object.keys(grouped)) {
-        // Main container for the modality
         const modalityContainer = document.createElement("div");
         modalityContainer.className = "modality-container";
         modalityContainer.dataset.modality = modality;
 
-        // Header with title and buttons
         const header = document.createElement("div");
         header.className = "modality-header";
         
@@ -226,7 +253,6 @@
         const buttonGroup = document.createElement("div");
         buttonGroup.className = "archetype-buttons";
 
-        // Content area for all archetype panels
         const contentArea = document.createElement("div");
         contentArea.className = "modality-content";
 
@@ -235,21 +261,18 @@
         modalityContainer.appendChild(header);
         modalityContainer.appendChild(contentArea);
 
-        // Track the first archetype to make it active by default
         let isFirstArchetype = true;
 
         for (const archetype of Object.keys(grouped[modality])) {
           const row = grouped[modality][archetype];
           const contentPanelId = `content-${modality.replace(/\s+/g, '-')}-${archetype.replace(/\s+/g, '-')}`;
 
-          // Create the button
           const button = document.createElement("button");
           button.className = "archetype-button";
           button.textContent = archetype;
           button.dataset.target = `#${contentPanelId}`;
           buttonGroup.appendChild(button);
 
-          // Create the content panel
           const panel = document.createElement("div");
           panel.className = "archetype-content-panel";
           panel.id = contentPanelId;
@@ -260,7 +283,6 @@
               isFirstArchetype = false;
           }
 
-          // Static Fields Section
           const staticHeader = document.createElement("h3");
           staticHeader.textContent = "Static Fields";
           panel.appendChild(staticHeader);
@@ -271,11 +293,12 @@
             const fieldDiv = document.createElement("div");
             fieldDiv.className = "static-field";
             const label = document.createElement("label");
-            label.textContent = field.replace(/_/g, ' ') + ":";
+            // MODIFIED: Use the label from the mapping object
+            label.textContent = staticFieldLabels[field] || field; // Fallback to raw key
             const input = document.createElement("input");
             input.type = "text";
             input.value = row[field] || "";
-            input.dataset.field = field;
+            input.dataset.field = field; // Keep the original key for data purposes
             input.dataset.id = row["id"];
             fieldDiv.appendChild(label);
             fieldDiv.appendChild(input);
@@ -283,7 +306,6 @@
           });
           panel.appendChild(staticGrid);
 
-          // Dynamic Projections Table
           const tableHeader = document.createElement("h3");
           tableHeader.textContent = "Yearly Projections";
           panel.appendChild(tableHeader);
@@ -298,7 +320,8 @@
           projectionMetrics.forEach(metric => {
             const tr = tbody.insertRow();
             const labelCell = tr.insertCell();
-            labelCell.textContent = metric.replace(/_/g, ' ');
+            // MODIFIED: Use the label from the mapping object
+            labelCell.textContent = projectionMetricLabels[metric] || metric; // Fallback to raw key
 
             years.forEach(y => {
               const key = `${metric}_${y}`;
