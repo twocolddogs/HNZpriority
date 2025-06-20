@@ -43,7 +43,7 @@
   <input type="file" id="upload" accept=".csv"><br><br>
   <div id="app"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
     const staticFields = [
       "non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day",
@@ -84,7 +84,7 @@
 
       for (const modality of Object.keys(grouped)) {
         const modDetails = document.createElement("details");
-        modDetails.open = true;
+        // modDetails.open = true; // <-- THIS LINE HAS BEEN REMOVED
         const modSummary = document.createElement("summary");
         modSummary.textContent = modality;
         modDetails.appendChild(modSummary);
@@ -92,7 +92,7 @@
         for (const archetype of Object.keys(grouped[modality])) {
           const row = grouped[modality][archetype];
           const archDetails = document.createElement("details");
-          archDetails.open = true; // <-- THE FIX IS HERE
+          // archDetails.open = true; // <-- THIS LINE HAS BEEN REMOVED
           archDetails.className = "archetype-section";
 
           const archSummary = document.createElement("summary");
