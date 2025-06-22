@@ -1,3 +1,5 @@
+/* File: styles.css */
+
 /* General Body & Font Styling */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -87,7 +89,7 @@ h4 {
 }
 .modality-header {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* Allow wrapping on small screens */
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
@@ -140,9 +142,13 @@ h4 {
 .archetype-content-panel.active {
   display: block;
 }
+
+/* --- THE FIX IS HERE --- */
+
+/* Static Fields Grid: Reduced minmax for mobile */
 .static-fields-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
   align-items: center;
 }
@@ -157,9 +163,11 @@ h4 {
   margin-right: 1rem;
   white-space: nowrap;
 }
+
+/* Projections Grid: Reduced minmax for the card on mobile */
 .projections-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
 }
 .projection-metric-card {
@@ -172,8 +180,8 @@ h4 {
 .year-inputs-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: center;
+  gap: 0.75rem; /* This provides the spacing */
+  justify-content: center; /* Center the items nicely */
 }
 .year-input-item {
   display: flex;
@@ -186,7 +194,7 @@ h4 {
   text-align: center;
 }
 
-/* Input Fields */
+/* Input Fields: Use fixed width to prevent stretching */
 input[type="text"] {
   width: 5rem;
   box-sizing: border-box;
