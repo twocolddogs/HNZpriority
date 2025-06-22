@@ -28,6 +28,10 @@
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+html {
+  font-size: 16px; /* Base font size for rem units */
+}
+
 body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   background: linear-gradient(to bottom right, #faf5ff, #f3f4f6);
@@ -308,12 +312,12 @@ h1 {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: all 0.3s ease;
+  transition: max-height 0.4s ease-out, opacity 0.4s ease-out, padding 0.4s ease-out;
 }
 
 .archetype-content-panel.active {
   padding: 2rem;
-  max-height: none;
+  max-height: 5000px; /* Use a large value instead of 'none' for smooth animation */
   opacity: 1;
 }
 
@@ -488,20 +492,9 @@ input.changed {
   margin: 0;
 }
 
-.status-message .error {
-  background: var(--danger);
-  color: white;
-}
-
-.status-message .success {
-  background: var(--secondary);
-  color: white;
-}
-
-.status-message .info {
-  background: var(--info);
-  color: white;
-}
+.status-message .error { background: var(--danger); color: white; }
+.status-message .success { background: var(--secondary); color: white; }
+.status-message .info { background: var(--info); color: white; }
 
 /* Loading Spinner */
 .loading-spinner {
@@ -515,60 +508,69 @@ input.changed {
 }
 
 /* Animations */
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(100px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Utility Classes */
 .hidden {
   display: none !important;
 }
 
-/* Responsive Design */
+/* --- MOBILE OPTIMIZATIONS --- */
 @media (max-width: 768px) {
+  html {
+    font-size: 14px; /* Scale down all rem-based units */
+  }
+
   .container {
     padding: 1rem;
   }
+
   h1 {
-    font-size: 2rem;
+    font-size: 2.25rem; /* Smaller main title */
   }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .file-upload {
+    padding: 2rem 1rem; /* Less vertical padding */
+  }
+
   .controls-container {
-    flex-direction: column;
+    flex-direction: column; /* Stack controls vertically */
     gap: 1rem;
   }
-  .static-fields-grid {
-    grid-template-columns: 1fr;
+
+  .modality-header {
+    flex-direction: column; /* Stack title above buttons */
+    align-items: flex-start; /* Align to the left */
+    gap: 1rem;
   }
+
+  .archetype-content-panel.active {
+    padding: 1.5rem; /* Reduce padding inside panels */
+  }
+
+  .static-fields-grid,
+  .projections-grid,
+  .year-inputs-container {
+    grid-template-columns: 1fr; /* Force single column layouts */
+  }
+  
   .projections-grid {
-    grid-template-columns: 1fr;
+    gap: 1rem;
   }
-  .archetype-buttons {
-    flex-wrap: wrap;
-  }
+
   .status-message {
     top: 1rem;
     right: 1rem;
     left: 1rem;
+    max-width: none;
+    width: auto;
   }
 }
