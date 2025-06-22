@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -12,674 +11,634 @@
       box-sizing: border-box;
     }
 
-```
-:root {
-  --primary: #5b21b6;
-  --primary-hover: #7c3aed;
-  --primary-light: #ede9fe;
-  --secondary: #10b981;
-  --secondary-hover: #059669;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --info: #3b82f6;
-  --surface: #ffffff;
-  --surface-hover: #fafafa;
-  --surface-secondary: #f9fafb;
-  --surface-tertiary: #f3f4f6;
-  --border: #e5e7eb;
-  --border-hover: #d1d5db;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-body {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background: linear-gradient(to bottom right, #faf5ff, #f3f4f6);
-  min-height: 100vh;
-  color: var(--text-primary);
-  line-height: 1.6;
-}
-
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-/* Header */
-header {
-  text-align: center;
-  margin-bottom: 3rem;
-  animation: fadeInDown 0.6s ease-out;
-}
-
-h1 {
-  font-size: 3rem;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 0.5rem;
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: 1.125rem;
-  font-weight: 400;
-}
-
-/* File Upload Area */
-.file-upload {
-  background: var(--surface);
-  border: 2px dashed var(--border);
-  border-radius: 1rem;
-  padding: 4rem 2rem;
-  text-align: center;
-  margin-bottom: 2rem;
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.file-upload::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, var(--primary-light) 0%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.file-upload.drag-over {
-  border-color: var(--primary);
-  transform: scale(1.02);
-}
-
-.file-upload.drag-over::before {
-  opacity: 0.1;
-}
-
-.file-upload-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.8;
-}
-
-.file-upload h3 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  color: var(--text-primary);
-}
-
-.file-upload p {
-  color: var(--text-secondary);
-  margin-bottom: 1.5rem;
-}
-
-.file-input input[type="file"] {
-  display: none;
-}
-
-.file-input label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 2rem;
-  background: var(--primary);
-  color: white;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-weight: 600;
-  transition: var(--transition);
-  box-shadow: var(--shadow-sm);
-}
-
-.file-input label:hover {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-}
-
-/* Controls */
-.controls-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 2rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-}
-
-.scenario-controls {
-  display: flex;
-  background: var(--surface);
-  border-radius: 0.75rem;
-  padding: 0.25rem;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
-}
-
-.scenario-controls input[type="radio"] {
-  display: none;
-}
-
-.scenario-controls label {
-  padding: 0.625rem 1.5rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--text-secondary);
-  transition: var(--transition);
-  position: relative;
-}
-
-.scenario-controls input[type="radio"]:checked + label {
-  background: var(--primary);
-  color: white;
-  box-shadow: var(--shadow-sm);
-}
-
-/* Buttons */
-.btn {
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: var(--transition);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-secondary {
-  background: var(--secondary);
-  color: white;
-}
-
-.btn-secondary:hover {
-  background: var(--secondary-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-}
-
-/* Search and Filter */
-.search-filter-container {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-}
-
-.search-box {
-  flex: 1;
-  min-width: 300px;
-  position: relative;
-}
-
-.search-box input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 3rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  transition: var(--transition);
-  background: var(--surface);
-}
-
-.search-box input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.1);
-}
-
-.search-box::before {
-  content: '🔍';
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  opacity: 0.5;
-}
-
-/* Summary Stats */
-.summary-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  text-align: center;
-  transition: var(--transition);
-}
-
-.stat-card:hover {
-  border-color: var(--primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--primary);
-  margin-bottom: 0.25rem;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Modality Containers */
-.modality-container {
-  background: var(--surface);
-  border-radius: 1rem;
-  margin-bottom: 2rem;
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  transition: var(--transition);
-  animation: slideUp 0.5s ease-out;
-  animation-fill-mode: both;
-}
-
-.modality-container:hover {
-  box-shadow: var(--shadow-lg);
-}
-
-.modality-container:nth-child(1) { animation-delay: 0.1s; }
-.modality-container:nth-child(2) { animation-delay: 0.2s; }
-.modality-container:nth-child(3) { animation-delay: 0.3s; }
-.modality-container:nth-child(4) { animation-delay: 0.4s; }
-
-.modality-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  background: var(--surface-secondary);
-  border-bottom: 1px solid var(--border);
-}
-
-.modality-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.modality-icon {
-  width: 2rem;
-  height: 2rem;
-  background: var(--primary-light);
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-}
-
-.archetype-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.archetype-button {
-  position: relative;
-  padding: 0.5rem 1.25rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border: 2px solid var(--border);
-  border-radius: 0.5rem;
-  background: var(--surface);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.archetype-button:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-.archetype-button.active {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.archetype-button.has-changes::after {
-  content: '';
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 12px;
-  height: 12px;
-  background: var(--warning);
-  border: 2px solid var(--surface);
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-/* Content Panels */
-.archetype-content-panel {
-  padding: 0;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: all 0.3s ease;
-}
-
-.archetype-content-panel.active {
-  padding: 2rem;
-  max-height: none;
-  opacity: 1;
-}
-
-h3 {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 2rem 0 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-h3:first-child {
-  margin-top: 0;
-}
-
-/* Fields Grid */
-.static-fields-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.static-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  background: var(--surface-secondary);
-  border-radius: 0.5rem;
-  border: 1px solid var(--border);
-  transition: var(--transition);
-}
-
-.static-field:hover {
-  border-color: var(--border-hover);
-  background: var(--surface-tertiary);
-}
-
-.static-field label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  flex: 1;
-  margin-right: 1rem;
-}
-
-/* Projections Grid */
-.projections-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 1.5rem;
-}
-
-.projection-metric-card {
-  background: var(--surface-secondary);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  transition: var(--transition);
-}
-
-.projection-metric-card:hover {
-  border-color: var(--primary);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-2px);
-}
-
-.projection-metric-card h4 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.metric-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-  background: var(--primary-light);
-  border-radius: 0.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-}
-
-.year-inputs-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 0.75rem;
-}
-
-.year-input-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.year-input-item label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  margin-bottom: 0.25rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Inputs */
-input[type="text"], input[type="number"] {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  text-align: center;
-  transition: var(--transition);
-  background: var(--surface);
-}
-
-input[type="text"]:focus, input[type="number"]:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.1);
-}
-
-input[type="text"]:hover:not(:focus):not([readonly]), 
-input[type="number"]:hover:not(:focus):not([readonly]) {
-  border-color: var(--border-hover);
-}
-
-input[readonly] {
-  background-color: var(--surface-tertiary);
-  color: var(--text-tertiary);
-  cursor: not-allowed;
-  border-color: var(--border);
-  opacity: 0.7;
-}
-
-/* Changed input indicator */
-input.changed {
-  border-color: var(--warning);
-  background-color: rgba(245, 158, 11, 0.05);
-}
-
-/* Status Messages */
-.status-message {
-  position: fixed;
-  top: 2rem;
-  right: 2rem;
-  z-index: 1000;
-  animation: slideInRight 0.3s ease-out;
-  max-width: 400px;
-}
-
-.status-message p {
-  padding: 1rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0;
-}
-
-.status-message .error {
-  background: var(--danger);
-  color: white;
-}
-
-.status-message .success {
-  background: var(--secondary);
-  color: white;
-}
-
-.status-message .info {
-  background: var(--info);
-  color: white;
-}
-
-/* Loading Spinner */
-.loading-spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 0.8s ease-in-out infinite;
-}
-
-/* Animations */
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(100px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Utility Classes */
-.hidden {
-  display: none !important;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-  }
-
-  h1 {
-    font-size: 2rem;
-  }
-
-  .controls-container {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .static-fields-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .projections-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .archetype-buttons {
-    flex-wrap: wrap;
-  }
-
-  .status-message {
-    top: 1rem;
-    right: 1rem;
-    left: 1rem;
-  }
-}
-```
-
+    :root {
+      --primary: #5b21b6;
+      --primary-hover: #7c3aed;
+      --primary-light: #ede9fe;
+      --secondary: #10b981;
+      --secondary-hover: #059669;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+      --surface: #ffffff;
+      --surface-hover: #fafafa;
+      --surface-secondary: #f9fafb;
+      --surface-tertiary: #f3f4f6;
+      --border: #e5e7eb;
+      --border-hover: #d1d5db;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --text-tertiary: #9ca3af;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(to bottom right, #faf5ff, #f3f4f6);
+      min-height: 100vh;
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      animation: fadeInDown 0.6s ease-out;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.125rem;
+      font-weight: 400;
+    }
+
+    /* File Upload Area */
+    .file-upload {
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: 1rem;
+      padding: 4rem 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .file-upload::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, var(--primary-light) 0%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .file-upload.drag-over {
+      border-color: var(--primary);
+      transform: scale(1.02);
+    }
+
+    .file-upload.drag-over::before {
+      opacity: 0.1;
+    }
+
+    .file-upload-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.8;
+    }
+
+    .file-upload h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .file-upload p {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+
+    .file-input input[type="file"] {
+      display: none;
+    }
+
+    .file-input label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 2rem;
+      background: var(--primary);
+      color: white;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .file-input label:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    /* Controls */
+    .controls-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .scenario-controls {
+      display: flex;
+      background: var(--surface);
+      border-radius: 0.75rem;
+      padding: 0.25rem;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+    }
+
+    .scenario-controls input[type="radio"] {
+      display: none;
+    }
+
+    .scenario-controls label {
+      padding: 0.625rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .scenario-controls input[type="radio"]:checked+label {
+      background: var(--primary);
+      color: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 0.75rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: var(--secondary-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    /* Search and Filter */
+    .search-filter-container {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 300px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 3rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      transition: var(--transition);
+      background: var(--surface);
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.1);
+    }
+
+    .search-box::before {
+      content: '🔍';
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.5;
+    }
+
+    /* Summary Stats */
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .stat-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Modality Containers */
+    .modality-container {
+      background: var(--surface);
+      border-radius: 1rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: var(--transition);
+      animation: slideUp 0.5s ease-out;
+      animation-fill-mode: both;
+    }
+
+    .modality-container:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modality-container:nth-child(1) { animation-delay: 0.1s; }
+    .modality-container:nth-child(2) { animation-delay: 0.2s; }
+    .modality-container:nth-child(3) { animation-delay: 0.3s; }
+    .modality-container:nth-child(4) { animation-delay: 0.4s; }
+
+    .modality-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem;
+      background: var(--surface-secondary);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .modality-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .modality-icon {
+      width: 2rem;
+      height: 2rem;
+      background: var(--primary-light);
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .archetype-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .archetype-button {
+      position: relative;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: 2px solid var(--border);
+      border-radius: 0.5rem;
+      background: var(--surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .archetype-button:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .archetype-button.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .archetype-button.has-changes::after {
+      content: '';
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 12px;
+      height: 12px;
+      background: var(--warning);
+      border: 2px solid var(--surface);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    /* Content Panels */
+    .archetype-content-panel {
+      padding: 0;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.4s ease-out, opacity 0.4s ease-out, padding 0.4s ease-out;
+      border-top: 1px solid var(--border);
+    }
+
+    .archetype-content-panel.active {
+      padding: 2rem;
+      max-height: 3000px; /* Use a large enough value */
+      opacity: 1;
+    }
+
+    h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h3:first-child {
+      margin-top: 0;
+    }
+
+    /* Fields Grid */
+    .static-fields-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .static-field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: var(--surface-secondary);
+      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+      transition: var(--transition);
+    }
+
+    .static-field:hover {
+      border-color: var(--border-hover);
+      background: var(--surface-tertiary);
+    }
+
+    .static-field label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      flex: 1;
+      margin-right: 1rem;
+    }
+
+    /* Projections Grid */
+    .projections-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .projection-metric-card {
+      background: var(--surface-secondary);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      transition: var(--transition);
+    }
+
+    .projection-metric-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-2px);
+    }
+
+    .projection-metric-card h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .metric-icon {
+      width: 1.5rem;
+      height: 1.5rem;
+      background: var(--primary-light);
+      border-radius: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+    }
+
+    .year-inputs-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .year-input-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .year-input-item label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Inputs */
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      text-align: center;
+      transition: var(--transition);
+      background: var(--surface);
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.1);
+    }
+
+    input[type="text"]:hover:not(:focus):not([readonly]),
+    input[type="number"]:hover:not(:focus):not([readonly]) {
+      border-color: var(--border-hover);
+    }
+
+    input[readonly] {
+      background-color: var(--surface-tertiary);
+      color: var(--text-tertiary);
+      cursor: not-allowed;
+      border-color: var(--border);
+      opacity: 0.7;
+    }
+
+    /* Changed input indicator */
+    input.changed {
+      border-color: var(--warning);
+      background-color: rgba(245, 158, 11, 0.05);
+    }
+
+    /* Status Messages */
+    .status-message {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      z-index: 1000;
+      animation: slideInRight 0.3s ease-out;
+      max-width: 400px;
+    }
+
+    .status-message p {
+      padding: 1rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0;
+    }
+
+    .status-message .error {
+      background: var(--danger);
+      color: white;
+    }
+
+    .status-message .success {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .status-message .info {
+      background: var(--info);
+      color: white;
+    }
+
+    /* Loading Spinner */
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s ease-in-out infinite;
+    }
+
+    /* Animations */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Utility Classes */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container { padding: 1rem; }
+      h1 { font-size: 2rem; }
+      .controls-container { flex-direction: column; gap: 1rem; }
+      .static-fields-grid, .projections-grid { grid-template-columns: 1fr; }
+      .archetype-buttons { flex-wrap: wrap; }
+      .status-message { top: 1rem; right: 1rem; left: 1rem; }
+    }
   </style>
 </head>
 <body>
@@ -689,849 +648,369 @@ input.changed {
       <p class="subtitle">Transform your radiology workflow with data-driven scenarios</p>
     </header>
 
-```
-<div class="file-upload" id="file-upload-area">
-  <div class="file-upload-icon">📊</div>
-  <h3>Load Configuration Data</h3>
-  <p>Upload your CSV file to get started</p>
-  <div class="file-input">
-    <input type="file" id="csv-file-input" accept=".csv" />
-    <label for="csv-file-input">Choose File</label>
-  </div>
-  <p><small>Or drag and drop a CSV file here</small></p>
-</div>
-
-<div id="main-content" class="hidden">
-  <div class="controls-container">
-    <div class="scenario-controls" id="scenario-toggle">
-      <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
-      <label for="source-baseline">Baseline</label>
-      <input type="radio" id="source-scenario" name="data-source" value="scenario">
-      <label for="source-scenario">Scenario</label>
+    <div class="file-upload" id="file-upload-area">
+      <div class="file-upload-icon">📊</div>
+      <h3>Load Configuration Data</h3>
+      <p>Upload your CSV file to get started</p>
+      <div class="file-input">
+        <input type="file" id="csv-file-input" accept=".csv" />
+        <label for="csv-file-input">Choose File</label>
+      </div>
+      <p><small>Or drag and drop a CSV file here</small></p>
     </div>
-    <button id="export-button" class="btn btn-secondary">📥 Export CSV</button>
-  </div>
 
-  <div class="search-filter-container">
-    <div class="search-box">
-      <input type="text" id="search-input" placeholder="Search modalities or archetypes...">
+    <div id="main-content" class="hidden">
+      <div class="controls-container">
+        <div class="scenario-controls" id="scenario-toggle">
+          <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
+          <label for="source-baseline">Baseline</label>
+          <input type="radio" id="source-scenario" name="data-source" value="scenario">
+          <label for="source-scenario">Scenario</label>
+        </div>
+        <button id="export-button" class="btn btn-secondary">📥 Export CSV</button>
+      </div>
+
+      <div class="search-filter-container">
+        <div class="search-box">
+          <input type="text" id="search-input" placeholder="Search modalities or archetypes...">
+        </div>
+      </div>
+
+      <div class="summary-stats" id="summary-stats"></div>
+      <div id="app"></div>
     </div>
-  </div>
 
-  <div class="summary-stats" id="summary-stats"></div>
-
-  <div id="app"></div>
-</div>
-
-<div id="status-message" class="status-message"></div>
-```
-
+    <div id="status-message" class="status-message"></div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
   <script>
-    const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
-    const staticFieldLabels = { 
-      "non_demographic_growth": "Non-Demographic Growth", 
-      "routine_machine_hours": "Routine Machine Hours", 
-      "share_of_scans_during_day": "Share of Scans During Day", 
-      "ooh_machines": "Out-of-Hours (OOH) Machines", 
-      "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", 
-      "mit_shift_length": "MIT Shift Length", 
-      "mit_weeks_lost": "MIT Weeks Lost", 
-      "session_length_hours": "Session Length (Hours)", 
-      "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", 
-      "rad_weeks_lost": "Radiologist Weeks Lost"
-    };
-    const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
-    const projectionMetricLabels = { 
-      "ip_volume_step": "Inpatient Volume Step", 
-      "op_volume_step": "Outpatient Volume Step", 
-      "scan_rate": "Scan Rate", 
-      "report_rate": "Report Rate", 
-      "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", 
-      "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour"
-    };
-    const years = Array.from({length: 11}, (_, i) => `y${i}`);
-    
-    const app = document.getElementById("app");
-    const scenarioToggle = document.getElementById("scenario-toggle");
-    const exportButton = document.getElementById("export-button");
-    const fileInput = document.getElementById("csv-file-input");
-    const fileUploadArea = document.getElementById("file-upload-area");
-    const mainContent = document.getElementById("main-content");
-    const statusMessage = document.getElementById("status-message");
-    const searchInput = document.getElementById("search-input");
-    const summaryStats = document.getElementById("summary-stats");
+    document.addEventListener('DOMContentLoaded', () => {
+      const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
+      const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
+      const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
+      const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
+      const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
 
-    let baselineData = [];
-    let scenarioData = [];
-    let activePanelIds = new Set();
-    let editedRowIds = new Set();
-    let messageTimeout;
+      const app = document.getElementById("app");
+      const scenarioToggle = document.getElementById("scenario-toggle");
+      const exportButton = document.getElementById("export-button");
+      const fileInput = document.getElementById("csv-file-input");
+      const fileUploadArea = document.getElementById("file-upload-area");
+      const mainContent = document.getElementById("main-content");
+      const statusMessage = document.getElementById("status-message");
+      const searchInput = document.getElementById("search-input");
+      const summaryStats = document.getElementById("summary-stats");
 
-    // Initialize - Try to load local file first
-    document.addEventListener('DOMContentLoaded', loadAndInitializeData);
+      let baselineData = [];
+      let scenarioData = [];
+      let activePanelIds = new Set();
+      let editedRowIds = new Set();
+      let messageTimeout;
 
-    // File upload handling
-    fileInput.addEventListener('change', handleFileSelect);
-    fileUploadArea.addEventListener('dragover', handleDragOver);
-    fileUploadArea.addEventListener('dragleave', handleDragLeave);
-    fileUploadArea.addEventListener('drop', handleFileDrop);
+      // Try to load local file first
+      loadAndInitializeData();
 
-    // Try to load local CSV file first
-    async function loadAndInitializeData() {
-      try {
-        showMessage('Loading local configuration file...', 'info');
-        const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const csvText = await response.text();
-        
-        Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            if (results.errors.length > 0) {
-              throw new Error('Parse error: ' + results.errors[0].message);
-            }
-            
-            // Add ID field if missing
-            results.data.forEach((row, index) => {
-              if (!row.id) {
-                row.id = `row_${index}`;
-              }
-            });
-            
-            baselineData = results.data;
-            scenarioData = JSON.parse(JSON.stringify(baselineData));
-            
-            fileUploadArea.classList.add('hidden');
-            mainContent.classList.remove('hidden');
-            renderUI(baselineData, false);
-            updateSummaryStats();
-            showMessage('Configuration loaded successfully!', 'success');
-          }
-        });
-      } catch (error) {
-        // If local file loading fails, show upload interface
-        console.log('Local file not found, showing upload interface:', error.message);
-        showMessage('Please upload your configuration file', 'info');
+      fileInput.addEventListener('change', handleFileSelect);
+      fileUploadArea.addEventListener('dragover', handleDragOver);
+      fileUploadArea.addEventListener('dragleave', handleDragLeave);
+      fileUploadArea.addEventListener('drop', handleFileDrop);
+
+      async function loadAndInitializeData() {
+        try {
+          showMessage('Loading local configuration file...', 'info');
+          const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
+          if (!response.ok) throw new Error(`Local file not found or server error.`);
+          const csvText = await response.text();
+          parseAndInitialize(csvText);
+        } catch (error) {
+          console.warn('Local file not found, showing upload interface:', error.message);
+          showMessage('Please upload your configuration file', 'info');
+        }
       }
-    }
-
-    function handleFileSelect(event) {
-      const file = event.target.files[0];
-      if (file && file.type === 'text/csv') {
-        loadCSVFile(file);
-      } else {
-        showMessage('Please select a valid CSV file.', 'error');
-      }
-    }
-
-    function handleDragOver(event) {
-      event.preventDefault();
-      fileUploadArea.classList.add('drag-over');
-    }
-
-    function handleDragLeave(event) {
-      event.preventDefault();
-      fileUploadArea.classList.remove('drag-over');
-    }
-
-    function handleFileDrop(event) {
-      event.preventDefault();
-      fileUploadArea.classList.remove('drag-over');
-      const files = event.dataTransfer.files;
-      if (files.length > 0 && files[0].type === 'text/csv') {
-        loadCSVFile(files[0]);
-      } else {
-        showMessage('Please drop a valid CSV file.', 'error');
-      }
-    }
-
-    function loadCSVFile(file) {
-      showMessage('Loading CSV file...', 'info');
       
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          if (results.errors.length > 0) {
-            showMessage('Error parsing CSV: ' + results.errors[0].message, 'error');
-            return;
-          }
-          
-          // Add ID field if missing
-          results.data.forEach((row, index) => {
-            if (!row.id) {
-              row.id = `row_${index}`;
+      function parseAndInitialize(csvText) {
+          Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              if (results.errors.length > 0) {
+                  showMessage('Error parsing CSV: ' + results.errors.map(e => e.message).join(', '), 'error');
+                  return;
+              }
+              
+              results.data.forEach((row, index) => { row.id = `row_${index}`; });
+              
+              baselineData = results.data;
+              scenarioData = JSON.parse(JSON.stringify(baselineData));
+              
+              fileUploadArea.classList.add('hidden');
+              mainContent.classList.remove('hidden');
+              renderUI(baselineData, false);
+              updateSummaryStats();
+              showMessage('Configuration loaded successfully!', 'success');
+            },
+            error: (err) => {
+              showMessage('Error parsing file: ' + err.message, 'error');
             }
           });
-          
-          baselineData = results.data;
-          scenarioData = JSON.parse(JSON.stringify(baselineData));
-          
-          fileUploadArea.classList.add('hidden');
-          mainContent.classList.remove('hidden');
-          renderUI(baselineData, false);
-          updateSummaryStats();
-          showMessage('CSV loaded successfully!', 'success');
-        },
-        error: (error) => {
-          showMessage('Error reading file: ' + error.message, 'error');
-        }
-      });
-    }
-
-    function showMessage(message, type) {
-      if (!statusMessage) return; // Safety check
-      
-      if (messageTimeout) {
-        clearTimeout(messageTimeout);
       }
-      
-      statusMessage.innerHTML = `<p class="${type}">${message}</p>`;
-      statusMessage.style.display = 'block';
-      
-      messageTimeout = setTimeout(() => {
-        if (statusMessage) {
-          statusMessage.style.display = 'none';
+
+      function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file && (file.type === 'text/csv' || file.name.endsWith('.csv'))) {
+          loadCSVFile(file);
+        } else {
+          showMessage('Please select a valid CSV file.', 'error');
         }
-      }, 4000);
-    }
+      }
 
-    function updateSummaryStats() {
-      if (!summaryStats || !baselineData) return; // Safety check
-      
-      const modalities = [...new Set(baselineData.map(row => row.modality))];
-      const archetypes = [...new Set(baselineData.map(row => row.archetype))];
-      const totalFields = staticFields.length + (projectionMetrics.length * years.length);
-      
-      summaryStats.innerHTML = `
-        <div class="stat-card">
-          <div class="stat-value">${modalities.length}</div>
-          <div class="stat-label">Modalities</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${archetypes.length}</div>
-          <div class="stat-label">Archetypes</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${baselineData.length}</div>
-          <div class="stat-label">Configurations</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${totalFields}</div>
-          <div class="stat-label">Fields per Config</div>
-        </div>
-      `;
-    }
+      function handleDragOver(event) {
+        event.preventDefault();
+        fileUploadArea.classList.add('drag-over');
+      }
 
-    // Search functionality
-    searchInput.addEventListener('input', (e) => {
-      const searchTerm = e.target.value.toLowerCase();
-      const modalityContainers = document.querySelectorAll('.modality-container');
-      
-      modalityContainers.forEach(container => {
-        const h2Element = container.querySelector('h2');
-        if (!h2Element) return; // Skip if no h2 found
-        
-        const modalityName = h2Element.textContent.toLowerCase();
-        const archetypeButtons = container.querySelectorAll('.archetype-button');
-        
-        let hasMatch = modalityName.includes(searchTerm);
-        
-        archetypeButtons.forEach(button => {
-          const archetypeName = button.textContent.toLowerCase();
-          if (archetypeName.includes(searchTerm)) {
-            hasMatch = true;
-          }
+      function handleDragLeave(event) {
+        event.preventDefault();
+        fileUploadArea.classList.remove('drag-over');
+      }
+
+      function handleFileDrop(event) {
+        event.preventDefault();
+        fileUploadArea.classList.remove('drag-over');
+        const files = event.dataTransfer.files;
+        if (files.length > 0 && (files[0].type === 'text/csv' || files[0].name.endsWith('.csv'))) {
+          loadCSVFile(files[0]);
+        } else {
+          showMessage('Please drop a valid CSV file.', 'error');
+        }
+      }
+
+      function loadCSVFile(file) {
+        showMessage('Loading CSV file...', 'info');
+        const reader = new FileReader();
+        reader.onload = (e) => parseAndInitialize(e.target.result);
+        reader.onerror = () => showMessage('Error reading file.', 'error');
+        reader.readAsText(file);
+      }
+
+      function showMessage(message, type) {
+        if (!statusMessage) return;
+        clearTimeout(messageTimeout);
+        statusMessage.innerHTML = `<p class="${type}">${message}</p>`;
+        statusMessage.style.display = 'block';
+        messageTimeout = setTimeout(() => {
+          if (statusMessage) statusMessage.style.display = 'none';
+        }, 4000);
+      }
+
+      function updateSummaryStats() {
+        if (!summaryStats || !baselineData) return;
+        const modalities = [...new Set(baselineData.map(row => row.modality))];
+        const archetypes = [...new Set(baselineData.map(row => row.archetype))];
+        const totalFields = staticFields.length + (projectionMetrics.length * years.length);
+        summaryStats.innerHTML = `
+          <div class="stat-card"><div class="stat-value">${modalities.length}</div><div class="stat-label">Modalities</div></div>
+          <div class="stat-card"><div class="stat-value">${archetypes.length}</div><div class="stat-label">Archetypes</div></div>
+          <div class="stat-card"><div class="stat-value">${baselineData.length}</div><div class="stat-label">Configurations</div></div>
+          <div class="stat-card"><div class="stat-value">${editedRowIds.size}</div><div class="stat-label">Edited Configs</div></div>
+        `;
+      }
+
+      searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        document.querySelectorAll('.modality-container').forEach(container => {
+          const modalityName = container.querySelector('h2').textContent.toLowerCase();
+          const archetypeButtons = container.querySelectorAll('.archetype-button');
+          let hasMatch = modalityName.includes(searchTerm) || Array.from(archetypeButtons).some(btn => btn.textContent.toLowerCase().includes(searchTerm));
+          container.style.display = hasMatch ? '' : 'none';
         });
-        
-        container.style.display = hasMatch ? '' : 'none';
       });
-    });
 
-    // --- EVENT LISTENERS ---
-    scenarioToggle.addEventListener('change', (e) => {
-      activePanelIds.clear();
-      document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
-      const isBaseline = e.target.value === 'baseline';
-      renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
-      updateSummaryStats();
-    });
+      scenarioToggle.addEventListener('change', (e) => {
+        activePanelIds.clear();
+        document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
+        const isBaseline = e.target.value === 'baseline';
+        renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
+        updateSummaryStats();
+      });
 
-    app.addEventListener('input', (e) => {
-      if (!e.target.matches('input[type="text"]') || e.target.readOnly) return;
-      
-      const { id: rowId, field: fieldKey } = e.target.dataset;
-      const { value: newValue } = e.target;
-
-      // Ensure rowId is a string for consistent comparison
-      const normalizedRowId = String(rowId);
-      const rowToUpdate = scenarioData.find(row => String(row.id) === normalizedRowId);
-      
-      if (rowToUpdate) {
-        // Check if the value actually changed from baseline
-        const baselineRow = baselineData.find(row => String(row.id) === normalizedRowId);
-        const baselineValue = baselineRow ? baselineRow[fieldKey] : '';
+      app.addEventListener('input', (e) => {
+        if (!e.target.matches('input[type="text"]') || e.target.readOnly) return;
+        const { id: rowId, field: fieldKey } = e.target.dataset;
+        const { value: newValue } = e.target;
+        const normalizedRowId = String(rowId);
+        const rowToUpdate = scenarioData.find(row => String(row.id) === normalizedRowId);
+        if (!rowToUpdate) return;
         
+        const baselineRow = baselineData.find(row => String(row.id) === normalizedRowId);
         rowToUpdate[fieldKey] = newValue;
         
-        // Update input visual state
-        if (String(newValue) !== String(baselineValue)) {
-          e.target.classList.add('changed');
-        } else {
-          e.target.classList.remove('changed');
-        }
-        
-        // Check if any field in this row is different from baseline
-        let hasAnyChanges = false;
-        for (const key of Object.keys(baselineRow)) {
-          if (String(rowToUpdate[key]) !== String(baselineRow[key])) {
-            hasAnyChanges = true;
-            break;
-          }
-        }
-        
-        // Update row tracking
+        e.target.classList.toggle('changed', String(newValue) !== String(baselineRow?.[fieldKey] ?? ''));
+
+        const hasAnyChanges = Object.keys(baselineRow).some(key => String(rowToUpdate[key]) !== String(baselineRow[key]));
+        const button = document.querySelector(`.archetype-button[data-id="${normalizedRowId}"]`);
+
         if (hasAnyChanges) {
-          if (!editedRowIds.has(normalizedRowId)) {
-            editedRowIds.add(normalizedRowId);
-            const button = document.querySelector(`.archetype-button[data-id="${normalizedRowId}"]`);
-            if (button) {
+          editedRowIds.add(normalizedRowId);
+          if(button) {
               button.classList.add('has-changes');
               button.title = "Contains scenario edits";
-            }
           }
         } else {
           editedRowIds.delete(normalizedRowId);
-          const button = document.querySelector(`.archetype-button[data-id="${normalizedRowId}"]`);
-          if (button) {
-            button.classList.remove('has-changes');
-            button.title = "";
+           if(button) {
+              button.classList.remove('has-changes');
+              button.title = "";
           }
         }
-      }
-    });
-    
-    app.addEventListener('click', (e) => {
-      if (!e.target.matches('.archetype-button')) return;
-      const button = e.target;
-      const isAlreadyActive = button.classList.contains('active');
-      const targetPanelId = button.dataset.target;
-      const contentPanel = document.querySelector(targetPanelId);
-      const parentContainer = button.closest('.modality-container');
-      
-      parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
-      parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
+        updateSummaryStats();
+      });
 
-      if (!isAlreadyActive) {
-        button.classList.add('active');
-        contentPanel.classList.add('active');
-      }
-    });
+      app.addEventListener('click', (e) => {
+        if (!e.target.matches('.archetype-button')) return;
+        const button = e.target;
+        const isAlreadyActive = button.classList.contains('active');
+        const targetPanelId = button.dataset.target;
+        const contentPanel = document.querySelector(targetPanelId);
+        const parentContainer = button.closest('.modality-container');
 
-    exportButton.addEventListener('click', () => {
-      if (baselineData.length === 0) return;
-      
-      exportButton.disabled = true;
-      exportButton.innerHTML = '<span class="loading-spinner"></span> Exporting...';
-      
-      setTimeout(() => {
-        const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
-        const firstColumnHeader = Object.keys(baselineData[0])[0];
-        scenarioExportData.forEach(row => {
-          row[firstColumnHeader] = "Scenario - Transforming Radiology";
-        });
-        const dataForExport = [...baselineData, ...scenarioExportData];
-        const csvString = Papa.unparse(dataForExport);
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", "scenario_export.csv");
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        parentContainer.querySelectorAll('.archetype-button, .archetype-content-panel').forEach(el => el.classList.remove('active'));
+
+        if (!isAlreadyActive && contentPanel) {
+          button.classList.add('active');
+          contentPanel.classList.add('active');
+        }
+      });
+
+      exportButton.addEventListener('click', () => {
+        if (baselineData.length === 0) return;
+        exportButton.disabled = true;
+        exportButton.innerHTML = '<span class="loading-spinner"></span> Exporting...';
         
-        exportButton.disabled = false;
-        exportButton.innerHTML = '📥 Export CSV';
-        showMessage('CSV exported successfully!', 'success');
-      }, 500);
-    });
-
-    // --- UI RENDERING LOGIC ---
-    function renderUI(dataToRender, isEditable) {
-      if (!app || !dataToRender) return; // Safety check
-      
-      app.innerHTML = "";
-      const grouped = {};
-      for (const row of dataToRender) {
-        const modality = row["modality"];
-        const archetype = row["archetype"];
-        if (!modality || !archetype) continue; // Skip invalid rows
-        if (!grouped[modality]) grouped[modality] = {};
-        grouped[modality][archetype] = row;
-      }
-
-      const modalityIcons = {
-        'CT': '🔬',
-        'MRI': '🧲',
-        'X-ray': '📸',
-        'Ultrasound': '🔊',
-        'PET': '☢️'
-      };
-
-      for (const modality of Object.keys(grouped)) {
-        const modalityContainer = document.createElement("div");
-        modalityContainer.className = "modality-container";
-        const header = document.createElement("div");
-        header.className = "modality-header";
-        const title = document.createElement("h2");
-        
-        const icon = document.createElement("span");
-        icon.className = "modality-icon";
-        icon.textContent = modalityIcons[modality] || '📊';
-        
-        title.appendChild(icon);
-        title.appendChild(document.createTextNode(modality));
-        
-        const buttonGroup = document.createElement("div");
-        buttonGroup.className = "archetype-buttons";
-        const contentArea = document.createElement("div");
-        contentArea.className = "modality-content";
-        header.appendChild(title);
-        header.appendChild(buttonGroup);
-        modalityContainer.appendChild(header);
-        modalityContainer.appendChild(contentArea);
-
-        for (const archetype of Object.keys(grouped[modality])) {
-          const row = grouped[modality][archetype];
-          const contentPanelId = `content-${modality.replace(/\s+/g, '-')}-${archetype.replace(/\s+/g, '-')}`;
-          
-          const button = document.createElement("button");
-          button.className = "archetype-button";
-          button.textContent = archetype;
-          button.dataset.target = `#${contentPanelId}`;
-          button.dataset.id = row.id;
-
-          // Show changes indicator only in scenario view and only for edited rows
-          if (isEditable && editedRowIds.has(String(row.id))) {
-            button.classList.add('has-changes');
-            button.title = "Contains scenario edits";
-          }
-          
-          buttonGroup.appendChild(button);
-
-          const panel = document.createElement("div");
-          panel.className = "archetype-content-panel";
-          panel.id = contentPanelId;
-          
-          const staticHeader = document.createElement("h3");
-          staticHeader.innerHTML = '⚙️ Static Fields';
-          panel.appendChild(staticHeader);
-          const staticGrid = document.createElement("div");
-          staticGrid.className = "static-fields-grid";
-          staticFields.forEach(field => {
-            const fieldDiv = document.createElement("div");
-            fieldDiv.className = "static-field";
-            const label = document.createElement("label");
-            label.textContent = staticFieldLabels[field] || field;
-            const input = document.createElement("input");
-            input.type = "text";
-            input.value = row[field] != null ? row[field] : "";
-            input.dataset.id = row.id;
-            input.dataset.field = field;
-            if (!isEditable) {
-              input.readOnly = true;
-            } else {
-              // Check if this field is different from baseline
-              const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-              if (baselineRow && String(row[field]) !== String(baselineRow[field])) {
-                input.classList.add('changed');
-              }
-            }
-            fieldDiv.appendChild(label);
-            fieldDiv.appendChild(input);
-            staticGrid.appendChild(fieldDiv);
+        setTimeout(() => {
+          const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
+          const firstColumnHeader = Object.keys(baselineData[0])[0];
+          scenarioExportData.forEach(row => { 
+              delete row.id; // Remove the internal ID before export
+              row[firstColumnHeader] = "Scenario - Transforming Radiology";
           });
-          panel.appendChild(staticGrid);
+          const baselineExportData = JSON.parse(JSON.stringify(baselineData));
+          baselineExportData.forEach(row => delete row.id);
 
-          const tableHeader = document.createElement("h3");
-          tableHeader.innerHTML = '📈 Yearly Projections';
-          panel.appendChild(tableHeader);
-          const projectionsGrid = document.createElement("div");
-          projectionsGrid.className = "projections-grid";
+          const dataForExport = [...baselineExportData, ...scenarioExportData];
+          const csvString = Papa.unparse(dataForExport);
           
-          const metricIcons = {
-            'ip_volume_step': '🏥',
-            'op_volume_step': '🏢',
-            'scan_rate': '📊',
-            'report_rate': '📝',
-            'mits_per_routine_machine_hour': '👥',
-            'mits_per_ooh_machine_hour': '🌙'
-          };
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(new Blob([csvString], { type: 'text/csv;charset=utf-8;' }));
+          link.download = "scenario_export.csv";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
           
-          projectionMetrics.forEach(metric => {
-            const metricCard = document.createElement("div");
-            metricCard.className = "projection-metric-card";
-            const metricTitle = document.createElement("h4");
+          exportButton.disabled = false;
+          exportButton.innerHTML = '📥 Export CSV';
+          showMessage('CSV exported successfully!', 'success');
+        }, 500);
+      });
+
+      function renderUI(dataToRender, isEditable) {
+        if (!app || !dataToRender) return;
+        app.innerHTML = "";
+        const grouped = dataToRender.reduce((acc, row) => {
+          const { modality, archetype } = row;
+          if (!modality || !archetype) return acc;
+          if (!acc[modality]) acc[modality] = {};
+          acc[modality][archetype] = row;
+          return acc;
+        }, {});
+
+        const modalityIcons = { 'CT': '🔬', 'MRI': '🧲', 'X-ray': '📸', 'Ultrasound': '🔊', 'PET': '☢️' };
+
+        for (const modality of Object.keys(grouped).sort()) {
+          const modalityContainer = document.createElement("div");
+          modalityContainer.className = "modality-container";
+          const headerHTML = `
+            <div class="modality-header">
+              <h2><span class="modality-icon">${modalityIcons[modality] || '📊'}</span>${modality}</h2>
+              <div class="archetype-buttons"></div>
+            </div>
+            <div class="modality-content"></div>`;
+          modalityContainer.innerHTML = headerHTML;
+          const buttonGroup = modalityContainer.querySelector('.archetype-buttons');
+          const contentArea = modalityContainer.querySelector('.modality-content');
+
+          for (const archetype of Object.keys(grouped[modality]).sort()) {
+            const row = grouped[modality][archetype];
+            const contentPanelId = `content-${modality.replace(/\s+/g, '-')}-${archetype.replace(/\s+/g, '-')}`;
             
-            const metricIcon = document.createElement("span");
-            metricIcon.className = "metric-icon";
-            metricIcon.textContent = metricIcons[metric] || '📊';
+            const button = document.createElement("button");
+            button.className = "archetype-button";
+            button.textContent = archetype;
+            button.dataset.target = `#${contentPanelId}`;
+            button.dataset.id = row.id;
+
+            if (isEditable && editedRowIds.has(String(row.id))) {
+                button.classList.add('has-changes');
+                button.title = "Contains scenario edits";
+            }
+            buttonGroup.appendChild(button);
+
+            const panel = document.createElement("div");
+            panel.className = "archetype-content-panel";
+            panel.id = contentPanelId;
             
-            metricTitle.appendChild(metricIcon);
-            metricTitle.appendChild(document.createTextNode(projectionMetricLabels[metric] || metric));
-            metricCard.appendChild(metricTitle);
-            
-            const inputsContainer = document.createElement("div");
-            inputsContainer.className = "year-inputs-container";
-            years.forEach(y => {
-              const key = `${metric}_${y}`;
-              const yearItem = document.createElement("div");
-              yearItem.className = "year-input-item";
-              const yearLabel = document.createElement("label");
-              yearLabel.textContent = y.toUpperCase();
-              yearItem.appendChild(yearLabel);
-              const input = document.createElement("input");
-              input.type = "text";
-              input.value = row[key] != null ? row[key] : "";
-              input.dataset.id = row.id;
-              input.dataset.field = key;
-              if (!isEditable) {
-                input.readOnly = true;
-              } else {
-                // Check if this field is different from baseline
+            const staticGridHTML = staticFields.map(field => {
                 const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-                if (baselineRow && String(row[key]) !== String(baselineRow[key])) {
-                  input.classList.add('changed');
-                }
-              }
-              yearItem.appendChild(input);
-              inputsContainer.appendChild(yearItem);
-            });
-            metricCard.appendChild(inputsContainer);
-            projectionsGrid.appendChild(metricCard);
-          });
-          panel.appendChild(projectionsGrid);
-          contentArea.appendChild(panel);
-        }
-        app.appendChild(modalityContainer);
-      }
+                const isChanged = isEditable && baselineRow && String(row[field]) !== String(baselineRow[field]);
+                return `
+                <div class="static-field">
+                  <label>${staticFieldLabels[field] || field}</label>
+                  <input type="text" value="${row[field] ?? ''}" data-id="${row.id}" data-field="${field}" ${!isEditable ? 'readonly' : ''} class="${isChanged ? 'changed' : ''}">
+                </div>`;
+            }).join('');
+            
+            const projectionGridHTML = projectionMetrics.map(metric => {
+                const metricInputsHTML = years.map(y => {
+                    const key = `${metric}_${y}`;
+                    const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
+                    const isChanged = isEditable && baselineRow && String(row[key]) !== String(baselineRow[key]);
+                    return `
+                    <div class="year-input-item">
+                      <label>${y.toUpperCase()}</label>
+                      <input type="text" value="${row[key] ?? ''}" data-id="${row.id}" data-field="${key}" ${!isEditable ? 'readonly' : ''} class="${isChanged ? 'changed' : ''}">
+                    </div>`;
+                }).join('');
+                
+                const metricIcons = { 'ip_volume_step': '🏥', 'op_volume_step': '🏢', 'scan_rate': '📊', 'report_rate': '📝', 'mits_per_routine_machine_hour': '👥', 'mits_per_ooh_machine_hour': '🌙' };
+                return `
+                <div class="projection-metric-card">
+                  <h4><span class="metric-icon">${metricIcons[metric] || '📈'}</span>${projectionMetricLabels[metric] || metric}</h4>
+                  <div class="year-inputs-container">${metricInputsHTML}</div>
+                </div>`;
+            }).join('');
 
-      // Restore active panels
-      activePanelIds.forEach(panelId => {
-        const panelToActivate = document.getElementById(panelId);
-        if (panelToActivate) {
-          const buttonToActivate = document.querySelector(`button[data-target="#${panelId}"]`);
-          panelToActivate.classList.add('active');
-          if (buttonToActivate) buttonToActivate.classList.add('active');
-        }
-      });
-    }
-  </script>
-
-</body>
-</html>
-
-```
-    let hasMatch = modalityName.includes(searchTerm);
-    
-    archetypeButtons.forEach(button => {
-      const archetypeName = button.textContent.toLowerCase();
-      if (archetypeName.includes(searchTerm)) {
-        hasMatch = true;
-      }
-    });
-    
-    container.style.display = hasMatch ? '' : 'none';
-  });
-});
-
-// --- EVENT LISTENERS ---
-scenarioToggle.addEventListener('change', (e) => {
-  activePanelIds.clear();
-  document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
-  const isBaseline = e.target.value === 'baseline';
-  renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
-  updateSummaryStats();
-});
-
-app.addEventListener('input', (e) => {
-  if (!e.target.matches('input[type="text"]') || e.target.readOnly) return;
-  
-  const { id: rowId, field: fieldKey } = e.target.dataset;
-  const { value: newValue } = e.target;
-
-  // Ensure rowId is a string for consistent comparison
-  const normalizedRowId = String(rowId);
-  const rowToUpdate = scenarioData.find(row => String(row.id) === normalizedRowId);
-  
-  if (rowToUpdate) {
-    // Check if the value actually changed from baseline
-    const baselineRow = baselineData.find(row => String(row.id) === normalizedRowId);
-    const baselineValue = baselineRow ? baselineRow[fieldKey] : '';
-    
-    rowToUpdate[fieldKey] = newValue;
-    
-    // Update input visual state
-    if (String(newValue) !== String(baselineValue)) {
-      e.target.classList.add('changed');
-    } else {
-      e.target.classList.remove('changed');
-    }
-    
-    // Check if any field in this row is different from baseline
-    let hasAnyChanges = false;
-    for (const key of Object.keys(baselineRow)) {
-      if (String(rowToUpdate[key]) !== String(baselineRow[key])) {
-        hasAnyChanges = true;
-        break;
-      }
-    }
-    
-    // Update row tracking
-    if (hasAnyChanges) {
-      if (!editedRowIds.has(normalizedRowId)) {
-        editedRowIds.add(normalizedRowId);
-        const button = document.querySelector(`.archetype-button[data-id="${normalizedRowId}"]`);
-        if (button) {
-          button.classList.add('has-changes');
-          button.title = "Contains scenario edits";
-        }
-      }
-    } else {
-      editedRowIds.delete(normalizedRowId);
-      const button = document.querySelector(`.archetype-button[data-id="${normalizedRowId}"]`);
-      if (button) {
-        button.classList.remove('has-changes');
-        button.title = "";
-      }
-    }
-  }
-});
-
-app.addEventListener('click', (e) => {
-  if (!e.target.matches('.archetype-button')) return;
-  const button = e.target;
-  const isAlreadyActive = button.classList.contains('active');
-  const targetPanelId = button.dataset.target;
-  const contentPanel = document.querySelector(targetPanelId);
-  const parentContainer = button.closest('.modality-container');
-  
-  parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
-  parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
-
-  if (!isAlreadyActive) {
-    button.classList.add('active');
-    contentPanel.classList.add('active');
-  }
-});
-
-exportButton.addEventListener('click', () => {
-  if (baselineData.length === 0) return;
-  
-  exportButton.disabled = true;
-  exportButton.innerHTML = '<span class="loading-spinner"></span> Exporting...';
-  
-  setTimeout(() => {
-    const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
-    const firstColumnHeader = Object.keys(baselineData[0])[0];
-    scenarioExportData.forEach(row => {
-      row[firstColumnHeader] = "Scenario - Transforming Radiology";
-    });
-    const dataForExport = [...baselineData, ...scenarioExportData];
-    const csvString = Papa.unparse(dataForExport);
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "scenario_export.csv");
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    exportButton.disabled = false;
-    exportButton.innerHTML = '📥 Export CSV';
-    showMessage('CSV exported successfully!', 'success');
-  }, 500);
-});
-
-// --- UI RENDERING LOGIC ---
-function renderUI(dataToRender, isEditable) {
-  app.innerHTML = "";
-  const grouped = {};
-  for (const row of dataToRender) {
-    const modality = row["modality"];
-    const archetype = row["archetype"];
-    if (!grouped[modality]) grouped[modality] = {};
-    grouped[modality][archetype] = row;
-  }
-
-  const modalityIcons = {
-    'CT': '🔬',
-    'MRI': '🧲',
-    'X-ray': '📸',
-    'Ultrasound': '🔊',
-    'PET': '☢️'
-  };
-
-  for (const modality of Object.keys(grouped)) {
-    const modalityContainer = document.createElement("div");
-    modalityContainer.className = "modality-container";
-    const header = document.createElement("div");
-    header.className = "modality-header";
-    const title = document.createElement("h2");
-    
-    const icon = document.createElement("span");
-    icon.className = "modality-icon";
-    icon.textContent = modalityIcons[modality] || '📊';
-    
-    title.appendChild(icon);
-    title.appendChild(document.createTextNode(modality));
-    
-    const buttonGroup = document.createElement("div");
-    buttonGroup.className = "archetype-buttons";
-    const contentArea = document.createElement("div");
-    contentArea.className = "modality-content";
-    header.appendChild(title);
-    header.appendChild(buttonGroup);
-    modalityContainer.appendChild(header);
-    modalityContainer.appendChild(contentArea);
-
-    for (const archetype of Object.keys(grouped[modality])) {
-      const row = grouped[modality][archetype];
-      const contentPanelId = `content-${modality.replace(/\s+/g, '-')}-${archetype.replace(/\s+/g, '-')}`;
-      
-      const button = document.createElement("button");
-      button.className = "archetype-button";
-      button.textContent = archetype;
-      button.dataset.target = `#${contentPanelId}`;
-      button.dataset.id = row.id;
-
-      // Show changes indicator only in scenario view and only for edited rows
-      if (isEditable && editedRowIds.has(String(row.id))) {
-        button.classList.add('has-changes');
-        button.title = "Contains scenario edits";
-      }
-      
-      buttonGroup.appendChild(button);
-
-      const panel = document.createElement("div");
-      panel.className = "archetype-content-panel";
-      panel.id = contentPanelId;
-      
-      const staticHeader = document.createElement("h3");
-      staticHeader.innerHTML = '⚙️ Static Fields';
-      panel.appendChild(staticHeader);
-      const staticGrid = document.createElement("div");
-      staticGrid.className = "static-fields-grid";
-      staticFields.forEach(field => {
-        const fieldDiv = document.createElement("div");
-        fieldDiv.className = "static-field";
-        const label = document.createElement("label");
-        label.textContent = staticFieldLabels[field] || field;
-        const input = document.createElement("input");
-        input.type = "text";
-        input.value = row[field] != null ? row[field] : "";
-        input.dataset.id = row.id;
-        input.dataset.field = field;
-        if (!isEditable) {
-          input.readOnly = true;
-        } else {
-          // Check if this field is different from baseline
-          const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-          if (baselineRow && String(row[field]) !== String(baselineRow[field])) {
-            input.classList.add('changed');
+            panel.innerHTML = `
+                <h3>⚙️ Static Fields</h3>
+                <div class="static-fields-grid">${staticGridHTML}</div>
+                <h3>📈 Yearly Projections</h3>
+                <div class="projections-grid">${projectionGridHTML}</div>`;
+            contentArea.appendChild(panel);
           }
+          app.appendChild(modalityContainer);
         }
-        fieldDiv.appendChild(label);
-        fieldDiv.appendChild(input);
-        staticGrid.appendChild(fieldDiv);
-      });
-      panel.appendChild(staticGrid);
 
-      const tableHeader = document.createElement("h3");
-      tableHeader.innerHTML = '📈 Yearly Projections';
-      panel.appendChild(tableHeader);
-      const projectionsGrid = document.createElement("div");
-      projectionsGrid.className = "projections-grid";
-      
-      const metricIcons = {
-        'ip_volume_step': '🏥',
-        'op_volume_step': '🏢',
-        'scan_rate': '📊',
-        'report_rate': '📝',
-        'mits_per_routine_machine_hour': '👥',
-        'mits_per_ooh_machine_hour': '🌙'
-      };
-      
-      projectionMetrics.forEach(metric => {
-        const metricCard = document.createElement("div");
-        metricCard.className = "projection-metric-card";
-        const metricTitle = document.createElement("h4");
-        
-        const metricIcon = document.createElement("span");
-        metricIcon.className = "metric-icon";
-        metricIcon.textContent = metricIcons[metric] || '📊';
-        
-        metricTitle.appendChild(metricIcon);
-        metricTitle.appendChild(document.createTextNode(projectionMetricLabels[metric] || metric));
-        metricCard.appendChild(metricTitle);
-        
-        const inputsContainer = document.createElement("div");
-        inputsContainer.className = "year-inputs-container";
-        years.forEach(y => {
-          const key = `${metric}_${y}`;
-          const yearItem = document.createElement("div");
-          yearItem.className = "year-input-item";
-          const yearLabel = document.createElement("label");
-          yearLabel.textContent = y.toUpperCase();
-          yearItem.appendChild(yearLabel);
-          const input = document.createElement("input");
-          input.type = "text";
-          input.value = row[key] != null ? row[key] : "";
-          input.dataset.id = row.id;
-          input.dataset.field = key;
-          if (!isEditable) {
-            input.readOnly = true;
-          } else {
-            // Check if this field is different from baseline
-            const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-            if (baselineRow && String(row[key]) !== String(baselineRow[key])) {
-              input.classList.add('changed');
-            }
+        activePanelIds.forEach(panelId => {
+          const panelToActivate = document.getElementById(panelId);
+          if (panelToActivate) {
+            const buttonToActivate = document.querySelector(`button[data-target="#${panelId}"]`);
+            panelToActivate.classList.add('active');
+            if (buttonToActivate) buttonToActivate.classList.add('active');
           }
-          yearItem.appendChild(input);
-          inputsContainer.appendChild(yearItem);
         });
-        metricCard.appendChild(inputsContainer);
-        projectionsGrid.appendChild(metricCard);
-      });
-      panel.appendChild(projectionsGrid);
-      contentArea.appendChild(panel);
-    }
-    app.appendChild(modalityContainer);
-  }
-
-  // Restore active panels
-  activePanelIds.forEach(panelId => {
-    const panelToActivate = document.getElementById(panelId);
-    if (panelToActivate) {
-      const buttonToActivate = document.querySelector(`button[data-target="#${panelId}"]`);
-      panelToActivate.classList.add('active');
-      if (buttonToActivate) buttonToActivate.classList.add('active');
-    }
-  });
-}
-```
-
+      }
+    });
   </script>
-
 </body>
 </html>
