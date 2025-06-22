@@ -2,122 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scenario Configurator</title>
+  <!-- Link to the external stylesheet -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="rtt-container">
-    <header class="rtt-brand-bar">
-      <h1 class="rtt-title">Scenario Configurator</h1>
-      <div id="header-controls-wrapper" class="hidden">
-        <div class="rtt-header-controls">
-          <div class="scenario-controls" id="scenario-toggle">
-            <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
-            <label for="source-baseline">Baseline</label>
-            <input type="radio" id="source-scenario" name="data-source" value="scenario">
-            <label for="source-scenario">Scenario</label>
-          </div>
-          <button id="export-button">Export CSV</button>
-        </div>
-      </div>
-    </header>
-
-    <main id="main-content" class="rtt-main-content">
-      <div id="file-upload-area" class="file-upload hidden">
-        <h3>Load Configuration Data</h3>
-        <p>Could not load local file. Please upload your CSV to begin.</p>
-        <div class="file-input">
-          <input type="file" id="csv-file-input" accept=".csv" />
-          <label for="csv-file-input">Choose File</label>
-        </div>
-      </div>
-      <div id="app">
-        <div class="app-loading-message">Loading Configuration...</div>
-      </div>
-    </main>
-    
-    <div id="status-message" class="status-message"></div>
+  <h1>Scenario Configurator</h1>
+  
+  <div class="controls-container">
+    <div class="scenario-controls" id="scenario-toggle">
+      <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
+      <label for="source-baseline">Baseline</label>
+      <input type="radio" id="source-scenario" name="data-source" value="scenario">
+      <label for="source-scenario">Scenario</label>
+    </div>
+    <button id="export-button" style="display: none;">Export CSV</button>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script>
-    const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
-    const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
-    const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
-    const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
-    const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
+  <div id="app"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    // All JavaScript logic is self-contained here.
+    const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
+    const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost"};
+    const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
+    const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour"};
+    const years = Array.from({length: 11}, (_, i) => `y${i}`);
+    
     const app = document.getElementById("app");
-    const headerControlsWrapper = document.getElementById("header-controls-wrapper");
     const scenarioToggle = document.getElementById("scenario-toggle");
     const exportButton = document.getElementById("export-button");
-    const statusMessage = document.getElementById("status-message");
-    const fileUploadArea = document.getElementById("file-upload-area");
-    const fileInput = document.getElementById("csv-file-input");
 
-    let baselineData = [], scenarioData = [], activePanelIds = new Set(), editedRowIds = new Set(), messageTimeout;
+    let baselineData = [];
+    let scenarioData = [];
+    let activePanelIds = new Set();
+    let editedRowIds = new Set();
 
     document.addEventListener('DOMContentLoaded', loadAndInitializeData);
-    fileInput.addEventListener('change', (e) => loadCSVFile(e.target.files[0]));
-    fileUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); fileUploadArea.classList.add('drag-over'); });
-    fileUploadArea.addEventListener('dragleave', () => fileUploadArea.classList.remove('drag-over'));
-    fileUploadArea.addEventListener('drop', (e) => { e.preventDefault(); fileUploadArea.classList.remove('drag-over'); loadCSVFile(e.dataTransfer.files[0]); });
 
     async function loadAndInitializeData() {
       try {
         const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
-        if (!response.ok) throw new Error(`HTTP ${response.status}: Failed to fetch`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const csvText = await response.text();
-        processCSV(csvText, "Local configuration loaded successfully!");
+        
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            baselineData = results.data;
+            scenarioData = JSON.parse(JSON.stringify(baselineData));
+            renderUI(baselineData, false);
+            exportButton.style.display = 'inline-block';
+          }
+        });
       } catch (error) {
-        console.error("Local load failed:", error.message);
-        app.innerHTML = "";
-        fileUploadArea.classList.remove('hidden');
+        app.innerHTML = `<p style="color: red; text-align: center;">Error: Could not load configuration file.</p>`;
       }
     }
-    
-    function loadCSVFile(file) {
-        if (file && file.type === 'text/csv') {
-            const reader = new FileReader();
-            reader.onload = (e) => processCSV(e.target.result, "File loaded successfully!");
-            reader.onerror = () => showMessage('Error reading file.', 'error');
-            reader.readAsText(file);
-        } else {
-            showMessage('Please select a valid CSV file.', 'error');
-        }
-    }
 
-    function processCSV(csvText, successMessage) {
-        Papa.parse(csvText, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                if (results.errors.length > 0) {
-                    showMessage('Error parsing CSV: ' + results.errors[0].message, 'error');
-                    return;
-                }
-                
-                results.data.forEach((row, index) => {
-                    if (!row.id) row.id = `row_${index}`;
-                });
-                
-                baselineData = results.data;
-                scenarioData = JSON.parse(JSON.stringify(baselineData));
-                fileUploadArea.classList.add('hidden');
-                headerControlsWrapper.classList.remove('hidden');
-                renderUI(baselineData, false);
-                showMessage(successMessage, 'success');
-            },
-        });
-    }
-
-    function showMessage(message, type) {
-      if (messageTimeout) clearTimeout(messageTimeout);
-      statusMessage.innerHTML = `<p class="${type}">${message}</p>`;
-      messageTimeout = setTimeout(() => { statusMessage.innerHTML = ''; }, 4000);
-    }
-    
     scenarioToggle.addEventListener('change', (e) => {
       activePanelIds.clear();
       document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
@@ -129,24 +73,16 @@
       if (!e.target.matches('input[type="text"]') || e.target.readOnly) return;
       const { id: rowId, field: fieldKey } = e.target.dataset;
       const { value: newValue } = e.target;
-      const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
-      
+      const rowToUpdate = scenarioData.find(row => row.id === rowId);
       if (rowToUpdate) {
         rowToUpdate[fieldKey] = newValue;
-        const baselineRow = baselineData.find(row => String(row.id) === String(rowId));
-        if (baselineRow && String(newValue) !== String(baselineRow[fieldKey])) {
-          e.target.classList.add('changed');
-        } else {
-          e.target.classList.remove('changed');
-        }
-        let hasAnyChanges = Object.keys(baselineRow).some(key => String(rowToUpdate[key]) !== String(baselineRow[key]));
-        const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
-        if (hasAnyChanges) {
+        if (!editedRowIds.has(rowId)) {
           editedRowIds.add(rowId);
-          if (button) button.classList.add('has-changes');
-        } else {
-          editedRowIds.delete(rowId);
-          if (button) button.classList.remove('has-changes');
+          const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
+          if (button) {
+            button.classList.add('has-changes');
+            button.title = "Contains scenario edits";
+          }
         }
       }
     });
@@ -168,34 +104,32 @@
 
     exportButton.addEventListener('click', () => {
       if (baselineData.length === 0) return;
-      exportButton.disabled = true;
-      exportButton.innerHTML = '<span class="loading-spinner"></span>';
-      setTimeout(() => {
-        const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
-        const firstColumnHeader = Object.keys(baselineData[0])[0];
-        scenarioExportData.forEach(row => { row[firstColumnHeader] = "Scenario - Transforming Radiology"; });
-        const dataForExport = [...baselineData, ...scenarioExportData];
-        const csvString = Papa.unparse(dataForExport);
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "scenario_export.csv";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        exportButton.disabled = false;
-        exportButton.innerHTML = 'Export CSV';
-        showMessage('CSV exported successfully!', 'success');
-      }, 500);
+      const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
+      const firstColumnHeader = Object.keys(baselineData[0])[0];
+      scenarioExportData.forEach(row => {
+        row[firstColumnHeader] = "Scenario - Transforming Radiology";
+      });
+      const dataForExport = [...baselineData, ...scenarioExportData];
+      const csvString = Papa.unparse(dataForExport);
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "scenario_export.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     });
 
     function renderUI(dataToRender, isEditable) {
       app.innerHTML = "";
       const grouped = {};
       for (const row of dataToRender) {
-        if (!row.modality || !row.archetype) continue;
-        if (!grouped[row.modality]) grouped[row.modality] = {};
-        grouped[row.modality][row.archetype] = row;
+        const modality = row["modality"];
+        const archetype = row["archetype"];
+        if (!grouped[modality]) grouped[modality] = {};
+        grouped[modality][archetype] = row;
       }
       for (const modality of Object.keys(grouped)) {
         const modalityContainer = document.createElement("div");
@@ -206,10 +140,12 @@
         title.textContent = modality;
         const buttonGroup = document.createElement("div");
         buttonGroup.className = "archetype-buttons";
+        const contentArea = document.createElement("div");
+        contentArea.className = "modality-content";
         header.appendChild(title);
         header.appendChild(buttonGroup);
         modalityContainer.appendChild(header);
-
+        modalityContainer.appendChild(contentArea);
         for (const archetype of Object.keys(grouped[modality])) {
           const row = grouped[modality][archetype];
           const contentPanelId = `content-${modality.replace(/\s+/g, '-')}-${archetype.replace(/\s+/g, '-')}`;
@@ -218,15 +154,16 @@
           button.textContent = archetype;
           button.dataset.target = `#${contentPanelId}`;
           button.dataset.id = row.id;
-          if (editedRowIds.has(String(row.id))) { button.classList.add('has-changes'); }
+          if (editedRowIds.has(row.id)) {
+            button.classList.add('has-changes');
+            button.title = "Contains scenario edits";
+          }
           buttonGroup.appendChild(button);
-
           const panel = document.createElement("div");
           panel.className = "archetype-content-panel";
           panel.id = contentPanelId;
-          
           const staticHeader = document.createElement("h3");
-          staticHeader.textContent = 'Static Fields';
+          staticHeader.textContent = "Static Fields";
           panel.appendChild(staticHeader);
           const staticGrid = document.createElement("div");
           staticGrid.className = "static-fields-grid";
@@ -240,23 +177,15 @@
             input.value = row[field] != null ? row[field] : "";
             input.dataset.id = row.id;
             input.dataset.field = field;
-            if (!isEditable) {
-              input.readOnly = true;
-            } else {
-              const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-              if (baselineRow && String(row[field]) !== String(baselineRow[field])) {
-                input.classList.add('changed');
-              }
-            }
+            if (!isEditable) input.readOnly = true;
             fieldDiv.appendChild(label);
             fieldDiv.appendChild(input);
             staticGrid.appendChild(fieldDiv);
           });
           panel.appendChild(staticGrid);
-
-          const projHeader = document.createElement("h3");
-          projHeader.textContent = 'Yearly Projections';
-          panel.appendChild(projHeader);
+          const tableHeader = document.createElement("h3");
+          tableHeader.textContent = "Yearly Projections";
+          panel.appendChild(tableHeader);
           const projectionsGrid = document.createElement("div");
           projectionsGrid.className = "projections-grid";
           projectionMetrics.forEach(metric => {
@@ -279,24 +208,15 @@
               input.value = row[key] != null ? row[key] : "";
               input.dataset.id = row.id;
               input.dataset.field = key;
-              if (!isEditable) {
-                input.readOnly = true;
-              } else {
-                const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-                if (baselineRow && String(row[key]) !== String(baselineRow[key])) {
-                  input.classList.add('changed');
-                }
-              }
+              if (!isEditable) input.readOnly = true;
               yearItem.appendChild(input);
               inputsContainer.appendChild(yearItem);
             });
             metricCard.appendChild(inputsContainer);
             projectionsGrid.appendChild(metricCard);
           });
-          
-          // THE FIX IS HERE: Append the grid, not the header again.
           panel.appendChild(projectionsGrid);
-          modalityContainer.appendChild(panel);
+          contentArea.appendChild(panel);
         }
         app.appendChild(modalityContainer);
       }
