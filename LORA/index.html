@@ -72,8 +72,8 @@
         processCSV(csvText, "Local configuration loaded successfully!");
       } catch (error) {
         console.error("Local load failed:", error.message);
-        app.innerHTML = ""; // Clear "Loading..." message
-        fileUploadArea.classList.remove('hidden'); // Show upload UI as fallback
+        app.innerHTML = "";
+        fileUploadArea.classList.remove('hidden');
       }
     }
     
@@ -104,9 +104,8 @@
                 
                 baselineData = results.data;
                 scenarioData = JSON.parse(JSON.stringify(baselineData));
-
-                fileUploadArea.classList.add('hidden'); // Hide upload UI if present
-                headerControlsWrapper.classList.remove('hidden'); // Show header controls
+                fileUploadArea.classList.add('hidden');
+                headerControlsWrapper.classList.remove('hidden');
                 renderUI(baselineData, false);
                 showMessage(successMessage, 'success');
             },
@@ -119,7 +118,6 @@
       messageTimeout = setTimeout(() => { statusMessage.innerHTML = ''; }, 4000);
     }
     
-    // All other event listeners and the renderUI function are correct and can remain as they were in the previous version.
     scenarioToggle.addEventListener('change', (e) => {
       activePanelIds.clear();
       document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
@@ -136,16 +134,13 @@
       if (rowToUpdate) {
         rowToUpdate[fieldKey] = newValue;
         const baselineRow = baselineData.find(row => String(row.id) === String(rowId));
-        
         if (baselineRow && String(newValue) !== String(baselineRow[fieldKey])) {
           e.target.classList.add('changed');
         } else {
           e.target.classList.remove('changed');
         }
-        
         let hasAnyChanges = Object.keys(baselineRow).some(key => String(rowToUpdate[key]) !== String(baselineRow[key]));
         const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
-        
         if (hasAnyChanges) {
           editedRowIds.add(rowId);
           if (button) button.classList.add('has-changes');
@@ -163,10 +158,8 @@
       const targetPanelId = button.dataset.target;
       const contentPanel = document.querySelector(targetPanelId);
       const parentContainer = button.closest('.modality-container');
-      
       parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
       parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
-
       if (!isAlreadyActive) {
         button.classList.add('active');
         contentPanel.classList.add('active');
@@ -177,7 +170,6 @@
       if (baselineData.length === 0) return;
       exportButton.disabled = true;
       exportButton.innerHTML = '<span class="loading-spinner"></span>';
-      
       setTimeout(() => {
         const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
         const firstColumnHeader = Object.keys(baselineData[0])[0];
@@ -301,7 +293,9 @@
             metricCard.appendChild(inputsContainer);
             projectionsGrid.appendChild(metricCard);
           });
-          panel.appendChild(projHeader);
+          
+          // THE FIX IS HERE: Append the grid, not the header again.
+          panel.appendChild(projectionsGrid);
           modalityContainer.appendChild(panel);
         }
         app.appendChild(modalityContainer);
