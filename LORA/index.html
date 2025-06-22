@@ -4,132 +4,91 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scenario Configurator</title>
-  <!-- Link to the external stylesheet -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Scenario Configurator</h1>
-      <p class="subtitle">Transform your radiology workflow with data-driven scenarios</p>
+  <div class="rtt-container">
+    <header class="rtt-brand-bar">
+      <h1 class="rtt-title">Scenario Configurator</h1>
+      <div id="header-controls-wrapper" class="hidden">
+        <div class="rtt-header-controls">
+          <div class="scenario-controls" id="scenario-toggle">
+            <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
+            <label for="source-baseline">Baseline</label>
+            <input type="radio" id="source-scenario" name="data-source" value="scenario">
+            <label for="source-scenario">Scenario</label>
+          </div>
+          <button id="export-button">Export CSV</button>
+        </div>
+      </div>
     </header>
 
-    <div class="file-upload" id="file-upload-area">
-      <div class="file-upload-icon">📊</div>
-      <h3>Load Configuration Data</h3>
-      <p>Upload your CSV file to get started</p>
-      <div class="file-input">
-        <input type="file" id="csv-file-input" accept=".csv" />
-        <label for="csv-file-input">Choose File</label>
-      </div>
-      <p><small>Or drag and drop a CSV file here</small></p>
-    </div>
-
-    <!-- Main content area, shown after file load -->
-    <div id="main-content" class="hidden">
-      <div class="controls-container">
-        <div class="scenario-controls" id="scenario-toggle">
-          <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
-          <label for="source-baseline">Baseline</label>
-          <input type="radio" id="source-scenario" name="data-source" value="scenario">
-          <label for="source-scenario">Scenario</label>
+    <main id="main-content" class="rtt-main-content">
+      <div id="file-upload-area" class="file-upload hidden">
+        <h3>Load Configuration Data</h3>
+        <p>Could not load local file. Please upload your CSV to begin.</p>
+        <div class="file-input">
+          <input type="file" id="csv-file-input" accept=".csv" />
+          <label for="csv-file-input">Choose File</label>
         </div>
-        <button id="export-button" class="btn btn-secondary">📥 Export CSV</button>
       </div>
-
-      <!-- Search and Summary Stats have been removed -->
-
-      <div id="app"></div>
-    </div>
-
+      <div id="app">
+        <div class="app-loading-message">Loading Configuration...</div>
+      </div>
+    </main>
+    
     <div id="status-message" class="status-message"></div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
-    // Constants for data fields
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
 
-    // DOM Element References
     const app = document.getElementById("app");
+    const headerControlsWrapper = document.getElementById("header-controls-wrapper");
     const scenarioToggle = document.getElementById("scenario-toggle");
     const exportButton = document.getElementById("export-button");
-    const fileInput = document.getElementById("csv-file-input");
-    const fileUploadArea = document.getElementById("file-upload-area");
-    const mainContent = document.getElementById("main-content");
     const statusMessage = document.getElementById("status-message");
-    // References to searchInput and summaryStats have been removed
+    const fileUploadArea = document.getElementById("file-upload-area");
+    const fileInput = document.getElementById("csv-file-input");
 
-    // State Variables
-    let baselineData = [];
-    let scenarioData = [];
-    let activePanelIds = new Set();
-    let editedRowIds = new Set();
-    let messageTimeout;
+    let baselineData = [], scenarioData = [], activePanelIds = new Set(), editedRowIds = new Set(), messageTimeout;
 
-    // --- INITIALIZATION & FILE HANDLING ---
     document.addEventListener('DOMContentLoaded', loadAndInitializeData);
-    fileInput.addEventListener('change', handleFileSelect);
-    fileUploadArea.addEventListener('dragover', handleDragOver);
-    fileUploadArea.addEventListener('dragleave', handleDragLeave);
-    fileUploadArea.addEventListener('drop', handleFileDrop);
+    fileInput.addEventListener('change', (e) => loadCSVFile(e.target.files[0]));
+    fileUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); fileUploadArea.classList.add('drag-over'); });
+    fileUploadArea.addEventListener('dragleave', () => fileUploadArea.classList.remove('drag-over'));
+    fileUploadArea.addEventListener('drop', (e) => { e.preventDefault(); fileUploadArea.classList.remove('drag-over'); loadCSVFile(e.dataTransfer.files[0]); });
 
     async function loadAndInitializeData() {
       try {
-        showMessage('Loading local configuration file...', 'info');
         const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
-        if (!response.ok) throw new Error(`Local file not found or server error.`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}: Failed to fetch`);
         const csvText = await response.text();
-        processCSV(csvText);
+        processCSV(csvText, "Local configuration loaded successfully!");
       } catch (error) {
-        console.log('Local file load failed:', error.message);
-        showMessage('Please upload your configuration file', 'info');
+        console.error("Local load failed:", error.message);
+        app.innerHTML = ""; // Clear "Loading..." message
+        fileUploadArea.classList.remove('hidden'); // Show upload UI as fallback
       }
-    }
-
-    function handleFileSelect(event) {
-      const file = event.target.files[0];
-      if (file && file.type === 'text/csv') {
-        loadCSVFile(file);
-      } else {
-        showMessage('Please select a valid CSV file.', 'error');
-      }
-    }
-
-    function handleDragOver(event) {
-      event.preventDefault();
-      fileUploadArea.classList.add('drag-over');
-    }
-
-    function handleDragLeave(event) {
-      event.preventDefault();
-      fileUploadArea.classList.remove('drag-over');
-    }
-
-    function handleFileDrop(event) {
-      event.preventDefault();
-      fileUploadArea.classList.remove('drag-over');
-      const files = event.dataTransfer.files;
-      if (files.length > 0 && files[0].type === 'text/csv') {
-        loadCSVFile(files[0]);
-      } else {
-        showMessage('Please drop a valid CSV file.', 'error');
-      }
-    }
-
-    function loadCSVFile(file) {
-        showMessage('Loading CSV file...', 'info');
-        const reader = new FileReader();
-        reader.onload = (e) => processCSV(e.target.result);
-        reader.onerror = () => showMessage('Error reading file.', 'error');
-        reader.readAsText(file);
     }
     
-    function processCSV(csvText) {
+    function loadCSVFile(file) {
+        if (file && file.type === 'text/csv') {
+            const reader = new FileReader();
+            reader.onload = (e) => processCSV(e.target.result, "File loaded successfully!");
+            reader.onerror = () => showMessage('Error reading file.', 'error');
+            reader.readAsText(file);
+        } else {
+            showMessage('Please select a valid CSV file.', 'error');
+        }
+    }
+
+    function processCSV(csvText, successMessage) {
         Papa.parse(csvText, {
             header: true,
             skipEmptyLines: true,
@@ -145,65 +104,54 @@
                 
                 baselineData = results.data;
                 scenarioData = JSON.parse(JSON.stringify(baselineData));
-                
-                fileUploadArea.classList.add('hidden');
-                mainContent.classList.remove('hidden');
+
+                fileUploadArea.classList.add('hidden'); // Hide upload UI if present
+                headerControlsWrapper.classList.remove('hidden'); // Show header controls
                 renderUI(baselineData, false);
-                showMessage('Configuration loaded successfully!', 'success');
+                showMessage(successMessage, 'success');
             },
-            error: (error) => showMessage('Error parsing CSV: ' + error.message, 'error')
         });
     }
 
     function showMessage(message, type) {
-      if (!statusMessage) return;
       if (messageTimeout) clearTimeout(messageTimeout);
       statusMessage.innerHTML = `<p class="${type}">${message}</p>`;
-      statusMessage.style.display = 'block';
-      messageTimeout = setTimeout(() => {
-        if (statusMessage) statusMessage.style.display = 'none';
-      }, 4000);
+      messageTimeout = setTimeout(() => { statusMessage.innerHTML = ''; }, 4000);
     }
-    // updateSummaryStats function has been removed.
-
-    // --- EVENT LISTENERS ---
+    
+    // All other event listeners and the renderUI function are correct and can remain as they were in the previous version.
     scenarioToggle.addEventListener('change', (e) => {
       activePanelIds.clear();
       document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
       const isBaseline = e.target.value === 'baseline';
       renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
-      // Call to updateSummaryStats removed.
     });
 
     app.addEventListener('input', (e) => {
       if (!e.target.matches('input[type="text"]') || e.target.readOnly) return;
       const { id: rowId, field: fieldKey } = e.target.dataset;
       const { value: newValue } = e.target;
-      const normalizedRowId = String(rowId);
-      const rowToUpdate = scenarioData.find(row => String(row.id) === normalizedRowId);
+      const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
+      
       if (rowToUpdate) {
-        const baselineRow = baselineData.find(row => String(row.id) === normalizedRowId);
-        const baselineValue = baselineRow ? baselineRow[fieldKey] : '';
         rowToUpdate[fieldKey] = newValue;
-        if (String(newValue) !== String(baselineValue)) {
+        const baselineRow = baselineData.find(row => String(row.id) === String(rowId));
+        
+        if (baselineRow && String(newValue) !== String(baselineRow[fieldKey])) {
           e.target.classList.add('changed');
         } else {
           e.target.classList.remove('changed');
         }
+        
         let hasAnyChanges = Object.keys(baselineRow).some(key => String(rowToUpdate[key]) !== String(baselineRow[key]));
-        const button = document.querySelector(`.archetype-button[data-id="${normalizedRowId}"]`);
+        const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
+        
         if (hasAnyChanges) {
-          editedRowIds.add(normalizedRowId);
-          if (button) {
-            button.classList.add('has-changes');
-            button.title = "Contains scenario edits";
-          }
+          editedRowIds.add(rowId);
+          if (button) button.classList.add('has-changes');
         } else {
-          editedRowIds.delete(normalizedRowId);
-          if (button) {
-            button.classList.remove('has-changes');
-            button.title = "";
-          }
+          editedRowIds.delete(rowId);
+          if (button) button.classList.remove('has-changes');
         }
       }
     });
@@ -215,8 +163,10 @@
       const targetPanelId = button.dataset.target;
       const contentPanel = document.querySelector(targetPanelId);
       const parentContainer = button.closest('.modality-container');
+      
       parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
       parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
+
       if (!isAlreadyActive) {
         button.classList.add('active');
         contentPanel.classList.add('active');
@@ -226,62 +176,48 @@
     exportButton.addEventListener('click', () => {
       if (baselineData.length === 0) return;
       exportButton.disabled = true;
-      exportButton.innerHTML = '<span class="loading-spinner"></span> Exporting...';
+      exportButton.innerHTML = '<span class="loading-spinner"></span>';
+      
       setTimeout(() => {
         const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
         const firstColumnHeader = Object.keys(baselineData[0])[0];
-        scenarioExportData.forEach(row => {
-          row[firstColumnHeader] = "Scenario - Transforming Radiology";
-        });
+        scenarioExportData.forEach(row => { row[firstColumnHeader] = "Scenario - Transforming Radiology"; });
         const dataForExport = [...baselineData, ...scenarioExportData];
         const csvString = Papa.unparse(dataForExport);
         const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", "scenario_export.csv");
-        link.style.visibility = 'hidden';
+        link.href = URL.createObjectURL(blob);
+        link.download = "scenario_export.csv";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         exportButton.disabled = false;
-        exportButton.innerHTML = '📥 Export CSV';
+        exportButton.innerHTML = 'Export CSV';
         showMessage('CSV exported successfully!', 'success');
       }, 500);
     });
 
-    // --- UI RENDERING LOGIC ---
     function renderUI(dataToRender, isEditable) {
-      if (!app || !dataToRender) return;
       app.innerHTML = "";
       const grouped = {};
       for (const row of dataToRender) {
-        const modality = row["modality"];
-        const archetype = row["archetype"];
-        if (!modality || !archetype) continue;
-        if (!grouped[modality]) grouped[modality] = {};
-        grouped[modality][archetype] = row;
+        if (!row.modality || !row.archetype) continue;
+        if (!grouped[row.modality]) grouped[row.modality] = {};
+        grouped[row.modality][row.archetype] = row;
       }
-      const modalityIcons = { 'CT': '🔬', 'MRI': '🧲', 'X-ray': '📸', 'Ultrasound': '🔊', 'PET': '☢️' };
       for (const modality of Object.keys(grouped)) {
         const modalityContainer = document.createElement("div");
         modalityContainer.className = "modality-container";
         const header = document.createElement("div");
         header.className = "modality-header";
         const title = document.createElement("h2");
-        const icon = document.createElement("span");
-        icon.className = "modality-icon";
-        icon.textContent = modalityIcons[modality] || '📊';
-        title.appendChild(icon);
-        title.appendChild(document.createTextNode(modality));
+        title.textContent = modality;
         const buttonGroup = document.createElement("div");
         buttonGroup.className = "archetype-buttons";
-        const contentArea = document.createElement("div");
-        contentArea.className = "modality-content";
         header.appendChild(title);
         header.appendChild(buttonGroup);
         modalityContainer.appendChild(header);
-        modalityContainer.appendChild(contentArea);
+
         for (const archetype of Object.keys(grouped[modality])) {
           const row = grouped[modality][archetype];
           const contentPanelId = `content-${modality.replace(/\s+/g, '-')}-${archetype.replace(/\s+/g, '-')}`;
@@ -290,16 +226,15 @@
           button.textContent = archetype;
           button.dataset.target = `#${contentPanelId}`;
           button.dataset.id = row.id;
-          if (editedRowIds.has(String(row.id))) {
-            button.classList.add('has-changes');
-            button.title = "Contains scenario edits";
-          }
+          if (editedRowIds.has(String(row.id))) { button.classList.add('has-changes'); }
           buttonGroup.appendChild(button);
+
           const panel = document.createElement("div");
           panel.className = "archetype-content-panel";
           panel.id = contentPanelId;
+          
           const staticHeader = document.createElement("h3");
-          staticHeader.innerHTML = '⚙️ Static Fields';
+          staticHeader.textContent = 'Static Fields';
           panel.appendChild(staticHeader);
           const staticGrid = document.createElement("div");
           staticGrid.className = "static-fields-grid";
@@ -326,21 +261,17 @@
             staticGrid.appendChild(fieldDiv);
           });
           panel.appendChild(staticGrid);
-          const tableHeader = document.createElement("h3");
-          tableHeader.innerHTML = '📈 Yearly Projections';
-          panel.appendChild(tableHeader);
+
+          const projHeader = document.createElement("h3");
+          projHeader.textContent = 'Yearly Projections';
+          panel.appendChild(projHeader);
           const projectionsGrid = document.createElement("div");
           projectionsGrid.className = "projections-grid";
-          const metricIcons = { 'ip_volume_step': '🏥', 'op_volume_step': '🏢', 'scan_rate': '📊', 'report_rate': '📝', 'mits_per_routine_machine_hour': '👥', 'mits_per_ooh_machine_hour': '🌙' };
           projectionMetrics.forEach(metric => {
             const metricCard = document.createElement("div");
             metricCard.className = "projection-metric-card";
             const metricTitle = document.createElement("h4");
-            const metricIcon = document.createElement("span");
-            metricIcon.className = "metric-icon";
-            metricIcon.textContent = metricIcons[metric] || '📊';
-            metricTitle.appendChild(metricIcon);
-            metricTitle.appendChild(document.createTextNode(projectionMetricLabels[metric] || metric));
+            metricTitle.textContent = projectionMetricLabels[metric] || metric;
             metricCard.appendChild(metricTitle);
             const inputsContainer = document.createElement("div");
             inputsContainer.className = "year-inputs-container";
@@ -370,8 +301,8 @@
             metricCard.appendChild(inputsContainer);
             projectionsGrid.appendChild(metricCard);
           });
-          panel.appendChild(projectionsGrid);
-          contentArea.appendChild(panel);
+          panel.appendChild(projHeader);
+          modalityContainer.appendChild(panel);
         }
         app.appendChild(modalityContainer);
       }
