@@ -1,125 +1,373 @@
-/* General Body & Font Styling */
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  padding: 2rem;
-  background-color: #f4f7f9;
-  color: #333;
-}
-h1 {
-  color: #2c3e50;
-  text-align: center;
-  margin-bottom: 0.5rem;
-}
-h2 { margin: 0; color: #34495e; font-size: 1.5rem; }
-h3 {
-  border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem;
-  margin-top: 2rem; margin-bottom: 1rem;
-  color: #34495e; font-weight: 600;
-}
-h4 { margin: 0 0 0.75rem 0; color: #34495e; }
+/* styles.css - Adapted for Scenario Configurator */
 
-/* Controls Container */
-.controls-container {
-  text-align: center;
-  margin-bottom: 2rem;
+/* ==========================================================================
+   1. Global Styles & Keyframes
+   ========================================================================== */
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes pulse {
+  0% { box-shadow: 0 2px 8px rgba(255, 167, 38, 0.1); }
+  50% { box-shadow: 0 4px 16px rgba(255, 167, 38, 0.25); }
+  100% { box-shadow: 0 2px 8px rgba(255, 167, 38, 0.1); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   2. Core App Structure & Layout
+   ========================================================================== */
+
+body {
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #F9FAFB;
+  min-height: 100vh;
+  padding: 1em;
+  color: #4B5563;
+  line-height: 1.6;
+}
+
+.rtt-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* --- App Header --- */
+.rtt-brand-bar {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #143345 45%, #41236a 100%);
+  padding: 0.8em 1.5em;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.rtt-title {
+  color: #fff;
+  font-size: 1.5em;
+  margin: 0;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  white-space: nowrap;
+}
+
+.rtt-header-controls {
+  display: flex;
   align-items: center;
   gap: 1.5rem;
 }
+
 .scenario-controls {
-  display: inline-flex;
-  gap: 1rem;
-  background-color: #eaf0f4;
-  padding: 0.5rem;
-  border-radius: 8px;
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.25rem;
 }
-.scenario-controls input[type="radio"] { display: none; }
+
+.scenario-controls input[type="radio"] {
+  display: none;
+}
+
 .scenario-controls label {
   padding: 0.5rem 1.25rem;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  font-weight: 500;
-}
-.scenario-controls input[type="radio"]:checked + label {
-  background-color: #3498db;
-  color: white;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-#export-button {
-  padding: 0.6rem 1.5rem;
-  font-size: 1rem;
   font-weight: 600;
-  border: none;
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease-in-out;
+  border: 1px solid transparent;
+}
+
+.scenario-controls input[type="radio"]:checked+label {
+  background: #fff;
+  color: #143345;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Main Content Area --- */
+.rtt-main-content {
+  background: #F5F7FA;
+  border-radius: 10px;
+  border: 1px solid #E5EAF0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  padding: 1.5em;
+}
+
+/* ==========================================================================
+   3. Buttons & Modality Cards
+   ========================================================================== */
+
+/* --- Export Button --- */
+#export-button {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.9em;
+  font-weight: 600;
+  padding: 0.6em 1.2em;
+  border: 1px solid #3a5c24;
   border-radius: 6px;
-  background-color: #27ae60;
-  color: white;
+  background: #4c7a30;
+  color: #fff;
   cursor: pointer;
-  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
 }
-#export-button:hover { background-color: #2ecc71; }
 
-/* Modality Cards */
+#export-button:hover {
+  background: #3e6326;
+  border-color: #2f4a1c;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s ease-in-out infinite;
+}
+
+/* --- Modality Cards --- */
 .modality-container {
-  background: #ffffff; border: 1px solid #e1e8ed;
-  border-radius: 8px; margin-bottom: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: #fff;
+  border: 1px solid #E0E6ED;
+  border-radius: 12px;
+  margin-bottom: 1.5em;
   overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
+
 .modality-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 1rem 1.5rem; background-color: #f8f9fa;
-  border-bottom: 1px solid #e1e8ed;
+  background: #E8F0F6;
+  padding: 1em 1.25em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #00549F;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.1em;
+  border-bottom: 1px solid #D1D9E1;
 }
 
-/* Archetype Buttons */
-.archetype-buttons { display: flex; gap: 0.5rem; }
+.modality-header h2 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/* --- Archetype Buttons --- */
+.archetype-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .archetype-button {
+  padding: 0.5em 1em;
+  font-size: 0.85em;
+  text-align: left;
+  border: 1px solid #00549F;
+  background: #fff;
+  color: #00549F;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all .2s;
+  font-family: 'Poppins', sans-serif;
   position: relative;
-  padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600;
-  border: 1px solid #bdc3c7; border-radius: 5px;
-  background-color: #ffffff; color: #2c3e50;
-  cursor: pointer; transition: all 0.2s ease-in-out;
-}
-.archetype-button:hover { background-color: #ecf0f1; border-color: #3498db; }
-.archetype-button.active { background-color: #3498db; color: #ffffff; border-color: #3498db; }
-.archetype-button.has-changes::after {
-  content: '●';
-  position: absolute;
-  top: 3px;
-  right: 5px;
-  font-size: 10px;
-  color: #f39c12;
 }
 
-/* Content Panels & Grids */
-.archetype-content-panel { padding: 0.5rem 1.5rem 1.5rem 1.5rem; display: none; }
-.archetype-content-panel.active { display: block; }
+.archetype-button.active {
+  background: #00549F;
+  color: #fff;
+}
+
+.archetype-button.has-changes {
+  border-color: #FFA726;
+  color: #c07d0c;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   4. Content Panels & Inputs
+   ========================================================================== */
+
+.archetype-content-panel {
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  background: #FAFBFC;
+  transition: max-height 0.4s ease-out, opacity 0.4s ease-out, padding 0.4s ease-out;
+  opacity: 0;
+}
+
+.archetype-content-panel.active {
+  padding: 1.5em;
+  max-height: 5000px; /* Large value for smooth animation */
+  opacity: 1;
+}
+
+h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: #143345;
+  margin: 1.5rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #E0E6ED;
+  font-family: 'Poppins', sans-serif;
+}
+h3:first-child { margin-top: 0; }
+
+/* --- Fields & Projections Grids --- */
+.static-fields-grid, .projections-grid {
+  display: grid;
+  gap: 1.25rem;
+}
 .static-fields-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1rem; align-items: center;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 }
-.static-field { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
-.static-field label { color: #555; margin-right: 1rem; white-space: nowrap; }
 .projections-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
 }
-.projection-metric-card {
-  background-color: #fdfdfd; border: 1px solid #e8e8e8;
-  border-radius: 6px; padding: 1rem;
-}
-.year-inputs-container { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-.year-input-item { display: flex; flex-direction: column; }
-.year-input-item label { font-size: 0.75rem; color: #666; margin-bottom: 0.2rem; text-align: center; }
 
-/* Input Fields */
-input[type="text"] {
-  width: 5rem; padding: 0.4rem; border: 1px solid #ccc;
-  border-radius: 4px; transition: border-color 0.2s, background-color 0.2s;
+.static-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #E5EAF0;
+}
+
+.static-field label {
+  font-size: 0.9em;
+  font-weight: 500;
+  margin-right: 1rem;
+}
+
+.projection-metric-card {
+  background: #fff;
+  border: 1px solid #E5EAF0;
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.projection-metric-card h4 {
+  font-size: 1em;
+  font-weight: 600;
+  color: #00549F;
+  margin: 0 0 1rem 0;
+}
+
+.year-inputs-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.75rem;
+}
+
+.year-input-item label {
+  font-size: 0.75em;
+  font-weight: 600;
+  color: #6B7280;
+  margin-bottom: 0.25rem;
   text-align: center;
 }
-input[type="text"]:focus { outline: none; border-color: #3498db; }
-input[readonly] { background-color: #f1f3f4; color: #555; cursor: not-allowed; border-color: #ddd; }
+
+/* --- Inputs --- */
+input[type="text"] {
+  width: 100%;
+  padding: 0.4em 0.5em;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  font-size: 0.9em;
+  text-align: center;
+  background-color: #fff;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+input[type="text"]:focus {
+  outline: none;
+  border-color: #007A86;
+  box-shadow: 0 0 0 3px rgba(0, 122, 134, 0.15);
+}
+
+input[readonly] {
+  background-color: #F3F4F6;
+  color: #6B7280;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+input.changed {
+  border-color: #FFA726;
+  background-color: #FFF7E6;
+}
+
+/* --- Status Message --- */
+.status-message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  animation: slideInRight 0.3s ease-out;
+}
+.status-message p {
+  padding: 1em 1.5em;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin: 0;
+}
+.status-message .success { background: #28a745; }
+.status-message .error { background: #d9534f; }
+.status-message .info { background: #007A86; }
+
+/* ==========================================================================
+   5. Mobile Responsiveness
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  body {
+    padding: 0.5em;
+  }
+  .rtt-brand-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1em;
+  }
+  .rtt-header-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .scenario-controls {
+    flex-grow: 1;
+  }
+  .scenario-controls label {
+    flex-grow: 1;
+    text-align: center;
+  }
+  #export-button {
+    font-size: 0.8em;
+  }
+  .rtt-main-content, .archetype-content-panel.active {
+    padding: 1em;
+  }
+  .modality-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .static-fields-grid, .projections-grid {
+    grid-template-columns: 1fr;
+  }
+}
