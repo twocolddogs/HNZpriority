@@ -182,7 +182,7 @@ body {
   font-weight: 600;
   transition: all .2s;
   font-family: 'Poppins', sans-serif;
-  position: relative; /* This is crucial for positioning the badge */
+  position: relative;
 }
 
 .archetype-button.active {
@@ -201,10 +201,10 @@ body {
   right: 4px;
   width: 8px;
   height: 8px;
-  background-color: #FFA726; /* Orange color */
-  border-radius: 50%; /* Makes it a circle */
-  border: 1.5px solid white; /* A white border to make it pop */
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.1); /* Subtle shadow for better visibility */
+  background-color: #FFA726;
+  border-radius: 50%;
+  border: 1.5px solid white;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
 }
 
 /* ==========================================================================
@@ -246,7 +246,7 @@ h3:first-child { margin-top: 0; }
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 }
 .projections-grid {
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: 1fr; /* Make projection cards take full width */
 }
 
 .static-field {
@@ -279,27 +279,33 @@ h3:first-child { margin-top: 0; }
   margin: 0 0 1rem 0;
 }
 
+/* === MODIFIED RULES FOR YEARLY INPUTS === */
+/* 1. Change the container to a strict 2-column grid. */
 .year-inputs-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  /* === MODIFIED RULE FOR MOBILE SPACING === */
-  /* Increased gap from 0.75rem to 1rem for better spacing,
-     especially when items wrap on mobile screens. */
-  gap: 1rem;
+  grid-template-columns: 1fr 1fr; /* Two equal columns */
+  /* Set vertical and horizontal gaps */
+  gap: 0.75rem 1.5rem;
 }
 
+/* 2. Change each item to be a horizontal flex container (label beside input). */
 .year-input-item {
   display: flex;
-  flex-direction: column;
+  align-items: center; /* Vertically center the label and input */
+  gap: 0.5rem; /* Space between label and input */
 }
 
+/* 3. Adjust the label to align the inputs neatly. */
 .year-input-item label {
-  font-size: 0.75em;
+  font-size: 0.8em; /* Slightly smaller for better fit */
   font-weight: 600;
   color: #6B7280;
-  margin-bottom: 0.25rem;
-  text-align: center;
+  margin-bottom: 0; /* Remove old margin */
+  text-align: right;
+  width: 30px;      /* Fixed width for alignment */
+  flex-shrink: 0;   /* Prevent label from shrinking */
 }
+/* ========================================= */
 
 /* --- Inputs --- */
 input[type="text"] {
@@ -386,7 +392,15 @@ input.changed {
     align-items: flex-start;
     gap: 1rem;
   }
-  .static-fields-grid, .projections-grid {
+  .static-fields-grid {
     grid-template-columns: 1fr;
+  }
+  
+  /* On very small screens, fall back to a single column for yearly projections */
+  @media (max-width: 480px) {
+    .year-inputs-container {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
   }
 }
