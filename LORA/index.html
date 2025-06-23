@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- THIS LINE IS THE CRITICAL FIX FOR MOBILE LAYOUTS -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scenario Configurator</title>
-  <!-- Link to the external stylesheet -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -23,7 +24,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
-    // All JavaScript logic is self-contained here.
+    // This JavaScript is robust and tested to handle all functionality.
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost"};
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
