@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scenario Configurator</title>
-  <!-- The user's original stylesheet link is kept -->
   <link rel="stylesheet" href="styles.css">
-  <!-- Added styles for uploader and other UI elements -->
   <style>
     /* General body and layout improvements */
     body {
@@ -124,10 +122,8 @@
     </header>
 
     <main id="main-content" class="rtt-main-content">
-      <!-- The file upload area is now styled and has corrected text -->
       <div id="file-upload-area" class="file-upload hidden">
         <h3>Load Configuration Data</h3>
-        <!-- This error message is now hidden by default -->
         <p id="upload-error-message" class="hidden">Could not load local file. Please upload your CSV to begin.</p>
         <p>Drag & drop your CSV file here, or click to select.</p>
         <div class="file-input">
@@ -150,6 +146,9 @@
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
+
+    // === NEW: Get the current year to use as the base for labels ===
+    const currentYear = new Date().getFullYear();
 
     const app = document.getElementById("app");
     const headerControlsWrapper = document.getElementById("header-controls-wrapper");
@@ -175,10 +174,9 @@
         processCSV(csvText, "Local configuration loaded successfully!");
       } catch (error) {
         console.error("Local load failed:", error.message);
-        app.innerHTML = ""; // Clear "Loading..." message
-        // Show the specific error message and then the entire upload area
+        app.innerHTML = "";
         document.getElementById('upload-error-message').classList.remove('hidden');
-        fileUploadArea.classList.remove('hidden'); // Show upload UI as fallback
+        fileUploadArea.classList.remove('hidden');
       }
     }
     
@@ -210,8 +208,8 @@
                 baselineData = results.data;
                 scenarioData = JSON.parse(JSON.stringify(baselineData));
 
-                fileUploadArea.classList.add('hidden'); // Hide upload UI if present
-                headerControlsWrapper.classList.remove('hidden'); // Show header controls
+                fileUploadArea.classList.add('hidden');
+                headerControlsWrapper.classList.remove('hidden');
                 renderUI(baselineData, false);
                 showMessage(successMessage, 'success');
             },
@@ -384,7 +382,12 @@
               const yearItem = document.createElement("div");
               yearItem.className = "year-input-item";
               const yearLabel = document.createElement("label");
-              yearLabel.textContent = y.toUpperCase();
+              
+              // === MODIFIED: Calculate and set the label to a real year ===
+              const yearIndex = parseInt(y.substring(1), 10);
+              yearLabel.textContent = currentYear + yearIndex;
+              // ==========================================================
+
               yearItem.appendChild(yearLabel);
               const input = document.createElement("input");
               input.type = "text";
