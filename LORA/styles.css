@@ -8,7 +8,6 @@
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
-/* The pulse animation is no longer used by the button, but kept for potential future use */
 @keyframes pulse {
   0% { box-shadow: 0 2px 8px rgba(255, 167, 38, 0.1); }
   50% { box-shadow: 0 4px 16px rgba(255, 167, 38, 0.25); }
@@ -191,14 +190,10 @@ body {
   color: #fff;
 }
 
-/* === MODIFIED/NEW RULE FOR CHANGE INDICATOR === */
-/* The .has-changes class now acts as a hook for the pseudo-element badge.
-   The old styles (border, color, animation) have been removed. */
 .archetype-button.has-changes {
   /* No styles needed here anymore, the ::after pseudo-element does the work. */
 }
 
-/* This creates the small orange badge on buttons with changes. */
 .archetype-button.has-changes::after {
   content: '';
   position: absolute;
@@ -287,7 +282,15 @@ h3:first-child { margin-top: 0; }
 .year-inputs-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 0.75rem;
+  /* === MODIFIED RULE FOR MOBILE SPACING === */
+  /* Increased gap from 0.75rem to 1rem for better spacing,
+     especially when items wrap on mobile screens. */
+  gap: 1rem;
+}
+
+.year-input-item {
+  display: flex;
+  flex-direction: column;
 }
 
 .year-input-item label {
