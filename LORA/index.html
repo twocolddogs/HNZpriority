@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- THIS TAG IS THE CRITICAL FIX FOR THE MOBILE LAYOUT -->
+  <!-- This tag is ESSENTIAL for correct mobile rendering -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scenario Configurator</title>
   <link rel="stylesheet" href="styles.css">
@@ -50,7 +50,7 @@
         Papa.parse(csvText, {
           header: true,
           skipEmptyLines: true,
-          // By NOT using dynamicTyping, we ensure all IDs are strings, fixing the core bug.
+          // By NOT using dynamicTyping, we ensure all IDs are read as STRINGS.
           complete: (results) => {
             baselineData = results.data;
             scenarioData = JSON.parse(JSON.stringify(baselineData));
@@ -75,11 +75,11 @@
       const { id: rowId, field: fieldKey } = e.target.dataset;
       const { value: newValue } = e.target;
 
-      // This comparison now works because both `row.id` and `rowId` are strings.
+      // This comparison now works because both `row.id` and `rowId` are STRINGS.
       const rowToUpdate = scenarioData.find(row => row.id === rowId);
 
       if (rowToUpdate) {
-        // 1. Update the data model. This now saves the edit.
+        // 1. Update the data model. This saves the edit.
         rowToUpdate[fieldKey] = newValue;
         
         // 2. Mark the row as edited.
