@@ -4,7 +4,107 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scenario Configurator</title>
+  <!-- The user's original stylesheet link is kept -->
   <link rel="stylesheet" href="styles.css">
+  <!-- Added styles for uploader and other UI elements -->
+  <style>
+    /* General body and layout improvements */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f4f7fa;
+      margin: 0;
+      color: #333;
+    }
+    .hidden {
+      display: none !important;
+    }
+    
+    /* File Upload Area Styling */
+    .file-upload {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 40px 20px;
+      text-align: center;
+      background-color: #ffffff;
+      transition: all 0.2s ease-in-out;
+      margin: 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .file-upload.drag-over {
+      border-color: #007bff;
+      background-color: #f0f8ff;
+    }
+    .file-upload h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .file-upload p {
+      color: #666;
+    }
+    #upload-error-message {
+        color: #d9534f; /* Error red color */
+        font-weight: bold;
+    }
+    .file-input {
+      margin-top: 20px;
+    }
+    .file-input input[type="file"] {
+      width: 0.1px;
+      height: 0.1px;
+      opacity: 0;
+      overflow: hidden;
+      position: absolute;
+      z-index: -1;
+    }
+    .file-input label {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #fff;
+      background-color: #007bff;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .file-input label:hover {
+      background-color: #0056b3;
+    }
+    
+    /* Status Message Styling */
+    .status-message p {
+      padding: 12px;
+      margin: 0;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .status-message p.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status-message p.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    /* Loading Spinner for Export Button */
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
   <div class="rtt-container">
@@ -24,9 +124,12 @@
     </header>
 
     <main id="main-content" class="rtt-main-content">
+      <!-- The file upload area is now styled and has corrected text -->
       <div id="file-upload-area" class="file-upload hidden">
         <h3>Load Configuration Data</h3>
-        <p>Could not load local file. Please upload your CSV to begin.</p>
+        <!-- This error message is now hidden by default -->
+        <p id="upload-error-message" class="hidden">Could not load local file. Please upload your CSV to begin.</p>
+        <p>Drag & drop your CSV file here, or click to select.</p>
         <div class="file-input">
           <input type="file" id="csv-file-input" accept=".csv" />
           <label for="csv-file-input">Choose File</label>
@@ -73,6 +176,8 @@
       } catch (error) {
         console.error("Local load failed:", error.message);
         app.innerHTML = ""; // Clear "Loading..." message
+        // Show the specific error message and then the entire upload area
+        document.getElementById('upload-error-message').classList.remove('hidden');
         fileUploadArea.classList.remove('hidden'); // Show upload UI as fallback
       }
     }
@@ -119,7 +224,6 @@
       messageTimeout = setTimeout(() => { statusMessage.innerHTML = ''; }, 4000);
     }
     
-    // All other event listeners and the renderUI function are correct and can remain as they were in the previous version.
     scenarioToggle.addEventListener('change', (e) => {
       activePanelIds.clear();
       document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
@@ -301,7 +405,7 @@
             metricCard.appendChild(inputsContainer);
             projectionsGrid.appendChild(metricCard);
           });
-          panel.appendChild(projHeader);
+          panel.appendChild(projectionsGrid);
           modalityContainer.appendChild(panel);
         }
         app.appendChild(modalityContainer);
