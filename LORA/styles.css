@@ -8,6 +8,7 @@
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
+/* The pulse animation is no longer used by the button, but kept for potential future use */
 @keyframes pulse {
   0% { box-shadow: 0 2px 8px rgba(255, 167, 38, 0.1); }
   50% { box-shadow: 0 4px 16px rgba(255, 167, 38, 0.25); }
@@ -182,7 +183,7 @@ body {
   font-weight: 600;
   transition: all .2s;
   font-family: 'Poppins', sans-serif;
-  position: relative;
+  position: relative; /* This is crucial for positioning the badge */
 }
 
 .archetype-button.active {
@@ -190,10 +191,25 @@ body {
   color: #fff;
 }
 
+/* === MODIFIED/NEW RULE FOR CHANGE INDICATOR === */
+/* The .has-changes class now acts as a hook for the pseudo-element badge.
+   The old styles (border, color, animation) have been removed. */
 .archetype-button.has-changes {
-  border-color: #FFA726;
-  color: #c07d0c;
-  animation: pulse 2s ease-in-out infinite;
+  /* No styles needed here anymore, the ::after pseudo-element does the work. */
+}
+
+/* This creates the small orange badge on buttons with changes. */
+.archetype-button.has-changes::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background-color: #FFA726; /* Orange color */
+  border-radius: 50%; /* Makes it a circle */
+  border: 1.5px solid white; /* A white border to make it pop */
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1); /* Subtle shadow for better visibility */
 }
 
 /* ==========================================================================
