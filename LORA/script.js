@@ -1,0 +1,223 @@
+const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
+const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost"};
+const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
+const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour"};
+const years = Array.from({length: 11}, (_, i) => `y${i}`);
+
+const app = document.getElementById("app");
+const scenarioToggle = document.getElementById("scenario-toggle");
+const exportButton = document.getElementById("export-button");
+
+let baselineData = [];
+let scenarioData = [];
+let activePanelIds = new Set();
+let editedRowIds = new Set();
+
+async function loadAndInitializeData() {
+  try {
+    const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const csvText = await response.text();
+    
+    Papa.parse(csvText, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        baselineData = results.data;
+        scenarioData = JSON.parse(JSON.stringify(baselineData));
+        renderUI(baselineData, false);
+        exportButton.style.display = 'inline-block';
+      }
+    });
+  } catch (error) {
+    app.innerHTML = `<p style="color: red; text-align: center;">Error: Could not load configuration file.</p>`;
+  }
+}
+
+// --- EVENT LISTENERS ---
+scenarioToggle.addEventListener('change', (e) => {
+  activePanelIds.clear();
+  document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
+  const isBaseline = e.target.value === 'baseline';
+  renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
+});
+
+app.addEventListener('input', (e) => {
+  if (!e.target.matches('input[type="text"]') || e.target.readOnly) return;
+  
+  const { id: rowId, field: fieldKey } = e.target.dataset;
+  const { value: newValue } = e.target;
+
+  const rowToUpdate = scenarioData.find(row => row.id === rowId);
+  
+  if (rowToUpdate) {
+    rowToUpdate[fieldKey] = newValue;
+    
+    if (!editedRowIds.has(rowId)) {
+      editedRowIds.add(rowId);
+      const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
+      if (button) {
+        button.classList.add('has-changes');
+        button.title = "Contains scenario edits";
+      }
+    }
+  }
+});
+
+app.addEventListener('click', (e) => {
+  if (!e.target.matches('.archetype-button')) return;
+  const button = e.target;
+  const isAlreadyActive = button.classList.contains('active');
+  const targetPanelId = button.dataset.target;
+  const contentPanel = document.querySelector(targetPanelId);
+  const parentContainer = button.closest('.modality-container');
+  
+  parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
+  parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
+
+  if (!isAlreadyActive) {
+    button.classList.add('active');
+    contentPanel.classList.add('active');
+  }
+});
+
+exportButton.addEventListener('click', () => {
+  if (baselineData.length === 0) return;
+  const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
+  const firstColumnHeader = Object.keys(baselineData[0])[0];
+  scenarioExportData.forEach(row => {
+    row[firstColumnHeader] = "Scenario - Transforming Radiology";
+  });
+  const dataForExport = [...baselineData, ...scenarioExportData];
+  const csvString = Papa.unparse(dataForExport);
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", "scenario_export.csv");
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+});
+
+// --- UI RENDERING LOGIC ---
+function renderUI(dataToRender, isEditable) {
+  app.innerHTML = "";
+  const grouped = {};
+  for (const row of dataToRender) {
+    const modality = row["modality"];
+    const archetype = row["archetype"];
+    if (!grouped[modality]) grouped[modality] = {};
+    grouped[modality][archetype] = row;
+  }
+
+  for (const modality of Object.keys(grouped)) {
+    const modalityContainer = document.createElement("div");
+    modalityContainer.className = "modality-container";
+    const header = document.createElement("div");
+    header.className = "modality-header";
+    const title = document.createElement("h2");
+    title.textContent = modality;
+    const buttonGroup = document.createElement("div");
+    buttonGroup.className = "archetype-buttons";
+    const contentArea = document.createElement("div");
+    contentArea.className = "modality-content";
+    header.appendChild(title);
+    header.appendChild(buttonGroup);
+    modalityContainer.appendChild(header);
+    modalityContainer.appendChild(contentArea);
+
+    for (const archetype of Object.keys(grouped[modality])) {
+      const row = grouped[modality][archetype];
+      const contentPanelId = `content-${modality.replace(/\s+/g, '-')}-${archetype.replace(/\s+/g, '-')}`;
+      
+      const button = document.createElement("button");
+      button.className = "archetype-button";
+      button.textContent = archetype;
+      button.dataset.target = `#${contentPanelId}`;
+      button.dataset.id = row.id;
+
+      if (editedRowIds.has(row.id)) {
+        button.classList.add('has-changes');
+        button.title = "Contains scenario edits";
+      }
+      
+      buttonGroup.appendChild(button);
+
+      const panel = document.createElement("div");
+      panel.className = "archetype-content-panel";
+      panel.id = contentPanelId;
+      
+      const staticHeader = document.createElement("h3");
+      staticHeader.textContent = "Static Fields";
+      panel.appendChild(staticHeader);
+      const staticGrid = document.createElement("div");
+      staticGrid.className = "static-fields-grid";
+      staticFields.forEach(field => {
+        const fieldDiv = document.createElement("div");
+        fieldDiv.className = "static-field";
+        const label = document.createElement("label");
+        label.textContent = staticFieldLabels[field] || field;
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = row[field] != null ? row[field] : "";
+        input.dataset.id = row.id;
+        input.dataset.field = field;
+        if (!isEditable) input.readOnly = true;
+        fieldDiv.appendChild(label);
+        fieldDiv.appendChild(input);
+        staticGrid.appendChild(fieldDiv);
+      });
+      panel.appendChild(staticGrid);
+
+      const tableHeader = document.createElement("h3");
+      tableHeader.textContent = "Yearly Projections";
+      panel.appendChild(tableHeader);
+      const projectionsGrid = document.createElement("div");
+      projectionsGrid.className = "projections-grid";
+      projectionMetrics.forEach(metric => {
+        const metricCard = document.createElement("div");
+        metricCard.className = "projection-metric-card";
+        const metricTitle = document.createElement("h4");
+        metricTitle.textContent = projectionMetricLabels[metric] || metric;
+        metricCard.appendChild(metricTitle);
+        const inputsContainer = document.createElement("div");
+        inputsContainer.className = "year-inputs-container";
+        years.forEach(y => {
+          const key = `${metric}_${y}`;
+          const yearItem = document.createElement("div");
+          yearItem.className = "year-input-item";
+          const yearLabel = document.createElement("label");
+          yearLabel.textContent = y.toUpperCase();
+          yearItem.appendChild(yearLabel);
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = row[key] != null ? row[key] : "";
+          input.dataset.id = row.id;
+          input.dataset.field = key;
+          if (!isEditable) input.readOnly = true;
+          yearItem.appendChild(input);
+          inputsContainer.appendChild(yearItem);
+        });
+        metricCard.appendChild(inputsContainer);
+        projectionsGrid.appendChild(metricCard);
+      });
+      panel.appendChild(projectionsGrid);
+      contentArea.appendChild(panel);
+    }
+    app.appendChild(modalityContainer);
+  }
+
+  activePanelIds.forEach(panelId => {
+    const panelToActivate = document.getElementById(panelId);
+    if (panelToActivate) {
+      const buttonToActivate = document.querySelector(`button[data-target="#${panelId}"]`);
+      panelToActivate.classList.add('active');
+      if (buttonToActivate) buttonToActivate.classList.add('active');
+    }
+  });
+}
+
+// Start the application
+loadAndInitializeData();
