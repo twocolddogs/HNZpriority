@@ -56,8 +56,8 @@ h4 { margin: 0 0 0.75rem 0; color: #34495e; }
 input[type="text"] { box-sizing: border-box; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px; transition: border-color 0.2s, background-color 0.2s; text-align: center; }
 input[type="text"]:focus { outline: none; border-color: #3498db; }
 input[readonly] { background-color: #f1f3f4; color: #555; cursor: not-allowed; border-color: #ddd; }
-.static-field input[type="text"] { width: 100%; } /* Static fields get full width on mobile */
-.year-input-item input[type="text"] { width: 5rem; } /* Year inputs keep fixed width */
+.static-field input[type="text"] { width: 100%; }
+.year-input-item input[type="text"] { width: 5rem; }
 
 
 /* --- 2. DESKTOP STYLES (Overrides for screens wider than 768px) --- */
@@ -74,23 +74,23 @@ input[readonly] { background-color: #f1f3f4; color: #555; cursor: not-allowed; b
 
   /* Static Fields: DESKTOP - Two columns, label on the left */
   .static-fields-grid {
-    grid-template-columns: 1fr 1fr; /* Switch to a two-column grid */
-    gap: 1rem 2rem; /* row-gap column-gap */
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 2rem;
   }
   .static-field {
-    flex-direction: row; /* Put label and input side-by-side */
+    flex-direction: row;
     justify-content: space-between;
     align-items: center;
   }
   .static-field input[type="text"] {
-    width: 12rem; /* Give the input a fixed width on desktop */
+    width: 12rem;
   }
 
   /* Projections: DESKTOP - Two columns for metric cards */
   .projections-grid {
-    grid-template-columns: 1fr 1fr; /* Two-column grid for the metric cards */
+    grid-template-columns: 1fr 1fr;
   }
   .year-inputs-container {
-    justify-content: center; /* Center the year inputs on desktop */
+    justify-content: center;
   }
 }
