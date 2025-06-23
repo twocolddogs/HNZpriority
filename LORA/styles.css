@@ -1,96 +1,125 @@
-/* File: styles.css */
-
-/* --- 1. MOBILE-FIRST STYLES (Default for all screen sizes) --- */
-
+/* General Body & Font Styling */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  padding: 1rem;
+  padding: 2rem;
   background-color: #f4f7f9;
   color: #333;
-  -webkit-text-size-adjust: 100%; /* Prevents text zoom on mobile */
 }
-
-h1 { color: #2c3e50; text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem; }
+h1 {
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
 h2 { margin: 0; color: #34495e; font-size: 1.5rem; }
-h3 { border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem; margin-top: 2rem; margin-bottom: 1rem; color: #34495e; font-weight: 600; }
+h3 {
+  border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem;
+  margin-top: 2rem; margin-bottom: 1rem;
+  color: #34495e; font-weight: 600;
+}
 h4 { margin: 0 0 0.75rem 0; color: #34495e; }
 
-/* Controls at the top of the page */
-.controls-container { text-align: center; margin-bottom: 2rem; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1.5rem; }
-.scenario-controls { display: inline-flex; gap: 0.5rem; background-color: #eaf0f4; padding: 0.4rem; border-radius: 8px; }
+/* Controls Container */
+.controls-container {
+  text-align: center;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+}
+.scenario-controls {
+  display: inline-flex;
+  gap: 1rem;
+  background-color: #eaf0f4;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
 .scenario-controls input[type="radio"] { display: none; }
-.scenario-controls label { padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; transition: all 0.2s ease-in-out; font-weight: 500; }
-.scenario-controls input[type="radio"]:checked + label { background-color: #3498db; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.scenario-controls label {
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-weight: 500;
+}
+.scenario-controls input[type="radio"]:checked + label {
+  background-color: #3498db;
+  color: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
 
-#export-button { padding: 0.6rem 1.5rem; font-size: 1rem; font-weight: 600; border: none; border-radius: 6px; background-color: #27ae60; color: white; cursor: pointer; transition: background-color 0.2s; }
+#export-button {
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background-color: #27ae60;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
 #export-button:hover { background-color: #2ecc71; }
 
-/* Main layout cards */
-.modality-container { background: #ffffff; border: 1px solid #e1e8ed; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); overflow: hidden; }
-.modality-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 1rem; background-color: #f8f9fa; border-bottom: 1px solid #e1e8ed; gap: 1rem; }
+/* Modality Cards */
+.modality-container {
+  background: #ffffff; border: 1px solid #e1e8ed;
+  border-radius: 8px; margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+.modality-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 1.5rem; background-color: #f8f9fa;
+  border-bottom: 1px solid #e1e8ed;
+}
 
-.archetype-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.archetype-button { position: relative; padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; border: 1px solid #bdc3c7; border-radius: 5px; background-color: #ffffff; color: #2c3e50; cursor: pointer; transition: all 0.2s ease-in-out; }
+/* Archetype Buttons */
+.archetype-buttons { display: flex; gap: 0.5rem; }
+.archetype-button {
+  position: relative;
+  padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600;
+  border: 1px solid #bdc3c7; border-radius: 5px;
+  background-color: #ffffff; color: #2c3e50;
+  cursor: pointer; transition: all 0.2s ease-in-out;
+}
 .archetype-button:hover { background-color: #ecf0f1; border-color: #3498db; }
 .archetype-button.active { background-color: #3498db; color: #ffffff; border-color: #3498db; }
-.archetype-button.has-changes::after { content: '●'; position: absolute; top: 3px; right: 5px; font-size: 10px; color: #f39c12; }
+.archetype-button.has-changes::after {
+  content: '●';
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 10px;
+  color: #f39c12;
+}
 
-/* Content Panels */
-.archetype-content-panel { padding: 0.5rem 1rem 1.5rem 1rem; display: none; }
+/* Content Panels & Grids */
+.archetype-content-panel { padding: 0.5rem 1.5rem 1.5rem 1.5rem; display: none; }
 .archetype-content-panel.active { display: block; }
-
-/* Static Fields: MOBILE - Single column, label on top */
-.static-fields-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
-.static-field { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; }
-.static-field label { color: #555; font-weight: 500; }
-
-/* Projections: MOBILE - Single column for metric cards */
-.projections-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
-.projection-metric-card { background-color: #f8f9fa; border: 1px solid #e8e8e8; border-radius: 6px; padding: 1rem; }
-
-.year-inputs-container { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: flex-start; }
+.static-fields-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1rem; align-items: center;
+}
+.static-field { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+.static-field label { color: #555; margin-right: 1rem; white-space: nowrap; }
+.projections-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+.projection-metric-card {
+  background-color: #fdfdfd; border: 1px solid #e8e8e8;
+  border-radius: 6px; padding: 1rem;
+}
+.year-inputs-container { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 .year-input-item { display: flex; flex-direction: column; }
 .year-input-item label { font-size: 0.75rem; color: #666; margin-bottom: 0.2rem; text-align: center; }
 
 /* Input Fields */
-input[type="text"] { box-sizing: border-box; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px; transition: border-color 0.2s, background-color 0.2s; text-align: center; }
+input[type="text"] {
+  width: 5rem; padding: 0.4rem; border: 1px solid #ccc;
+  border-radius: 4px; transition: border-color 0.2s, background-color 0.2s;
+  text-align: center;
+}
 input[type="text"]:focus { outline: none; border-color: #3498db; }
 input[readonly] { background-color: #f1f3f4; color: #555; cursor: not-allowed; border-color: #ddd; }
-.static-field input[type="text"] { width: 100%; }
-.year-input-item input[type="text"] { width: 5rem; }
-
-
-/* --- 2. DESKTOP STYLES (Overrides for screens wider than 768px) --- */
-@media (min-width: 768px) {
-  body {
-    padding: 2rem;
-  }
-  .modality-header {
-    padding: 1rem 1.5rem;
-  }
-  .archetype-content-panel {
-    padding: 0.5rem 1.5rem 1.5rem 1.5rem;
-  }
-
-  /* Static Fields: DESKTOP - Two columns, label on the left */
-  .static-fields-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem 2rem;
-  }
-  .static-field {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .static-field input[type="text"] {
-    width: 12rem;
-  }
-
-  /* Projections: DESKTOP - Two columns for metric cards */
-  .projections-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .year-inputs-container {
-    justify-content: center;
-  }
-}
