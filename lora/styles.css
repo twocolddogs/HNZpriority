@@ -207,6 +207,21 @@ body {
    4. Content Panels & Inputs
    ========================================================================== */
 
+/* === NEW: Scenario Name Card Content === */
+.scenario-name-content {
+  padding: 1.5em;
+  background: #FAFBFC;
+}
+.scenario-name-content label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+.scenario-name-content input {
+    text-align: left;
+    padding: 0.6em 0.8em;
+}
+
 .archetype-content-panel {
   padding: 0;
   max-height: 0;
@@ -233,7 +248,6 @@ h3 {
 }
 h3:first-child { margin-top: 0; }
 
-/* --- Fields & Projections Grids --- */
 .static-fields-grid, .projections-grid {
   display: grid;
   gap: 1.25rem;
@@ -246,7 +260,6 @@ h3:first-child { margin-top: 0; }
   grid-template-columns: 1fr;
 }
 
-/* === NEW: Read-only field styles for Baseline view === */
 .static-field {
   display: flex;
   align-items: center;
@@ -266,11 +279,10 @@ h3:first-child { margin-top: 0; }
 }
 .static-field input {
   text-align: right;
-  width: 120px; /* Give it a fixed width */
+  width: 120px;
   flex-shrink: 0;
 }
 
-/* === Slider Field Styles for Scenario view === */
 .slider-field {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -361,7 +373,6 @@ input[type="range"]:disabled::-moz-range-thumb {
   cursor: not-allowed;
 }
 
-/* --- Projections Section --- */
 .projection-metric-card {
   background: #fff;
   border: 1px solid #E5EAF0;
@@ -394,7 +405,6 @@ input[type="range"]:disabled::-moz-range-thumb {
   flex-shrink: 0;
 }
 
-/* --- Generic Inputs --- */
 input[type="text"] {
   width: 100%;
   padding: 0.4em 0.5em;
@@ -423,7 +433,6 @@ input.changed {
   background-color: #FFF7E6;
 }
 
-/* --- Status Message --- */
 .status-message {
   position: fixed;
   top: 20px;
