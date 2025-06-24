@@ -132,6 +132,7 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
@@ -140,7 +141,6 @@
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
     const currentYear = new Date().getFullYear();
 
-    // === MODIFIED: Added a 'parse' function to each config for two-way binding ===
     const staticFieldSliderConfig = {
       non_demographic_growth: { min: 0, max: 0.2, step: 0.005, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s) / 100 },
       routine_machine_hours: { min: 1000, max: 10000, step: 100, format: v => Math.round(v), parse: s => parseFloat(s) },
@@ -177,19 +177,89 @@
     });
 
     async function loadAndInitializeData() {
-      // ... (no changes here)
+      try {
+        const response = await fetch('baseline.csv');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const csvText = await response.text();
+        processCSV(csvText, "Successfully loaded baseline data.");
+      } catch (error) {
+        console.error("Could not auto-load baseline.csv:", error);
+        const appLoadingMessage = document.querySelector('.app-loading-message');
+        if (appLoadingMessage) {
+            appLoadingMessage.classList.add('hidden');
+        }
+        fileUploadArea.classList.remove('hidden');
+        document.getElementById('upload-error-message').classList.remove('hidden');
+      }
     }
     
     function loadCSVFile(file) {
-      // ... (no changes here)
+      if (file && (file.type === "text/csv" || file.name.endsWith('.csv'))) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          processCSV(event.target.result, "Successfully loaded uploaded file.");
+          document.getElementById('upload-error-message').classList.add('hidden');
+        };
+        reader.onerror = function() {
+            showMessage("Error reading the file.", "error");
+        };
+        reader.readAsText(file);
+      } else {
+        showMessage("Please select a valid .csv file.", "error");
+      }
     }
 
     function processCSV(csvText, successMessage) {
-      // ... (no changes here, dynamicTyping is important)
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: true,
+        complete: function(results) {
+          if (results.errors.length) {
+            console.error("CSV Parsing Errors:", results.errors);
+            showMessage("Error parsing CSV file. Check console for details.", "error");
+            fileUploadArea.classList.remove('hidden');
+            return;
+          }
+
+          results.data.forEach((row, index) => {
+              if (!row.id) {
+                  row.id = `${row.modality}-${row.archetype}`.replace(/\s+/g, '-').toLowerCase();
+              }
+          });
+          
+          baselineData = JSON.parse(JSON.stringify(results.data));
+          scenarioData = JSON.parse(JSON.stringify(results.data));
+          
+          editedRowIds.clear();
+          activePanelIds.clear();
+
+          fileUploadArea.classList.add('hidden');
+          headerControlsWrapper.classList.remove('hidden');
+          
+          renderUI(baselineData, false); 
+          showMessage(successMessage, "success");
+        },
+        error: function(error) {
+            console.error("PapaParse Error:", error);
+            showMessage("A critical error occurred while parsing the file.", "error");
+            fileUploadArea.classList.remove('hidden');
+        }
+      });
     }
 
     function showMessage(message, type) {
-      // ... (no changes here)
+      clearTimeout(messageTimeout);
+      const p = document.createElement('p');
+      p.className = type;
+      p.textContent = message;
+      statusMessage.innerHTML = '';
+      statusMessage.appendChild(p);
+      messageTimeout = setTimeout(() => {
+        statusMessage.innerHTML = '';
+      }, 4000);
     }
     
     scenarioToggle.addEventListener('change', (e) => {
@@ -218,7 +288,6 @@
             if (button) button.classList.remove('has-changes');
         }
 
-        // Also update individual field changed status
         const panel = button?.dataset.target ? document.querySelector(button.dataset.target) : null;
         if (panel) {
             panel.querySelectorAll('[data-field]').forEach(input => {
@@ -251,11 +320,9 @@
       
       if (!rowToUpdate || !config) return;
 
-      // Update the text display
       const display = slider.closest('.slider-control-wrapper').querySelector('.slider-value-display');
       display.value = config.format(newValue);
       
-      // Update data model and UI state
       rowToUpdate[fieldKey] = newValue;
       updateChangeState(rowId);
     }
@@ -271,16 +338,13 @@
 
         let parsedValue = config.parse(textInput.value);
 
-        // If parsing fails (e.g., user types "abc"), revert to the last valid value.
         if (isNaN(parsedValue)) {
             textInput.value = config.format(rowToUpdate[fieldKey]);
             return;
         }
 
-        // Clamp the value to the slider's min/max range
         const clampedValue = Math.max(config.min, Math.min(config.max, parsedValue));
 
-        // Update slider, data model, and reformat the text box
         const slider = textInput.closest('.slider-control-wrapper').querySelector('input[type=range]');
         slider.value = clampedValue;
         rowToUpdate[fieldKey] = clampedValue;
@@ -289,18 +353,51 @@
         updateChangeState(rowId);
     }
     
-    // Listen for slider drags
     app.addEventListener('input', handleSliderInput);
     app.addEventListener('touchmove', handleSliderInput);
-    // Listen for text input changes (after focus is lost)
     app.addEventListener('change', handleTextChange);
 
     app.addEventListener('click', (e) => {
-      // ... (no changes here)
+        if (e.target.classList.contains('archetype-button')) {
+            const button = e.target;
+            const targetPanelId = button.dataset.target;
+            const panel = document.querySelector(targetPanelId);
+
+            if (!panel) return;
+
+            if (panel.classList.contains('active')) {
+                panel.classList.remove('active');
+                button.classList.remove('active');
+            } else {
+                panel.classList.add('active');
+                button.classList.add('active');
+            }
+        }
     });
 
     exportButton.addEventListener('click', () => {
-      // ... (no changes here)
+        const spinner = document.createElement('span');
+        spinner.className = 'loading-spinner';
+        exportButton.prepend(spinner);
+        exportButton.disabled = true;
+
+        setTimeout(() => { 
+            const csv = Papa.unparse(scenarioData);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            const filename = scenarioName.trim().replace(/\s+/g, '_') || 'scenario_export';
+            link.setAttribute("download", `${filename}_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            exportButton.removeChild(spinner);
+            exportButton.disabled = false;
+            showMessage("CSV exported successfully!", "success");
+        }, 500);
     });
 
     function renderUI(dataToRender, isEditable) {
@@ -311,14 +408,47 @@
         scenarioNameCard.classList.add('hidden');
       }
 
-      const grouped = {};
-      // ... (grouping logic is the same)
+      const grouped = dataToRender.reduce((acc, row) => {
+        const { modality, archetype } = row;
+        if (!acc[modality]) acc[modality] = {};
+        if (!acc[modality][archetype]) acc[modality][archetype] = [];
+        acc[modality][archetype].push(row);
+        return acc;
+      }, {});
 
-      for (const modality of Object.keys(grouped)) {
-        // ... (modality container and header creation is the same)
+      for (const modality of Object.keys(grouped).sort()) {
+        const modalityContainer = document.createElement('div');
+        modalityContainer.className = 'modality-container';
+        
+        const modalityHeader = document.createElement('div');
+        modalityHeader.className = 'modality-header';
+        const modalityTitle = document.createElement('h2');
+        modalityTitle.textContent = modality;
+        const archetypeButtonsDiv = document.createElement('div');
+        archetypeButtonsDiv.className = 'archetype-buttons';
+        modalityHeader.appendChild(modalityTitle);
+        modalityHeader.appendChild(archetypeButtonsDiv);
+        modalityContainer.appendChild(modalityHeader);
 
-        for (const archetype of Object.keys(grouped[modality])) {
-          // ... (archetype button and panel creation is the same)
+        for (const archetype of Object.keys(grouped[modality]).sort()) {
+          const row = grouped[modality][archetype][0];
+          const panelId = `panel-${row.id}`;
+
+          const button = document.createElement('button');
+          button.className = 'archetype-button';
+          button.textContent = archetype;
+          button.dataset.target = `#${panelId}`;
+          button.dataset.id = row.id;
+
+          if (editedRowIds.has(row.id)) {
+             button.classList.add('has-changes');
+          }
+
+          archetypeButtonsDiv.appendChild(button);
+
+          const panel = document.createElement('div');
+          panel.className = 'archetype-content-panel';
+          panel.id = panelId;
           
           const staticHeader = document.createElement("h3");
           staticHeader.textContent = 'Static Fields';
@@ -350,7 +480,6 @@
               valueDisplay.type = 'text';
               valueDisplay.className = 'slider-value-display';
               valueDisplay.value = config.format(slider.value);
-              // === NEW: Add dataset to text box for two-way binding ===
               valueDisplay.dataset.id = row.id;
               valueDisplay.dataset.field = field;
               
@@ -366,7 +495,6 @@
               staticGrid.appendChild(fieldDiv);
 
             } else {
-              // This part for Baseline view remains the same
               const fieldDiv = document.createElement("div");
               fieldDiv.className = "static-field";
               const label = document.createElement("label");
@@ -388,7 +516,40 @@
           const projectionsGrid = document.createElement("div");
           projectionsGrid.className = "projections-grid";
           projectionMetrics.forEach(metric => {
-            // ... (yearly projections logic is unchanged)
+              const card = document.createElement('div');
+              card.className = 'projection-metric-card';
+              const cardTitle = document.createElement('h4');
+              cardTitle.textContent = projectionMetricLabels[metric] || metric;
+              card.appendChild(cardTitle);
+
+              const yearInputsContainer = document.createElement('div');
+              yearInputsContainer.className = 'year-inputs-container';
+              
+              years.forEach((yearKey, index) => {
+                  const item = document.createElement('div');
+                  item.className = 'year-input-item';
+                  const label = document.createElement('label');
+                  label.textContent = `${currentYear + index}`;
+                  const input = document.createElement('input');
+                  input.type = 'text';
+                  input.value = row[metric] && row[metric][yearKey] !== undefined ? row[metric][yearKey] : 'N/A';
+                  input.readOnly = true;
+                  input.dataset.field = `${metric}.${yearKey}`;
+                  
+                  if(isEditable) {
+                      const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
+                      if (baselineRow && baselineRow[metric] && row[metric][yearKey] !== baselineRow[metric][yearKey]) {
+                          input.classList.add('changed');
+                      }
+                  }
+                  
+                  item.appendChild(label);
+                  item.appendChild(input);
+                  yearInputsContainer.appendChild(item);
+              });
+
+              card.appendChild(yearInputsContainer);
+              projectionsGrid.appendChild(card);
           });
           panel.appendChild(projectionsGrid);
           modalityContainer.appendChild(panel);
@@ -396,7 +557,10 @@
         app.appendChild(modalityContainer);
       }
       activePanelIds.forEach(panelId => {
-        // ... (panel activation logic is unchanged)
+        const panelToReopen = document.getElementById(panelId);
+        const buttonToReactivate = document.querySelector(`.archetype-button[data-target="#${panelId}"]`);
+        if (panelToReopen) panelToReopen.classList.add('active');
+        if (buttonToReactivate) buttonToReactivate.classList.add('active');
       });
     }
   </script>
