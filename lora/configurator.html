@@ -366,48 +366,57 @@
           const staticGrid = document.createElement("div");
           staticGrid.className = "static-fields-grid";
           
+          // === MODIFIED: Conditionally render sliders or simple text fields ===
           staticFields.forEach(field => {
             const config = staticFieldSliderConfig[field];
             if (!config) return;
-            
-            const fieldDiv = document.createElement("div");
-            fieldDiv.className = "slider-field";
 
-            const label = document.createElement("label");
-            label.textContent = staticFieldLabels[field] || field;
-
-            const controlsWrapper = document.createElement('div');
-            controlsWrapper.className = 'slider-control-wrapper';
-
-            const slider = document.createElement("input");
-            slider.type = "range";
-            slider.min = config.min;
-            slider.max = config.max;
-            slider.step = config.step;
-            slider.value = row[field] != null ? row[field] : config.min;
-            slider.dataset.id = row.id;
-            slider.dataset.field = field;
-            
-            const valueDisplay = document.createElement('input');
-            valueDisplay.type = 'text';
-            valueDisplay.className = 'slider-value-display';
-            valueDisplay.value = config.format(slider.value);
-            valueDisplay.readOnly = true;
-
-            controlsWrapper.appendChild(slider);
-            controlsWrapper.appendChild(valueDisplay);
-            fieldDiv.appendChild(label);
-            fieldDiv.appendChild(controlsWrapper);
-            
-            if (!isEditable) {
-              slider.disabled = true;
-            } else {
+            if (isEditable) {
+              // SCENARIO VIEW: Render interactive sliders
+              const fieldDiv = document.createElement("div");
+              fieldDiv.className = "slider-field";
+              const label = document.createElement("label");
+              label.textContent = staticFieldLabels[field] || field;
+              const controlsWrapper = document.createElement('div');
+              controlsWrapper.className = 'slider-control-wrapper';
+              const slider = document.createElement("input");
+              slider.type = "range";
+              slider.min = config.min;
+              slider.max = config.max;
+              slider.step = config.step;
+              slider.value = row[field] != null ? row[field] : config.min;
+              slider.dataset.id = row.id;
+              slider.dataset.field = field;
+              const valueDisplay = document.createElement('input');
+              valueDisplay.type = 'text';
+              valueDisplay.className = 'slider-value-display';
+              valueDisplay.value = config.format(slider.value);
+              valueDisplay.readOnly = true;
+              controlsWrapper.appendChild(slider);
+              controlsWrapper.appendChild(valueDisplay);
+              fieldDiv.appendChild(label);
+              fieldDiv.appendChild(controlsWrapper);
+              
               const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
               if (baselineRow && Math.abs(parseFloat(row[field]) - parseFloat(baselineRow[field])) > 1e-9) {
                 fieldDiv.classList.add('changed');
               }
+              staticGrid.appendChild(fieldDiv);
+
+            } else {
+              // BASELINE VIEW: Render simple read-only fields
+              const fieldDiv = document.createElement("div");
+              fieldDiv.className = "static-field";
+              const label = document.createElement("label");
+              label.textContent = staticFieldLabels[field] || field;
+              const input = document.createElement("input");
+              input.type = "text";
+              input.value = config.format(row[field] != null ? row[field] : config.min);
+              input.readOnly = true;
+              fieldDiv.appendChild(label);
+              fieldDiv.appendChild(input);
+              staticGrid.appendChild(fieldDiv);
             }
-            staticGrid.appendChild(fieldDiv);
           });
           panel.appendChild(staticGrid);
 
