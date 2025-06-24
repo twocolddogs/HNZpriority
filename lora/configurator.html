@@ -134,7 +134,6 @@
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
     const currentYear = new Date().getFullYear();
 
-    // === NEW: Configuration for static field sliders (min, max, step, and display format) ===
     const staticFieldSliderConfig = {
       non_demographic_growth: { min: 0, max: 0.2, step: 0.005, format: v => `${(parseFloat(v) * 100).toFixed(1)}%` },
       routine_machine_hours: { min: 1000, max: 10000, step: 100, format: v => Math.round(v) },
@@ -193,7 +192,7 @@
         Papa.parse(csvText, {
             header: true,
             skipEmptyLines: true,
-            dynamicTyping: true, // Auto-detect numbers
+            dynamicTyping: true,
             complete: (results) => {
                 if (results.errors.length > 0) {
                     showMessage('Error parsing CSV: ' + results.errors[0].message, 'error');
@@ -228,26 +227,25 @@
       renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
     });
 
-    app.addEventListener('input', (e) => {
-      // === MODIFIED: Selector to include sliders and ignore their readonly text displays ===
-      if (!e.target.matches('input[type="text"], input[type="range"]') || e.target.readOnly || e.target.classList.contains('slider-value-display')) return;
+    function handleInputChange(e) {
+      const target = e.target;
+      if (!target.matches('input[type="text"], input[type="range"]') || target.readOnly || target.classList.contains('slider-value-display')) return;
       
-      const { id: rowId, field: fieldKey } = e.target.dataset;
-      const { value: newValue } = e.target;
+      const { id: rowId, field: fieldKey } = target.dataset;
+      const { value: newValue } = target;
       const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
       
       if (!rowToUpdate) return;
       
-      // === NEW: If the input is a slider, update its text display ===
-      if(e.target.type === 'range') {
-        const display = e.target.closest('.slider-control-wrapper').querySelector('.slider-value-display');
+      if(target.type === 'range') {
+        const display = target.closest('.slider-control-wrapper').querySelector('.slider-value-display');
         const config = staticFieldSliderConfig[fieldKey];
         if (display && config) {
             display.value = config.format(newValue);
         }
       }
 
-      rowToUpdate[fieldKey] = e.target.type === 'range' ? parseFloat(newValue) : newValue;
+      rowToUpdate[fieldKey] = target.type === 'range' ? parseFloat(newValue) : newValue;
       const baselineRow = baselineData.find(row => String(row.id) === String(rowId));
       
       if (!baselineRow) return;
@@ -255,19 +253,17 @@
       const baselineValue = baselineRow[fieldKey];
       const scenarioValue = rowToUpdate[fieldKey];
 
-      // Use a small epsilon for float comparison to avoid precision issues
       const isChanged = Math.abs(parseFloat(scenarioValue) - parseFloat(baselineValue)) > 1e-9;
 
-      if (e.target.type === 'range') {
-        e.target.closest('.slider-field').classList.toggle('changed', isChanged);
+      if (target.type === 'range') {
+        target.closest('.slider-field').classList.toggle('changed', isChanged);
       } else {
-        e.target.classList.toggle('changed', isChanged);
+        target.classList.toggle('changed', isChanged);
       }
       
       let hasAnyChanges = Object.keys(baselineRow).some(key => {
           const blVal = baselineRow[key];
           const scVal = rowToUpdate[key];
-          // Check if key is a number, string, or something else. Only compare if not an object.
           if (typeof blVal !== 'object' && blVal !== null) {
               return String(scVal) !== String(blVal);
           }
@@ -282,8 +278,11 @@
         editedRowIds.delete(rowId);
         if (button) button.classList.remove('has-changes');
       }
-    });
-    
+    }
+
+    app.addEventListener('input', handleInputChange);
+    app.addEventListener('touchmove', handleInputChange);
+
     app.addEventListener('click', (e) => {
       if (!e.target.matches('.archetype-button')) return;
       const button = e.target;
@@ -367,10 +366,9 @@
           const staticGrid = document.createElement("div");
           staticGrid.className = "static-fields-grid";
           
-          // === MODIFIED: Loop to create sliders for static fields ===
           staticFields.forEach(field => {
             const config = staticFieldSliderConfig[field];
-            if (!config) return; // Skip if no config for this field
+            if (!config) return;
             
             const fieldDiv = document.createElement("div");
             fieldDiv.className = "slider-field";
