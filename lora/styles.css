@@ -190,8 +190,6 @@ body {
   color: #fff;
 }
 
-.archetype-button.has-changes {}
-
 .archetype-button.has-changes::after {
   content: '';
   position: absolute;
@@ -241,31 +239,30 @@ h3:first-child { margin-top: 0; }
   gap: 1.25rem;
 }
 .static-fields-grid {
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); /* Increased min-width for sliders */
-  gap: 1.5rem 1.25rem; /* More vertical gap */
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem 1.25rem;
 }
 .projections-grid {
   grid-template-columns: 1fr;
 }
 
-/* === NEW: Slider Field Styles === */
+/* === Slider Field Styles === */
 .slider-field {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr; /* Label takes auto width, controls take rest */
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem;
   padding: 0.75rem 1rem;
   background: #fff;
   border-radius: 6px;
   border: 1px solid #E5EAF0;
-  border-left: 4px solid transparent; /* For 'changed' state visual cue */
+  border-left: 4px solid transparent;
   transition: border-color 0.2s ease;
 }
 
 .slider-field label {
   font-size: 0.9em;
   font-weight: 500;
-  margin-right: 1rem;
   white-space: nowrap;
 }
 
@@ -277,6 +274,7 @@ h3:first-child { margin-top: 0; }
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-width: 200px; /* Give slider enough space */
 }
 
 .slider-value-display {
@@ -285,15 +283,15 @@ h3:first-child { margin-top: 0; }
   border: 1px solid #D1D5DB;
   border-radius: 4px;
   font-size: 0.9em;
-  font-variant-numeric: tabular-nums; /* Keeps numbers from jumping around */
+  font-variant-numeric: tabular-nums;
   text-align: center;
   background-color: #F3F4F6;
   color: #4B5563;
   box-shadow: none;
-  flex-shrink: 0; /* Prevent shrinking */
+  flex-shrink: 0;
 }
 
-/* === NEW: Custom Slider Styles === */
+/* === Custom Slider Styles === */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -320,7 +318,7 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   border: 3px solid #fff;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  margin-top: -6px; /* Center the thumb on the track */
+  margin-top: -6px;
 }
 
 input[type="range"]::-moz-range-thumb {
@@ -410,7 +408,6 @@ input[readonly] {
   cursor: not-allowed;
   box-shadow: none;
 }
-/* This still applies to yearly projection inputs */
 input.changed {
   border-color: #FFA726;
   background-color: #FFF7E6;
@@ -450,8 +447,30 @@ input.changed {
   .rtt-main-content, .archetype-content-panel.active { padding: 1em; }
   .modality-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
   .static-fields-grid { grid-template-columns: 1fr; }
-  .slider-field { grid-template-columns: 1fr; }
   
+  /* === NEW/MODIFIED: Mobile layout for sliders === */
+  .slider-field {
+    /* Stack label and controls vertically */
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .slider-control-wrapper {
+    /* Stack slider and its value display vertically */
+    flex-direction: column;
+    /* Put value display below slider */
+    flex-direction: column-reverse; 
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .slider-value-display {
+    /* Make value display full-width for a cleaner look */
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  /* ============================================== */
+
   @media (max-width: 480px) {
     .year-inputs-container { grid-template-columns: 1fr; gap: 0.5rem; }
   }
