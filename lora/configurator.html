@@ -117,6 +117,18 @@
           <label for="csv-file-input">Choose File</label>
         </div>
       </div>
+
+      <!-- === NEW: Scenario Name Card (hidden by default) === -->
+      <div id="scenario-name-card" class="modality-container hidden">
+        <div class="modality-header">
+          <h2>Scenario Name</h2>
+        </div>
+        <div class="scenario-name-content">
+          <label for="scenario-name-input">Enter a name for your scenario:</label>
+          <input type="text" id="scenario-name-input" placeholder="e.g., High Growth Projection">
+        </div>
+      </div>
+      
       <div id="app">
         <div class="app-loading-message">Loading Configuration...</div>
       </div>
@@ -154,14 +166,23 @@
     const statusMessage = document.getElementById("status-message");
     const fileUploadArea = document.getElementById("file-upload-area");
     const fileInput = document.getElementById("csv-file-input");
+    // === NEW: References for scenario name card and input ===
+    const scenarioNameCard = document.getElementById("scenario-name-card");
+    const scenarioNameInput = document.getElementById("scenario-name-input");
 
     let baselineData = [], scenarioData = [], activePanelIds = new Set(), editedRowIds = new Set(), messageTimeout;
+    // === NEW: Variable to store the custom scenario name ===
+    let scenarioName = "";
 
     document.addEventListener('DOMContentLoaded', loadAndInitializeData);
     fileInput.addEventListener('change', (e) => loadCSVFile(e.target.files[0]));
     fileUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); fileUploadArea.classList.add('drag-over'); });
     fileUploadArea.addEventListener('dragleave', () => fileUploadArea.classList.remove('drag-over'));
     fileUploadArea.addEventListener('drop', (e) => { e.preventDefault(); fileUploadArea.classList.remove('drag-over'); loadCSVFile(e.dataTransfer.files[0]); });
+    // === NEW: Event listener to update scenario name as user types ===
+    scenarioNameInput.addEventListener('input', (e) => {
+        scenarioName = e.target.value;
+    });
 
     async function loadAndInitializeData() {
       try {
@@ -308,7 +329,15 @@
       setTimeout(() => {
         const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
         const firstColumnHeader = Object.keys(baselineData[0])[0];
-        scenarioExportData.forEach(row => { row[firstColumnHeader] = "Scenario - Transforming Radiology"; });
+        
+        // === MODIFIED: Use the custom scenario name for the export ===
+        const finalScenarioName = scenarioName.trim() || 'Unnamed Scenario';
+        const exportLabel = `Scenario : ${finalScenarioName}`;
+        
+        scenarioExportData.forEach(row => { 
+          row[firstColumnHeader] = exportLabel; 
+        });
+        
         const dataForExport = [...baselineData, ...scenarioExportData];
         const csvString = Papa.unparse(dataForExport);
         const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
@@ -326,6 +355,14 @@
 
     function renderUI(dataToRender, isEditable) {
       app.innerHTML = "";
+
+      // === NEW: Show or hide the scenario name card based on the view ===
+      if (isEditable) {
+        scenarioNameCard.classList.remove('hidden');
+      } else {
+        scenarioNameCard.classList.add('hidden');
+      }
+
       const grouped = {};
       for (const row of dataToRender) {
         if (!row.modality || !row.archetype) continue;
@@ -366,13 +403,11 @@
           const staticGrid = document.createElement("div");
           staticGrid.className = "static-fields-grid";
           
-          // === MODIFIED: Conditionally render sliders or simple text fields ===
           staticFields.forEach(field => {
             const config = staticFieldSliderConfig[field];
             if (!config) return;
 
             if (isEditable) {
-              // SCENARIO VIEW: Render interactive sliders
               const fieldDiv = document.createElement("div");
               fieldDiv.className = "slider-field";
               const label = document.createElement("label");
@@ -404,7 +439,6 @@
               staticGrid.appendChild(fieldDiv);
 
             } else {
-              // BASELINE VIEW: Render simple read-only fields
               const fieldDiv = document.createElement("div");
               fieldDiv.className = "static-field";
               const label = document.createElement("label");
