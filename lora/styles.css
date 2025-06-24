@@ -44,6 +44,13 @@ body {
   padding: 0.8em 1.5em;
   border-radius: 8px;
   margin-bottom: 2rem;
+
+  /* === NEW: Sticky Header Styles === */
+  position: -webkit-sticky; /* For Safari compatibility */
+  position: sticky;
+  top: 1em; /* Match the body's top padding for a smooth stick */
+  z-index: 1000; /* Ensure it stays on top of other content */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Add depth when it scrolls */
 }
 
 .rtt-title {
@@ -308,16 +315,15 @@ h3:first-child { margin-top: 0; }
   gap: 1rem;
   min-width: 200px;
 }
-/* === MODIFIED: Slider value box is now an editable input === */
 .slider-value-display {
-  width: 80px; /* A bit more space for typing */
+  width: 80px;
   padding: 0.4em 0.5em;
   border: 1px solid #D1D5DB;
   border-radius: 4px;
   font-size: 0.9em;
   font-variant-numeric: tabular-nums;
   text-align: center;
-  background-color: #fff; /* Editable look */
+  background-color: #fff;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
   flex-shrink: 0;
@@ -458,9 +464,20 @@ input.changed {
 .status-message .error { background: #d9534f; }
 .status-message .info { background: #007A86; }
 
+/* ==========================================================================
+   5. Mobile Responsiveness
+   ========================================================================== */
+
 @media (max-width: 768px) {
   body { padding: 0.5em; }
-  .rtt-brand-bar { flex-direction: column; align-items: flex-start; gap: 1rem; padding: 1em; }
+  .rtt-brand-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1em;
+    /* === NEW: Adjust sticky top for mobile body padding === */
+    top: 0.5em;
+  }
   .rtt-header-controls { width: 100%; justify-content: space-between; }
   .scenario-controls { flex-grow: 1; }
   .scenario-controls label { flex-grow: 1; text-align: center; }
