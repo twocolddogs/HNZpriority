@@ -88,20 +88,6 @@
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
-
-    /* Loading Spinner for Export Button */
-    .loading-spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 1s ease-in-out infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body>
@@ -146,9 +132,21 @@
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
-
-    // === NEW: Get the current year to use as the base for labels ===
     const currentYear = new Date().getFullYear();
+
+    // === NEW: Configuration for static field sliders (min, max, step, and display format) ===
+    const staticFieldSliderConfig = {
+      non_demographic_growth: { min: 0, max: 0.2, step: 0.005, format: v => `${(parseFloat(v) * 100).toFixed(1)}%` },
+      routine_machine_hours: { min: 1000, max: 10000, step: 100, format: v => Math.round(v) },
+      share_of_scans_during_day: { min: 0, max: 1, step: 0.01, format: v => `${(parseFloat(v) * 100).toFixed(0)}%` },
+      ooh_machines: { min: 0, max: 20, step: 1, format: v => Math.round(v) },
+      ras_per_routine_machine_hour: { min: 0, max: 2, step: 0.01, format: v => parseFloat(v).toFixed(2) },
+      mit_shift_length: { min: 4, max: 12, step: 0.5, format: v => parseFloat(v).toFixed(1) },
+      mit_weeks_lost: { min: 0, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1) },
+      session_length_hours: { min: 2, max: 8, step: 0.25, format: v => parseFloat(v).toFixed(2) },
+      clinical_reporting_sessions_per_rad: { min: 0, max: 10, step: 1, format: v => Math.round(v) },
+      rad_weeks_lost: { min: 0, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1) },
+    };
 
     const app = document.getElementById("app");
     const headerControlsWrapper = document.getElementById("header-controls-wrapper");
@@ -195,6 +193,7 @@
         Papa.parse(csvText, {
             header: true,
             skipEmptyLines: true,
+            dynamicTyping: true, // Auto-detect numbers
             complete: (results) => {
                 if (results.errors.length > 0) {
                     showMessage('Error parsing CSV: ' + results.errors[0].message, 'error');
@@ -230,31 +229,58 @@
     });
 
     app.addEventListener('input', (e) => {
-      if (!e.target.matches('input[type="text"]') || e.target.readOnly) return;
+      // === MODIFIED: Selector to include sliders and ignore their readonly text displays ===
+      if (!e.target.matches('input[type="text"], input[type="range"]') || e.target.readOnly || e.target.classList.contains('slider-value-display')) return;
+      
       const { id: rowId, field: fieldKey } = e.target.dataset;
       const { value: newValue } = e.target;
       const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
       
-      if (rowToUpdate) {
-        rowToUpdate[fieldKey] = newValue;
-        const baselineRow = baselineData.find(row => String(row.id) === String(rowId));
-        
-        if (baselineRow && String(newValue) !== String(baselineRow[fieldKey])) {
-          e.target.classList.add('changed');
-        } else {
-          e.target.classList.remove('changed');
+      if (!rowToUpdate) return;
+      
+      // === NEW: If the input is a slider, update its text display ===
+      if(e.target.type === 'range') {
+        const display = e.target.closest('.slider-control-wrapper').querySelector('.slider-value-display');
+        const config = staticFieldSliderConfig[fieldKey];
+        if (display && config) {
+            display.value = config.format(newValue);
         }
-        
-        let hasAnyChanges = Object.keys(baselineRow).some(key => String(rowToUpdate[key]) !== String(baselineRow[key]));
-        const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
-        
-        if (hasAnyChanges) {
-          editedRowIds.add(rowId);
-          if (button) button.classList.add('has-changes');
-        } else {
-          editedRowIds.delete(rowId);
-          if (button) button.classList.remove('has-changes');
-        }
+      }
+
+      rowToUpdate[fieldKey] = e.target.type === 'range' ? parseFloat(newValue) : newValue;
+      const baselineRow = baselineData.find(row => String(row.id) === String(rowId));
+      
+      if (!baselineRow) return;
+
+      const baselineValue = baselineRow[fieldKey];
+      const scenarioValue = rowToUpdate[fieldKey];
+
+      // Use a small epsilon for float comparison to avoid precision issues
+      const isChanged = Math.abs(parseFloat(scenarioValue) - parseFloat(baselineValue)) > 1e-9;
+
+      if (e.target.type === 'range') {
+        e.target.closest('.slider-field').classList.toggle('changed', isChanged);
+      } else {
+        e.target.classList.toggle('changed', isChanged);
+      }
+      
+      let hasAnyChanges = Object.keys(baselineRow).some(key => {
+          const blVal = baselineRow[key];
+          const scVal = rowToUpdate[key];
+          // Check if key is a number, string, or something else. Only compare if not an object.
+          if (typeof blVal !== 'object' && blVal !== null) {
+              return String(scVal) !== String(blVal);
+          }
+          return false;
+      });
+      const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
+      
+      if (hasAnyChanges) {
+        editedRowIds.add(rowId);
+        if (button) button.classList.add('has-changes');
+      } else {
+        editedRowIds.delete(rowId);
+        if (button) button.classList.remove('has-changes');
       }
     });
     
@@ -340,26 +366,49 @@
           panel.appendChild(staticHeader);
           const staticGrid = document.createElement("div");
           staticGrid.className = "static-fields-grid";
+          
+          // === MODIFIED: Loop to create sliders for static fields ===
           staticFields.forEach(field => {
+            const config = staticFieldSliderConfig[field];
+            if (!config) return; // Skip if no config for this field
+            
             const fieldDiv = document.createElement("div");
-            fieldDiv.className = "static-field";
+            fieldDiv.className = "slider-field";
+
             const label = document.createElement("label");
             label.textContent = staticFieldLabels[field] || field;
-            const input = document.createElement("input");
-            input.type = "text";
-            input.value = row[field] != null ? row[field] : "";
-            input.dataset.id = row.id;
-            input.dataset.field = field;
+
+            const controlsWrapper = document.createElement('div');
+            controlsWrapper.className = 'slider-control-wrapper';
+
+            const slider = document.createElement("input");
+            slider.type = "range";
+            slider.min = config.min;
+            slider.max = config.max;
+            slider.step = config.step;
+            slider.value = row[field] != null ? row[field] : config.min;
+            slider.dataset.id = row.id;
+            slider.dataset.field = field;
+            
+            const valueDisplay = document.createElement('input');
+            valueDisplay.type = 'text';
+            valueDisplay.className = 'slider-value-display';
+            valueDisplay.value = config.format(slider.value);
+            valueDisplay.readOnly = true;
+
+            controlsWrapper.appendChild(slider);
+            controlsWrapper.appendChild(valueDisplay);
+            fieldDiv.appendChild(label);
+            fieldDiv.appendChild(controlsWrapper);
+            
             if (!isEditable) {
-              input.readOnly = true;
+              slider.disabled = true;
             } else {
               const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-              if (baselineRow && String(row[field]) !== String(baselineRow[field])) {
-                input.classList.add('changed');
+              if (baselineRow && Math.abs(parseFloat(row[field]) - parseFloat(baselineRow[field])) > 1e-9) {
+                fieldDiv.classList.add('changed');
               }
             }
-            fieldDiv.appendChild(label);
-            fieldDiv.appendChild(input);
             staticGrid.appendChild(fieldDiv);
           });
           panel.appendChild(staticGrid);
@@ -382,12 +431,8 @@
               const yearItem = document.createElement("div");
               yearItem.className = "year-input-item";
               const yearLabel = document.createElement("label");
-              
-              // === MODIFIED: Calculate and set the label to a real year ===
               const yearIndex = parseInt(y.substring(1), 10);
               yearLabel.textContent = currentYear + yearIndex;
-              // ==========================================================
-
               yearItem.appendChild(yearLabel);
               const input = document.createElement("input");
               input.type = "text";
