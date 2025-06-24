@@ -131,15 +131,16 @@
     <div id="status-message" class="status-message"></div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
-    const currentYear = new Date().getFullYear();
+    
+    // === MODIFIED: Use `let` and provide a fallback. This will be updated from the CSV. ===
+    let currentYear = new Date().getFullYear(); 
 
     const staticFieldSliderConfig = {
       non_demographic_growth: { min: 0, max: 0.2, step: 0.005, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s) / 100 },
@@ -178,14 +179,20 @@
 
     async function loadAndInitializeData() {
       try {
-        const response = await fetch('baseline.csv');
+        // Attempt to load the user's provided file name by default
+        const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+           // Fallback to a generic name if the specific one isn't found
+           const fallbackResponse = await fetch('baseline.csv');
+           if (!fallbackResponse.ok) throw new Error(`HTTP error! status: ${fallbackResponse.status}`);
+           const csvText = await fallbackResponse.text();
+           processCSV(csvText, "Successfully loaded baseline data.");
+           return;
         }
         const csvText = await response.text();
         processCSV(csvText, "Successfully loaded baseline data.");
       } catch (error) {
-        console.error("Could not auto-load baseline.csv:", error);
+        console.error("Could not auto-load CSV:", error);
         const appLoadingMessage = document.querySelector('.app-loading-message');
         if (appLoadingMessage) {
             appLoadingMessage.classList.add('hidden');
@@ -219,19 +226,43 @@
         complete: function(results) {
           if (results.errors.length) {
             console.error("CSV Parsing Errors:", results.errors);
-            showMessage("Error parsing CSV file. Check console for details.", "error");
+            showMessage("Error parsing CSV file. Check for jagged rows or header issues.", "error");
             fileUploadArea.classList.remove('hidden');
             return;
           }
-
-          results.data.forEach((row, index) => {
-              if (!row.id) {
-                  row.id = `${row.modality}-${row.archetype}`.replace(/\s+/g, '-').toLowerCase();
-              }
-          });
           
-          baselineData = JSON.parse(JSON.stringify(results.data));
-          scenarioData = JSON.parse(JSON.stringify(results.data));
+          const processedData = results.data.map(flatRow => {
+              const newRow = { ...flatRow };
+              projectionMetrics.forEach(metric => {
+                  newRow[metric] = {}; 
+                  years.forEach(yearKey => {
+                      const flatHeaderKey = `${metric}_${yearKey}`; 
+                      if (flatRow.hasOwnProperty(flatHeaderKey)) {
+                          newRow[metric][yearKey] = flatRow[flatHeaderKey];
+                          delete newRow[flatHeaderKey];
+                      }
+                  });
+              });
+              if (!newRow.id) {
+                  newRow.id = `${newRow.modality}-${newRow.archetype}`.replace(/\s+/g, '-').toLowerCase();
+              }
+              return newRow;
+          });
+
+          // === NEW: Dynamically set the base year from the loaded CSV data ===
+          if (processedData.length > 0 && processedData[0].baseyear) {
+              const baseYearString = String(processedData[0].baseyear); // e.g., "2023/24"
+              // Safely parse the first 4 digits as the year
+              const parsedYear = parseInt(baseYearString, 10); 
+              // Check if parsing was successful and it's a realistic year
+              if (!isNaN(parsedYear) && parsedYear > 1900 && parsedYear < 2100) {
+                  currentYear = parsedYear;
+                  console.log(`Base year set to ${currentYear} from CSV.`);
+              }
+          }
+
+          baselineData = JSON.parse(JSON.stringify(processedData));
+          scenarioData = JSON.parse(JSON.stringify(processedData));
           
           editedRowIds.clear();
           activePanelIds.clear();
@@ -275,7 +306,7 @@
         if (!rowToUpdate || !baselineRow) return;
 
         let hasAnyChanges = Object.keys(baselineRow).some(key => {
-            if (typeof baselineRow[key] === 'object' || baselineRow[key] === null) return false;
+            if (key === 'scenario' || key === 'baseyear' || typeof baselineRow[key] === 'object' || baselineRow[key] === null) return false;
             return String(rowToUpdate[key]) !== String(baselineRow[key]);
         });
         
@@ -294,15 +325,16 @@
                 const fieldKey = input.dataset.field;
                 const baselineValue = baselineRow[fieldKey];
                 const scenarioValue = rowToUpdate[fieldKey];
-                const isFieldChanged = Math.abs(parseFloat(scenarioValue) - parseFloat(baselineValue)) > 1e-9;
                 
-                const fieldContainer = input.closest('.slider-field') || input.closest('.year-input-item');
-                if(fieldContainer) {
-                    fieldContainer.classList.toggle('changed', isFieldChanged);
-                    if(input.classList.contains('slider-value-display') || input.matches('input[type=range]')) {
-                        input.closest('.slider-field').classList.toggle('changed', isFieldChanged);
-                    } else {
-                         input.classList.toggle('changed', isFieldChanged);
+                if (fieldKey.includes('.')) { // This is a yearly projection
+                    const [metric, year] = fieldKey.split('.');
+                    const isFieldChanged = baselineRow[metric] && rowToUpdate[metric] && baselineRow[metric][year] !== rowToUpdate[metric][year];
+                    input.classList.toggle('changed', isFieldChanged);
+                } else { // This is a static slider field
+                    const isFieldChanged = Math.abs(parseFloat(scenarioValue) - parseFloat(baselineValue)) > 1e-9;
+                    const fieldContainer = input.closest('.slider-field');
+                    if (fieldContainer) {
+                        fieldContainer.classList.toggle('changed', isFieldChanged);
                     }
                 }
             });
@@ -382,7 +414,23 @@
         exportButton.disabled = true;
 
         setTimeout(() => { 
-            const csv = Papa.unparse(scenarioData);
+            const dataToExport = JSON.parse(JSON.stringify(scenarioData));
+            
+            const flatData = dataToExport.map(row => {
+                const newFlatRow = { ...row };
+                projectionMetrics.forEach(metric => {
+                    if (newFlatRow[metric]) {
+                        years.forEach(yearKey => {
+                            const flatHeaderKey = `${metric}_${yearKey}`;
+                            newFlatRow[flatHeaderKey] = newFlatRow[metric][yearKey];
+                        });
+                        delete newFlatRow[metric];
+                    }
+                });
+                return newFlatRow;
+            });
+
+            const csv = Papa.unparse(flatData);
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
@@ -404,6 +452,11 @@
       app.innerHTML = "";
       if (isEditable) {
         scenarioNameCard.classList.remove('hidden');
+        // Set the scenario name input from the loaded data
+        if(dataToRender.length > 0 && dataToRender[0].scenario) {
+            scenarioNameInput.value = dataToRender[0].scenario;
+            scenarioName = dataToRender[0].scenario;
+        }
       } else {
         scenarioNameCard.classList.add('hidden');
       }
@@ -529,16 +582,18 @@
                   const item = document.createElement('div');
                   item.className = 'year-input-item';
                   const label = document.createElement('label');
-                  label.textContent = `${currentYear + index}`;
+                  // Use the (now correct) currentYear for labels
+                  label.textContent = `${currentYear + index}`; 
                   const input = document.createElement('input');
                   input.type = 'text';
-                  input.value = row[metric] && row[metric][yearKey] !== undefined ? row[metric][yearKey] : 'N/A';
+                  const value = row[metric] && row[metric][yearKey] !== undefined ? row[metric][yearKey] : 'N/A';
+                  input.value = typeof value === 'number' ? value.toFixed(2) : value; // Format numbers
                   input.readOnly = true;
                   input.dataset.field = `${metric}.${yearKey}`;
                   
                   if(isEditable) {
                       const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-                      if (baselineRow && baselineRow[metric] && row[metric][yearKey] !== baselineRow[metric][yearKey]) {
+                      if (baselineRow && baselineRow[metric] && row[metric] && row[metric][yearKey] !== baselineRow[metric][yearKey]) {
                           input.classList.add('changed');
                       }
                   }
