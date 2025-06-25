@@ -141,6 +141,14 @@
     
     // === MODIFIED: Use `let` and provide a fallback. This will be updated from the CSV. ===
     let currentYear = new Date().getFullYear(); 
+    
+    const archetypeSortOrder = {
+        "X-Small": 1,
+        "Small": 2,
+        "Medium": 3,
+        "Large": 4,
+        "X-Large": 5,
+    };
 
     const staticFieldSliderConfig = {
       non_demographic_growth: { min: 0, max: 0.2, step: 0.005, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s) / 100 },
@@ -483,7 +491,7 @@
         modalityHeader.appendChild(archetypeButtonsDiv);
         modalityContainer.appendChild(modalityHeader);
 
-        for (const archetype of Object.keys(grouped[modality]).sort()) {
+                for (const archetype of Object.keys(grouped[modality]).sort((a, b) => (archetypeSortOrder[a] || 99) - (archetypeSortOrder[b] || 99))) {
           const row = grouped[modality][archetype][0];
           const panelId = `panel-${row.id}`;
 
