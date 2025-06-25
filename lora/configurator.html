@@ -139,7 +139,6 @@
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
     
-    // === MODIFIED: Use `let` and provide a fallback. This will be updated from the CSV. ===
     let currentYear = new Date().getFullYear(); 
     
     const archetypeSortOrder = {
@@ -187,10 +186,8 @@
 
     async function loadAndInitializeData() {
       try {
-        // Attempt to load the user's provided file name by default
         const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
         if (!response.ok) {
-           // Fallback to a generic name if the specific one isn't found
            const fallbackResponse = await fetch('baseline.csv');
            if (!fallbackResponse.ok) throw new Error(`HTTP error! status: ${fallbackResponse.status}`);
            const csvText = await fallbackResponse.text();
@@ -257,12 +254,9 @@
               return newRow;
           });
 
-          // === NEW: Dynamically set the base year from the loaded CSV data ===
           if (processedData.length > 0 && processedData[0].baseyear) {
-              const baseYearString = String(processedData[0].baseyear); // e.g., "2023/24"
-              // Safely parse the first 4 digits as the year
+              const baseYearString = String(processedData[0].baseyear);
               const parsedYear = parseInt(baseYearString, 10); 
-              // Check if parsing was successful and it's a realistic year
               if (!isNaN(parsedYear) && parsedYear > 1900 && parsedYear < 2100) {
                   currentYear = parsedYear;
                   console.log(`Base year set to ${currentYear} from CSV.`);
@@ -313,33 +307,27 @@
         const baselineRow = baselineData.find(row => String(row.id) === String(rowId));
         if (!rowToUpdate || !baselineRow) return;
 
-        let hasAnyChanges = Object.keys(baselineRow).some(key => {
-            if (key === 'scenario' || key === 'baseyear' || typeof baselineRow[key] === 'object' || baselineRow[key] === null) return false;
-            return String(rowToUpdate[key]) !== String(baselineRow[key]);
-        });
+        let hasAnyChanges = staticFields.some(key =>
+            Math.abs(parseFloat(rowToUpdate[key]) - parseFloat(baselineRow[key])) > 1e-9
+        ) || projectionMetrics.some(metric =>
+            years.some(yearKey => baselineRow[metric]?.[yearKey] !== rowToUpdate[metric]?.[yearKey])
+        );
         
         const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
-        if (hasAnyChanges) {
-            editedRowIds.add(rowId);
-            if (button) button.classList.add('has-changes');
-        } else {
-            editedRowIds.delete(rowId);
-            if (button) button.classList.remove('has-changes');
+        if (button) {
+            button.classList.toggle('has-changes', hasAnyChanges);
         }
 
-        const panel = button?.dataset.target ? document.querySelector(button.dataset.target) : null;
+        const panel = document.querySelector(`#panel-${rowId}`);
         if (panel) {
             panel.querySelectorAll('[data-field]').forEach(input => {
                 const fieldKey = input.dataset.field;
-                const baselineValue = baselineRow[fieldKey];
-                const scenarioValue = rowToUpdate[fieldKey];
-                
-                if (fieldKey.includes('.')) { // This is a yearly projection
+                if (fieldKey.includes('.')) { // Yearly projection
                     const [metric, year] = fieldKey.split('.');
-                    const isFieldChanged = baselineRow[metric] && rowToUpdate[metric] && baselineRow[metric][year] !== rowToUpdate[metric][year];
+                    const isFieldChanged = baselineRow[metric]?.[year] !== rowToUpdate[metric]?.[year];
                     input.classList.toggle('changed', isFieldChanged);
-                } else { // This is a static slider field
-                    const isFieldChanged = Math.abs(parseFloat(scenarioValue) - parseFloat(baselineValue)) > 1e-9;
+                } else { // Static slider field
+                    const isFieldChanged = Math.abs(parseFloat(rowToUpdate[fieldKey]) - parseFloat(baselineRow[fieldKey])) > 1e-9;
                     const fieldContainer = input.closest('.slider-field');
                     if (fieldContainer) {
                         fieldContainer.classList.toggle('changed', isFieldChanged);
@@ -369,27 +357,44 @@
     
     function handleTextChange(e) {
         const textInput = e.target;
-        if (!textInput.classList.contains('slider-value-display')) return;
-        
         const { id: rowId, field: fieldKey } = textInput.dataset;
+        if (!rowId || !fieldKey) return;
+
         const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
-        const config = staticFieldSliderConfig[fieldKey];
-        if (!rowToUpdate || !config) return;
+        if (!rowToUpdate) return;
+        
+        // Case 1: Handle slider text inputs
+        if (textInput.classList.contains('slider-value-display')) {
+            const config = staticFieldSliderConfig[fieldKey];
+            if (!config) return;
 
-        let parsedValue = config.parse(textInput.value);
+            let parsedValue = config.parse(textInput.value);
+            if (isNaN(parsedValue)) {
+                textInput.value = config.format(rowToUpdate[fieldKey]);
+                return;
+            }
 
-        if (isNaN(parsedValue)) {
-            textInput.value = config.format(rowToUpdate[fieldKey]);
-            return;
+            const clampedValue = Math.max(config.min, Math.min(config.max, parsedValue));
+            const slider = textInput.closest('.slider-control-wrapper').querySelector('input[type=range]');
+            slider.value = clampedValue;
+            rowToUpdate[fieldKey] = clampedValue;
+            textInput.value = config.format(clampedValue);
+        } 
+        // Case 2: Handle yearly projection inputs
+        else if (textInput.classList.contains('projection-input')) {
+            const [metric, yearKey] = fieldKey.split('.');
+            const originalValue = rowToUpdate[metric]?.[yearKey];
+            const numericValue = parseFloat(textInput.value);
+            
+            if (isNaN(numericValue)) {
+                textInput.value = typeof originalValue === 'number' ? originalValue.toFixed(2) : originalValue || 'N/A';
+                return;
+            }
+            
+            rowToUpdate[metric][yearKey] = numericValue;
+            textInput.value = numericValue.toFixed(2);
         }
 
-        const clampedValue = Math.max(config.min, Math.min(config.max, parsedValue));
-
-        const slider = textInput.closest('.slider-control-wrapper').querySelector('input[type=range]');
-        slider.value = clampedValue;
-        rowToUpdate[fieldKey] = clampedValue;
-        textInput.value = config.format(clampedValue);
-        
         updateChangeState(rowId);
     }
     
@@ -460,7 +465,6 @@
       app.innerHTML = "";
       if (isEditable) {
         scenarioNameCard.classList.remove('hidden');
-        // Set the scenario name input from the loaded data
         if(dataToRender.length > 0 && dataToRender[0].scenario) {
             scenarioNameInput.value = dataToRender[0].scenario;
             scenarioName = dataToRender[0].scenario;
@@ -491,7 +495,7 @@
         modalityHeader.appendChild(archetypeButtonsDiv);
         modalityContainer.appendChild(modalityHeader);
 
-                for (const archetype of Object.keys(grouped[modality]).sort((a, b) => (archetypeSortOrder[a] || 99) - (archetypeSortOrder[b] || 99))) {
+        for (const archetype of Object.keys(grouped[modality]).sort((a, b) => (archetypeSortOrder[a] || 99) - (archetypeSortOrder[b] || 99))) {
           const row = grouped[modality][archetype][0];
           const panelId = `panel-${row.id}`;
 
@@ -500,11 +504,9 @@
           button.textContent = archetype;
           button.dataset.target = `#${panelId}`;
           button.dataset.id = row.id;
-
           if (editedRowIds.has(row.id)) {
              button.classList.add('has-changes');
           }
-
           archetypeButtonsDiv.appendChild(button);
 
           const panel = document.createElement('div');
@@ -521,64 +523,39 @@
             const config = staticFieldSliderConfig[field];
             if (!config) return;
 
+            const fieldDiv = document.createElement("div");
+            fieldDiv.className = "slider-field";
+            const label = document.createElement("label");
+            label.textContent = staticFieldLabels[field] || field;
+            const controlsWrapper = document.createElement('div');
+            controlsWrapper.className = 'slider-control-wrapper';
+            const valueDisplay = document.createElement('input');
+            valueDisplay.type = 'text';
+            valueDisplay.className = 'slider-value-display';
+            valueDisplay.value = config.format(row[field] != null ? row[field] : config.min);
+            valueDisplay.dataset.id = row.id;
+            valueDisplay.dataset.field = field;
+
             if (isEditable) {
-              const fieldDiv = document.createElement("div");
-              fieldDiv.className = "slider-field";
-              const label = document.createElement("label");
-              label.textContent = staticFieldLabels[field] || field;
-              const controlsWrapper = document.createElement('div');
-              controlsWrapper.className = 'slider-control-wrapper';
               const slider = document.createElement("input");
               slider.type = "range";
-              slider.min = config.min;
-              slider.max = config.max;
-              slider.step = config.step;
+              slider.min = config.min; slider.max = config.max; slider.step = config.step;
               slider.value = row[field] != null ? row[field] : config.min;
-              slider.dataset.id = row.id;
-              slider.dataset.field = field;
-              
-              const valueDisplay = document.createElement('input');
-              valueDisplay.type = 'text';
-              valueDisplay.className = 'slider-value-display';
-              valueDisplay.value = config.format(slider.value);
-              valueDisplay.dataset.id = row.id;
-              valueDisplay.dataset.field = field;
-              
+              slider.dataset.id = row.id; slider.dataset.field = field;
               controlsWrapper.appendChild(slider);
-              controlsWrapper.appendChild(valueDisplay);
-              fieldDiv.appendChild(label);
-              fieldDiv.appendChild(controlsWrapper);
               
               const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
               if (baselineRow && Math.abs(parseFloat(row[field]) - parseFloat(baselineRow[field])) > 1e-9) {
                 fieldDiv.classList.add('changed');
               }
-              staticGrid.appendChild(fieldDiv);
-
-                        } else {
-              // Non-editable "Baseline" view
-              const fieldDiv = document.createElement("div");
-              // Use the same class as the editable view for consistent layout
-              fieldDiv.className = "slider-field"; 
-              const label = document.createElement("label");
-              label.textContent = staticFieldLabels[field] || field;
-
-              // Use the same wrapper for alignment, but with a simple text input
-              const controlsWrapper = document.createElement('div');
-              controlsWrapper.className = 'slider-control-wrapper';
-              
-              const valueDisplay = document.createElement('input');
-              valueDisplay.type = 'text';
-              // Use the same class for consistent styling (width, padding, etc.)
-              valueDisplay.className = 'slider-value-display'; 
-              valueDisplay.value = config.format(row[field] != null ? row[field] : config.min);
-              valueDisplay.readOnly = true;
-
-              controlsWrapper.appendChild(valueDisplay);
-              fieldDiv.appendChild(label);
-              fieldDiv.appendChild(controlsWrapper);
-              staticGrid.appendChild(fieldDiv);
+            } else {
+                valueDisplay.readOnly = true;
             }
+            
+            controlsWrapper.appendChild(valueDisplay);
+            fieldDiv.appendChild(label);
+            fieldDiv.appendChild(controlsWrapper);
+            staticGrid.appendChild(fieldDiv);
           });
           panel.appendChild(staticGrid);
 
@@ -601,18 +578,26 @@
                   const item = document.createElement('div');
                   item.className = 'year-input-item';
                   const label = document.createElement('label');
-                  // Use the (now correct) currentYear for labels
                   label.textContent = `${currentYear + index}`; 
                   const input = document.createElement('input');
                   input.type = 'text';
-                  const value = row[metric] && row[metric][yearKey] !== undefined ? row[metric][yearKey] : 'N/A';
-                  input.value = typeof value === 'number' ? value.toFixed(2) : value; // Format numbers
-                  input.readOnly = true;
+                  input.classList.add('projection-input'); // Class for event handling
+
+                  const value = row[metric]?.[yearKey];
+                  input.value = typeof value === 'number' ? value.toFixed(2) : (value ?? 'N/A');
                   input.dataset.field = `${metric}.${yearKey}`;
+                  input.dataset.id = row.id;
                   
+                  // Make editable in scenario mode, but not the first year (index 0 / y0)
+                  if (isEditable && index > 0) {
+                      input.readOnly = false;
+                  } else {
+                      input.readOnly = true;
+                  }
+
                   if(isEditable) {
                       const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-                      if (baselineRow && baselineRow[metric] && row[metric] && row[metric][yearKey] !== baselineRow[metric][yearKey]) {
+                      if (baselineRow && baselineRow[metric]?.[yearKey] !== row[metric]?.[yearKey]) {
                           input.classList.add('changed');
                       }
                   }
