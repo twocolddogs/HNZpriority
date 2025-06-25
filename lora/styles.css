@@ -73,21 +73,6 @@ background: rgba(255, 255, 255, 0.1);
 border-radius: 8px;
 padding: 4px;
 position: relative;
-overflow: hidden;
-}
-
-.scenario-controls::before {
-content: ‘’;
-position: absolute;
-top: 4px;
-left: 4px;
-width: calc(50% - 4px);
-height: calc(100% - 8px);
-background: #fff;
-border-radius: 6px;
-transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-z-index: 1;
 }
 
 .scenario-controls input[type=“radio”] {
@@ -100,36 +85,26 @@ border-radius: 6px;
 cursor: pointer;
 font-weight: 600;
 font-size: 0.9em;
-color: rgba(255, 255, 255, 0.8);
-transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+color: rgba(255, 255, 255, 0.7);
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 border: none;
 position: relative;
 z-index: 2;
 flex: 1;
 text-align: center;
 user-select: none;
+background: transparent;
+}
+
+.scenario-controls label:hover {
+color: rgba(255, 255, 255, 0.9);
 }
 
 .scenario-controls input[type=“radio”]:checked + label {
+background: #fff;
 color: #143345;
-}
-
-.scenario-controls input[type=“radio”]:first-child:checked ~ .scenario-controls::before,
-.scenario-controls input[id=“source-baseline”]:checked ~ .scenario-controls::before {
-transform: translateX(0);
-}
-
-.scenario-controls input[id=“source-scenario”]:checked ~ .scenario-controls::before {
-transform: translateX(100%);
-}
-
-/* Alternative approach using data attributes if the above doesn’t work */
-.scenario-controls[data-active=“baseline”]::before {
-transform: translateX(0);
-}
-
-.scenario-controls[data-active=“scenario”]::before {
-transform: translateX(100%);
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+transform: none;
 }
 
 /* — Main Content Area — */
