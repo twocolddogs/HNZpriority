@@ -547,17 +547,28 @@
               }
               staticGrid.appendChild(fieldDiv);
 
-            } else {
+                        } else {
+              // Non-editable "Baseline" view
               const fieldDiv = document.createElement("div");
-              fieldDiv.className = "static-field";
+              // Use the same class as the editable view for consistent layout
+              fieldDiv.className = "slider-field"; 
               const label = document.createElement("label");
               label.textContent = staticFieldLabels[field] || field;
-              const input = document.createElement("input");
-              input.type = "text";
-              input.value = config.format(row[field] != null ? row[field] : config.min);
-              input.readOnly = true;
+
+              // Use the same wrapper for alignment, but with a simple text input
+              const controlsWrapper = document.createElement('div');
+              controlsWrapper.className = 'slider-control-wrapper';
+              
+              const valueDisplay = document.createElement('input');
+              valueDisplay.type = 'text';
+              // Use the same class for consistent styling (width, padding, etc.)
+              valueDisplay.className = 'slider-value-display'; 
+              valueDisplay.value = config.format(row[field] != null ? row[field] : config.min);
+              valueDisplay.readOnly = true;
+
+              controlsWrapper.appendChild(valueDisplay);
               fieldDiv.appendChild(label);
-              fieldDiv.appendChild(input);
+              fieldDiv.appendChild(controlsWrapper);
               staticGrid.appendChild(fieldDiv);
             }
           });
