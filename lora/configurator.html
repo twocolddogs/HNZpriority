@@ -266,8 +266,10 @@
           baselineData = JSON.parse(JSON.stringify(processedData));
           scenarioData = JSON.parse(JSON.stringify(processedData));
           
+          // MODIFIED: Reset scenario name state when a new file is loaded
           editedRowIds.clear();
           activePanelIds.clear();
+          scenarioName = "";
 
           fileUploadArea.classList.add('hidden');
           headerControlsWrapper.classList.remove('hidden');
@@ -348,7 +350,7 @@
       
       if (!rowToUpdate || !config) return;
 
-      const display = slider.closest('.slider-control-wrapper').querySelector('.slider-value-display');
+      const display = slider.closest('.slider-field').querySelector('.slider-value-display');
       display.value = config.format(newValue);
       
       rowToUpdate[fieldKey] = newValue;
@@ -375,7 +377,7 @@
             }
 
             const clampedValue = Math.max(config.min, Math.min(config.max, parsedValue));
-            const slider = textInput.closest('.slider-control-wrapper').querySelector('input[type=range]');
+            const slider = textInput.closest('.slider-field').querySelector('input[type=range]');
             slider.value = clampedValue;
             rowToUpdate[fieldKey] = clampedValue;
             textInput.value = config.format(clampedValue);
@@ -464,11 +466,10 @@
     function renderUI(dataToRender, isEditable) {
       app.innerHTML = "";
       if (isEditable) {
+        // MODIFIED: Logic simplified to prevent pre-populating name from baseline data.
+        // It will now correctly show the placeholder or the user's previously entered name.
         scenarioNameCard.classList.remove('hidden');
-        if(dataToRender.length > 0 && dataToRender[0].scenario) {
-            scenarioNameInput.value = dataToRender[0].scenario;
-            scenarioName = dataToRender[0].scenario;
-        }
+        scenarioNameInput.value = scenarioName;
       } else {
         scenarioNameCard.classList.add('hidden');
       }
