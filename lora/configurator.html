@@ -6,7 +6,6 @@
   <title>Scenario Configurator</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* General body and layout improvements */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: #f4f7fa;
@@ -16,8 +15,6 @@
     .hidden {
       display: none !important;
     }
-    
-    /* File Upload Area Styling */
     .file-upload {
       border: 2px dashed #ccc;
       border-radius: 8px;
@@ -42,7 +39,7 @@
       color: #666;
     }
     #upload-error-message {
-        color: #d9534f; /* Error red color */
+        color: #d9534f;
         font-weight: bold;
     }
     .file-input {
@@ -70,8 +67,6 @@
     .file-input label:hover {
       background-color: #0056b3;
     }
-    
-    /* Status Message Styling */
     .status-message p {
       padding: 12px;
       margin: 0;
@@ -87,20 +82,6 @@
       background-color: #f8d7da;
       color: #721c24;
       border: 1px solid #f5c6cb;
-    }
-
-    /* Loading Spinner for Export Button */
-    .loading-spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 1s ease-in-out infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -131,6 +112,17 @@
           <label for="csv-file-input">Choose File</label>
         </div>
       </div>
+
+      <div id="scenario-name-card" class="modality-container hidden">
+        <div class="modality-header">
+          <h2>Scenario Name</h2>
+        </div>
+        <div class="scenario-name-content">
+          <label for="scenario-name-input">Enter a name for your scenario:</label>
+          <input type="text" id="scenario-name-input" placeholder="e.g., High Growth Projection">
+        </div>
+      </div>
+      
       <div id="app">
         <div class="app-loading-message">Loading Configuration...</div>
       </div>
@@ -139,16 +131,36 @@
     <div id="status-message" class="status-message"></div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
+    
+    let currentYear = new Date().getFullYear(); 
+    
+    const archetypeSortOrder = {
+        "X Small": 1,
+        "Small": 2,
+        "Medium": 3,
+        "Large": 4,
+        "X Large": 5,
+    };
 
-    // === NEW: Get the current year to use as the base for labels ===
-    const currentYear = new Date().getFullYear();
+    const staticFieldSliderConfig = {
+      non_demographic_growth: { min: 0, max: 0.2, step: 0.005, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s) / 100 },
+      routine_machine_hours: { min: 1000, max: 10000, step: 100, format: v => Math.round(v), parse: s => parseFloat(s) },
+      share_of_scans_during_day: { min: 0, max: 1, step: 0.01, format: v => `${(parseFloat(v) * 100).toFixed(0)}%`, parse: s => parseFloat(s) / 100 },
+      ooh_machines: { min: 0, max: 20, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) },
+      ras_per_routine_machine_hour: { min: 0, max: 2, step: 0.01, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) },
+      mit_shift_length: { min: 4, max: 12, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) },
+      mit_weeks_lost: { min: 0, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) },
+      session_length_hours: { min: 2, max: 8, step: 0.25, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) },
+      clinical_reporting_sessions_per_rad: { min: 0, max: 10, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) },
+      rad_weeks_lost: { min: 0, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) },
+    };
 
     const app = document.getElementById("app");
     const headerControlsWrapper = document.getElementById("header-controls-wrapper");
@@ -157,69 +169,130 @@
     const statusMessage = document.getElementById("status-message");
     const fileUploadArea = document.getElementById("file-upload-area");
     const fileInput = document.getElementById("csv-file-input");
+    const scenarioNameCard = document.getElementById("scenario-name-card");
+    const scenarioNameInput = document.getElementById("scenario-name-input");
 
     let baselineData = [], scenarioData = [], activePanelIds = new Set(), editedRowIds = new Set(), messageTimeout;
+    let scenarioName = "";
 
     document.addEventListener('DOMContentLoaded', loadAndInitializeData);
     fileInput.addEventListener('change', (e) => loadCSVFile(e.target.files[0]));
     fileUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); fileUploadArea.classList.add('drag-over'); });
     fileUploadArea.addEventListener('dragleave', () => fileUploadArea.classList.remove('drag-over'));
     fileUploadArea.addEventListener('drop', (e) => { e.preventDefault(); fileUploadArea.classList.remove('drag-over'); loadCSVFile(e.dataTransfer.files[0]); });
+    scenarioNameInput.addEventListener('input', (e) => {
+        scenarioName = e.target.value;
+    });
 
     async function loadAndInitializeData() {
       try {
         const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
-        if (!response.ok) throw new Error(`HTTP ${response.status}: Failed to fetch`);
+        if (!response.ok) {
+           const fallbackResponse = await fetch('baseline.csv');
+           if (!fallbackResponse.ok) throw new Error(`HTTP error! status: ${fallbackResponse.status}`);
+           const csvText = await fallbackResponse.text();
+           processCSV(csvText, "Successfully loaded baseline data.");
+           return;
+        }
         const csvText = await response.text();
-        processCSV(csvText, "Local configuration loaded successfully!");
+        processCSV(csvText, "Successfully loaded baseline data.");
       } catch (error) {
-        console.error("Local load failed:", error.message);
-        app.innerHTML = "";
-        document.getElementById('upload-error-message').classList.remove('hidden');
+        console.error("Could not auto-load CSV:", error);
+        const appLoadingMessage = document.querySelector('.app-loading-message');
+        if (appLoadingMessage) {
+            appLoadingMessage.classList.add('hidden');
+        }
         fileUploadArea.classList.remove('hidden');
+        document.getElementById('upload-error-message').classList.remove('hidden');
       }
     }
     
     function loadCSVFile(file) {
-        if (file && file.type === 'text/csv') {
-            const reader = new FileReader();
-            reader.onload = (e) => processCSV(e.target.result, "File loaded successfully!");
-            reader.onerror = () => showMessage('Error reading file.', 'error');
-            reader.readAsText(file);
-        } else {
-            showMessage('Please select a valid CSV file.', 'error');
-        }
+      if (file && (file.type === "text/csv" || file.name.endsWith('.csv'))) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          processCSV(event.target.result, "Successfully loaded uploaded file.");
+          document.getElementById('upload-error-message').classList.add('hidden');
+        };
+        reader.onerror = function() {
+            showMessage("Error reading the file.", "error");
+        };
+        reader.readAsText(file);
+      } else {
+        showMessage("Please select a valid .csv file.", "error");
+      }
     }
 
     function processCSV(csvText, successMessage) {
-        Papa.parse(csvText, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                if (results.errors.length > 0) {
-                    showMessage('Error parsing CSV: ' + results.errors[0].message, 'error');
-                    return;
-                }
-                
-                results.data.forEach((row, index) => {
-                    if (!row.id) row.id = `row_${index}`;
-                });
-                
-                baselineData = results.data;
-                scenarioData = JSON.parse(JSON.stringify(baselineData));
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: true,
+        complete: function(results) {
+          if (results.errors.length) {
+            console.error("CSV Parsing Errors:", results.errors);
+            showMessage("Error parsing CSV file. Check for jagged rows or header issues.", "error");
+            fileUploadArea.classList.remove('hidden');
+            return;
+          }
+          
+          const processedData = results.data.map(flatRow => {
+              const newRow = { ...flatRow };
+              projectionMetrics.forEach(metric => {
+                  newRow[metric] = {}; 
+                  years.forEach(yearKey => {
+                      const flatHeaderKey = `${metric}_${yearKey}`; 
+                      if (flatRow.hasOwnProperty(flatHeaderKey)) {
+                          newRow[metric][yearKey] = flatRow[flatHeaderKey];
+                          delete newRow[flatHeaderKey];
+                      }
+                  });
+              });
+              if (!newRow.id) {
+                  newRow.id = `${newRow.modality}-${newRow.archetype}`.replace(/\s+/g, '-').toLowerCase();
+              }
+              return newRow;
+          });
 
-                fileUploadArea.classList.add('hidden');
-                headerControlsWrapper.classList.remove('hidden');
-                renderUI(baselineData, false);
-                showMessage(successMessage, 'success');
-            },
-        });
+          if (processedData.length > 0 && processedData[0].baseyear) {
+              const baseYearString = String(processedData[0].baseyear);
+              const parsedYear = parseInt(baseYearString, 10); 
+              if (!isNaN(parsedYear) && parsedYear > 1900 && parsedYear < 2100) {
+                  currentYear = parsedYear;
+                  console.log(`Base year set to ${currentYear} from CSV.`);
+              }
+          }
+
+          baselineData = JSON.parse(JSON.stringify(processedData));
+          scenarioData = JSON.parse(JSON.stringify(processedData));
+          
+          editedRowIds.clear();
+          activePanelIds.clear();
+
+          fileUploadArea.classList.add('hidden');
+          headerControlsWrapper.classList.remove('hidden');
+          
+          renderUI(baselineData, false); 
+          showMessage(successMessage, "success");
+        },
+        error: function(error) {
+            console.error("PapaParse Error:", error);
+            showMessage("A critical error occurred while parsing the file.", "error");
+            fileUploadArea.classList.remove('hidden');
+        }
+      });
     }
 
     function showMessage(message, type) {
-      if (messageTimeout) clearTimeout(messageTimeout);
-      statusMessage.innerHTML = `<p class="${type}">${message}</p>`;
-      messageTimeout = setTimeout(() => { statusMessage.innerHTML = ''; }, 4000);
+      clearTimeout(messageTimeout);
+      const p = document.createElement('p');
+      p.className = type;
+      p.textContent = message;
+      statusMessage.innerHTML = '';
+      statusMessage.appendChild(p);
+      messageTimeout = setTimeout(() => {
+        statusMessage.innerHTML = '';
+      }, 4000);
     }
     
     scenarioToggle.addEventListener('change', (e) => {
@@ -229,137 +302,259 @@
       renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
     });
 
-    app.addEventListener('input', (e) => {
-      if (!e.target.matches('input[type="text"]') || e.target.readOnly) return;
-      const { id: rowId, field: fieldKey } = e.target.dataset;
-      const { value: newValue } = e.target;
-      const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
-      
-      if (rowToUpdate) {
-        rowToUpdate[fieldKey] = newValue;
+    function updateChangeState(rowId) {
+        const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
         const baselineRow = baselineData.find(row => String(row.id) === String(rowId));
-        
-        if (baselineRow && String(newValue) !== String(baselineRow[fieldKey])) {
-          e.target.classList.add('changed');
-        } else {
-          e.target.classList.remove('changed');
-        }
-        
-        let hasAnyChanges = Object.keys(baselineRow).some(key => String(rowToUpdate[key]) !== String(baselineRow[key]));
-        const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
-        
-        if (hasAnyChanges) {
-          editedRowIds.add(rowId);
-          if (button) button.classList.add('has-changes');
-        } else {
-          editedRowIds.delete(rowId);
-          if (button) button.classList.remove('has-changes');
-        }
-      }
-    });
-    
-    app.addEventListener('click', (e) => {
-      if (!e.target.matches('.archetype-button')) return;
-      const button = e.target;
-      const isAlreadyActive = button.classList.contains('active');
-      const targetPanelId = button.dataset.target;
-      const contentPanel = document.querySelector(targetPanelId);
-      const parentContainer = button.closest('.modality-container');
-      
-      parentContainer.querySelectorAll('.archetype-button').forEach(btn => btn.classList.remove('active'));
-      parentContainer.querySelectorAll('.archetype-content-panel').forEach(panel => panel.classList.remove('active'));
+        if (!rowToUpdate || !baselineRow) return;
 
-      if (!isAlreadyActive) {
-        button.classList.add('active');
-        contentPanel.classList.add('active');
-      }
+        let hasAnyChanges = staticFields.some(key =>
+            Math.abs(parseFloat(rowToUpdate[key]) - parseFloat(baselineRow[key])) > 1e-9
+        ) || projectionMetrics.some(metric =>
+            years.some(yearKey => baselineRow[metric]?.[yearKey] !== rowToUpdate[metric]?.[yearKey])
+        );
+        
+        const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
+        if (button) {
+            button.classList.toggle('has-changes', hasAnyChanges);
+        }
+
+        const panel = document.querySelector(`#panel-${rowId}`);
+        if (panel) {
+            panel.querySelectorAll('[data-field]').forEach(input => {
+                const fieldKey = input.dataset.field;
+                if (fieldKey.includes('.')) { // Yearly projection
+                    const [metric, year] = fieldKey.split('.');
+                    const isFieldChanged = baselineRow[metric]?.[year] !== rowToUpdate[metric]?.[year];
+                    input.classList.toggle('changed', isFieldChanged);
+                } else { // Static slider field
+                    const isFieldChanged = Math.abs(parseFloat(rowToUpdate[fieldKey]) - parseFloat(baselineRow[fieldKey])) > 1e-9;
+                    const fieldContainer = input.closest('.slider-field');
+                    if (fieldContainer) {
+                        fieldContainer.classList.toggle('changed', isFieldChanged);
+                    }
+                }
+            });
+        }
+    }
+
+    function handleSliderInput(e) {
+      const slider = e.target;
+      if (slider.type !== 'range') return;
+
+      const { id: rowId, field: fieldKey } = slider.dataset;
+      const newValue = parseFloat(slider.value);
+      const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
+      const config = staticFieldSliderConfig[fieldKey];
+      
+      if (!rowToUpdate || !config) return;
+
+      const display = slider.closest('.slider-control-wrapper').querySelector('.slider-value-display');
+      display.value = config.format(newValue);
+      
+      rowToUpdate[fieldKey] = newValue;
+      updateChangeState(rowId);
+    }
+    
+    function handleTextChange(e) {
+        const textInput = e.target;
+        const { id: rowId, field: fieldKey } = textInput.dataset;
+        if (!rowId || !fieldKey) return;
+
+        const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
+        if (!rowToUpdate) return;
+        
+        // Case 1: Handle slider text inputs
+        if (textInput.classList.contains('slider-value-display')) {
+            const config = staticFieldSliderConfig[fieldKey];
+            if (!config) return;
+
+            let parsedValue = config.parse(textInput.value);
+            if (isNaN(parsedValue)) {
+                textInput.value = config.format(rowToUpdate[fieldKey]);
+                return;
+            }
+
+            const clampedValue = Math.max(config.min, Math.min(config.max, parsedValue));
+            const slider = textInput.closest('.slider-control-wrapper').querySelector('input[type=range]');
+            slider.value = clampedValue;
+            rowToUpdate[fieldKey] = clampedValue;
+            textInput.value = config.format(clampedValue);
+        } 
+        // Case 2: Handle yearly projection inputs
+        else if (textInput.classList.contains('projection-input')) {
+            const [metric, yearKey] = fieldKey.split('.');
+            const originalValue = rowToUpdate[metric]?.[yearKey];
+            const numericValue = parseFloat(textInput.value);
+            
+            if (isNaN(numericValue)) {
+                textInput.value = typeof originalValue === 'number' ? originalValue.toFixed(2) : originalValue || 'N/A';
+                return;
+            }
+            
+            rowToUpdate[metric][yearKey] = numericValue;
+            textInput.value = numericValue.toFixed(2);
+        }
+
+        updateChangeState(rowId);
+    }
+    
+    app.addEventListener('input', handleSliderInput);
+    app.addEventListener('touchmove', handleSliderInput);
+    app.addEventListener('change', handleTextChange);
+
+    app.addEventListener('click', (e) => {
+        if (e.target.classList.contains('archetype-button')) {
+            const button = e.target;
+            const targetPanelId = button.dataset.target;
+            const panel = document.querySelector(targetPanelId);
+
+            if (!panel) return;
+
+            if (panel.classList.contains('active')) {
+                panel.classList.remove('active');
+                button.classList.remove('active');
+            } else {
+                panel.classList.add('active');
+                button.classList.add('active');
+            }
+        }
     });
 
     exportButton.addEventListener('click', () => {
-      if (baselineData.length === 0) return;
-      exportButton.disabled = true;
-      exportButton.innerHTML = '<span class="loading-spinner"></span>';
-      
-      setTimeout(() => {
-        const scenarioExportData = JSON.parse(JSON.stringify(scenarioData));
-        const firstColumnHeader = Object.keys(baselineData[0])[0];
-        scenarioExportData.forEach(row => { row[firstColumnHeader] = "Scenario - Transforming Radiology"; });
-        const dataForExport = [...baselineData, ...scenarioExportData];
-        const csvString = Papa.unparse(dataForExport);
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "scenario_export.csv";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        exportButton.disabled = false;
-        exportButton.innerHTML = 'Export CSV';
-        showMessage('CSV exported successfully!', 'success');
-      }, 500);
+        const spinner = document.createElement('span');
+        spinner.className = 'loading-spinner';
+        exportButton.prepend(spinner);
+        exportButton.disabled = true;
+
+        setTimeout(() => { 
+            const dataToExport = JSON.parse(JSON.stringify(scenarioData));
+            
+            const flatData = dataToExport.map(row => {
+                const newFlatRow = { ...row };
+                projectionMetrics.forEach(metric => {
+                    if (newFlatRow[metric]) {
+                        years.forEach(yearKey => {
+                            const flatHeaderKey = `${metric}_${yearKey}`;
+                            newFlatRow[flatHeaderKey] = newFlatRow[metric][yearKey];
+                        });
+                        delete newFlatRow[metric];
+                    }
+                });
+                return newFlatRow;
+            });
+
+            const csv = Papa.unparse(flatData);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            const filename = scenarioName.trim().replace(/\s+/g, '_') || 'scenario_export';
+            link.setAttribute("download", `${filename}_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            exportButton.removeChild(spinner);
+            exportButton.disabled = false;
+            showMessage("CSV exported successfully!", "success");
+        }, 500);
     });
 
     function renderUI(dataToRender, isEditable) {
       app.innerHTML = "";
-      const grouped = {};
-      for (const row of dataToRender) {
-        if (!row.modality || !row.archetype) continue;
-        if (!grouped[row.modality]) grouped[row.modality] = {};
-        grouped[row.modality][row.archetype] = row;
+      if (isEditable) {
+        scenarioNameCard.classList.remove('hidden');
+        if(dataToRender.length > 0 && dataToRender[0].scenario) {
+            scenarioNameInput.value = dataToRender[0].scenario;
+            scenarioName = dataToRender[0].scenario;
+        }
+      } else {
+        scenarioNameCard.classList.add('hidden');
       }
-      for (const modality of Object.keys(grouped)) {
-        const modalityContainer = document.createElement("div");
-        modalityContainer.className = "modality-container";
-        const header = document.createElement("div");
-        header.className = "modality-header";
-        const title = document.createElement("h2");
-        title.textContent = modality;
-        const buttonGroup = document.createElement("div");
-        buttonGroup.className = "archetype-buttons";
-        header.appendChild(title);
-        header.appendChild(buttonGroup);
-        modalityContainer.appendChild(header);
 
-        for (const archetype of Object.keys(grouped[modality])) {
-          const row = grouped[modality][archetype];
-          const contentPanelId = `content-${modality.replace(/\s+/g, '-')}-${archetype.replace(/\s+/g, '-')}`;
-          const button = document.createElement("button");
-          button.className = "archetype-button";
+      const grouped = dataToRender.reduce((acc, row) => {
+        const { modality, archetype } = row;
+        if (!acc[modality]) acc[modality] = {};
+        if (!acc[modality][archetype]) acc[modality][archetype] = [];
+        acc[modality][archetype].push(row);
+        return acc;
+      }, {});
+
+      for (const modality of Object.keys(grouped).sort()) {
+        const modalityContainer = document.createElement('div');
+        modalityContainer.className = 'modality-container';
+        
+        const modalityHeader = document.createElement('div');
+        modalityHeader.className = 'modality-header';
+        const modalityTitle = document.createElement('h2');
+        modalityTitle.textContent = modality;
+        const archetypeButtonsDiv = document.createElement('div');
+        archetypeButtonsDiv.className = 'archetype-buttons';
+        modalityHeader.appendChild(modalityTitle);
+        modalityHeader.appendChild(archetypeButtonsDiv);
+        modalityContainer.appendChild(modalityHeader);
+
+        for (const archetype of Object.keys(grouped[modality]).sort((a, b) => (archetypeSortOrder[a] || 99) - (archetypeSortOrder[b] || 99))) {
+          const row = grouped[modality][archetype][0];
+          const panelId = `panel-${row.id}`;
+
+          const button = document.createElement('button');
+          button.className = 'archetype-button';
           button.textContent = archetype;
-          button.dataset.target = `#${contentPanelId}`;
+          button.dataset.target = `#${panelId}`;
           button.dataset.id = row.id;
-          if (editedRowIds.has(String(row.id))) { button.classList.add('has-changes'); }
-          buttonGroup.appendChild(button);
+          if (editedRowIds.has(row.id)) {
+             button.classList.add('has-changes');
+          }
+          archetypeButtonsDiv.appendChild(button);
 
-          const panel = document.createElement("div");
-          panel.className = "archetype-content-panel";
-          panel.id = contentPanelId;
+          const panel = document.createElement('div');
+          panel.className = 'archetype-content-panel';
+          panel.id = panelId;
           
           const staticHeader = document.createElement("h3");
           staticHeader.textContent = 'Static Fields';
           panel.appendChild(staticHeader);
           const staticGrid = document.createElement("div");
           staticGrid.className = "static-fields-grid";
+          
           staticFields.forEach(field => {
+            const config = staticFieldSliderConfig[field];
+            if (!config) return;
+
             const fieldDiv = document.createElement("div");
-            fieldDiv.className = "static-field";
+            fieldDiv.className = "slider-field";
             const label = document.createElement("label");
             label.textContent = staticFieldLabels[field] || field;
-            const input = document.createElement("input");
-            input.type = "text";
-            input.value = row[field] != null ? row[field] : "";
-            input.dataset.id = row.id;
-            input.dataset.field = field;
-            if (!isEditable) {
-              input.readOnly = true;
-            } else {
+            const controlsWrapper = document.createElement('div');
+            controlsWrapper.className = 'slider-control-wrapper';
+            const valueDisplay = document.createElement('input');
+            valueDisplay.type = 'text';
+            valueDisplay.className = 'slider-value-display';
+            valueDisplay.value = config.format(row[field] != null ? row[field] : config.min);
+            valueDisplay.dataset.id = row.id;
+            valueDisplay.dataset.field = field;
+
+            if (isEditable) {
+              const slider = document.createElement("input");
+              slider.type = "range";
+              slider.min = config.min; slider.max = config.max; slider.step = config.step;
+              slider.value = row[field] != null ? row[field] : config.min;
+              slider.dataset.id = row.id; slider.dataset.field = field;
+              controlsWrapper.appendChild(slider);
+              
               const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-              if (baselineRow && String(row[field]) !== String(baselineRow[field])) {
-                input.classList.add('changed');
+              if (baselineRow && Math.abs(parseFloat(row[field]) - parseFloat(baselineRow[field])) > 1e-9) {
+                fieldDiv.classList.add('changed');
               }
+            } else {
+                valueDisplay.readOnly = true;
             }
+            
+            controlsWrapper.appendChild(valueDisplay);
             fieldDiv.appendChild(label);
-            fieldDiv.appendChild(input);
+            fieldDiv.appendChild(controlsWrapper);
             staticGrid.appendChild(fieldDiv);
           });
           panel.appendChild(staticGrid);
@@ -370,43 +565,50 @@
           const projectionsGrid = document.createElement("div");
           projectionsGrid.className = "projections-grid";
           projectionMetrics.forEach(metric => {
-            const metricCard = document.createElement("div");
-            metricCard.className = "projection-metric-card";
-            const metricTitle = document.createElement("h4");
-            metricTitle.textContent = projectionMetricLabels[metric] || metric;
-            metricCard.appendChild(metricTitle);
-            const inputsContainer = document.createElement("div");
-            inputsContainer.className = "year-inputs-container";
-            years.forEach(y => {
-              const key = `${metric}_${y}`;
-              const yearItem = document.createElement("div");
-              yearItem.className = "year-input-item";
-              const yearLabel = document.createElement("label");
-              
-              // === MODIFIED: Calculate and set the label to a real year ===
-              const yearIndex = parseInt(y.substring(1), 10);
-              yearLabel.textContent = currentYear + yearIndex;
-              // ==========================================================
+              const card = document.createElement('div');
+              card.className = 'projection-metric-card';
+              const cardTitle = document.createElement('h4');
+              cardTitle.textContent = projectionMetricLabels[metric] || metric;
+              card.appendChild(cardTitle);
 
-              yearItem.appendChild(yearLabel);
-              const input = document.createElement("input");
-              input.type = "text";
-              input.value = row[key] != null ? row[key] : "";
-              input.dataset.id = row.id;
-              input.dataset.field = key;
-              if (!isEditable) {
-                input.readOnly = true;
-              } else {
-                const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
-                if (baselineRow && String(row[key]) !== String(baselineRow[key])) {
-                  input.classList.add('changed');
-                }
-              }
-              yearItem.appendChild(input);
-              inputsContainer.appendChild(yearItem);
-            });
-            metricCard.appendChild(inputsContainer);
-            projectionsGrid.appendChild(metricCard);
+              const yearInputsContainer = document.createElement('div');
+              yearInputsContainer.className = 'year-inputs-container';
+              
+              years.forEach((yearKey, index) => {
+                  const item = document.createElement('div');
+                  item.className = 'year-input-item';
+                  const label = document.createElement('label');
+                  label.textContent = `${currentYear + index}`; 
+                  const input = document.createElement('input');
+                  input.type = 'text';
+                  input.classList.add('projection-input'); // Class for event handling
+
+                  const value = row[metric]?.[yearKey];
+                  input.value = typeof value === 'number' ? value.toFixed(2) : (value ?? 'N/A');
+                  input.dataset.field = `${metric}.${yearKey}`;
+                  input.dataset.id = row.id;
+                  
+                  // Make editable in scenario mode, but not the first year (index 0 / y0)
+                  if (isEditable && index > 0) {
+                      input.readOnly = false;
+                  } else {
+                      input.readOnly = true;
+                  }
+
+                  if(isEditable) {
+                      const baselineRow = baselineData.find(r => String(r.id) === String(row.id));
+                      if (baselineRow && baselineRow[metric]?.[yearKey] !== row[metric]?.[yearKey]) {
+                          input.classList.add('changed');
+                      }
+                  }
+                  
+                  item.appendChild(label);
+                  item.appendChild(input);
+                  yearInputsContainer.appendChild(item);
+              });
+
+              card.appendChild(yearInputsContainer);
+              projectionsGrid.appendChild(card);
           });
           panel.appendChild(projectionsGrid);
           modalityContainer.appendChild(panel);
@@ -414,12 +616,10 @@
         app.appendChild(modalityContainer);
       }
       activePanelIds.forEach(panelId => {
-        const panelToActivate = document.getElementById(panelId);
-        if (panelToActivate) {
-          const buttonToActivate = document.querySelector(`button[data-target="#${panelId}"]`);
-          panelToActivate.classList.add('active');
-          if (buttonToActivate) buttonToActivate.classList.add('active');
-        }
+        const panelToReopen = document.getElementById(panelId);
+        const buttonToReactivate = document.querySelector(`.archetype-button[data-target="#${panelId}"]`);
+        if (panelToReopen) panelToReopen.classList.add('active');
+        if (buttonToReactivate) buttonToReactivate.classList.add('active');
       });
     }
   </script>
