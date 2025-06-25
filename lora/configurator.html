@@ -96,6 +96,8 @@
             <label for="source-baseline">Baseline</label>
             <input type="radio" id="source-scenario" name="data-source" value="scenario">
             <label for="source-scenario">Scenario</label>
+            <!-- MODIFIED: Added span for the sliding background -->
+            <span class="scenario-switch-bg" aria-hidden="true"></span>
           </div>
           <button id="export-button">Export CSV</button>
         </div>
@@ -266,7 +268,6 @@
           baselineData = JSON.parse(JSON.stringify(processedData));
           scenarioData = JSON.parse(JSON.stringify(processedData));
           
-          // MODIFIED: Reset scenario name state when a new file is loaded
           editedRowIds.clear();
           activePanelIds.clear();
           scenarioName = "";
@@ -466,8 +467,6 @@
     function renderUI(dataToRender, isEditable) {
       app.innerHTML = "";
       if (isEditable) {
-        // MODIFIED: Logic simplified to prevent pre-populating name from baseline data.
-        // It will now correctly show the placeholder or the user's previously entered name.
         scenarioNameCard.classList.remove('hidden');
         scenarioNameInput.value = scenarioName;
       } else {
@@ -589,7 +588,6 @@
                   input.dataset.field = `${metric}.${yearKey}`;
                   input.dataset.id = row.id;
                   
-                  // Make editable in scenario mode, but not the first year (index 0 / y0)
                   if (isEditable && index > 0) {
                       input.readOnly = false;
                   } else {
