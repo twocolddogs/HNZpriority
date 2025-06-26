@@ -96,6 +96,8 @@
             <label for="source-baseline">Baseline</label>
             <input type="radio" id="source-scenario" name="data-source" value="scenario">
             <label for="source-scenario">Scenario</label>
+            <!-- MODIFIED: Added span for the sliding background -->
+            <span class="scenario-switch-bg" aria-hidden="true"></span>
           </div>
           <button id="export-button">Export CSV</button>
         </div>
@@ -268,6 +270,7 @@
           
           editedRowIds.clear();
           activePanelIds.clear();
+          scenarioName = "";
 
           fileUploadArea.classList.add('hidden');
           headerControlsWrapper.classList.remove('hidden');
@@ -348,7 +351,7 @@
       
       if (!rowToUpdate || !config) return;
 
-      const display = slider.closest('.slider-control-wrapper').querySelector('.slider-value-display');
+      const display = slider.closest('.slider-field').querySelector('.slider-value-display');
       display.value = config.format(newValue);
       
       rowToUpdate[fieldKey] = newValue;
@@ -375,7 +378,7 @@
             }
 
             const clampedValue = Math.max(config.min, Math.min(config.max, parsedValue));
-            const slider = textInput.closest('.slider-control-wrapper').querySelector('input[type=range]');
+            const slider = textInput.closest('.slider-field').querySelector('input[type=range]');
             slider.value = clampedValue;
             rowToUpdate[fieldKey] = clampedValue;
             textInput.value = config.format(clampedValue);
@@ -465,10 +468,7 @@
       app.innerHTML = "";
       if (isEditable) {
         scenarioNameCard.classList.remove('hidden');
-        if(dataToRender.length > 0 && dataToRender[0].scenario) {
-            scenarioNameInput.value = dataToRender[0].scenario;
-            scenarioName = dataToRender[0].scenario;
-        }
+        scenarioNameInput.value = scenarioName;
       } else {
         scenarioNameCard.classList.add('hidden');
       }
@@ -588,7 +588,6 @@
                   input.dataset.field = `${metric}.${yearKey}`;
                   input.dataset.id = row.id;
                   
-                  // Make editable in scenario mode, but not the first year (index 0 / y0)
                   if (isEditable && index > 0) {
                       input.readOnly = false;
                   } else {
