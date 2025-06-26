@@ -4,9 +4,10 @@
    1. Global Styles & Keyframes
    ========================================================================== */
 
-@keyframes slideInRight {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+/* MODIFIED: Replaced slideInRight with a centered slideInDown animation */
+@keyframes slideInDownCentered {
+  from { transform: translate(-50%, -150%); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
 }
 @keyframes pulse {
   0% { box-shadow: 0 2px 8px rgba(255, 167, 38, 0.1); }
@@ -340,19 +341,18 @@ h3::after {
   margin: 1rem 0;
 }
 
-/* MODIFIED: Using a pseudo-element for the change indicator */
 .slider-field {
-  position: relative; /* Needed for the pseudo-element */
+  position: relative; 
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
   background: #fff;
   border-radius: 6px;
-  border: 1px solid #E5EAF0; /* Consistent border on all 4 sides */
+  border: 1px solid #E5EAF0; 
   transition: all 0.2s ease;
   min-height: auto;
-  overflow: hidden; /* Ensures pseudo-element respects border-radius */
+  overflow: hidden; 
 }
 
 .slider-field::before {
@@ -362,7 +362,7 @@ h3::after {
   top: 0;
   bottom: 0;
   width: 4px;
-  background-color: transparent; /* Transparent by default */
+  background-color: transparent; 
   transition: background-color 0.2s ease;
 }
 
@@ -372,7 +372,7 @@ h3::after {
 }
 
 .slider-field.changed::before {
-  background-color: #FFA726; /* Becomes colored when changed */
+  background-color: #FFA726; 
 }
 
 .slider-field label {
@@ -566,12 +566,14 @@ input:disabled {
 }
 
 /* --- Status Messages --- */
+/* MODIFIED: Centered the status message banner */
 .status-message {
   position: fixed;
   top: 20px;
-  right: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 9999;
-  animation: slideInRight 0.3s ease-out;
+  animation: slideInDownCentered 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .status-message p {
@@ -581,6 +583,7 @@ input:disabled {
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   margin: 0;
+  white-space: nowrap;
 }
 
 .status-message .success { background: #28a745; }
