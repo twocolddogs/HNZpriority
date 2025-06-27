@@ -127,11 +127,10 @@
     <div id="status-message" class="status-message"></div>
   </div>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script>
+          <script>
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
-    const staticFieldDescriptions = { "non_demographic_growth": "Non-demographic growth is a % change to apply over and above demographic growth (which comes from population projections). This varies by Modality.", "routine_machine_hours": "Routine machine hours provides the number of hours one machine of that modality would be expected to run in a normal working week.", "share_of_scans_during_day": "This is the % of events that occurred during routine hours which sets the level of activity to meet in hours.", "ooh_machines": "This is the number of machines each archetype is expected to run out of hours (OOH).", "ras_per_routine_machine_hour": "Radiology Assistants (RAs) support efficient delivery of CT and MR modalities. This ratio provides the number of RAs needed per routine machine hour.", "mit_shift_length": "MITs run the modalities and so to identify their FTE requirements we need to set the shift length they will work. This is strictly 4 hours.", "mit_weeks_lost": "This is a factor to account for cover given the need for MITs to take leave.", "session_length_hours": "This is the length of a session that a radiologist reports on events, this tends to be 4 hours.", "clinical_reporting_sessions_per_rad": "This provides the number of reporting sessions that each radiologist does per week - this varies by archetype as larger facilities have a broader set of responsibilities for radiologists.", "rad_weeks_lost": "This is a factor to account for cover given the need for radiologists to take leave." };
+    const staticFieldDescriptions = { "non_demographic_growth": "Non-demographic growth is a % change to apply over and above demographic growth (which comes from population projections). This varies by Modality.", "routine_machine_hours": "Routine machine hours provides the number of hours one machine of that modality would be expected to run in a normal working week.", "share_of_scans_during_day": "This is the % of events that occurred during routine hours which sets the level of activity to meet in hours.", "ooh_machines": "This is the number of machines each archetype is expected to run out of hours (OOH).", "ras_per_routine_machine_hour": "Radiology Assistants (RAs) support efficient delivery of CT and MR modalities. This ratio provides the number of RAs needed per routine machine hour.", "mit_shift_length": "MITs run the modalities and so to identify their FTE requirements we need to set the shift length they will work. This is strictly 4 hours.", "mit_weeks_lost": "This is a factor to account for cover given the need for MITs to take leave.", "session_length_hours": "This is the length of a session that a radiologist reports on an event, this tends to be 4 hours.", "clinical_reporting_sessions_per_rad": "This provides the number of reporting sessions that each radiologist does per week - this varies by archetype as larger facilities have a broader set of responsibilities for radiologists.", "rad_weeks_lost": "This is a factor to account for cover given the need for radiologists to take leave." };
 
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
@@ -139,7 +138,6 @@
     
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
     
-    // MODIFICATION: Default base year start. This will be updated by the CSV.
     let baseYearStart = new Date().getFullYear(); 
     
     const archetypeSortOrder = { "X Small": 1, "Small": 2, "Medium": 3, "Large": 4, "X Large": 5, };
@@ -158,7 +156,18 @@
     let baselineData = [], scenarioData = [], activePanelIds = new Set(), messageTimeout;
     let scenarioName = "";
 
-    document.addEventListener('DOMContentLoaded', loadAndInitializeData);
+    // --- FIX PART 1: ADD GLOBAL CLICK LISTENER ---
+    // This now adds the essential listener to the whole document.
+    document.addEventListener('DOMContentLoaded', () => {
+        loadAndInitializeData();
+        // This listener will close any open tooltip when a click happens anywhere.
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.info-tooltip.visible').forEach(tooltip => {
+                tooltip.classList.remove('visible');
+            });
+        });
+    });
+
     fileInput.addEventListener('change', (e) => loadCSVFile(e.target.files[0]));
     fileUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); fileUploadArea.classList.add('drag-over'); });
     fileUploadArea.addEventListener('dragleave', () => fileUploadArea.classList.remove('drag-over'));
@@ -237,10 +246,8 @@
               return newRow;
           });
 
-          // MODIFICATION: Parse the financial year format from the CSV.
           if (processedData.length > 0 && processedData[0].baseyear) {
               const baseYearString = String(processedData[0].baseyear).trim();
-              // Regex to match "YYYY/YY" or a single "YYYY"
               const match = baseYearString.match(/^(\d{4})(?:\/\d{2})?$/); 
               if (match && match[1]) {
                   const parsedStartYear = parseInt(match[1], 10);
@@ -273,8 +280,8 @@
       });
     }
 
-    // MODIFICATION: New helper function to format financial year labels
-   function formatFinancialYear(startYear) {
+    // Correcting this function back to the YY/YY format as per our conversation history
+    function formatFinancialYear(startYear) {
         const startYY = String(startYear).slice(-2);
         const endYY = String(startYear + 1).slice(-2);
         return `FY ${startYY}/${endYY}`;
@@ -397,6 +404,8 @@
     app.addEventListener('touchmove', handleSliderInput);
     app.addEventListener('change', handleTextChange);
 
+    // --- FIX PART 2: UPDATE THE APP CLICK LISTENER ---
+    // This listener now correctly handles clicks inside the main app container.
     app.addEventListener('click', (e) => {
         if (e.target.classList.contains('archetype-button')) {
             const button = e.target;
@@ -414,20 +423,24 @@
         }
 
         if (e.target.classList.contains('info-icon')) {
-            // This is the key change: stop the click from reaching the document.
+            // This is crucial: it stops the click on the icon from
+            // bubbling up to the document and triggering the global listener.
             e.stopPropagation(); 
             
             const icon = e.target;
             const tooltip = icon.nextElementSibling;
             const wasVisible = tooltip.classList.contains('visible');
 
-            // First, close any other tooltips that might be open
+            // First, close any other tooltips that might be open.
+            // This is now redundant because the global listener handles it,
+            // but it's good practice to keep it for clarity.
             document.querySelectorAll('.info-tooltip.visible').forEach(visibleTooltip => {
                 visibleTooltip.classList.remove('visible');
             });
             
-            // If the tooltip we clicked wasn't already visible, show it.
-            // This logic correctly handles opening a new tooltip and closing the current one.
+            // If the tooltip we just clicked wasn't already visible, show it.
+            // This logic allows clicking an icon to open it, and clicking it
+            // again to close it (because `wasVisible` would be true).
             if (!wasVisible && tooltip) {
                 tooltip.classList.add('visible');
             }
@@ -630,7 +643,6 @@
                   const item = document.createElement('div');
                   item.className = 'year-input-item';
                   const label = document.createElement('label');
-                  // MODIFICATION: Use the financial year formatter for the label
                   label.textContent = formatFinancialYear(baseYearStart + index); 
                   const input = document.createElement('input');
                   input.type = 'text';
