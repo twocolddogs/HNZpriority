@@ -85,7 +85,6 @@
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step Change", "op_volume_step": "Outpatient Volume Step Change", "scan_rate": "Scan Rate (Mins)", "report_rate": "Report Rate (Mins)", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
     const projectionMetricDescriptions = { "ip_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "op_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "scan_rate": "These financial-year-based 10 fields provide the number of minutes required for modality to be scanning per event, which may change over time as technologies change. These vary by modality and archetype.", "report_rate": "These financial-year-based 10 fields provide the number of minutes required for a radiologist to report on an event, which may change over time as technologies change. These vary by modality and archetype", "mits_per_routine_machine_hour": "These financial-year-based 10 fields provide the number of MITs required in-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype.", "mits_per_ooh_machine_hour": "These financial-year-based 10 fields provide the number of MITs required out-of-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype." };
     
-    // FIX: Add map to handle data inconsistencies like "MR" vs "MRI"
     const modalityDisplayMap = { "MR": "MRI" };
     const modalityIcons = { "CT": "CT.png", "US": "US.png", "XR": "XR.png", "MRI": "MRI.png" };
     
@@ -167,7 +166,7 @@
         
         if (!e.target.closest('.info-container')) {
              document.querySelectorAll('.info-tooltip.visible').forEach(tt => tt.classList.remove('visible'));
-             document.querySelectorAll('tr.focused-row').forEach(row => row.classList.remove('focused-row'));
+             hideGlobalTooltip();
         }
       });
       
@@ -175,22 +174,20 @@
         if (e.target.classList.contains('info-icon')) {
             e.stopPropagation();
             const tooltip = e.target.nextElementSibling;
-            const parentTr = e.target.closest('tr');
-
-            document.querySelectorAll('tr.focused-row').forEach(row => {
-                if(row !== parentTr) row.classList.remove('focused-row');
-            });
             
-            const isVisible = tooltip.classList.contains('visible');
-            document.querySelectorAll('.info-tooltip.visible').forEach(tt => tt.classList.remove('visible'));
+            const isArchetypeTooltip = tooltip.classList.contains('tooltip-right');
+            const isVisible = tooltip.classList.contains('visible') || (isArchetypeTooltip && document.querySelector('.global-tooltip'));
 
+            // Always hide all tooltips first
+            document.querySelectorAll('.info-tooltip.visible').forEach(tt => tt.classList.remove('visible'));
+            hideGlobalTooltip();
+            
             if (!isVisible) {
-                tooltip.classList.add('visible');
-                if (tooltip.classList.contains('tooltip-right') && parentTr) {
-                    parentTr.classList.add('focused-row');
+                if (isArchetypeTooltip) {
+                    showArchetypeTooltip(e.target);
+                } else {
+                    tooltip.classList.add('visible');
                 }
-            } else {
-                 if (parentTr) parentTr.classList.remove('focused-row');
             }
         }
       });
@@ -517,7 +514,34 @@
         return grid;
     }
 
-    // --- Event Handling Logic ---
+    // --- Event Handling Logic & Tooltip Management ---
+    function showArchetypeTooltip(icon) {
+        hideGlobalTooltip(); // Remove any existing one
+        const iconRect = icon.getBoundingClientRect();
+        const hiddenTooltip = icon.nextElementSibling;
+        if (!hiddenTooltip) return;
+
+        const globalTooltip = document.createElement('div');
+        globalTooltip.className = 'info-tooltip tooltip-right global-tooltip';
+        globalTooltip.innerHTML = hiddenTooltip.innerHTML;
+        
+        document.body.appendChild(globalTooltip);
+        
+        const tooltipRect = globalTooltip.getBoundingClientRect();
+        const topPos = iconRect.top + (iconRect.height / 2) - (tooltipRect.height / 2);
+        const leftPos = iconRect.left + iconRect.width + 8;
+
+        globalTooltip.style.top = `${topPos}px`;
+        globalTooltip.style.left = `${leftPos}px`;
+        globalTooltip.classList.add('visible');
+    }
+
+    function hideGlobalTooltip() {
+        const existingTooltip = document.querySelector('.global-tooltip');
+        if (existingTooltip) existingTooltip.remove();
+    }
+
+
     function handleDataInput(e) {
         const slider = e.target;
         if (slider.type !== 'range') return;
@@ -571,7 +595,6 @@
         updateChangeState(rowId, fieldKey);
     }
     
-    // --- State Update & Utility Functions ---
     function updateChangeState(rowId, fieldKey) {
         const rowToUpdate = scenarioData.find(row => row.id === rowId);
         const baselineRow = baselineData.find(row => row.id === rowId);
@@ -595,8 +618,7 @@
         }
 
         const modality = rowToUpdate.modality;
-        const displayName = modalityDisplayMap[modality] || modality;
-        const tabButton = document.querySelector(`.tab-button span[data-target="tab-${modality.toLowerCase().replace(/\s/g, '-')}"]`);
+        const tabButton = document.querySelector(`.tab-button[data-target="tab-${modality.toLowerCase().replace(/\s/g, '-')}"]`);
         if (tabButton) {
             tabButton.classList.toggle('has-changes', scenarioData.filter(r => r.modality === modality).some(r => hasRowChanged(r.id)));
         }
