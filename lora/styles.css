@@ -16,14 +16,18 @@ body {
   line-height: 1.6;
 }
 .hidden { display: none !important; }
+
+/* FIX 4: Add side padding and box-sizing to prevent content touching edges */
 .rtt-container {
   max-width: 1600px;
   margin: 1em auto;
+  padding: 0 1em;
+  box-sizing: border-box;
 }
 .rtt-sticky-header {
   position: sticky;
   top: 0;
-  z-index: 1002; /* Sits above tabs, below tooltips */
+  z-index: 1002;
   background: #F9FAFB;
   padding: 0.5em 0;
 }
@@ -35,7 +39,7 @@ body {
   padding: 0.6em 1.5em;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  min-height: 58px; /* Give it a consistent height for sticky calculation */
+  min-height: 58px;
   box-sizing: border-box;
 }
 .rtt-app-logo { height: auto; margin-right: 1.5em; width: 160px; flex-shrink: 0; }
@@ -75,18 +79,18 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
    4. Tab & Table Layout
    ========================================================================== */
 
-/* --- NEW: Wrapper for sticky tabs --- */
+/* FIX 3: Adjusted top value for sticky tabs */
 #sticky-tabs-wrapper {
   position: sticky;
-  top: 74px; /* Height of the header (58px) + its container padding (16px) */
-  z-index: 1001; /* Sits below header, above content */
-  background-color: #F9FAFB; /* Match body background */
+  top: 75px; /* Height of the header (58px) + container padding (16px) + 1px border */
+  z-index: 1001;
+  background-color: #F9FAFB;
 }
 .tabs-nav {
   display: flex;
   gap: 0.25rem;
   border-bottom: 2px solid #D1D9E1;
-  margin: 0 0 2rem 0; /* Removed top margin */
+  margin: 0 0 2rem 0;
   flex-wrap: wrap;
 }
 .tab-button {
@@ -207,11 +211,13 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   position: sticky;
   left: 0;
   background-color: #F9FAFB;
-  z-index: 1010; /* Increased to be above the tabs wrapper */
+  z-index: 1010;
   min-width: 120px; 
 }
 .data-table th:first-child .th-content { justify-content: flex-start; }
 .data-table td:first-child { background-color: #fff; }
+
+/* FIX 2: Added position relative to fix right-tooltip z-index */
 .archetype-label-wrapper {
     position: relative;
     display: flex;
@@ -294,9 +300,11 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
 .info-container { position: relative; display: inline-flex; }
 .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background-color: #B0B6BF; color: white; font-size: 12px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; user-select: none; flex-shrink: 0; }
 .info-icon:hover { background-color: #00549F; }
+
+/* FIX 1: Changed tooltip to appear below the icon */
 .info-tooltip { 
   position: absolute; 
-  bottom: calc(100% + 8px); 
+  top: calc(100% + 8px); /* Changed from 'bottom' */
   left: 50%; 
   transform: translateX(-50%); 
   background: #333D47; 
@@ -314,21 +322,29 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
   transition: opacity 0.2s, visibility 0.2s; 
 }
 .info-tooltip.visible { opacity: 1; visibility: visible; }
-.info-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #333D47 transparent transparent transparent; }
+.info-tooltip::after { 
+  content: ''; 
+  position: absolute; 
+  bottom: 100%; /* Changed from 'top' */
+  left: 50%; 
+  transform: translateX(-50%); 
+  border-width: 6px; 
+  border-style: solid; 
+  border-color: transparent transparent #333D47 transparent; /* Arrow now points up */
+}
 
 .tooltip-right {
-  bottom: auto;
+  bottom: auto; /* Remove bottom positioning */
   left: calc(100% + 8px);
   top: 50%;
   transform: translateY(-50%);
-  z-index: 1050;
 }
 .tooltip-right::after {
     content: '';
     position: absolute;
     top: 50%;
-    left: -12px;
-    bottom: auto;
+    right: 100%; /* Changed from left: -12px */
+    bottom: auto; /* Remove bottom */
     transform: translateY(-50%);
     border-width: 6px;
     border-style: solid;
@@ -343,9 +359,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
 .status-message .success { background: #28a745; }
 .status-message .error { background: #d9534f; }
 @media (max-width: 768px) {
-    body { margin: 0.5em; }
-    .rtt-container { margin: 0; }
-    #sticky-tabs-wrapper { top: 100%; /* On mobile, tabs will just scroll with content */ }
+    .rtt-container { padding: 0 0.5em; }
+    #sticky-tabs-wrapper { top: 100%; }
     .rtt-brand-bar { flex-wrap: wrap; gap: 1rem; padding: 0.8em 1em; }
     .rtt-header-controls { flex-basis: 100%; justify-content: space-between; }
     .data-table th, .data-table td { padding: 0.5rem; font-size: 0.85rem; }
