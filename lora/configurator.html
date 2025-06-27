@@ -68,7 +68,9 @@
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step Change", "op_volume_step": "Outpatient Volume Step Change", "scan_rate": "Scan Rate (Mins)", "report_rate": "Report Rate (Mins)", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
     const projectionMetricDescriptions = { "ip_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "op_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "scan_rate": "These financial-year-based 10 fields provide the number of minutes required for modality to be scanning per event, which may change over time as technologies change. These vary by modality and archetype.", "report_rate": "These financial-year-based 10 fields provide the number of minutes required for a radiologist to report on an event, which may change over time as technologies change. These vary by modality and archetype", "mits_per_routine_machine_hour": "These financial-year-based 10 fields provide the number of MITs required in-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype.", "mits_per_ooh_machine_hour": "These financial-year-based 10 fields provide the number of MITs required out-of-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype." };
-
+    
+    // --- NEW: Added icons for modality tabs ---
+    const modalityIcons = { "CT": "💿", "MRI": "🧲", "Fluoroscopy": "✨", "GX": "🦴", "NM": "🎀", "US": "🔊", "Default": "⚕️" };
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
     let baseYearStart = new Date().getFullYear(); 
     const archetypeSortOrder = { "X Small": 1, "Small": 2, "Medium": 3, "Large": 4, "X Large": 5, };
@@ -228,7 +230,7 @@
       }, {});
       
       const modalities = Object.keys(groupedByModality).sort();
-      if (!activeTabId || !groupedByModality[activeTabId.replace('tab-','')]) {
+      if (!activeTabId || !modalities.some(m => `tab-${m.toLowerCase().replace(/\s/g, '-')}` === activeTabId)) {
          activeTabId = `tab-${modalities[0]?.toLowerCase().replace(/\s/g, '-')}`;
       }
 
@@ -243,7 +245,8 @@
           button.classList.toggle('has-changes', groupedByModality[modality].some(row => hasRowChanged(row.id)));
         }
         button.dataset.target = tabId;
-        button.textContent = modality;
+        const icon = modalityIcons[modality] || modalityIcons["Default"];
+        button.innerHTML = `<span class="tab-icon">${icon}</span> ${modality}`;
         nav.appendChild(button);
       });
       tabsNavContainer.appendChild(nav);
@@ -302,7 +305,7 @@
         const thead = table.createTHead();
         const headerRow = thead.insertRow();
         const firstTh = document.createElement('th');
-        firstTh.textContent = 'Archetype';
+        firstTh.innerHTML = `<div class="th-content">Archetype</div>`;
         headerRow.appendChild(firstTh);
 
         staticFields.forEach(f => {
@@ -340,7 +343,7 @@
 
                 if (isEditable) {
                     const baselineRow = baselineData.find(br => br.id === row.id);
-                    if (Math.abs(parseFloat(value) - parseFloat(baselineRow[field])) > 1e-9) {
+                    if (baselineRow && Math.abs(parseFloat(value) - parseFloat(baselineRow[field])) > 1e-9) {
                         td.classList.add('changed');
                     }
                     const sliderContainer = document.createElement('div');
@@ -383,7 +386,8 @@
                 input.dataset.field = `${metric}.${yearKey}`;
                 input.readOnly = !isEditable || yearKey === 'y0';
 
-                if (isEditable && baselineData.find(br => br.id === row.id)[metric]?.[yearKey] !== value) {
+                const baselineRow = baselineData.find(br => br.id === row.id);
+                if (isEditable && baselineRow && baselineRow[metric]?.[yearKey] !== value) {
                     td.classList.add('changed');
                 }
                 td.appendChild(input);
@@ -423,8 +427,9 @@
             const config = staticFieldSliderConfig[fieldKey];
             if (!config) return;
             let parsedValue = config.parse(textInput.value);
+            const originalValue = rowToUpdate[fieldKey];
             if (isNaN(parsedValue)) {
-                return textInput.value = config.format(rowToUpdate[fieldKey]);
+                return textInput.value = (originalValue !== null && !isNaN(originalValue)) ? config.format(originalValue) : 'N/A';
             }
             const clampedValue = Math.max(config.min, Math.min(config.max, parsedValue));
             rowToUpdate[fieldKey] = clampedValue;
@@ -435,8 +440,9 @@
         else {
             const [metric, yearKey] = fieldKey.split('.');
             const numericValue = parseFloat(textInput.value);
+            const originalValue = rowToUpdate[metric]?.[yearKey];
             if (isNaN(numericValue)) {
-                textInput.value = rowToUpdate[metric][yearKey].toFixed(2);
+                textInput.value = (originalValue !== null && !isNaN(originalValue)) ? originalValue.toFixed(2) : 'N/A';
             } else {
                 rowToUpdate[metric][yearKey] = numericValue;
                 textInput.value = numericValue.toFixed(2);
@@ -450,7 +456,7 @@
         const rowToUpdate = scenarioData.find(row => row.id === rowId);
         const baselineRow = baselineData.find(row => row.id === rowId);
         const cell = document.querySelector(`input[data-id="${rowId}"][data-field="${fieldKey}"]`).closest('td');
-        if (!cell) return;
+        if (!cell || !baselineRow) return;
 
         let isChanged = false;
         if (staticFields.includes(fieldKey)) {
