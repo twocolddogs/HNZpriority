@@ -92,6 +92,8 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   transition: all 0.2s ease-in-out;
   font-family: 'Poppins', sans-serif;
   position: relative;
+  display: flex;
+  align-items: center;
 }
 .tab-button:hover {
   background: #F3F4F6;
@@ -100,6 +102,12 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
 .tab-button.active {
   color: #00549F;
   border-color: #00549F;
+}
+/* --- NEW: Style for tab icons --- */
+.tab-icon {
+  margin-right: 0.5em;
+  font-size: 1.2em;
+  line-height: 1;
 }
 .tab-button.has-changes::after {
   content: '';
@@ -134,7 +142,7 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  white-space: nowrap;
+  /* --- MODIFIED: Removed white-space: nowrap to allow wrapping --- */
 }
 .data-table th, .data-table td {
   padding: 0.75rem 1rem;
@@ -147,6 +155,10 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   font-weight: 600;
   color: #374151;
   font-size: 0.9em;
+  /* --- NEW: Set width constraints and allow wrapping --- */
+  min-width: 160px;
+  max-width: 200px;
+  white-space: normal;
 }
 .data-table th .th-content { display: flex; align-items: center; gap: 8px; justify-content: center;}
 .data-table td:first-child, .data-table th:first-child {
@@ -156,7 +168,7 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   left: 0;
   background-color: #F9FAFB;
   z-index: 1;
-  min-width: 120px;
+  min-width: 140px; /* Give archetype column a fixed size */
 }
 .data-table th:first-child .th-content { justify-content: flex-start; }
 .data-table td:first-child { background-color: #fff; }
@@ -196,7 +208,26 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
 .info-container { position: relative; display: inline-flex; }
 .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background-color: #B0B6BF; color: white; font-size: 12px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; user-select: none; flex-shrink: 0; }
 .info-icon:hover { background-color: #00549F; }
-.info-tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #333D47; color: white; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.9em; line-height: 1.5; width: 280px; max-width: 90vw; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 30; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s; }
+.info-tooltip { 
+  position: absolute; 
+  bottom: calc(100% + 8px); 
+  left: 50%; 
+  transform: translateX(-50%); 
+  background: #333D47; 
+  color: white; 
+  padding: 0.75rem 1rem; 
+  border-radius: 6px; 
+  font-size: 0.9em; 
+  line-height: 1.5; 
+  width: 280px; 
+  max-width: 90vw; 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+  /* --- MODIFIED: Increased z-index to appear over sticky header --- */
+  z-index: 1010; 
+  opacity: 0; 
+  visibility: hidden; 
+  transition: opacity 0.2s, visibility 0.2s; 
+}
 .info-tooltip.visible { opacity: 1; visibility: visible; }
 .info-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #333D47 transparent transparent transparent; }
 
@@ -214,4 +245,5 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
     .rtt-brand-bar { flex-wrap: wrap; gap: 1rem; padding: 0.8em 1em; }
     .rtt-header-controls { flex-basis: 100%; justify-content: space-between; }
     .data-table th, .data-table td { padding: 0.5rem; font-size: 0.85rem; }
+    .data-table th { min-width: 120px; }
 }
