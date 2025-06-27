@@ -63,6 +63,7 @@
        ========================================================================== */
     .rtt-download-btn { font-family: 'Poppins', sans-serif; font-size: 0.9em; font-weight: 600; padding: 0.6em 1.2em; border: 1px solid #3a5c24; border-radius: 6px; background: #4c7a30; color: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease; min-height: 44px; white-space: nowrap; }
     .rtt-download-btn:hover { background: #3e6326; border-color: #2f4a1c; }
+    .rtt-download-btn:disabled { background: #9ca3af; border-color: #6b7280; cursor: not-allowed; }
     .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s ease-in-out infinite; }
     input[type="text"] { box-sizing: border-box; width: 100%; padding: 0.5em 0.75em; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 0.9rem; text-align: center; background-color: #fff; box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.07); transition: all 0.2s ease; min-height: 40px; }
     input[type="text"]:focus { outline: none; border-color: #007A86; box-shadow: 0 0 0 3px rgba(0, 122, 134, 0.15); }
@@ -77,7 +78,7 @@
     .file-upload { border: 2px dashed #ccc; border-radius: 8px; padding: 40px 20px; text-align: center; background-color: #ffffff; margin: 20px; max-width: 600px; margin-left: auto; margin-right: auto; }
 
     /* ==========================================================================
-       4. NEW: Tab & Table Layout
+       4. Tab & Table Layout
        ========================================================================== */
     .tabs-nav {
       display: flex;
@@ -123,11 +124,13 @@
     .tab-panel.active { display: block; animation: fadeIn 0.5s ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    .tab-panel h3, .tab-panel h4 {
+    .tab-panel h3, .tab-panel .metric-title-wrapper {
         font-size: 1.4em; font-weight: 600; color: #143345; margin: 2rem 0 1.5rem 0;
         padding-bottom: 0.5rem; border-bottom: 1px solid #E0E6ED; font-family: 'Poppins', sans-serif;
+        display: flex; align-items: center; gap: 0.75rem;
     }
-    .tab-panel h4 { font-size: 1.2em; margin-top: 2.5rem; }
+    .tab-panel .metric-title-wrapper { font-size: 1.2em; margin-top: 2.5rem; }
+    .tab-panel h4 { margin:0; padding: 0; border: 0; font-family: inherit; font-size: inherit; }
 
     .table-container {
       overflow-x: auto;
@@ -153,6 +156,7 @@
       color: #374151;
       font-size: 0.9em;
     }
+    .data-table th .th-content { display: flex; align-items: center; gap: 8px; justify-content: center;}
     .data-table td:first-child, .data-table th:first-child {
       text-align: left;
       font-weight: 600;
@@ -162,12 +166,13 @@
       z-index: 1;
       min-width: 120px;
     }
+    .data-table th:first-child .th-content { justify-content: flex-start; }
     .data-table td:first-child { background-color: #fff; }
     .data-table td.changed {
       box-shadow: inset 3px 0 0 #FFA726;
     }
     /* ==========================================================================
-       5. NEW: Interactive Input/Slider
+       5. Interactive Input/Slider & Tooltips
        ========================================================================== */
     .input-slider-wrapper {
       position: relative;
@@ -196,6 +201,13 @@
     input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #00549F; cursor: pointer; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); margin-top: -6px; }
     input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #00549F; cursor: pointer; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
     
+    .info-container { position: relative; display: inline-flex; }
+    .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background-color: #B0B6BF; color: white; font-size: 12px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; user-select: none; flex-shrink: 0; }
+    .info-icon:hover { background-color: #00549F; }
+    .info-tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #333D47; color: white; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.9em; line-height: 1.5; width: 280px; max-width: 90vw; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 30; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s; }
+    .info-tooltip.visible { opacity: 1; visibility: visible; }
+    .info-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #333D47 transparent transparent transparent; }
+
     /* ==========================================================================
        6. Status Messages & Responsive
        ========================================================================== */
@@ -231,7 +243,7 @@
               <span class="scenario-switch-bg" aria-hidden="true"></span>
             </div>
             <button id="export-button" class="rtt-download-btn">
-              <span class="loading-spinner hidden"></span>
+              <span id="export-spinner" class="loading-spinner hidden"></span>
               Export CSV
             </button>
           </div>
@@ -269,10 +281,12 @@
     // --- Data Definitions ---
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "OOH Machines", "ras_per_routine_machine_hour": "RAs per Routine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hrs)", "clinical_reporting_sessions_per_rad": "Rad Reporting Sessions", "rad_weeks_lost": "Rad Weeks Lost" };
+    const staticFieldDescriptions = { "non_demographic_growth": "Non-demographic growth is a % change to apply over and above demographic growth (which comes from population projections). This varies by Modality.", "routine_machine_hours": "Routine machine hours provides the number of hours one machine of that modality would be expected to run in a normal working week.", "share_of_scans_during_day": "This is the % of events that occurred during routine hours which sets the level of activity to meet in hours.", "ooh_machines": "This is the number of machines each archetype is expected to run out of hours (OOH).", "ras_per_routine_machine_hour": "Radiology Assistants (RAs) support efficient delivery of CT and MR modalities. This ratio provides the number of RAs needed per routine machine hour.", "mit_shift_length": "MITs run the modalities and so to identify their FTE requirements we need to set the shift length they will work. This is strictly 4 hours.", "mit_weeks_lost": "This is a factor to account for cover given the need for MITs to take leave.", "session_length_hours": "This is the length of a session that a radiologist reports on an event, this tends to be 4 hours.", "clinical_reporting_sessions_per_rad": "This provides the number of reporting sessions that each radiologist does per week - this varies by archetype as larger facilities have a broader set of responsibilities for radiologists.", "rad_weeks_lost": "This is a factor to account for cover given the need for radiologists to take leave." };
     const staticFieldSliderConfig = { non_demographic_growth: { min: -0.05, max: 0.1, step: 0.001, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s.replace('%','')) / 100 }, routine_machine_hours: { min: 40, max: 84, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, share_of_scans_during_day: { min: 0.90, max: 1.00, step: 0.001, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s.replace('%','')) / 100 }, ooh_machines: { min: 0, max: 4, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, ras_per_routine_machine_hour: { min: 0, max: 2, step: 0.1, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, mit_shift_length: { min: 4, max: 6, step: 1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, mit_weeks_lost: { min: 6, max: 8, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, session_length_hours: { min: 4, max: 5, step: 0.5, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, clinical_reporting_sessions_per_rad: { min: 2, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, rad_weeks_lost: { min: 10, max: 14, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, };
     
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step Change", "op_volume_step": "Outpatient Volume Step Change", "scan_rate": "Scan Rate (Mins)", "report_rate": "Report Rate (Mins)", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
+    const projectionMetricDescriptions = { "ip_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "op_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "scan_rate": "These financial-year-based 10 fields provide the number of minutes required for modality to be scanning per event, which may change over time as technologies change. These vary by modality and archetype.", "report_rate": "These financial-year-based 10 fields provide the number of minutes required for a radiologist to report on an event, which may change over time as technologies change. These vary by modality and archetype", "mits_per_routine_machine_hour": "These financial-year-based 10 fields provide the number of MITs required in-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype.", "mits_per_ooh_machine_hour": "These financial-year-based 10 fields provide the number of MITs required out-of-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype." };
 
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
     let baseYearStart = new Date().getFullYear(); 
@@ -280,6 +294,7 @@
 
     // --- DOM Element Cache ---
     const app = document.getElementById("app");
+    const mainContent = document.getElementById("main-content");
     const headerControlsWrapper = document.getElementById("header-controls-wrapper");
     const scenarioToggle = document.getElementById("scenario-toggle");
     const exportButton = document.getElementById("export-button");
@@ -299,19 +314,15 @@
 
     // --- Event Listeners Setup ---
     function setupEventListeners() {
-      // Data Source Toggle (Baseline/Scenario)
       scenarioToggle.addEventListener('change', (e) => {
         const isBaseline = e.target.value === 'baseline';
         renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
       });
 
-      // File Upload
       document.getElementById('csv-file-input').addEventListener('change', (e) => loadCSVFile(e.target.files[0]));
-      
-      // Scenario Name
       scenarioNameInput.addEventListener('input', (e) => { scenarioName = e.target.value; });
-
-      // Tab Navigation
+      exportButton.addEventListener('click', exportScenarioCSV);
+      
       tabsNavContainer.addEventListener('click', (e) => {
         const button = e.target.closest('.tab-button');
         if (!button) return;
@@ -320,28 +331,33 @@
         document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === activeTabId));
       });
       
-      // Global Click: Hide sliders if click is outside
       document.addEventListener('click', (e) => {
-        if (!e.target.closest('.input-slider-wrapper')) {
-            hideAllSliders();
+        if (!e.target.closest('.input-slider-wrapper')) hideAllSliders();
+        if (!e.target.closest('.info-container')) {
+             document.querySelectorAll('.info-tooltip.visible').forEach(tt => tt.classList.remove('visible'));
+        }
+      });
+      
+      mainContent.addEventListener('click', (e) => {
+        if (e.target.classList.contains('info-icon')) {
+            e.stopPropagation();
+            const tooltip = e.target.nextElementSibling;
+            const isVisible = tooltip.classList.contains('visible');
+            document.querySelectorAll('.info-tooltip.visible').forEach(tt => tt.classList.remove('visible'));
+            if (!isVisible) tooltip.classList.add('visible');
         }
       });
 
-      // Show slider on input focus
       app.addEventListener('focusin', (e) => {
         if (e.target.matches('.static-field-input')) {
             hideAllSliders();
             const wrapper = e.target.closest('.input-slider-wrapper');
-            if (wrapper) {
-                const sliderContainer = wrapper.querySelector('.slider-container');
-                if (sliderContainer) sliderContainer.classList.add('visible');
-            }
+            if (wrapper) wrapper.querySelector('.slider-container')?.classList.add('visible');
         }
       });
       
-      // Data Input Changes
-      app.addEventListener('input', handleDataInput); // For sliders
-      app.addEventListener('change', handleDataChange); // For text inputs after blur
+      app.addEventListener('input', handleDataInput);
+      app.addEventListener('change', handleDataChange);
     }
 
     // --- Data Loading & Processing ---
@@ -384,8 +400,7 @@
 
         if (results.errors.length) {
             console.error("CSV Parsing Errors:", results.errors);
-            showMessage("Error parsing CSV file.", "error");
-            return;
+            return showMessage("Error parsing CSV file.", "error");
         }
 
         const processedData = results.data.map(row => {
@@ -409,8 +424,7 @@
 
         baselineData = JSON.parse(JSON.stringify(processedData));
         scenarioData = JSON.parse(JSON.stringify(processedData));
-        activeTabId = null;
-        scenarioName = "";
+        activeTabId = null; scenarioName = "";
 
         fileUploadArea.classList.add('hidden');
         headerControlsWrapper.classList.remove('hidden');
@@ -433,19 +447,19 @@
       }, {});
       
       const modalities = Object.keys(groupedByModality).sort();
-      if (!activeTabId) activeTabId = `tab-${modalities[0]?.toLowerCase().replace(' ', '-')}`;
+      if (!activeTabId || !groupedByModality[activeTabId.replace('tab-','')]) {
+         activeTabId = `tab-${modalities[0]?.toLowerCase().replace(/\s/g, '-')}`;
+      }
 
-      // 1. Create Tab Navigation
       const nav = document.createElement('div');
       nav.className = 'tabs-nav';
       modalities.forEach(modality => {
-        const tabId = `tab-${modality.toLowerCase().replace(' ', '-')}`;
+        const tabId = `tab-${modality.toLowerCase().replace(/\s/g, '-')}`;
         const button = document.createElement('button');
         button.className = 'tab-button';
         button.classList.toggle('active', tabId === activeTabId);
         if (isEditable) {
-          const hasChanges = groupedByModality[modality].some(row => hasRowChanged(row.id));
-          button.classList.toggle('has-changes', hasChanges);
+          button.classList.toggle('has-changes', groupedByModality[modality].some(row => hasRowChanged(row.id)));
         }
         button.dataset.target = tabId;
         button.textContent = modality;
@@ -453,9 +467,8 @@
       });
       tabsNavContainer.appendChild(nav);
       
-      // 2. Create Tab Panels
       modalities.forEach(modality => {
-        const tabId = `tab-${modality.toLowerCase().replace(' ', '-')}`;
+        const tabId = `tab-${modality.toLowerCase().replace(/\s/g, '-')}`;
         const panel = document.createElement('div');
         panel.id = tabId;
         panel.className = 'tab-panel';
@@ -463,19 +476,40 @@
         
         const archetypes = groupedByModality[modality].sort((a,b) => (archetypeSortOrder[a.archetype] || 99) - (archetypeSortOrder[b.archetype] || 99));
 
-        // Static Fields Table
-        panel.innerHTML += `<h3>Static Fields</h3>`;
+        panel.appendChild(createTableTitle('h3', 'Static Fields'));
         panel.appendChild(createStaticTable(archetypes, isEditable));
 
-        // Projection Metrics Tables
-        panel.innerHTML += `<h3>Yearly Projections</h3>`;
         projectionMetrics.forEach(metric => {
-            panel.innerHTML += `<h4>${projectionMetricLabels[metric]}</h4>`;
+            const titleWrapper = createTableTitle('div', projectionMetricLabels[metric], projectionMetricDescriptions[metric]);
+            titleWrapper.classList.add('metric-title-wrapper');
+            panel.appendChild(titleWrapper);
             panel.appendChild(createProjectionTable(archetypes, metric, isEditable));
         });
         
         app.appendChild(panel);
       });
+    }
+    
+    function createTableTitle(tag, title, description) {
+        const wrapper = document.createElement(tag);
+        const titleEl = document.createElement(tag === 'div' ? 'h4' : 'span');
+        titleEl.textContent = title;
+        wrapper.appendChild(titleEl);
+
+        if (description) {
+            const infoContainer = document.createElement('div');
+            infoContainer.className = 'info-container';
+            const infoIcon = document.createElement('span');
+            infoIcon.className = 'info-icon';
+            infoIcon.textContent = '?';
+            const tooltip = document.createElement('div');
+            tooltip.className = 'info-tooltip';
+            tooltip.textContent = description;
+            infoContainer.appendChild(infoIcon);
+            infoContainer.appendChild(tooltip);
+            wrapper.appendChild(infoContainer);
+        }
+        return wrapper;
     }
 
     function createStaticTable(archetypes, isEditable) {
@@ -484,12 +518,23 @@
         const table = document.createElement('table');
         table.className = 'data-table';
         
-        // Header
         const thead = table.createTHead();
         const headerRow = thead.insertRow();
-        headerRow.innerHTML = `<th>Archetype</th>` + staticFields.map(f => `<th>${staticFieldLabels[f]}</th>`).join('');
+        const firstTh = document.createElement('th');
+        firstTh.textContent = 'Archetype';
+        headerRow.appendChild(firstTh);
 
-        // Body
+        staticFields.forEach(f => {
+            const th = document.createElement('th');
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'th-content';
+            contentDiv.textContent = staticFieldLabels[f];
+            const infoContainer = createTableTitle('div', '', staticFieldDescriptions[f]).querySelector('.info-container');
+            if(infoContainer) contentDiv.appendChild(infoContainer);
+            th.appendChild(contentDiv);
+            headerRow.appendChild(th);
+        });
+
         const tbody = table.createTBody();
         archetypes.forEach(row => {
             const tr = tbody.insertRow();
@@ -505,26 +550,24 @@
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.className = 'static-field-input';
-                input.value = config.format(row[field]);
+                const value = row[field];
+                input.value = (value !== null && typeof value !== 'undefined' && !isNaN(value)) ? config.format(value) : 'N/A';
                 input.dataset.id = row.id;
                 input.dataset.field = field;
                 input.readOnly = !isEditable;
-
                 wrapper.appendChild(input);
 
                 if (isEditable) {
                     const baselineRow = baselineData.find(br => br.id === row.id);
-                    if (Math.abs(parseFloat(row[field]) - parseFloat(baselineRow[field])) > 1e-9) {
+                    if (Math.abs(parseFloat(value) - parseFloat(baselineRow[field])) > 1e-9) {
                         td.classList.add('changed');
                     }
                     const sliderContainer = document.createElement('div');
                     sliderContainer.className = 'slider-container';
                     const slider = document.createElement('input');
                     slider.type = 'range';
-                    slider.min = config.min;
-                    slider.max = config.max;
-                    slider.step = config.step;
-                    slider.value = row[field];
+                    slider.min = config.min; slider.max = config.max; slider.step = config.step;
+                    slider.value = value;
                     sliderContainer.appendChild(slider);
                     wrapper.appendChild(sliderContainer);
                 }
@@ -541,12 +584,10 @@
         const table = document.createElement('table');
         table.className = 'data-table';
 
-        // Header
         const thead = table.createTHead();
         const headerRow = thead.insertRow();
         headerRow.innerHTML = `<th>Archetype</th>` + years.map((_, i) => `<th>FY ${String(baseYearStart + i).slice(-2)}/${String(baseYearStart + i + 1).slice(-2)}</th>`).join('');
 
-        // Body
         const tbody = table.createTBody();
         archetypes.forEach(row => {
             const tr = tbody.insertRow();
@@ -556,7 +597,7 @@
                 const input = document.createElement('input');
                 input.type = 'text';
                 const value = row[metric]?.[yearKey];
-                input.value = typeof value === 'number' ? value.toFixed(2) : (value ?? 'N/A');
+                input.value = (value !== null && typeof value !== 'undefined' && !isNaN(value)) ? value.toFixed(2) : 'N/A';
                 input.dataset.id = row.id;
                 input.dataset.field = `${metric}.${yearKey}`;
                 input.readOnly = !isEditable || yearKey === 'y0';
@@ -572,12 +613,11 @@
     }
 
     // --- Event Handling Logic ---
-    function handleDataInput(e) { // For real-time slider changes
+    function handleDataInput(e) {
         const slider = e.target;
         if (slider.type !== 'range') return;
         
-        const wrapper = slider.closest('.input-slider-wrapper');
-        const textInput = wrapper.querySelector('input[type=text]');
+        const textInput = slider.closest('.input-slider-wrapper').querySelector('input[type=text]');
         const { id: rowId, field: fieldKey } = textInput.dataset;
         const config = staticFieldSliderConfig[fieldKey];
         const rowToUpdate = scenarioData.find(row => row.id === rowId);
@@ -590,7 +630,7 @@
         updateChangeState(rowId, fieldKey);
     }
 
-    function handleDataChange(e) { // For text inputs after they lose focus
+    function handleDataChange(e) {
         const textInput = e.target;
         if (textInput.type !== 'text' || !textInput.dataset.id) return;
 
@@ -598,14 +638,12 @@
         const rowToUpdate = scenarioData.find(row => row.id === rowId);
         if (!rowToUpdate) return;
         
-        // Static field (with slider)
         if (staticFields.includes(fieldKey)) {
             const config = staticFieldSliderConfig[fieldKey];
             if (!config) return;
             let parsedValue = config.parse(textInput.value);
             if (isNaN(parsedValue)) {
-                textInput.value = config.format(rowToUpdate[fieldKey]); // Revert on invalid
-                return;
+                return textInput.value = config.format(rowToUpdate[fieldKey]);
             }
             const clampedValue = Math.max(config.min, Math.min(config.max, parsedValue));
             rowToUpdate[fieldKey] = clampedValue;
@@ -613,12 +651,11 @@
             const slider = textInput.closest('.input-slider-wrapper').querySelector('input[type=range]');
             if (slider) slider.value = clampedValue;
         } 
-        // Projection field (no slider)
         else {
             const [metric, yearKey] = fieldKey.split('.');
             const numericValue = parseFloat(textInput.value);
             if (isNaN(numericValue)) {
-                textInput.value = rowToUpdate[metric][yearKey].toFixed(2); // Revert
+                textInput.value = rowToUpdate[metric][yearKey].toFixed(2);
             } else {
                 rowToUpdate[metric][yearKey] = numericValue;
                 textInput.value = numericValue.toFixed(2);
@@ -632,22 +669,21 @@
         const rowToUpdate = scenarioData.find(row => row.id === rowId);
         const baselineRow = baselineData.find(row => row.id === rowId);
         const cell = document.querySelector(`input[data-id="${rowId}"][data-field="${fieldKey}"]`).closest('td');
+        if (!cell) return;
 
         let isChanged = false;
         if (staticFields.includes(fieldKey)) {
             isChanged = Math.abs(parseFloat(rowToUpdate[fieldKey]) - parseFloat(baselineRow[fieldKey])) > 1e-9;
         } else {
             const [metric, yearKey] = fieldKey.split('.');
-            isChanged = rowToUpdate[metric][yearKey] !== baselineRow[metric][yearKey];
+            isChanged = rowToUpdate[metric]?.[yearKey] !== baselineRow[metric]?.[yearKey];
         }
         cell.classList.toggle('changed', isChanged);
 
-        // Update tab's change indicator
         const modality = rowToUpdate.modality;
-        const tabButton = document.querySelector(`.tab-button[data-target="tab-${modality.toLowerCase().replace(' ', '-')}"]`);
+        const tabButton = document.querySelector(`.tab-button[data-target="tab-${modality.toLowerCase().replace(/\s/g, '-')}"]`);
         if (tabButton) {
-            const hasAnyChanges = scenarioData.filter(r => r.modality === modality).some(r => hasRowChanged(r.id));
-            tabButton.classList.toggle('has-changes', hasAnyChanges);
+            tabButton.classList.toggle('has-changes', scenarioData.filter(r => r.modality === modality).some(r => hasRowChanged(r.id)));
         }
     }
 
@@ -655,20 +691,47 @@
         const scenarioRow = scenarioData.find(r => r.id === rowId);
         const baselineRow = baselineData.find(r => r.id === rowId);
         if (!scenarioRow || !baselineRow) return false;
+        return staticFields.some(key => Math.abs(parseFloat(scenarioRow[key]) - parseFloat(baselineRow[key])) > 1e-9) || 
+               projectionMetrics.some(metric => years.some(yearKey => scenarioRow[metric]?.[yearKey] !== baselineRow[metric]?.[yearKey]));
+    }
+    
+    function exportScenarioCSV() {
+        const spinner = document.getElementById('export-spinner');
+        spinner.classList.remove('hidden');
+        exportButton.disabled = true;
 
-        const staticChanged = staticFields.some(key => Math.abs(parseFloat(scenarioRow[key]) - parseFloat(baselineRow[key])) > 1e-9);
-        if (staticChanged) return true;
-        
-        const projectionChanged = projectionMetrics.some(metric =>
-            years.some(yearKey => scenarioRow[metric]?.[yearKey] !== baselineRow[metric]?.[yearKey])
-        );
-        return projectionChanged;
+        setTimeout(() => { 
+            const flatData = scenarioData.map(row => {
+                const newFlatRow = { ...row };
+                projectionMetrics.forEach(metric => {
+                    if (newFlatRow[metric]) {
+                        years.forEach(yearKey => {
+                            newFlatRow[`${metric}_${yearKey}`] = newFlatRow[metric][yearKey];
+                        });
+                        delete newFlatRow[metric];
+                    }
+                });
+                return newFlatRow;
+            });
+
+            const csv = Papa.unparse(flatData);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            const filename = (scenarioName.trim().replace(/\s+/g, '_') || 'scenario_export') + `_${new Date().toISOString().slice(0,10)}.csv`;
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            spinner.classList.add('hidden');
+            exportButton.disabled = false;
+            showMessage("CSV exported successfully!", "success");
+        }, 500);
     }
 
     function hideAllSliders() {
-        document.querySelectorAll('.slider-container.visible').forEach(slider => {
-            slider.classList.remove('visible');
-        });
+        document.querySelectorAll('.slider-container.visible').forEach(slider => slider.classList.remove('visible'));
     }
 
     function showLoadingMessage(message) {
