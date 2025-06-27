@@ -305,6 +305,7 @@ body {
   opacity: 1;
 }
 
+/* MODIFICATION: Removed flex properties and the ::after pseudo-element to remove the horizontal line */
 h3 {
   font-size: 1.4em;
   font-weight: 600;
@@ -313,20 +314,10 @@ h3 {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #E0E6ED;
   font-family: 'Poppins', sans-serif;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
 }
 
 h3:first-child {
   margin-top: 0;
-}
-
-h3::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #E0E6ED;
 }
 
 /* --- Static Fields Grid --- */
@@ -375,10 +366,13 @@ h3::after {
   background-color: #FFA726; 
 }
 
-.slider-field .label-with-info {
+.label-wrapper, .title-wrapper {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.slider-field .label-wrapper {
   margin-bottom: 0.5rem;
 }
 
@@ -495,13 +489,9 @@ input[type="range"]:disabled::-moz-range-thumb {
   border: 1px solid #E5EAF0;
   border-radius: 8px;
   padding: 1.25rem;
-  position: relative; /* For tooltip positioning */
 }
 
-.projection-metric-card .title-with-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.projection-metric-card .title-wrapper {
   margin-bottom: 1rem;
 }
 
@@ -581,6 +571,12 @@ input:disabled {
 }
 
 /* --- Tooltips & Help Text --- */
+/* MODIFICATION: Added a wrapper to correctly position tooltips */
+.info-container {
+  position: relative;
+  display: inline-flex; /* Keeps the container tight to the icon */
+}
+
 .info-icon {
   display: inline-flex;
   align-items: center;
@@ -600,10 +596,11 @@ input:disabled {
   background-color: #00549F;
 }
 
+/* MODIFICATION: Position tooltip relative to the icon via .info-container */
 .info-tooltip {
   position: absolute;
-  bottom: calc(100% + 10px); /* Position above the element */
-  left: 20px;
+  bottom: calc(100% + 8px); /* Position above the icon */
+  left: 50%;
   transform: translateX(-50%);
   background: #333D47;
   color: white;
@@ -628,7 +625,7 @@ input:disabled {
   position: absolute;
   top: 100%;
   left: 50%;
-  margin-left: -6px;
+  transform: translateX(-50%); /* Center the arrow */
   border-width: 6px;
   border-style: solid;
   border-color: #333D47 transparent transparent transparent;
