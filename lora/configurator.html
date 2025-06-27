@@ -515,7 +515,7 @@
     }
 
     // --- Event Handling Logic & Tooltip Management ---
-    function showArchetypeTooltip(icon) {
+        function showArchetypeTooltip(icon) {
         hideGlobalTooltip(); // Remove any existing one
         const iconRect = icon.getBoundingClientRect();
         const hiddenTooltip = icon.nextElementSibling;
@@ -528,8 +528,13 @@
         document.body.appendChild(globalTooltip);
         
         const tooltipRect = globalTooltip.getBoundingClientRect();
-        const topPos = iconRect.top + (iconRect.height / 2) - (tooltipRect.height / 2);
-        const leftPos = iconRect.left + iconRect.width + 8;
+        
+        // --- FIX START ---
+        // Calculate position relative to the document, not the viewport,
+        // by adding the window's scroll offset.
+        const topPos = iconRect.top + window.scrollY + (iconRect.height / 2) - (tooltipRect.height / 2);
+        const leftPos = iconRect.left + window.scrollX + iconRect.width + 8;
+        // --- FIX END ---
 
         globalTooltip.style.top = `${topPos}px`;
         globalTooltip.style.left = `${leftPos}px`;
