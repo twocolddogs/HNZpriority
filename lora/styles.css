@@ -352,7 +352,7 @@ h3::after {
   border: 1px solid #E5EAF0; 
   transition: all 0.2s ease;
   min-height: auto;
-  overflow: hidden; 
+  overflow: visible; /* Allow tooltips to show */
 }
 
 .slider-field::before {
@@ -375,11 +375,18 @@ h3::after {
   background-color: #FFA726; 
 }
 
+.slider-field .label-with-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .slider-field label {
   font-size: 1rem;
   font-weight: 500;
   color: #4B5563;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0; /* Adjusted */
   display: block;
   line-height: 1.4;
 }
@@ -488,13 +495,21 @@ input[type="range"]:disabled::-moz-range-thumb {
   border: 1px solid #E5EAF0;
   border-radius: 8px;
   padding: 1.25rem;
+  position: relative; /* For tooltip positioning */
+}
+
+.projection-metric-card .title-with-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .projection-metric-card h4 {
   font-size: 1.1em;
   font-weight: 600;
   color: #00549F;
-  margin: 0 0 1rem 0;
+  margin: 0; /* Adjusted */
   line-height: 1.3;
 }
 
@@ -564,6 +579,61 @@ input:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+/* --- Tooltips & Help Text --- */
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #B0B6BF;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+.info-icon:hover {
+  background-color: #00549F;
+}
+
+.info-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px); /* Position above the element */
+  left: 20px;
+  transform: translateX(-50%);
+  background: #333D47;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9em;
+  line-height: 1.5;
+  width: 280px;
+  max-width: 90vw;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 10;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+.info-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+}
+.info-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: #333D47 transparent transparent transparent;
+}
+
 
 /* --- Status Messages --- */
 /* MODIFIED: Centered the status message banner */
