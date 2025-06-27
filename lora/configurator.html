@@ -71,18 +71,29 @@
 </head>
 <body>
   <div class="rtt-container">
-    <header class="rtt-brand-bar">
-      <h1 class="rtt-title">Scenario Configurator</h1>
-      <div id="header-controls-wrapper" class="hidden">
-        <div class="rtt-header-controls">
-          <div class="scenario-controls" id="scenario-toggle">
-            <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
-            <label for="source-baseline">Baseline</label>
-            <input type="radio" id="source-scenario" name="data-source" value="scenario">
-            <label for="source-scenario">Scenario</label>
-            <span class="scenario-switch-bg" aria-hidden="true"></span>
+    <!-- MODIFICATION: Header structure updated to match new design system -->
+    <header class="rtt-sticky-header">
+      <div class="rtt-brand-bar">
+        <!-- NOTE: The logo path is based on the provided file. Ensure 'images/HealthNZ_logo_v2.svg' exists in your project structure. -->
+        <img src="images/HealthNZ_logo_v2.svg" alt="Health NZ Logo" class="rtt-app-logo">
+        <div class="rtt-header-divider"></div>
+        <h1 class="rtt-title">Scenario Configurator</h1>
+        <div class="rtt-flex-spacer"></div>
+
+        <div id="header-controls-wrapper" class="hidden">
+          <div class="rtt-header-controls">
+            <div class="scenario-controls" id="scenario-toggle">
+              <input type="radio" id="source-baseline" name="data-source" value="baseline" checked>
+              <label for="source-baseline">Baseline</label>
+              <input type="radio" id="source-scenario" name="data-source" value="scenario">
+              <label for="source-scenario">Scenario</label>
+              <span class="scenario-switch-bg" aria-hidden="true"></span>
+            </div>
+            <button id="export-button" class="rtt-download-btn">
+              <!-- Spinner will be added here by JS -->
+              Export CSV
+            </button>
           </div>
-          <button id="export-button">Export CSV</button>
         </div>
       </div>
     </header>
@@ -387,10 +398,8 @@
             }
         }
 
-        // MODIFICATION: Refined click handler for tooltips
         if (e.target.classList.contains('info-icon')) {
             const icon = e.target;
-            // The tooltip is the next sibling within the .info-container
             const tooltip = icon.nextElementSibling;
             
             document.querySelectorAll('.info-tooltip.visible').forEach(visibleTooltip => {
@@ -521,7 +530,6 @@
             label.textContent = staticFieldLabels[field] || field;
             labelWrapper.appendChild(label);
             
-            // MODIFICATION: Create a container for the icon and tooltip for correct positioning
             const infoContainer = document.createElement('div');
             infoContainer.className = 'info-container';
             const infoIcon = document.createElement('span');
