@@ -343,11 +343,12 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
     transform: translateY(-50%);
     border-color: transparent #333D47 transparent transparent;
 }
-/* FIX 2: Global tooltip is now absolutely positioned */
+/* FIX 2: Removed focused-row and added global-tooltip which is not trapped by stacking contexts */
 .global-tooltip {
     position: absolute; 
-    z-index: 1100; /* Highest z-index */
+    z-index: 1100;
 }
+
 
 /* ==========================================================================
    6. Status Messages & Responsive
