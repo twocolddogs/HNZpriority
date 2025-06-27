@@ -67,7 +67,6 @@
     .file-input label:hover {
       background-color: #0056b3;
     }
-    /* MODIFICATION: Removed conflicting status message styles. The definitions in styles.css will now be used. */
   </style>
 </head>
 <body>
@@ -81,7 +80,6 @@
             <label for="source-baseline">Baseline</label>
             <input type="radio" id="source-scenario" name="data-source" value="scenario">
             <label for="source-scenario">Scenario</label>
-            <!-- MODIFIED: Added span for the sliding background -->
             <span class="scenario-switch-bg" aria-hidden="true"></span>
           </div>
           <button id="export-button">Export CSV</button>
@@ -122,32 +120,20 @@
   <script>
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
+    // MODIFICATION: Added descriptions for static fields
+    const staticFieldDescriptions = { "non_demographic_growth": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus.", "routine_machine_hours": "Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor.", "share_of_scans_during_day": "Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi.", "ooh_machines": "Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum.", "ras_per_routine_machine_hour": "Donec magna magna, iaculis et, dignissim et, gravida nec, diam.", "mit_shift_length": "Aenean a quam. Phasellus enim sapien, blandit et, consectetuer eget, commodo et, somebody.", "mit_weeks_lost": "Nam quis nulla. Integer malesuada. In in enim a arcu imperdiet malesuada.", "session_length_hours": "Sed vel lectus. Donec odio tempus molestie, porttitor ut, iaculis quis, sem.", "clinical_reporting_sessions_per_rad": "Phasellus rhoncus. Aenean id metus id velit ullamcorper pulvinar.", "rad_weeks_lost": "Ut in re quis est. Curabitur laoreet, mauris eu vestibulum." };
+
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
+    // MODIFICATION: Added descriptions for projection metrics
+    const projectionMetricDescriptions = { "ip_volume_step": "Pellentesque sapien. Praesent id justo in neque elementum ultrices.", "op_volume_step": "Phasellus at dui in ligula mollis ultricies. Integer placerat tristique nisl.", "scan_rate": "Praesent augue. Fusce commodo. Vestibulum convallis, lorem a tempus semper, dui.", "report_rate": "Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus.", "mits_per_routine_machine_hour": "Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis.", "mits_per_ooh_machine_hour": "Donec consectetuer ligula vulputate sem tristique cursus. Nam nulla quam, gravida." };
+    
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
     
     let currentYear = new Date().getFullYear(); 
     
-    const archetypeSortOrder = {
-        "X Small": 1,
-        "Small": 2,
-        "Medium": 3,
-        "Large": 4,
-        "X Large": 5,
-    };
-
-    const staticFieldSliderConfig = {
-      non_demographic_growth: { min: 0, max: 0.2, step: 0.005, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s) / 100 },
-      routine_machine_hours: { min: 1000, max: 10000, step: 100, format: v => Math.round(v), parse: s => parseFloat(s) },
-      share_of_scans_during_day: { min: 0, max: 1, step: 0.01, format: v => `${(parseFloat(v) * 100).toFixed(0)}%`, parse: s => parseFloat(s) / 100 },
-      ooh_machines: { min: 0, max: 20, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) },
-      ras_per_routine_machine_hour: { min: 0, max: 2, step: 0.01, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) },
-      mit_shift_length: { min: 4, max: 12, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) },
-      mit_weeks_lost: { min: 0, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) },
-      session_length_hours: { min: 2, max: 8, step: 0.25, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) },
-      clinical_reporting_sessions_per_rad: { min: 0, max: 10, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) },
-      rad_weeks_lost: { min: 0, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) },
-    };
+    const archetypeSortOrder = { "X Small": 1, "Small": 2, "Medium": 3, "Large": 4, "X Large": 5, };
+    const staticFieldSliderConfig = { non_demographic_growth: { min: 0, max: 0.2, step: 0.005, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s) / 100 }, routine_machine_hours: { min: 1000, max: 10000, step: 100, format: v => Math.round(v), parse: s => parseFloat(s) }, share_of_scans_during_day: { min: 0, max: 1, step: 0.01, format: v => `${(parseFloat(v) * 100).toFixed(0)}%`, parse: s => parseFloat(s) / 100 }, ooh_machines: { min: 0, max: 20, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, ras_per_routine_machine_hour: { min: 0, max: 2, step: 0.01, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, mit_shift_length: { min: 4, max: 12, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, mit_weeks_lost: { min: 0, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, session_length_hours: { min: 2, max: 8, step: 0.25, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, clinical_reporting_sessions_per_rad: { min: 0, max: 10, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, rad_weeks_lost: { min: 0, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, };
 
     const app = document.getElementById("app");
     const headerControlsWrapper = document.getElementById("header-controls-wrapper");
@@ -159,7 +145,6 @@
     const scenarioNameCard = document.getElementById("scenario-name-card");
     const scenarioNameInput = document.getElementById("scenario-name-input");
 
-    // MODIFICATION: Removed unused editedRowIds variable.
     let baselineData = [], scenarioData = [], activePanelIds = new Set(), messageTimeout;
     let scenarioName = "";
 
@@ -351,7 +336,6 @@
         const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
         if (!rowToUpdate) return;
         
-        // Case 1: Handle slider text inputs
         if (textInput.classList.contains('slider-value-display')) {
             const config = staticFieldSliderConfig[fieldKey];
             if (!config) return;
@@ -368,7 +352,6 @@
             rowToUpdate[fieldKey] = clampedValue;
             textInput.value = config.format(clampedValue);
         } 
-        // Case 2: Handle yearly projection inputs
         else if (textInput.classList.contains('projection-input')) {
             const [metric, yearKey] = fieldKey.split('.');
             const originalValue = rowToUpdate[metric]?.[yearKey];
@@ -391,6 +374,7 @@
     app.addEventListener('change', handleTextChange);
 
     app.addEventListener('click', (e) => {
+        // Handle archetype button clicks
         if (e.target.classList.contains('archetype-button')) {
             const button = e.target;
             const targetPanelId = button.dataset.target;
@@ -404,6 +388,23 @@
             } else {
                 panel.classList.add('active');
                 button.classList.add('active');
+            }
+        }
+
+        // MODIFICATION: Handle info icon clicks for tooltips
+        if (e.target.classList.contains('info-icon')) {
+            const icon = e.target;
+            const tooltip = icon.parentElement.nextElementSibling;
+            
+            // Hide all other tooltips
+            document.querySelectorAll('.info-tooltip.visible').forEach(visibleTooltip => {
+                if (visibleTooltip !== tooltip) {
+                    visibleTooltip.classList.remove('visible');
+                }
+            });
+            // Toggle the clicked one
+            if (tooltip && tooltip.classList.contains('info-tooltip')) {
+                tooltip.classList.toggle('visible');
             }
         }
     });
@@ -490,8 +491,6 @@
           button.dataset.target = `#${panelId}`;
           button.dataset.id = row.id;
           
-          // MODIFICATION: Replaced unused editedRowIds with a direct comparison to baseline data
-          // to correctly show the 'has-changes' state on buttons during re-render.
           const baselineRow = baselineData.find(br => String(br.id) === String(row.id));
           if (isEditable && baselineRow) {
             const hasAnyChanges = staticFields.some(key =>
@@ -500,12 +499,8 @@
             ) || projectionMetrics.some(metric =>
               years.some(yearKey => row[metric]?.[yearKey] !== baselineRow[metric]?.[yearKey])
             );
-      
-            if (hasAnyChanges) {
-              button.classList.add('has-changes');
-            }
+            if (hasAnyChanges) { button.classList.add('has-changes'); }
           }
-
           archetypeButtonsDiv.appendChild(button);
 
           const panel = document.createElement('div');
@@ -524,8 +519,27 @@
 
             const fieldDiv = document.createElement("div");
             fieldDiv.className = "slider-field";
+
+            // MODIFICATION: Add wrapper for label and info icon
+            const labelWrapper = document.createElement('div');
+            labelWrapper.className = 'label-with-info';
+
             const label = document.createElement("label");
             label.textContent = staticFieldLabels[field] || field;
+            labelWrapper.appendChild(label);
+            
+            const infoIcon = document.createElement('span');
+            infoIcon.className = 'info-icon';
+            infoIcon.textContent = '?';
+            labelWrapper.appendChild(infoIcon);
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'info-tooltip';
+            tooltip.textContent = staticFieldDescriptions[field] || 'No description available.';
+            
+            fieldDiv.appendChild(labelWrapper);
+            fieldDiv.appendChild(tooltip);
+
             const controlsWrapper = document.createElement('div');
             controlsWrapper.className = 'slider-control-wrapper';
             const valueDisplay = document.createElement('input');
@@ -542,7 +556,6 @@
               slider.value = row[field] != null ? row[field] : config.min;
               slider.dataset.id = row.id; slider.dataset.field = field;
               controlsWrapper.appendChild(slider);
-              
               if (baselineRow && Math.abs(parseFloat(row[field]) - parseFloat(baselineRow[field])) > 1e-9) {
                 fieldDiv.classList.add('changed');
               }
@@ -551,7 +564,6 @@
             }
             
             controlsWrapper.appendChild(valueDisplay);
-            fieldDiv.appendChild(label);
             fieldDiv.appendChild(controlsWrapper);
             staticGrid.appendChild(fieldDiv);
           });
@@ -565,9 +577,25 @@
           projectionMetrics.forEach(metric => {
               const card = document.createElement('div');
               card.className = 'projection-metric-card';
+              
+              const titleWrapper = document.createElement('div');
+              titleWrapper.className = 'title-with-info';
+              
               const cardTitle = document.createElement('h4');
               cardTitle.textContent = projectionMetricLabels[metric] || metric;
-              card.appendChild(cardTitle);
+              titleWrapper.appendChild(cardTitle);
+
+              const infoIcon = document.createElement('span');
+              infoIcon.className = 'info-icon';
+              infoIcon.textContent = '?';
+              titleWrapper.appendChild(infoIcon);
+
+              const tooltip = document.createElement('div');
+              tooltip.className = 'info-tooltip';
+              tooltip.textContent = projectionMetricDescriptions[metric] || 'No description available.';
+              
+              card.appendChild(titleWrapper);
+              card.appendChild(tooltip);
 
               const yearInputsContainer = document.createElement('div');
               yearInputsContainer.className = 'year-inputs-container';
@@ -579,8 +607,7 @@
                   label.textContent = `${currentYear + index}`; 
                   const input = document.createElement('input');
                   input.type = 'text';
-                  input.classList.add('projection-input'); // Class for event handling
-
+                  input.classList.add('projection-input');
                   const value = row[metric]?.[yearKey];
                   input.value = typeof value === 'number' ? value.toFixed(2) : (value ?? 'N/A');
                   input.dataset.field = `${metric}.${yearKey}`;
@@ -591,7 +618,6 @@
                   } else {
                       input.readOnly = true;
                   }
-
                   if(isEditable) {
                       if (baselineRow && baselineRow[metric]?.[yearKey] !== row[metric]?.[yearKey]) {
                           input.classList.add('changed');
@@ -602,7 +628,6 @@
                   item.appendChild(input);
                   yearInputsContainer.appendChild(item);
               });
-
               card.appendChild(yearInputsContainer);
               projectionsGrid.appendChild(card);
           });
