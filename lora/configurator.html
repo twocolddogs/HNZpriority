@@ -47,7 +47,6 @@
         </div>
       </div>
       
-      <!-- NEW: Wrapper for sticky tabs, moved outside header -->
       <div id="sticky-tabs-wrapper">
         <div id="tabs-nav-container"></div>
       </div>
@@ -163,8 +162,11 @@
       
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.input-slider-wrapper')) hideAllSliders();
+        
+        // Hide tooltips and remove row focus if click is outside an info icon
         if (!e.target.closest('.info-container')) {
              document.querySelectorAll('.info-tooltip.visible').forEach(tt => tt.classList.remove('visible'));
+             document.querySelectorAll('tr.focused-row').forEach(row => row.classList.remove('focused-row'));
         }
       });
       
@@ -172,9 +174,26 @@
         if (e.target.classList.contains('info-icon')) {
             e.stopPropagation();
             const tooltip = e.target.nextElementSibling;
+            const parentTr = e.target.closest('tr');
+
+            // Always remove focus from all other rows first
+            document.querySelectorAll('tr.focused-row').forEach(row => {
+                if(row !== parentTr) row.classList.remove('focused-row');
+            });
+            
             const isVisible = tooltip.classList.contains('visible');
+            // Close all tooltips before opening a new one
             document.querySelectorAll('.info-tooltip.visible').forEach(tt => tt.classList.remove('visible'));
-            if (!isVisible) tooltip.classList.add('visible');
+
+            if (!isVisible) {
+                tooltip.classList.add('visible');
+                // If this is a right tooltip, give its parent row focus
+                if (tooltip.classList.contains('tooltip-right') && parentTr) {
+                    parentTr.classList.add('focused-row');
+                }
+            } else {
+                 if (parentTr) parentTr.classList.remove('focused-row');
+            }
         }
       });
 
@@ -614,7 +633,7 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            const filename = (scenarioName.trim().replace(/\s+/g, '_') || 'scenario_export') + `_${new Date().toISOString().slice(0,10)}.csv`;
+            const filename = (scenarioName.trim().replace(/\s/g, '_') || 'scenario_export') + `_${new Date().toISOString().slice(0,10)}.csv`;
             link.setAttribute("download", filename);
             document.body.appendChild(link);
             link.click();
