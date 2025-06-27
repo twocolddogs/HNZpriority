@@ -169,7 +169,7 @@
 
     async function loadAndInitializeData() {
       try {
-        const response = await fetch('input_configuration_snowflake_baseline_2025.csv');
+        const response = await fetch('input_configuration_snowflake_baseline_2023_2024.csv');
         if (!response.ok) {
            const fallbackResponse = await fetch('baseline.csv');
            if (!fallbackResponse.ok) throw new Error(`HTTP error! status: ${fallbackResponse.status}`);
@@ -276,7 +276,7 @@
     // MODIFICATION: New helper function to format financial year labels
     function formatFinancialYear(startYear) {
         const endYear = (startYear + 1) % 100;
-        return `FY ${startYear}/${String(endYear).padStart(2, '0')}`;
+        return `${startYear}/${String(endYear).padStart(2, '0')}`;
     }
 
     function showMessage(message, type) {
