@@ -120,12 +120,10 @@
   <script>
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
-    // MODIFICATION: Added descriptions for static fields
     const staticFieldDescriptions = { "non_demographic_growth": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus.", "routine_machine_hours": "Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor.", "share_of_scans_during_day": "Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi.", "ooh_machines": "Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum.", "ras_per_routine_machine_hour": "Donec magna magna, iaculis et, dignissim et, gravida nec, diam.", "mit_shift_length": "Aenean a quam. Phasellus enim sapien, blandit et, consectetuer eget, commodo et, somebody.", "mit_weeks_lost": "Nam quis nulla. Integer malesuada. In in enim a arcu imperdiet malesuada.", "session_length_hours": "Sed vel lectus. Donec odio tempus molestie, porttitor ut, iaculis quis, sem.", "clinical_reporting_sessions_per_rad": "Phasellus rhoncus. Aenean id metus id velit ullamcorper pulvinar.", "rad_weeks_lost": "Ut in re quis est. Curabitur laoreet, mauris eu vestibulum." };
 
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
-    // MODIFICATION: Added descriptions for projection metrics
     const projectionMetricDescriptions = { "ip_volume_step": "Pellentesque sapien. Praesent id justo in neque elementum ultrices.", "op_volume_step": "Phasellus at dui in ligula mollis ultricies. Integer placerat tristique nisl.", "scan_rate": "Praesent augue. Fusce commodo. Vestibulum convallis, lorem a tempus semper, dui.", "report_rate": "Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus.", "mits_per_routine_machine_hour": "Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis.", "mits_per_ooh_machine_hour": "Donec consectetuer ligula vulputate sem tristique cursus. Nam nulla quam, gravida." };
     
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
@@ -374,12 +372,10 @@
     app.addEventListener('change', handleTextChange);
 
     app.addEventListener('click', (e) => {
-        // Handle archetype button clicks
         if (e.target.classList.contains('archetype-button')) {
             const button = e.target;
             const targetPanelId = button.dataset.target;
             const panel = document.querySelector(targetPanelId);
-
             if (!panel) return;
 
             if (panel.classList.contains('active')) {
@@ -391,18 +387,17 @@
             }
         }
 
-        // MODIFICATION: Handle info icon clicks for tooltips
+        // MODIFICATION: Refined click handler for tooltips
         if (e.target.classList.contains('info-icon')) {
             const icon = e.target;
-            const tooltip = icon.parentElement.nextElementSibling;
+            // The tooltip is the next sibling within the .info-container
+            const tooltip = icon.nextElementSibling;
             
-            // Hide all other tooltips
             document.querySelectorAll('.info-tooltip.visible').forEach(visibleTooltip => {
                 if (visibleTooltip !== tooltip) {
                     visibleTooltip.classList.remove('visible');
                 }
             });
-            // Toggle the clicked one
             if (tooltip && tooltip.classList.contains('info-tooltip')) {
                 tooltip.classList.toggle('visible');
             }
@@ -519,26 +514,27 @@
 
             const fieldDiv = document.createElement("div");
             fieldDiv.className = "slider-field";
-
-            // MODIFICATION: Add wrapper for label and info icon
+            
             const labelWrapper = document.createElement('div');
-            labelWrapper.className = 'label-with-info';
-
+            labelWrapper.className = 'label-wrapper';
             const label = document.createElement("label");
             label.textContent = staticFieldLabels[field] || field;
             labelWrapper.appendChild(label);
             
+            // MODIFICATION: Create a container for the icon and tooltip for correct positioning
+            const infoContainer = document.createElement('div');
+            infoContainer.className = 'info-container';
             const infoIcon = document.createElement('span');
             infoIcon.className = 'info-icon';
             infoIcon.textContent = '?';
-            labelWrapper.appendChild(infoIcon);
-
             const tooltip = document.createElement('div');
             tooltip.className = 'info-tooltip';
             tooltip.textContent = staticFieldDescriptions[field] || 'No description available.';
-            
+            infoContainer.appendChild(infoIcon);
+            infoContainer.appendChild(tooltip);
+            labelWrapper.appendChild(infoContainer);
+
             fieldDiv.appendChild(labelWrapper);
-            fieldDiv.appendChild(tooltip);
 
             const controlsWrapper = document.createElement('div');
             controlsWrapper.className = 'slider-control-wrapper';
@@ -579,23 +575,24 @@
               card.className = 'projection-metric-card';
               
               const titleWrapper = document.createElement('div');
-              titleWrapper.className = 'title-with-info';
-              
+              titleWrapper.className = 'title-wrapper';
               const cardTitle = document.createElement('h4');
               cardTitle.textContent = projectionMetricLabels[metric] || metric;
               titleWrapper.appendChild(cardTitle);
 
+              const infoContainer = document.createElement('div');
+              infoContainer.className = 'info-container';
               const infoIcon = document.createElement('span');
               infoIcon.className = 'info-icon';
               infoIcon.textContent = '?';
-              titleWrapper.appendChild(infoIcon);
-
               const tooltip = document.createElement('div');
               tooltip.className = 'info-tooltip';
               tooltip.textContent = projectionMetricDescriptions[metric] || 'No description available.';
+              infoContainer.appendChild(infoIcon);
+              infoContainer.appendChild(tooltip);
+              titleWrapper.appendChild(infoContainer);
               
               card.appendChild(titleWrapper);
-              card.appendChild(tooltip);
 
               const yearInputsContainer = document.createElement('div');
               yearInputsContainer.className = 'year-inputs-container';
