@@ -1,54 +1,32 @@
-/* styles.css - Improved Layout for Scenario Configurator */
-
 /* ==========================================================================
    1. Global Styles & Keyframes
    ========================================================================== */
-
-/* MODIFIED: Replaced slideInRight with a centered slideInDown animation */
-@keyframes slideInDownCentered {
-  from { transform: translate(-50%, -150%); opacity: 0; }
-  to { transform: translate(-50%, 0); opacity: 1; }
-}
-@keyframes pulse {
-  0% { box-shadow: 0 2px 8px rgba(255, 167, 38, 0.1); }
-  50% { box-shadow: 0 4px 16px rgba(255, 167, 38, 0.25); }
-  100% { box-shadow: 0 2px 8px rgba(255, 167, 38, 0.1); }
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes slideInDownCentered { from { transform: translate(-50%, -150%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 167, 38, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 167, 38, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 167, 38, 0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ==========================================================================
    2. Core App Structure & Layout
    ========================================================================== */
-
-/* --- FIX: Removed padding to let container control spacing --- */
 body {
   font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background: #F9FAFB;
   min-height: 100vh;
-  /* padding: 1em; */ /* REMOVED */
   color: #4B5563;
   line-height: 1.6;
 }
-
-/* --- FIX: Added margin to create initial spacing --- */
+.hidden { display: none !important; }
 .rtt-container {
-  max-width: 1400px;
-  margin: 1em auto; /* MODIFIED */
+  max-width: 1600px;
+  margin: 1em auto;
 }
-
-/* --- App Header (MODIFIED) --- */
-/* --- FIX: Set top to 0 to stick flush to the viewport edge --- */
 .rtt-sticky-header {
   position: sticky;
-  top: 0; /* MODIFIED */
+  top: 0;
   z-index: 1002;
   background: #F9FAFB;
   padding-bottom: 0.4em;
-  margin-bottom: 2rem;
 }
-
 .rtt-brand-bar {
   display: flex;
   align-items: center;
@@ -57,802 +35,183 @@ body {
   padding: 0.6em 1.5em;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
 }
-
-.rtt-app-logo {
-  height: auto;
-  margin-right: 1.5em;
-  width: 160px;
-  flex-shrink: 0;
-}
-
-.rtt-header-divider {
-  width: 1px;
-  height: 30px;
-  background: rgba(255,255,255,0.3);
-  margin-right: 1.5em;
-  flex-shrink: 0;
-}
-
-.rtt-title {
-  color: #fff;
-  font-size: 1.5em;
-  margin: 0;
-  font-weight: 600;
-  font-family: 'Poppins', sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rtt-flex-spacer {
-  flex-grow: 1;
-}
-
-.rtt-header-controls {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-shrink: 0;
-}
-
-/* MODIFICATION: Set explicit height to match export button */
-.scenario-controls {
-  display: flex;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 4px;
-  position: relative;
-  height: 44px;
-  box-sizing: border-box;
-}
-
-.scenario-controls input[type="radio"] {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-  width: 0;
-  height: 0;
-}
-
-/* MODIFICATION: Removed vertical padding to allow perfect vertical alignment. */
-.scenario-controls label {
-  padding: 0 1.75rem; /* Removed vertical padding */
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.7);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
-  position: relative;
-  z-index: 2;
-  flex: 1;
-  text-align: center;
-  user-select: none;
-  background: transparent;
-  height: 100%; /* Fill the inner height */
-  min-height: auto; /* Remove old min-height */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.scenario-controls label:hover {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.scenario-controls .scenario-switch-bg {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: calc(50% - 4px);
-  height: calc(100% - 8px);
-  background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
-}
-
-#source-scenario:checked ~ .scenario-switch-bg {
-  transform: translateX(100%);
-}
-
-.scenario-controls input[type="radio"]:checked + label {
-  color: #143345;
-}
-
-
-/* --- Main Content Area --- */
-.rtt-main-content {
-  background: #F5F7FA;
-  border-radius: 10px;
-  border: 1px solid #E5EAF0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  padding: 1.5em;
-}
+.rtt-app-logo { height: auto; margin-right: 1.5em; width: 160px; flex-shrink: 0; }
+.rtt-header-divider { width: 1px; height: 30px; background: rgba(255,255,255,0.3); margin-right: 1.5em; flex-shrink: 0; }
+.rtt-title { color: #fff; font-size: 1.5em; margin: 0; font-weight: 600; font-family: 'Poppins', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rtt-flex-spacer { flex-grow: 1; }
+.rtt-header-controls { display: flex; align-items: center; gap: 1.5rem; flex-shrink: 0; }
+.scenario-controls { display: flex; background: rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 4px; position: relative; height: 44px; box-sizing: border-box; }
+.scenario-controls input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+.scenario-controls label { padding: 0 1.75rem; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; color: rgba(255, 255, 255, 0.7); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: none; position: relative; z-index: 2; flex: 1; text-align: center; user-select: none; background: transparent; height: 100%; display: flex; align-items: center; justify-content: center; }
+.scenario-controls label:hover { color: rgba(255, 255, 255, 0.9); }
+.scenario-controls .scenario-switch-bg { position: absolute; top: 4px; left: 4px; width: calc(50% - 4px); height: calc(100% - 8px); background: #fff; border-radius: 6px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; }
+#source-scenario:checked ~ .scenario-switch-bg { transform: translateX(100%); }
+.scenario-controls input[type="radio"]:checked + label { color: #143345; }
 
 /* ==========================================================================
-   3. Buttons & Modality Cards
+   3. Buttons, Inputs & File Upload
    ========================================================================== */
+.rtt-download-btn { font-family: 'Poppins', sans-serif; font-size: 0.9em; font-weight: 600; padding: 0.6em 1.2em; border: 1px solid #3a5c24; border-radius: 6px; background: #4c7a30; color: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease; min-height: 44px; white-space: nowrap; }
+.rtt-download-btn:hover { background: #3e6326; border-color: #2f4a1c; }
+.rtt-download-btn:disabled { background: #9ca3af; border-color: #6b7280; cursor: not-allowed; }
+.loading-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s ease-in-out infinite; }
+input[type="text"] { box-sizing: border-box; width: 100%; padding: 0.5em 0.75em; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 0.9rem; text-align: center; background-color: #fff; box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.07); transition: all 0.2s ease; min-height: 40px; }
+input[type="text"]:focus { outline: none; border-color: #007A86; box-shadow: 0 0 0 3px rgba(0, 122, 134, 0.15); }
+input[readonly], input:disabled { background-color: #F3F4F6; color: #6B7280; cursor: not-allowed; box-shadow: none; border-color: #E5EAF0; opacity: 0.7; }
+input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !important; }
+.scenario-name-card { background: #fff; border: 1px solid #E0E6ED; border-radius: 12px; margin-bottom: 2rem; overflow: hidden; }
+.scenario-name-header { background: #E8F0F6; padding: 1em 1.25em; color: #00549F; font-weight: 600; font-family: 'Poppins', sans-serif; font-size: 1.1em; border-bottom: 1px solid #D1D9E1; }
+.scenario-name-header h2 { margin: 0; font-size: inherit; font-weight: inherit; }
+.scenario-name-content { padding: 1.5em; }
+.scenario-name-content label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+.scenario-name-content input { text-align: left; padding: 0.6em 0.8em; font-size: 1rem; max-width: 400px; }
+.file-upload { border: 2px dashed #ccc; border-radius: 8px; padding: 40px 20px; text-align: center; background-color: #ffffff; margin: 20px; max-width: 600px; margin-left: auto; margin-right: auto; }
 
-/* --- Export Button (MODIFIED) --- */
-.rtt-download-btn {
-  font-family: 'Poppins', sans-serif;
-  font-size: 0.9em;
-  font-weight: 600;
-  padding: 0.6em 1.2em;
-  border: 1px solid #3a5c24;
-  border-radius: 6px;
-  background: #4c7a30;
-  color: #fff;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-  min-height: 44px; /* Matched height of scenario toggle */
-  white-space: nowrap;
-}
-.rtt-download-btn:hover {
-  background: #3e6326;
-  border-color: #2f4a1c;
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 0.8s ease-in-out infinite;
-}
-
-/* --- Modality Cards --- */
-.modality-container {
-  background: #fff;
-  border: 1px solid #E0E6ED;
-  border-radius: 12px;
+/* ==========================================================================
+   4. Tab & Table Layout
+   ========================================================================== */
+.tabs-nav {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 2px solid #D1D9E1;
   margin-bottom: 2rem;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
 }
-
-.modality-header {
-  background: #E8F0F6;
-  padding: 1em 1.25em;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #00549F;
+.tab-button {
+  padding: 0.8em 1.5em;
+  font-size: 1rem;
   font-weight: 600;
-  font-family: 'Poppins', sans-serif;
-  font-size: 1.1em;
-  border-bottom: 1px solid #D1D9E1;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.modality-header h2 {
-  margin: 0;
-  font-size: inherit;
-  font-weight: inherit;
-}
-
-/* --- Archetype Buttons --- */
-.archetype-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  max-width: 100%;
-}
-
-.archetype-button {
-  padding: 0.5em 1em;
-  font-size: 0.85em;
-  text-align: center;
-  border: 1px solid #00549F;
-  background: #fff;
-  color: #00549F;
-  border-radius: 6px;
+  color: #4B5563;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
   cursor: pointer;
-  font-weight: 600;
-  transition: all .2s;
+  margin-bottom: -2px;
+  transition: all 0.2s ease-in-out;
   font-family: 'Poppins', sans-serif;
   position: relative;
-  min-width: 80px;
-  flex: 0 0 auto;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
-
-.archetype-button.active {
-  background: #00549F;
-  color: #fff;
+.tab-button:hover {
+  background: #F3F4F6;
+  color: #1F2937;
 }
-
-.archetype-button.has-changes {
-  background: #FFF7E6;
-  border-color: #FFA726;
-  color: #B8860B;
-  animation: pulse 2s infinite;
+.tab-button.active {
+  color: #00549F;
+  border-color: #00549F;
 }
-
-.archetype-button.has-changes.active {
-  background: #FFA726;
-  color: white;
-  animation: none;
-}
-
-.archetype-button.has-changes::after {
+.tab-button.has-changes::after {
   content: '';
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 0.75rem;
+  right: 0.75rem;
   width: 8px;
   height: 8px;
   background-color: #FFA726;
   border-radius: 50%;
-  border: 1.5px solid white;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+  animation: pulse 1.5s infinite;
 }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeIn 0.5s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* ==========================================================================
-   4. Content Panels & Inputs
-   ========================================================================== */
+.tab-panel h3, .tab-panel .metric-title-wrapper {
+    font-size: 1.4em; font-weight: 600; color: #143345; margin: 2rem 0 1.5rem 0;
+    padding-bottom: 0.5rem; border-bottom: 1px solid #E0E6ED; font-family: 'Poppins', sans-serif;
+    display: flex; align-items: center; gap: 0.75rem;
+}
+.tab-panel .metric-title-wrapper { font-size: 1.2em; margin-top: 2.5rem; }
+.tab-panel h4 { margin:0; padding: 0; border: 0; font-family: inherit; font-size: inherit; }
 
-.scenario-name-content {
-  padding: 1.5em;
-  background: #FAFBFC;
-}
-.scenario-name-content label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-.scenario-name-content input {
-  text-align: left;
-  padding: 0.6em 0.8em;
-  font-size: 1rem;
-}
-
-.archetype-content-panel {
-  padding: 0;
-  max-height: 0;
-  overflow: hidden;
-  background: #FAFBFC;
-  transition: max-height 0.4s ease-out, opacity 0.4s ease-out, padding 0.4s ease-out;
-  opacity: 0;
-  max-width: 100%;
-}
-
-.archetype-content-panel.active {
-  padding: 2rem;
-  max-height: 5000px;
-  opacity: 1;
-}
-
-h3 {
-  font-size: 1.4em;
-  font-weight: 600;
-  color: #143345;
-  margin: 2rem 0 1.5rem 0;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #E0E6ED;
-  font-family: 'Poppins', sans-serif;
-}
-
-h3:first-child {
-  margin-top: 0;
-}
-
-/* --- Static Fields Grid --- */
-.static-fields-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  max-width: 100%;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  margin: 1rem 0;
-}
-
-.slider-field {
-  position: relative; 
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
+.table-container {
+  overflow-x: auto;
   background: #fff;
-  border-radius: 6px;
-  border: 1px solid #E5EAF0; 
-  transition: all 0.2s ease;
-  min-height: auto;
-  overflow: visible; /* Allow tooltips to show */
+  border: 1px solid #E0E6ED;
+  border-radius: 8px;
+  padding: 0.5rem;
 }
-
-.slider-field::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background-color: transparent; 
-  transition: background-color 0.2s ease;
-}
-
-.slider-field.changed {
-  background: #FFF7E6;
-  box-shadow: 0 2px 4px rgba(255, 167, 38, 0.1);
-}
-
-.slider-field.changed::before {
-  background-color: #FFA726; 
-}
-
-.label-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.slider-field label {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #4B5563;
-  margin-bottom: 0; /* Adjusted */
-  display: block;
-  line-height: 1.4;
-}
-
-.slider-control-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.slider-value-display {
-  width: 140px;
-  padding: 0.6em 0.75em;
-  border: 1px solid #B0B6BF;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-  background-color: #fff;
-  transition: all 0.2s ease;
-  align-self: flex-start;
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.slider-value-display:focus {
-  outline: none;
-  border-color: #007A86;
-  box-shadow: 0 0 0 3px rgba(0, 122, 134, 0.15);
-}
-
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
+.data-table {
   width: 100%;
-  height: 10px;
-  background: #E5EAF0;
-  border-radius: 5px;
-  outline: none;
-  cursor: pointer;
-  transition: opacity .2s;
-  margin: 0;
-}
-
-input[type="range"]:hover {
-  opacity: 1;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 22px;
-  height: 22px;
-  background: #00549F;
-  cursor: pointer;
-  border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  margin-top: -6px;
-}
-
-input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  background: #00549F;
-  cursor: pointer;
-  border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-input[type="range"]:focus::-webkit-slider-thumb {
-  box-shadow: 0 0 0 4px rgba(0, 84, 159, 0.2);
-}
-
-input[type="range"]:focus::-moz-range-thumb {
-  box-shadow: 0 0 0 4px rgba(0, 84, 159, 0.2);
-}
-
-input[type="range"]:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-input[type="range"]:disabled::-webkit-slider-thumb,
-input[type="range"]:disabled::-moz-range-thumb {
-  background: #9CA3AF;
-  cursor: not-allowed;
-}
-
-/* --- Projections Grid --- */
-.projections-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  margin: 1rem 0;
-}
-
-.projection-metric-card {
-  background: #fff;
-  border: 1px solid #E5EAF0;
-  border-radius: 8px;
-  padding: 1.25rem;
-}
-
-.title-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.projection-metric-card h4 {
-  font-size: 1.1em;
-  font-weight: 600;
-  color: #00549F;
-  margin: 0; /* Adjusted */
-  line-height: 1.3;
-}
-
-.year-inputs-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 0.75rem 1rem;
-  max-width: 100%;
-}
-
-/* --- UPDATED RULE --- */
-.year-input-item {
-  display: flex;
-  flex-direction: column; /* Stack label and input vertically */
-}
-
-/* --- UPDATED RULE --- */
-.year-input-item label {
-  font-size: 0.9em;
-  font-weight: 600;
-  color: #6B7280;
-  margin-bottom: 0.25rem; /* This adds the space (approx. 4px) */
-  text-align: center; /* Center the label above the input */
-  /* The properties below are no longer needed for a vertical layout */
-  /* width: 50px; */
-  /* flex-shrink: 0; */
-}
-
-/* --- Text Inputs --- */
-input[type="text"] {
-  box-sizing: border-box; 
-  width: 100%;
-  padding: 0.5em 0.75em;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  font-size: 1rem;
-  text-align: center;
-  background-color: #fff;
-  box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.07);
-  transition: all 0.2s ease;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-input[type="text"]:focus {
-  outline: none;
-  border-color: #007A86;
-  box-shadow: 0 0 0 3px rgba(0, 122, 134, 0.15);
-}
-
-input[readonly] {
-  background-color: #F3F4F6;
-  color: #6B7280;
-  cursor: not-allowed;
-  box-shadow: none;
-  border-color: #E5EAF0;
-  opacity: 0.7;
-}
-
-input.changed {
-  border-color: #FFA726;
-  background-color: #FFF7E6;
-  box-shadow: 0 0 0 2px rgba(255, 167, 38, 0.2);
-}
-
-input:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* --- Tooltips & Help Text --- */
-.info-container {
-  position: relative;
-  display: inline-flex;
-}
-
-.info-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background-color: #B0B6BF;
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  user-select: none;
-}
-.info-icon:hover {
-  background-color: #00549F;
-}
-
-.info-tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333D47;
-  color: white;
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  font-size: 0.9em;
-  line-height: 1.5;
-  width: 280px;
-  max-width: 90vw;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 10;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s, visibility 0.2s;
-}
-.info-tooltip.visible {
-  opacity: 1;
-  visibility: visible;
-}
-.info-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 6px;
-  border-style: solid;
-  border-color: #333D47 transparent transparent transparent;
-}
-
-
-/* --- Status Messages --- */
-.status-message {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  animation: slideInDownCentered 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.status-message p {
-  padding: 1em 1.5em;
-  border-radius: 8px;
-  color: white;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  margin: 0;
+  border-collapse: collapse;
   white-space: nowrap;
 }
-
-.status-message .success { background: #28a745; }
-.status-message .error { background: #d9534f; }
-.status-message .info { background: #007A86; }
-
-/* --- Loading States --- */
-.app-loading-message {
+.data-table th, .data-table td {
+  padding: 0.75rem 1rem;
   text-align: center;
-  padding: 3rem;
-  color: #6B7280;
-  font-style: italic;
-  font-size: 1.1em;
+  vertical-align: middle;
+  border: 1px solid #E5EAF0;
 }
+.data-table th {
+  background-color: #F9FAFB;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9em;
+}
+.data-table th .th-content { display: flex; align-items: center; gap: 8px; justify-content: center;}
+.data-table td:first-child, .data-table th:first-child {
+  text-align: left;
+  font-weight: 600;
+  position: sticky;
+  left: 0;
+  background-color: #F9FAFB;
+  z-index: 1;
+  min-width: 120px;
+}
+.data-table th:first-child .th-content { justify-content: flex-start; }
+.data-table td:first-child { background-color: #fff; }
+.data-table td.changed {
+  box-shadow: inset 3px 0 0 #FFA726;
+}
+/* ==========================================================================
+   5. Interactive Input/Slider & Tooltips
+   ========================================================================== */
+.input-slider-wrapper {
+  position: relative;
+  min-width: 120px;
+}
+.slider-container {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: #fff;
+  padding: 1rem;
+  border: 1px solid #B0B6BF;
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  transition: opacity 0.2s, visibility 0.2s;
+}
+.slider-container.visible {
+  visibility: visible;
+  opacity: 1;
+}
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: #E5EAF0; border-radius: 5px; outline: none; cursor: pointer; margin: 0; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #00549F; cursor: pointer; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); margin-top: -6px; }
+input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #00549F; cursor: pointer; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+
+.info-container { position: relative; display: inline-flex; }
+.info-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background-color: #B0B6BF; color: white; font-size: 12px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; user-select: none; flex-shrink: 0; }
+.info-icon:hover { background-color: #00549F; }
+.info-tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #333D47; color: white; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.9em; line-height: 1.5; width: 280px; max-width: 90vw; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 30; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s; }
+.info-tooltip.visible { opacity: 1; visibility: visible; }
+.info-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #333D47 transparent transparent transparent; }
 
 /* ==========================================================================
-   5. Responsive Design
+   6. Status Messages & Responsive
    ========================================================================== */
-
-/* Large Desktop Optimizations */
-@media (min-width: 1200px) {
-  .year-inputs-container {
-    grid-template-columns: repeat(6, 1fr);
-  }
-
-  .static-fields-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Medium Desktop */
-@media (min-width: 900px) and (max-width: 1199px) {
-  .year-inputs-container {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .static-fields-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Tablet (MODIFIED) */
+.status-message { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; animation: slideInDownCentered 0.4s; }
+.status-message p { padding: 1em 1.5em; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); margin: 0; white-space: nowrap; }
+.status-message .success { background: #28a745; }
+.status-message .error { background: #d9534f; }
 @media (max-width: 768px) {
-  /* --- FIX: Removed padding to let container control spacing --- */
-  body {
-    /* padding: 0.5em; */ /* REMOVED */
-  }
-  
-  /* --- FIX: Added margin for spacing on smaller screens --- */
-  .rtt-container {
-      margin: 0.5em;
-  }
-
-  /* --- FIX: Set top to 0 for consistency --- */
-  .rtt-sticky-header {
-    top: 0; /* MODIFIED */
-  }
-
-  .rtt-brand-bar {
-    flex-wrap: wrap;
-    gap: 1rem;
-    padding: 0.8em 1em;
-  }
-
-  .rtt-app-logo {
-    width: 120px;
-    margin-right: 1em;
-  }
-
-  .rtt-header-divider {
-    display: none; /* Hide divider on small screens for more space */
-  }
-
-  .rtt-title {
-    font-size: 1.25rem;
-  }
-
-  .rtt-flex-spacer {
-    display: none; /* Hide spacer when wrapping */
-  }
-  
-  .rtt-header-controls {
-    flex-basis: 100%; /* Make controls take full width on the new line */
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .scenario-controls {
-    flex: 1;
-  }
-
-  .rtt-download-btn {
-    font-size: 0.8em;
-    padding: 0.6em 1em;
-    flex-shrink: 0;
-  }
-
-  .rtt-main-content,
-  .archetype-content-panel.active {
-    padding: 1em;
-  }
-
-  .modality-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .archetype-button {
-    min-height: 44px;
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
-  }
-
-  .static-fields-grid {
-    grid-template-columns: 1fr;
-    padding: 1rem;
-  }
-
-  .slider-field {
-    padding: 1rem;
-    gap: 1rem;
-  }
-
-  .slider-field .label-wrapper {
-    margin-bottom: 0.5rem;
-  }
-
-  .slider-control-wrapper {
-    gap: 0.75rem;
-  }
-
-  .slider-value-display {
-    width: 150px;
-    font-size: 1rem;
-    align-self: center;
-  }
-
-  .slider-field input[type=range] {
-    height: 12px;
-  }
-
-  .slider-field input[type=range]::-webkit-slider-thumb {
-    width: 24px;
-    height: 24px;
-  }
-
-  .year-inputs-container {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Small Mobile */
-@media (max-width: 480px) {
-  .year-inputs-container {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-
-  .archetype-buttons {
-    justify-content: center;
-  }
-
-  .archetype-button {
-    flex: 1 1 auto;
-    min-width: 120px;
-  }
-
-  .static-fields-grid,
-  .projections-grid {
-    padding: 0.75rem;
-  }
+    body { margin: 0.5em; }
+    .rtt-container { margin: 0; }
+    .rtt-sticky-header { top: 0; }
+    .rtt-brand-bar { flex-wrap: wrap; gap: 1rem; padding: 0.8em 1em; }
+    .rtt-header-controls { flex-basis: 100%; justify-content: space-between; }
+    .data-table th, .data-table td { padding: 0.5rem; font-size: 0.85rem; }
 }
