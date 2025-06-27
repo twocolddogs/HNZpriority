@@ -80,7 +80,7 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   flex-wrap: wrap;
 }
 .tab-button {
-  padding: 0.8em 1.5em;
+  padding: 0.8em 1.25em;
   font-size: 1rem;
   font-weight: 600;
   color: #4B5563;
@@ -94,6 +94,7 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   position: relative;
   display: flex;
   align-items: center;
+  gap: 0.5em;
 }
 .tab-button:hover {
   background: #F3F4F6;
@@ -103,11 +104,13 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   color: #00549F;
   border-color: #00549F;
 }
-/* --- NEW: Style for tab icons --- */
 .tab-icon {
-  margin-right: 0.5em;
-  font-size: 1.2em;
-  line-height: 1;
+  height: 20px; /* Use height for consistency */
+  width: auto;
+  opacity: 0.7;
+}
+.tab-button.active .tab-icon {
+  opacity: 1;
 }
 .tab-button.has-changes::after {
   content: '';
@@ -132,6 +135,31 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
 .tab-panel .metric-title-wrapper { font-size: 1.2em; margin-top: 2.5rem; }
 .tab-panel h4 { margin:0; padding: 0; border: 0; font-family: inherit; font-size: inherit; }
 
+/* --- NEW: Sub-navigation for Static Fields Table --- */
+.sub-nav-container {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #E0E6ED;
+  padding-bottom: 1rem;
+}
+.sub-nav-button {
+  padding: 0.5em 1em;
+  font-size: 0.9em;
+  font-weight: 500;
+  color: #4B5563;
+  background: #F3F4F6;
+  border: 1px solid #E0E6ED;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.sub-nav-button.active {
+  background-color: #00549F;
+  color: #fff;
+  border-color: #00549F;
+}
+
 .table-container {
   overflow-x: auto;
   background: #fff;
@@ -142,7 +170,6 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  /* --- MODIFIED: Removed white-space: nowrap to allow wrapping --- */
 }
 .data-table th, .data-table td {
   padding: 0.75rem 1rem;
@@ -154,11 +181,11 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   background-color: #F9FAFB;
   font-weight: 600;
   color: #374151;
-  font-size: 0.9em;
-  /* --- NEW: Set width constraints and allow wrapping --- */
-  min-width: 160px;
-  max-width: 200px;
-  white-space: normal;
+  font-size: 0.85em;
+  min-width: 140px;
+  max-width: 180px;
+  white-space: normal; /* Allow header text to wrap */
+  line-height: 1.3;
 }
 .data-table th .th-content { display: flex; align-items: center; gap: 8px; justify-content: center;}
 .data-table td:first-child, .data-table th:first-child {
@@ -167,14 +194,23 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   position: sticky;
   left: 0;
   background-color: #F9FAFB;
-  z-index: 1;
-  min-width: 140px; /* Give archetype column a fixed size */
+  z-index: 10;
+  min-width: 140px; 
 }
 .data-table th:first-child .th-content { justify-content: flex-start; }
 .data-table td:first-child { background-color: #fff; }
 .data-table td.changed {
   box-shadow: inset 3px 0 0 #FFA726;
 }
+
+/* --- NEW: CSS to show/hide columns based on active sub-tab --- */
+.tab-panel[data-static-fields-subtab="Demand-&-Machine-Assumptions"] [data-group="Workforce"] {
+    display: none;
+}
+.tab-panel[data-static-fields-subtab="Workforce"] [data-group="Demand-&-Machine-Assumptions"] {
+    display: none;
+}
+
 /* ==========================================================================
    5. Interactive Input/Slider & Tooltips
    ========================================================================== */
@@ -222,8 +258,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
   width: 280px; 
   max-width: 90vw; 
   box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
-  /* --- MODIFIED: Increased z-index to appear over sticky header --- */
-  z-index: 1010; 
+  z-index: 1050; /* Increased z-index to ensure visibility */
   opacity: 0; 
   visibility: hidden; 
   transition: opacity 0.2s, visibility 0.2s; 
