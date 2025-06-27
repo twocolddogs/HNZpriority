@@ -77,14 +77,16 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
    4. Tab & Table Layout
    ========================================================================== */
 
+/* FIX 3: Adjusted sticky top position */
 #sticky-tabs-wrapper {
   position: sticky;
-  top: 75px; 
+  top: 76px; 
   z-index: 1001;
   background-color: #F9FAFB;
   padding-bottom: 1.5rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
 }
+/* FIX 1: Added top padding for more space */
 .tabs-nav {
   display: flex;
   gap: 0.25rem;
@@ -93,7 +95,6 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   flex-wrap: wrap;
   padding-top: 1rem;
 }
-/* FIX: Increased font-size and padding for a larger tab bar */
 .tab-button {
   padding: 0.85em 1.75em;
   font-size: 1.2rem;
@@ -120,7 +121,6 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   background-color: #fff;
   border-color: #D1D9E1;
 }
-/* FIX: Increased icon height */
 .tab-icon {
   height: 26px;
   width: auto;
@@ -213,7 +213,7 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   position: sticky;
   left: 0;
   background-color: #F9FAFB;
-  z-index: 20;
+  z-index: 20; 
   min-width: 120px; 
 }
 .data-table th:first-child .th-content { justify-content: flex-start; }
@@ -345,10 +345,11 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
     transform: translateY(-50%);
     border-color: transparent #333D47 transparent transparent;
 }
-tr.focused-row {
-  position: relative;
-  z-index: 50;
+.global-tooltip {
+    position: fixed; /* Use fixed positioning to escape all parent contexts */
+    z-index: 1100;
 }
+
 
 /* ==========================================================================
    6. Status Messages & Responsive
