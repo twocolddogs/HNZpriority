@@ -77,27 +77,26 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
    4. Tab & Table Layout
    ========================================================================== */
 
-/* FIX 2: Add padding & shadow below sticky tabs for separation */
 #sticky-tabs-wrapper {
   position: sticky;
   top: 75px; 
   z-index: 1001;
   background-color: #F9FAFB;
-  padding-bottom: 1.5rem; /* Space below tabs */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03); /* Subtle shadow for depth */
+  padding-bottom: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
 }
-/* FIX 1: Add more top padding to the tab buttons */
 .tabs-nav {
   display: flex;
   gap: 0.25rem;
   border-bottom: 2px solid #D1D9E1;
   margin: 0;
   flex-wrap: wrap;
-  padding-top: 1rem; /* More space above tabs */
+  padding-top: 1rem;
 }
+/* FIX: Increased font-size and padding for a larger tab bar */
 .tab-button {
-  padding: 0.75em 1.5em;
-  font-size: 1.1rem;
+  padding: 0.85em 1.75em;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #4B5563;
   background: transparent;
@@ -121,8 +120,9 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   background-color: #fff;
   border-color: #D1D9E1;
 }
+/* FIX: Increased icon height */
 .tab-icon {
-  height: 24px;
+  height: 26px;
   width: auto;
   opacity: 0.7;
 }
@@ -207,15 +207,13 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
 .data-table td {
   font-size: 0.9em;
 }
-
-/* FIX 3: Lowered z-index to sit below header/tabs */
 .data-table td:first-child, .data-table th:first-child {
   text-align: left;
   font-weight: 600;
   position: sticky;
   left: 0;
   background-color: #F9FAFB;
-  z-index: 20; 
+  z-index: 20;
   min-width: 120px; 
 }
 .data-table th:first-child .th-content { justify-content: flex-start; }
@@ -283,7 +281,7 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   top: calc(100% + 5px);
   left: 0;
   right: 0;
-  z-index: 50; /* Needs to be higher than sticky column */
+  z-index: 50;
   background: #fff;
   padding: 1rem;
   border: 1px solid #B0B6BF;
@@ -347,7 +345,6 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
     transform: translateY(-50%);
     border-color: transparent #333D47 transparent transparent;
 }
-/* FIX 4: New rule to give the focused row a high z-index */
 tr.focused-row {
   position: relative;
   z-index: 50;
