@@ -540,20 +540,22 @@ input[type="range"]:disabled::-moz-range-thumb {
   max-width: 100%;
 }
 
+/* --- UPDATED RULE --- */
 .year-input-item {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column; /* Stack label and input vertically */
 }
 
+/* --- UPDATED RULE --- */
 .year-input-item label {
   font-size: 0.9em;
   font-weight: 600;
   color: #6B7280;
-  margin-bottom: 0;
-  text-align: right;
-  width: 50px;
-  flex-shrink: 0;
+  margin-bottom: 0.25rem; /* This adds the space (approx. 4px) */
+  text-align: center; /* Center the label above the input */
+  /* The properties below are no longer needed for a vertical layout */
+  /* width: 50px; */
+  /* flex-shrink: 0; */
 }
 
 /* --- Text Inputs --- */
