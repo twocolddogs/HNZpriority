@@ -65,12 +65,17 @@
     const staticFieldDescriptions = { "non_demographic_growth": "Non-demographic growth is a % change to apply over and above demographic growth (which comes from population projections). This varies by Modality.", "routine_machine_hours": "Routine machine hours provides the number of hours one machine of that modality would be expected to run in a normal working week.", "share_of_scans_during_day": "This is the % of events that occurred during routine hours which sets the level of activity to meet in hours.", "ooh_machines": "This is the number of machines each archetype is expected to run out of hours (OOH).", "ras_per_routine_machine_hour": "Radiology Assistants (RAs) support efficient delivery of CT and MR modalities. This ratio provides the number of RAs needed per routine machine hour.", "mit_shift_length": "MITs run the modalities and so to identify their FTE requirements we need to set the shift length they will work. This is strictly 4 hours.", "mit_weeks_lost": "This is a factor to account for cover given the need for MITs to take leave.", "session_length_hours": "This is the length of a session that a radiologist reports on an event, this tends to be 4 hours.", "clinical_reporting_sessions_per_rad": "This provides the number of reporting sessions that each radiologist does per week - this varies by archetype as larger facilities have a broader set of responsibilities for radiologists.", "rad_weeks_lost": "This is a factor to account for cover given the need for radiologists to take leave." };
     const staticFieldSliderConfig = { non_demographic_growth: { min: -0.05, max: 0.1, step: 0.001, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s.replace('%','')) / 100 }, routine_machine_hours: { min: 40, max: 84, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, share_of_scans_during_day: { min: 0.90, max: 1.00, step: 0.001, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s.replace('%','')) / 100 }, ooh_machines: { min: 0, max: 4, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, ras_per_routine_machine_hour: { min: 0, max: 2, step: 0.1, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, mit_shift_length: { min: 4, max: 6, step: 1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, mit_weeks_lost: { min: 6, max: 8, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, session_length_hours: { min: 4, max: 5, step: 0.5, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, clinical_reporting_sessions_per_rad: { min: 2, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, rad_weeks_lost: { min: 10, max: 14, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, };
     
+    // --- NEW: Static field groups for sub-tabs ---
+    const staticFieldGroups = {
+        'Demand & Machine Assumptions': ['non_demographic_growth', 'routine_machine_hours', 'share_of_scans_during_day', 'ooh_machines'],
+        'Workforce': ['ras_per_routine_machine_hour', 'mit_shift_length', 'mit_weeks_lost', 'session_length_hours', 'clinical_reporting_sessions_per_rad', 'rad_weeks_lost']
+    };
+
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step Change", "op_volume_step": "Outpatient Volume Step Change", "scan_rate": "Scan Rate (Mins)", "report_rate": "Report Rate (Mins)", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
     const projectionMetricDescriptions = { "ip_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "op_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "scan_rate": "These financial-year-based 10 fields provide the number of minutes required for modality to be scanning per event, which may change over time as technologies change. These vary by modality and archetype.", "report_rate": "These financial-year-based 10 fields provide the number of minutes required for a radiologist to report on an event, which may change over time as technologies change. These vary by modality and archetype", "mits_per_routine_machine_hour": "These financial-year-based 10 fields provide the number of MITs required in-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype.", "mits_per_ooh_machine_hour": "These financial-year-based 10 fields provide the number of MITs required out-of-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype." };
     
-    // --- NEW: Added icons for modality tabs ---
-    const modalityIcons = { "CT": "💿", "MRI": "🧲", "Fluoroscopy": "✨", "GX": "🦴", "NM": "🎀", "US": "🔊", "Default": "⚕️" };
+    const modalityIcons = { "CT": "CT.png", "US": "US.png", "XR": "XR.png", "MRI": "MRI.png" };
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
     let baseYearStart = new Date().getFullYear(); 
     const archetypeSortOrder = { "X Small": 1, "Small": 2, "Medium": 3, "Large": 4, "X Large": 5, };
@@ -88,6 +93,8 @@
 
     // --- State Variables ---
     let baselineData = [], scenarioData = [], activeTabId = null, scenarioName = "";
+    let activeSubTabs = { 'static-fields': 'Demand & Machine Assumptions' };
+
 
     // --- Initial Setup ---
     document.addEventListener('DOMContentLoaded', () => {
@@ -112,6 +119,23 @@
         activeTabId = button.dataset.target;
         document.querySelectorAll('.tab-button').forEach(btn => btn.classList.toggle('active', btn === button));
         document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === activeTabId));
+      });
+      
+      app.addEventListener('click', (e) => {
+        // Sub-nav tab switching
+        const subNavButton = e.target.closest('.sub-nav-button');
+        if (subNavButton) {
+            const navId = subNavButton.parentElement.dataset.navId;
+            const targetGroup = subNavButton.dataset.targetGroup;
+            activeSubTabs[navId] = targetGroup;
+            
+            const tabPanel = subNavButton.closest('.tab-panel');
+            tabPanel.dataset.staticFieldsSubtab = targetGroup.replace(/\s/g, '-');
+
+            subNavButton.parentElement.querySelectorAll('.sub-nav-button').forEach(btn => {
+                btn.classList.toggle('active', btn === subNavButton);
+            });
+        }
       });
       
       document.addEventListener('click', (e) => {
@@ -245,8 +269,9 @@
           button.classList.toggle('has-changes', groupedByModality[modality].some(row => hasRowChanged(row.id)));
         }
         button.dataset.target = tabId;
-        const icon = modalityIcons[modality] || modalityIcons["Default"];
-        button.innerHTML = `<span class="tab-icon">${icon}</span> ${modality}`;
+        const iconName = modalityIcons[modality];
+        const iconHtml = iconName ? `<img src="../icons/${iconName}" class="tab-icon" alt="${modality} icon">` : '';
+        button.innerHTML = `${iconHtml}<span>${modality}</span>`;
         nav.appendChild(button);
       });
       tabsNavContainer.appendChild(nav);
@@ -257,10 +282,13 @@
         panel.id = tabId;
         panel.className = 'tab-panel';
         panel.classList.toggle('active', tabId === activeTabId);
+        const activeSubTab = activeSubTabs['static-fields'];
+        panel.dataset.staticFieldsSubtab = activeSubTab.replace(/\s/g, '-');
         
         const archetypes = groupedByModality[modality].sort((a,b) => (archetypeSortOrder[a.archetype] || 99) - (archetypeSortOrder[b.archetype] || 99));
 
         panel.appendChild(createTableTitle('h3', 'Static Fields'));
+        panel.appendChild(createSubNav('static-fields', Object.keys(staticFieldGroups), activeSubTab));
         panel.appendChild(createStaticTable(archetypes, isEditable));
 
         projectionMetrics.forEach(metric => {
@@ -274,6 +302,21 @@
       });
     }
     
+    function createSubNav(navId, groups, activeGroup) {
+        const navContainer = document.createElement('div');
+        navContainer.className = 'sub-nav-container';
+        navContainer.dataset.navId = navId;
+        groups.forEach(group => {
+            const button = document.createElement('button');
+            button.className = 'sub-nav-button';
+            button.textContent = group;
+            button.dataset.targetGroup = group;
+            button.classList.toggle('active', group === activeGroup);
+            navContainer.appendChild(button);
+        });
+        return navContainer;
+    }
+
     function createTableTitle(tag, title, description) {
         const wrapper = document.createElement(tag);
         const titleEl = document.createElement(tag === 'div' ? 'h4' : 'span');
@@ -310,6 +353,9 @@
 
         staticFields.forEach(f => {
             const th = document.createElement('th');
+            const groupName = Object.keys(staticFieldGroups).find(group => staticFieldGroups[group].includes(f));
+            th.dataset.group = groupName.replace(/\s/g, '-');
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'th-content';
             contentDiv.textContent = staticFieldLabels[f];
@@ -325,6 +371,9 @@
             tr.insertCell().textContent = row.archetype;
             staticFields.forEach(field => {
                 const td = tr.insertCell();
+                const groupName = Object.keys(staticFieldGroups).find(group => staticFieldGroups[group].includes(field));
+                td.dataset.group = groupName.replace(/\s/g, '-');
+                
                 const config = staticFieldSliderConfig[field];
                 if (!config) return;
 
