@@ -30,10 +30,25 @@
           </div>
         </div>
       </div>
-      <div id="tabs-nav-container"></div>
     </header>
 
     <main id="main-content">
+       <div id="baseline-name-card" class="name-card hidden">
+        <div class="name-card-header"><h2>Baseline Name</h2></div>
+        <div class="name-card-content">
+          <p id="baseline-name-display">Default Baseline</p>
+        </div>
+      </div>
+      <div id="scenario-name-card" class="name-card hidden">
+        <div class="name-card-header"><h2>Scenario Name</h2></div>
+        <div class="name-card-content">
+          <label for="scenario-name-input">Enter a name for your scenario:</label>
+          <input type="text" id="scenario-name-input" placeholder="e.g., High Growth Projection">
+        </div>
+      </div>
+      
+      <div id="tabs-nav-container"></div>
+
       <div id="file-upload-area" class="file-upload hidden">
         <h3>Load Configuration Data</h3>
         <p>Drag & drop your CSV file here, or click to select.</p>
@@ -42,13 +57,7 @@
           <label for="csv-file-input">Choose File</label>
         </div>
       </div>
-      <div id="scenario-name-card" class="scenario-name-card hidden">
-        <div class="scenario-name-header"><h2>Scenario Name</h2></div>
-        <div class="scenario-name-content">
-          <label for="scenario-name-input">Enter a name for your scenario:</label>
-          <input type="text" id="scenario-name-input" placeholder="e.g., High Growth Projection">
-        </div>
-      </div>
+      
       <div id="app">
         <div class="app-loading-message">Loading Configuration...</div>
       </div>
@@ -65,7 +74,6 @@
     const staticFieldDescriptions = { "non_demographic_growth": "Non-demographic growth is a % change to apply over and above demographic growth (which comes from population projections). This varies by Modality.", "routine_machine_hours": "Routine machine hours provides the number of hours one machine of that modality would be expected to run in a normal working week.", "share_of_scans_during_day": "This is the % of events that occurred during routine hours which sets the level of activity to meet in hours.", "ooh_machines": "This is the number of machines each archetype is expected to run out of hours (OOH).", "ras_per_routine_machine_hour": "Radiology Assistants (RAs) support efficient delivery of CT and MR modalities. This ratio provides the number of RAs needed per routine machine hour.", "mit_shift_length": "MITs run the modalities and so to identify their FTE requirements we need to set the shift length they will work. This is strictly 4 hours.", "mit_weeks_lost": "This is a factor to account for cover given the need for MITs to take leave.", "session_length_hours": "This is the length of a session that a radiologist reports on an event, this tends to be 4 hours.", "clinical_reporting_sessions_per_rad": "This provides the number of reporting sessions that each radiologist does per week - this varies by archetype as larger facilities have a broader set of responsibilities for radiologists.", "rad_weeks_lost": "This is a factor to account for cover given the need for radiologists to take leave." };
     const staticFieldSliderConfig = { non_demographic_growth: { min: -0.05, max: 0.1, step: 0.001, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s.replace('%','')) / 100 }, routine_machine_hours: { min: 40, max: 84, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, share_of_scans_during_day: { min: 0.90, max: 1.00, step: 0.001, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s.replace('%','')) / 100 }, ooh_machines: { min: 0, max: 4, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, ras_per_routine_machine_hour: { min: 0, max: 2, step: 0.1, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, mit_shift_length: { min: 4, max: 6, step: 1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, mit_weeks_lost: { min: 6, max: 8, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, session_length_hours: { min: 4, max: 5, step: 0.5, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, clinical_reporting_sessions_per_rad: { min: 2, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, rad_weeks_lost: { min: 10, max: 14, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, };
     
-    // --- NEW: Static field groups for sub-tabs ---
     const staticFieldGroups = {
         'Demand & Machine Assumptions': ['non_demographic_growth', 'routine_machine_hours', 'share_of_scans_during_day', 'ooh_machines'],
         'Workforce': ['ras_per_routine_machine_hour', 'mit_shift_length', 'mit_weeks_lost', 'session_length_hours', 'clinical_reporting_sessions_per_rad', 'rad_weeks_lost']
@@ -76,6 +84,17 @@
     const projectionMetricDescriptions = { "ip_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "op_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "scan_rate": "These financial-year-based 10 fields provide the number of minutes required for modality to be scanning per event, which may change over time as technologies change. These vary by modality and archetype.", "report_rate": "These financial-year-based 10 fields provide the number of minutes required for a radiologist to report on an event, which may change over time as technologies change. These vary by modality and archetype", "mits_per_routine_machine_hour": "These financial-year-based 10 fields provide the number of MITs required in-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype.", "mits_per_ooh_machine_hour": "These financial-year-based 10 fields provide the number of MITs required out-of-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype." };
     
     const modalityIcons = { "CT": "CT.png", "US": "US.png", "XR": "XR.png", "MRI": "MRI.png" };
+    
+    // --- NEW: Unique descriptions for each archetype tooltip ---
+    const archetypeDescriptions = {
+        "X Small": "Facilities include: Patea Health Centre, Opunake Health Centre, Waiouru Military Camp.",
+        "Small": "Facilities include: Wairoa Hospital, Taumarunui Hospital, Dannevirke Community Hospital, Hawera Hospital.",
+        "Medium": "Facilities include: Whanganui Hospital, Gisborne Hospital, Wairau Hospital (Blenheim), Timaru Hospital.",
+        "Large": "Facilities include: Tauranga Hospital, Palmerston North Hospital, Dunedin Hospital, Wellington Regional Hospital.",
+        "X Large": "Facilities include: Auckland City Hospital, Christchurch Hospital, Waikato Hospital, Middlemore Hospital.",
+        "Default": "No facility list available for this archetype."
+    };
+
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
     let baseYearStart = new Date().getFullYear(); 
     const archetypeSortOrder = { "X Small": 1, "Small": 2, "Medium": 3, "Large": 4, "X Large": 5, };
@@ -89,10 +108,13 @@
     const fileUploadArea = document.getElementById("file-upload-area");
     const scenarioNameCard = document.getElementById("scenario-name-card");
     const scenarioNameInput = document.getElementById("scenario-name-input");
+    const baselineNameCard = document.getElementById("baseline-name-card");
+    const baselineNameDisplay = document.getElementById("baseline-name-display");
     const tabsNavContainer = document.getElementById("tabs-nav-container");
 
     // --- State Variables ---
-    let baselineData = [], scenarioData = [], activeTabId = null, scenarioName = "";
+    let baselineData = [], scenarioData = [];
+    let activeTabId = null, scenarioName = "", baselineName = "Default Baseline";
     let activeSubTabs = { 'static-fields': 'Demand & Machine Assumptions' };
 
 
@@ -122,7 +144,6 @@
       });
       
       app.addEventListener('click', (e) => {
-        // Sub-nav tab switching
         const subNavButton = e.target.closest('.sub-nav-button');
         if (subNavButton) {
             const navId = subNavButton.parentElement.dataset.navId;
@@ -130,7 +151,7 @@
             activeSubTabs[navId] = targetGroup;
             
             const tabPanel = subNavButton.closest('.tab-panel');
-            tabPanel.dataset.staticFieldsSubtab = targetGroup.replace(/\s/g, '-');
+            tabPanel.dataset.staticFieldsSubtab = targetGroup.replace(/\s/g, '-').replace('&', 'and');
 
             subNavButton.parentElement.querySelectorAll('.sub-nav-button').forEach(btn => {
                 btn.classList.toggle('active', btn === subNavButton);
@@ -181,7 +202,7 @@
                 const fallbackResponse = await fetch('baseline.csv');
                 if (!fallbackResponse.ok) throw new Error('Fallback CSV not found.');
                 const csvText = await fallbackResponse.text();
-                processCSV(csvText, "Successfully loaded baseline data.");
+                processCSV(csvText, "Successfully loaded baseline data from fallback.");
             } catch (fallbackError) {
                 console.error("Could not auto-load any CSV:", fallbackError);
                 app.innerHTML = '';
@@ -194,7 +215,7 @@
       if (file && (file.type === "text/csv" || file.name.endsWith('.csv'))) {
         Papa.parse(file, {
           header: true, skipEmptyLines: true, dynamicTyping: true,
-          complete: (results) => processCSV(results, "Successfully loaded uploaded file."),
+          complete: (results) => processCSV(results, `Successfully loaded ${file.name}.`),
           error: (err) => showMessage("Error reading the file.", "error")
         });
       } else {
@@ -224,9 +245,13 @@
         });
 
         const firstRow = processedData[0];
-        if (firstRow && firstRow.baseyear) {
-            const parsedYear = parseInt(String(firstRow.baseyear).substring(0, 4), 10);
-            if (!isNaN(parsedYear)) baseYearStart = parsedYear;
+        if (firstRow) {
+            if (firstRow.baseyear) {
+                const parsedYear = parseInt(String(firstRow.baseyear).substring(0, 4), 10);
+                if (!isNaN(parsedYear)) baseYearStart = parsedYear;
+            }
+            // --- MODIFIED: Use the 'scenario' column for the baseline name ---
+            baselineName = firstRow.scenario || "Loaded Baseline Data";
         }
 
         baselineData = JSON.parse(JSON.stringify(processedData));
@@ -246,7 +271,9 @@
       app.innerHTML = '';
       tabsNavContainer.innerHTML = '';
       scenarioNameCard.classList.toggle('hidden', !isEditable);
+      baselineNameCard.classList.toggle('hidden', isEditable);
       if(isEditable) scenarioNameInput.value = scenarioName;
+      baselineNameDisplay.textContent = baselineName;
 
       const groupedByModality = data.reduce((acc, row) => {
         (acc[row.modality] = acc[row.modality] || []).push(row);
@@ -283,7 +310,7 @@
         panel.className = 'tab-panel';
         panel.classList.toggle('active', tabId === activeTabId);
         const activeSubTab = activeSubTabs['static-fields'];
-        panel.dataset.staticFieldsSubtab = activeSubTab.replace(/\s/g, '-');
+        panel.dataset.staticFieldsSubtab = activeSubTab.replace(/\s/g, '-').replace('&', 'and');
         
         const archetypes = groupedByModality[modality].sort((a,b) => (archetypeSortOrder[a.archetype] || 99) - (archetypeSortOrder[b.archetype] || 99));
 
@@ -354,7 +381,7 @@
         staticFields.forEach(f => {
             const th = document.createElement('th');
             const groupName = Object.keys(staticFieldGroups).find(group => staticFieldGroups[group].includes(f));
-            th.dataset.group = groupName.replace(/\s/g, '-');
+            th.dataset.group = groupName.replace(/\s/g, '-').replace('&', 'and');
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'th-content';
@@ -368,11 +395,26 @@
         const tbody = table.createTBody();
         archetypes.forEach(row => {
             const tr = tbody.insertRow();
-            tr.insertCell().textContent = row.archetype;
+            
+            // --- MODIFIED: Create archetype cell with unique tooltip ---
+            const archetypeCell = tr.insertCell();
+            const labelWrapper = document.createElement('div');
+            labelWrapper.className = 'archetype-label-wrapper';
+            const labelSpan = document.createElement('span');
+            labelSpan.textContent = row.archetype;
+            labelWrapper.appendChild(labelSpan);
+            const description = archetypeDescriptions[row.archetype] || archetypeDescriptions["Default"];
+            const infoContainer = createTableTitle('div', '', description).querySelector('.info-container');
+            if (infoContainer) {
+                infoContainer.querySelector('.info-tooltip').classList.add('tooltip-right');
+                labelWrapper.appendChild(infoContainer);
+            }
+            archetypeCell.appendChild(labelWrapper);
+
             staticFields.forEach(field => {
                 const td = tr.insertCell();
                 const groupName = Object.keys(staticFieldGroups).find(group => staticFieldGroups[group].includes(field));
-                td.dataset.group = groupName.replace(/\s/g, '-');
+                td.dataset.group = groupName.replace(/\s/g, '-').replace('&', 'and');
                 
                 const config = staticFieldSliderConfig[field];
                 if (!config) return;
