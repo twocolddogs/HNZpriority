@@ -36,20 +36,39 @@ body {
   margin: 0 auto;
 }
 
-/* --- App Header --- */
+/* --- App Header (MODIFIED) --- */
+.rtt-sticky-header {
+  position: sticky;
+  top: 1em;
+  z-index: 1002;
+  background: #F9FAFB;
+  padding-bottom: 0.4em;
+  margin-bottom: 2rem;
+}
+
 .rtt-brand-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(90deg, #143345 45%, #41236a 100%);
-  padding: 0.8em 1.5em;
+  background: linear-gradient(90deg,#143345 45%,#41236a 100%);
+  padding: 0.6em 1.5em;
   border-radius: 8px;
-  margin-bottom: 2rem;
-  position: -webkit-sticky;
-  position: sticky;
-  top: 1em;
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.rtt-app-logo {
+  height: auto;
+  margin-right: 1.5em;
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.rtt-header-divider {
+  width: 1px;
+  height: 30px;
+  background: rgba(255,255,255,0.3);
+  margin-right: 1.5em;
+  flex-shrink: 0;
 }
 
 .rtt-title {
@@ -59,20 +78,30 @@ body {
   font-weight: 600;
   font-family: 'Poppins', sans-serif;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rtt-flex-spacer {
+  flex-grow: 1;
 }
 
 .rtt-header-controls {
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  flex-shrink: 0;
 }
 
+/* MODIFICATION: Set explicit height to match export button */
 .scenario-controls {
   display: flex;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 4px;
   position: relative;
+  height: 44px;
+  box-sizing: border-box;
 }
 
 .scenario-controls input[type="radio"] {
@@ -83,8 +112,9 @@ body {
   height: 0;
 }
 
+/* MODIFICATION: Removed vertical padding to allow perfect vertical alignment. */
 .scenario-controls label {
-  padding: 0.75rem 1.75rem;
+  padding: 0 1.75rem; /* Removed vertical padding */
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
@@ -98,7 +128,8 @@ body {
   text-align: center;
   user-select: none;
   background: transparent;
-  min-height: 44px;
+  height: 100%; /* Fill the inner height */
+  min-height: auto; /* Remove old min-height */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -143,8 +174,8 @@ body {
    3. Buttons & Modality Cards
    ========================================================================== */
 
-/* --- Export Button --- */
-#export-button {
+/* --- Export Button (MODIFIED) --- */
+.rtt-download-btn {
   font-family: 'Poppins', sans-serif;
   font-size: 0.9em;
   font-weight: 600;
@@ -158,10 +189,10 @@ body {
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s ease;
-  min-height: 40px;
+  min-height: 44px; /* Matched height of scenario toggle */
+  white-space: nowrap;
 }
-
-#export-button:hover {
+.rtt-download-btn:hover {
   background: #3e6326;
   border-color: #2f4a1c;
 }
@@ -313,20 +344,10 @@ h3 {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #E0E6ED;
   font-family: 'Poppins', sans-serif;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
 }
 
 h3:first-child {
   margin-top: 0;
-}
-
-h3::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #E0E6ED;
 }
 
 /* --- Static Fields Grid --- */
@@ -352,7 +373,7 @@ h3::after {
   border: 1px solid #E5EAF0; 
   transition: all 0.2s ease;
   min-height: auto;
-  overflow: hidden; 
+  overflow: visible; /* Allow tooltips to show */
 }
 
 .slider-field::before {
@@ -375,11 +396,18 @@ h3::after {
   background-color: #FFA726; 
 }
 
+.label-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .slider-field label {
   font-size: 1rem;
   font-weight: 500;
   color: #4B5563;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0; /* Adjusted */
   display: block;
   line-height: 1.4;
 }
@@ -490,11 +518,18 @@ input[type="range"]:disabled::-moz-range-thumb {
   padding: 1.25rem;
 }
 
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .projection-metric-card h4 {
   font-size: 1.1em;
   font-weight: 600;
   color: #00549F;
-  margin: 0 0 1rem 0;
+  margin: 0; /* Adjusted */
   line-height: 1.3;
 }
 
@@ -505,20 +540,22 @@ input[type="range"]:disabled::-moz-range-thumb {
   max-width: 100%;
 }
 
+/* --- UPDATED RULE --- */
 .year-input-item {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column; /* Stack label and input vertically */
 }
 
+/* --- UPDATED RULE --- */
 .year-input-item label {
   font-size: 0.9em;
   font-weight: 600;
   color: #6B7280;
-  margin-bottom: 0;
-  text-align: right;
-  width: 50px;
-  flex-shrink: 0;
+  margin-bottom: 0.25rem; /* This adds the space (approx. 4px) */
+  text-align: center; /* Center the label above the input */
+  /* The properties below are no longer needed for a vertical layout */
+  /* width: 50px; */
+  /* flex-shrink: 0; */
 }
 
 /* --- Text Inputs --- */
@@ -565,8 +602,67 @@ input:disabled {
   cursor: not-allowed;
 }
 
+/* --- Tooltips & Help Text --- */
+.info-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #B0B6BF;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+.info-icon:hover {
+  background-color: #00549F;
+}
+
+.info-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333D47;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9em;
+  line-height: 1.5;
+  width: 280px;
+  max-width: 90vw;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 10;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+.info-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+}
+.info-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #333D47 transparent transparent transparent;
+}
+
+
 /* --- Status Messages --- */
-/* MODIFIED: Centered the status message banner */
 .status-message {
   position: fixed;
   top: 20px;
@@ -625,46 +721,53 @@ input:disabled {
   }
 }
 
-/* Tablet */
+/* Tablet (MODIFIED) */
 @media (max-width: 768px) {
   body {
     padding: 0.5em;
   }
 
-  .rtt-brand-bar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1rem;
+  .rtt-sticky-header {
     top: 0.5em;
+  }
+
+  .rtt-brand-bar {
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.8em 1em;
+  }
+
+  .rtt-app-logo {
+    width: 120px;
+    margin-right: 1em;
+  }
+
+  .rtt-header-divider {
+    display: none; /* Hide divider on small screens for more space */
   }
 
   .rtt-title {
     font-size: 1.25rem;
   }
 
+  .rtt-flex-spacer {
+    display: none; /* Hide spacer when wrapping */
+  }
+  
   .rtt-header-controls {
-    width: 100%;
+    flex-basis: 100%; /* Make controls take full width on the new line */
     justify-content: space-between;
-    flex-direction: row;
     gap: 1rem;
   }
 
   .scenario-controls {
     flex: 1;
-    min-height: 44px;
   }
 
-  .scenario-controls label {
-    flex-grow: 1;
-    text-align: center;
-    padding: 0.75rem 1rem;
-  }
-
-  #export-button {
+  .rtt-download-btn {
     font-size: 0.8em;
+    padding: 0.6em 1em;
     flex-shrink: 0;
-    min-height: 44px;
   }
 
   .rtt-main-content,
@@ -694,27 +797,22 @@ input:disabled {
     gap: 1rem;
   }
 
-  .slider-field > label {
-    text-align: left;
+  .slider-field .label-wrapper {
     margin-bottom: 0.5rem;
   }
 
   .slider-control-wrapper {
-    display: flex;
-    flex-direction: column;
     gap: 0.75rem;
   }
 
   .slider-value-display {
     width: 150px;
     font-size: 1rem;
-    text-align: center;
     align-self: center;
   }
 
   .slider-field input[type=range] {
     height: 12px;
-    margin: 0;
   }
 
   .slider-field input[type=range]::-webkit-slider-thumb {
