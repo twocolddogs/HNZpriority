@@ -85,7 +85,6 @@
     
     const modalityIcons = { "CT": "CT.png", "US": "US.png", "XR": "XR.png", "MRI": "MRI.png" };
     
-    // --- NEW: Unique descriptions for each archetype tooltip ---
     const archetypeDescriptions = {
         "X Small": "Facilities include: Patea Health Centre, Opunake Health Centre, Waiouru Military Camp.",
         "Small": "Facilities include: Wairoa Hospital, Taumarunui Hospital, Dannevirke Community Hospital, Hawera Hospital.",
@@ -250,7 +249,6 @@
                 const parsedYear = parseInt(String(firstRow.baseyear).substring(0, 4), 10);
                 if (!isNaN(parsedYear)) baseYearStart = parsedYear;
             }
-            // --- MODIFIED: Use the 'scenario' column for the baseline name ---
             baselineName = firstRow.scenario || "Loaded Baseline Data";
         }
 
@@ -322,7 +320,7 @@
             const titleWrapper = createTableTitle('div', projectionMetricLabels[metric], projectionMetricDescriptions[metric]);
             titleWrapper.classList.add('metric-title-wrapper');
             panel.appendChild(titleWrapper);
-            panel.appendChild(createProjectionTable(archetypes, metric, isEditable));
+            panel.appendChild(createProjectionGrid(archetypes, metric, isEditable));
         });
         
         app.appendChild(panel);
@@ -396,7 +394,6 @@
         archetypes.forEach(row => {
             const tr = tbody.insertRow();
             
-            // --- MODIFIED: Create archetype cell with unique tooltip ---
             const archetypeCell = tr.insertCell();
             const labelWrapper = document.createElement('div');
             labelWrapper.className = 'archetype-label-wrapper';
@@ -453,22 +450,29 @@
         return tableContainer;
     }
 
-    function createProjectionTable(archetypes, metric, isEditable) {
-        const tableContainer = document.createElement('div');
-        tableContainer.className = 'table-container';
-        const table = document.createElement('table');
-        table.className = 'data-table';
+    function createProjectionGrid(archetypes, metric, isEditable) {
+        const grid = document.createElement('div');
+        grid.className = 'projection-grid';
 
-        const thead = table.createTHead();
-        const headerRow = thead.insertRow();
-        headerRow.innerHTML = `<th>Archetype</th>` + years.map((_, i) => `<th>FY ${String(baseYearStart + i).slice(-2)}/${String(baseYearStart + i + 1).slice(-2)}</th>`).join('');
-
-        const tbody = table.createTBody();
         archetypes.forEach(row => {
-            const tr = tbody.insertRow();
-            tr.insertCell().textContent = row.archetype;
-            years.forEach(yearKey => {
-                const td = tr.insertCell();
+            const archetypeRow = document.createElement('div');
+            archetypeRow.className = 'projection-archetype-row';
+
+            const archetypeLabel = document.createElement('div');
+            archetypeLabel.className = 'projection-archetype-label';
+            archetypeLabel.textContent = row.archetype;
+            archetypeRow.appendChild(archetypeLabel);
+
+            const yearGrid = document.createElement('div');
+            yearGrid.className = 'year-inputs-grid';
+
+            years.forEach((yearKey, index) => {
+                const item = document.createElement('div');
+                item.className = 'year-input-item';
+
+                const label = document.createElement('label');
+                label.textContent = `FY ${String(baseYearStart + index).slice(-2)}/${String(baseYearStart + index + 1).slice(-2)}`;
+                
                 const input = document.createElement('input');
                 input.type = 'text';
                 const value = row[metric]?.[yearKey];
@@ -479,13 +483,17 @@
 
                 const baselineRow = baselineData.find(br => br.id === row.id);
                 if (isEditable && baselineRow && baselineRow[metric]?.[yearKey] !== value) {
-                    td.classList.add('changed');
+                    input.classList.add('changed');
                 }
-                td.appendChild(input);
+
+                item.appendChild(label);
+                item.appendChild(input);
+                yearGrid.appendChild(item);
             });
+            archetypeRow.appendChild(yearGrid);
+            grid.appendChild(archetypeRow);
         });
-        tableContainer.appendChild(table);
-        return tableContainer;
+        return grid;
     }
 
     // --- Event Handling Logic ---
@@ -546,8 +554,10 @@
     function updateChangeState(rowId, fieldKey) {
         const rowToUpdate = scenarioData.find(row => row.id === rowId);
         const baselineRow = baselineData.find(row => row.id === rowId);
-        const cell = document.querySelector(`input[data-id="${rowId}"][data-field="${fieldKey}"]`).closest('td');
-        if (!cell || !baselineRow) return;
+        const inputElement = document.querySelector(`input[data-id="${rowId}"][data-field="${fieldKey}"]`);
+        if (!inputElement || !baselineRow) return;
+        
+        const cell = inputElement.closest('td, .year-input-item');
 
         let isChanged = false;
         if (staticFields.includes(fieldKey)) {
@@ -556,7 +566,12 @@
             const [metric, yearKey] = fieldKey.split('.');
             isChanged = rowToUpdate[metric]?.[yearKey] !== baselineRow[metric]?.[yearKey];
         }
-        cell.classList.toggle('changed', isChanged);
+        
+        if (cell.matches('td')) {
+            cell.classList.toggle('changed', isChanged);
+        } else {
+            inputElement.classList.toggle('changed', isChanged);
+        }
 
         const modality = rowToUpdate.modality;
         const tabButton = document.querySelector(`.tab-button[data-target="tab-${modality.toLowerCase().replace(/\s/g, '-')}"]`);
