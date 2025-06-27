@@ -22,24 +22,27 @@
    2. Core App Structure & Layout
    ========================================================================== */
 
+/* --- FIX: Removed padding to let container control spacing --- */
 body {
   font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background: #F9FAFB;
   min-height: 100vh;
-  padding: 1em;
+  /* padding: 1em; */ /* REMOVED */
   color: #4B5563;
   line-height: 1.6;
 }
 
+/* --- FIX: Added margin to create initial spacing --- */
 .rtt-container {
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 1em auto; /* MODIFIED */
 }
 
 /* --- App Header (MODIFIED) --- */
+/* --- FIX: Set top to 0 to stick flush to the viewport edge --- */
 .rtt-sticky-header {
   position: sticky;
-  top: 1em;
+  top: 0; /* MODIFIED */
   z-index: 1002;
   background: #F9FAFB;
   padding-bottom: 0.4em;
@@ -723,12 +726,19 @@ input:disabled {
 
 /* Tablet (MODIFIED) */
 @media (max-width: 768px) {
+  /* --- FIX: Removed padding to let container control spacing --- */
   body {
-    padding: 0.5em;
+    /* padding: 0.5em; */ /* REMOVED */
+  }
+  
+  /* --- FIX: Added margin for spacing on smaller screens --- */
+  .rtt-container {
+      margin: 0.5em;
   }
 
+  /* --- FIX: Set top to 0 for consistency --- */
   .rtt-sticky-header {
-    top: 0.5em;
+    top: 0; /* MODIFIED */
   }
 
   .rtt-brand-bar {
