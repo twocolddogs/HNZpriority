@@ -4,82 +4,223 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LORA Scenario Configurator</title>
-  <link rel="stylesheet" href="styles.css">
+  <!-- The styles.css file is now self-contained in the <style> tag below -->
   <style>
+    /* ==========================================================================
+       1. Global Styles & Keyframes
+       ========================================================================== */
+    @keyframes slideInDownCentered { from { transform: translate(-50%, -150%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 167, 38, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 167, 38, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 167, 38, 0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ==========================================================================
+       2. Core App Structure & Layout
+       ========================================================================== */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f4f7fa;
-      margin: 0;
-      color: #333;
+      font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #F9FAFB;
+      min-height: 100vh;
+      color: #4B5563;
+      line-height: 1.6;
     }
-    .hidden {
-      display: none !important;
+    .hidden { display: none !important; }
+    .rtt-container {
+      max-width: 1600px;
+      margin: 1em auto;
     }
-    .file-upload {
-      border: 2px dashed #ccc;
+    .rtt-sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 1002;
+      background: #F9FAFB;
+      padding-bottom: 0.4em;
+    }
+    .rtt-brand-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(90deg,#143345 45%,#41236a 100%);
+      padding: 0.6em 1.5em;
       border-radius: 8px;
-      padding: 40px 20px;
-      text-align: center;
-      background-color: #ffffff;
-      transition: all 0.2s ease-in-out;
-      margin: 20px;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 1.5rem;
     }
-    .file-upload.drag-over {
-      border-color: #007bff;
-      background-color: #f0f8ff;
+    .rtt-app-logo { height: auto; margin-right: 1.5em; width: 160px; flex-shrink: 0; }
+    .rtt-header-divider { width: 1px; height: 30px; background: rgba(255,255,255,0.3); margin-right: 1.5em; flex-shrink: 0; }
+    .rtt-title { color: #fff; font-size: 1.5em; margin: 0; font-weight: 600; font-family: 'Poppins', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rtt-flex-spacer { flex-grow: 1; }
+    .rtt-header-controls { display: flex; align-items: center; gap: 1.5rem; flex-shrink: 0; }
+    .scenario-controls { display: flex; background: rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 4px; position: relative; height: 44px; box-sizing: border-box; }
+    .scenario-controls input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+    .scenario-controls label { padding: 0 1.75rem; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; color: rgba(255, 255, 255, 0.7); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: none; position: relative; z-index: 2; flex: 1; text-align: center; user-select: none; background: transparent; height: 100%; display: flex; align-items: center; justify-content: center; }
+    .scenario-controls label:hover { color: rgba(255, 255, 255, 0.9); }
+    .scenario-controls .scenario-switch-bg { position: absolute; top: 4px; left: 4px; width: calc(50% - 4px); height: calc(100% - 8px); background: #fff; border-radius: 6px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; }
+    #source-scenario:checked ~ .scenario-switch-bg { transform: translateX(100%); }
+    .scenario-controls input[type="radio"]:checked + label { color: #143345; }
+
+    /* ==========================================================================
+       3. Buttons, Inputs & File Upload
+       ========================================================================== */
+    .rtt-download-btn { font-family: 'Poppins', sans-serif; font-size: 0.9em; font-weight: 600; padding: 0.6em 1.2em; border: 1px solid #3a5c24; border-radius: 6px; background: #4c7a30; color: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease; min-height: 44px; white-space: nowrap; }
+    .rtt-download-btn:hover { background: #3e6326; border-color: #2f4a1c; }
+    .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s ease-in-out infinite; }
+    input[type="text"] { box-sizing: border-box; width: 100%; padding: 0.5em 0.75em; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 0.9rem; text-align: center; background-color: #fff; box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.07); transition: all 0.2s ease; min-height: 40px; }
+    input[type="text"]:focus { outline: none; border-color: #007A86; box-shadow: 0 0 0 3px rgba(0, 122, 134, 0.15); }
+    input[readonly], input:disabled { background-color: #F3F4F6; color: #6B7280; cursor: not-allowed; box-shadow: none; border-color: #E5EAF0; opacity: 0.7; }
+    input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !important; }
+    .scenario-name-card { background: #fff; border: 1px solid #E0E6ED; border-radius: 12px; margin-bottom: 2rem; overflow: hidden; }
+    .scenario-name-header { background: #E8F0F6; padding: 1em 1.25em; color: #00549F; font-weight: 600; font-family: 'Poppins', sans-serif; font-size: 1.1em; border-bottom: 1px solid #D1D9E1; }
+    .scenario-name-header h2 { margin: 0; font-size: inherit; font-weight: inherit; }
+    .scenario-name-content { padding: 1.5em; }
+    .scenario-name-content label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+    .scenario-name-content input { text-align: left; padding: 0.6em 0.8em; font-size: 1rem; max-width: 400px; }
+    .file-upload { border: 2px dashed #ccc; border-radius: 8px; padding: 40px 20px; text-align: center; background-color: #ffffff; margin: 20px; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+    /* ==========================================================================
+       4. NEW: Tab & Table Layout
+       ========================================================================== */
+    .tabs-nav {
+      display: flex;
+      gap: 0.25rem;
+      border-bottom: 2px solid #D1D9E1;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
     }
-    .file-upload h3 {
-      margin-top: 0;
-      color: #333;
-    }
-    .file-upload p {
-      color: #666;
-    }
-    #upload-error-message {
-        color: #d9534f;
-        font-weight: bold;
-    }
-    .file-input {
-      margin-top: 20px;
-    }
-    .file-input input[type="file"] {
-      width: 0.1px;
-      height: 0.1px;
-      opacity: 0;
-      overflow: hidden;
-      position: absolute;
-      z-index: -1;
-    }
-    .file-input label {
-      display: inline-block;
-      padding: 10px 20px;
-      font-size: 16px;
-      font-weight: bold;
-      color: #fff;
-      background-color: #007bff;
-      border-radius: 5px;
+    .tab-button {
+      padding: 0.8em 1.5em;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #4B5563;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
       cursor: pointer;
-      transition: background-color 0.2s;
+      margin-bottom: -2px;
+      transition: all 0.2s ease-in-out;
+      font-family: 'Poppins', sans-serif;
+      position: relative;
     }
-    .file-input label:hover {
-      background-color: #0056b3;
+    .tab-button:hover {
+      background: #F3F4F6;
+      color: #1F2937;
+    }
+    .tab-button.active {
+      color: #00549F;
+      border-color: #00549F;
+    }
+    .tab-button.has-changes::after {
+      content: '';
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      width: 8px;
+      height: 8px;
+      background-color: #FFA726;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .tab-panel h3, .tab-panel h4 {
+        font-size: 1.4em; font-weight: 600; color: #143345; margin: 2rem 0 1.5rem 0;
+        padding-bottom: 0.5rem; border-bottom: 1px solid #E0E6ED; font-family: 'Poppins', sans-serif;
+    }
+    .tab-panel h4 { font-size: 1.2em; margin-top: 2.5rem; }
+
+    .table-container {
+      overflow-x: auto;
+      background: #fff;
+      border: 1px solid #E0E6ED;
+      border-radius: 8px;
+      padding: 0.5rem;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      white-space: nowrap;
+    }
+    .data-table th, .data-table td {
+      padding: 0.75rem 1rem;
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid #E5EAF0;
+    }
+    .data-table th {
+      background-color: #F9FAFB;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9em;
+    }
+    .data-table td:first-child, .data-table th:first-child {
+      text-align: left;
+      font-weight: 600;
+      position: sticky;
+      left: 0;
+      background-color: #F9FAFB;
+      z-index: 1;
+      min-width: 120px;
+    }
+    .data-table td:first-child { background-color: #fff; }
+    .data-table td.changed {
+      box-shadow: inset 3px 0 0 #FFA726;
+    }
+    /* ==========================================================================
+       5. NEW: Interactive Input/Slider
+       ========================================================================== */
+    .input-slider-wrapper {
+      position: relative;
+      min-width: 120px;
+    }
+    .slider-container {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      top: calc(100% + 5px);
+      left: 0;
+      right: 0;
+      z-index: 20;
+      background: #fff;
+      padding: 1rem;
+      border: 1px solid #B0B6BF;
+      border-radius: 6px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+      transition: opacity 0.2s, visibility 0.2s;
+    }
+    .slider-container.visible {
+      visibility: visible;
+      opacity: 1;
+    }
+    input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: #E5EAF0; border-radius: 5px; outline: none; cursor: pointer; margin: 0; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #00549F; cursor: pointer; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); margin-top: -6px; }
+    input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #00549F; cursor: pointer; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    
+    /* ==========================================================================
+       6. Status Messages & Responsive
+       ========================================================================== */
+    .status-message { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; animation: slideInDownCentered 0.4s; }
+    .status-message p { padding: 1em 1.5em; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); margin: 0; white-space: nowrap; }
+    .status-message .success { background: #28a745; }
+    .status-message .error { background: #d9534f; }
+    @media (max-width: 768px) {
+        body { margin: 0.5em; }
+        .rtt-container { margin: 0; }
+        .rtt-sticky-header { top: 0; }
+        .rtt-brand-bar { flex-wrap: wrap; gap: 1rem; padding: 0.8em 1em; }
+        .rtt-header-controls { flex-basis: 100%; justify-content: space-between; }
+        .data-table th, .data-table td { padding: 0.5rem; font-size: 0.85rem; }
     }
   </style>
 </head>
 <body>
   <div class="rtt-container">
-    <!-- MODIFICATION: Header structure updated to match new design system -->
     <header class="rtt-sticky-header">
       <div class="rtt-brand-bar">
-        <!-- NOTE: The logo path is based on the provided file. Ensure 'images/HealthNZ_logo_v2.svg' exists in your project structure. -->
         <img src="../images/HealthNZ_logo_v2.svg" alt="Health NZ Logo" class="rtt-app-logo">
         <div class="rtt-header-divider"></div>
         <h1 class="rtt-title">LORA Scenario Configurator</h1>
         <div class="rtt-flex-spacer"></div>
-
         <div id="header-controls-wrapper" class="hidden">
           <div class="rtt-header-controls">
             <div class="scenario-controls" id="scenario-toggle">
@@ -90,35 +231,31 @@
               <span class="scenario-switch-bg" aria-hidden="true"></span>
             </div>
             <button id="export-button" class="rtt-download-btn">
-              <!-- Spinner will be added here by JS -->
+              <span class="loading-spinner hidden"></span>
               Export CSV
             </button>
           </div>
         </div>
       </div>
+      <div id="tabs-nav-container"></div>
     </header>
 
-    <main id="main-content" class="rtt-main-content">
+    <main id="main-content">
       <div id="file-upload-area" class="file-upload hidden">
         <h3>Load Configuration Data</h3>
-        <p id="upload-error-message" class="hidden">Could not load local file. Please upload your CSV to begin.</p>
         <p>Drag & drop your CSV file here, or click to select.</p>
         <div class="file-input">
           <input type="file" id="csv-file-input" accept=".csv" />
           <label for="csv-file-input">Choose File</label>
         </div>
       </div>
-
-      <div id="scenario-name-card" class="modality-container hidden">
-        <div class="modality-header">
-          <h2>Scenario Name</h2>
-        </div>
+      <div id="scenario-name-card" class="scenario-name-card hidden">
+        <div class="scenario-name-header"><h2>Scenario Name</h2></div>
         <div class="scenario-name-content">
           <label for="scenario-name-input">Enter a name for your scenario:</label>
           <input type="text" id="scenario-name-input" placeholder="e.g., High Growth Projection">
         </div>
       </div>
-      
       <div id="app">
         <div class="app-loading-message">Loading Configuration...</div>
       </div>
@@ -126,562 +263,427 @@
     
     <div id="status-message" class="status-message"></div>
   </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-          <script>
+<script>
+    // --- Data Definitions ---
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
-    const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
-    const staticFieldDescriptions = { "non_demographic_growth": "Non-demographic growth is a % change to apply over and above demographic growth (which comes from population projections). This varies by Modality.", "routine_machine_hours": "Routine machine hours provides the number of hours one machine of that modality would be expected to run in a normal working week.", "share_of_scans_during_day": "This is the % of events that occurred during routine hours which sets the level of activity to meet in hours.", "ooh_machines": "This is the number of machines each archetype is expected to run out of hours (OOH).", "ras_per_routine_machine_hour": "Radiology Assistants (RAs) support efficient delivery of CT and MR modalities. This ratio provides the number of RAs needed per routine machine hour.", "mit_shift_length": "MITs run the modalities and so to identify their FTE requirements we need to set the shift length they will work. This is strictly 4 hours.", "mit_weeks_lost": "This is a factor to account for cover given the need for MITs to take leave.", "session_length_hours": "This is the length of a session that a radiologist reports on an event, this tends to be 4 hours.", "clinical_reporting_sessions_per_rad": "This provides the number of reporting sessions that each radiologist does per week - this varies by archetype as larger facilities have a broader set of responsibilities for radiologists.", "rad_weeks_lost": "This is a factor to account for cover given the need for radiologists to take leave." };
-
+    const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "OOH Machines", "ras_per_routine_machine_hour": "RAs per Routine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hrs)", "clinical_reporting_sessions_per_rad": "Rad Reporting Sessions", "rad_weeks_lost": "Rad Weeks Lost" };
+    const staticFieldSliderConfig = { non_demographic_growth: { min: -0.05, max: 0.1, step: 0.001, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s.replace('%','')) / 100 }, routine_machine_hours: { min: 40, max: 84, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, share_of_scans_during_day: { min: 0.90, max: 1.00, step: 0.001, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s.replace('%','')) / 100 }, ooh_machines: { min: 0, max: 4, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, ras_per_routine_machine_hour: { min: 0, max: 2, step: 0.1, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, mit_shift_length: { min: 4, max: 6, step: 1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, mit_weeks_lost: { min: 6, max: 8, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, session_length_hours: { min: 4, max: 5, step: 0.5, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, clinical_reporting_sessions_per_rad: { min: 2, max: 10, step: 0.5, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, rad_weeks_lost: { min: 10, max: 14, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, };
+    
     const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
-    const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step", "op_volume_step": "Outpatient Volume Step", "scan_rate": "Scan Rate", "report_rate": "Report Rate", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
-    const projectionMetricDescriptions = { "ip_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "op_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "scan_rate": "These financial-year-based 10 fields provide the number of minutes required for modality to be scanning per event, which may change over time as technologies change. These vary by modality and archetype.", "report_rate": "These financial-year-based 10 fields provide the number of minutes required for a radiologist to report on an event, which may change over time as technologies change. These vary by modality and archetype", "mits_per_routine_machine_hour": "These financial-year-based 10 fields provide the number of MITs required in-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype.", "mits_per_ooh_machine_hour": "These financial-year-based 10 fields provide the number of MITs required out-of-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype." };
-    
-    const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
-    
-    let baseYearStart = new Date().getFullYear(); 
-    
-    const archetypeSortOrder = { "X Small": 1, "Small": 2, "Medium": 3, "Large": 4, "X Large": 5, };
-    const staticFieldSliderConfig = { non_demographic_growth: { min: -0.05, max: 0.1, step: 0.001, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s) / 100 }, routine_machine_hours: { min: 40, max: 84, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, share_of_scans_during_day: { min: 90, max: 100, step: 0.1, format: v => `${(parseFloat(v) * 100).toFixed(0)}%`, parse: s => parseFloat(s) / 100 }, ooh_machines: { min: 0, max: 4, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, ras_per_routine_machine_hour: { min: 0, max: 2, step: 0.1, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, mit_shift_length: { min: 4, max: 6, step: 1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, mit_weeks_lost: { min: 6, max: 8, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, session_length_hours: { min: 4, max: 5, step: 0.5, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, clinical_reporting_sessions_per_rad: { min: 2, max: 10, step: 0.5, format: v => Math.round(v), parse: s => parseFloat(s) }, rad_weeks_lost: { min: 10, max: 14, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, };
+    const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step Change", "op_volume_step": "Outpatient Volume Step Change", "scan_rate": "Scan Rate (Mins)", "report_rate": "Report Rate (Mins)", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
 
+    const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
+    let baseYearStart = new Date().getFullYear(); 
+    const archetypeSortOrder = { "X Small": 1, "Small": 2, "Medium": 3, "Large": 4, "X Large": 5, };
+
+    // --- DOM Element Cache ---
     const app = document.getElementById("app");
     const headerControlsWrapper = document.getElementById("header-controls-wrapper");
     const scenarioToggle = document.getElementById("scenario-toggle");
     const exportButton = document.getElementById("export-button");
-    const statusMessage = document.getElementById("status-message");
     const fileUploadArea = document.getElementById("file-upload-area");
-    const fileInput = document.getElementById("csv-file-input");
     const scenarioNameCard = document.getElementById("scenario-name-card");
     const scenarioNameInput = document.getElementById("scenario-name-input");
+    const tabsNavContainer = document.getElementById("tabs-nav-container");
 
-    let baselineData = [], scenarioData = [], activePanelIds = new Set(), messageTimeout;
-    let scenarioName = "";
+    // --- State Variables ---
+    let baselineData = [], scenarioData = [], activeTabId = null, scenarioName = "";
 
-    // --- FIX PART 1: ADD GLOBAL CLICK LISTENER ---
-    // This now adds the essential listener to the whole document.
+    // --- Initial Setup ---
     document.addEventListener('DOMContentLoaded', () => {
         loadAndInitializeData();
-        // This listener will close any open tooltip when a click happens anywhere.
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.info-tooltip.visible').forEach(tooltip => {
-                tooltip.classList.remove('visible');
-            });
-        });
+        setupEventListeners();
     });
 
-    fileInput.addEventListener('change', (e) => loadCSVFile(e.target.files[0]));
-    fileUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); fileUploadArea.classList.add('drag-over'); });
-    fileUploadArea.addEventListener('dragleave', () => fileUploadArea.classList.remove('drag-over'));
-    fileUploadArea.addEventListener('drop', (e) => { e.preventDefault(); fileUploadArea.classList.remove('drag-over'); loadCSVFile(e.dataTransfer.files[0]); });
-    scenarioNameInput.addEventListener('input', (e) => {
-        scenarioName = e.target.value;
-    });
+    // --- Event Listeners Setup ---
+    function setupEventListeners() {
+      // Data Source Toggle (Baseline/Scenario)
+      scenarioToggle.addEventListener('change', (e) => {
+        const isBaseline = e.target.value === 'baseline';
+        renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
+      });
 
-    async function loadAndInitializeData() {
-      try {
-        const response = await fetch('input_configuration_snowflake_baseline_2023_2024.csv');
-        if (!response.ok) {
-           const fallbackResponse = await fetch('baseline.csv');
-           if (!fallbackResponse.ok) throw new Error(`HTTP error! status: ${fallbackResponse.status}`);
-           const csvText = await fallbackResponse.text();
-           processCSV(csvText, "Successfully loaded baseline data.");
-           return;
+      // File Upload
+      document.getElementById('csv-file-input').addEventListener('change', (e) => loadCSVFile(e.target.files[0]));
+      
+      // Scenario Name
+      scenarioNameInput.addEventListener('input', (e) => { scenarioName = e.target.value; });
+
+      // Tab Navigation
+      tabsNavContainer.addEventListener('click', (e) => {
+        const button = e.target.closest('.tab-button');
+        if (!button) return;
+        activeTabId = button.dataset.target;
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.toggle('active', btn === button));
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === activeTabId));
+      });
+      
+      // Global Click: Hide sliders if click is outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.input-slider-wrapper')) {
+            hideAllSliders();
         }
-        const csvText = await response.text();
-        processCSV(csvText, "Successfully loaded baseline data.");
-      } catch (error) {
-        console.error("Could not auto-load CSV:", error);
-        const appLoadingMessage = document.querySelector('.app-loading-message');
-        if (appLoadingMessage) {
-            appLoadingMessage.classList.add('hidden');
+      });
+
+      // Show slider on input focus
+      app.addEventListener('focusin', (e) => {
+        if (e.target.matches('.static-field-input')) {
+            hideAllSliders();
+            const wrapper = e.target.closest('.input-slider-wrapper');
+            if (wrapper) {
+                const sliderContainer = wrapper.querySelector('.slider-container');
+                if (sliderContainer) sliderContainer.classList.add('visible');
+            }
         }
-        fileUploadArea.classList.remove('hidden');
-        document.getElementById('upload-error-message').classList.remove('hidden');
-      }
+      });
+      
+      // Data Input Changes
+      app.addEventListener('input', handleDataInput); // For sliders
+      app.addEventListener('change', handleDataChange); // For text inputs after blur
     }
-    
+
+    // --- Data Loading & Processing ---
+    async function loadAndInitializeData() {
+        showLoadingMessage("Loading baseline configuration...");
+        try {
+            const response = await fetch('input_configuration_snowflake_baseline_2023_2024.csv');
+            if (!response.ok) throw new Error('Primary CSV not found, trying fallback.');
+            const csvText = await response.text();
+            processCSV(csvText, "Successfully loaded baseline data.");
+        } catch (error) {
+            console.warn(error.message);
+            try {
+                const fallbackResponse = await fetch('baseline.csv');
+                if (!fallbackResponse.ok) throw new Error('Fallback CSV not found.');
+                const csvText = await fallbackResponse.text();
+                processCSV(csvText, "Successfully loaded baseline data.");
+            } catch (fallbackError) {
+                console.error("Could not auto-load any CSV:", fallbackError);
+                app.innerHTML = '';
+                fileUploadArea.classList.remove('hidden');
+            }
+        }
+    }
+
     function loadCSVFile(file) {
       if (file && (file.type === "text/csv" || file.name.endsWith('.csv'))) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          processCSV(event.target.result, "Successfully loaded uploaded file.");
-          document.getElementById('upload-error-message').classList.add('hidden');
-        };
-        reader.onerror = function() {
-            showMessage("Error reading the file.", "error");
-        };
-        reader.readAsText(file);
+        Papa.parse(file, {
+          header: true, skipEmptyLines: true, dynamicTyping: true,
+          complete: (results) => processCSV(results, "Successfully loaded uploaded file."),
+          error: (err) => showMessage("Error reading the file.", "error")
+        });
       } else {
         showMessage("Please select a valid .csv file.", "error");
       }
     }
 
-    function processCSV(csvText, successMessage) {
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        dynamicTyping: true,
-        complete: function(results) {
-          if (results.errors.length) {
+    function processCSV(csvData, successMessage) {
+        const results = (typeof csvData === 'string') ? Papa.parse(csvData, { header: true, skipEmptyLines: true, dynamicTyping: true }) : csvData;
+
+        if (results.errors.length) {
             console.error("CSV Parsing Errors:", results.errors);
-            showMessage("Error parsing CSV file. Check for jagged rows or header issues.", "error");
-            fileUploadArea.classList.remove('hidden');
+            showMessage("Error parsing CSV file.", "error");
             return;
-          }
-          
-          const processedData = results.data.map(flatRow => {
-              const newRow = { ...flatRow };
-              projectionMetrics.forEach(metric => {
-                  newRow[metric] = {}; 
-                  years.forEach(yearKey => {
-                      const flatHeaderKey = `${metric}_${yearKey}`; 
-                      if (flatRow.hasOwnProperty(flatHeaderKey)) {
-                          newRow[metric][yearKey] = flatRow[flatHeaderKey];
-                          delete newRow[flatHeaderKey];
-                      }
-                  });
-              });
-              if (!newRow.id) {
-                  newRow.id = `${newRow.modality}-${newRow.archetype}`.replace(/\s+/g, '-').toLowerCase();
-              }
-              return newRow;
-          });
-
-          if (processedData.length > 0 && processedData[0].baseyear) {
-              const baseYearString = String(processedData[0].baseyear).trim();
-              const match = baseYearString.match(/^(\d{4})(?:\/\d{2})?$/); 
-              if (match && match[1]) {
-                  const parsedStartYear = parseInt(match[1], 10);
-                  if (!isNaN(parsedStartYear)) {
-                      baseYearStart = parsedStartYear;
-                      console.log(`Base financial year start set to ${baseYearStart} from CSV value "${baseYearString}".`);
-                  }
-              } else {
-                  console.warn(`Could not parse baseyear format: "${baseYearString}". Using default.`);
-              }
-          }
-
-          baselineData = JSON.parse(JSON.stringify(processedData));
-          scenarioData = JSON.parse(JSON.stringify(processedData));
-          
-          activePanelIds.clear();
-          scenarioName = "";
-
-          fileUploadArea.classList.add('hidden');
-          headerControlsWrapper.classList.remove('hidden');
-          
-          renderUI(baselineData, false); 
-          showMessage(successMessage, "success");
-        },
-        error: function(error) {
-            console.error("PapaParse Error:", error);
-            showMessage("A critical error occurred while parsing the file.", "error");
-            fileUploadArea.classList.remove('hidden');
-        }
-      });
-    }
-
-    // Correcting this function back to the YY/YY format as per our conversation history
-    function formatFinancialYear(startYear) {
-        const startYY = String(startYear).slice(-2);
-        const endYY = String(startYear + 1).slice(-2);
-        return `FY ${startYY}/${endYY}`;
-    }
-
-    function showMessage(message, type) {
-      clearTimeout(messageTimeout);
-      const p = document.createElement('p');
-      p.className = type;
-      p.textContent = message;
-      statusMessage.innerHTML = '';
-      statusMessage.appendChild(p);
-      messageTimeout = setTimeout(() => {
-        statusMessage.innerHTML = '';
-      }, 2000);
-    }
-    
-    scenarioToggle.addEventListener('change', (e) => {
-      activePanelIds.clear();
-      document.querySelectorAll('.archetype-content-panel.active').forEach(panel => activePanelIds.add(panel.id));
-      const isBaseline = e.target.value === 'baseline';
-      renderUI(isBaseline ? baselineData : scenarioData, !isBaseline);
-    });
-
-    function updateChangeState(rowId) {
-        const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
-        const baselineRow = baselineData.find(row => String(row.id) === String(rowId));
-        if (!rowToUpdate || !baselineRow) return;
-
-        let hasAnyChanges = staticFields.some(key =>
-            Math.abs(parseFloat(rowToUpdate[key]) - parseFloat(baselineRow[key])) > 1e-9
-        ) || projectionMetrics.some(metric =>
-            years.some(yearKey => baselineRow[metric]?.[yearKey] !== rowToUpdate[metric]?.[yearKey])
-        );
-        
-        const button = document.querySelector(`.archetype-button[data-id="${rowId}"]`);
-        if (button) {
-            button.classList.toggle('has-changes', hasAnyChanges);
         }
 
-        const panel = document.querySelector(`#panel-${rowId}`);
-        if (panel) {
-            panel.querySelectorAll('[data-field]').forEach(input => {
-                const fieldKey = input.dataset.field;
-                if (fieldKey.includes('.')) { // Yearly projection
-                    const [metric, year] = fieldKey.split('.');
-                    const isFieldChanged = baselineRow[metric]?.[year] !== rowToUpdate[metric]?.[year];
-                    input.classList.toggle('changed', isFieldChanged);
-                } else { // Static slider field
-                    const isFieldChanged = Math.abs(parseFloat(rowToUpdate[fieldKey]) - parseFloat(baselineRow[fieldKey])) > 1e-9;
-                    const fieldContainer = input.closest('.slider-field');
-                    if (fieldContainer) {
-                        fieldContainer.classList.toggle('changed', isFieldChanged);
-                    }
-                }
-            });
-        }
-    }
-
-    function handleSliderInput(e) {
-      const slider = e.target;
-      if (slider.type !== 'range') return;
-
-      const { id: rowId, field: fieldKey } = slider.dataset;
-      const newValue = parseFloat(slider.value);
-      const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
-      const config = staticFieldSliderConfig[fieldKey];
-      
-      if (!rowToUpdate || !config) return;
-
-      const display = slider.closest('.slider-field').querySelector('.slider-value-display');
-      display.value = config.format(newValue);
-      
-      rowToUpdate[fieldKey] = newValue;
-      updateChangeState(rowId);
-    }
-    
-    function handleTextChange(e) {
-        const textInput = e.target;
-        const { id: rowId, field: fieldKey } = textInput.dataset;
-        if (!rowId || !fieldKey) return;
-
-        const rowToUpdate = scenarioData.find(row => String(row.id) === String(rowId));
-        if (!rowToUpdate) return;
-        
-        if (textInput.classList.contains('slider-value-display')) {
-            const config = staticFieldSliderConfig[fieldKey];
-            if (!config) return;
-
-            let parsedValue = config.parse(textInput.value);
-            if (isNaN(parsedValue)) {
-                textInput.value = config.format(rowToUpdate[fieldKey]);
-                return;
-            }
-
-            const clampedValue = Math.max(config.min, Math.min(config.max, parsedValue));
-            const slider = textInput.closest('.slider-field').querySelector('input[type=range]');
-            slider.value = clampedValue;
-            rowToUpdate[fieldKey] = clampedValue;
-            textInput.value = config.format(clampedValue);
-        } 
-        else if (textInput.classList.contains('projection-input')) {
-            const [metric, yearKey] = fieldKey.split('.');
-            const originalValue = rowToUpdate[metric]?.[yearKey];
-            const numericValue = parseFloat(textInput.value);
-            
-            if (isNaN(numericValue)) {
-                textInput.value = typeof originalValue === 'number' ? originalValue.toFixed(2) : originalValue || 'N/A';
-                return;
-            }
-            
-            rowToUpdate[metric][yearKey] = numericValue;
-            textInput.value = numericValue.toFixed(2);
-        }
-
-        updateChangeState(rowId);
-    }
-    
-    app.addEventListener('input', handleSliderInput);
-    app.addEventListener('touchmove', handleSliderInput);
-    app.addEventListener('change', handleTextChange);
-
-    // --- FIX PART 2: UPDATE THE APP CLICK LISTENER ---
-    // This listener now correctly handles clicks inside the main app container.
-    app.addEventListener('click', (e) => {
-        if (e.target.classList.contains('archetype-button')) {
-            const button = e.target;
-            const targetPanelId = button.dataset.target;
-            const panel = document.querySelector(targetPanelId);
-            if (!panel) return;
-
-            if (panel.classList.contains('active')) {
-                panel.classList.remove('active');
-                button.classList.remove('active');
-            } else {
-                panel.classList.add('active');
-                button.classList.add('active');
-            }
-        }
-
-        if (e.target.classList.contains('info-icon')) {
-            // This is crucial: it stops the click on the icon from
-            // bubbling up to the document and triggering the global listener.
-            e.stopPropagation(); 
-            
-            const icon = e.target;
-            const tooltip = icon.nextElementSibling;
-            const wasVisible = tooltip.classList.contains('visible');
-
-            // First, close any other tooltips that might be open.
-            // This is now redundant because the global listener handles it,
-            // but it's good practice to keep it for clarity.
-            document.querySelectorAll('.info-tooltip.visible').forEach(visibleTooltip => {
-                visibleTooltip.classList.remove('visible');
-            });
-            
-            // If the tooltip we just clicked wasn't already visible, show it.
-            // This logic allows clicking an icon to open it, and clicking it
-            // again to close it (because `wasVisible` would be true).
-            if (!wasVisible && tooltip) {
-                tooltip.classList.add('visible');
-            }
-        }
-    });
-
-    exportButton.addEventListener('click', () => {
-        const spinner = document.createElement('span');
-        spinner.className = 'loading-spinner';
-        exportButton.prepend(spinner);
-        exportButton.disabled = true;
-
-        setTimeout(() => { 
-            const dataToExport = JSON.parse(JSON.stringify(scenarioData));
-            
-            const flatData = dataToExport.map(row => {
-                const newFlatRow = { ...row };
-                projectionMetrics.forEach(metric => {
-                    if (newFlatRow[metric]) {
-                        years.forEach(yearKey => {
-                            const flatHeaderKey = `${metric}_${yearKey}`;
-                            newFlatRow[flatHeaderKey] = newFlatRow[metric][yearKey];
-                        });
-                        delete newFlatRow[metric];
-                    }
+        const processedData = results.data.map(row => {
+            const newRow = { ...row };
+            projectionMetrics.forEach(metric => {
+                newRow[metric] = {};
+                years.forEach(yearKey => {
+                    newRow[metric][yearKey] = row[`${metric}_${yearKey}`];
+                    delete newRow[`${metric}_${yearKey}`];
                 });
-                return newFlatRow;
             });
+            newRow.id = `${newRow.modality}-${newRow.archetype}`.replace(/\s+/g, '-').toLowerCase();
+            return newRow;
+        });
 
-            const csv = Papa.unparse(flatData);
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            const filename = scenarioName.trim().replace(/\s+/g, '_') || 'scenario_export';
-            link.setAttribute("download", `${filename}_${new Date().toISOString().slice(0,10)}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        const firstRow = processedData[0];
+        if (firstRow && firstRow.baseyear) {
+            const parsedYear = parseInt(String(firstRow.baseyear).substring(0, 4), 10);
+            if (!isNaN(parsedYear)) baseYearStart = parsedYear;
+        }
 
-            exportButton.removeChild(spinner);
-            exportButton.disabled = false;
-            showMessage("CSV exported successfully!", "success");
-        }, 500);
-    });
+        baselineData = JSON.parse(JSON.stringify(processedData));
+        scenarioData = JSON.parse(JSON.stringify(processedData));
+        activeTabId = null;
+        scenarioName = "";
 
-    function renderUI(dataToRender, isEditable) {
-      app.innerHTML = "";
-      if (isEditable) {
-        scenarioNameCard.classList.remove('hidden');
-        scenarioNameInput.value = scenarioName;
-      } else {
-        scenarioNameCard.classList.add('hidden');
-      }
+        fileUploadArea.classList.add('hidden');
+        headerControlsWrapper.classList.remove('hidden');
+        document.querySelector('.app-loading-message')?.classList.add('hidden');
+        
+        renderUI(baselineData, false);
+        showMessage(successMessage, "success");
+    }
 
-      const grouped = dataToRender.reduce((acc, row) => {
-        const { modality, archetype } = row;
-        if (!acc[modality]) acc[modality] = {};
-        if (!acc[modality][archetype]) acc[modality][archetype] = [];
-        acc[modality][archetype].push(row);
+    // --- UI Rendering ---
+    function renderUI(data, isEditable) {
+      app.innerHTML = '';
+      tabsNavContainer.innerHTML = '';
+      scenarioNameCard.classList.toggle('hidden', !isEditable);
+      if(isEditable) scenarioNameInput.value = scenarioName;
+
+      const groupedByModality = data.reduce((acc, row) => {
+        (acc[row.modality] = acc[row.modality] || []).push(row);
         return acc;
       }, {});
+      
+      const modalities = Object.keys(groupedByModality).sort();
+      if (!activeTabId) activeTabId = `tab-${modalities[0]?.toLowerCase().replace(' ', '-')}`;
 
-      for (const modality of Object.keys(grouped).sort()) {
-        const modalityContainer = document.createElement('div');
-        modalityContainer.className = 'modality-container';
-        
-        const modalityHeader = document.createElement('div');
-        modalityHeader.className = 'modality-header';
-        const modalityTitle = document.createElement('h2');
-        modalityTitle.textContent = modality;
-        const archetypeButtonsDiv = document.createElement('div');
-        archetypeButtonsDiv.className = 'archetype-buttons';
-        modalityHeader.appendChild(modalityTitle);
-        modalityHeader.appendChild(archetypeButtonsDiv);
-        modalityContainer.appendChild(modalityHeader);
-
-        for (const archetype of Object.keys(grouped[modality]).sort((a, b) => (archetypeSortOrder[a] || 99) - (archetypeSortOrder[b] || 99))) {
-          const row = grouped[modality][archetype][0];
-          const panelId = `panel-${row.id}`;
-
-          const button = document.createElement('button');
-          button.className = 'archetype-button';
-          button.textContent = archetype;
-          button.dataset.target = `#${panelId}`;
-          button.dataset.id = row.id;
-          
-          const baselineRow = baselineData.find(br => String(br.id) === String(row.id));
-          if (isEditable && baselineRow) {
-            const hasAnyChanges = staticFields.some(key =>
-              row[key] != null && baselineRow[key] != null &&
-              Math.abs(parseFloat(row[key]) - parseFloat(baselineRow[key])) > 1e-9
-            ) || projectionMetrics.some(metric =>
-              years.some(yearKey => row[metric]?.[yearKey] !== baselineRow[metric]?.[yearKey])
-            );
-            if (hasAnyChanges) { button.classList.add('has-changes'); }
-          }
-          archetypeButtonsDiv.appendChild(button);
-
-          const panel = document.createElement('div');
-          panel.className = 'archetype-content-panel';
-          panel.id = panelId;
-          
-          const staticHeader = document.createElement("h3");
-          staticHeader.textContent = 'Static Fields';
-          panel.appendChild(staticHeader);
-          const staticGrid = document.createElement("div");
-          staticGrid.className = "static-fields-grid";
-          
-          staticFields.forEach(field => {
-            const config = staticFieldSliderConfig[field];
-            if (!config) return;
-
-            const fieldDiv = document.createElement("div");
-            fieldDiv.className = "slider-field";
-            
-            const labelWrapper = document.createElement('div');
-            labelWrapper.className = 'label-wrapper';
-            const label = document.createElement("label");
-            label.textContent = staticFieldLabels[field] || field;
-            labelWrapper.appendChild(label);
-            
-            const infoContainer = document.createElement('div');
-            infoContainer.className = 'info-container';
-            const infoIcon = document.createElement('span');
-            infoIcon.className = 'info-icon';
-            infoIcon.textContent = '?';
-            const tooltip = document.createElement('div');
-            tooltip.className = 'info-tooltip';
-            tooltip.textContent = staticFieldDescriptions[field] || 'No description available.';
-            infoContainer.appendChild(infoIcon);
-            infoContainer.appendChild(tooltip);
-            labelWrapper.appendChild(infoContainer);
-
-            fieldDiv.appendChild(labelWrapper);
-
-            const controlsWrapper = document.createElement('div');
-            controlsWrapper.className = 'slider-control-wrapper';
-            const valueDisplay = document.createElement('input');
-            valueDisplay.type = 'text';
-            valueDisplay.className = 'slider-value-display';
-            valueDisplay.value = config.format(row[field] != null ? row[field] : config.min);
-            valueDisplay.dataset.id = row.id;
-            valueDisplay.dataset.field = field;
-
-            if (isEditable) {
-              const slider = document.createElement("input");
-              slider.type = "range";
-              slider.min = config.min; slider.max = config.max; slider.step = config.step;
-              slider.value = row[field] != null ? row[field] : config.min;
-              slider.dataset.id = row.id; slider.dataset.field = field;
-              controlsWrapper.appendChild(slider);
-              if (baselineRow && Math.abs(parseFloat(row[field]) - parseFloat(baselineRow[field])) > 1e-9) {
-                fieldDiv.classList.add('changed');
-              }
-            } else {
-                valueDisplay.readOnly = true;
-            }
-            
-            controlsWrapper.appendChild(valueDisplay);
-            fieldDiv.appendChild(controlsWrapper);
-            staticGrid.appendChild(fieldDiv);
-          });
-          panel.appendChild(staticGrid);
-
-          const projHeader = document.createElement("h3");
-          projHeader.textContent = 'Yearly Projections';
-          panel.appendChild(projHeader);
-          const projectionsGrid = document.createElement("div");
-          projectionsGrid.className = "projections-grid";
-          projectionMetrics.forEach(metric => {
-              const card = document.createElement('div');
-              card.className = 'projection-metric-card';
-              
-              const titleWrapper = document.createElement('div');
-              titleWrapper.className = 'title-wrapper';
-              const cardTitle = document.createElement('h4');
-              cardTitle.textContent = projectionMetricLabels[metric] || metric;
-              titleWrapper.appendChild(cardTitle);
-
-              const infoContainer = document.createElement('div');
-              infoContainer.className = 'info-container';
-              const infoIcon = document.createElement('span');
-              infoIcon.className = 'info-icon';
-              infoIcon.textContent = '?';
-              const tooltip = document.createElement('div');
-              tooltip.className = 'info-tooltip';
-              tooltip.textContent = projectionMetricDescriptions[metric] || 'No description available.';
-              infoContainer.appendChild(infoIcon);
-              infoContainer.appendChild(tooltip);
-              titleWrapper.appendChild(infoContainer);
-              
-              card.appendChild(titleWrapper);
-
-              const yearInputsContainer = document.createElement('div');
-              yearInputsContainer.className = 'year-inputs-container';
-              
-              years.forEach((yearKey, index) => {
-                  const item = document.createElement('div');
-                  item.className = 'year-input-item';
-                  const label = document.createElement('label');
-                  label.textContent = formatFinancialYear(baseYearStart + index); 
-                  const input = document.createElement('input');
-                  input.type = 'text';
-                  input.classList.add('projection-input');
-                  const value = row[metric]?.[yearKey];
-                  input.value = typeof value === 'number' ? value.toFixed(2) : (value ?? 'N/A');
-                  input.dataset.field = `${metric}.${yearKey}`;
-                  input.dataset.id = row.id;
-                  
-                  if (isEditable && index > 0) {
-                      input.readOnly = false;
-                  } else {
-                      input.readOnly = true;
-                  }
-                  if(isEditable) {
-                      if (baselineRow && baselineRow[metric]?.[yearKey] !== row[metric]?.[yearKey]) {
-                          input.classList.add('changed');
-                      }
-                  }
-                  
-                  item.appendChild(label);
-                  item.appendChild(input);
-                  yearInputsContainer.appendChild(item);
-              });
-              card.appendChild(yearInputsContainer);
-              projectionsGrid.appendChild(card);
-          });
-          panel.appendChild(projectionsGrid);
-          modalityContainer.appendChild(panel);
+      // 1. Create Tab Navigation
+      const nav = document.createElement('div');
+      nav.className = 'tabs-nav';
+      modalities.forEach(modality => {
+        const tabId = `tab-${modality.toLowerCase().replace(' ', '-')}`;
+        const button = document.createElement('button');
+        button.className = 'tab-button';
+        button.classList.toggle('active', tabId === activeTabId);
+        if (isEditable) {
+          const hasChanges = groupedByModality[modality].some(row => hasRowChanged(row.id));
+          button.classList.toggle('has-changes', hasChanges);
         }
-        app.appendChild(modalityContainer);
-      }
-      activePanelIds.forEach(panelId => {
-        const panelToReopen = document.getElementById(panelId);
-        const buttonToReactivate = document.querySelector(`.archetype-button[data-target="#${panelId}"]`);
-        if (panelToReopen) panelToReopen.classList.add('active');
-        if (buttonToReactivate) buttonToReactivate.classList.add('active');
+        button.dataset.target = tabId;
+        button.textContent = modality;
+        nav.appendChild(button);
+      });
+      tabsNavContainer.appendChild(nav);
+      
+      // 2. Create Tab Panels
+      modalities.forEach(modality => {
+        const tabId = `tab-${modality.toLowerCase().replace(' ', '-')}`;
+        const panel = document.createElement('div');
+        panel.id = tabId;
+        panel.className = 'tab-panel';
+        panel.classList.toggle('active', tabId === activeTabId);
+        
+        const archetypes = groupedByModality[modality].sort((a,b) => (archetypeSortOrder[a.archetype] || 99) - (archetypeSortOrder[b.archetype] || 99));
+
+        // Static Fields Table
+        panel.innerHTML += `<h3>Static Fields</h3>`;
+        panel.appendChild(createStaticTable(archetypes, isEditable));
+
+        // Projection Metrics Tables
+        panel.innerHTML += `<h3>Yearly Projections</h3>`;
+        projectionMetrics.forEach(metric => {
+            panel.innerHTML += `<h4>${projectionMetricLabels[metric]}</h4>`;
+            panel.appendChild(createProjectionTable(archetypes, metric, isEditable));
+        });
+        
+        app.appendChild(panel);
       });
     }
-  </script>
+
+    function createStaticTable(archetypes, isEditable) {
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'table-container';
+        const table = document.createElement('table');
+        table.className = 'data-table';
+        
+        // Header
+        const thead = table.createTHead();
+        const headerRow = thead.insertRow();
+        headerRow.innerHTML = `<th>Archetype</th>` + staticFields.map(f => `<th>${staticFieldLabels[f]}</th>`).join('');
+
+        // Body
+        const tbody = table.createTBody();
+        archetypes.forEach(row => {
+            const tr = tbody.insertRow();
+            tr.insertCell().textContent = row.archetype;
+            staticFields.forEach(field => {
+                const td = tr.insertCell();
+                const config = staticFieldSliderConfig[field];
+                if (!config) return;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'input-slider-wrapper';
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'static-field-input';
+                input.value = config.format(row[field]);
+                input.dataset.id = row.id;
+                input.dataset.field = field;
+                input.readOnly = !isEditable;
+
+                wrapper.appendChild(input);
+
+                if (isEditable) {
+                    const baselineRow = baselineData.find(br => br.id === row.id);
+                    if (Math.abs(parseFloat(row[field]) - parseFloat(baselineRow[field])) > 1e-9) {
+                        td.classList.add('changed');
+                    }
+                    const sliderContainer = document.createElement('div');
+                    sliderContainer.className = 'slider-container';
+                    const slider = document.createElement('input');
+                    slider.type = 'range';
+                    slider.min = config.min;
+                    slider.max = config.max;
+                    slider.step = config.step;
+                    slider.value = row[field];
+                    sliderContainer.appendChild(slider);
+                    wrapper.appendChild(sliderContainer);
+                }
+                td.appendChild(wrapper);
+            });
+        });
+        tableContainer.appendChild(table);
+        return tableContainer;
+    }
+
+    function createProjectionTable(archetypes, metric, isEditable) {
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'table-container';
+        const table = document.createElement('table');
+        table.className = 'data-table';
+
+        // Header
+        const thead = table.createTHead();
+        const headerRow = thead.insertRow();
+        headerRow.innerHTML = `<th>Archetype</th>` + years.map((_, i) => `<th>FY ${String(baseYearStart + i).slice(-2)}/${String(baseYearStart + i + 1).slice(-2)}</th>`).join('');
+
+        // Body
+        const tbody = table.createTBody();
+        archetypes.forEach(row => {
+            const tr = tbody.insertRow();
+            tr.insertCell().textContent = row.archetype;
+            years.forEach(yearKey => {
+                const td = tr.insertCell();
+                const input = document.createElement('input');
+                input.type = 'text';
+                const value = row[metric]?.[yearKey];
+                input.value = typeof value === 'number' ? value.toFixed(2) : (value ?? 'N/A');
+                input.dataset.id = row.id;
+                input.dataset.field = `${metric}.${yearKey}`;
+                input.readOnly = !isEditable || yearKey === 'y0';
+
+                if (isEditable && baselineData.find(br => br.id === row.id)[metric]?.[yearKey] !== value) {
+                    td.classList.add('changed');
+                }
+                td.appendChild(input);
+            });
+        });
+        tableContainer.appendChild(table);
+        return tableContainer;
+    }
+
+    // --- Event Handling Logic ---
+    function handleDataInput(e) { // For real-time slider changes
+        const slider = e.target;
+        if (slider.type !== 'range') return;
+        
+        const wrapper = slider.closest('.input-slider-wrapper');
+        const textInput = wrapper.querySelector('input[type=text]');
+        const { id: rowId, field: fieldKey } = textInput.dataset;
+        const config = staticFieldSliderConfig[fieldKey];
+        const rowToUpdate = scenarioData.find(row => row.id === rowId);
+
+        if (!rowToUpdate || !config) return;
+
+        const newValue = parseFloat(slider.value);
+        textInput.value = config.format(newValue);
+        rowToUpdate[fieldKey] = newValue;
+        updateChangeState(rowId, fieldKey);
+    }
+
+    function handleDataChange(e) { // For text inputs after they lose focus
+        const textInput = e.target;
+        if (textInput.type !== 'text' || !textInput.dataset.id) return;
+
+        const { id: rowId, field: fieldKey } = textInput.dataset;
+        const rowToUpdate = scenarioData.find(row => row.id === rowId);
+        if (!rowToUpdate) return;
+        
+        // Static field (with slider)
+        if (staticFields.includes(fieldKey)) {
+            const config = staticFieldSliderConfig[fieldKey];
+            if (!config) return;
+            let parsedValue = config.parse(textInput.value);
+            if (isNaN(parsedValue)) {
+                textInput.value = config.format(rowToUpdate[fieldKey]); // Revert on invalid
+                return;
+            }
+            const clampedValue = Math.max(config.min, Math.min(config.max, parsedValue));
+            rowToUpdate[fieldKey] = clampedValue;
+            textInput.value = config.format(clampedValue);
+            const slider = textInput.closest('.input-slider-wrapper').querySelector('input[type=range]');
+            if (slider) slider.value = clampedValue;
+        } 
+        // Projection field (no slider)
+        else {
+            const [metric, yearKey] = fieldKey.split('.');
+            const numericValue = parseFloat(textInput.value);
+            if (isNaN(numericValue)) {
+                textInput.value = rowToUpdate[metric][yearKey].toFixed(2); // Revert
+            } else {
+                rowToUpdate[metric][yearKey] = numericValue;
+                textInput.value = numericValue.toFixed(2);
+            }
+        }
+        updateChangeState(rowId, fieldKey);
+    }
+    
+    // --- State Update & Utility Functions ---
+    function updateChangeState(rowId, fieldKey) {
+        const rowToUpdate = scenarioData.find(row => row.id === rowId);
+        const baselineRow = baselineData.find(row => row.id === rowId);
+        const cell = document.querySelector(`input[data-id="${rowId}"][data-field="${fieldKey}"]`).closest('td');
+
+        let isChanged = false;
+        if (staticFields.includes(fieldKey)) {
+            isChanged = Math.abs(parseFloat(rowToUpdate[fieldKey]) - parseFloat(baselineRow[fieldKey])) > 1e-9;
+        } else {
+            const [metric, yearKey] = fieldKey.split('.');
+            isChanged = rowToUpdate[metric][yearKey] !== baselineRow[metric][yearKey];
+        }
+        cell.classList.toggle('changed', isChanged);
+
+        // Update tab's change indicator
+        const modality = rowToUpdate.modality;
+        const tabButton = document.querySelector(`.tab-button[data-target="tab-${modality.toLowerCase().replace(' ', '-')}"]`);
+        if (tabButton) {
+            const hasAnyChanges = scenarioData.filter(r => r.modality === modality).some(r => hasRowChanged(r.id));
+            tabButton.classList.toggle('has-changes', hasAnyChanges);
+        }
+    }
+
+    function hasRowChanged(rowId) {
+        const scenarioRow = scenarioData.find(r => r.id === rowId);
+        const baselineRow = baselineData.find(r => r.id === rowId);
+        if (!scenarioRow || !baselineRow) return false;
+
+        const staticChanged = staticFields.some(key => Math.abs(parseFloat(scenarioRow[key]) - parseFloat(baselineRow[key])) > 1e-9);
+        if (staticChanged) return true;
+        
+        const projectionChanged = projectionMetrics.some(metric =>
+            years.some(yearKey => scenarioRow[metric]?.[yearKey] !== baselineRow[metric]?.[yearKey])
+        );
+        return projectionChanged;
+    }
+
+    function hideAllSliders() {
+        document.querySelectorAll('.slider-container.visible').forEach(slider => {
+            slider.classList.remove('visible');
+        });
+    }
+
+    function showLoadingMessage(message) {
+        app.innerHTML = `<div class="app-loading-message">${message}</div>`;
+    }
+
+    function showMessage(message, type = 'info') {
+        const statusMessage = document.getElementById('status-message');
+        const p = document.createElement('p');
+        p.className = type;
+        p.textContent = message;
+        statusMessage.innerHTML = '';
+        statusMessage.appendChild(p);
+        setTimeout(() => { statusMessage.innerHTML = ''; }, 3000);
+    }
+</script>
 </body>
 </html>
