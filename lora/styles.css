@@ -36,20 +36,39 @@ body {
   margin: 0 auto;
 }
 
-/* --- App Header --- */
+/* --- App Header (MODIFIED) --- */
+.rtt-sticky-header {
+  position: sticky;
+  top: 1em;
+  z-index: 1002;
+  background: #F9FAFB;
+  padding-bottom: 0.4em;
+  margin-bottom: 2rem;
+}
+
 .rtt-brand-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(90deg, #143345 45%, #41236a 100%);
-  padding: 0.8em 1.5em;
+  background: linear-gradient(90deg,#143345 45%,#41236a 100%);
+  padding: 0.6em 1.5em;
   border-radius: 8px;
-  margin-bottom: 2rem;
-  position: -webkit-sticky;
-  position: sticky;
-  top: 1em;
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.rtt-app-logo {
+  height: auto;
+  margin-right: 1.5em;
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.rtt-header-divider {
+  width: 1px;
+  height: 30px;
+  background: rgba(255,255,255,0.3);
+  margin-right: 1.5em;
+  flex-shrink: 0;
 }
 
 .rtt-title {
@@ -59,12 +78,19 @@ body {
   font-weight: 600;
   font-family: 'Poppins', sans-serif;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rtt-flex-spacer {
+  flex-grow: 1;
 }
 
 .rtt-header-controls {
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  flex-shrink: 0;
 }
 
 .scenario-controls {
@@ -143,8 +169,8 @@ body {
    3. Buttons & Modality Cards
    ========================================================================== */
 
-/* --- Export Button --- */
-#export-button {
+/* --- Export Button (MODIFIED) --- */
+.rtt-download-btn {
   font-family: 'Poppins', sans-serif;
   font-size: 0.9em;
   font-weight: 600;
@@ -158,10 +184,10 @@ body {
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s ease;
-  min-height: 40px;
+  min-height: 44px; /* Matched height of scenario toggle */
+  white-space: nowrap;
 }
-
-#export-button:hover {
+.rtt-download-btn:hover {
   background: #3e6326;
   border-color: #2f4a1c;
 }
@@ -305,7 +331,6 @@ body {
   opacity: 1;
 }
 
-/* MODIFICATION: Removed flex properties and the ::after pseudo-element to remove the horizontal line */
 h3 {
   font-size: 1.4em;
   font-weight: 600;
@@ -366,13 +391,10 @@ h3:first-child {
   background-color: #FFA726; 
 }
 
-.label-wrapper, .title-wrapper {
+.label-wrapper {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.slider-field .label-wrapper {
   margin-bottom: 0.5rem;
 }
 
@@ -491,7 +513,10 @@ input[type="range"]:disabled::-moz-range-thumb {
   padding: 1.25rem;
 }
 
-.projection-metric-card .title-wrapper {
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
@@ -571,10 +596,9 @@ input:disabled {
 }
 
 /* --- Tooltips & Help Text --- */
-/* MODIFICATION: Added a wrapper to correctly position tooltips */
 .info-container {
   position: relative;
-  display: inline-flex; /* Keeps the container tight to the icon */
+  display: inline-flex;
 }
 
 .info-icon {
@@ -596,10 +620,9 @@ input:disabled {
   background-color: #00549F;
 }
 
-/* MODIFICATION: Position tooltip relative to the icon via .info-container */
 .info-tooltip {
   position: absolute;
-  bottom: calc(100% + 8px); /* Position above the icon */
+  bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
   background: #333D47;
@@ -625,7 +648,7 @@ input:disabled {
   position: absolute;
   top: 100%;
   left: 50%;
-  transform: translateX(-50%); /* Center the arrow */
+  transform: translateX(-50%);
   border-width: 6px;
   border-style: solid;
   border-color: #333D47 transparent transparent transparent;
@@ -633,7 +656,6 @@ input:disabled {
 
 
 /* --- Status Messages --- */
-/* MODIFIED: Centered the status message banner */
 .status-message {
   position: fixed;
   top: 20px;
@@ -692,46 +714,53 @@ input:disabled {
   }
 }
 
-/* Tablet */
+/* Tablet (MODIFIED) */
 @media (max-width: 768px) {
   body {
     padding: 0.5em;
   }
 
-  .rtt-brand-bar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1rem;
+  .rtt-sticky-header {
     top: 0.5em;
+  }
+
+  .rtt-brand-bar {
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.8em 1em;
+  }
+
+  .rtt-app-logo {
+    width: 120px;
+    margin-right: 1em;
+  }
+
+  .rtt-header-divider {
+    display: none; /* Hide divider on small screens for more space */
   }
 
   .rtt-title {
     font-size: 1.25rem;
   }
 
+  .rtt-flex-spacer {
+    display: none; /* Hide spacer when wrapping */
+  }
+  
   .rtt-header-controls {
-    width: 100%;
+    flex-basis: 100%; /* Make controls take full width on the new line */
     justify-content: space-between;
-    flex-direction: row;
     gap: 1rem;
   }
 
   .scenario-controls {
     flex: 1;
-    min-height: 44px;
   }
 
-  .scenario-controls label {
-    flex-grow: 1;
-    text-align: center;
-    padding: 0.75rem 1rem;
-  }
-
-  #export-button {
+  .rtt-download-btn {
     font-size: 0.8em;
+    padding: 0.6em 1em;
     flex-shrink: 0;
-    min-height: 44px;
   }
 
   .rtt-main-content,
@@ -761,27 +790,22 @@ input:disabled {
     gap: 1rem;
   }
 
-  .slider-field > label {
-    text-align: left;
+  .slider-field .label-wrapper {
     margin-bottom: 0.5rem;
   }
 
   .slider-control-wrapper {
-    display: flex;
-    flex-direction: column;
     gap: 0.75rem;
   }
 
   .slider-value-display {
     width: 150px;
     font-size: 1rem;
-    text-align: center;
     align-self: center;
   }
 
   .slider-field input[type=range] {
     height: 12px;
-    margin: 0;
   }
 
   .slider-field input[type=range]::-webkit-slider-thumb {
