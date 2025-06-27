@@ -77,7 +77,6 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
    4. Tab & Table Layout
    ========================================================================== */
 
-/* FIX 3: Adjusted sticky top position */
 #sticky-tabs-wrapper {
   position: sticky;
   top: 76px; 
@@ -86,7 +85,6 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
   padding-bottom: 1.5rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
 }
-/* FIX 1: Added top padding for more space */
 .tabs-nav {
   display: flex;
   gap: 0.25rem;
@@ -345,11 +343,11 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
     transform: translateY(-50%);
     border-color: transparent #333D47 transparent transparent;
 }
+/* FIX 2: Global tooltip is now absolutely positioned */
 .global-tooltip {
-    position: fixed; /* Use fixed positioning to escape all parent contexts */
-    z-index: 1100;
+    position: absolute; 
+    z-index: 1100; /* Highest z-index */
 }
-
 
 /* ==========================================================================
    6. Status Messages & Responsive
