@@ -414,16 +414,22 @@
         }
 
         if (e.target.classList.contains('info-icon')) {
+            // This is the key change: stop the click from reaching the document.
+            e.stopPropagation(); 
+            
             const icon = e.target;
             const tooltip = icon.nextElementSibling;
-            
+            const wasVisible = tooltip.classList.contains('visible');
+
+            // First, close any other tooltips that might be open
             document.querySelectorAll('.info-tooltip.visible').forEach(visibleTooltip => {
-                if (visibleTooltip !== tooltip) {
-                    visibleTooltip.classList.remove('visible');
-                }
+                visibleTooltip.classList.remove('visible');
             });
-            if (tooltip && tooltip.classList.contains('info-tooltip')) {
-                tooltip.classList.toggle('visible');
+            
+            // If the tooltip we clicked wasn't already visible, show it.
+            // This logic correctly handles opening a new tooltip and closing the current one.
+            if (!wasVisible && tooltip) {
+                tooltip.classList.add('visible');
             }
         }
     });
