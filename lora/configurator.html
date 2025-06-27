@@ -127,7 +127,7 @@
     <div id="status-message" class="status-message"></div>
   </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
     const staticFields = ["non_demographic_growth", "routine_machine_hours", "share_of_scans_during_day", "ooh_machines", "ras_per_routine_machine_hour", "mit_shift_length", "mit_weeks_lost", "session_length_hours", "clinical_reporting_sessions_per_rad", "rad_weeks_lost"];
     const staticFieldLabels = { "non_demographic_growth": "Non-Demographic Growth", "routine_machine_hours": "Routine Machine Hours", "share_of_scans_during_day": "Share of Scans During Day", "ooh_machines": "Out-of-Hours (OOH) Machines", "ras_per_routine_machine_hour": "RAs per Routine Machine Hour", "mit_shift_length": "MIT Shift Length", "mit_weeks_lost": "MIT Weeks Lost", "session_length_hours": "Session Length (Hours)", "clinical_reporting_sessions_per_rad": "Clinical Reporting Sessions per Rad", "rad_weeks_lost": "Radiologist Weeks Lost" };
@@ -139,7 +139,8 @@
     
     const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
     
-    let currentYear = new Date().getFullYear(); 
+    // MODIFICATION: Default base year start. This will be updated by the CSV.
+    let baseYearStart = new Date().getFullYear(); 
     
     const archetypeSortOrder = { "X Small": 1, "Small": 2, "Medium": 3, "Large": 4, "X Large": 5, };
     const staticFieldSliderConfig = { non_demographic_growth: { min: -0.05, max: 0.1, step: 0.001, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(s) / 100 }, routine_machine_hours: { min: 40, max: 84, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, share_of_scans_during_day: { min: 90, max: 100, step: 0.1, format: v => `${(parseFloat(v) * 100).toFixed(0)}%`, parse: s => parseFloat(s) / 100 }, ooh_machines: { min: 0, max: 4, step: 1, format: v => Math.round(v), parse: s => parseFloat(s) }, ras_per_routine_machine_hour: { min: 0, max: 2, step: 0.1, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, mit_shift_length: { min: 4, max: 6, step: 1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, mit_weeks_lost: { min: 6, max: 8, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, session_length_hours: { min: 4, max: 5, step: 0.5, format: v => parseFloat(v).toFixed(2), parse: s => parseFloat(s) }, clinical_reporting_sessions_per_rad: { min: 2, max: 10, step: 0.5, format: v => Math.round(v), parse: s => parseFloat(s) }, rad_weeks_lost: { min: 10, max: 14, step: 0.1, format: v => parseFloat(v).toFixed(1), parse: s => parseFloat(s) }, };
@@ -236,12 +237,19 @@
               return newRow;
           });
 
+          // MODIFICATION: Parse the financial year format from the CSV.
           if (processedData.length > 0 && processedData[0].baseyear) {
-              const baseYearString = String(processedData[0].baseyear);
-              const parsedYear = parseInt(baseYearString, 10); 
-              if (!isNaN(parsedYear) && parsedYear > 1900 && parsedYear < 2100) {
-                  currentYear = parsedYear;
-                  console.log(`Base year set to ${currentYear} from CSV.`);
+              const baseYearString = String(processedData[0].baseyear).trim();
+              // Regex to match "YYYY/YY" or a single "YYYY"
+              const match = baseYearString.match(/^(\d{4})(?:\/\d{2})?$/); 
+              if (match && match[1]) {
+                  const parsedStartYear = parseInt(match[1], 10);
+                  if (!isNaN(parsedStartYear)) {
+                      baseYearStart = parsedStartYear;
+                      console.log(`Base financial year start set to ${baseYearStart} from CSV value "${baseYearString}".`);
+                  }
+              } else {
+                  console.warn(`Could not parse baseyear format: "${baseYearString}". Using default.`);
               }
           }
 
@@ -263,6 +271,12 @@
             fileUploadArea.classList.remove('hidden');
         }
       });
+    }
+
+    // MODIFICATION: New helper function to format financial year labels
+    function formatFinancialYear(startYear) {
+        const endYear = (startYear + 1) % 100;
+        return `FY ${startYear}/${String(endYear).padStart(2, '0')}`;
     }
 
     function showMessage(message, type) {
@@ -609,7 +623,8 @@
                   const item = document.createElement('div');
                   item.className = 'year-input-item';
                   const label = document.createElement('label');
-                  label.textContent = `${currentYear + index}`; 
+                  // MODIFICATION: Use the financial year formatter for the label
+                  label.textContent = formatFinancialYear(baseYearStart + index); 
                   const input = document.createElement('input');
                   input.type = 'text';
                   input.classList.add('projection-input');
