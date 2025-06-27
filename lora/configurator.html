@@ -85,6 +85,8 @@
     const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step Change", "op_volume_step": "Outpatient Volume Step Change", "scan_rate": "Scan Rate (Mins)", "report_rate": "Report Rate (Mins)", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
     const projectionMetricDescriptions = { "ip_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "op_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "scan_rate": "These financial-year-based 10 fields provide the number of minutes required for modality to be scanning per event, which may change over time as technologies change. These vary by modality and archetype.", "report_rate": "These financial-year-based 10 fields provide the number of minutes required for a radiologist to report on an event, which may change over time as technologies change. These vary by modality and archetype", "mits_per_routine_machine_hour": "These financial-year-based 10 fields provide the number of MITs required in-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype.", "mits_per_ooh_machine_hour": "These financial-year-based 10 fields provide the number of MITs required out-of-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype." };
     
+    // FIX: Add map to handle data inconsistencies like "MR" vs "MRI"
+    const modalityDisplayMap = { "MR": "MRI" };
     const modalityIcons = { "CT": "CT.png", "US": "US.png", "XR": "XR.png", "MRI": "MRI.png" };
     
     const archetypeDescriptions = {
@@ -163,7 +165,6 @@
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.input-slider-wrapper')) hideAllSliders();
         
-        // Hide tooltips and remove row focus if click is outside an info icon
         if (!e.target.closest('.info-container')) {
              document.querySelectorAll('.info-tooltip.visible').forEach(tt => tt.classList.remove('visible'));
              document.querySelectorAll('tr.focused-row').forEach(row => row.classList.remove('focused-row'));
@@ -176,18 +177,15 @@
             const tooltip = e.target.nextElementSibling;
             const parentTr = e.target.closest('tr');
 
-            // Always remove focus from all other rows first
             document.querySelectorAll('tr.focused-row').forEach(row => {
                 if(row !== parentTr) row.classList.remove('focused-row');
             });
             
             const isVisible = tooltip.classList.contains('visible');
-            // Close all tooltips before opening a new one
             document.querySelectorAll('.info-tooltip.visible').forEach(tt => tt.classList.remove('visible'));
 
             if (!isVisible) {
                 tooltip.classList.add('visible');
-                // If this is a right tooltip, give its parent row focus
                 if (tooltip.classList.contains('tooltip-right') && parentTr) {
                     parentTr.classList.add('focused-row');
                 }
@@ -308,6 +306,7 @@
       const nav = document.createElement('div');
       nav.className = 'tabs-nav';
       modalities.forEach(modality => {
+        const displayName = modalityDisplayMap[modality] || modality;
         const tabId = `tab-${modality.toLowerCase().replace(/\s/g, '-')}`;
         const button = document.createElement('button');
         button.className = 'tab-button';
@@ -316,9 +315,9 @@
           button.classList.toggle('has-changes', groupedByModality[modality].some(row => hasRowChanged(row.id)));
         }
         button.dataset.target = tabId;
-        const iconName = modalityIcons[modality];
-        const iconHtml = iconName ? `<img src="../icons/${iconName}" class="tab-icon" alt="${modality} icon">` : '';
-        button.innerHTML = `${iconHtml}<span>${modality}</span>`;
+        const iconName = modalityIcons[displayName];
+        const iconHtml = iconName ? `<img src="../icons/${iconName}" class="tab-icon" alt="${displayName} icon">` : '';
+        button.innerHTML = `${iconHtml}<span>${displayName}</span>`;
         nav.appendChild(button);
       });
       tabsNavContainer.appendChild(nav);
@@ -596,7 +595,8 @@
         }
 
         const modality = rowToUpdate.modality;
-        const tabButton = document.querySelector(`.tab-button[data-target="tab-${modality.toLowerCase().replace(/\s/g, '-')}"]`);
+        const displayName = modalityDisplayMap[modality] || modality;
+        const tabButton = document.querySelector(`.tab-button span[data-target="tab-${modality.toLowerCase().replace(/\s/g, '-')}"]`);
         if (tabButton) {
             tabButton.classList.toggle('has-changes', scenarioData.filter(r => r.modality === modality).some(r => hasRowChanged(r.id)));
         }
@@ -633,7 +633,7 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            const filename = (scenarioName.trim().replace(/\s/g, '_') || 'scenario_export') + `_${new Date().toISOString().slice(0,10)}.csv`;
+            const filename = (scenarioName.trim().replace(/\s+/g, '_') || 'scenario_export') + `_${new Date().toISOString().slice(0,10)}.csv`;
             link.setAttribute("download", filename);
             document.body.appendChild(link);
             link.click();
