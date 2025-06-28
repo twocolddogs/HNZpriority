@@ -160,18 +160,22 @@ input.changed { border-color: #FFA726 !important; background-color: #FFF7E6 !imp
 .sub-nav-button {
   padding: 0.5em 1em;
   font-size: 0.9em;
-  font-weight: 500;
-  color: #4B5563;
-  background: #F3F4F6;
-  border: 1px solid #E0E6ED;
+  font-weight: 600;
+  color: #5c3d8d;
+  background: #f5f2f9;
+  border: 1px solid #e9e1f2;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
+.sub-nav-button:not(.active):hover {
+  background-color: #e9e1f2;
+  border-color: #d8cce6;
+}
 .sub-nav-button.active {
-  background-color: #143345;
+  background-color: #41236a;
   color: #fff;
-  border-color: #143345;
+  border-color: #41236a;
 }
 
 .table-container {
