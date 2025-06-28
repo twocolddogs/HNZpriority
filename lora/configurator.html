@@ -69,6 +69,32 @@
     <div id="global-tooltip" class="global-tooltip"></div>
   </div>
 
+  <div id="projection-modal-overlay" class="modal-overlay hidden">
+    <div id="projection-modal-container" class="modal-container">
+      <h2 class="modal-title">Apply Bulk Change</h2>
+      <div class="modal-options">
+        <div class="modal-toggle-group">
+          <label for="toggle-subsequent-years">Apply to all subsequent years?</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-subsequent-years" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="modal-toggle-group">
+          <label for="toggle-all-modalities">Apply across all modalities?</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-all-modalities">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button id="projection-modal-cancel" class="modal-btn modal-btn-cancel">Cancel</button>
+        <button id="projection-modal-confirm" class="modal-btn modal-btn-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
     // --- Data Definitions ---
@@ -115,11 +141,19 @@ const baselineNameCard = document.getElementById("baseline-name-card");
 const baselineNameDisplay = document.getElementById("baseline-name-display");
 const tabsNavContainer = document.getElementById("tabs-nav-container");
 const globalTooltip = document.getElementById("global-tooltip");
+// New Modal Elements
+const projectionModalOverlay = document.getElementById("projection-modal-overlay");
+const projectionModalConfirmBtn = document.getElementById("projection-modal-confirm");
+const projectionModalCancelBtn = document.getElementById("projection-modal-cancel");
+const toggleSubsequentYears = document.getElementById("toggle-subsequent-years");
+const toggleAllModalities = document.getElementById("toggle-all-modalities");
+
 
 // --- State Variables ---
 let baselineData = [], scenarioData = [];
 let activeTabId = null, scenarioName = "", baselineName = "Default Baseline";
 let activeSubTabs = { 'static-fields': 'Demand & Machine Assumptions' };
+let currentProjectionChangeContext = null; // To store context for the modal
 
 // --- Simplified Tooltip System ---
 function showTooltip(triggerElement, content) {
@@ -261,6 +295,15 @@ function setupEventListeners() {
   
   app.addEventListener('input', handleDataInput);
   app.addEventListener('change', handleDataChange);
+
+  // New Modal Listeners
+  projectionModalConfirmBtn.addEventListener('click', handleProjectionConfirm);
+  projectionModalCancelBtn.addEventListener('click', hideProjectionModal);
+  projectionModalOverlay.addEventListener('click', (e) => {
+    if (e.target === projectionModalOverlay) {
+        hideProjectionModal();
+    }
+  });
 }
 
 // --- Data Loading & Processing ---
@@ -612,6 +655,7 @@ function handleDataChange(e) {
         textInput.value = config.format(clampedValue);
         const slider = textInput.closest('.input-slider-wrapper').querySelector('input[type=range]');
         if (slider) slider.value = clampedValue;
+        updateChangeState(rowId, fieldKey);
     } 
     else {
         const [metric, yearKey] = fieldKey.split('.');
@@ -623,8 +667,22 @@ function handleDataChange(e) {
             rowToUpdate[metric][yearKey] = numericValue;
             textInput.value = numericValue.toFixed(2);
         }
+        updateChangeState(rowId, fieldKey);
+
+        // --- NEW: Trigger for projection modal ---
+        // Only show modal if the change was manual, valid, and not for the last year
+        const yearIndex = years.indexOf(yearKey);
+        if (!isNaN(numericValue) && yearIndex < years.length - 1) {
+            currentProjectionChangeContext = {
+                numericValue,
+                metric,
+                archetype: rowToUpdate.archetype,
+                yearKey,
+                yearIndex,
+            };
+            showProjectionModal();
+        }
     }
-    updateChangeState(rowId, fieldKey);
 }
 
 function updateChangeState(rowId, fieldKey) {
@@ -640,7 +698,7 @@ function updateChangeState(rowId, fieldKey) {
         isChanged = Math.abs(parseFloat(rowToUpdate[fieldKey]) - parseFloat(baselineRow[fieldKey])) > 1e-9;
     } else {
         const [metric, yearKey] = fieldKey.split('.');
-        isChanged = rowToUpdate[metric]?.[yearKey] !== baselineRow[metric]?.[yearKey];
+        isChanged = Math.abs(parseFloat(rowToUpdate[metric]?.[yearKey]) - parseFloat(baselineRow[metric]?.[yearKey])) > 1e-9;
     }
     
     if (cell.matches('td')) {
@@ -661,7 +719,7 @@ function hasRowChanged(rowId) {
     const baselineRow = baselineData.find(r => r.id === rowId);
     if (!scenarioRow || !baselineRow) return false;
     return staticFields.some(key => Math.abs(parseFloat(scenarioRow[key]) - parseFloat(baselineRow[key])) > 1e-9) || 
-           projectionMetrics.some(metric => years.some(yearKey => scenarioRow[metric]?.[yearKey] !== baselineRow[metric]?.[yearKey]));
+           projectionMetrics.some(metric => years.some(yearKey => Math.abs(parseFloat(scenarioRow[metric]?.[yearKey]) - parseFloat(baselineRow[metric]?.[yearKey])) > 1e-9));
 }
 
 function exportScenarioCSV() {
@@ -680,6 +738,7 @@ function exportScenarioCSV() {
                     delete newFlatRow[metric];
                 }
             });
+            delete newFlatRow.id; // Clean up the helper ID before export
             return newFlatRow;
         });
 
@@ -715,6 +774,68 @@ function showMessage(message, type = 'info') {
     statusMessage.innerHTML = '';
     statusMessage.appendChild(p);
     setTimeout(() => { statusMessage.innerHTML = ''; }, 3000);
+}
+
+// --- New Modal Functions ---
+function showProjectionModal() {
+    // Reset toggles to default state
+    toggleSubsequentYears.checked = true;
+    toggleAllModalities.checked = false;
+    projectionModalOverlay.classList.remove('hidden');
+}
+
+function hideProjectionModal() {
+    projectionModalOverlay.classList.add('hidden');
+    currentProjectionChangeContext = null;
+}
+
+function handleProjectionConfirm() {
+    if (!currentProjectionChangeContext) return;
+
+    const { numericValue, metric, archetype, yearIndex } = currentProjectionChangeContext;
+    const applyToSubsequent = toggleSubsequentYears.checked;
+    const applyToAllModalities = toggleAllModalities.checked;
+
+    const processRow = (row, startYearIndex) => {
+        if (applyToSubsequent) {
+            for (let i = startYearIndex + 1; i < years.length; i++) {
+                const subsequentYearKey = years[i];
+                row[metric][subsequentYearKey] = numericValue;
+                
+                // Update the UI for this change
+                const inputElement = document.querySelector(`input[data-id="${row.id}"][data-field="${metric}.${subsequentYearKey}"]`);
+                if (inputElement) {
+                    inputElement.value = numericValue.toFixed(2);
+                    updateChangeState(row.id, `${metric}.${subsequentYearKey}`);
+                }
+            }
+        }
+    };
+
+    if (applyToAllModalities) {
+        scenarioData.forEach(row => {
+            if (row.archetype === archetype) {
+                // Apply the initial change to the same year in other modalities
+                const initialYearKey = years[yearIndex];
+                if (row[metric][initialYearKey] !== numericValue) {
+                   row[metric][initialYearKey] = numericValue;
+                   const inputElement = document.querySelector(`input[data-id="${row.id}"][data-field="${metric}.${initialYearKey}"]`);
+                    if (inputElement) {
+                        inputElement.value = numericValue.toFixed(2);
+                        updateChangeState(row.id, `${metric}.${initialYearKey}`);
+                    }
+                }
+                // Process subsequent years for this row
+                processRow(row, yearIndex);
+            }
+        });
+    } else {
+        // Only apply to the original modality
+        const originalRow = scenarioData.find(row => row.archetype === archetype && row.modality === activeTabId.replace('tab-','').toUpperCase());
+        if(originalRow) processRow(originalRow, yearIndex);
+    }
+    
+    hideProjectionModal();
 }
 </script>
 </body>
