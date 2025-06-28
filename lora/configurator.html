@@ -514,36 +514,42 @@
         return grid;
     }
 
-    // --- Event Handling Logic & Tooltip Management ---
-        function showArchetypeTooltip(icon) {
+        // --- Event Handling Logic & Tooltip Management ---
+    function showArchetypeTooltip(icon) {
         hideGlobalTooltip(); // Remove any existing one
         const iconRect = icon.getBoundingClientRect();
         const hiddenTooltip = icon.nextElementSibling;
         if (!hiddenTooltip) return;
 
         const globalTooltip = document.createElement('div');
+        // Note: The 'transform' in the CSS will now handle the vertical centering
         globalTooltip.className = 'info-tooltip tooltip-right global-tooltip';
         globalTooltip.innerHTML = hiddenTooltip.innerHTML;
         
         document.body.appendChild(globalTooltip);
         
-        const tooltipRect = globalTooltip.getBoundingClientRect();
-        
-        // --- FIX START ---
-        // Calculate position relative to the document, not the viewport,
-        // by adding the window's scroll offset.
-        const topPos = iconRect.top + window.scrollY + (iconRect.height / 2) - (tooltipRect.height / 2);
+        // --- FIX 1: ALIGNMENT ---
+        // Calculate the icon's absolute vertical center. The CSS transform will do the rest.
+        const topPos = iconRect.top + window.scrollY + (iconRect.height / 2);
         const leftPos = iconRect.left + window.scrollX + iconRect.width + 8;
-        // --- FIX END ---
 
         globalTooltip.style.top = `${topPos}px`;
         globalTooltip.style.left = `${leftPos}px`;
         globalTooltip.classList.add('visible');
+
+        // --- FIX 2: HIDE ON SCROLL ---
+        // Add a listener to hide the tooltip when the user scrolls.
+        // { once: true } automatically removes the listener after it fires once.
+        window.addEventListener('scroll', hideGlobalTooltip, { once: true });
     }
 
     function hideGlobalTooltip() {
         const existingTooltip = document.querySelector('.global-tooltip');
-        if (existingTooltip) existingTooltip.remove();
+        if (existingTooltip) {
+            existingTooltip.remove();
+        }
+        // In case the listener was added but not fired, we ensure it's removed.
+        window.removeEventListener('scroll', hideGlobalTooltip, { once: true });
     }
 
 
