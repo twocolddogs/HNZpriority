@@ -335,6 +335,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
   left: calc(100% + 8px);
   transform: translateY(-50%);
 }
+
 .tooltip-right::after {
     top: 50%;
     bottom: auto;
@@ -347,7 +348,11 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
 .global-tooltip {
     position: absolute; 
     z-index: 1100;
+    /* This transform will vertically center the tooltip against its 'top' coordinate */
+    transform: translateY(-50%); 
 }
+
+
 
 
 /* ==========================================================================
