@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- ... (rest of the body HTML is unchanged) ... -->
   <div class="rtt-container">
     <header class="rtt-sticky-header">
       <div class="rtt-brand-bar">
@@ -111,6 +112,12 @@ const staticFieldGroups = {
 const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "report_rate", "mits_per_routine_machine_hour", "mits_per_ooh_machine_hour"];
 const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step Change", "op_volume_step": "Outpatient Volume Step Change", "scan_rate": "Scan Rate (Mins)", "report_rate": "Report Rate (Mins)", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
 const projectionMetricDescriptions = { "ip_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "op_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "scan_rate": "These financial-year-based 10 fields provide the number of minutes required for modality to be scanning per event, which may change over time as technologies change. These vary by modality and archetype.", "report_rate": "These financial-year-based 10 fields provide the number of minutes required for a radiologist to report on an event, which may change over time as technologies change. These vary by modality and archetype", "mits_per_routine_machine_hour": "These financial-year-based 10 fields provide the number of MITs required in-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype.", "mits_per_ooh_machine_hour": "These financial-year-based 10 fields provide the number of MITs required out-of-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype." };
+
+// --- NEW: Configuration for projection metrics ---
+const projectionMetricConfig = {
+    ip_volume_step: { min: -0.20, max: 0.20, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(String(s).replace('%','')) / 100 },
+    op_volume_step: { min: -0.20, max: 0.20, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(String(s).replace('%','')) / 100 }
+};
 
 const modalityDisplayMap = { "MR": "MRI" };
 const modalityIcons = { "CT": "CT.png", "US": "US.png", "XR": "XR.png", "MRI": "MRI.png" };
@@ -595,14 +602,22 @@ function createProjectionGrid(archetypes, metric, isEditable) {
             
             const input = document.createElement('input');
             input.type = 'text';
+            
+            // --- MODIFIED: Use projection config for formatting ---
+            const config = projectionMetricConfig[metric];
             const value = row[metric]?.[yearKey];
-            input.value = (value !== null && typeof value !== 'undefined' && !isNaN(value)) ? value.toFixed(2) : 'N/A';
+            if (value !== null && typeof value !== 'undefined' && !isNaN(value)) {
+                input.value = config ? config.format(value) : value.toFixed(2);
+            } else {
+                input.value = 'N/A';
+            }
+            
             input.dataset.id = row.id;
             input.dataset.field = `${metric}.${yearKey}`;
             input.readOnly = !isEditable || yearKey === 'y0';
 
             const baselineRow = baselineData.find(br => br.id === row.id);
-            if (isEditable && baselineRow && baselineRow[metric]?.[yearKey] !== value) {
+            if (isEditable && baselineRow && Math.abs(parseFloat(baselineRow[metric]?.[yearKey]) - parseFloat(value)) > 1e-9) {
                 input.classList.add('changed');
             }
 
@@ -658,21 +673,35 @@ function handleDataChange(e) {
         updateChangeState(rowId, fieldKey);
     } 
     else {
+        // --- MODIFIED: Handle projection changes with new config ---
         const [metric, yearKey] = fieldKey.split('.');
-        const numericValue = parseFloat(textInput.value);
+        const config = projectionMetricConfig[metric];
         const originalValue = rowToUpdate[metric]?.[yearKey];
-        if (isNaN(numericValue)) {
-            textInput.value = (originalValue !== null && !isNaN(originalValue)) ? originalValue.toFixed(2) : 'N/A';
-        } else {
+        let numericValue;
+
+        if (config) { // It's a percentage field with validation
+            numericValue = config.parse(textInput.value);
+            if (isNaN(numericValue) || numericValue < config.min || numericValue > config.max) {
+                showMessage(`Invalid input. Please enter a percentage between ${config.format(config.min)} and ${config.format(config.max)}.`, 'error');
+                textInput.value = (originalValue !== null && !isNaN(originalValue)) ? config.format(originalValue) : 'N/A';
+                return; // Abort the change
+            }
+            rowToUpdate[metric][yearKey] = numericValue;
+            textInput.value = config.format(numericValue);
+        } else { // It's a regular number field
+            numericValue = parseFloat(textInput.value);
+            if (isNaN(numericValue)) {
+                textInput.value = (originalValue !== null && !isNaN(originalValue)) ? originalValue.toFixed(2) : 'N/A';
+                return; // Abort the change
+            }
             rowToUpdate[metric][yearKey] = numericValue;
             textInput.value = numericValue.toFixed(2);
         }
+
         updateChangeState(rowId, fieldKey);
 
-        // --- NEW: Trigger for projection modal ---
-        // Only show modal if the change was manual, valid, and not for the last year
         const yearIndex = years.indexOf(yearKey);
-        if (!isNaN(numericValue) && yearIndex < years.length - 1) {
+        if (yearIndex < years.length - 1) {
             currentProjectionChangeContext = {
                 numericValue,
                 metric,
@@ -795,6 +824,7 @@ function handleProjectionConfirm() {
     const { numericValue, metric, archetype, yearIndex } = currentProjectionChangeContext;
     const applyToSubsequent = toggleSubsequentYears.checked;
     const applyToAllModalities = toggleAllModalities.checked;
+    const config = projectionMetricConfig[metric];
 
     const processRow = (row, startYearIndex) => {
         if (applyToSubsequent) {
@@ -802,10 +832,10 @@ function handleProjectionConfirm() {
                 const subsequentYearKey = years[i];
                 row[metric][subsequentYearKey] = numericValue;
                 
-                // Update the UI for this change
                 const inputElement = document.querySelector(`input[data-id="${row.id}"][data-field="${metric}.${subsequentYearKey}"]`);
                 if (inputElement) {
-                    inputElement.value = numericValue.toFixed(2);
+                    // --- MODIFIED: Use config for formatting UI value ---
+                    inputElement.value = config ? config.format(numericValue) : numericValue.toFixed(2);
                     updateChangeState(row.id, `${metric}.${subsequentYearKey}`);
                 }
             }
@@ -815,23 +845,26 @@ function handleProjectionConfirm() {
     if (applyToAllModalities) {
         scenarioData.forEach(row => {
             if (row.archetype === archetype) {
-                // Apply the initial change to the same year in other modalities
                 const initialYearKey = years[yearIndex];
                 if (row[metric][initialYearKey] !== numericValue) {
                    row[metric][initialYearKey] = numericValue;
                    const inputElement = document.querySelector(`input[data-id="${row.id}"][data-field="${metric}.${initialYearKey}"]`);
                     if (inputElement) {
-                        inputElement.value = numericValue.toFixed(2);
+                        // --- MODIFIED: Use config for formatting UI value ---
+                        inputElement.value = config ? config.format(numericValue) : numericValue.toFixed(2);
                         updateChangeState(row.id, `${metric}.${initialYearKey}`);
                     }
                 }
-                // Process subsequent years for this row
                 processRow(row, yearIndex);
             }
         });
     } else {
-        // Only apply to the original modality
-        const originalRow = scenarioData.find(row => row.archetype === archetype && row.modality === activeTabId.replace('tab-','').toUpperCase());
+        const originalModalityTab = document.querySelector('.tab-button.active');
+        if (!originalModalityTab) return;
+        const originalModalityName = originalModalityTab.dataset.target.replace('tab-','').toUpperCase();
+
+        const originalRow = scenarioData.find(row => row.archetype === archetype && (row.modality === originalModalityName || (modalityDisplayMap[row.modality] === originalModalityName.toUpperCase())));
+
         if(originalRow) processRow(originalRow, yearIndex);
     }
     
