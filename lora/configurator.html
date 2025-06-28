@@ -289,8 +289,6 @@ function setupEventListeners() {
 }
 
 // --- Data Loading & Processing ---
-async function loadAndInitializeData() { /* ... */ }
-function loadCSVFile(file) { /* ... */ }
 function processCSV(csvData, successMessage) {
     const results = (typeof csvData === 'string') ? Papa.parse(csvData, { header: true, skipEmptyLines: true, dynamicTyping: true }) : csvData;
     if (results.errors.length) {
@@ -356,7 +354,6 @@ function renderUI(data, isEditable) {
   
   scenarioNameCard.classList.toggle('hidden', !isEditable);
   baselineNameCard.classList.toggle('hidden', isEditable);
-  resetButton.classList.toggle('hidden', !isEditable);
   
   if(isEditable) {
       scenarioNameInput.value = scenarioName;
@@ -413,14 +410,8 @@ function renderUI(data, isEditable) {
   });
   updateHeaderButtonStates(isEditable);
 }
-function createSubNav(navId, groups, activeGroup) { /* ... */ }
-function createTableTitle(tag, title, description) { /* ... */ }
-function createStaticTable(archetypes, isEditable) { /* ... */ }
-function createProjectionGrid(archetypes, metric, isEditable) { /* ... */ }
 
 // --- Event Handling Logic ---
-function handleDataInput(e) { /* ... */ }
-function handleDataChange(e) { /* ... */ }
 function updateChangeState(rowId, fieldKey) {
     const rowToUpdate = scenarioData.find(row => row.id === rowId);
     const baselineRow = baselineData.find(row => row.id === rowId);
@@ -446,95 +437,46 @@ function updateChangeState(rowId, fieldKey) {
     }
     updateHeaderButtonStates(true);
 }
-function hasRowChanged(rowId) { /* ... */ }
-function exportScenarioCSV() {
-    const spinner = document.getElementById('export-spinner');
-    spinner.classList.remove('hidden');
-    exportButton.disabled = true;
-    setTimeout(() => { 
-        const flatData = scenarioData.map(row => {
-            const newFlatRow = { ...row };
-            projectionMetrics.forEach(metric => {
-                if (newFlatRow[metric]) {
-                    years.forEach(yearKey => {
-                        newFlatRow[`${metric}_${yearKey}`] = newFlatRow[metric][yearKey];
-                    });
-                    delete newFlatRow[metric];
-                }
-            });
-            delete newFlatRow.id;
-            return newFlatRow;
-        });
-
-        const headers = Object.keys(flatData[0] || {});
-        const emptyRow = headers.reduce((acc, header) => ({...acc, [header]: ''}), {});
-        const baselineDescRowForExport = { ...emptyRow, scenario: 'Baseline Description', baseyear: baselineDescription };
-        const scenarioDescRowForExport = { ...emptyRow, scenario: 'Scenario Description', baseyear: scenarioDescription };
-
-        for (let i = 0; i < 21; i++) { 
-            flatData.push({ ...emptyRow });
-        }
-        flatData.push(baselineDescRowForExport);
-        flatData.push(scenarioDescRowForExport);
-
-        const csv = Papa.unparse(flatData);
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        const filename = (scenarioName.trim().replace(/\s+/g, '_') || 'scenario_export') + `_${new Date().toISOString().slice(0,10)}.csv`;
-        link.setAttribute("download", filename);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        spinner.classList.add('hidden');
-        exportButton.disabled = false;
-        showMessage("CSV exported successfully!", "success");
-        updateHeaderButtonStates(true); 
-    }, 500);
-}
 
 // --- Helper Functions ---
 function updateHeaderButtonStates(isEditable) {
     if (!isEditable) {
         exportButton.disabled = true;
-        resetButton.disabled = true;
+        resetButton.classList.add('hidden');
         return;
     }
     const hasDataChanges = scenarioData.some(row => hasRowChanged(row.id));
     const hasDescriptionChange = scenarioDescription !== initialScenarioDescription;
     const hasChanges = hasDataChanges || hasDescriptionChange;
+
     exportButton.disabled = !hasChanges;
-    resetButton.disabled = !hasChanges;
+    resetButton.classList.toggle('hidden', !hasChanges);
 }
+
+// --- PASTE ALL OTHER UNCHANGED FUNCTIONS HERE ---
+// (The full script is long, so only showing the changed function. 
+//  All other JS functions remain exactly the same as the previous step.)
+async function loadAndInitializeData() { /* ... */ }
+function loadCSVFile(file) { /* ... */ }
+function createSubNav(navId, groups, activeGroup) { /* ... */ }
+function createTableTitle(tag, title, description) { /* ... */ }
+function createStaticTable(archetypes, isEditable) { /* ... */ }
+function createProjectionGrid(archetypes, metric, isEditable) { /* ... */ }
+function handleDataInput(e) { /* ... */ }
+function handleDataChange(e) { /* ... */ }
+function hasRowChanged(rowId) { /* ... */ }
+function exportScenarioCSV() { /* ... */ }
 function hideAllSliders() { /* ... */ }
 function showLoadingMessage(message) { /* ... */ }
 function showMessage(message, type = 'success') { /* ... */ }
-
-// --- Modal Functions ---
 function showInfoModal() { /* ... */ }
 function hideInfoModal() { /* ... */ }
-
-function showResetModal() {
-    resetModalOverlay.classList.remove('hidden');
-}
-
-function hideResetModal() {
-    resetModalOverlay.classList.add('hidden');
-}
-
-function handleResetConfirm() {
-    scenarioData = JSON.parse(JSON.stringify(baselineData));
-    scenarioName = ""; 
-    scenarioDescription = initialScenarioDescription;
-    hideResetModal();
-    renderUI(scenarioData, true); 
-    showMessage("Scenario has been reset to baseline values.", "success");
-}
-
+function showResetModal() { /* ... */ }
+function hideResetModal() { /* ... */ }
+function handleResetConfirm() { /* ... */ }
 function showProjectionModal() { /* ... */ }
 function hideProjectionModal() { /* ... */ }
 function handleProjectionConfirm() { /* ... */ }
-
 
 // --- PASTE UNCHANGED FUNCTIONS HERE ---
 async function loadAndInitializeData() {
@@ -798,6 +740,51 @@ function hasRowChanged(rowId) {
     return staticFields.some(key => Math.abs(parseFloat(scenarioRow[key]) - parseFloat(baselineRow[key])) > 1e-9) || 
            projectionMetrics.some(metric => years.some(yearKey => Math.abs(parseFloat(scenarioRow[metric]?.[yearKey]) - parseFloat(baselineRow[metric]?.[yearKey])) > 1e-9));
 }
+function exportScenarioCSV() {
+    const spinner = document.getElementById('export-spinner');
+    spinner.classList.remove('hidden');
+    exportButton.disabled = true;
+    setTimeout(() => { 
+        const flatData = scenarioData.map(row => {
+            const newFlatRow = { ...row };
+            projectionMetrics.forEach(metric => {
+                if (newFlatRow[metric]) {
+                    years.forEach(yearKey => {
+                        newFlatRow[`${metric}_${yearKey}`] = newFlatRow[metric][yearKey];
+                    });
+                    delete newFlatRow[metric];
+                }
+            });
+            delete newFlatRow.id;
+            return newFlatRow;
+        });
+
+        const headers = Object.keys(flatData[0] || {});
+        const emptyRow = headers.reduce((acc, header) => ({...acc, [header]: ''}), {});
+        const baselineDescRowForExport = { ...emptyRow, scenario: 'Baseline Description', baseyear: baselineDescription };
+        const scenarioDescRowForExport = { ...emptyRow, scenario: 'Scenario Description', baseyear: scenarioDescription };
+
+        for (let i = 0; i < 21; i++) { 
+            flatData.push({ ...emptyRow });
+        }
+        flatData.push(baselineDescRowForExport);
+        flatData.push(scenarioDescRowForExport);
+
+        const csv = Papa.unparse(flatData);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        const filename = (scenarioName.trim().replace(/\s+/g, '_') || 'scenario_export') + `_${new Date().toISOString().slice(0,10)}.csv`;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        spinner.classList.add('hidden');
+        exportButton.disabled = false;
+        showMessage("CSV exported successfully!", "success");
+        updateHeaderButtonStates(true); 
+    }, 500);
+}
 function hideAllSliders() {
     document.querySelectorAll('.slider-container.visible').forEach(slider => slider.classList.remove('visible'));
 }
@@ -818,6 +805,20 @@ function showInfoModal() {
 }
 function hideInfoModal() {
     infoModalOverlay.classList.add('hidden');
+}
+function showResetModal() {
+    resetModalOverlay.classList.remove('hidden');
+}
+function hideResetModal() {
+    resetModalOverlay.classList.add('hidden');
+}
+function handleResetConfirm() {
+    scenarioData = JSON.parse(JSON.stringify(baselineData));
+    scenarioName = ""; 
+    scenarioDescription = initialScenarioDescription;
+    hideResetModal();
+    renderUI(scenarioData, true); 
+    showMessage("Scenario has been reset to baseline values.", "success");
 }
 function showProjectionModal() {
     toggleSubsequentYears.checked = true;
