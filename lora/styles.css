@@ -365,7 +365,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
 .status-message .error { background: #d9534f; }
 @media (max-width: 768px) {
     .rtt-container { padding: 0 0.5em; }
-    #sticky-tabs-wrapper { top: 100%; }
+    #sticky-tabs-wrapper {
+  top: 128px;
     .rtt-brand-bar { flex-wrap: wrap; gap: 1rem; padding: 0.8em 1em; }
     .rtt-header-controls { flex-basis: 100%; justify-content: space-between; }
     .data-table th, .data-table td { padding: 0.5rem; font-size: 0.85rem; }
