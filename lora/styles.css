@@ -350,21 +350,6 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
   word-wrap: break-word;
 }
 
-.global-tooltip strong {
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-.global-tooltip ul {
-  padding-left: 1.25rem;
-  margin: 0;
-  text-align: left;
-}
-
-.global-tooltip li {
-  margin-bottom: 0.25rem;
-}
-
 .global-tooltip.visible {
   opacity: 1;
   visibility: visible;
@@ -377,6 +362,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
 .status-message p { padding: 1em 1.5em; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); margin: 0; white-space: nowrap; }
 .status-message .success { background: #28a745; }
 .status-message .error { background: #d9534f; }
+
 @media (max-width: 768px) {
     .rtt-container { padding: 0 0.5em; }
     #sticky-tabs-wrapper { top: 128px; }
@@ -417,7 +403,13 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
   font-weight: 600;
   color: #143345;
   margin-top: 0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+}
+.modal-body-text {
+  margin: 0 0 2rem 0;
+  color: #4B5563;
+  font-size: 1rem;
+  line-height: 1.6;
 }
 .modal-options {
   display: flex;
