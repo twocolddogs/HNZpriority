@@ -352,7 +352,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
     transform: translateY(-50%); 
 }
 
-
+/* In section 5. Interactive Input/Slider & Tooltips */
+.info-icon:hover, .info-icon.active-icon { background-color: #00549F; } /* FIX: Added .active-icon state */
 
 
 /* ==========================================================================
