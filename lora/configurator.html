@@ -113,7 +113,6 @@ const projectionMetrics = ["ip_volume_step", "op_volume_step", "scan_rate", "rep
 const projectionMetricLabels = { "ip_volume_step": "Inpatient Volume Step Change", "op_volume_step": "Outpatient Volume Step Change", "scan_rate": "Scan Rate (Mins)", "report_rate": "Report Rate (Mins)", "mits_per_routine_machine_hour": "MITs per Routine Machine Hour", "mits_per_ooh_machine_hour": "MITs per OOH Machine Hour" };
 const projectionMetricDescriptions = { "ip_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "op_volume_step": "These financial-year-based 10 fields provide a % change based step ED/Inpatient uplift in activity which may be required when testing scenarios, e.g., impact of lung screening. These vary by modality and archetype.", "scan_rate": "These financial-year-based 10 fields provide the number of minutes required for modality to be scanning per event, which may change over time as technologies change. These vary by modality and archetype.", "report_rate": "These financial-year-based 10 fields provide the number of minutes required for a radiologist to report on an event, which may change over time as technologies change. These vary by modality and archetype", "mits_per_routine_machine_hour": "These financial-year-based 10 fields provide the number of MITs required in-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype.", "mits_per_ooh_machine_hour": "These financial-year-based 10 fields provide the number of MITs required out-of-hours per machine hour to run the machines, which may change over time as technologies change. These vary by modality and archetype." };
 
-// --- NEW: Configuration for projection metrics ---
 const projectionMetricConfig = {
     ip_volume_step: { min: -0.20, max: 0.20, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(String(s).replace('%','')) / 100 },
     op_volume_step: { min: -0.20, max: 0.20, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(String(s).replace('%','')) / 100 }
@@ -122,12 +121,13 @@ const projectionMetricConfig = {
 const modalityDisplayMap = { "MR": "MRI" };
 const modalityIcons = { "CT": "CT.png", "US": "US.png", "XR": "XR.png", "MRI": "MRI.png" };
 
+// --- MODIFIED: Archetype descriptions updated with new data ---
 const archetypeDescriptions = {
-    "X Small": "Facilities include: Patea Health Centre, Opunake Health Centre, Waiouru Military Camp.",
-    "Small": "Facilities include: Wairoa Hospital, Taumarunui Hospital, Dannevirke Community Hospital, Hawera Hospital.",
-    "Medium": "Facilities include: Whanganui Hospital, Gisborne Hospital, Wairau Hospital (Blenheim), Timaru Hospital.",
-    "Large": "Facilities include: Tauranga Hospital, Palmerston North Hospital, Dunedin Hospital, Wellington Regional Hospital.",
-    "X Large": "Facilities include: Auckland City Hospital, Christchurch Hospital, Waikato Hospital, Middlemore Hospital.",
+    "X Small": `<strong>Facilities include:</strong><ul><li>Greymouth</li><li>Waipukurau</li><li>Wairoa</li><li>Taihape</li><li>Waimarino</li><li>Bay of Islands</li><li>Dargaville</li><li>Kaitaia</li><li>Rawene</li><li>Opotiki</li><li>Te Puia Springs</li><li>Hawera</li><li>Stratford</li><li>Waitara</li><li>Taumarunui</li><li>Te Kuiti</li><li>Kenepuru</li><li>Tokoroa</li><li>Chatham Islands</li><li>Kaikoura</li><li>Dunstan</li><li>Lakes District</li><li>Oamaru</li><li>Buller</li></ul>`,
+    "Small": `<strong>Facilities include:</strong><ul><li>Whanganui</li><li>Wairarapa</li><li>Whakatane</li><li>Taupo</li><li>Gisborne</li><li>Ashburton</li><li>Wairau</li><li>Timaru</li></ul>`,
+    "Medium": `<strong>Facilities include:</strong><ul><li>Hawke's Bay</li><li>Palmerston North</li><li>Whangarei</li><li>Tauranga</li><li>Rotorua</li><li>Taranaki</li><li>Nelson</li><li>Hutt</li></ul>`,
+    "Large": `<strong>Facilities include:</strong><ul><li>Wellington/Hutt</li><li>North Shore/Waitakere</li><li>Middlemore/Manukau</li><li>Starship</li><li>Wellington</li><li>Dunedin</li></ul>`,
+    "X Large": `<strong>Facilities include:</strong><ul><li>Auckland/Greenlane</li><li>Christchurch</li></ul>`,
     "Default": "No facility list available for this archetype."
 };
 
@@ -148,7 +148,6 @@ const baselineNameCard = document.getElementById("baseline-name-card");
 const baselineNameDisplay = document.getElementById("baseline-name-display");
 const tabsNavContainer = document.getElementById("tabs-nav-container");
 const globalTooltip = document.getElementById("global-tooltip");
-// New Modal Elements
 const projectionModalOverlay = document.getElementById("projection-modal-overlay");
 const projectionModalConfirmBtn = document.getElementById("projection-modal-confirm");
 const projectionModalCancelBtn = document.getElementById("projection-modal-cancel");
@@ -160,9 +159,12 @@ const toggleAllModalities = document.getElementById("toggle-all-modalities");
 let baselineData = [], scenarioData = [];
 let activeTabId = null, scenarioName = "", baselineName = "Default Baseline";
 let activeSubTabs = { 'static-fields': 'Demand & Machine Assumptions' };
-let currentProjectionChangeContext = null; // To store context for the modal
+let currentProjectionChangeContext = null;
 
-// --- Simplified Tooltip System ---
+// --- (The rest of the script is unchanged from the previous step) ---
+// ... (showTooltip, hideTooltip, setupEventListeners, loadAndInitializeData, etc.)
+// ... The script from the prior step is correct and will work with this new data.
+
 function showTooltip(triggerElement, content) {
     hideTooltip();
     
@@ -483,7 +485,7 @@ function createTableTitle(tag, title, description) {
         infoIcon.textContent = '?';
         const tooltip = document.createElement('div');
         tooltip.className = 'info-tooltip';
-        tooltip.textContent = description;
+        tooltip.innerHTML = description; // Use innerHTML to render bulleted lists
         infoContainer.appendChild(infoIcon);
         infoContainer.appendChild(tooltip);
         wrapper.appendChild(infoContainer);
@@ -603,7 +605,6 @@ function createProjectionGrid(archetypes, metric, isEditable) {
             const input = document.createElement('input');
             input.type = 'text';
             
-            // --- MODIFIED: Use projection config for formatting ---
             const config = projectionMetricConfig[metric];
             const value = row[metric]?.[yearKey];
             if (value !== null && typeof value !== 'undefined' && !isNaN(value)) {
@@ -673,26 +674,25 @@ function handleDataChange(e) {
         updateChangeState(rowId, fieldKey);
     } 
     else {
-        // --- MODIFIED: Handle projection changes with new config ---
         const [metric, yearKey] = fieldKey.split('.');
         const config = projectionMetricConfig[metric];
         const originalValue = rowToUpdate[metric]?.[yearKey];
         let numericValue;
 
-        if (config) { // It's a percentage field with validation
+        if (config) { 
             numericValue = config.parse(textInput.value);
             if (isNaN(numericValue) || numericValue < config.min || numericValue > config.max) {
                 showMessage(`Invalid input. Please enter a percentage between ${config.format(config.min)} and ${config.format(config.max)}.`, 'error');
                 textInput.value = (originalValue !== null && !isNaN(originalValue)) ? config.format(originalValue) : 'N/A';
-                return; // Abort the change
+                return; 
             }
             rowToUpdate[metric][yearKey] = numericValue;
             textInput.value = config.format(numericValue);
-        } else { // It's a regular number field
+        } else { 
             numericValue = parseFloat(textInput.value);
             if (isNaN(numericValue)) {
                 textInput.value = (originalValue !== null && !isNaN(originalValue)) ? originalValue.toFixed(2) : 'N/A';
-                return; // Abort the change
+                return; 
             }
             rowToUpdate[metric][yearKey] = numericValue;
             textInput.value = numericValue.toFixed(2);
@@ -805,9 +805,7 @@ function showMessage(message, type = 'info') {
     setTimeout(() => { statusMessage.innerHTML = ''; }, 3000);
 }
 
-// --- New Modal Functions ---
 function showProjectionModal() {
-    // Reset toggles to default state
     toggleSubsequentYears.checked = true;
     toggleAllModalities.checked = false;
     projectionModalOverlay.classList.remove('hidden');
@@ -834,7 +832,6 @@ function handleProjectionConfirm() {
                 
                 const inputElement = document.querySelector(`input[data-id="${row.id}"][data-field="${metric}.${subsequentYearKey}"]`);
                 if (inputElement) {
-                    // --- MODIFIED: Use config for formatting UI value ---
                     inputElement.value = config ? config.format(numericValue) : numericValue.toFixed(2);
                     updateChangeState(row.id, `${metric}.${subsequentYearKey}`);
                 }
@@ -850,7 +847,6 @@ function handleProjectionConfirm() {
                    row[metric][initialYearKey] = numericValue;
                    const inputElement = document.querySelector(`input[data-id="${row.id}"][data-field="${metric}.${initialYearKey}"]`);
                     if (inputElement) {
-                        // --- MODIFIED: Use config for formatting UI value ---
                         inputElement.value = config ? config.format(numericValue) : numericValue.toFixed(2);
                         updateChangeState(row.id, `${metric}.${initialYearKey}`);
                     }
@@ -861,9 +857,11 @@ function handleProjectionConfirm() {
     } else {
         const originalModalityTab = document.querySelector('.tab-button.active');
         if (!originalModalityTab) return;
-        const originalModalityName = originalModalityTab.dataset.target.replace('tab-','').toUpperCase();
-
-        const originalRow = scenarioData.find(row => row.archetype === archetype && (row.modality === originalModalityName || (modalityDisplayMap[row.modality] === originalModalityName.toUpperCase())));
+        let originalModalityName = originalModalityTab.dataset.target.replace('tab-','').toUpperCase();
+        // Handle 'MRI' display name mapping back to 'MR' data key
+        const dataKeyModality = Object.keys(modalityDisplayMap).find(key => modalityDisplayMap[key] === originalModalityName) || originalModalityName;
+        
+        const originalRow = scenarioData.find(row => row.archetype === archetype && row.modality === dataKeyModality);
 
         if(originalRow) processRow(originalRow, yearIndex);
     }
