@@ -346,6 +346,21 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
   word-wrap: break-word;
 }
 
+.global-tooltip strong {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.global-tooltip ul {
+  padding-left: 1.25rem;
+  margin: 0;
+  text-align: left;
+}
+
+.global-tooltip li {
+  margin-bottom: 0.25rem;
+}
+
 .global-tooltip.visible {
   opacity: 1;
   visibility: visible;
