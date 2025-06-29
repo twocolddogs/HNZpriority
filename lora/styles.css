@@ -269,6 +269,74 @@ textarea:focus { outline: none; border-color: #007A86; box-shadow: 0 0 0 3px rgb
 .tab-panel[data-static-fields-subtab="Workforce"] [data-metric-group="demand"] { display: none; }
 .tab-panel[data-static-fields-subtab="Workforce"] .projections-container { display: block; }
 
+/* Collapsible sections */
+.collapsible-projection-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+}
+
+.collapsible-projection-header:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.projection-collapse-indicator {
+    font-size: 0.8rem;
+    color: #666;
+    transition: transform 0.2s ease;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+.projection-grid-wrapper.collapsed,
+.static-table-wrapper.collapsed {
+    display: none;
+}
+
+.projection-grid-wrapper,
+.static-table-wrapper {
+    display: block;
+}
+
+/* Inline sub-navigation styling */
+.tabs-spacer {
+    width: 2rem;
+    flex-shrink: 0;
+}
+
+.sub-nav-inline {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.sub-nav-inline .sub-nav-button {
+    background: #f5f2f9;
+    border: 1px solid #e9e1f2;
+    color: #5c3d8d;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.sub-nav-inline .sub-nav-button:hover {
+    background: #e9e1f2;
+    border-color: #d8cce6;
+}
+
+.sub-nav-inline .sub-nav-button.active {
+    background: #41236a;
+    color: #fff;
+    border-color: #41236a;
+}
+
 .projection-grid {
     display: flex;
     flex-direction: column;
