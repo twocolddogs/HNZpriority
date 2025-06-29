@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LORA Scenario Configurator</title>
+  <link rel="stylesheet" href="../fonts/poppins.css">
+  <link rel="stylesheet" href="../fonts/publicsans.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -309,6 +311,11 @@ function setupEventListeners() {
   });
   
   app.addEventListener('click', (e) => {
+    // Skip if click is within an info-icon or info-container to prevent interfering with tooltips
+    if (e.target.closest('.info-icon') || e.target.closest('.info-container')) {
+        return;
+    }
+    
     const subNavButton = e.target.closest('.sub-nav-button');
     if (subNavButton) {
         const navId = subNavButton.parentElement.dataset.navId;
