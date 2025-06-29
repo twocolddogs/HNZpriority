@@ -385,8 +385,7 @@ textarea:focus { outline: none; border-color: #007A86; box-shadow: 0 0 0 3px rgb
 }
 
 .table-container {
-  overflow-x: auto;
-  overflow-y: visible;
+  overflow: visible;
   background: #fff;
   border: 1px solid #E0E6ED;
   border-radius: 8px;
@@ -686,6 +685,12 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; background: #
     .lora-header-controls { flex-basis: 100%; justify-content: space-between; }
     .data-table th, .data-table td { padding: 0.5rem; font-size: 0.85rem; }
     .data-table th { min-width: 120px; }
+    
+    /* Only add horizontal scrolling on mobile when tables are too wide */
+    .table-container {
+        overflow-x: auto;
+        overflow-y: visible;
+    }
 }
 
 /* ==========================================================================
