@@ -260,6 +260,10 @@ textarea:focus { outline: none; border-color: #007A86; box-shadow: 0 0 0 3px rgb
 .tab-panel[data-static-fields-subtab="Demand-and-Machine-Assumptions"] [data-group="Workforce"] { display: none; }
 .tab-panel[data-static-fields-subtab="Workforce"] [data-group="Demand-and-Machine-Assumptions"] { display: none; }
 
+/* Hide projections container by default, only show when Demand & Machine Assumptions tab is selected */
+.projections-container { display: none; }
+.tab-panel[data-static-fields-subtab="Demand-and-Machine-Assumptions"] .projections-container { display: block; }
+
 .projection-grid {
     display: flex;
     flex-direction: column;
