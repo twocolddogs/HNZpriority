@@ -232,8 +232,8 @@ function hideTooltip() {
 }
 
 // --- Initial Setup ---
-document.addEventListener('DOMContentLoaded', () => {
-    loadArchetypeDescriptions();
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadArchetypeDescriptions();
     loadAndInitializeData();
     setupEventListeners();
 });
@@ -348,10 +348,13 @@ function setupEventListeners() {
 
 // --- Archetype Data Loading ---
 async function loadArchetypeDescriptions() {
+    console.log('Starting to load archetype descriptions...');
     try {
+        console.log('Fetching archetypes.csv...');
         const response = await fetch('archetypes.csv');
-        if (!response.ok) throw new Error('Archetypes CSV not found');
+        if (!response.ok) throw new Error(`Archetypes CSV not found: ${response.status}`);
         const csvText = await response.text();
+        console.log('CSV text loaded, length:', csvText.length);
         
         const results = Papa.parse(csvText, { 
             header: false, 
@@ -367,15 +370,17 @@ async function loadArchetypeDescriptions() {
             "X Large": []
         };
         
-        results.data.forEach(row => {
+        results.data.forEach((row, index) => {
             const facility = row[0];
             const archetype = row[1];
             
-            // Skip empty rows or header rows
-            if (facility && archetype && archetypeGroups[archetype]) {
-                archetypeGroups[archetype].push(facility);
+            // Skip empty rows, header rows, or rows with empty facility/archetype
+            if (facility && facility.trim() && archetype && archetype.trim() && archetypeGroups[archetype]) {
+                archetypeGroups[archetype].push(facility.trim());
             }
         });
+        
+        console.log('Parsed archetype groups:', archetypeGroups);
         
         // Format as bullet lists
         Object.keys(archetypeGroups).forEach(archetype => {
@@ -391,6 +396,7 @@ async function loadArchetypeDescriptions() {
         });
         
         console.log('Archetype descriptions loaded successfully');
+        console.log('Final archetype descriptions:', archetypeDescriptions);
     } catch (error) {
         console.warn('Could not load archetype descriptions:', error);
         // Keep default loading messages if CSV fails to load
