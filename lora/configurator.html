@@ -163,7 +163,7 @@ const projectionMetricDescriptions = { "ip_volume_step": "These financial-year-b
 const projectionMetricConfig = { ip_volume_step: { min: -0.20, max: 0.20, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(String(s).replace('%','')) / 100 }, op_volume_step: { min: -0.20, max: 0.20, format: v => `${(parseFloat(v) * 100).toFixed(1)}%`, parse: s => parseFloat(String(s).replace('%','')) / 100 }};
 const modalityDisplayMap = { "MR": "MRI" };
 const modalityIcons = { "CT": "CT.png", "US": "US.png", "XR": "XR.png", "MRI": "MRI.png" };
-const archetypeDescriptions = { "X Small": "Facilities include: Patea Health Centre, Opunake Health Centre, Waiouru Military Camp.", "Small": "Facilities include: Wairoa Hospital, Taumarunui Hospital, Dannevirke Community Hospital, Hawera Hospital.", "Medium": "Facilities include: Whanganui Hospital, Gisborne Hospital, Wairau Hospital (Blenheim), Timaru Hospital.", "Large": "Facilities include: Tauranga Hospital, Palmerston North Hospital, Dunedin Hospital, Wellington Regional Hospital.", "X Large": "Facilities include: Auckland City Hospital, Christchurch Hospital, Waikato Hospital, Middlemore Hospital.", "Default": "No facility list available for this archetype." };
+let archetypeDescriptions = { "X Small": "Loading facilities...", "Small": "Loading facilities...", "Medium": "Loading facilities...", "Large": "Loading facilities...", "X Large": "Loading facilities...", "Default": "No facility list available for this archetype." };
 const years = Array.from({ length: 11 }, (_, i) => `y${i}`);
 let baseYearStart = new Date().getFullYear(); 
 const archetypeSortOrder = { "X Small": 1, "Small": 2, "Medium": 3, "Large": 4, "X Large": 5, };
@@ -233,6 +233,7 @@ function hideTooltip() {
 
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
+    loadArchetypeDescriptions();
     loadAndInitializeData();
     setupEventListeners();
 });
@@ -343,6 +344,57 @@ function setupEventListeners() {
   resetModalOverlay.addEventListener('click', (e) => { if (e.target === resetModalOverlay) hideResetModal(); });
   importDraftModalCloseBtn.addEventListener('click', () => importDraftModalOverlay.classList.add('hidden'));
   importDraftModalOverlay.addEventListener('click', (e) => { if (e.target === importDraftModalOverlay) importDraftModalOverlay.classList.add('hidden'); });
+}
+
+// --- Archetype Data Loading ---
+async function loadArchetypeDescriptions() {
+    try {
+        const response = await fetch('archetypes.csv');
+        if (!response.ok) throw new Error('Archetypes CSV not found');
+        const csvText = await response.text();
+        
+        const results = Papa.parse(csvText, { 
+            header: false, 
+            skipEmptyLines: true 
+        });
+        
+        // Group facilities by archetype
+        const archetypeGroups = {
+            "X Small": [],
+            "Small": [],
+            "Medium": [],
+            "Large": [],
+            "X Large": []
+        };
+        
+        results.data.forEach(row => {
+            const facility = row[0];
+            const archetype = row[1];
+            
+            // Skip empty rows or header rows
+            if (facility && archetype && archetypeGroups[archetype]) {
+                archetypeGroups[archetype].push(facility);
+            }
+        });
+        
+        // Format as bullet lists
+        Object.keys(archetypeGroups).forEach(archetype => {
+            if (archetypeGroups[archetype].length > 0) {
+                const facilityList = archetypeGroups[archetype]
+                    .sort()
+                    .map(facility => `• ${facility}`)
+                    .join('<br>');
+                archetypeDescriptions[archetype] = `Facilities include:<br>${facilityList}`;
+            } else {
+                archetypeDescriptions[archetype] = "No facilities listed for this archetype.";
+            }
+        });
+        
+        console.log('Archetype descriptions loaded successfully');
+    } catch (error) {
+        console.warn('Could not load archetype descriptions:', error);
+        // Keep default loading messages if CSV fails to load
+    }
 }
 
 // --- Data Loading & Processing ---
@@ -532,7 +584,12 @@ function createTableTitle(tag, title, description) {
         infoIcon.textContent = '?';
         const tooltip = document.createElement('div');
         tooltip.className = 'info-tooltip';
-        tooltip.textContent = description;
+        // Use innerHTML if description contains HTML tags, otherwise use textContent
+        if (description.includes('<')) {
+            tooltip.innerHTML = description;
+        } else {
+            tooltip.textContent = description;
+        }
         infoContainer.appendChild(infoIcon);
         infoContainer.appendChild(tooltip);
         wrapper.appendChild(infoContainer);
