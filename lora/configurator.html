@@ -214,6 +214,10 @@ let baselineName = "Default Baseline", scenarioName = "";
 let baselineDescription = "", scenarioDescription = "", initialScenarioDescription = "";
 let activeSubTabs = { 'static-fields': 'Demand & Machine Assumptions' };
 let currentProjectionChangeContext = null;
+let collapseStates = { 
+    staticFields: false, // false = expanded, true = collapsed
+    projections: {} // metric name -> boolean
+};
 
 // --- Tooltip System (UNCHANGED) ---
 function showTooltip(triggerElement, content) {
@@ -269,10 +273,29 @@ function setupEventListeners() {
 
   tabsNavContainer.addEventListener('click', (e) => {
     const button = e.target.closest('.tab-button');
-    if (!button) return;
-    activeTabId = button.dataset.target;
-    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.toggle('active', btn === button));
-    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === activeTabId));
+    if (button) {
+      activeTabId = button.dataset.target;
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.toggle('active', btn === button));
+      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === activeTabId));
+      return;
+    }
+    
+    // Handle inline sub-navigation clicks
+    const subNavButton = e.target.closest('.sub-nav-button');
+    if (subNavButton) {
+        const navId = subNavButton.parentElement.dataset.navId;
+        const targetGroup = subNavButton.dataset.targetGroup;
+        activeSubTabs[navId] = targetGroup;
+        
+        // Update all tab panels with new sub-tab selection
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+          panel.dataset.staticFieldsSubtab = targetGroup.replace(/\s/g, '-').replace('&', 'and');
+        });
+        
+        subNavButton.parentElement.querySelectorAll('.sub-nav-button').forEach(btn => {
+            btn.classList.toggle('active', btn === subNavButton);
+        });
+    }
   });
   
   app.addEventListener('click', (e) => {
@@ -286,6 +309,63 @@ function setupEventListeners() {
         subNavButton.parentElement.querySelectorAll('.sub-nav-button').forEach(btn => {
             btn.classList.toggle('active', btn === subNavButton);
         });
+    }
+    
+    // Handle collapsible projection headers
+    const projectionHeader = e.target.closest('.collapsible-projection-header');
+    if (projectionHeader) {
+        const metric = projectionHeader.getAttribute('data-metric');
+        const gridWrapper = document.querySelector(`.projection-grid-wrapper[data-metric="${metric}"]`);
+        const indicator = projectionHeader.querySelector('.projection-collapse-indicator');
+        
+        if (gridWrapper) {
+            const isCollapsed = gridWrapper.classList.contains('collapsed');
+            gridWrapper.classList.toggle('collapsed');
+            indicator.innerHTML = isCollapsed ? '▼' : '▶';
+        }
+    }
+    
+    // Handle collapsible headers (both static fields and projections)
+    const header = e.target.closest('.collapsible-projection-header');
+    if (header) {
+        const section = header.getAttribute('data-section');
+        const metric = header.getAttribute('data-metric');
+        
+        if (section) {
+            // Handle static fields collapse
+            const activePanel = document.querySelector('.tab-panel.active');
+            const sectionWrapper = activePanel?.querySelector(`.static-table-wrapper[data-section="${section}"]`);
+            const indicator = header.querySelector('.projection-collapse-indicator');
+            
+            if (sectionWrapper && indicator) {
+                const isCollapsed = collapseStates.staticFields;
+                collapseStates.staticFields = !isCollapsed;
+                
+                // Update all static field sections across all tabs
+                document.querySelectorAll(`.static-table-wrapper[data-section="${section}"]`).forEach(wrapper => {
+                    wrapper.classList.toggle('collapsed', collapseStates.staticFields);
+                });
+                
+                // Update all indicators
+                document.querySelectorAll('.collapsible-projection-header[data-section="static-fields"] .projection-collapse-indicator').forEach(ind => {
+                    ind.innerHTML = collapseStates.staticFields ? '▶' : '▼';
+                });
+            }
+        } else if (metric) {
+            // Handle projection collapse
+            const isCurrentlyCollapsed = collapseStates.projections[metric] ?? true; // default collapsed
+            collapseStates.projections[metric] = !isCurrentlyCollapsed;
+            
+            // Update all projection wrappers with this metric across all tabs
+            document.querySelectorAll(`.projection-grid-wrapper[data-metric="${metric}"]`).forEach(wrapper => {
+                wrapper.classList.toggle('collapsed', collapseStates.projections[metric]);
+            });
+            
+            // Update all indicators for this metric
+            document.querySelectorAll(`.collapsible-projection-header[data-metric="${metric}"] .projection-collapse-indicator`).forEach(ind => {
+                ind.innerHTML = collapseStates.projections[metric] ? '▶' : '▼';
+            });
+        }
     }
   });
   
@@ -521,6 +601,8 @@ function renderUI(data, isEditable) {
   }
   const nav = document.createElement('div');
   nav.className = 'tabs-nav';
+  
+  // Add modality tabs
   modalities.forEach(modality => {
     const displayName = modalityDisplayMap[modality] || modality;
     const tabId = `tab-${modality.toLowerCase().replace(/\s/g, '-')}`;
@@ -536,6 +618,17 @@ function renderUI(data, isEditable) {
     button.innerHTML = `${iconHtml}<span>${displayName}</span>`;
     nav.appendChild(button);
   });
+  
+  // Add spacer between modality tabs and sub-nav
+  const spacer = document.createElement('div');
+  spacer.className = 'tabs-spacer';
+  nav.appendChild(spacer);
+  
+  // Add demand/workforce sub-navigation to the main nav
+  const activeSubTab = activeSubTabs['static-fields'];
+  const subNavInline = createInlineSubNav('static-fields', Object.keys(staticFieldGroups), activeSubTab);
+  nav.appendChild(subNavInline);
+  
   tabsNavContainer.appendChild(nav);
   modalities.forEach(modality => {
     const tabId = `tab-${modality.toLowerCase().replace(/\s/g, '-')}`;
@@ -546,15 +639,36 @@ function renderUI(data, isEditable) {
     const activeSubTab = activeSubTabs['static-fields'];
     panel.dataset.staticFieldsSubtab = activeSubTab.replace(/\s/g, '-').replace('&', 'and');
     const archetypes = groupedByModality[modality].sort((a,b) => (archetypeSortOrder[a.archetype] || 99) - (archetypeSortOrder[b.archetype] || 99));
-    panel.appendChild(createTableTitle('h3', 'Static Fields'));
-    panel.appendChild(createSubNav('static-fields', Object.keys(staticFieldGroups), activeSubTab));
-    panel.appendChild(createStaticTable(archetypes, isEditable));
+    
+    // Create collapsible Static Fields section
+    const staticFieldsHeader = createTableTitle('div', 'Static Fields', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.');
+    staticFieldsHeader.classList.add('metric-title-wrapper', 'collapsible-projection-header');
+    staticFieldsHeader.style.cursor = 'pointer';
+    staticFieldsHeader.setAttribute('data-section', 'static-fields');
+    
+    // Add collapse indicator to static fields
+    const staticCollapseIndicator = document.createElement('span');
+    staticCollapseIndicator.className = 'projection-collapse-indicator';
+    staticCollapseIndicator.innerHTML = collapseStates.staticFields ? '▶' : '▼';
+    staticFieldsHeader.insertBefore(staticCollapseIndicator, staticFieldsHeader.firstChild);
+    
+    panel.appendChild(staticFieldsHeader);
+    
+    // Create wrapper for static table
+    const staticTableWrapper = document.createElement('div');
+    staticTableWrapper.className = 'static-table-wrapper';
+    staticTableWrapper.setAttribute('data-section', 'static-fields');
+    if (collapseStates.staticFields) {
+        staticTableWrapper.classList.add('collapsed');
+    }
+    staticTableWrapper.appendChild(createStaticTable(archetypes, isEditable));
+    panel.appendChild(staticTableWrapper);
     // Create projection grids container
     const projectionsContainer = document.createElement('div');
     projectionsContainer.className = 'projections-container';
     projectionMetrics.forEach(metric => {
         const titleWrapper = createTableTitle('div', projectionMetricLabels[metric], projectionMetricDescriptions[metric]);
-        titleWrapper.classList.add('metric-title-wrapper');
+        titleWrapper.classList.add('metric-title-wrapper', 'collapsible-projection-header');
         
         // Add data attribute to identify workforce-related metrics
         if (metric === 'report_rate' || metric === 'mits_per_routine_machine_hour' || metric === 'mits_per_ooh_machine_hour') {
@@ -563,9 +677,24 @@ function renderUI(data, isEditable) {
             titleWrapper.setAttribute('data-metric-group', 'demand');
         }
         
+        // Add collapse indicator at the beginning
+        const collapseIndicator = document.createElement('span');
+        collapseIndicator.className = 'projection-collapse-indicator';
+        const isCollapsed = collapseStates.projections[metric] ?? true; // default collapsed
+        collapseIndicator.innerHTML = isCollapsed ? '▶' : '▼';
+        titleWrapper.insertBefore(collapseIndicator, titleWrapper.firstChild);
+        
+        // Make title clickable
+        titleWrapper.style.cursor = 'pointer';
+        titleWrapper.setAttribute('data-metric', metric);
+        
         const gridWrapper = document.createElement('div');
         gridWrapper.className = 'projection-grid-wrapper';
+        if (isCollapsed) {
+            gridWrapper.classList.add('collapsed');
+        }
         gridWrapper.setAttribute('data-metric-group', titleWrapper.getAttribute('data-metric-group'));
+        gridWrapper.setAttribute('data-metric', metric);
         gridWrapper.appendChild(createProjectionGrid(archetypes, metric, isEditable));
         
         projectionsContainer.appendChild(titleWrapper);
@@ -579,6 +708,20 @@ function renderUI(data, isEditable) {
 function createSubNav(navId, groups, activeGroup) {
     const navContainer = document.createElement('div');
     navContainer.className = 'sub-nav-container';
+    navContainer.dataset.navId = navId;
+    groups.forEach(group => {
+        const button = document.createElement('button');
+        button.className = 'sub-nav-button';
+        button.textContent = group;
+        button.dataset.targetGroup = group;
+        button.classList.toggle('active', group === activeGroup);
+        navContainer.appendChild(button);
+    });
+    return navContainer;
+}
+function createInlineSubNav(navId, groups, activeGroup) {
+    const navContainer = document.createElement('div');
+    navContainer.className = 'sub-nav-inline';
     navContainer.dataset.navId = navId;
     groups.forEach(group => {
         const button = document.createElement('button');
