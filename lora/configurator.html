@@ -638,8 +638,8 @@ function renderUI(data, isEditable) {
     panel.dataset.staticFieldsSubtab = activeSubTab.replace(/\s/g, '-').replace('&', 'and');
     const archetypes = groupedByModality[modality].sort((a,b) => (archetypeSortOrder[a.archetype] || 99) - (archetypeSortOrder[b.archetype] || 99));
     
-    // Create collapsible Static Fields section
-    const staticFieldsHeader = createTableTitle('div', 'Static Fields', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.');
+    // Create collapsible Static Parameters section
+    const staticFieldsHeader = createTableTitle('div', 'Static Parameters', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.');
     staticFieldsHeader.classList.add('metric-title-wrapper', 'collapsible-projection-header');
     staticFieldsHeader.style.cursor = 'pointer';
     staticFieldsHeader.setAttribute('data-section', 'static-fields');
