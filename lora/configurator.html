@@ -443,7 +443,8 @@ function renderUI(data, isEditable) {
   
   scenarioNameCard.classList.toggle('hidden', !isEditable);
   baselineNameCard.classList.toggle('hidden', isEditable);
-  actionsMenuContainer.classList.toggle('hidden', !isEditable);
+  // Keep hamburger menu visible in both baseline and scenario views
+  actionsMenuContainer.classList.remove('hidden');
   
   if(isEditable) {
       scenarioNameInput.value = scenarioName;
@@ -852,20 +853,28 @@ function loadDraft(file) {
 
 // --- Helper Functions ---
 function updateHeaderButtonStates(isEditable) {
-    if (!isEditable) {
-        actionsMenuContainer.classList.add('hidden');
-        return;
-    }
+    // Keep hamburger menu visible in both baseline and scenario views
     actionsMenuContainer.classList.remove('hidden');
 
-    const hasDataChanges = scenarioData.some(row => hasRowChanged(row.id));
-    const hasDescriptionChange = scenarioDescription !== initialScenarioDescription;
-    const hasChanges = hasDataChanges || hasDescriptionChange;
+    if (!isEditable) {
+        // In baseline view, only show Import Draft option
+        menuSaveDraft.classList.add('hidden');
+        menuExport.classList.add('hidden');
+        menuReset.classList.add('hidden');
+        menuDivider.classList.add('hidden');
+        menuImportDraft.classList.remove('hidden');
+    } else {
+        // In scenario view, show/hide based on changes
+        const hasDataChanges = scenarioData.some(row => hasRowChanged(row.id));
+        const hasDescriptionChange = scenarioDescription !== initialScenarioDescription;
+        const hasChanges = hasDataChanges || hasDescriptionChange;
 
-    menuSaveDraft.classList.toggle('hidden', !hasChanges);
-    menuExport.classList.toggle('hidden', !hasChanges);
-    menuReset.classList.toggle('hidden', !hasChanges);
-    menuDivider.classList.toggle('hidden', !hasChanges);
+        menuSaveDraft.classList.toggle('hidden', !hasChanges);
+        menuExport.classList.toggle('hidden', !hasChanges);
+        menuReset.classList.toggle('hidden', !hasChanges);
+        menuDivider.classList.toggle('hidden', !hasChanges);
+        menuImportDraft.classList.remove('hidden');
+    }
 }
 function hideAllSliders() {
     document.querySelectorAll('.slider-container.visible').forEach(slider => slider.classList.remove('visible'));
