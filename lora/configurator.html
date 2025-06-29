@@ -555,8 +555,21 @@ function renderUI(data, isEditable) {
     projectionMetrics.forEach(metric => {
         const titleWrapper = createTableTitle('div', projectionMetricLabels[metric], projectionMetricDescriptions[metric]);
         titleWrapper.classList.add('metric-title-wrapper');
+        
+        // Add data attribute to identify workforce-related metrics
+        if (metric === 'report_rate' || metric === 'mits_per_routine_machine_hour' || metric === 'mits_per_ooh_machine_hour') {
+            titleWrapper.setAttribute('data-metric-group', 'workforce');
+        } else {
+            titleWrapper.setAttribute('data-metric-group', 'demand');
+        }
+        
+        const gridWrapper = document.createElement('div');
+        gridWrapper.className = 'projection-grid-wrapper';
+        gridWrapper.setAttribute('data-metric-group', titleWrapper.getAttribute('data-metric-group'));
+        gridWrapper.appendChild(createProjectionGrid(archetypes, metric, isEditable));
+        
         projectionsContainer.appendChild(titleWrapper);
-        projectionsContainer.appendChild(createProjectionGrid(archetypes, metric, isEditable));
+        projectionsContainer.appendChild(gridWrapper);
     });
     panel.appendChild(projectionsContainer);
     app.appendChild(panel);
