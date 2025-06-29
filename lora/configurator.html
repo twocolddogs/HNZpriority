@@ -96,6 +96,16 @@
     </div>
   </div>
 
+  <div id="export-validation-modal-overlay" class="modal-overlay hidden">
+    <div class="modal-container">
+        <h2 class="modal-title">Scenario Details Required</h2>
+        <p class="modal-body-text">Please enter a scenario name and description before exporting. This information is required for proper scenario tracking and documentation.</p>
+        <div class="modal-buttons">
+            <button id="export-validation-modal-ok-btn" class="modal-btn modal-btn-confirm">OK</button>
+        </div>
+    </div>
+  </div>
+
   <div id="info-modal-overlay" class="modal-overlay hidden">
     <div class="modal-container">
       <h2 class="modal-title">Read-Only View</h2>
@@ -203,6 +213,8 @@ const resetModalCancelBtn = document.getElementById("reset-modal-cancel-btn");
 const importDraftModalOverlay = document.getElementById("import-draft-modal-overlay");
 const importDraftModalCloseBtn = document.getElementById("import-draft-modal-close-btn");
 const draftFileInput = document.getElementById("draft-file-input");
+const exportValidationModalOverlay = document.getElementById("export-validation-modal-overlay");
+const exportValidationModalOkBtn = document.getElementById("export-validation-modal-ok-btn");
 
 
 // --- State Variables ---
@@ -422,6 +434,8 @@ function setupEventListeners() {
   resetModalOverlay.addEventListener('click', (e) => { if (e.target === resetModalOverlay) hideResetModal(); });
   importDraftModalCloseBtn.addEventListener('click', () => importDraftModalOverlay.classList.add('hidden'));
   importDraftModalOverlay.addEventListener('click', (e) => { if (e.target === importDraftModalOverlay) importDraftModalOverlay.classList.add('hidden'); });
+  exportValidationModalOkBtn.addEventListener('click', () => exportValidationModalOverlay.classList.add('hidden'));
+  exportValidationModalOverlay.addEventListener('click', (e) => { if (e.target === exportValidationModalOverlay) exportValidationModalOverlay.classList.add('hidden'); });
 }
 
 // --- Archetype Data Loading ---
@@ -982,6 +996,16 @@ function hasRowChanged(rowId) {
 // --- Import/Export/Save Functions ---
 function exportScenarioCSV() {
     actionsDropdownMenu.classList.add('hidden');
+    
+    // Validate that scenario name and description are provided
+    const scenarioNameInput = document.getElementById('scenario-name-input');
+    const scenarioDescriptionInput = document.getElementById('scenario-description-input');
+    
+    if (!scenarioNameInput.value.trim() || !scenarioDescriptionInput.value.trim()) {
+        exportValidationModalOverlay.classList.remove('hidden');
+        return;
+    }
+    
     setTimeout(() => { 
         const flatData = scenarioData.map(row => {
             const newFlatRow = { ...row };
