@@ -260,9 +260,14 @@ textarea:focus { outline: none; border-color: #007A86; box-shadow: 0 0 0 3px rgb
 .tab-panel[data-static-fields-subtab="Demand-and-Machine-Assumptions"] [data-group="Workforce"] { display: none; }
 .tab-panel[data-static-fields-subtab="Workforce"] [data-group="Demand-and-Machine-Assumptions"] { display: none; }
 
-/* Hide projections container by default, only show when Demand & Machine Assumptions tab is selected */
+/* Hide projections container by default, show based on selected tab */
 .projections-container { display: none; }
 .tab-panel[data-static-fields-subtab="Demand-and-Machine-Assumptions"] .projections-container { display: block; }
+
+/* Hide workforce metrics by default, only show when Workforce tab is selected */
+.tab-panel[data-static-fields-subtab="Demand-and-Machine-Assumptions"] [data-metric-group="workforce"] { display: none; }
+.tab-panel[data-static-fields-subtab="Workforce"] [data-metric-group="demand"] { display: none; }
+.tab-panel[data-static-fields-subtab="Workforce"] .projections-container { display: block; }
 
 .projection-grid {
     display: flex;
