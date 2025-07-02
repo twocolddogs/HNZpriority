@@ -838,60 +838,111 @@ input:checked + .toggle-slider:before {
    ========================================================================== */
 .hierarchy-intro {
   text-align: center;
-  margin: 2rem 0 3rem 0;
+  margin: 1rem 0 1.5rem 0;
 }
 
 .hierarchy-intro h2 {
   font-family: var(--font-display);
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .hierarchy-intro p {
   font-family: var(--font-body);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-sm);
   color: var(--text-secondary);
   max-width: 800px;
   margin: 0 auto;
 }
 
-.hierarchy-cards {
+/* Main layout with 3-column structure */
+.main-content {
+  margin: 1rem 0;
+}
+
+.column-headers {
   display: grid;
-  gap: 2rem;
-  margin: 3rem 0;
+  grid-template-columns: 200px 1fr 200px;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.header-cost, .header-options, .header-strategic {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  padding: 0.75rem;
+  background: #F8F9FA;
+  border-radius: 8px;
+  border: 1px solid #E0E6ED;
+}
+
+.option-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.option-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  gap: 1rem;
+  align-items: center;
+  position: relative;
+}
+
+.row-connector {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.5rem;
+  height: 2px;
+  background: repeating-linear-gradient(
+    to right,
+    #D1D5DB 0px,
+    #D1D5DB 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  z-index: 1;
 }
 
 .hierarchy-card {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  position: relative;
+  z-index: 2;
+  flex: 1;
 }
 
 .hierarchy-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .hierarchy-rank {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.5rem 2rem;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
   color: white;
   font-weight: var(--font-weight-bold);
 }
 
 .rank-number {
   font-family: var(--font-display);
-  font-size: 2.5rem;
+  font-size: 1.5rem;
   font-weight: var(--font-weight-bold);
-  width: 60px;
-  height: 60px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
   display: flex;
@@ -902,51 +953,51 @@ input:checked + .toggle-slider:before {
 
 .rank-label {
   font-family: var(--font-display);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .hierarchy-content {
-  padding: 2rem;
+  padding: 1rem;
 }
 
 .hierarchy-content h3 {
   font-family: var(--font-display);
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 0.75rem 0;
 }
 
 .service-details {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .detail-item {
   display: flex;
   align-items: center;
-  margin-bottom: 0.75rem;
-  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
   background: #F8F9FA;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .detail-label {
   font-family: var(--font-body);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   color: var(--text-secondary);
-  min-width: 80px;
-  margin-right: 1rem;
+  min-width: 60px;
+  margin-right: 0.5rem;
 }
 
 .detail-value {
   font-family: var(--font-body);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
 }
 
 .detail-value.in-house {
@@ -964,34 +1015,34 @@ input:checked + .toggle-slider:before {
 .hierarchy-benefits, .hierarchy-risks {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .benefit-tag {
   font-family: var(--font-body);
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   font-weight: var(--font-weight-medium);
   background: #E8F5E8;
   color: #2E7D2E;
-  padding: 0.375rem 0.75rem;
-  border-radius: 20px;
+  padding: 0.2rem 0.4rem;
+  border-radius: 12px;
   border: 1px solid #C4E8C4;
 }
 
 .risk-tag {
   font-family: var(--font-body);
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   font-weight: var(--font-weight-medium);
   background: #FEE2E2;
   color: #B91C1C;
-  padding: 0.375rem 0.75rem;
-  border-radius: 20px;
+  padding: 0.2rem 0.4rem;
+  border-radius: 12px;
   border: 1px solid #FECACA;
 }
 
-/* Card-specific color schemes */
+/* Card-specific color schemes - darker to lighter */
 .gold-standard .hierarchy-rank {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
+  background: linear-gradient(135deg, #B8860B, #FFD700);
 }
 
 .gold-standard {
@@ -999,7 +1050,7 @@ input:checked + .toggle-slider:before {
 }
 
 .good-option .hierarchy-rank {
-  background: linear-gradient(135deg, #4CAF50, #2E7D32);
+  background: linear-gradient(135deg, #1B5E20, #4CAF50);
 }
 
 .good-option {
@@ -1007,7 +1058,7 @@ input:checked + .toggle-slider:before {
 }
 
 .caution-option .hierarchy-rank {
-  background: linear-gradient(135deg, #FF9800, #F57C00);
+  background: linear-gradient(135deg, #E65100, #FF9800);
 }
 
 .caution-option {
@@ -1015,7 +1066,7 @@ input:checked + .toggle-slider:before {
 }
 
 .worst-option .hierarchy-rank {
-  background: linear-gradient(135deg, #F44336, #D32F2F);
+  background: linear-gradient(135deg, #B71C1C, #F44336);
 }
 
 .worst-option {
@@ -1073,8 +1124,125 @@ input:checked + .toggle-slider:before {
   margin: 0;
 }
 
+/* Cost and Strategic Cards */
+.cost-card, .strategic-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid transparent;
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.cost-card:hover, .strategic-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.cost-content, .strategic-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cost-label, .strategic-label {
+  font-family: var(--font-display);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.cost-description, .strategic-description {
+  font-family: var(--font-body);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+/* Cost card color schemes */
+.cost-card.low {
+  border-color: #4CAF50;
+}
+
+.cost-card.low .cost-label {
+  color: #2E7D2E;
+}
+
+.cost-card.medium {
+  border-color: #FF9800;
+}
+
+.cost-card.medium .cost-label {
+  color: #D2691E;
+}
+
+.cost-card.high {
+  border-color: #F57C00;
+}
+
+.cost-card.high .cost-label {
+  color: #F57C00;
+}
+
+.cost-card.highest {
+  border-color: #F44336;
+}
+
+.cost-card.highest .cost-label {
+  color: #B91C1C;
+}
+
+/* Strategic card color schemes */
+.strategic-card.highest {
+  border-color: #4CAF50;
+}
+
+.strategic-card.highest .strategic-label {
+  color: #2E7D2E;
+}
+
+.strategic-card.high {
+  border-color: #4CAF50;
+}
+
+.strategic-card.high .strategic-label {
+  color: #4CAF50;
+}
+
+.strategic-card.medium {
+  border-color: #FF9800;
+}
+
+.strategic-card.medium .strategic-label {
+  color: #D2691E;
+}
+
+.strategic-card.low {
+  border-color: #F44336;
+}
+
+.strategic-card.low .strategic-label {
+  color: #B91C1C;
+}
+
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  .column-headers {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .option-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .row-connector {
+    display: none;
+  }
+  
   .hierarchy-intro h2 {
     font-size: var(--font-size-2xl);
   }
@@ -1084,23 +1252,23 @@ input:checked + .toggle-slider:before {
   }
   
   .hierarchy-rank {
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 0.75rem;
   }
   
   .rank-number {
-    font-size: 2rem;
-    width: 50px;
-    height: 50px;
+    font-size: 1.25rem;
+    width: 30px;
+    height: 30px;
   }
   
   .hierarchy-content {
-    padding: 1.5rem;
+    padding: 0.75rem;
   }
   
   .detail-item {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: 0.25rem;
   }
   
   .detail-label {
