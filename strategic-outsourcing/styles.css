@@ -138,9 +138,10 @@ body {
 .lora-sticky-header {
   position: sticky;
   top: 0;
-  z-index: 1002;
+  z-index: 1010;
   background: #F9FAFB;
   padding: 0.5em 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 .lora-brand-bar {
   display: flex;
@@ -915,6 +916,7 @@ input:checked + .toggle-slider:before {
 .hierarchy-intro {
   text-align: center;
   margin: 1rem 0 1.5rem 0;
+  padding-bottom: 0.5rem;
 }
 
 .hierarchy-intro h2 {
@@ -944,6 +946,16 @@ input:checked + .toggle-slider:before {
   gap: 1rem;
   margin-bottom: 1rem;
   text-align: center;
+  position: sticky;
+  top: 74px;
+  z-index: 1000;
+  background: #F9FAFB;
+  padding: 2rem 0 1rem 0;
+  margin-top: -2rem;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 .header-cost, .header-options, .header-strategic {
@@ -955,6 +967,7 @@ input:checked + .toggle-slider:before {
   background: #F8F9FA;
   border-radius: 8px;
   border: 1px solid #E0E6ED;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .option-rows {
@@ -979,7 +992,13 @@ input:checked + .toggle-slider:before {
   top: 1rem;
   bottom: 1rem;
   width: 2px;
-  background: #D1D5DB;
+  background: repeating-linear-gradient(
+    to bottom,
+    #D1D5DB 0px,
+    #D1D5DB 4px,
+    transparent 4px,
+    transparent 8px
+  );
   transform: translateX(-50%);
   z-index: 1;
   pointer-events: none;
