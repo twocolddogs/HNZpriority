@@ -960,7 +960,7 @@ input:checked + .toggle-slider:before {
 .option-rows {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
   position: relative;
 }
 
@@ -976,12 +976,13 @@ input:checked + .toggle-slider:before {
 .vertical-connector {
   position: absolute;
   left: 50%;
-  top: 0;
-  bottom: 0;
+  top: 2rem;
+  bottom: 2rem;
   width: 2px;
   background: #E5E7EB;
   transform: translateX(-50%);
   z-index: 1;
+  pointer-events: none;
 }
 
 .hierarchy-card {
@@ -1111,6 +1112,12 @@ input:checked + .toggle-slider:before {
   padding: 0.2rem 0.4rem;
   border-radius: 12px;
   border: 1px solid #C4E8C4;
+}
+
+.benefit-tag.cost-effective {
+  background: #FFF4E6;
+  color: #D2691E;
+  border: 1px solid #FFE0B3;
 }
 
 .risk-tag {
