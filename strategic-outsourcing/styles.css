@@ -961,6 +961,7 @@ input:checked + .toggle-slider:before {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  position: relative;
 }
 
 .option-row {
@@ -969,21 +970,17 @@ input:checked + .toggle-slider:before {
   gap: 1rem;
   align-items: center;
   position: relative;
+  z-index: 2;
 }
 
-.row-connector {
+.vertical-connector {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -0.5rem;
-  height: 2px;
-  background: repeating-linear-gradient(
-    to right,
-    #D1D5DB 0px,
-    #D1D5DB 4px,
-    transparent 4px,
-    transparent 8px
-  );
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #E5E7EB;
+  transform: translateX(-50%);
   z-index: 1;
 }
 
@@ -1326,7 +1323,7 @@ input:checked + .toggle-slider:before {
     gap: 0.75rem;
   }
   
-  .row-connector {
+  .vertical-connector {
     display: none;
   }
   
