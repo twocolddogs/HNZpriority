@@ -225,6 +225,20 @@ class DecisionTreeBuilder {
     } catch (error) {
       console.error('Error binding guide modal events:', error);
     }
+
+    try {
+      // Callout helper buttons
+      console.log('Binding callout helper events...');
+      document.querySelectorAll('.btn-callout').forEach(button => {
+        button.addEventListener('click', () => {
+          const calloutType = button.getAttribute('data-callout');
+          this.insertCallout(calloutType);
+        });
+      });
+      console.log('Callout helper events bound successfully');
+    } catch (error) {
+      console.error('Error binding callout helper events:', error);
+    }
   }
 
   showView(viewName) {
@@ -283,6 +297,7 @@ class DecisionTreeBuilder {
     this.getRecommendationEndpoints().forEach(endpoint => {
       const stepItem = document.createElement('div');
       stepItem.className = 'step-item recommendation-endpoint';
+      stepItem.addEventListener('click', () => this.editRecommendationEndpoint(endpoint.id));
       
       // Visual styling for recommendation endpoints
       stepItem.style.border = '1px solid #10B981';
@@ -344,14 +359,17 @@ class DecisionTreeBuilder {
       const guideItem = document.createElement('div');
       guideItem.className = 'guide-item';
       
+      guideItem.style.flexDirection = 'column';
+      guideItem.style.alignItems = 'stretch';
+      
       guideItem.innerHTML = `
         <div style="width: 100%; margin-bottom: 0.75rem;">
           <span style="font-weight: 500;">${guide.title || 'Untitled Guide'}</span>
           <p style="margin: 0; font-size: 0.875rem; color: #6B7280;">${guide.sections?.length || 0} sections</p>
         </div>
         <div style="display: flex; gap: 0.5rem; width: 100%;">
-          <button class="btn secondary small" onclick="builder.editGuide(${index})" style="flex: 1;">Edit</button>
-          <button class="btn danger small" onclick="builder.removeGuideAtIndex(${index})" style="flex: 1;">Remove</button>
+          <button class="btn secondary small" onclick="builder.editGuide(${index})" style="flex: 1; text-align: center;">Edit</button>
+          <button class="btn danger small" onclick="builder.removeGuideAtIndex(${index})" style="flex: 1; text-align: center;">Remove</button>
         </div>
       `;
       
@@ -371,6 +389,35 @@ class DecisionTreeBuilder {
     this.currentTree.steps[stepId] = newStep;
     this.updateUI();
     this.editStep(stepId);
+  }
+
+  editRecommendationEndpoint(endpointId) {
+    // Find the endpoint from our virtual endpoints
+    const endpoint = this.getRecommendationEndpoints().find(ep => ep.id === endpointId);
+    if (!endpoint) return;
+    
+    // Set up editing mode for this virtual endpoint
+    this.currentEditingStep = endpointId;
+    this.editingVirtualEndpoint = true;
+    
+    // Populate modal fields with endpoint data
+    document.getElementById('stepId').value = endpointId;
+    document.getElementById('stepTitle').value = `${endpoint.recommendation.modality || 'Recommendation'} Endpoint`;
+    document.getElementById('stepSubtitle').value = '';
+    document.getElementById('stepQuestion').value = '';
+    document.getElementById('stepType').value = 'endpoint';
+    
+    // Populate endpoint fields
+    document.getElementById('endpointModality').value = endpoint.recommendation.modality || '';
+    document.getElementById('endpointContrast').value = endpoint.recommendation.contrast || '';
+    document.getElementById('endpointNotes').value = endpoint.recommendation.notes || '';
+    document.getElementById('endpointPriority').value = endpoint.recommendation.priority || '';
+    
+    // Update UI to show endpoint section
+    this.updateStepTypeUI('endpoint');
+    
+    // Show the modal
+    document.getElementById('stepModal').classList.remove('hidden');
   }
 
   editStep(stepId) {
@@ -494,6 +541,38 @@ class DecisionTreeBuilder {
 
   saveStep() {
     if (!this.currentEditingStep) return;
+
+    // Handle virtual endpoint editing
+    if (this.editingVirtualEndpoint) {
+      const endpointId = this.currentEditingStep;
+      const newRecommendation = {
+        modality: document.getElementById('endpointModality').value,
+        contrast: document.getElementById('endpointContrast').value,
+        notes: document.getElementById('endpointNotes').value,
+        priority: document.getElementById('endpointPriority').value
+      };
+      
+      // Find all steps that point to this recommendation endpoint and update them
+      Object.values(this.currentTree.steps).forEach(step => {
+        if (step.options) {
+          step.options.forEach(option => {
+            if (option.action && option.action.type === 'recommend') {
+              // Check if this recommendation matches the endpoint we're editing
+              const endpoint = this.getRecommendationEndpoints().find(ep => ep.id === endpointId);
+              if (endpoint && JSON.stringify(option.action.recommendation) === JSON.stringify(endpoint.recommendation)) {
+                option.action.recommendation = { ...newRecommendation };
+              }
+            }
+          });
+        }
+      });
+      
+      this.editingVirtualEndpoint = false;
+      this.updateUI();
+      this.updateJSON();
+      this.closeModal();
+      return;
+    }
 
     const step = this.currentTree.steps[this.currentEditingStep];
     
@@ -1895,6 +1974,28 @@ class DecisionTreeBuilder {
   truncateText(text, maxLength) {
     if (!text) return '';
     return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
+  }
+
+  insertCallout(calloutType) {
+    const textarea = document.getElementById('stepQuestion');
+    if (!textarea) return;
+
+    const cursorPosition = textarea.selectionStart;
+    const currentValue = textarea.value;
+    
+    // Insert callout syntax at cursor position
+    const calloutText = `[${calloutType}]Insert your ${calloutType} text here[/${calloutType}]`;
+    const newValue = currentValue.slice(0, cursorPosition) + calloutText + currentValue.slice(cursorPosition);
+    
+    textarea.value = newValue;
+    
+    // Position cursor inside the callout content for easy editing
+    const contentStart = cursorPosition + calloutType.length + 2; // After [type]
+    const contentEnd = contentStart + `Insert your ${calloutType} text here`.length;
+    textarea.setSelectionRange(contentStart, contentEnd);
+    
+    // Focus the textarea
+    textarea.focus();
   }
 }
 

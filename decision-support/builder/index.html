@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HNZ Decision Tree Builder</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
     <div class="app-container">
         <div class="header">
             <div class="brand-bar">
-                <img src="../images/HealthNZ_logo_v2.svg" alt="Health New Zealand Logo" class="app-logo">
+                <img src="../../images/HealthNZ_logo_v2.svg" alt="Health New Zealand Logo" class="app-logo">
                 <div class="header-divider"></div>
                 <h1 class="title">Decision Tree Builder</h1>
             </div>
@@ -130,8 +130,16 @@
                     <input type="text" id="stepSubtitle" placeholder="Optional subtitle">
                 </div>
                 <div class="form-group">
-                    <label for="stepQuestion">Question</label>
-                    <input type="text" id="stepQuestion" placeholder="What is the question?">
+                    <label for="stepQuestion">Description</label>
+                    <textarea id="stepQuestion" placeholder="Describe this step. You can use callouts like [info]Important note[/info] or [warning]Be careful[/warning]" rows="3"></textarea>
+                    <div class="callout-helpers">
+                        <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
+                        <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
+                        <button type="button" class="btn-callout" data-callout="info" title="Insert Info callout">Info</button>
+                        <button type="button" class="btn-callout" data-callout="warning" title="Insert Warning callout">Warning</button>
+                        <button type="button" class="btn-callout" data-callout="success" title="Insert Success callout">Success</button>
+                        <button type="button" class="btn-callout" data-callout="danger" title="Insert Danger callout">Danger</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="stepType">Step Type</label>

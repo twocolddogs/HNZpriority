@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Callout Test</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div style="padding: 2rem;">
+        <h1>Callout Implementation Test</h1>
+        
+        <h2>Step Description with Callouts</h2>
+        <div class="step-description">
+            This is a regular step description with various callouts:
+            
+            <div class="step-callout step-callout-protocol">
+                This is a protocol callout with blue styling.
+            </div>
+            
+            <div class="step-callout step-callout-info">
+                This is an info callout with purple styling.
+            </div>
+            
+            <div class="step-callout step-callout-warning">
+                This is a warning callout with orange styling.
+            </div>
+            
+            <div class="step-callout step-callout-success">
+                This is a success callout with green styling.
+            </div>
+            
+            <div class="step-callout step-callout-danger">
+                This is a danger callout with red styling.
+            </div>
+        </div>
+
+        <h2>Callout Helper Buttons</h2>
+        <div class="callout-helpers">
+            <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
+            <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
+            <button type="button" class="btn-callout" data-callout="info" title="Insert Info callout">Info</button>
+            <button type="button" class="btn-callout" data-callout="warning" title="Insert Warning callout">Warning</button>
+            <button type="button" class="btn-callout" data-callout="success" title="Insert Success callout">Success</button>
+            <button type="button" class="btn-callout" data-callout="danger" title="Insert Danger callout">Danger</button>
+        </div>
+        
+        <h2>Test Textarea</h2>
+        <div class="form-group">
+            <label for="testTextarea">Description</label>
+            <textarea id="testTextarea" placeholder="Click helper buttons to insert callouts..." rows="5">
+This is sample text. [info]This is an info callout[/info] And this continues the regular text.
+
+[warning]Be careful with this process[/warning]
+
+Regular text again. [protocol]Follow the standard protocol[/protocol] End of text.
+            </textarea>
+        </div>
+
+        <h2>Parsed Callout Result</h2>
+        <div id="parsedResult" class="step-description"></div>
+
+        <script>
+            // Simple callout parser for testing
+            function parseCallouts(text) {
+                if (!text) return '';
+                const calloutRegex = /\[(protocol|guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
+                return text.replace(calloutRegex, (match, type, content) => {
+                    return `<div class="step-callout step-callout-${type}">${content.trim()}</div>`;
+                });
+            }
+
+            // Parse the textarea content and show result
+            function updateParsedResult() {
+                const textarea = document.getElementById('testTextarea');
+                const result = document.getElementById('parsedResult');
+                result.innerHTML = parseCallouts(textarea.value);
+            }
+
+            // Update on page load and when textarea changes
+            updateParsedResult();
+            document.getElementById('testTextarea').addEventListener('input', updateParsedResult);
+
+            // Add functionality to helper buttons
+            document.querySelectorAll('.btn-callout').forEach(button => {
+                button.addEventListener('click', () => {
+                    const calloutType = button.getAttribute('data-callout');
+                    const textarea = document.getElementById('testTextarea');
+                    const cursorPosition = textarea.selectionStart;
+                    const currentValue = textarea.value;
+                    
+                    const calloutText = `[${calloutType}]Insert your ${calloutType} text here[/${calloutType}]`;
+                    const newValue = currentValue.slice(0, cursorPosition) + calloutText + currentValue.slice(cursorPosition);
+                    
+                    textarea.value = newValue;
+                    
+                    const contentStart = cursorPosition + calloutType.length + 2;
+                    const contentEnd = contentStart + `Insert your ${calloutType} text here`.length;
+                    textarea.setSelectionRange(contentStart, contentEnd);
+                    textarea.focus();
+                    
+                    updateParsedResult();
+                });
+            });
+        </script>
+    </div>
+</body>
+</html>
