@@ -90,7 +90,7 @@ class DecisionTreeRenderer {
     console.log('Rendering step:', step);
     
     const stepCard = document.createElement('div');
-    stepCard.className = 'step-card';
+    stepCard.className = `step-card step-card-${step.type || 'choice'}`;
     
     // Title
     const title = document.createElement('h2');
@@ -112,12 +112,12 @@ class DecisionTreeRenderer {
       stepCard.appendChild(guideInfo);
     }
     
-    // Question
+    // Description (with callout parsing)
     if (step.question) {
-      const question = document.createElement('p');
-      question.className = 'step-question';
-      question.textContent = step.question;
-      stepCard.appendChild(question);
+      const description = document.createElement('div');
+      description.className = 'step-description';
+      description.innerHTML = this.parseCallouts(step.question);
+      stepCard.appendChild(description);
     }
     
     // Options
@@ -405,6 +405,17 @@ class DecisionTreeRenderer {
     });
     
     return section;
+  }
+
+  parseCallouts(text) {
+    if (!text) return '';
+    
+    // Parse callout syntax: [type]content[/type]
+    const calloutRegex = /\[(protocol|guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
+    
+    return text.replace(calloutRegex, (match, type, content) => {
+      return `<div class="step-callout step-callout-${type}">${content.trim()}</div>`;
+    });
   }
 
   hideProtocolModal() {

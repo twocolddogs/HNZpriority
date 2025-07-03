@@ -1181,3 +1181,33 @@ body {
     padding: var(--space-sm) var(--space-md);
   }
 }
+
+/* ==========================================================================
+   Text Size Improvements
+   ========================================================================== */
+
+/* Increase nav tab text size */
+.nav-tab {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Increase form field text size in sidebar */
+.properties-panel .form-group input,
+.properties-panel .form-group textarea,
+.properties-panel .form-group select {
+  font-size: 1rem;
+}
+
+/* Increase Add Step button text size */
+#addStep {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Decision button styling */
+.decision-button {
+  font-family: 'Public Sans', sans-serif;
+  font-weight: 400;
+  font-size: 0.875rem;
+}
