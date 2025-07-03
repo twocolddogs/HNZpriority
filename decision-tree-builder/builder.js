@@ -345,13 +345,13 @@ class DecisionTreeBuilder {
       guideItem.className = 'guide-item';
       
       guideItem.innerHTML = `
-        <div style="flex: 1;">
+        <div style="width: 100%; margin-bottom: 0.75rem;">
           <span style="font-weight: 500;">${guide.title || 'Untitled Guide'}</span>
-          <p style="margin: 0; font-size: 0.875rem; color: var(--text-muted);">${guide.sections?.length || 0} sections</p>
+          <p style="margin: 0; font-size: 0.875rem; color: #6B7280;">${guide.sections?.length || 0} sections</p>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-          <button class="btn secondary small" onclick="builder.editGuide(${index})">Edit</button>
-          <button class="btn danger small" onclick="builder.removeGuideAtIndex(${index})">Remove</button>
+        <div style="display: flex; gap: 0.5rem; width: 100%;">
+          <button class="btn secondary small" onclick="builder.editGuide(${index})" style="flex: 1;">Edit</button>
+          <button class="btn danger small" onclick="builder.removeGuideAtIndex(${index})" style="flex: 1;">Remove</button>
         </div>
       `;
       
@@ -386,11 +386,11 @@ class DecisionTreeBuilder {
     document.getElementById('stepQuestion').value = step.question || '';
     document.getElementById('stepType').value = step.type;
 
-    // Protocol info
-    if (step.protocolInfo) {
-      document.getElementById('protocolTitle').value = step.protocolInfo.title || '';
-      document.getElementById('protocolDescription').value = step.protocolInfo.description || '';
-      document.getElementById('protocolNote').value = step.protocolInfo.note || '';
+    // Guide info
+    if (step.guideInfo) {
+      document.getElementById('protocolTitle').value = step.guideInfo.title || '';
+      document.getElementById('protocolDescription').value = step.guideInfo.description || '';
+      document.getElementById('protocolNote').value = step.guideInfo.note || '';
     } else {
       document.getElementById('protocolTitle').value = '';
       document.getElementById('protocolDescription').value = '';
@@ -427,7 +427,7 @@ class DecisionTreeBuilder {
 
     // Show relevant sections
     switch (stepType) {
-      case 'protocol-info':
+      case 'guide':
         protocolSection.classList.remove('hidden');
         optionsSection.classList.remove('hidden');
         break;
@@ -516,15 +516,15 @@ class DecisionTreeBuilder {
     step.question = question;
     step.type = type;
 
-    // Protocol info
-    if (type === 'protocol-info') {
-      step.protocolInfo = {
+    // Guide info
+    if (type === 'guide') {
+      step.guideInfo = {
         title: document.getElementById('protocolTitle').value,
         description: document.getElementById('protocolDescription').value,
         note: document.getElementById('protocolNote').value
       };
     } else {
-      delete step.protocolInfo;
+      delete step.guideInfo;
     }
 
     // Endpoint info
@@ -639,7 +639,7 @@ class DecisionTreeBuilder {
       sectionItem.className = 'option-item';
       
       const typeLabels = {
-        protocol: 'Protocol (Blue)',
+        protocol: 'Guide (Blue)',
         info: 'Information (Purple)', 
         warning: 'Warning (Orange)',
         success: 'Success (Green)',

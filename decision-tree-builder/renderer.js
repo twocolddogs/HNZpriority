@@ -106,10 +106,10 @@ class DecisionTreeRenderer {
       stepCard.appendChild(subtitle);
     }
     
-    // Protocol info
-    if (step.protocolInfo) {
-      const protocolInfo = this.createProtocolInfo(step.protocolInfo);
-      stepCard.appendChild(protocolInfo);
+    // Guide info
+    if (step.guideInfo) {
+      const guideInfo = this.createGuideInfo(step.guideInfo);
+      stepCard.appendChild(guideInfo);
     }
     
     // Question
@@ -156,23 +156,23 @@ class DecisionTreeRenderer {
     return button;
   }
 
-  createProtocolInfo(protocolInfo) {
+  createGuideInfo(guideInfo) {
     const container = document.createElement('div');
-    container.className = 'protocol-info';
+    container.className = 'guide-info';
     
     const title = document.createElement('h4');
-    title.textContent = protocolInfo.title;
+    title.textContent = guideInfo.title;
     container.appendChild(title);
     
     const description = document.createElement('p');
-    description.textContent = protocolInfo.description;
+    description.textContent = guideInfo.description;
     container.appendChild(description);
     
-    if (protocolInfo.note) {
+    if (guideInfo.note) {
       const note = document.createElement('div');
-      note.className = 'protocol-note';
+      note.className = 'guide-note';
       const noteP = document.createElement('p');
-      noteP.innerHTML = `<strong>Note:</strong> ${protocolInfo.note}`;
+      noteP.innerHTML = `<strong>Note:</strong> ${guideInfo.note}`;
       note.appendChild(noteP);
       container.appendChild(note);
     }
@@ -292,7 +292,7 @@ class DecisionTreeRenderer {
     
     const button = document.createElement('button');
     button.className = 'decision-button protocol-reference full-width';
-    button.textContent = 'View Protocol Reference Guide';
+    button.textContent = 'View Reference Guide';
     button.addEventListener('click', () => this.showProtocolModal());
     
     container.appendChild(button);
@@ -342,7 +342,7 @@ class DecisionTreeRenderer {
     
     const title = document.createElement('h3');
     title.className = 'modal-title';
-    title.textContent = 'Protocol Reference Guide';
+    title.textContent = 'Reference Guide';
     
     const closeBtn = document.createElement('button');
     closeBtn.className = 'modal-close';
