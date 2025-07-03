@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HNZ Decision Support Tool</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .pathway-subtitle {
+            text-align: center;
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 800px;
+            margin: 0 auto var(--space-xl) auto;
+            line-height: 1.6;
+            padding: 0 var(--space-md);
+        }
+
+        .home-button {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: var(--text-white);
+            padding: var(--space-md) var(--space-2xl);
+            border-radius: 8px;
+            text-decoration: none;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.9375rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .home-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .home-button-icon {
+            font-size: 1.125rem;
+            transition: transform 0.2s ease;
+        }
+
+        .home-button:hover .home-button-icon {
+            transform: translateX(-2px);
+        }
+
+        .lora-container {
+            margin: 0;
+            padding: 0;
+        }
+
+        .lora-sticky-header {
+            padding: var(--space-lg);
+            margin: 0;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .lora-brand-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(90deg, #143345 45%, #41236a 100%);
+            padding: var(--space-lg) var(--space-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            min-height: 72px;
+            margin: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .brand-left {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .lora-title {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-white);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .lora-app-logo {
+            height: auto;
+            width: 160px;
+            flex-shrink: 0;
+        }
+
+        .lora-header-divider {
+            width: 1px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 0 var(--space-lg);
+            flex-shrink: 0;
+        }
+
+        .loading-pathway {
+            text-align: center;
+            padding: var(--space-2xl);
+            color: var(--text-muted);
+        }
+
+        .error-pathway {
+            text-align: center;
+            padding: var(--space-2xl);
+            color: var(--danger);
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            border-radius: var(--radius-md);
+            margin: var(--space-xl);
+        }
+    </style>
+</head>
+<body>
+    <div class="lora-container">
+        <div class="lora-sticky-header">
+            <div class="lora-brand-bar">
+                <div class="brand-left">
+                    <img src="../images/HealthNZ_logo_v2.svg" alt="Health New Zealand Logo" class="lora-app-logo">
+                    <div class="lora-header-divider"></div>
+                    <h1 id="pathwayTitle" class="lora-title">Loading...</h1>
+                </div>
+                <a href="index.html" class="home-button">
+                    <span class="home-button-icon">←</span>
+                    <span>All Pathways</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Pathway subtitle section -->
+        <div id="pathwaySubtitle" class="pathway-subtitle hidden"></div>
+
+        <!-- Loading indicator -->
+        <div id="loading" class="loading-pathway">
+            <div class="loading-spinner"></div>
+            <p>Loading decision pathway...</p>
+        </div>
+
+        <!-- Error state -->
+        <div id="errorState" class="error-pathway hidden">
+            <h3>Unable to Load Pathway</h3>
+            <p id="errorMessage">There was an error loading this decision pathway.</p>
+            <a href="index.html" class="decision-button primary" style="display: inline-block; margin-top: 1rem;">
+                Return to All Pathways
+            </a>
+        </div>
+
+        <!-- Protocol Reference Modal -->
+        <div id="protocolModal" class="modal-overlay hidden">
+            <div class="modal-container protocol-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Protocol Reference Guide</h3>
+                    <button id="closeProtocol" class="modal-close">&times;</button>
+                </div>
+                
+                <div class="modal-body" id="protocolContent">
+                    <!-- Protocol content will be dynamically inserted -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="appContent" class="app-content hidden">
+            <!-- Dynamic decision tree content will be inserted here -->
+        </div>
+    </div>
+
+    <script src="pathway-renderer.js"></script>
+</body>
+</html>

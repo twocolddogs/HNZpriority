@@ -307,6 +307,74 @@
         </div>
     </div>
 
+    <!-- Modal for editing guides -->
+    <div id="guideModal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="guideModalTitle">Edit Guide</h3>
+                <button id="closeGuideModal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="guideTitle">Guide Title</label>
+                    <input type="text" id="guideTitle" placeholder="Protocol Reference Guide">
+                </div>
+
+                <div class="form-section">
+                    <h4>Guide Sections</h4>
+                    <div id="guideSectionsList" class="options-list">
+                        <!-- Guide sections will be listed here -->
+                    </div>
+                    <button id="addGuideSection" class="btn secondary">Add Section</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveGuide" class="btn primary">Save Guide</button>
+                <button id="deleteGuide" class="btn danger">Delete Guide</button>
+                <button id="cancelGuide" class="btn secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing guide sections -->
+    <div id="guideSectionModal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="guideSectionModalTitle">Edit Section</h3>
+                <button id="closeGuideSectionModal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="sectionTitle">Section Title</label>
+                    <input type="text" id="sectionTitle" placeholder="Section title">
+                </div>
+                <div class="form-group">
+                    <label for="sectionType">Section Type</label>
+                    <select id="sectionType">
+                        <option value="protocol">Protocol (Blue)</option>
+                        <option value="info">Information (Purple)</option>
+                        <option value="warning">Warning (Orange)</option>
+                        <option value="success">Success (Green)</option>
+                        <option value="danger">Danger (Red)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="sectionContent">Content</label>
+                    <textarea id="sectionContent" placeholder="Section content" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="sectionItems">List Items (one per line, optional)</label>
+                    <textarea id="sectionItems" placeholder="• Item 1&#10;• Item 2&#10;• Item 3" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveGuideSection" class="btn primary">Save Section</button>
+                <button id="deleteGuideSection" class="btn danger">Delete Section</button>
+                <button id="cancelGuideSection" class="btn secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script src="builder.js"></script>
     <script src="renderer.js"></script>
 </body>
