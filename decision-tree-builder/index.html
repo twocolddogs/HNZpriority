@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HNZ Decision Tree Builder</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div class="brand-bar">
+                <img src="../images/HealthNZ_logo_v2.svg" alt="Health New Zealand Logo" class="app-logo">
+                <div class="header-divider"></div>
+                <h1 class="title">Decision Tree Builder</h1>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <button id="builderTab" class="nav-tab active">Builder</button>
+                <button id="birdseyeTab" class="nav-tab">Birdseye</button>
+                <button id="previewTab" class="nav-tab">Preview</button>
+                <button id="jsonTab" class="nav-tab">JSON</button>
+            </div>
+
+            <!-- Builder View -->
+            <div id="builderView" class="view active">
+                <div class="builder-layout">
+                    <!-- Tree Properties Panel -->
+                    <div class="properties-panel">
+                        <h3>Tree Properties</h3>
+                        <div class="form-group">
+                            <label for="treeId">Tree ID</label>
+                            <input type="text" id="treeId" placeholder="unique-tree-id">
+                        </div>
+                        <div class="form-group">
+                            <label for="treeTitle">Title</label>
+                            <input type="text" id="treeTitle" placeholder="Decision Tree Title">
+                        </div>
+                        <div class="form-group">
+                            <label for="treeDescription">Description</label>
+                            <textarea id="treeDescription" placeholder="Optional description"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="startStep">Start Step</label>
+                            <select id="startStep">
+                                <option value="">Select start step...</option>
+                            </select>
+                        </div>
+
+                        <h4>Protocol Guides</h4>
+                        <div id="guidesList" class="guides-list">
+                            <!-- Guides will be listed here -->
+                        </div>
+                        <button id="addGuide" class="btn secondary">Add Guide</button>
+                    </div>
+
+                    <!-- Steps Editor -->
+                    <div class="steps-panel">
+                        <div class="steps-header">
+                            <h3>Decision Steps</h3>
+                            <button id="addStep" class="btn primary">Add Step</button>
+                        </div>
+                        <div id="stepsList" class="steps-list">
+                            <!-- Steps will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Birdseye View -->
+            <div id="birdseyeView" class="view">
+                <div class="birdseye-controls">
+                    <button id="autoLayout" class="btn primary">Auto Layout</button>
+                    <button id="resetZoom" class="btn secondary">Reset Zoom</button>
+                    <div class="zoom-controls">
+                        <button id="zoomIn" class="btn secondary small">+</button>
+                        <button id="zoomOut" class="btn secondary small">-</button>
+                    </div>
+                </div>
+                <div id="flowchartContainer" class="flowchart-container">
+                    <svg id="flowchartSvg" class="flowchart-svg">
+                        <!-- Flowchart will be rendered here -->
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Preview View -->
+            <div id="previewView" class="view">
+                <div id="previewContent" class="preview-content">
+                    <!-- Preview will be rendered here -->
+                </div>
+            </div>
+
+            <!-- JSON View -->
+            <div id="jsonView" class="view">
+                <div class="json-controls">
+                    <button id="exportJson" class="btn primary">Export JSON</button>
+                    <button id="importJson" class="btn secondary">Import JSON</button>
+                    <button id="loadExample" class="btn success">Load Example</button>
+                    <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+                </div>
+                <div class="json-editor">
+                    <textarea id="jsonOutput" readonly></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing steps -->
+    <div id="stepModal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modalTitle">Edit Step</h3>
+                <button id="closeModal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="stepId">Step ID</label>
+                    <input type="text" id="stepId" placeholder="step-id">
+                </div>
+                <div class="form-group">
+                    <label for="stepTitle">Title</label>
+                    <input type="text" id="stepTitle" placeholder="Step Title">
+                </div>
+                <div class="form-group">
+                    <label for="stepSubtitle">Subtitle (optional)</label>
+                    <input type="text" id="stepSubtitle" placeholder="Optional subtitle">
+                </div>
+                <div class="form-group">
+                    <label for="stepQuestion">Question</label>
+                    <input type="text" id="stepQuestion" placeholder="What is the question?">
+                </div>
+                <div class="form-group">
+                    <label for="stepType">Step Type</label>
+                    <select id="stepType">
+                        <option value="choice">Multiple Choice</option>
+                        <option value="yes-no">Yes/No Decision</option>
+                        <option value="endpoint">Endpoint (Recommendation)</option>
+                        <option value="protocol-info">Protocol Information</option>
+                    </select>
+                </div>
+
+                <!-- Protocol Info Section -->
+                <div id="protocolSection" class="form-section hidden">
+                    <h4>Protocol Information</h4>
+                    <div class="form-group">
+                        <label for="protocolTitle">Protocol Title</label>
+                        <input type="text" id="protocolTitle" placeholder="Protocol name">
+                    </div>
+                    <div class="form-group">
+                        <label for="protocolDescription">Description</label>
+                        <textarea id="protocolDescription" placeholder="Protocol description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="protocolNote">Note (optional)</label>
+                        <input type="text" id="protocolNote" placeholder="Additional note">
+                    </div>
+                </div>
+
+                <!-- Options Section -->
+                <div id="optionsSection" class="form-section">
+                    <h4>Options</h4>
+                    <div id="optionsList" class="options-list">
+                        <!-- Options will be listed here -->
+                    </div>
+                    <button id="addOption" class="btn secondary">Add Option</button>
+                </div>
+
+                <!-- Endpoint Section -->
+                <div id="endpointSection" class="form-section hidden">
+                    <h4>Recommendation</h4>
+                    <div class="form-group">
+                        <label for="endpointModality">Modality</label>
+                        <input type="text" id="endpointModality" placeholder="MRI, CT, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="endpointContrast">Contrast</label>
+                        <input type="text" id="endpointContrast" placeholder="Contrast details">
+                    </div>
+                    <div class="form-group">
+                        <label for="endpointNotes">Notes (optional)</label>
+                        <textarea id="endpointNotes" placeholder="Additional notes"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="endpointPriority">Priority (optional)</label>
+                        <input type="text" id="endpointPriority" placeholder="P1, P2, etc.">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveStep" class="btn primary">Save Step</button>
+                <button id="deleteStep" class="btn danger">Delete Step</button>
+                <button id="cancelStep" class="btn secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing options -->
+    <div id="optionModal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="optionModalTitle">Edit Option</h3>
+                <button id="closeOptionModal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="optionText">Option Text</label>
+                    <input type="text" id="optionText" placeholder="Button text that users will see">
+                </div>
+                <div class="form-group">
+                    <label for="optionVariant">Button Style</label>
+                    <select id="optionVariant">
+                        <option value="primary">Primary (Blue)</option>
+                        <option value="secondary">Secondary (Gray)</option>
+                        <option value="success">Success (Green)</option>
+                        <option value="warning">Warning (Orange)</option>
+                        <option value="danger">Danger (Red)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="optionAction">Action Type</label>
+                    <select id="optionAction">
+                        <option value="navigate">Navigate to Another Step</option>
+                        <option value="recommend">Show Recommendation (End Step)</option>
+                    </select>
+                </div>
+
+                <!-- Navigation Action Section -->
+                <div id="navigationSection" class="form-section">
+                    <h4>Navigation Target</h4>
+                    <div class="form-group">
+                        <label for="targetStep">Target Step</label>
+                        <select id="targetStep">
+                            <option value="">Select existing step...</option>
+                            <option value="__NEW__">+ Create New Step</option>
+                        </select>
+                    </div>
+                    <div id="newStepSection" class="form-subsection hidden">
+                        <div class="form-group">
+                            <label for="newStepId">New Step ID</label>
+                            <input type="text" id="newStepId" placeholder="new-step-id">
+                        </div>
+                        <div class="form-group">
+                            <label for="newStepTitle">New Step Title</label>
+                            <input type="text" id="newStepTitle" placeholder="Step Title">
+                        </div>
+                        <div class="form-group">
+                            <label for="newStepType">New Step Type</label>
+                            <select id="newStepType">
+                                <option value="choice">Multiple Choice</option>
+                                <option value="yes-no">Yes/No Decision</option>
+                                <option value="endpoint">Endpoint (Recommendation)</option>
+                                <option value="protocol-info">Protocol Information</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendation Action Section -->
+                <div id="recommendationSection" class="form-section hidden">
+                    <h4>Recommendation Details</h4>
+                    <div class="form-group">
+                        <label for="existingEndpoint">Use Existing Endpoint</label>
+                        <select id="existingEndpoint">
+                            <option value="">Create new recommendation...</option>
+                            <option value="__NEW__">+ Create New Endpoint Step</option>
+                        </select>
+                    </div>
+                    <div id="recommendationDetails" class="form-subsection">
+                        <div class="form-group">
+                            <label for="recModality">Modality</label>
+                            <input type="text" id="recModality" placeholder="MRI, CT, Ultrasound, etc.">
+                        </div>
+                        <div class="form-group">
+                            <label for="recContrast">Contrast</label>
+                            <input type="text" id="recContrast" placeholder="Contrast details">
+                        </div>
+                        <div class="form-group">
+                            <label for="recNotes">Notes (optional)</label>
+                            <textarea id="recNotes" placeholder="Additional notes or instructions"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="recPriority">Priority (optional)</label>
+                            <input type="text" id="recPriority" placeholder="P1, P2, S1, etc.">
+                        </div>
+                    </div>
+                    <div id="newEndpointSection" class="form-subsection hidden">
+                        <div class="form-group">
+                            <label for="newEndpointId">New Endpoint Step ID</label>
+                            <input type="text" id="newEndpointId" placeholder="endpoint-step-id">
+                        </div>
+                        <div class="form-group">
+                            <label for="newEndpointTitle">New Endpoint Title</label>
+                            <input type="text" id="newEndpointTitle" placeholder="Endpoint Step Title">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveOption" class="btn primary">Save Option</button>
+                <button id="deleteOption" class="btn danger">Delete Option</button>
+                <button id="cancelOption" class="btn secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="builder.js"></script>
+    <script src="renderer.js"></script>
+</body>
+</html>

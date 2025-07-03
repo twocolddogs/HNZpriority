@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Decision Tree Schema",
+  "description": "Schema for HNZ decision tree pathways",
+  "type": "object",
+  "required": ["id", "title", "startStep", "steps"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the decision tree"
+    },
+    "title": {
+      "type": "string",
+      "description": "Display title of the decision tree"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description shown below title"
+    },
+    "startStep": {
+      "type": "string",
+      "description": "ID of the first step to display"
+    },
+    "guides": {
+      "type": "array",
+      "description": "Optional protocol guides/reference materials",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "sections"],
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": "string"},
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["title", "content"],
+              "properties": {
+                "title": {"type": "string"},
+                "content": {"type": "string"},
+                "type": {
+                  "type": "string",
+                  "enum": ["info", "warning", "protocol"],
+                  "default": "info"
+                },
+                "items": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "object",
+      "description": "All decision steps keyed by step ID",
+      "patternProperties": {
+        "^[a-zA-Z0-9-_]+$": {
+          "type": "object",
+          "required": ["id", "title", "type"],
+          "properties": {
+            "id": {"type": "string"},
+            "title": {"type": "string"},
+            "subtitle": {"type": "string"},
+            "question": {"type": "string"},
+            "type": {
+              "type": "string",
+              "enum": ["choice", "yes-no", "endpoint", "protocol-info"]
+            },
+            "protocolInfo": {
+              "type": "object",
+              "description": "Protocol information displayed on this step",
+              "properties": {
+                "title": {"type": "string"},
+                "description": {"type": "string"},
+                "note": {"type": "string"}
+              }
+            },
+            "options": {
+              "type": "array",
+              "description": "Available choices for choice and yes-no types",
+              "items": {
+                "type": "object",
+                "required": ["text", "action"],
+                "properties": {
+                  "text": {"type": "string"},
+                  "variant": {
+                    "type": "string",
+                    "enum": ["primary", "secondary", "success", "warning", "danger"],
+                    "default": "primary"
+                  },
+                  "action": {
+                    "type": "object",
+                    "oneOf": [
+                      {
+                        "required": ["type", "nextStep"],
+                        "properties": {
+                          "type": {"const": "navigate"},
+                          "nextStep": {"type": "string"}
+                        }
+                      },
+                      {
+                        "required": ["type", "recommendation"],
+                        "properties": {
+                          "type": {"const": "recommend"},
+                          "recommendation": {
+                            "type": "object",
+                            "required": ["modality", "contrast"],
+                            "properties": {
+                              "modality": {"type": "string"},
+                              "contrast": {"type": "string"},
+                              "notes": {"type": "string"},
+                              "priority": {"type": "string"}
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "recommendation": {
+              "type": "object",
+              "description": "Recommendation for endpoint steps",
+              "required": ["modality", "contrast"],
+              "properties": {
+                "modality": {"type": "string"},
+                "contrast": {"type": "string"},
+                "notes": {"type": "string"},
+                "priority": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
