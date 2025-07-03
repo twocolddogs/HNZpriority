@@ -640,6 +640,7 @@ body {
 .decision-button {
   font-family: var(--font-display);
   font-weight: 500;
+  font-size: 1.125rem;
   padding: var(--space-lg) var(--space-xl);
   border-radius: var(--radius-md);
   border: 2px solid;
@@ -749,7 +750,7 @@ body {
   max-width: 220px;
   margin: 0;
   padding: var(--space-md) var(--space-lg);
-  font-size: 0.875rem;
+  font-size: 1rem;
   justify-content: center;
 }
 
@@ -1104,6 +1105,7 @@ body {
 .legend-color.yes-no { background: var(--info); }
 .legend-color.endpoint { background: var(--warning); }
 .legend-color.protocol-info { background: var(--secondary); }
+.legend-color.option { background: var(--primary); }
 
 /* ==========================================================================
    JSON View

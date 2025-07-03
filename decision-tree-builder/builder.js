@@ -20,97 +20,211 @@ class DecisionTreeBuilder {
   }
 
   init() {
-    this.bindEvents();
-    this.updateUI();
+    console.log('Initializing DecisionTreeBuilder...');
+    try {
+      this.bindEvents();
+      console.log('Events bound successfully');
+      this.updateUI();
+      console.log('UI updated successfully');
+      console.log('DecisionTreeBuilder initialization complete');
+    } catch (error) {
+      console.error('Error during initialization:', error);
+      throw error;
+    }
   }
 
   bindEvents() {
-    // Tab navigation
-    document.getElementById('builderTab').addEventListener('click', () => this.showView('builder'));
-    document.getElementById('birdseyeTab').addEventListener('click', () => this.showView('birdseye'));
-    document.getElementById('previewTab').addEventListener('click', () => this.showView('preview'));
-    document.getElementById('jsonTab').addEventListener('click', () => this.showView('json'));
-
-    // Tree properties
-    document.getElementById('treeId').addEventListener('input', (e) => {
-      this.currentTree.id = e.target.value;
-      this.updateJSON();
-    });
+    console.log('Binding events...');
     
-    document.getElementById('treeTitle').addEventListener('input', (e) => {
-      this.currentTree.title = e.target.value;
-      this.updateJSON();
-    });
-    
-    document.getElementById('treeDescription').addEventListener('input', (e) => {
-      this.currentTree.description = e.target.value;
-      this.updateJSON();
-    });
-    
-    document.getElementById('startStep').addEventListener('change', (e) => {
-      this.currentTree.startStep = e.target.value;
-      this.updateJSON();
-    });
+    try {
+      // Tab navigation
+      console.log('Binding tab navigation events...');
+      document.getElementById('builderTab').addEventListener('click', () => this.showView('builder'));
+      document.getElementById('birdseyeTab').addEventListener('click', () => this.showView('birdseye'));
+      document.getElementById('previewTab').addEventListener('click', () => this.showView('preview'));
+      document.getElementById('jsonTab').addEventListener('click', () => this.showView('json'));
+      console.log('Tab navigation events bound successfully');
+    } catch (error) {
+      console.error('Error binding tab navigation:', error);
+      throw error; // Re-throw to stop initialization
+    }
 
-    // Step management
-    document.getElementById('addStep').addEventListener('click', () => this.addStep());
-    document.getElementById('addGuide').addEventListener('click', () => this.addGuide());
+    try {
+      // Tree properties
+      console.log('Binding tree properties events...');
+      document.getElementById('treeId').addEventListener('input', (e) => {
+        this.currentTree.id = e.target.value;
+        this.updateJSON();
+      });
+      
+      document.getElementById('treeTitle').addEventListener('input', (e) => {
+        this.currentTree.title = e.target.value;
+        this.updateJSON();
+      });
+      
+      document.getElementById('treeDescription').addEventListener('input', (e) => {
+        this.currentTree.description = e.target.value;
+        this.updateJSON();
+      });
+      
+      document.getElementById('startStep').addEventListener('change', (e) => {
+        this.currentTree.startStep = e.target.value;
+        this.updateJSON();
+      });
+      console.log('Tree properties events bound successfully');
+    } catch (error) {
+      console.error('Error binding tree properties:', error);
+      throw error;
+    }
 
-    // Modal events
-    document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
-    document.getElementById('saveStep').addEventListener('click', () => this.saveStep());
-    document.getElementById('deleteStep').addEventListener('click', () => this.deleteStep());
-    document.getElementById('cancelStep').addEventListener('click', () => this.closeModal());
+    try {
+      // Step management
+      console.log('Binding step management events...');
+      document.getElementById('addStep').addEventListener('click', () => this.addStep());
+      document.getElementById('addGuide').addEventListener('click', () => this.addGuide());
+      console.log('Step management events bound successfully');
+    } catch (error) {
+      console.error('Error binding step management:', error);
+      throw error;
+    }
 
-    // Option modal events
-    document.getElementById('closeOptionModal').addEventListener('click', () => this.closeOptionModal());
-    document.getElementById('saveOption').addEventListener('click', () => this.saveOption());
-    document.getElementById('deleteOption').addEventListener('click', () => this.deleteOption());
-    document.getElementById('cancelOption').addEventListener('click', () => this.closeOptionModal());
+    try {
+      // Modal events
+      console.log('Binding modal events...');
+      document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
+      document.getElementById('saveStep').addEventListener('click', () => this.saveStep());
+      document.getElementById('deleteStep').addEventListener('click', () => this.deleteStep());
+      document.getElementById('cancelStep').addEventListener('click', () => this.closeModal());
+      console.log('Modal events bound successfully');
+    } catch (error) {
+      console.error('Error binding modal events:', error);
+      throw error;
+    }
 
-    // Option form changes
-    document.getElementById('optionAction').addEventListener('change', (e) => {
-      this.updateOptionActionUI(e.target.value);
-    });
-    document.getElementById('targetStep').addEventListener('change', (e) => {
-      this.updateTargetStepUI(e.target.value);
-    });
-    document.getElementById('existingEndpoint').addEventListener('change', (e) => {
-      this.updateEndpointUI(e.target.value);
-    });
+    try {
+      // Option modal events
+      console.log('Binding option modal events...');
+      document.getElementById('closeOptionModal').addEventListener('click', () => this.closeOptionModal());
+      document.getElementById('saveOption').addEventListener('click', () => this.saveOption());
+      document.getElementById('deleteOption').addEventListener('click', () => this.deleteOption());
+      document.getElementById('cancelOption').addEventListener('click', () => this.closeOptionModal());
+      console.log('Option modal events bound successfully');
+    } catch (error) {
+      console.error('Error binding option modal events:', error);
+      throw error;
+    }
 
-    // Step type change
-    document.getElementById('stepType').addEventListener('change', (e) => {
-      this.updateStepTypeUI(e.target.value);
-    });
+    try {
+      // Option form changes
+      console.log('Binding option form events...');
+      document.getElementById('optionAction').addEventListener('change', (e) => {
+        this.updateOptionActionUI(e.target.value);
+      });
+      document.getElementById('targetStep').addEventListener('change', (e) => {
+        this.updateTargetStepUI(e.target.value);
+      });
+      document.getElementById('existingEndpoint').addEventListener('change', (e) => {
+        this.updateEndpointUI(e.target.value);
+      });
+      console.log('Option form events bound successfully');
+    } catch (error) {
+      console.error('Error binding option form events:', error);
+      throw error;
+    }
 
-    // Options management
-    document.getElementById('addOption').addEventListener('click', () => this.addOption());
+    try {
+      // Step type change
+      console.log('Binding step type events...');
+      document.getElementById('stepType').addEventListener('change', (e) => {
+        this.updateStepTypeUI(e.target.value);
+      });
+      console.log('Step type events bound successfully');
+    } catch (error) {
+      console.error('Error binding step type events:', error);
+      throw error;
+    }
 
-    // JSON export/import
-    document.getElementById('exportJson').addEventListener('click', () => this.exportJSON());
-    document.getElementById('importJson').addEventListener('click', () => this.importJSON());
-    document.getElementById('loadExample').addEventListener('click', () => this.loadExample());
-    document.getElementById('jsonFileInput').addEventListener('change', (e) => this.handleFileImport(e));
+    try {
+      // Options management
+      console.log('Binding options management events...');
+      document.getElementById('addOption').addEventListener('click', () => this.addOption());
+      console.log('Options management events bound successfully');
+    } catch (error) {
+      console.error('Error binding options management events:', error);
+      throw error;
+    }
 
-    // Close modal on overlay click
-    document.getElementById('stepModal').addEventListener('click', (e) => {
-      if (e.target.id === 'stepModal') {
-        this.closeModal();
-      }
-    });
-    
-    document.getElementById('optionModal').addEventListener('click', (e) => {
-      if (e.target.id === 'optionModal') {
-        this.closeOptionModal();
-      }
-    });
+    try {
+      // JSON export/import
+      console.log('Binding JSON import/export events...');
+      document.getElementById('exportJson').addEventListener('click', () => this.exportJSON());
+      document.getElementById('importJson').addEventListener('click', () => this.importJSON());
+      document.getElementById('loadExample').addEventListener('click', () => this.loadExample());
+      document.getElementById('jsonFileInput').addEventListener('change', (e) => this.handleFileImport(e));
+      console.log('JSON import/export events bound successfully');
+    } catch (error) {
+      console.error('Error binding JSON import/export events:', error);
+      throw error;
+    }
 
-    // Birdseye view controls
-    document.getElementById('autoLayout').addEventListener('click', () => this.autoLayoutFlowchart());
-    document.getElementById('resetZoom').addEventListener('click', () => this.resetFlowchartZoom());
-    document.getElementById('zoomIn').addEventListener('click', () => this.zoomFlowchart(1.2));
-    document.getElementById('zoomOut').addEventListener('click', () => this.zoomFlowchart(0.8));
+    try {
+      // Close modal on overlay click
+      console.log('Binding modal overlay events...');
+      document.getElementById('stepModal').addEventListener('click', (e) => {
+        if (e.target.id === 'stepModal') {
+          this.closeModal();
+        }
+      });
+      
+      document.getElementById('optionModal').addEventListener('click', (e) => {
+        if (e.target.id === 'optionModal') {
+          this.closeOptionModal();
+        }
+      });
+      console.log('Modal overlay events bound successfully');
+    } catch (error) {
+      console.error('Error binding modal overlay events:', error);
+      throw error;
+    }
+
+    try {
+      // Birdseye view controls
+      console.log('Binding birdseye view controls...');
+      document.getElementById('autoLayout').addEventListener('click', () => this.autoLayoutFlowchart());
+      document.getElementById('resetZoom').addEventListener('click', () => this.resetFlowchartZoom());
+      document.getElementById('zoomIn').addEventListener('click', () => this.zoomFlowchart(1.2));
+      document.getElementById('zoomOut').addEventListener('click', () => this.zoomFlowchart(0.8));
+      console.log('Birdseye view controls bound successfully');
+    } catch (error) {
+      console.error('Error binding birdseye view controls:', error);
+      throw error;
+    }
+
+    try {
+      // Guide modal events
+      document.getElementById('closeGuideModal').addEventListener('click', () => this.closeGuideModal());
+      document.getElementById('saveGuide').addEventListener('click', () => this.saveGuide());
+      document.getElementById('deleteGuide').addEventListener('click', () => this.deleteGuide());
+      document.getElementById('cancelGuide').addEventListener('click', () => this.closeGuideModal());
+      document.getElementById('addGuideSection').addEventListener('click', () => this.addGuideSection());
+
+      // Guide section modal events
+      document.getElementById('closeGuideSectionModal').addEventListener('click', () => this.closeGuideSectionModal());
+      document.getElementById('saveGuideSection').addEventListener('click', () => this.saveGuideSection());
+      document.getElementById('deleteGuideSection').addEventListener('click', () => this.deleteGuideSection());
+      document.getElementById('cancelGuideSection').addEventListener('click', () => this.closeGuideSectionModal());
+
+      // Modal overlay clicks
+      document.getElementById('guideModal').addEventListener('click', (e) => {
+        if (e.target.id === 'guideModal') this.closeGuideModal();
+      });
+      document.getElementById('guideSectionModal').addEventListener('click', (e) => {
+        if (e.target.id === 'guideSectionModal') this.closeGuideSectionModal();
+      });
+      console.log('Guide modal events bound successfully');
+    } catch (error) {
+      console.error('Error binding guide modal events:', error);
+    }
   }
 
   showView(viewName) {
@@ -150,6 +264,7 @@ class DecisionTreeBuilder {
     const stepsList = document.getElementById('stepsList');
     stepsList.innerHTML = '';
 
+    // Show regular steps
     Object.values(this.currentTree.steps).forEach(step => {
       const stepItem = document.createElement('div');
       stepItem.className = 'step-item';
@@ -163,6 +278,46 @@ class DecisionTreeBuilder {
 
       stepsList.appendChild(stepItem);
     });
+
+    // Show virtual recommendation endpoints
+    this.getRecommendationEndpoints().forEach(endpoint => {
+      const stepItem = document.createElement('div');
+      stepItem.className = 'step-item recommendation-endpoint';
+      
+      // Visual styling for recommendation endpoints
+      stepItem.style.border = '1px solid #10B981';
+      stepItem.style.backgroundColor = '#ECFDF5';
+
+      stepItem.innerHTML = `
+        <h4>✓ ${endpoint.recommendation.modality || 'Recommendation'}</h4>
+        <p>From: ${endpoint.sourceStep} → "${endpoint.optionText}"</p>
+        <span class="step-type">recommendation endpoint</span>
+      `;
+
+      stepsList.appendChild(stepItem);
+    });
+  }
+
+  getRecommendationEndpoints() {
+    const endpoints = [];
+    
+    Object.entries(this.currentTree.steps).forEach(([stepId, step]) => {
+      if (step.options) {
+        step.options.forEach((option, optionIndex) => {
+          if (option.action.type === 'recommend' && option.action.recommendation) {
+            endpoints.push({
+              id: `endpoint_${stepId}_${optionIndex}`,
+              sourceStep: step.title || stepId,
+              optionText: option.text,
+              recommendation: option.action.recommendation,
+              isVirtual: true
+            });
+          }
+        });
+      }
+    });
+    
+    return endpoints;
   }
 
   updateStartStepSelect() {
@@ -190,8 +345,14 @@ class DecisionTreeBuilder {
       guideItem.className = 'guide-item';
       
       guideItem.innerHTML = `
-        <span>${guide.title || 'Untitled Guide'}</span>
-        <button class="btn danger small" onclick="builder.removeGuideAtIndex(${index})">Remove</button>
+        <div style="flex: 1;">
+          <span style="font-weight: 500;">${guide.title || 'Untitled Guide'}</span>
+          <p style="margin: 0; font-size: 0.875rem; color: var(--text-muted);">${guide.sections?.length || 0} sections</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn secondary small" onclick="builder.editGuide(${index})">Edit</button>
+          <button class="btn danger small" onclick="builder.removeGuideAtIndex(${index})">Remove</button>
+        </div>
       `;
       
       guidesList.appendChild(guideItem);
@@ -394,16 +555,212 @@ class DecisionTreeBuilder {
   }
 
   addGuide() {
-    const title = prompt('Guide title:');
-    if (title) {
-      const newGuide = {
-        id: `guide-${Date.now()}`,
-        title: title,
-        sections: []
-      };
+    this.currentEditingGuide = null;
+    this.currentEditingGuideIndex = -1;
+    
+    // Reset form
+    document.getElementById('guideTitle').value = '';
+    document.getElementById('guideModalTitle').textContent = 'Add Guide';
+    document.getElementById('deleteGuide').style.display = 'none';
+    
+    this.updateGuideSectionsList([]);
+    this.showGuideModal();
+  }
+
+  editGuide(index) {
+    const guide = this.currentTree.guides[index];
+    this.currentEditingGuide = { ...guide };
+    this.currentEditingGuideIndex = index;
+    
+    // Populate form
+    document.getElementById('guideTitle').value = guide.title || '';
+    document.getElementById('guideModalTitle').textContent = 'Edit Guide';
+    document.getElementById('deleteGuide').style.display = 'inline-flex';
+    
+    this.updateGuideSectionsList(guide.sections || []);
+    this.showGuideModal();
+  }
+
+  showGuideModal() {
+    document.getElementById('guideModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeGuideModal() {
+    document.getElementById('guideModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    this.currentEditingGuide = null;
+    this.currentEditingGuideIndex = -1;
+  }
+
+  saveGuide() {
+    const title = document.getElementById('guideTitle').value.trim();
+    if (!title) {
+      alert('Please enter a guide title');
+      return;
+    }
+
+    const guideData = {
+      id: this.currentEditingGuide?.id || `guide-${Date.now()}`,
+      title: title,
+      sections: this.currentEditingGuide?.sections || []
+    };
+
+    if (this.currentEditingGuideIndex >= 0) {
+      // Update existing guide
+      this.currentTree.guides[this.currentEditingGuideIndex] = guideData;
+    } else {
+      // Add new guide
+      this.currentTree.guides.push(guideData);
+    }
+
+    this.updateGuidesList();
+    this.updateJSON();
+    this.closeGuideModal();
+  }
+
+  deleteGuide() {
+    if (this.currentEditingGuideIndex >= 0) {
+      if (confirm('Are you sure you want to delete this guide?')) {
+        this.currentTree.guides.splice(this.currentEditingGuideIndex, 1);
+        this.updateGuidesList();
+        this.updateJSON();
+        this.closeGuideModal();
+      }
+    }
+  }
+
+  updateGuideSectionsList(sections) {
+    const sectionsList = document.getElementById('guideSectionsList');
+    sectionsList.innerHTML = '';
+
+    sections.forEach((section, index) => {
+      const sectionItem = document.createElement('div');
+      sectionItem.className = 'option-item';
       
-      this.currentTree.guides.push(newGuide);
-      this.updateGuidesList();
+      const typeLabels = {
+        protocol: 'Protocol (Blue)',
+        info: 'Information (Purple)', 
+        warning: 'Warning (Orange)',
+        success: 'Success (Green)',
+        danger: 'Danger (Red)'
+      };
+
+      sectionItem.innerHTML = `
+        <div class="option-content">
+          <strong>${section.title || 'Untitled Section'}</strong>
+          <p>${typeLabels[section.type] || section.type}</p>
+          <p style="color: var(--text-muted); font-size: 0.875rem;">${section.content ? section.content.substring(0, 60) + '...' : 'No content'}</p>
+        </div>
+        <div class="option-controls">
+          <button class="btn secondary small" onclick="builder.editGuideSection(${index})">Edit</button>
+          <button class="btn danger small" onclick="builder.removeGuideSection(${index})">Remove</button>
+        </div>
+      `;
+
+      sectionsList.appendChild(sectionItem);
+    });
+  }
+
+  addGuideSection() {
+    this.currentEditingSection = null;
+    this.currentEditingSectionIndex = -1;
+    
+    // Reset form
+    document.getElementById('sectionTitle').value = '';
+    document.getElementById('sectionType').value = 'protocol';
+    document.getElementById('sectionContent').value = '';
+    document.getElementById('sectionItems').value = '';
+    document.getElementById('guideSectionModalTitle').textContent = 'Add Section';
+    document.getElementById('deleteGuideSection').style.display = 'none';
+    
+    this.showGuideSectionModal();
+  }
+
+  editGuideSection(index) {
+    const sections = this.currentEditingGuide?.sections || [];
+    const section = sections[index];
+    this.currentEditingSection = { ...section };
+    this.currentEditingSectionIndex = index;
+    
+    // Populate form
+    document.getElementById('sectionTitle').value = section.title || '';
+    document.getElementById('sectionType').value = section.type || 'protocol';
+    document.getElementById('sectionContent').value = section.content || '';
+    document.getElementById('sectionItems').value = section.items ? section.items.join('\n') : '';
+    document.getElementById('guideSectionModalTitle').textContent = 'Edit Section';
+    document.getElementById('deleteGuideSection').style.display = 'inline-flex';
+    
+    this.showGuideSectionModal();
+  }
+
+  showGuideSectionModal() {
+    document.getElementById('guideSectionModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeGuideSectionModal() {
+    document.getElementById('guideSectionModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    this.currentEditingSection = null;
+    this.currentEditingSectionIndex = -1;
+  }
+
+  saveGuideSection() {
+    const title = document.getElementById('sectionTitle').value.trim();
+    const type = document.getElementById('sectionType').value;
+    const content = document.getElementById('sectionContent').value.trim();
+    const itemsText = document.getElementById('sectionItems').value.trim();
+    
+    if (!title) {
+      alert('Please enter a section title');
+      return;
+    }
+
+    const sectionData = {
+      title: title,
+      type: type,
+      content: content
+    };
+
+    if (itemsText) {
+      sectionData.items = itemsText.split('\n').map(item => item.trim()).filter(item => item);
+    }
+
+    // Initialize guide editing object if needed
+    if (!this.currentEditingGuide) {
+      this.currentEditingGuide = { sections: [] };
+    }
+    if (!this.currentEditingGuide.sections) {
+      this.currentEditingGuide.sections = [];
+    }
+
+    if (this.currentEditingSectionIndex >= 0) {
+      // Update existing section
+      this.currentEditingGuide.sections[this.currentEditingSectionIndex] = sectionData;
+    } else {
+      // Add new section
+      this.currentEditingGuide.sections.push(sectionData);
+    }
+
+    this.updateGuideSectionsList(this.currentEditingGuide.sections);
+    this.closeGuideSectionModal();
+  }
+
+  deleteGuideSection() {
+    if (this.currentEditingSectionIndex >= 0) {
+      if (confirm('Are you sure you want to delete this section?')) {
+        this.currentEditingGuide.sections.splice(this.currentEditingSectionIndex, 1);
+        this.updateGuideSectionsList(this.currentEditingGuide.sections);
+        this.closeGuideSectionModal();
+      }
+    }
+  }
+
+  removeGuideSection(index) {
+    if (confirm('Are you sure you want to remove this section?')) {
+      this.currentEditingGuide.sections.splice(index, 1);
+      this.updateGuideSectionsList(this.currentEditingGuide.sections);
     }
   }
 
@@ -920,43 +1277,81 @@ class DecisionTreeBuilder {
       maxY = Math.max(maxY, pos.y + 100);
     });
     
-    // Update viewBox to fit content
-    svg.setAttribute('viewBox', `0 0 ${Math.max(2000, maxX + 100)} ${Math.max(1000, maxY + 100)}`);
+    // Update viewBox to fit content with more padding
+    svg.setAttribute('viewBox', `0 0 ${Math.max(3000, maxX + 200)} ${Math.max(1200, maxY + 200)}`);
     
     // Create connections first (so they appear behind nodes)
     Object.entries(this.currentTree.steps).forEach(([stepId, step]) => {
       if (!step.options) return;
       
-      step.options.forEach((option, index) => {
+      step.options.forEach((option, optionIndex) => {
+        const optionId = `option_${stepId}_${optionIndex}`;
+        
+        // Connection from step to option node
+        if (positions[stepId] && positions[optionId]) {
+          const stepToOption = this.createConnection(
+            positions[stepId], 
+            positions[optionId], 
+            '', // No label needed for step to option
+            false,
+            'step',
+            'option'
+          );
+          contentGroup.appendChild(stepToOption);
+        }
+        
+        // Connection from option node to target
         let targetStep = null;
         let isRecommendation = false;
+        let targetNodeType = 'step';
         
         if (option.action.type === 'navigate' && option.action.nextStep) {
           targetStep = option.action.nextStep;
+          targetNodeType = 'step';
         } else if (option.action.type === 'recommend') {
+          targetStep = `endpoint_${stepId}_${optionIndex}`;
           isRecommendation = true;
+          targetNodeType = 'endpoint';
         }
         
-        if (targetStep && positions[stepId] && positions[targetStep]) {
-          const connection = this.createConnection(
-            positions[stepId], 
+        if (targetStep && positions[optionId] && positions[targetStep]) {
+          const optionToTarget = this.createConnection(
+            positions[optionId], 
             positions[targetStep], 
-            option.text,
-            isRecommendation
+            '', // No label needed since option node shows the text
+            isRecommendation,
+            'option',
+            targetNodeType
           );
-          contentGroup.appendChild(connection);
+          contentGroup.appendChild(optionToTarget);
         }
       });
     });
     
     // Create nodes (so they appear on top of connections)
-    Object.entries(positions).forEach(([stepId, pos]) => {
-      const step = this.currentTree.steps[stepId];
-      if (!step) return;
+    Object.entries(positions).forEach(([nodeId, pos]) => {
+      let node = null;
+      let nodeData = null;
       
-      const node = this.createFlowchartNode(step, pos.x, pos.y);
-      nodes[stepId] = { element: node, step: step, pos: pos };
-      contentGroup.appendChild(node);
+      // Check what type of node this is
+      if (this.currentTree.steps[nodeId]) {
+        // Regular step
+        nodeData = this.currentTree.steps[nodeId];
+        node = this.createFlowchartNode(nodeData, pos.x, pos.y);
+      } else if (this.virtualEndpoints && this.virtualEndpoints.has(nodeId)) {
+        // Virtual endpoint
+        nodeData = this.virtualEndpoints.get(nodeId);
+        node = this.createFlowchartNode(nodeData, pos.x, pos.y);
+      } else if (this.optionNodes && this.optionNodes.has(nodeId)) {
+        // Option node
+        nodeData = this.optionNodes.get(nodeId);
+        node = this.createOptionNode(nodeData, pos.x, pos.y);
+      }
+      
+      if (node && nodeData) {
+        nodes[nodeId] = { element: node, step: nodeData, pos: pos };
+        contentGroup.appendChild(node);
+      }
     });
     
     // Add legend
@@ -971,6 +1366,8 @@ class DecisionTreeBuilder {
     const positions = {};
     const visited = new Set();
     const levels = {};
+    const virtualEndpoints = new Map(); // Store virtual endpoint nodes
+    const optionNodes = new Map(); // Store option nodes
     
     // Start with the start step
     const startStep = this.currentTree.startStep;
@@ -991,11 +1388,44 @@ class DecisionTreeBuilder {
       
       const step = steps[id];
       if (step && step.options) {
-        step.options.forEach(option => {
+        step.options.forEach((option, optionIndex) => {
+          // Create option node for each option
+          const optionId = `option_${id}_${optionIndex}`;
+          const optionLevel = level + 0.5; // Position option nodes between levels
+          
+          optionNodes.set(optionId, {
+            id: optionId,
+            type: 'option',
+            text: option.text,
+            variant: option.variant || 'primary',
+            parentStep: id,
+            isOptionNode: true
+          });
+          
+          levels[optionId] = optionLevel;
+          levelCounts[optionLevel] = (levelCounts[optionLevel] || 0) + 1;
+          
           if (option.action.type === 'navigate' && option.action.nextStep) {
             const nextId = option.action.nextStep;
             if (!visited.has(nextId) && steps[nextId]) {
               queue.push({id: nextId, level: level + 1});
+            }
+          } else if (option.action.type === 'recommend' && option.action.recommendation) {
+            // Create virtual endpoint node for recommendation
+            const endpointId = `endpoint_${id}_${optionIndex}`;
+            const endpointLevel = level + 1;
+            
+            if (!virtualEndpoints.has(endpointId)) {
+              virtualEndpoints.set(endpointId, {
+                id: endpointId,
+                type: 'endpoint',
+                title: option.action.recommendation.modality || 'Recommendation',
+                recommendation: option.action.recommendation,
+                isVirtual: true
+              });
+              
+              levels[endpointId] = endpointLevel;
+              levelCounts[endpointLevel] = (levelCounts[endpointLevel] || 0) + 1;
             }
           }
         });
@@ -1005,16 +1435,16 @@ class DecisionTreeBuilder {
     // Calculate positions for left-to-right layout
     const nodeWidth = 200;
     const nodeHeight = 100;
-    const levelWidth = 250;  // Horizontal spacing between levels
-    const nodeSpacing = 120; // Vertical spacing between nodes
-    const startX = 100;
+    const levelWidth = 320;  // Increased horizontal spacing for breathing room
+    const nodeSpacing = 120; // Increased vertical spacing
+    const startX = 150;      // More margin from left edge
     const startY = 100;
     
     // Calculate total height needed for proper centering
     const maxNodesInLevel = Math.max(...Object.values(levelCounts));
     const totalHeight = maxNodesInLevel * nodeHeight + (maxNodesInLevel - 1) * nodeSpacing;
     
-    Object.entries(levels).forEach(([stepId, level]) => {
+    Object.entries(levels).forEach(([nodeId, level]) => {
       const nodesInLevel = levelCounts[level];
       const levelHeight = nodesInLevel * nodeHeight + (nodesInLevel - 1) * nodeSpacing;
       const startYForLevel = startY + (totalHeight - levelHeight) / 2;
@@ -1022,13 +1452,17 @@ class DecisionTreeBuilder {
       const indexInLevel = Object.entries(levels)
         .filter(([id, l]) => l === level)
         .sort()
-        .findIndex(([id]) => id === stepId);
+        .findIndex(([id]) => id === nodeId);
       
-      positions[stepId] = {
+      positions[nodeId] = {
         x: startX + level * levelWidth,  // Left to right
         y: startYForLevel + indexInLevel * (nodeHeight + nodeSpacing)  // Top to bottom within level
       };
     });
+    
+    // Store virtual endpoints and option nodes for later use
+    this.virtualEndpoints = virtualEndpoints;
+    this.optionNodes = optionNodes;
     
     return positions;
   }
@@ -1037,6 +1471,11 @@ class DecisionTreeBuilder {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     group.setAttribute('class', `flow-node ${step.type}`);
     group.setAttribute('transform', `translate(${x},${y})`);
+    
+    // For virtual recommendation endpoints, create a detailed recommendation card
+    if (step.isVirtual && step.recommendation) {
+      return this.createRecommendationNode(step, x, y);
+    }
     
     // Determine colors based on step type
     let fillColor = '#3B82F6'; // default blue
@@ -1062,9 +1501,15 @@ class DecisionTreeBuilder {
     titleText.setAttribute('x', '90');
     titleText.setAttribute('y', '30');
     
-    // Split long text into multiple lines
-    const title = step.title || step.id;
-    const words = title.split(' ');
+    // Split long text into multiple lines - show question for decision steps, title for others
+    let displayText = step.title || step.id;
+    
+    // For decision steps, show the question if available
+    if ((step.type === 'choice' || step.type === 'yes-no') && step.question) {
+      displayText = step.question;
+    }
+    
+    const words = displayText.split(' ');
     const maxCharsPerLine = 18;
     const lines = [];
     let currentLine = '';
@@ -1108,7 +1553,7 @@ class DecisionTreeBuilder {
     group.appendChild(titleText);
     group.appendChild(typeText);
     
-    // Add click handler
+    // Add click handler for real steps
     group.addEventListener('click', () => {
       this.showView('builder');
       this.editStep(step.id);
@@ -1117,14 +1562,186 @@ class DecisionTreeBuilder {
     return group;
   }
 
-  createConnection(fromPos, toPos, label, isRecommendation = false) {
+  createRecommendationNode(step, x, y) {
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('class', 'flow-node endpoint recommendation');
+    group.setAttribute('transform', `translate(${x},${y})`);
+    
+    const rec = step.recommendation;
+    
+    // Create larger rectangle for recommendation details
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('class', 'flow-node-rect');
+    rect.setAttribute('width', '220');
+    rect.setAttribute('height', '120');
+    rect.setAttribute('fill', '#10B981'); // green for recommendations
+    rect.setAttribute('rx', '8');
+    rect.setAttribute('ry', '8');
+    rect.setAttribute('stroke', '#fff');
+    rect.setAttribute('stroke-width', '2');
+    
+    // Title - "Recommendation"
+    const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    titleText.setAttribute('class', 'flow-node-text flow-node-title');
+    titleText.setAttribute('x', '110');
+    titleText.setAttribute('y', '20');
+    titleText.setAttribute('font-size', '12');
+    titleText.setAttribute('font-weight', '600');
+    titleText.textContent = '✓ Recommendation';
+    
+    // Modality
+    const modalityText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    modalityText.setAttribute('class', 'flow-node-text');
+    modalityText.setAttribute('x', '110');
+    modalityText.setAttribute('y', '40');
+    modalityText.setAttribute('font-size', '11');
+    modalityText.setAttribute('font-weight', '600');
+    modalityText.textContent = rec.modality || 'Imaging';
+    
+    // Contrast
+    if (rec.contrast) {
+      const contrastText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      contrastText.setAttribute('class', 'flow-node-text');
+      contrastText.setAttribute('x', '110');
+      contrastText.setAttribute('y', '55');
+      contrastText.setAttribute('font-size', '10');
+      contrastText.textContent = rec.contrast;
+      group.appendChild(contrastText);
+    }
+    
+    // Priority
+    if (rec.priority) {
+      const priorityText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      priorityText.setAttribute('class', 'flow-node-text');
+      priorityText.setAttribute('x', '110');
+      priorityText.setAttribute('y', '70');
+      priorityText.setAttribute('font-size', '10');
+      priorityText.setAttribute('font-weight', '600');
+      priorityText.textContent = `Priority: ${rec.priority}`;
+      group.appendChild(priorityText);
+    }
+    
+    // Notes (truncated)
+    if (rec.notes) {
+      const notesText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      notesText.setAttribute('class', 'flow-node-text');
+      notesText.setAttribute('x', '110');
+      notesText.setAttribute('y', '85');
+      notesText.setAttribute('font-size', '9');
+      const truncatedNotes = rec.notes.length > 25 ? rec.notes.substring(0, 25) + '...' : rec.notes;
+      notesText.textContent = truncatedNotes;
+      group.appendChild(notesText);
+    }
+    
+    // Type indicator
+    const typeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    typeText.setAttribute('class', 'flow-node-text flow-node-type');
+    typeText.setAttribute('x', '110');
+    typeText.setAttribute('y', '105');
+    typeText.setAttribute('font-size', '9');
+    typeText.setAttribute('opacity', '0.8');
+    typeText.textContent = 'endpoint';
+    
+    group.appendChild(rect);
+    group.appendChild(titleText);
+    group.appendChild(modalityText);
+    group.appendChild(typeText);
+    
+    return group;
+  }
+
+  createOptionNode(optionData, x, y) {
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('class', 'flow-node option');
+    group.setAttribute('transform', `translate(${x},${y})`);
+    
+    // Determine color based on variant
+    let fillColor = '#3B82F6'; // primary blue
+    let strokeColor = '#3B82F6';
+    
+    switch (optionData.variant) {
+      case 'secondary':
+        fillColor = '#6B7280';
+        strokeColor = '#6B7280';
+        break;
+      case 'success':
+        fillColor = '#10B981';
+        strokeColor = '#10B981';
+        break;
+      case 'warning':
+        fillColor = '#F59E0B';
+        strokeColor = '#F59E0B';
+        break;
+      case 'danger':
+        fillColor = '#EF4444';
+        strokeColor = '#EF4444';
+        break;
+      default:
+        fillColor = '#3B82F6';
+        strokeColor = '#3B82F6';
+    }
+    
+    // Create smaller rectangle for option nodes
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('class', 'flow-option-rect');
+    rect.setAttribute('width', '140');
+    rect.setAttribute('height', '50');
+    rect.setAttribute('fill', fillColor);
+    rect.setAttribute('rx', '25'); // More rounded for button look
+    rect.setAttribute('ry', '25');
+    rect.setAttribute('stroke', '#fff');
+    rect.setAttribute('stroke-width', '2');
+    
+    // Create option text
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('class', 'flow-option-text');
+    text.setAttribute('x', '70'); // Center of 140px width
+    text.setAttribute('y', '25'); // Center of 50px height
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
+    text.setAttribute('font-size', '13');
+    text.setAttribute('font-weight', '500');
+    text.setAttribute('fill', 'white');
+    
+    // Truncate long option text
+    const maxLength = 16;
+    const displayText = optionData.text.length > maxLength 
+      ? optionData.text.substring(0, maxLength - 3) + '...' 
+      : optionData.text;
+    text.textContent = displayText;
+    
+    group.appendChild(rect);
+    group.appendChild(text);
+    
+    return group;
+  }
+
+  createConnection(fromPos, toPos, label, isRecommendation = false, fromNodeType = 'step', toNodeType = 'step') {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     
-    // Calculate connection points for left-to-right layout
-    const fromX = fromPos.x + 180; // Right edge of source node
-    const fromY = fromPos.y + 40;  // Middle of source node
-    const toX = toPos.x;           // Left edge of target node
-    const toY = toPos.y + 40;      // Middle of target node
+    // Calculate connection points based on node types
+    let fromX, fromY, toX, toY;
+    
+    // From node calculations
+    if (fromNodeType === 'option') {
+      fromX = fromPos.x + 140; // Right edge of option node (140px wide)
+      fromY = fromPos.y + 25;  // Middle of option node (50px tall)
+    } else {
+      fromX = fromPos.x + 180; // Right edge of step node (180px wide)
+      fromY = fromPos.y + 40;  // Middle of step node (80px tall)
+    }
+    
+    // To node calculations
+    if (toNodeType === 'option') {
+      toX = toPos.x;           // Left edge of option node
+      toY = toPos.y + 25;      // Middle of option node (50px tall)
+    } else if (toNodeType === 'endpoint') {
+      toX = toPos.x;           // Left edge of recommendation node
+      toY = toPos.y + 60;      // Middle of recommendation node (120px tall)
+    } else {
+      toX = toPos.x;           // Left edge of step node
+      toY = toPos.y + 40;      // Middle of step node (80px tall)
+    }
     
     // Create curved path for left-to-right connections
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1183,7 +1800,7 @@ class DecisionTreeBuilder {
     const legend = document.createElement('div');
     legend.className = 'flowchart-legend';
     legend.innerHTML = `
-      <h4 style="margin: 0 0 8px 0; font-size: 14px;">Step Types</h4>
+      <h4 style="margin: 0 0 8px 0; font-size: 14px;">Node Types</h4>
       <div class="legend-item">
         <div class="legend-color start"></div>
         <span>Start Step</span>
@@ -1197,12 +1814,16 @@ class DecisionTreeBuilder {
         <span>Yes/No Decision</span>
       </div>
       <div class="legend-item">
-        <div class="legend-color endpoint"></div>
-        <span>Endpoint</span>
-      </div>
-      <div class="legend-item">
         <div class="legend-color protocol-info"></div>
         <span>Protocol Info</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color option"></div>
+        <span>Option Button</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color endpoint"></div>
+        <span>Recommendation</span>
       </div>
     `;
     
@@ -1246,10 +1867,9 @@ class DecisionTreeBuilder {
   }
 
   updateFlowchartTransform() {
-    const svg = document.getElementById('flowchartSvg');
-    const content = svg.querySelector('g') || svg;
-    if (content !== svg) {
-      content.setAttribute('transform', `translate(${this.currentPan.x}, ${this.currentPan.y}) scale(${this.currentZoom})`);
+    const contentGroup = document.getElementById('flowchartContent');
+    if (contentGroup) {
+      contentGroup.setAttribute('transform', `translate(${this.currentPan.x}, ${this.currentPan.y}) scale(${this.currentZoom})`);
     }
   }
 
@@ -1281,5 +1901,26 @@ class DecisionTreeBuilder {
 // Initialize the builder when DOM is loaded
 let builder;
 document.addEventListener('DOMContentLoaded', () => {
-  builder = new DecisionTreeBuilder();
+  try {
+    console.log('Initializing Decision Tree Builder...');
+    
+    // Debug: Check if key elements exist
+    const criticalElements = [
+      'builderTab', 'birdseyeTab', 'previewTab', 'jsonTab',
+      'addStep', 'addGuide', 'closeModal', 'saveStep'
+    ];
+    
+    console.log('Checking for critical elements:');
+    criticalElements.forEach(id => {
+      const element = document.getElementById(id);
+      console.log(`- ${id}: ${element ? 'FOUND' : 'MISSING'}`);
+    });
+    
+    builder = new DecisionTreeBuilder();
+    console.log('Decision Tree Builder initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize Decision Tree Builder:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
+  }
 });

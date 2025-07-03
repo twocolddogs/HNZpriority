@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decision Tree Builder Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { border-color: #4CAF50; background-color: #f0f8f0; }
+        .error { border-color: #f44336; background-color: #fff0f0; }
+        .console-output {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a8b;
+        }
+        .status {
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Decision Tree Builder Test</h1>
+    
+    <div class="test-section">
+        <h2>Builder Status</h2>
+        <div id="builderStatus" class="status">Initializing...</div>
+        <div id="consoleOutput" class="console-output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Element Checks</h2>
+        <div id="elementChecks"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Quick Test</h2>
+        <button onclick="testAddStep()">Test Add Step</button>
+        <button onclick="testTabSwitch()">Test Tab Switch</button>
+        <button onclick="showConsole()">Show Console</button>
+    </div>
+    
+    <script>
+        // Capture console output
+        const consoleOutput = document.getElementById('consoleOutput');
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            consoleOutput.textContent += 'LOG: ' + args.join(' ') + '\n';
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            consoleOutput.textContent += 'ERROR: ' + args.join(' ') + '\n';
+        };
+        
+        // Test functions
+        function testAddStep() {
+            if (window.builder) {
+                try {
+                    window.builder.addStep();
+                    console.log('Add step test: SUCCESS');
+                } catch (error) {
+                    console.error('Add step test: FAILED', error);
+                }
+            } else {
+                console.error('Add step test: Builder not initialized');
+            }
+        }
+        
+        function testTabSwitch() {
+            if (window.builder) {
+                try {
+                    window.builder.showView('json');
+                    console.log('Tab switch test: SUCCESS');
+                } catch (error) {
+                    console.error('Tab switch test: FAILED', error);
+                }
+            } else {
+                console.error('Tab switch test: Builder not initialized');
+            }
+        }
+        
+        function showConsole() {
+            console.log('Current builder state:', window.builder ? 'INITIALIZED' : 'NOT INITIALIZED');
+            if (window.builder) {
+                console.log('Current tree:', window.builder.currentTree);
+            }
+        }
+        
+        // Check for required elements
+        function checkElements() {
+            const elements = [
+                'builderTab', 'birdseyeTab', 'previewTab', 'jsonTab',
+                'addStep', 'addGuide', 'closeModal', 'saveStep',
+                'treeId', 'treeTitle', 'treeDescription', 'startStep'
+            ];
+            
+            const checksDiv = document.getElementById('elementChecks');
+            let allFound = true;
+            
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                const status = element ? '✓' : '✗';
+                const className = element ? 'success' : 'error';
+                checksDiv.innerHTML += `<div class="${className}">${status} ${id}</div>`;
+                if (!element) allFound = false;
+            });
+            
+            return allFound;
+        }
+        
+        // Wait for DOM and check builder initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            const statusDiv = document.getElementById('builderStatus');
+            
+            // Check if elements exist
+            const elementsOk = checkElements();
+            
+            // Wait a bit for builder to initialize
+            setTimeout(() => {
+                if (window.builder) {
+                    statusDiv.textContent = 'Builder initialized successfully!';
+                    statusDiv.className = 'status success';
+                } else {
+                    statusDiv.textContent = 'Builder failed to initialize';
+                    statusDiv.className = 'status error';
+                }
+            }, 1000);
+        });
+    </script>
+    
+    <!-- Include builder but without the actual HTML elements -->
+    <script src="builder.js"></script>
+</body>
+</html>
