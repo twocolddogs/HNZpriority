@@ -1188,7 +1188,7 @@ class DecisionTreeBuilder {
       // Confirm publication
       const confirmed = confirm(
         `Are you sure you want to publish "${this.currentTree.title}"?\n\n` +
-        'This will make it available in the decision support tools.'
+        'This will save the pathway to the pathways directory and update the manifest.'
       );
       
       if (!confirmed) return;
@@ -1203,29 +1203,78 @@ class DecisionTreeBuilder {
         }
       };
 
-      const dataStr = JSON.stringify(publishData, null, 2);
+      const filename = `${this.currentTree.id || 'pathway'}.json`;
       
-      // In a real implementation, this would:
-      // 1. POST to server to save to pathways directory
-      // 2. Trigger manifest regeneration
-      // For now, we'll simulate by downloading with publish prefix
-      const dataBlob = new Blob([dataStr], {type: 'application/json'});
-      
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(dataBlob);
-      link.download = `published-${this.currentTree.id || 'pathway'}.json`;
-      link.click();
-      
-      alert(
-        'Pathway published successfully!\n\n' +
-        'File downloaded - in a production environment, this would be automatically ' +
-        'copied to the pathways directory and the manifest would be updated.'
-      );
+      try {
+        // Save the pathway file
+        await this.savePathwayFile(filename, publishData);
+        
+        // Regenerate the manifest
+        await this.regenerateManifest();
+        
+        alert(
+          `Pathway "${this.currentTree.title}" published successfully!\n\n` +
+          `Saved as: ${filename}\n` +
+          'Manifest updated automatically.'
+        );
+        
+      } catch (saveError) {
+        console.error('Error saving pathway:', saveError);
+        
+        // Fallback to download if save fails
+        console.log('Falling back to download method...');
+        const dataStr = JSON.stringify(publishData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = filename;
+        link.click();
+        
+        alert(
+          `Unable to save directly to server.\n\n` +
+          `File downloaded as: ${filename}\n\n` +
+          'Please manually copy this file to the pathways/ directory and run:\n' +
+          'node generate-manifest.js'
+        );
+      }
       
     } catch (error) {
       console.error('Error publishing pathway:', error);
       alert('Error publishing pathway: ' + error.message);
     }
+  }
+
+  async savePathwayFile(filename, data) {
+    // Try to save the file using the publish endpoint
+    const response = await fetch(`http://localhost:3001/pathways/${filename}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data, null, 2)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Failed to save pathway: ${response.status} ${response.statusText} - ${errorData.error || ''}`);
+    }
+
+    return await response.json();
+  }
+
+  async regenerateManifest() {
+    // Try to trigger manifest regeneration via the publish endpoint
+    const response = await fetch('http://localhost:3001/regenerate-manifest', {
+      method: 'POST'
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Failed to regenerate manifest: ${response.status} ${response.statusText} - ${errorData.error || ''}`);
+    }
+
+    return await response.json();
   }
 
   validatePathway() {

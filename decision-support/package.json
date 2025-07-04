@@ -5,6 +5,7 @@
   "scripts": {
     "generate-manifest": "node generate-manifest.js",
     "publish-pathways": "node generate-manifest.js",
+    "publish-server": "node publish-endpoint.js",
     "dev": "python3 -m http.server 8000",
     "start": "python3 -m http.server 8000"
   },
