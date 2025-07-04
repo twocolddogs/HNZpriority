@@ -65,6 +65,26 @@ class DecisionTreeRenderer {
   renderStepContent(container, step) {
     console.log('Rendering step:', step);
     
+    // Handle endpoint steps as recommendation cards
+    if (step.type === 'endpoint' && step.recommendation) {
+      const stepCard = document.createElement('div');
+      stepCard.className = 'step-card step-card-endpoint';
+      
+      // Title
+      const title = document.createElement('h2');
+      title.className = 'step-title';
+      title.textContent = 'Imaging Recommendation';
+      stepCard.appendChild(title);
+      
+      // Render recommendation card
+      const recommendationCard = this.createRecommendationCard(step.recommendation);
+      stepCard.appendChild(recommendationCard);
+      
+      container.appendChild(stepCard);
+      return;
+    }
+    
+    // Regular step rendering
     const stepCard = document.createElement('div');
     stepCard.className = `step-card step-card-${step.type || 'choice'}`;
     

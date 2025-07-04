@@ -621,6 +621,7 @@ class DecisionTreeBuilder {
 
     this.closeModal();
     this.updateUI();
+    this.updateJSON();
   }
 
   deleteStep() {
@@ -630,6 +631,7 @@ class DecisionTreeBuilder {
       delete this.currentTree.steps[this.currentEditingStep];
       this.closeModal();
       this.updateUI();
+      this.updateJSON();
     }
   }
 
@@ -854,6 +856,196 @@ class DecisionTreeBuilder {
     document.body.style.overflow = 'auto';
     this.currentEditingStep = null;
     this.currentEditingOption = null;
+  }
+
+  showStepHoverModal(step, event) {
+    // Create or get the hover modal
+    let hoverModal = document.getElementById('stepHoverModal');
+    if (!hoverModal) {
+      hoverModal = this.createStepHoverModal();
+      document.body.appendChild(hoverModal);
+    }
+
+    // Clear previous content
+    const modalContent = hoverModal.querySelector('.hover-modal-content');
+    modalContent.innerHTML = '';
+
+    // Create scaled-down step card
+    const stepCard = this.createMiniStepCard(step);
+    modalContent.appendChild(stepCard);
+
+    // Position modal near cursor
+    const rect = event.target.getBoundingClientRect();
+    hoverModal.style.left = (rect.right + 10) + 'px';
+    hoverModal.style.top = (rect.top) + 'px';
+
+    // Show modal
+    hoverModal.classList.remove('hidden');
+  }
+
+  showOptionHoverModal(optionData, event) {
+    // Create or get the hover modal
+    let hoverModal = document.getElementById('stepHoverModal');
+    if (!hoverModal) {
+      hoverModal = this.createStepHoverModal();
+      document.body.appendChild(hoverModal);
+    }
+
+    // Clear previous content
+    const modalContent = hoverModal.querySelector('.hover-modal-content');
+    modalContent.innerHTML = '';
+
+    // Create option preview
+    const optionCard = this.createMiniOptionCard(optionData);
+    modalContent.appendChild(optionCard);
+
+    // Position modal near cursor
+    const rect = event.target.getBoundingClientRect();
+    hoverModal.style.left = (rect.right + 10) + 'px';
+    hoverModal.style.top = (rect.top) + 'px';
+
+    // Show modal
+    hoverModal.classList.remove('hidden');
+  }
+
+  hideStepHoverModal() {
+    const hoverModal = document.getElementById('stepHoverModal');
+    if (hoverModal) {
+      hoverModal.classList.add('hidden');
+    }
+  }
+
+  createStepHoverModal() {
+    const modal = document.createElement('div');
+    modal.id = 'stepHoverModal';
+    modal.className = 'hover-modal hidden';
+    modal.innerHTML = `
+      <div class="hover-modal-content"></div>
+    `;
+    return modal;
+  }
+
+  createMiniStepCard(step) {
+    const card = document.createElement('div');
+    card.className = `mini-step-card mini-step-card-${step.type || 'choice'}`;
+    
+    // Title
+    const title = document.createElement('h4');
+    title.className = 'mini-step-title';
+    title.textContent = step.title || step.id;
+    card.appendChild(title);
+    
+    // Description (if exists)
+    if (step.question) {
+      const description = document.createElement('div');
+      description.className = 'mini-step-description';
+      description.innerHTML = this.parseCallouts(step.question);
+      card.appendChild(description);
+    }
+    
+    // Guide info (if exists)
+    if (step.guideInfo) {
+      const guideInfo = document.createElement('div');
+      guideInfo.className = 'mini-guide-info';
+      
+      const guideTitle = document.createElement('h5');
+      guideTitle.textContent = step.guideInfo.title;
+      guideInfo.appendChild(guideTitle);
+      
+      const guideDesc = document.createElement('p');
+      guideDesc.textContent = step.guideInfo.description;
+      guideInfo.appendChild(guideDesc);
+      
+      if (step.guideInfo.note) {
+        const note = document.createElement('div');
+        note.className = 'mini-guide-note';
+        note.innerHTML = `<strong>Note:</strong> ${step.guideInfo.note}`;
+        guideInfo.appendChild(note);
+      }
+      
+      card.appendChild(guideInfo);
+    }
+    
+    // Options (if exists)
+    if (step.options && step.options.length > 0) {
+      const optionsTitle = document.createElement('h5');
+      optionsTitle.className = 'mini-options-title';
+      optionsTitle.textContent = 'Options:';
+      card.appendChild(optionsTitle);
+      
+      const optionsList = document.createElement('ul');
+      optionsList.className = 'mini-options-list';
+      
+      step.options.forEach(option => {
+        const optionItem = document.createElement('li');
+        optionItem.className = `mini-option-item variant-${option.variant || 'primary'}`;
+        optionItem.textContent = option.text;
+        optionsList.appendChild(optionItem);
+      });
+      
+      card.appendChild(optionsList);
+    }
+    
+    // Recommendation (if endpoint)
+    if (step.type === 'endpoint' && step.recommendation) {
+      const rec = step.recommendation;
+      const recCard = document.createElement('div');
+      recCard.className = 'mini-recommendation-card';
+      
+      const recTitle = document.createElement('h5');
+      recTitle.textContent = 'Recommendation';
+      recCard.appendChild(recTitle);
+      
+      const modality = document.createElement('div');
+      modality.innerHTML = `<strong>Modality:</strong> ${rec.modality}`;
+      recCard.appendChild(modality);
+      
+      const contrast = document.createElement('div');
+      contrast.innerHTML = `<strong>Contrast:</strong> ${rec.contrast}`;
+      recCard.appendChild(contrast);
+      
+      if (rec.notes) {
+        const notes = document.createElement('div');
+        notes.innerHTML = `<strong>Notes:</strong> ${rec.notes}`;
+        recCard.appendChild(notes);
+      }
+      
+      card.appendChild(recCard);
+    }
+    
+    return card;
+  }
+
+  createMiniOptionCard(optionData) {
+    const card = document.createElement('div');
+    card.className = `mini-option-card variant-${optionData.variant || 'primary'}`;
+    
+    const text = document.createElement('div');
+    text.className = 'mini-option-text';
+    text.textContent = optionData.text;
+    card.appendChild(text);
+    
+    const action = document.createElement('div');
+    action.className = 'mini-option-action';
+    if (optionData.action.type === 'navigate') {
+      action.textContent = `→ ${optionData.action.nextStep}`;
+    } else if (optionData.action.type === 'recommend') {
+      action.textContent = '→ Recommendation';
+    }
+    card.appendChild(action);
+    
+    return card;
+  }
+
+  parseCallouts(text) {
+    if (!text) return '';
+    
+    // Parse callout syntax: [type]content[/type]
+    const calloutRegex = /\[(protocol|guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
+    
+    return text.replace(calloutRegex, (match, type, content) => {
+      return `<div class="mini-step-callout mini-step-callout-${type}">${content.trim()}</div>`;
+    });
   }
 
   updatePreview() {
@@ -1263,15 +1455,32 @@ class DecisionTreeBuilder {
           nextStep: existingEndpoint
         };
       } else {
-        // Direct recommendation
+        // Create new endpoint step for inline recommendation - make every recommendation reusable
+        const timestamp = Date.now();
+        const newEndpointId = `endpoint-${timestamp}`;
+        const modality = document.getElementById('recModality').value || 'Recommendation';
+        
+        // Create the new endpoint step
+        const recommendation = {
+          modality: document.getElementById('recModality').value,
+          contrast: document.getElementById('recContrast').value,
+          notes: document.getElementById('recNotes').value,
+          priority: document.getElementById('recPriority').value
+        };
+        
+        const newEndpointStep = {
+          id: newEndpointId,
+          title: `${modality} Recommendation`,
+          type: 'endpoint',
+          recommendation: recommendation
+        };
+        
+        this.currentTree.steps[newEndpointId] = newEndpointStep;
+        
+        // Point to the new endpoint step
         option.action = {
-          type: 'recommend',
-          recommendation: {
-            modality: document.getElementById('recModality').value,
-            contrast: document.getElementById('recContrast').value,
-            notes: document.getElementById('recNotes').value,
-            priority: document.getElementById('recPriority').value
-          }
+          type: 'navigate',
+          nextStep: newEndpointId
         };
       }
     }
@@ -1279,6 +1488,7 @@ class DecisionTreeBuilder {
     this.closeOptionModal();
     this.updateOptionsList(step.options);
     this.updateUI();
+    this.updateJSON();
   }
 
   deleteOption() {
@@ -1352,12 +1562,12 @@ class DecisionTreeBuilder {
     // Calculate SVG dimensions based on positions
     let maxX = 0, maxY = 0;
     Object.values(positions).forEach(pos => {
-      maxX = Math.max(maxX, pos.x + 200);
-      maxY = Math.max(maxY, pos.y + 100);
+      maxX = Math.max(maxX, pos.x + 250); // Account for larger 220px width
+      maxY = Math.max(maxY, pos.y + 120); // Account for larger 100px height
     });
     
-    // Update viewBox to fit content with more padding
-    svg.setAttribute('viewBox', `0 0 ${Math.max(3000, maxX + 200)} ${Math.max(1200, maxY + 200)}`);
+    // Update viewBox to fit content with more padding for increased horizontal spacing
+    svg.setAttribute('viewBox', `0 0 ${Math.max(5000, maxX + 400)} ${Math.max(1500, maxY + 300)}`);
     
     // Create connections first (so they appear behind nodes)
     Object.entries(this.currentTree.steps).forEach(([stepId, step]) => {
@@ -1366,7 +1576,7 @@ class DecisionTreeBuilder {
       step.options.forEach((option, optionIndex) => {
         const optionId = `option_${stepId}_${optionIndex}`;
         
-        // Connection from step to option node
+        // Dotted connection from step to option node
         if (positions[stepId] && positions[optionId]) {
           const stepToOption = this.createConnection(
             positions[stepId], 
@@ -1374,12 +1584,13 @@ class DecisionTreeBuilder {
             '', // No label needed for step to option
             false,
             'step',
-            'option'
+            'option',
+            true // isDotted = true for step to option connections
           );
           contentGroup.appendChild(stepToOption);
         }
         
-        // Connection from option node to target
+        // Solid connection from option node to target
         let targetStep = null;
         let isRecommendation = false;
         let targetNodeType = 'step';
@@ -1400,7 +1611,8 @@ class DecisionTreeBuilder {
             '', // No label needed since option node shows the text
             isRecommendation,
             'option',
-            targetNodeType
+            targetNodeType,
+            false // isDotted = false for option to target connections (solid lines)
           );
           contentGroup.appendChild(optionToTarget);
         }
@@ -1511,32 +1723,57 @@ class DecisionTreeBuilder {
       }
     }
     
-    // Calculate positions for left-to-right layout
-    const nodeWidth = 200;
-    const nodeHeight = 100;
-    const levelWidth = 320;  // Increased horizontal spacing for breathing room
-    const nodeSpacing = 120; // Increased vertical spacing
+    // Calculate positions for left-to-right layout with more horizontal spacing
+    const nodeWidth = 220;   // Updated for larger step nodes
+    const nodeHeight = 100;  // Updated for taller step nodes
+    const levelWidth = 600;  // Much more horizontal spacing between step cards and option trees
+    const nodeSpacing = 60;  // Reduced vertical spacing for option nodes to cluster them
+    const stepSpacing = 140; // Larger vertical spacing for step cards
     const startX = 150;      // More margin from left edge
     const startY = 100;
     
-    // Calculate total height needed for proper centering
-    const maxNodesInLevel = Math.max(...Object.values(levelCounts));
-    const totalHeight = maxNodesInLevel * nodeHeight + (maxNodesInLevel - 1) * nodeSpacing;
-    
+    // Group nodes by level and type for better spacing
+    const levelGroups = {};
     Object.entries(levels).forEach(([nodeId, level]) => {
-      const nodesInLevel = levelCounts[level];
-      const levelHeight = nodesInLevel * nodeHeight + (nodesInLevel - 1) * nodeSpacing;
-      const startYForLevel = startY + (totalHeight - levelHeight) / 2;
+      if (!levelGroups[level]) levelGroups[level] = { steps: [], options: [], endpoints: [] };
       
-      const indexInLevel = Object.entries(levels)
-        .filter(([id, l]) => l === level)
-        .sort()
-        .findIndex(([id]) => id === nodeId);
+      if (this.currentTree.steps[nodeId]) {
+        levelGroups[level].steps.push(nodeId);
+      } else if (optionNodes.has(nodeId)) {
+        levelGroups[level].options.push(nodeId);
+      } else if (virtualEndpoints.has(nodeId)) {
+        levelGroups[level].endpoints.push(nodeId);
+      }
+    });
+    
+    // Position nodes with different spacing rules
+    Object.entries(levelGroups).forEach(([level, groups]) => {
+      const levelNum = parseFloat(level);
+      const baseX = startX + levelNum * levelWidth;
       
-      positions[nodeId] = {
-        x: startX + level * levelWidth,  // Left to right
-        y: startYForLevel + indexInLevel * (nodeHeight + nodeSpacing)  // Top to bottom within level
-      };
+      // Position step cards with larger vertical spacing
+      groups.steps.forEach((nodeId, index) => {
+        positions[nodeId] = {
+          x: baseX,
+          y: startY + index * (nodeHeight + stepSpacing)
+        };
+      });
+      
+      // Position option nodes closer together vertically
+      groups.options.forEach((nodeId, index) => {
+        positions[nodeId] = {
+          x: baseX,
+          y: startY + index * (50 + nodeSpacing) // Smaller height + closer spacing for options
+        };
+      });
+      
+      // Position endpoint nodes with step spacing
+      groups.endpoints.forEach((nodeId, index) => {
+        positions[nodeId] = {
+          x: baseX,
+          y: startY + index * (nodeHeight + stepSpacing)
+        };
+      });
     });
     
     // Store virtual endpoints and option nodes for later use
@@ -1557,39 +1794,46 @@ class DecisionTreeBuilder {
     }
     
     // Determine colors based on step type
-    let fillColor = '#3B82F6'; // default blue
-    if (step.id === this.currentTree.startStep) fillColor = '#10B981'; // green for start
-    else if (step.type === 'endpoint') fillColor = '#F59E0B'; // orange for endpoints
-    else if (step.type === 'yes-no') fillColor = '#6366F1'; // indigo for yes/no
-    else if (step.type === 'protocol-info') fillColor = '#6B7280'; // gray for protocol
+    let fillColor = '#3B82F6'; // default blue for choice
+    if (step.id === this.currentTree.startStep) {
+      fillColor = '#10B981'; // green for start step
+    } else if (step.type === 'endpoint') {
+      fillColor = '#F59E0B'; // orange for endpoints
+    } else if (step.type === 'yes-no') {
+      fillColor = '#8B5CF6'; // purple for yes/no
+    } else if (step.type === 'guide') {
+      fillColor = '#6366F1'; // indigo for guide/protocol
+    } else if (step.type === 'choice') {
+      fillColor = '#3B82F6'; // blue for multiple choice
+    }
     
-    // Create rectangle - larger for better readability
+    // Create larger rectangle for full title display
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.setAttribute('class', 'flow-node-rect');
-    rect.setAttribute('width', '180');
-    rect.setAttribute('height', '80');
+    rect.setAttribute('width', '220');
+    rect.setAttribute('height', '100');
     rect.setAttribute('fill', fillColor);
     rect.setAttribute('rx', '8');
     rect.setAttribute('ry', '8');
     rect.setAttribute('stroke', '#fff');
     rect.setAttribute('stroke-width', '2');
     
-    // Create title text - no truncation, use full title
-    const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    titleText.setAttribute('class', 'flow-node-text flow-node-title');
-    titleText.setAttribute('x', '90');
-    titleText.setAttribute('y', '30');
-    
-    // Split long text into multiple lines - show question for decision steps, title for others
+    // Show only the title (not question or description)
     let displayText = step.title || step.id;
     
-    // For decision steps, show the question if available
-    if ((step.type === 'choice' || step.type === 'yes-no') && step.question) {
-      displayText = step.question;
-    }
+    // Create title text with dynamic sizing - centered in box
+    const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    titleText.setAttribute('class', 'flow-node-text flow-node-title');
+    titleText.setAttribute('x', '110'); // Center of 220px width
+    titleText.setAttribute('text-anchor', 'middle');
+    titleText.setAttribute('dominant-baseline', 'central');
+    titleText.setAttribute('font-size', '13');
+    titleText.setAttribute('font-weight', '600');
+    titleText.setAttribute('fill', 'white');
     
+    // Split text into multiple lines for better readability
     const words = displayText.split(' ');
-    const maxCharsPerLine = 18;
+    const maxCharsPerLine = 25; // Increased for larger box
     const lines = [];
     let currentLine = '';
     
@@ -1603,39 +1847,49 @@ class DecisionTreeBuilder {
     }
     if (currentLine) lines.push(currentLine.trim());
     
-    // Add text lines
-    if (lines.length === 1) {
-      titleText.textContent = lines[0];
-      titleText.setAttribute('y', '35');
-    } else {
-      titleText.textContent = lines[0];
-      titleText.setAttribute('y', '25');
-      
-      if (lines[1]) {
-        const titleText2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        titleText2.setAttribute('class', 'flow-node-text flow-node-title');
-        titleText2.setAttribute('x', '90');
-        titleText2.setAttribute('y', '42');
-        titleText2.textContent = lines[1];
-        group.appendChild(titleText2);
-      }
+    // Limit to maximum 3 lines for cleaner appearance
+    const maxLines = 3;
+    const displayLines = lines.slice(0, maxLines);
+    if (lines.length > maxLines) {
+      displayLines[maxLines - 1] += '...';
     }
     
-    // Create type text
-    const typeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    typeText.setAttribute('class', 'flow-node-text flow-node-type');
-    typeText.setAttribute('x', '90');
-    typeText.setAttribute('y', '65');
-    typeText.textContent = step.type.replace('-', ' ');
+    // Position text based on number of lines - centered vertically
+    const lineHeight = 16;
+    const totalTextHeight = displayLines.length * lineHeight;
+    const startY = 50 - (totalTextHeight / 2) + (lineHeight / 2); // Center vertically in 100px box
+    
+    displayLines.forEach((line, index) => {
+      const lineText = index === 0 ? titleText : document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      if (index > 0) {
+        lineText.setAttribute('class', 'flow-node-text flow-node-title');
+        lineText.setAttribute('x', '110');
+        lineText.setAttribute('text-anchor', 'middle');
+        lineText.setAttribute('font-size', '13');
+        lineText.setAttribute('font-weight', '600');
+        lineText.setAttribute('fill', 'white');
+      }
+      lineText.setAttribute('y', startY + (index * lineHeight));
+      lineText.textContent = line;
+      if (index > 0) group.appendChild(lineText);
+    });
     
     group.appendChild(rect);
     group.appendChild(titleText);
-    group.appendChild(typeText);
     
     // Add click handler for real steps
     group.addEventListener('click', () => {
       this.showView('builder');
       this.editStep(step.id);
+    });
+    
+    // Add hover handlers for step preview modal
+    group.addEventListener('mouseenter', (e) => {
+      this.showStepHoverModal(step, e);
+    });
+    
+    group.addEventListener('mouseleave', () => {
+      this.hideStepHoverModal();
     });
     
     return group;
@@ -1726,6 +1980,15 @@ class DecisionTreeBuilder {
     group.appendChild(modalityText);
     group.appendChild(typeText);
     
+    // Add hover handlers for recommendation node preview
+    group.addEventListener('mouseenter', (e) => {
+      this.showStepHoverModal(step, e);
+    });
+    
+    group.addEventListener('mouseleave', () => {
+      this.hideStepHoverModal();
+    });
+    
     return group;
   }
 
@@ -1792,10 +2055,19 @@ class DecisionTreeBuilder {
     group.appendChild(rect);
     group.appendChild(text);
     
+    // Add hover handlers for option preview
+    group.addEventListener('mouseenter', (e) => {
+      this.showOptionHoverModal(optionData, e);
+    });
+    
+    group.addEventListener('mouseleave', () => {
+      this.hideStepHoverModal();
+    });
+    
     return group;
   }
 
-  createConnection(fromPos, toPos, label, isRecommendation = false, fromNodeType = 'step', toNodeType = 'step') {
+  createConnection(fromPos, toPos, label, isRecommendation = false, fromNodeType = 'step', toNodeType = 'step', isDotted = false) {
     const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     
     // Calculate connection points based on node types
@@ -1806,8 +2078,8 @@ class DecisionTreeBuilder {
       fromX = fromPos.x + 140; // Right edge of option node (140px wide)
       fromY = fromPos.y + 25;  // Middle of option node (50px tall)
     } else {
-      fromX = fromPos.x + 180; // Right edge of step node (180px wide)
-      fromY = fromPos.y + 40;  // Middle of step node (80px tall)
+      fromX = fromPos.x + 220; // Right edge of step node (220px wide)
+      fromY = fromPos.y + 50;  // Middle of step node (100px tall)
     }
     
     // To node calculations
@@ -1819,50 +2091,46 @@ class DecisionTreeBuilder {
       toY = toPos.y + 60;      // Middle of recommendation node (120px tall)
     } else {
       toX = toPos.x;           // Left edge of step node
-      toY = toPos.y + 40;      // Middle of step node (80px tall)
+      toY = toPos.y + 50;      // Middle of step node (100px tall)
     }
     
-    // Create curved path for left-to-right connections
+    // Create horizontal curved path that always ends horizontally for proper arrowhead alignment
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const midX = fromX + (toX - fromX) / 2;
-    const pathData = `M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`;
+    const horizontalDistance = toX - fromX;
+    const verticalDistance = Math.abs(toY - fromY);
+    
+    // Calculate control points to ensure horizontal entry
+    const midPoint = Math.max(80, horizontalDistance * 0.6); // Stronger horizontal preference
+    
+    // First control point: extends horizontally from start point
+    const cp1X = fromX + midPoint;
+    const cp1Y = fromY;
+    
+    // Second control point: positioned to ensure horizontal approach to target
+    const cp2X = toX - Math.max(40, horizontalDistance * 0.2); // Ensure horizontal approach
+    const cp2Y = toY; // Same Y as target for horizontal entry
+    
+    const pathData = `M ${fromX} ${fromY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${toX} ${toY}`;
     
     path.setAttribute('d', pathData);
-    path.setAttribute('class', `flow-connection ${isRecommendation ? 'recommendation' : ''}`);
+    
+    // Set line style based on connection type
+    let connectionClass = 'flow-connection';
+    if (isDotted) {
+      connectionClass += ' dotted';
+      path.setAttribute('stroke-dasharray', '8,4');
+    }
+    if (isRecommendation) {
+      connectionClass += ' recommendation';
+    }
+    
+    path.setAttribute('class', connectionClass);
     path.setAttribute('marker-end', 'url(#arrowhead)');
-    
-    // Create label
-    const labelX = (fromX + toX) / 2;
-    const labelY = (fromY + toY) / 2;
-    
-    const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    labelText.setAttribute('class', 'flow-connection-label');
-    labelText.setAttribute('x', labelX);
-    labelText.setAttribute('y', labelY);
-    
-    // Don't truncate labels, use full text
-    const displayLabel = label || '';
-    labelText.textContent = displayLabel;
-    
-    // Create background rectangle for label
-    const labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    
-    // Estimate text dimensions
-    const textWidth = displayLabel.length * 7; // Rough estimation
-    const textHeight = 16;
-    
-    labelBg.setAttribute('x', labelX - textWidth/2 - 4);
-    labelBg.setAttribute('y', labelY - textHeight/2 - 2);
-    labelBg.setAttribute('width', textWidth + 8);
-    labelBg.setAttribute('height', textHeight + 4);
-    labelBg.setAttribute('fill', '#fff');
-    labelBg.setAttribute('stroke', '#e5e7eb');
-    labelBg.setAttribute('rx', '4');
-    labelBg.setAttribute('opacity', '0.9');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', '#6B7280');
+    path.setAttribute('stroke-width', '2');
     
     group.appendChild(path);
-    group.appendChild(labelBg);
-    group.appendChild(labelText);
     
     return group;
   }
@@ -1879,34 +2147,59 @@ class DecisionTreeBuilder {
     const legend = document.createElement('div');
     legend.className = 'flowchart-legend';
     legend.innerHTML = `
-      <h4 style="margin: 0 0 8px 0; font-size: 14px;">Node Types</h4>
-      <div class="legend-item">
-        <div class="legend-color start"></div>
-        <span>Start Step</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color choice"></div>
-        <span>Multiple Choice</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color yes-no"></div>
-        <span>Yes/No Decision</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color protocol-info"></div>
-        <span>Protocol Info</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color option"></div>
-        <span>Option Button</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color endpoint"></div>
-        <span>Recommendation</span>
+      <div class="legend-sections-horizontal">
+        <div class="legend-section">
+          <h4 style="margin: 0 0 8px 0; font-size: 14px;">Step Types</h4>
+          <div class="legend-items-horizontal">
+            <div class="legend-item">
+              <div class="legend-color start"></div>
+              <span>Start Step</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color choice"></div>
+              <span>Multiple Choice</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color yes-no"></div>
+              <span>Yes/No Decision</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color guide"></div>
+              <span>Guide/Protocol</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color endpoint"></div>
+              <span>Endpoint</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color option"></div>
+              <span>Option Button</span>
+            </div>
+          </div>
+        </div>
+        <div class="legend-section">
+          <h4 style="margin: 0 0 8px 0; font-size: 14px;">Line Types</h4>
+          <div class="legend-items-horizontal">
+            <div class="legend-item">
+              <div style="width: 20px; height: 2px; background: #9CA3AF; border: 1px dashed #9CA3AF;"></div>
+              <span>To Options</span>
+            </div>
+            <div class="legend-item">
+              <div style="width: 20px; height: 2px; background: #6B7280;"></div>
+              <span>To Next Step</span>
+            </div>
+          </div>
+        </div>
       </div>
     `;
     
-    container.appendChild(legend);
+    // Insert legend at the beginning of the container (above the SVG)
+    const svgContainer = container.querySelector('.flowchart-svg-container');
+    if (svgContainer) {
+      container.insertBefore(legend, svgContainer);
+    } else {
+      container.insertBefore(legend, container.firstChild);
+    }
   }
 
   initializeFlowchartInteraction() {

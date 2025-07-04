@@ -1041,7 +1041,7 @@ body {
 
 /* Connection Lines */
 .flow-connection {
-  stroke: var(--border);
+  stroke: #6B7280;
   stroke-width: 2;
   fill: none;
   marker-end: url(#arrowhead);
@@ -1053,9 +1053,20 @@ body {
   stroke-width: 3;
 }
 
+.flow-connection.dotted {
+  stroke: #9CA3AF;
+  stroke-dasharray: 8,4;
+  stroke-width: 2;
+}
+
+.flow-connection.dotted:hover {
+  stroke: #6B7280;
+  stroke-width: 3;
+}
+
 .flow-connection.recommendation {
   stroke: var(--warning);
-  stroke-dasharray: 5,5;
+  stroke-width: 2;
 }
 
 .flow-connection-label {
@@ -1100,12 +1111,12 @@ body {
   border: 1px solid var(--border);
 }
 
-.legend-color.start { background: var(--success); }
-.legend-color.choice { background: var(--primary); }
-.legend-color.yes-no { background: var(--info); }
-.legend-color.endpoint { background: var(--warning); }
-.legend-color.protocol-info { background: var(--secondary); }
-.legend-color.option { background: var(--primary); }
+.legend-color.start { background: #10B981; }
+.legend-color.choice { background: #3B82F6; }
+.legend-color.yes-no { background: #8B5CF6; }
+.legend-color.guide { background: #6366F1; }
+.legend-color.endpoint { background: #F59E0B; }
+.legend-color.option { background: #3B82F6; }
 
 /* ==========================================================================
    JSON View
