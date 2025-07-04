@@ -1,0 +1,24 @@
+[
+  {
+    "filename": "demo.json",
+    "id": "liver-imaging-decision-tool",
+    "title": "HNZ Liver Imaging Decision Support Tool",
+    "description": "Interactive guide for selecting appropriate imaging modality and contrast",
+    "stepCount": 13,
+    "guideCount": 1,
+    "status": "published",
+    "lastModified": "2025-07-04T22:18:01.607Z",
+    "size": 8764
+  },
+  {
+    "filename": "liver-imaging-example.json",
+    "id": "liver-imaging-decision-tool",
+    "title": "HNZ Liver Imaging Decision Support Tool",
+    "description": "Interactive guide for selecting appropriate imaging modality and contrast",
+    "stepCount": 9,
+    "guideCount": 1,
+    "status": "published",
+    "lastModified": "2025-07-04T22:18:01.608Z",
+    "size": 8445
+  }
+]
