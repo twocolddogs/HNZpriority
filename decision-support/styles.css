@@ -186,15 +186,15 @@
 }
 
 .flow-node.choice {
-  fill: #3B82F6;
+  fill: #F59E0B;
 }
 
 .flow-node.yes-no {
-  fill: #6366F1;
+  fill: #EA580C;
 }
 
 .flow-node.endpoint {
-  fill: #F59E0B;
+  fill: #2563EB;
 }
 
 .flow-node.protocol-info {
@@ -302,19 +302,19 @@
   background: #059669 !important; /* Dark green for start steps */
 }
 .legend-color.choice { 
-  background: #2563EB !important; /* Bright blue for multiple choice */
+  background: #F59E0B !important; /* Orange for multiple choice */
 }
 .legend-color.yes-no { 
-  background: #7C3AED !important; /* Deep purple for yes/no */
+  background: #EA580C !important; /* Darker orange for yes/no */
 }
 .legend-color.guide { 
   background: #4338CA !important; /* Indigo for guide/protocol */
 }
 .legend-color.endpoint { 
-  background: #DC2626 !important; /* RED for endpoints */
+  background: #2563EB !important; /* Blue for endpoints */
 }
 .legend-color.option { 
-  background: #2563EB !important; /* Bright blue for option buttons */
+  background: #6B7280 !important; /* Grey for option buttons */
 }
 
 /* JSON View */
