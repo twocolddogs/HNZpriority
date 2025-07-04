@@ -1326,7 +1326,7 @@ body {
 
 /* Choice step cards */
 .step-card-choice {
-  border-left-color: #3B82F6;
+  /* Removed blue border-left-color */
 }
 
 .step-card-choice .step-title {
