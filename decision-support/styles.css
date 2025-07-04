@@ -888,7 +888,55 @@ body {
 }
 
 /* ==========================================================================
-   6. Protocol Information Cards
+   6. Decision Tree Header (Preview Mode)
+   ========================================================================== */
+.decision-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+}
+
+.decision-title {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+  line-height: 1.2;
+}
+
+.decision-description {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.6;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Responsive adjustments for decision header */
+@media (max-width: 768px) {
+  .decision-title {
+    font-size: 2rem;
+  }
+  
+  .decision-description {
+    font-size: 1rem;
+  }
+  
+  .decision-header {
+    padding: 1.5rem 1rem;
+    margin-bottom: 2rem;
+  }
+}
+
+/* ==========================================================================
+   7. Protocol Information Cards
    ========================================================================== */
 .protocol-info {
   background: linear-gradient(135deg, #EBF8FF, #DBEAFE);
@@ -1098,6 +1146,72 @@ body {
   font-weight: var(--font-weight-semibold);
   color: #7C2D12;
   margin: 0 0 1rem 0;
+}
+
+/* Guide section type styles */
+.protocol-card.protocol {
+  background: #EBF8FF;
+  border-color: #93C5FD;
+}
+
+.protocol-card.protocol h4 {
+  color: #1E40AF;
+}
+
+.protocol-card.protocol p {
+  color: #1E40AF;
+}
+
+.protocol-card.info {
+  background: #F3E8FF;
+  border-color: #C4B5FD;
+}
+
+.protocol-card.info h4 {
+  color: #7C3AED;
+}
+
+.protocol-card.info p {
+  color: #7C3AED;
+}
+
+.protocol-card.warning {
+  background: #FEF3C7;
+  border-color: #FCD34D;
+}
+
+.protocol-card.warning h4 {
+  color: #92400E;
+}
+
+.protocol-card.warning p {
+  color: #92400E;
+}
+
+.protocol-card.success {
+  background: #ECFDF5;
+  border-color: #86EFAC;
+}
+
+.protocol-card.success h4 {
+  color: #166534;
+}
+
+.protocol-card.success p {
+  color: #166534;
+}
+
+.protocol-card.danger {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+}
+
+.protocol-card.danger h4 {
+  color: #991B1B;
+}
+
+.protocol-card.danger p {
+  color: #991B1B;
 }
 
 .contrast-options {
