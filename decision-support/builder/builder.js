@@ -1304,7 +1304,6 @@ class DecisionTreeBuilder {
         const importedTree = JSON.parse(e.target.result);
         this.currentTree = importedTree;
         this.updateUI();
-        alert('Decision tree imported successfully!');
       } catch (error) {
         alert('Error importing file: ' + error.message);
       }
@@ -1601,7 +1600,6 @@ class DecisionTreeBuilder {
     
     this.currentTree = exampleTree;
     this.updateUI();
-    alert('Liver imaging demo loaded successfully!');
   }
 
   // Public methods for button onclick handlers
@@ -1931,23 +1929,6 @@ class DecisionTreeBuilder {
     svg.setAttribute('viewBox', '0 0 2000 1000');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     
-    // Add arrow marker definition
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-    marker.setAttribute('id', 'arrowhead');
-    marker.setAttribute('markerWidth', '10');
-    marker.setAttribute('markerHeight', '7');
-    marker.setAttribute('refX', '9');
-    marker.setAttribute('refY', '3.5');
-    marker.setAttribute('orient', 'auto');
-    
-    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
-    polygon.setAttribute('class', 'flow-arrow-marker');
-    
-    marker.appendChild(polygon);
-    defs.appendChild(marker);
-    svg.appendChild(defs);
     
     // Create main content group for zoom/pan
     const contentGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -2143,7 +2124,32 @@ class DecisionTreeBuilder {
       }
     });
     
+    // First position guide steps near the start card
+    const guideSteps = [];
+    const nonGuideStepsByLevel = {};
+    
     Object.entries(stepsByLevel).forEach(([level, stepIds]) => {
+      nonGuideStepsByLevel[level] = [];
+      stepIds.forEach(stepId => {
+        const step = this.currentTree.steps[stepId];
+        if (step && step.type === 'guide') {
+          guideSteps.push(stepId);
+        } else {
+          nonGuideStepsByLevel[level].push(stepId);
+        }
+      });
+    });
+    
+    // Position guide steps below the start card
+    guideSteps.forEach((guideId, index) => {
+      positions[guideId] = {
+        x: startX, // Same x position as start card
+        y: startY + (nodeHeight + stepSpacing) + index * (nodeHeight + stepSpacing) // Below start card
+      };
+    });
+    
+    // Position non-guide steps normally
+    Object.entries(nonGuideStepsByLevel).forEach(([level, stepIds]) => {
       const levelNum = parseFloat(level);
       const baseX = startX + levelNum * levelWidth;
       
@@ -2218,17 +2224,17 @@ class DecisionTreeBuilder {
     }
     
     // Determine colors based on step type with better differentiation
-    let fillColor = '#2563EB'; // default bright blue for choice
+    let fillColor = '#F59E0B'; // default orange for choice
     if (step.id === this.currentTree.startStep) {
       fillColor = '#059669'; // darker green for start step
     } else if (step.type === 'endpoint') {
-      fillColor = '#DC2626'; // red for endpoints
+      fillColor = '#2563EB'; // blue for endpoints
     } else if (step.type === 'yes-no') {
-      fillColor = '#7C3AED'; // deeper purple for yes/no
+      fillColor = '#EA580C'; // darker orange for yes/no
     } else if (step.type === 'guide') {
       fillColor = '#4338CA'; // indigo for guide/protocol
     } else if (step.type === 'choice') {
-      fillColor = '#2563EB'; // bright blue for multiple choice
+      fillColor = '#F59E0B'; // orange for multiple choice
     }
     
     // Create larger rectangle for full title display
@@ -2327,7 +2333,7 @@ class DecisionTreeBuilder {
     rect.setAttribute('class', 'flow-node-rect');
     rect.setAttribute('width', '220');
     rect.setAttribute('height', '120');
-    rect.setAttribute('fill', '#DC2626'); // red for recommendations to match endpoint color
+    rect.setAttribute('fill', '#2563EB'); // blue for recommendations to match endpoint color
     rect.setAttribute('rx', '8');
     rect.setAttribute('ry', '8');
     rect.setAttribute('stroke', '#fff');
@@ -2418,7 +2424,7 @@ class DecisionTreeBuilder {
     group.setAttribute('transform', `translate(${x},${y})`);
     
     // Determine color based on variant
-    let fillColor = '#2563EB'; // primary blue to match choice steps
+    let fillColor = '#6B7280'; // grey for option buttons
     let strokeColor = '#2563EB';
     
     switch (optionData.variant) {
@@ -2427,20 +2433,20 @@ class DecisionTreeBuilder {
         strokeColor = '#6B7280';
         break;
       case 'success':
-        fillColor = '#10B981';
-        strokeColor = '#10B981';
+        fillColor = '#6B7280';
+        strokeColor = '#6B7280';
         break;
       case 'warning':
-        fillColor = '#F59E0B';
-        strokeColor = '#F59E0B';
+        fillColor = '#6B7280';
+        strokeColor = '#6B7280';
         break;
       case 'danger':
         fillColor = '#EF4444';
         strokeColor = '#EF4444';
         break;
       default:
-        fillColor = '#2563EB';
-        strokeColor = '#2563EB';
+        fillColor = '#6B7280';
+        strokeColor = '#6B7280';
     }
     
     // Create smaller rectangle for option nodes
@@ -2545,7 +2551,6 @@ class DecisionTreeBuilder {
     }
     
     path.setAttribute('class', connectionClass);
-    path.setAttribute('marker-end', 'url(#arrowhead)');
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke', '#6B7280');
     path.setAttribute('stroke-width', '2');
