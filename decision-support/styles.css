@@ -98,6 +98,430 @@
 }
 
 /* ==========================================================================
+   Builder Specific Styles
+   ========================================================================== */
+
+/* Builder Layout */
+.builder-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 2rem;
+  height: calc(100vh - 200px);
+}
+
+.properties-panel {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+.steps-panel {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+.steps-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.steps-header h3 {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  color: #143345;
+}
+
+/* Increase form field text size in sidebar */
+.properties-panel .form-group input,
+.properties-panel .form-group textarea,
+.properties-panel .form-group select {
+  font-size: 1rem;
+}
+
+/* Birdseye View & Flowchart */
+.flowchart-container {
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  height: calc(100vh - 300px);
+  overflow: hidden;
+  border: 1px solid #E5E7EB;
+  z-index: 1;
+}
+
+.flowchart-svg {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, #f8f9fa 1px, transparent 1px);
+  background-size: 20px 20px;
+  cursor: grab;
+  position: relative;
+  z-index: 1;
+}
+
+.flowchart-svg:active {
+  cursor: grabbing;
+}
+
+/* Flowchart Node Styles */
+.flow-node {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.flow-node:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.flow-node.start {
+  fill: #10B981;
+}
+
+.flow-node.choice {
+  fill: #3B82F6;
+}
+
+.flow-node.yes-no {
+  fill: #6366F1;
+}
+
+.flow-node.endpoint {
+  fill: #F59E0B;
+}
+
+.flow-node.protocol-info {
+  fill: #6B7280;
+}
+
+.flow-node-rect {
+  rx: 8;
+  ry: 8;
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.flow-node-text {
+  fill: white;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.flow-node-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.flow-node-type {
+  font-size: 10px;
+  opacity: 0.9;
+}
+
+/* Connection Lines */
+.flow-connection {
+  stroke: #6B7280;
+  stroke-width: 2;
+  fill: none;
+  transition: stroke 0.2s ease;
+}
+
+.flow-connection:hover {
+  stroke: #3B82F6;
+  stroke-width: 3;
+}
+
+.flow-connection.dotted {
+  stroke: #9CA3AF;
+  stroke-dasharray: 8,4;
+  stroke-width: 2;
+}
+
+.flow-connection.dotted:hover {
+  stroke: #6B7280;
+  stroke-width: 3;
+}
+
+.flow-connection.recommendation {
+  stroke: #F59E0B;
+  stroke-width: 2;
+}
+
+.flow-connection-label {
+  fill: #374151;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 10px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  background: #FFFFFF;
+  padding: 2px 4px;
+}
+
+
+/* Legend */
+.flowchart-legend {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 0.875rem;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid #E5E7EB;
+}
+
+/* FINAL Legend Colors - Match flowchart exactly */
+.legend-color.start { 
+  background: #059669 !important; /* Dark green for start steps */
+}
+.legend-color.choice { 
+  background: #2563EB !important; /* Bright blue for multiple choice */
+}
+.legend-color.yes-no { 
+  background: #7C3AED !important; /* Deep purple for yes/no */
+}
+.legend-color.guide { 
+  background: #4338CA !important; /* Indigo for guide/protocol */
+}
+.legend-color.endpoint { 
+  background: #DC2626 !important; /* RED for endpoints */
+}
+.legend-color.option { 
+  background: #2563EB !important; /* Bright blue for option buttons */
+}
+
+/* JSON View */
+.json-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.json-editor {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.json-editor textarea {
+  width: 100%;
+  height: 500px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: #F9FAFB;
+  resize: vertical;
+}
+
+/* Hamburger Menu */
+.hamburger-menu {
+  position: relative;
+  margin-left: auto;
+}
+
+.hamburger-button {
+  display: flex;
+  flex-direction: column;
+  width: 30px;
+  height: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  justify-content: space-between;
+}
+
+.hamburger-line {
+  width: 100%;
+  height: 2px;
+  background: #FFFFFF;
+  transition: all 0.3s ease;
+}
+
+.hamburger-button:hover .hamburger-line {
+  background: #E5E7EB;
+}
+
+.hamburger-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  z-index: 1000;
+  margin-top: 0.5rem;
+}
+
+.dropdown-section {
+  padding: 0.5rem 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: #F3F4F6;
+}
+
+.dropdown-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  font-size: 14px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #E5E7EB;
+  margin: 0.5rem 0;
+}
+
+.toggle-item {
+  justify-content: space-between;
+}
+
+.toggle-indicator {
+  font-size: 0.75rem;
+  color: #9CA3AF;
+  font-weight: 500;
+}
+
+.toggle-indicator.on {
+  color: #059669;
+}
+
+/* Callout Helpers */
+.callout-helpers {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.btn-callout {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  background: #F9FAFB;
+  color: #6B7280;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-callout:hover {
+  background: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+/* Step Callouts */
+.step-callout {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.step-callout-protocol {
+  background: #EBF8FF;
+  border-left-color: #3B82F6;
+  color: #1E3A8A;
+}
+
+.step-callout-info {
+  background: #F0F9FF;
+  border-left-color: #0EA5E9;
+  color: #0C4A6E;
+}
+
+.step-callout-warning {
+  background: #FEF3C7;
+  border-left-color: #F59E0B;
+  color: #92400E;
+}
+
+.step-callout-success {
+  background: #ECFDF5;
+  border-left-color: #10B981;
+  color: #065F46;
+}
+
+.step-callout-danger {
+  background: #FEE2E2;
+  border-left-color: #EF4444;
+  color: #991B1B;
+}
+
+/* Responsive Design for Builder */
+@media (max-width: 1024px) {
+  .builder-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    height: auto;
+  }
+  
+  .properties-panel {
+    order: 2;
+    height: auto;
+  }
+  
+  .steps-panel {
+    order: 1;
+    height: 400px;
+  }
+}
+
+/* ==========================================================================
    1. Global Styles & Typography Variables
    ========================================================================== */
 :root {
@@ -1547,7 +1971,6 @@ body {
   stroke: #6B7280;
   stroke-width: 2;
   fill: none;
-  marker-end: url(#arrowhead);
   transition: stroke 0.2s ease;
 }
 
@@ -1691,70 +2114,6 @@ body {
   background: #FEF2F2;
 }
 
-/* ==========================================================================
-   16. Legend Colors
-   ========================================================================== */
-.legend-color {
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-}
-
-.legend-color.start { background: #10B981; }
-.legend-color.choice { background: #3B82F6; }
-.legend-color.yes-no { background: #8B5CF6; }
-.legend-color.guide { background: #6366F1; }
-.legend-color.endpoint { background: #F59E0B; }
-.legend-color.option { background: #3B82F6; }
-
-/* ==========================================================================
-   17. Flowchart Legend
-   ========================================================================== */
-.flowchart-legend {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.flowchart-legend h4 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.legend-sections-horizontal {
-  display: flex;
-  gap: 4rem;
-  flex-wrap: wrap;
-}
-
-.legend-section {
-  flex: 0 0 auto;
-}
-
-.legend-items-horizontal {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  align-items: center;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.legend-item span {
-  font-size: 12px;
-  color: var(--text-body);
-}
 
 /* ==========================================================================
    18. Hover Modal Styles
