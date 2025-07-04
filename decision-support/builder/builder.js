@@ -2418,8 +2418,8 @@ class DecisionTreeBuilder {
     group.setAttribute('transform', `translate(${x},${y})`);
     
     // Determine color based on variant
-    let fillColor = '#3B82F6'; // primary blue
-    let strokeColor = '#3B82F6';
+    let fillColor = '#2563EB'; // primary blue to match choice steps
+    let strokeColor = '#2563EB';
     
     switch (optionData.variant) {
       case 'secondary':
@@ -2439,8 +2439,8 @@ class DecisionTreeBuilder {
         strokeColor = '#EF4444';
         break;
       default:
-        fillColor = '#3B82F6';
-        strokeColor = '#3B82F6';
+        fillColor = '#2563EB';
+        strokeColor = '#2563EB';
     }
     
     // Create smaller rectangle for option nodes

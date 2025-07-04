@@ -1120,12 +1120,25 @@ body {
   border: 1px solid var(--border);
 }
 
-.legend-color.start { background: #059669; }
-.legend-color.choice { background: #2563EB; }
-.legend-color.yes-no { background: #7C3AED; }
-.legend-color.guide { background: #4338CA; }
-.legend-color.endpoint { background: #DC2626; }
-.legend-color.option { background: #2563EB; }
+/* Legend colors - match flowchart exactly */
+.legend-color.start { 
+  background: #059669 !important; /* Dark green for start steps */
+}
+.legend-color.choice { 
+  background: #2563EB !important; /* Bright blue for multiple choice */
+}
+.legend-color.yes-no { 
+  background: #7C3AED !important; /* Deep purple for yes/no */
+}
+.legend-color.guide { 
+  background: #4338CA !important; /* Indigo for guide/protocol */
+}
+.legend-color.endpoint { 
+  background: #DC2626 !important; /* RED for endpoints (not orange) */
+}
+.legend-color.option { 
+  background: #2563EB !important; /* Bright blue for option buttons */
+}
 
 /* ==========================================================================
    JSON View
