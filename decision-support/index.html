@@ -109,16 +109,29 @@
             box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
         }
 
-        .pathway-steps {
-            font-weight: 600;
+        .pathway-steps,
+        .pathway-guides,
+        .pathway-modified {
+            font-weight: 500;
             color: var(--text-secondary);
             display: flex;
             align-items: center;
             gap: var(--space-xs);
+            font-size: 0.875rem;
         }
 
         .pathway-steps::before {
             content: '📋';
+            font-size: 1.1em;
+        }
+
+        .pathway-guides::before {
+            content: '📖';
+            font-size: 1.1em;
+        }
+
+        .pathway-modified::before {
+            content: '📅';
             font-size: 1.1em;
         }
 

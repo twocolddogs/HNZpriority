@@ -3,8 +3,8 @@
    ========================================================================== */
 @font-face {
   font-family: 'Public Sans';
-  src: url('../fonts/PublicSans-Regular.woff2') format('woff2'),
-       url('../fonts/PublicSans-Regular.woff') format('woff');
+  src: url('../../fonts/PublicSans-Regular.woff2') format('woff2'),
+       url('../../fonts/PublicSans-Regular.woff') format('woff');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -12,8 +12,8 @@
 
 @font-face {
   font-family: 'Public Sans';
-  src: url('../fonts/PublicSans-Medium.woff2') format('woff2'),
-       url('../fonts/PublicSans-Medium.woff') format('woff');
+  src: url('../../fonts/PublicSans-Medium.woff2') format('woff2'),
+       url('../../fonts/PublicSans-Medium.woff') format('woff');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -21,8 +21,8 @@
 
 @font-face {
   font-family: 'Public Sans';
-  src: url('../fonts/PublicSans-SemiBold.woff2') format('woff2'),
-       url('../fonts/PublicSans-SemiBold.woff') format('woff');
+  src: url('../../fonts/PublicSans-SemiBold.woff2') format('woff2'),
+       url('../../fonts/PublicSans-SemiBold.woff') format('woff');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -30,8 +30,8 @@
 
 @font-face {
   font-family: 'Poppins';
-  src: url('../fonts/Poppins-Regular.woff2') format('woff2'),
-       url('../fonts/Poppins-Regular.woff') format('woff');
+  src: url('../../fonts/Poppins-Regular.woff2') format('woff2'),
+       url('../../fonts/Poppins-Regular.woff') format('woff');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -39,8 +39,8 @@
 
 @font-face {
   font-family: 'Poppins';
-  src: url('../fonts/Poppins-Medium.woff2') format('woff2'),
-       url('../fonts/Poppins-Medium.woff') format('woff');
+  src: url('../../fonts/Poppins-Medium.woff2') format('woff2'),
+       url('../../fonts/Poppins-Medium.woff') format('woff');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -48,11 +48,35 @@
 
 @font-face {
   font-family: 'Poppins';
-  src: url('../fonts/Poppins-SemiBold.woff2') format('woff2'),
-       url('../fonts/Poppins-SemiBold.woff') format('woff');
+  src: url('../../fonts/Poppins-SemiBold.woff2') format('woff2'),
+       url('../../fonts/Poppins-SemiBold.woff') format('woff');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
+}
+
+@font-face {
+  font-family: 'Symbols Nerd Font';
+  src: url('../../fonts/SymbolsNerdFont-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ==========================================================================
+   Icon Fonts
+   ========================================================================== */
+.nerd-icon {
+  font-family: 'Symbols Nerd Font', monospace;
+  font-size: 1em;
+  line-height: 1;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ==========================================================================
@@ -943,22 +967,7 @@ body {
 /* ==========================================================================
    Birdseye View & Flowchart
    ========================================================================== */
-.birdseye-controls {
-  display: flex;
-  gap: var(--space-md);
-  align-items: center;
-  margin-bottom: var(--space-lg);
-  padding: var(--space-lg);
-  background: var(--bg-primary);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.zoom-controls {
-  display: flex;
-  gap: var(--space-xs);
-  margin-left: auto;
-}
+/* Birdseye controls removed - now integrated into legend */
 
 .flowchart-container {
   background: var(--bg-primary);
@@ -1111,12 +1120,25 @@ body {
   border: 1px solid var(--border);
 }
 
-.legend-color.start { background: #10B981; }
-.legend-color.choice { background: #3B82F6; }
-.legend-color.yes-no { background: #8B5CF6; }
-.legend-color.guide { background: #6366F1; }
-.legend-color.endpoint { background: #F59E0B; }
-.legend-color.option { background: #3B82F6; }
+/* Legend colors - match flowchart exactly */
+.legend-color.start { 
+  background: #059669 !important; /* Dark green for start steps */
+}
+.legend-color.choice { 
+  background: #2563EB !important; /* Bright blue for multiple choice */
+}
+.legend-color.yes-no { 
+  background: #7C3AED !important; /* Deep purple for yes/no */
+}
+.legend-color.guide { 
+  background: #4338CA !important; /* Indigo for guide/protocol */
+}
+.legend-color.endpoint { 
+  background: #DC2626 !important; /* RED for endpoints (not orange) */
+}
+.legend-color.option { 
+  background: #2563EB !important; /* Bright blue for option buttons */
+}
 
 /* ==========================================================================
    JSON View

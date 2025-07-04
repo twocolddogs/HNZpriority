@@ -18,14 +18,71 @@ class DecisionSupportHome {
     }
   }
 
+  async discoverPathways() {
+    try {
+      // Method 1: Try to fetch a manifest file if it exists
+      try {
+        const manifestResponse = await fetch('pathways/manifest.json');
+        if (manifestResponse.ok) {
+          const manifest = await manifestResponse.json();
+          console.log('Found pathways manifest:', manifest);
+          
+          // Store manifest data for richer display
+          this.pathwaysManifest = manifest;
+          
+          // Filter out draft pathways from public listing
+          return manifest
+            .filter(item => item.status !== 'draft')
+            .map(item => item.filename);
+        }
+      } catch (e) {
+        console.log('No manifest file found, trying alternative discovery methods');
+      }
+
+      // Method 2: Try common pathway filenames based on directory scanning
+      const commonPatterns = [
+        'liver-imaging-example.json',
+        'liver-imaging-example-converted.json',
+        'cardiac-imaging.json',
+        'brain-imaging.json',
+        'chest-imaging.json',
+        'pediatric-imaging.json',
+        'emergency-imaging.json'
+      ];
+
+      const existingFiles = [];
+      for (const filename of commonPatterns) {
+        try {
+          const response = await fetch(`pathways/${filename}`, { method: 'HEAD' });
+          if (response.ok) {
+            existingFiles.push(filename);
+          }
+        } catch (e) {
+          // File doesn't exist, continue
+        }
+      }
+
+      return existingFiles;
+    } catch (error) {
+      console.warn('Pathway discovery failed:', error);
+      return [];
+    }
+  }
+
   async loadPathways() {
     try {
       console.log('Starting to load pathways...');
       
-      // Try to fetch pathways, but fallback to embedded data if fetch fails
-      const pathwayFiles = [
-        'liver-imaging-example.json'
-      ];
+      // Try to discover pathways dynamically first, then fallback to known files
+      let pathwayFiles = await this.discoverPathways();
+      
+      // If discovery fails, fallback to known pathways
+      if (pathwayFiles.length === 0) {
+        pathwayFiles = [
+          'liver-imaging-example.json',
+          'liver-imaging-example-converted.json'
+        ];
+      }
 
       console.log('Pathway files to load:', pathwayFiles);
 
@@ -267,13 +324,27 @@ class DecisionSupportHome {
     card.className = 'pathway-card';
     card.addEventListener('click', () => this.openPathway(filename));
 
+    // Get manifest data if available for richer display
+    const manifestData = this.pathwaysManifest?.find(item => item.filename === filename);
+    
     // Calculate some metadata
-    const stepCount = Object.keys(data.steps || {}).length;
-    const guideCount = (data.guides || []).length;
+    const stepCount = manifestData?.stepCount || Object.keys(data.steps || {}).length;
+    const guideCount = manifestData?.guideCount || (data.guides || []).length;
+    const description = manifestData?.description || data.description || this.generateDescription(data, stepCount, guideCount);
+    const lastModified = manifestData?.lastModified ? new Date(manifestData.lastModified).toLocaleDateString() : null;
 
     card.innerHTML = `
       <div class="pathway-header">
         <h3 class="pathway-title">${data.title || 'Untitled Pathway'}</h3>
+      </div>
+      <div class="pathway-body">
+        <div class="pathway-description">${description}</div>
+        <div class="pathway-meta">
+          <div class="pathway-steps">${stepCount} ${stepCount === 1 ? 'step' : 'steps'}</div>
+          ${guideCount > 0 ? `<div class="pathway-guides">${guideCount} ${guideCount === 1 ? 'guide' : 'guides'}</div>` : ''}
+          ${lastModified ? `<div class="pathway-modified">Updated ${lastModified}</div>` : ''}
+          <div class="pathway-badge">Available</div>
+        </div>
       </div>
     `;
 

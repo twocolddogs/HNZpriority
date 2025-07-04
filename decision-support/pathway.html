@@ -6,6 +6,27 @@
     <title>HNZ Decision Support Tool</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        @font-face {
+            font-family: 'Symbols Nerd Font';
+            src: url('../fonts/SymbolsNerdFont-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        .nerd-icon {
+            font-family: 'Symbols Nerd Font', monospace;
+            font-size: 1em;
+            line-height: 1;
+            speak: never;
+            font-style: normal;
+            font-weight: normal;
+            font-variant: normal;
+            text-transform: none;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
         .pathway-subtitle {
             text-align: center;
             font-size: 1.125rem;
@@ -90,7 +111,7 @@
                     <h1 id="pathwayTitle" class="lora-title">Loading...</h1>
                 </div>
                 <a href="index.html" class="home-button">
-                    <span class="home-button-icon">←</span>
+                    <span class="home-button-icon nerd-icon">󰁍</span>
                     <span>All Pathways</span>
                 </a>
             </div>
