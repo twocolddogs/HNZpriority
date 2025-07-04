@@ -1262,7 +1262,7 @@ body {
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   position: relative;
-  height: calc(100vh - 300px);
+  height: calc(100vh - 200px);
   overflow: hidden;
   border: 1px solid #E5E7EB;
 }
@@ -1326,7 +1326,7 @@ body {
 
 /* Choice step cards */
 .step-card-choice {
-  border-left-color: #3B82F6;
+  /* Removed blue border-left-color */
 }
 
 .step-card-choice .step-title {
@@ -1369,7 +1369,41 @@ body {
 }
 
 /* ==========================================================================
-   14. Step Description Callouts
+   14. Flow Connection Styles
+   ========================================================================== */
+
+/* Connection Lines */
+.flow-connection {
+  stroke: #6B7280;
+  stroke-width: 2;
+  fill: none;
+  marker-end: url(#arrowhead);
+  transition: stroke 0.2s ease;
+}
+
+.flow-connection:hover {
+  stroke: var(--decision-primary);
+  stroke-width: 3;
+}
+
+.flow-connection.dotted {
+  stroke: #9CA3AF;
+  stroke-dasharray: 8,4;
+  stroke-width: 2;
+}
+
+.flow-connection.dotted:hover {
+  stroke: #6B7280;
+  stroke-width: 3;
+}
+
+.flow-connection.recommendation {
+  stroke: var(--decision-warning);
+  stroke-width: 2;
+}
+
+/* ==========================================================================
+   15. Step Description Callouts
    ========================================================================== */
 
 .step-description {
@@ -1485,4 +1519,327 @@ body {
 
 .btn-callout[data-callout="danger"]:hover {
   background: #FEF2F2;
+}
+
+/* ==========================================================================
+   16. Legend Colors
+   ========================================================================== */
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.legend-color.start { background: #10B981; }
+.legend-color.choice { background: #3B82F6; }
+.legend-color.yes-no { background: #8B5CF6; }
+.legend-color.guide { background: #6366F1; }
+.legend-color.endpoint { background: #F59E0B; }
+.legend-color.option { background: #3B82F6; }
+
+/* ==========================================================================
+   17. Flowchart Legend
+   ========================================================================== */
+.flowchart-legend {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.flowchart-legend h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.legend-sections-horizontal {
+  display: flex;
+  gap: 4rem;
+  flex-wrap: wrap;
+}
+
+.legend-section {
+  flex: 0 0 auto;
+}
+
+.legend-items-horizontal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.legend-item span {
+  font-size: 12px;
+  color: var(--text-body);
+}
+
+/* ==========================================================================
+   18. Hover Modal Styles
+   ========================================================================== */
+.hover-modal {
+  position: fixed;
+  z-index: 2000;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  max-width: 400px;
+  animation: fadeIn 0.2s ease;
+  pointer-events: none;
+}
+
+.hover-modal-content {
+  padding: 0;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* Mini Step Card */
+.mini-step-card {
+  padding: 1rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.mini-step-card-choice {
+  border-left: 3px solid #3B82F6;
+  background: linear-gradient(135deg, #EBF8FF 0%, #F8FAFC 100%);
+}
+
+.mini-step-card-yes-no {
+  border-left: 3px solid #8B5CF6;
+  background: linear-gradient(135deg, #F3E8FF 0%, #F8FAFC 100%);
+}
+
+.mini-step-card-guide {
+  border-left: 3px solid #6366F1;
+  background: linear-gradient(135deg, #EEF2FF 0%, #F8FAFC 100%);
+}
+
+.mini-step-card-endpoint {
+  border-left: 3px solid #F59E0B;
+  background: linear-gradient(135deg, #FFF7ED 0%, #F8FAFC 100%);
+}
+
+.mini-step-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mini-step-description {
+  margin: 0.5rem 0;
+  color: var(--text-body);
+}
+
+.mini-guide-info {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.mini-guide-info h5 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.mini-guide-info p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-body);
+}
+
+.mini-guide-note {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.mini-options-title {
+  margin: 0.75rem 0 0.25rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.mini-options-list {
+  margin: 0;
+  padding-left: 1rem;
+  list-style: none;
+}
+
+.mini-option-item {
+  margin: 0.25rem 0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  position: relative;
+}
+
+.mini-option-item::before {
+  content: '•';
+  position: absolute;
+  left: -0.75rem;
+  font-weight: bold;
+}
+
+.mini-option-item.variant-primary {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1E40AF;
+}
+
+.mini-option-item.variant-primary::before {
+  color: #3B82F6;
+}
+
+.mini-option-item.variant-secondary {
+  background: rgba(107, 114, 128, 0.1);
+  color: #374151;
+}
+
+.mini-option-item.variant-secondary::before {
+  color: #6B7280;
+}
+
+.mini-option-item.variant-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+}
+
+.mini-option-item.variant-success::before {
+  color: #10B981;
+}
+
+.mini-option-item.variant-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #D97706;
+}
+
+.mini-option-item.variant-warning::before {
+  color: #F59E0B;
+}
+
+.mini-recommendation-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #10B981;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.mini-recommendation-card h5 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #047857;
+}
+
+.mini-recommendation-card div {
+  margin: 0.25rem 0;
+  font-size: 0.8125rem;
+  color: var(--text-body);
+}
+
+.mini-recommendation-card strong {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Mini Option Card */
+.mini-option-card {
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  border-left: 3px solid;
+}
+
+.mini-option-card.variant-primary {
+  background: rgba(59, 130, 246, 0.1);
+  border-left-color: #3B82F6;
+}
+
+.mini-option-card.variant-secondary {
+  background: rgba(107, 114, 128, 0.1);
+  border-left-color: #6B7280;
+}
+
+.mini-option-card.variant-success {
+  background: rgba(16, 185, 129, 0.1);
+  border-left-color: #10B981;
+}
+
+.mini-option-card.variant-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-left-color: #F59E0B;
+}
+
+.mini-option-text {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.mini-option-action {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Mini Step Callouts */
+.mini-step-callout {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  border-left: 3px solid;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.mini-step-callout-protocol,
+.mini-step-callout-guide {
+  background: rgba(59, 130, 246, 0.1);
+  border-left-color: #3B82F6;
+  color: #1E40AF;
+}
+
+.mini-step-callout-info {
+  background: rgba(139, 92, 246, 0.1);
+  border-left-color: #8B5CF6;
+  color: #6B46C1;
+}
+
+.mini-step-callout-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border-left-color: #F59E0B;
+  color: #D97706;
+}
+
+.mini-step-callout-success {
+  background: rgba(16, 185, 129, 0.1);
+  border-left-color: #10B981;
+  color: #047857;
+}
+
+.mini-step-callout-danger {
+  background: rgba(239, 68, 68, 0.1);
+  border-left-color: #EF4444;
+  color: #DC2626;
 }
