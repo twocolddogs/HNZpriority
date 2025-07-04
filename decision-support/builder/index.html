@@ -13,6 +13,50 @@
                 <img src="../../images/HealthNZ_logo_v2.svg" alt="Health New Zealand Logo" class="app-logo">
                 <div class="header-divider"></div>
                 <h1 class="title">Decision Tree Builder</h1>
+                
+                <!-- Hamburger Menu -->
+                <div class="hamburger-menu">
+                    <button id="hamburgerToggle" class="hamburger-button">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </button>
+                    
+                    <div id="hamburgerDropdown" class="hamburger-dropdown hidden">
+                        <div class="dropdown-section">
+                            <button id="menuSaveDraft" class="dropdown-item">
+                                <span class="dropdown-icon nerd-icon">󰆓</span>
+                                Save Draft
+                            </button>
+                            <button id="menuPublish" class="dropdown-item">
+                                <span class="dropdown-icon nerd-icon">󰅟</span>
+                                Publish
+                            </button>
+                            <button id="menuExport" class="dropdown-item">
+                                <span class="dropdown-icon nerd-icon">󰈝</span>
+                                Export JSON
+                            </button>
+                            <button id="menuImport" class="dropdown-item">
+                                <span class="dropdown-icon nerd-icon">󰅠</span>
+                                Import JSON
+                            </button>
+                            <button id="menuDemo" class="dropdown-item">
+                                <span class="dropdown-icon nerd-icon">󰎞</span>
+                                Demo
+                            </button>
+                        </div>
+                        
+                        <div class="dropdown-divider"></div>
+                        
+                        <div class="dropdown-section">
+                            <button id="menuAdvanced" class="dropdown-item toggle-item">
+                                <span class="dropdown-icon nerd-icon">󰓔</span>
+                                <span>Advanced</span>
+                                <span id="advancedToggle" class="toggle-indicator">OFF</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -22,7 +66,7 @@
                 <button id="builderTab" class="nav-tab active">Builder</button>
                 <button id="birdseyeTab" class="nav-tab">Birdseye</button>
                 <button id="previewTab" class="nav-tab">Preview</button>
-                <button id="jsonTab" class="nav-tab">JSON</button>
+                <button id="jsonTab" class="nav-tab hidden">JSON</button>
             </div>
 
             <!-- Builder View -->
@@ -72,14 +116,6 @@
 
             <!-- Birdseye View -->
             <div id="birdseyeView" class="view">
-                <div class="birdseye-controls">
-                    <button id="autoLayout" class="btn primary">Auto Layout</button>
-                    <button id="resetZoom" class="btn secondary">Reset Zoom</button>
-                    <div class="zoom-controls">
-                        <button id="zoomIn" class="btn secondary small">+</button>
-                        <button id="zoomOut" class="btn secondary small">-</button>
-                    </div>
-                </div>
                 <div id="flowchartContainer" class="flowchart-container">
                     <svg id="flowchartSvg" class="flowchart-svg">
                         <!-- Flowchart will be rendered here -->
@@ -96,15 +132,10 @@
 
             <!-- JSON View -->
             <div id="jsonView" class="view">
-                <div class="json-controls">
-                    <button id="exportJson" class="btn primary">Export JSON</button>
-                    <button id="importJson" class="btn secondary">Import JSON</button>
-                    <button id="loadExample" class="btn success">Load Example</button>
-                    <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
-                </div>
                 <div class="json-editor">
                     <textarea id="jsonOutput" readonly></textarea>
                 </div>
+                <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
             </div>
         </div>
     </div>

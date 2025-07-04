@@ -1,0 +1,14 @@
+{
+  "name": "hnz-decision-support",
+  "version": "1.0.0",
+  "description": "HNZ Clinical Decision Support Tools",
+  "scripts": {
+    "generate-manifest": "node generate-manifest.js",
+    "publish-pathways": "node generate-manifest.js",
+    "dev": "python3 -m http.server 8000",
+    "start": "python3 -m http.server 8000"
+  },
+  "keywords": ["healthcare", "decision-support", "clinical"],
+  "author": "Health New Zealand",
+  "license": "MIT"
+}

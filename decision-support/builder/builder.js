@@ -15,6 +15,7 @@ class DecisionTreeBuilder {
     
     this.currentEditingStep = null;
     this.currentEditingOption = null;
+    this.advancedMode = false;
     
     this.init();
   }
@@ -155,15 +156,19 @@ class DecisionTreeBuilder {
     }
 
     try {
-      // JSON export/import
-      console.log('Binding JSON import/export events...');
-      document.getElementById('exportJson').addEventListener('click', () => this.exportJSON());
-      document.getElementById('importJson').addEventListener('click', () => this.importJSON());
-      document.getElementById('loadExample').addEventListener('click', () => this.loadExample());
+      // Hamburger menu events
+      console.log('Binding hamburger menu events...');
+      document.getElementById('hamburgerToggle').addEventListener('click', () => this.toggleHamburgerMenu());
+      document.getElementById('menuSaveDraft').addEventListener('click', () => { this.closeHamburgerMenu(); this.saveDraft(); });
+      document.getElementById('menuPublish').addEventListener('click', () => { this.closeHamburgerMenu(); this.publishPathway(); });
+      document.getElementById('menuExport').addEventListener('click', () => { this.closeHamburgerMenu(); this.exportJSON(); });
+      document.getElementById('menuImport').addEventListener('click', () => { this.closeHamburgerMenu(); this.importJSON(); });
+      document.getElementById('menuDemo').addEventListener('click', () => { this.closeHamburgerMenu(); this.loadExample(); });
+      document.getElementById('menuAdvanced').addEventListener('click', () => this.toggleAdvancedMode());
       document.getElementById('jsonFileInput').addEventListener('change', (e) => this.handleFileImport(e));
-      console.log('JSON import/export events bound successfully');
+      console.log('Hamburger menu events bound successfully');
     } catch (error) {
-      console.error('Error binding JSON import/export events:', error);
+      console.error('Error binding hamburger menu events:', error);
       throw error;
     }
 
@@ -181,24 +186,22 @@ class DecisionTreeBuilder {
           this.closeOptionModal();
         }
       });
+      
+      // Close hamburger menu on outside click
+      document.addEventListener('click', (e) => {
+        const hamburgerMenu = document.querySelector('.hamburger-menu');
+        if (hamburgerMenu && !hamburgerMenu.contains(e.target)) {
+          this.closeHamburgerMenu();
+        }
+      });
+      
       console.log('Modal overlay events bound successfully');
     } catch (error) {
       console.error('Error binding modal overlay events:', error);
       throw error;
     }
 
-    try {
-      // Birdseye view controls
-      console.log('Binding birdseye view controls...');
-      document.getElementById('autoLayout').addEventListener('click', () => this.autoLayoutFlowchart());
-      document.getElementById('resetZoom').addEventListener('click', () => this.resetFlowchartZoom());
-      document.getElementById('zoomIn').addEventListener('click', () => this.zoomFlowchart(1.2));
-      document.getElementById('zoomOut').addEventListener('click', () => this.zoomFlowchart(0.8));
-      console.log('Birdseye view controls bound successfully');
-    } catch (error) {
-      console.error('Error binding birdseye view controls:', error);
-      throw error;
-    }
+    // Birdseye view controls are now bound dynamically in the legend
 
     try {
       // Guide modal events
@@ -252,6 +255,7 @@ class DecisionTreeBuilder {
 
     if (viewName === 'birdseye') {
       this.updateBirdseye();
+      // Don't auto-fit automatically - let user use Auto Layout button if needed
     } else if (viewName === 'preview') {
       this.updatePreview();
     } else if (viewName === 'json') {
@@ -498,9 +502,9 @@ class DecisionTreeBuilder {
       
       let actionText = '';
       if (option.action.type === 'navigate') {
-        actionText = `→ ${option.action.nextStep}`;
+        actionText = `󰁔 ${option.action.nextStep}`;
       } else if (option.action.type === 'recommend') {
-        actionText = `🎯 ${option.action.recommendation.modality}`;
+        actionText = `󰯯 ${option.action.recommendation.modality}`;
       }
 
       optionItem.innerHTML = `
@@ -858,6 +862,44 @@ class DecisionTreeBuilder {
     this.currentEditingOption = null;
   }
 
+  toggleHamburgerMenu() {
+    const dropdown = document.getElementById('hamburgerDropdown');
+    const button = document.getElementById('hamburgerToggle');
+    
+    dropdown.classList.toggle('hidden');
+    button.classList.toggle('active');
+  }
+
+  closeHamburgerMenu() {
+    const dropdown = document.getElementById('hamburgerDropdown');
+    const button = document.getElementById('hamburgerToggle');
+    
+    dropdown.classList.add('hidden');
+    button.classList.remove('active');
+  }
+
+  toggleAdvancedMode() {
+    this.advancedMode = !this.advancedMode;
+    
+    const jsonTab = document.getElementById('jsonTab');
+    const toggleIndicator = document.getElementById('advancedToggle');
+    
+    if (this.advancedMode) {
+      jsonTab.classList.remove('hidden');
+      toggleIndicator.textContent = 'ON';
+      toggleIndicator.classList.add('on');
+    } else {
+      jsonTab.classList.add('hidden');
+      toggleIndicator.textContent = 'OFF';
+      toggleIndicator.classList.remove('on');
+      
+      // If JSON tab is currently active, switch to builder tab
+      if (jsonTab.classList.contains('active')) {
+        this.showView('builder');
+      }
+    }
+  }
+
   showStepHoverModal(step, event) {
     // Create or get the hover modal
     let hoverModal = document.getElementById('stepHoverModal');
@@ -1097,6 +1139,157 @@ class DecisionTreeBuilder {
     link.click();
   }
 
+  async saveDraft() {
+    try {
+      // Validate the pathway has required fields
+      if (!this.currentTree.title || !this.currentTree.id) {
+        alert('Please provide a title and ID for the pathway before saving.');
+        return;
+      }
+
+      // Add metadata for draft saving
+      const draftData = {
+        ...this.currentTree,
+        metadata: {
+          savedAt: new Date().toISOString(),
+          version: '1.0',
+          status: 'draft'
+        }
+      };
+
+      const dataStr = JSON.stringify(draftData, null, 2);
+      
+      // In a real implementation, this would POST to a server endpoint
+      // For now, we'll simulate by downloading to a drafts folder name
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(dataBlob);
+      link.download = `draft-${this.currentTree.id || 'pathway'}.json`;
+      link.click();
+      
+      alert('Draft saved successfully! File downloaded to your computer.');
+      
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      alert('Error saving draft: ' + error.message);
+    }
+  }
+
+  async publishPathway() {
+    try {
+      // Validate the pathway is complete
+      const validation = this.validatePathway();
+      if (!validation.isValid) {
+        alert('Cannot publish pathway:\n' + validation.errors.join('\n'));
+        return;
+      }
+
+      // Confirm publication
+      const confirmed = confirm(
+        `Are you sure you want to publish "${this.currentTree.title}"?\n\n` +
+        'This will make it available in the decision support tools.'
+      );
+      
+      if (!confirmed) return;
+
+      // Add publication metadata
+      const publishData = {
+        ...this.currentTree,
+        metadata: {
+          publishedAt: new Date().toISOString(),
+          version: '1.0',
+          status: 'published'
+        }
+      };
+
+      const dataStr = JSON.stringify(publishData, null, 2);
+      
+      // In a real implementation, this would:
+      // 1. POST to server to save to pathways directory
+      // 2. Trigger manifest regeneration
+      // For now, we'll simulate by downloading with publish prefix
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(dataBlob);
+      link.download = `published-${this.currentTree.id || 'pathway'}.json`;
+      link.click();
+      
+      alert(
+        'Pathway published successfully!\n\n' +
+        'File downloaded - in a production environment, this would be automatically ' +
+        'copied to the pathways directory and the manifest would be updated.'
+      );
+      
+    } catch (error) {
+      console.error('Error publishing pathway:', error);
+      alert('Error publishing pathway: ' + error.message);
+    }
+  }
+
+  validatePathway() {
+    const errors = [];
+    
+    // Check required fields
+    if (!this.currentTree.title) errors.push('- Title is required');
+    if (!this.currentTree.id) errors.push('- ID is required');
+    if (!this.currentTree.startStep) errors.push('- Start step must be specified');
+    
+    // Check that start step exists
+    if (this.currentTree.startStep && !this.currentTree.steps[this.currentTree.startStep]) {
+      errors.push('- Start step does not exist in steps');
+    }
+    
+    // Check that all steps have required fields
+    Object.entries(this.currentTree.steps || {}).forEach(([stepId, step]) => {
+      if (!step.title) errors.push(`- Step "${stepId}" missing title`);
+      if (!step.type) errors.push(`- Step "${stepId}" missing type`);
+      
+      // Check that navigation targets exist
+      if (step.options) {
+        step.options.forEach((option, index) => {
+          if (option.action?.type === 'navigate' && option.action.nextStep) {
+            if (!this.currentTree.steps[option.action.nextStep]) {
+              errors.push(`- Step "${stepId}" option ${index + 1} references non-existent step "${option.action.nextStep}"`);
+            }
+          }
+        });
+      }
+    });
+    
+    // Check for orphaned steps (unreachable from start)
+    const reachableSteps = new Set();
+    const visitStep = (stepId) => {
+      if (reachableSteps.has(stepId)) return;
+      reachableSteps.add(stepId);
+      
+      const step = this.currentTree.steps[stepId];
+      if (step?.options) {
+        step.options.forEach(option => {
+          if (option.action?.type === 'navigate' && option.action.nextStep) {
+            visitStep(option.action.nextStep);
+          }
+        });
+      }
+    };
+    
+    if (this.currentTree.startStep) {
+      visitStep(this.currentTree.startStep);
+    }
+    
+    Object.keys(this.currentTree.steps || {}).forEach(stepId => {
+      if (!reachableSteps.has(stepId)) {
+        errors.push(`- Step "${stepId}" is not reachable from the start step`);
+      }
+    });
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
   importJSON() {
     document.getElementById('jsonFileInput').click();
   }
@@ -1120,7 +1313,7 @@ class DecisionTreeBuilder {
   }
 
   loadExample() {
-    // Embed the example directly to avoid fetch issues
+    // Load the demo from examples/demo.json
     const exampleTree = {
       "id": "liver-imaging-decision-tool",
       "title": "HNZ Liver Imaging Decision Support Tool",
@@ -1143,7 +1336,10 @@ class DecisionTreeBuilder {
               "items": [
                 "Primovist: If there is evidence of malignancy on prior imaging",
                 "Primovist: Solid/complex liver lesion",
-                "Dotarem or Gadovist: Question of haemangioma with no other malignancy"
+                "Primovist: Gallbladder lesions ?malignancy",
+                "Primovist: Pancreatic malignancy including high risk or large/enlarging IPMNs",
+                "Dotarem or Gadovist: Question of haemangioma with no other malignancy",
+                "Dotarem or Gadovist: Routine low risk IPMN follow up"
               ]
             }
           ]
@@ -1152,27 +1348,32 @@ class DecisionTreeBuilder {
       "steps": {
         "start": {
           "id": "start",
-          "title": "Patient Presentation", 
+          "title": "Patient Presentation",
           "question": "What is the primary clinical scenario?",
           "type": "choice",
           "options": [
             {
-              "text": "Cirrhosis or risk factors for cirrhosis and no other malignancy suspected",
+              "text": "Cirrhosis or risk factors for cirrhosis and no other malignancy suspected. Outside CT or US showing liver lesion",
               "variant": "primary",
               "action": {
-                "type": "recommend",
-                "recommendation": {
-                  "modality": "MRI liver",
-                  "contrast": "with Gadovist (in line with Auckland unless specified by MDM)"
-                }
+                "type": "navigate",
+                "nextStep": "endpoint-mri-liver-gadovist"
               }
             },
             {
               "text": "Patients less than 40 years old",
-              "variant": "primary", 
+              "variant": "primary",
               "action": {
                 "type": "navigate",
                 "nextStep": "under-40-branch"
+              }
+            },
+            {
+              "text": "Patients greater than 40 years old",
+              "variant": "primary",
+              "action": {
+                "type": "navigate",
+                "nextStep": "over-40-branch"
               }
             }
           ]
@@ -1187,21 +1388,220 @@ class DecisionTreeBuilder {
               "text": "Incidentally detected liver lesions on ultrasound",
               "variant": "primary",
               "action": {
-                "type": "recommend",
-                "recommendation": {
-                  "modality": "MRCP/MRI liver/pancreas",
-                  "contrast": "with Gadolinium"
-                }
+                "type": "navigate",
+                "nextStep": "under-40-ct-pancreas"
+              }
+            },
+            {
+              "text": "Symptoms or abnormal LFTs and ultrasound/CT confirms gallstones",
+              "variant": "primary",
+              "action": {
+                "type": "navigate",
+                "nextStep": "under-40-symptoms-decision"
               }
             }
           ]
+        },
+        "under-40-ct-pancreas": {
+          "id": "under-40-ct-pancreas",
+          "title": "CT Pancreatic Mass Protocol",
+          "question": "Has the CT already been completed?",
+          "type": "yes-no",
+          "guideInfo": {
+            "title": "CT Pancreatic Mass Protocol",
+            "description": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis",
+            "note": "MRI preferred, but CT undertaken first due to MRI resource constraints"
+          },
+          "options": [
+            {
+              "text": "Yes",
+              "variant": "success",
+              "action": {
+                "type": "navigate",
+                "nextStep": "under-40-characterization"
+              }
+            },
+            {
+              "text": "No",
+              "variant": "warning",
+              "action": {
+                "type": "navigate",
+                "nextStep": "endpoint-ct-pancreatic-protocol"
+              }
+            }
+          ]
+        },
+        "under-40-characterization": {
+          "id": "under-40-characterization",
+          "title": "Pancreatic CT Completed",
+          "question": "Is further characterisation or assessment required?",
+          "type": "yes-no",
+          "options": [
+            {
+              "text": "Yes",
+              "variant": "success",
+              "action": {
+                "type": "navigate",
+                "nextStep": "endpoint-mrcp-mri-gadolinium"
+              }
+            }
+          ]
+        },
+        "under-40-symptoms-decision": {
+          "id": "under-40-symptoms-decision",
+          "title": "Patient < 40 symptoms or proven gallstones",
+          "question": "?CBD stone is the only question",
+          "type": "yes-no",
+          "options": [
+            {
+              "text": "Yes",
+              "variant": "success",
+              "action": {
+                "type": "navigate",
+                "nextStep": "endpoint-mrcp-no-ct"
+              }
+            },
+            {
+              "text": "No",
+              "variant": "warning",
+              "action": {
+                "type": "navigate",
+                "nextStep": "under-40-ct-check"
+              }
+            }
+          ]
+        },
+        "under-40-ct-check": {
+          "id": "under-40-ct-check",
+          "title": "CT Pancreatic Mass Protocol",
+          "question": "Has the CT already been completed and there is still diagnostic uncertainty?",
+          "type": "yes-no",
+          "guideInfo": {
+            "title": "CT Pancreatic Mass Protocol",
+            "description": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis"
+          },
+          "options": [
+            {
+              "text": "Yes",
+              "variant": "success",
+              "action": {
+                "type": "navigate",
+                "nextStep": "endpoint-mrcp-mri-gadolinium"
+              }
+            }
+          ]
+        },
+        "over-40-branch": {
+          "id": "over-40-branch",
+          "title": "Patients Greater Than 40 Years Old",
+          "question": "What clinical scenario applies?",
+          "type": "choice",
+          "options": [
+            {
+              "text": "Incidentally detected new/concerning liver lesions on ultrasound",
+              "variant": "primary",
+              "action": {
+                "type": "navigate",
+                "nextStep": "over-40-ct-pancreas"
+              }
+            },
+            {
+              "text": "Abdominal ultrasound for abnormal LFTs. Question is ?gallstone or pancreaticobiliary pathology",
+              "variant": "primary",
+              "action": {
+                "type": "navigate",
+                "nextStep": "over-40-ct-pancreas"
+              }
+            }
+          ]
+        },
+        "over-40-ct-pancreas": {
+          "id": "over-40-ct-pancreas",
+          "title": "CT Pancreatic Mass Protocol",
+          "question": "Has the CT already been completed?",
+          "type": "yes-no",
+          "guideInfo": {
+            "title": "CT Pancreatic Mass Protocol",
+            "description": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis"
+          },
+          "options": [
+            {
+              "text": "Yes",
+              "variant": "success",
+              "action": {
+                "type": "navigate",
+                "nextStep": "over-40-characterization"
+              }
+            },
+            {
+              "text": "No",
+              "variant": "warning",
+              "action": {
+                "type": "navigate",
+                "nextStep": "endpoint-ct-pancreatic-protocol"
+              }
+            }
+          ]
+        },
+        "over-40-characterization": {
+          "id": "over-40-characterization",
+          "title": "Pancreatic CT Completed",
+          "question": "Is further characterisation or assessment required?",
+          "type": "yes-no",
+          "options": [
+            {
+              "text": "Yes",
+              "variant": "success",
+              "action": {
+                "type": "navigate",
+                "nextStep": "endpoint-mrcp-mri-gadolinium"
+              }
+            }
+          ]
+        },
+        "endpoint-mri-liver-gadovist": {
+          "id": "endpoint-mri-liver-gadovist",
+          "title": "MRI liver Recommendation",
+          "type": "endpoint",
+          "recommendation": {
+            "modality": "MRI liver",
+            "contrast": "with Gadovist (in line with Auckland unless specified by MDM)",
+            "notes": "Direct pathway for cirrhosis/risk factors with no other malignancy suspected"
+          }
+        },
+        "endpoint-ct-pancreatic-protocol": {
+          "id": "endpoint-ct-pancreatic-protocol",
+          "title": "CT Pancreatic Mass Protocol Recommendation",
+          "type": "endpoint",
+          "recommendation": {
+            "modality": "CT Pancreatic Mass Protocol",
+            "contrast": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis"
+          }
+        },
+        "endpoint-mrcp-mri-gadolinium": {
+          "id": "endpoint-mrcp-mri-gadolinium",
+          "title": "MRCP/MRI liver/pancreas Recommendation",
+          "type": "endpoint",
+          "recommendation": {
+            "modality": "MRCP/MRI liver/pancreas",
+            "contrast": "with Gadolinium (see protocol reference for contrast selection)"
+          }
+        },
+        "endpoint-mrcp-no-ct": {
+          "id": "endpoint-mrcp-no-ct",
+          "title": "MRCP Recommendation",
+          "type": "endpoint",
+          "recommendation": {
+            "modality": "MRCP",
+            "contrast": "(CT not required)"
+          }
         }
       }
     };
     
     this.currentTree = exampleTree;
     this.updateUI();
-    alert('Liver imaging example loaded successfully!');
+    alert('Liver imaging demo loaded successfully!');
   }
 
   // Public methods for button onclick handlers
@@ -1559,15 +1959,17 @@ class DecisionTreeBuilder {
     const positions = this.calculateNodePositions();
     const nodes = {};
     
-    // Calculate SVG dimensions based on positions
+    // Calculate SVG dimensions based on actual content
     let maxX = 0, maxY = 0;
     Object.values(positions).forEach(pos => {
-      maxX = Math.max(maxX, pos.x + 250); // Account for larger 220px width
-      maxY = Math.max(maxY, pos.y + 120); // Account for larger 100px height
+      maxX = Math.max(maxX, pos.x + 250); // Account for node width + padding
+      maxY = Math.max(maxY, pos.y + 120); // Account for node height + padding
     });
     
-    // Update viewBox to fit content with more padding for increased horizontal spacing
-    svg.setAttribute('viewBox', `0 0 ${Math.max(5000, maxX + 400)} ${Math.max(1500, maxY + 300)}`);
+    // Set viewBox to fit actual content size (not a huge fixed minimum!)
+    const viewBoxWidth = maxX + 100;  // Just add some padding
+    const viewBoxHeight = maxY + 100;
+    svg.setAttribute('viewBox', `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
     
     // Create connections first (so they appear behind nodes)
     Object.entries(this.currentTree.steps).forEach(([stepId, step]) => {
@@ -1648,7 +2050,7 @@ class DecisionTreeBuilder {
     // Add legend
     this.addFlowchartLegend();
     
-    // Initialize zoom/pan
+    // Initialize zoom/pan without auto-fit
     this.initializeFlowchartInteraction();
   }
 
@@ -1723,53 +2125,75 @@ class DecisionTreeBuilder {
       }
     }
     
-    // Calculate positions for left-to-right layout with more horizontal spacing
-    const nodeWidth = 220;   // Updated for larger step nodes
-    const nodeHeight = 100;  // Updated for taller step nodes
-    const levelWidth = 600;  // Much more horizontal spacing between step cards and option trees
-    const nodeSpacing = 60;  // Reduced vertical spacing for option nodes to cluster them
-    const stepSpacing = 140; // Larger vertical spacing for step cards
-    const startX = 150;      // More margin from left edge
-    const startY = 100;
+    // Calculate positions for left-to-right layout with good spacing
+    const nodeWidth = 220;   // Step node width
+    const nodeHeight = 100;  // Step node height
+    const levelWidth = 600;  // Expanded horizontal spacing between levels
+    const nodeSpacing = 12;  // Tight vertical spacing for option nodes - almost touching
+    const stepSpacing = 200; // Increased vertical spacing for step cards
+    const startX = 80;       // Reasonable margin from left edge
+    const startY = 80;
     
-    // Group nodes by level and type for better spacing
-    const levelGroups = {};
+    // First, position all step nodes with increased spacing
+    const stepsByLevel = {};
     Object.entries(levels).forEach(([nodeId, level]) => {
-      if (!levelGroups[level]) levelGroups[level] = { steps: [], options: [], endpoints: [] };
-      
       if (this.currentTree.steps[nodeId]) {
-        levelGroups[level].steps.push(nodeId);
-      } else if (optionNodes.has(nodeId)) {
-        levelGroups[level].options.push(nodeId);
-      } else if (virtualEndpoints.has(nodeId)) {
-        levelGroups[level].endpoints.push(nodeId);
+        if (!stepsByLevel[level]) stepsByLevel[level] = [];
+        stepsByLevel[level].push(nodeId);
       }
     });
     
-    // Position nodes with different spacing rules
-    Object.entries(levelGroups).forEach(([level, groups]) => {
+    Object.entries(stepsByLevel).forEach(([level, stepIds]) => {
       const levelNum = parseFloat(level);
       const baseX = startX + levelNum * levelWidth;
       
-      // Position step cards with larger vertical spacing
-      groups.steps.forEach((nodeId, index) => {
-        positions[nodeId] = {
+      stepIds.forEach((stepId, index) => {
+        positions[stepId] = {
           x: baseX,
           y: startY + index * (nodeHeight + stepSpacing)
         };
       });
+    });
+    
+    // Position option nodes grouped by their parent step and centered vertically
+    Object.entries(this.currentTree.steps).forEach(([stepId, step]) => {
+      if (step.options && positions[stepId]) {
+        const parentPos = positions[stepId];
+        const parentCenterY = parentPos.y + nodeHeight / 2;
+        const optionLevel = levels[stepId] + 0.5;
+        const optionX = startX + optionLevel * levelWidth;
+        
+        // Calculate total height needed for all options from this step
+        const optionCount = step.options.length;
+        const totalOptionHeight = (optionCount - 1) * (50 + nodeSpacing);
+        const optionStartY = parentCenterY - totalOptionHeight / 2;
+        
+        step.options.forEach((option, optionIndex) => {
+          const optionId = `option_${stepId}_${optionIndex}`;
+          if (optionNodes.has(optionId)) {
+            positions[optionId] = {
+              x: optionX,
+              y: optionStartY + optionIndex * (50 + nodeSpacing)
+            };
+          }
+        });
+      }
+    });
+    
+    // Position virtual endpoints with step spacing
+    const endpointsByLevel = {};
+    virtualEndpoints.forEach((endpoint, endpointId) => {
+      const level = levels[endpointId];
+      if (!endpointsByLevel[level]) endpointsByLevel[level] = [];
+      endpointsByLevel[level].push(endpointId);
+    });
+    
+    Object.entries(endpointsByLevel).forEach(([level, endpointIds]) => {
+      const levelNum = parseFloat(level);
+      const baseX = startX + levelNum * levelWidth;
       
-      // Position option nodes closer together vertically
-      groups.options.forEach((nodeId, index) => {
-        positions[nodeId] = {
-          x: baseX,
-          y: startY + index * (50 + nodeSpacing) // Smaller height + closer spacing for options
-        };
-      });
-      
-      // Position endpoint nodes with step spacing
-      groups.endpoints.forEach((nodeId, index) => {
-        positions[nodeId] = {
+      endpointIds.forEach((endpointId, index) => {
+        positions[endpointId] = {
           x: baseX,
           y: startY + index * (nodeHeight + stepSpacing)
         };
@@ -1793,18 +2217,18 @@ class DecisionTreeBuilder {
       return this.createRecommendationNode(step, x, y);
     }
     
-    // Determine colors based on step type
-    let fillColor = '#3B82F6'; // default blue for choice
+    // Determine colors based on step type with better differentiation
+    let fillColor = '#2563EB'; // default bright blue for choice
     if (step.id === this.currentTree.startStep) {
-      fillColor = '#10B981'; // green for start step
+      fillColor = '#059669'; // darker green for start step
     } else if (step.type === 'endpoint') {
-      fillColor = '#F59E0B'; // orange for endpoints
+      fillColor = '#DC2626'; // red for endpoints
     } else if (step.type === 'yes-no') {
-      fillColor = '#8B5CF6'; // purple for yes/no
+      fillColor = '#7C3AED'; // deeper purple for yes/no
     } else if (step.type === 'guide') {
-      fillColor = '#6366F1'; // indigo for guide/protocol
+      fillColor = '#4338CA'; // indigo for guide/protocol
     } else if (step.type === 'choice') {
-      fillColor = '#3B82F6'; // blue for multiple choice
+      fillColor = '#2563EB'; // bright blue for multiple choice
     }
     
     // Create larger rectangle for full title display
@@ -1877,11 +2301,7 @@ class DecisionTreeBuilder {
     group.appendChild(rect);
     group.appendChild(titleText);
     
-    // Add click handler for real steps
-    group.addEventListener('click', () => {
-      this.showView('builder');
-      this.editStep(step.id);
-    });
+    // Birdseye view is read-only - no click handlers to edit steps
     
     // Add hover handlers for step preview modal
     group.addEventListener('mouseenter', (e) => {
@@ -1907,7 +2327,7 @@ class DecisionTreeBuilder {
     rect.setAttribute('class', 'flow-node-rect');
     rect.setAttribute('width', '220');
     rect.setAttribute('height', '120');
-    rect.setAttribute('fill', '#10B981'); // green for recommendations
+    rect.setAttribute('fill', '#DC2626'); // red for recommendations to match endpoint color
     rect.setAttribute('rx', '8');
     rect.setAttribute('ry', '8');
     rect.setAttribute('stroke', '#fff');
@@ -1920,7 +2340,7 @@ class DecisionTreeBuilder {
     titleText.setAttribute('y', '20');
     titleText.setAttribute('font-size', '12');
     titleText.setAttribute('font-weight', '600');
-    titleText.textContent = '✓ Recommendation';
+    titleText.textContent = '󰄬 Recommendation';
     
     // Modality
     const modalityText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -2181,13 +2601,20 @@ class DecisionTreeBuilder {
           <h4 style="margin: 0 0 8px 0; font-size: 14px;">Line Types</h4>
           <div class="legend-items-horizontal">
             <div class="legend-item">
-              <div style="width: 20px; height: 2px; background: #9CA3AF; border: 1px dashed #9CA3AF;"></div>
-              <span>To Options</span>
+              <div style="width: 20px; height: 2px; background: transparent; border-top: 2px dashed #9CA3AF;"></div>
+              <span>Options</span>
             </div>
             <div class="legend-item">
               <div style="width: 20px; height: 2px; background: #6B7280;"></div>
-              <span>To Next Step</span>
+              <span>Next Step</span>
             </div>
+          </div>
+        </div>
+        <div class="legend-section" style="margin-top: 12px;">
+          <div class="legend-controls" style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button id="resetZoomLegend" style="padding: 4px 8px; font-size: 11px; height: auto; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">Reset Zoom</button>
+            <button id="zoomInLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">+</button>
+            <button id="zoomOutLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">-</button>
           </div>
         </div>
       </div>
@@ -2200,6 +2627,27 @@ class DecisionTreeBuilder {
     } else {
       container.insertBefore(legend, container.firstChild);
     }
+    
+    // Bind legend control events
+    const resetZoomBtn = legend.querySelector('#resetZoomLegend');
+    const zoomInBtn = legend.querySelector('#zoomInLegend');
+    const zoomOutBtn = legend.querySelector('#zoomOutLegend');
+    
+    if (resetZoomBtn) {
+      resetZoomBtn.addEventListener('click', () => this.resetToInitialState());
+      resetZoomBtn.addEventListener('mouseenter', () => resetZoomBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)');
+      resetZoomBtn.addEventListener('mouseleave', () => resetZoomBtn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)');
+    }
+    if (zoomInBtn) {
+      zoomInBtn.addEventListener('click', () => this.zoomFlowchart(1.2));
+      zoomInBtn.addEventListener('mouseenter', () => zoomInBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)');
+      zoomInBtn.addEventListener('mouseleave', () => zoomInBtn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)');
+    }
+    if (zoomOutBtn) {
+      zoomOutBtn.addEventListener('click', () => this.zoomFlowchart(0.8));
+      zoomOutBtn.addEventListener('mouseenter', () => zoomOutBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)');
+      zoomOutBtn.addEventListener('mouseleave', () => zoomOutBtn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)');
+    }
   }
 
   initializeFlowchartInteraction() {
@@ -2208,10 +2656,17 @@ class DecisionTreeBuilder {
     this.currentPan = {x: 0, y: 0};
     
     const svg = document.getElementById('flowchartSvg');
+    const container = document.querySelector('.flowchart-container');
     let isPanning = false;
     let startPan = {x: 0, y: 0};
     
+    // Prevent right-click context menu
+    svg.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
+    
     svg.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
       isPanning = true;
       startPan = {x: e.clientX - this.currentPan.x, y: e.clientY - this.currentPan.y};
       svg.style.cursor = 'grabbing';
@@ -2230,12 +2685,19 @@ class DecisionTreeBuilder {
       svg.style.cursor = 'grab';
     });
     
+    svg.addEventListener('mouseleave', () => {
+      isPanning = false;
+      svg.style.cursor = 'grab';
+    });
+    
     // Zoom with mouse wheel
     svg.addEventListener('wheel', (e) => {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
       this.zoomFlowchart(zoomFactor);
     });
+    
+    // Don't auto-fit on initial load - let the SVG viewBox handle initial sizing
   }
 
   updateFlowchartTransform() {
@@ -2246,13 +2708,104 @@ class DecisionTreeBuilder {
   }
 
   autoLayoutFlowchart() {
-    this.currentZoom = 1;
-    this.currentPan = {x: 0, y: 0};
-    this.updateFlowchartTransform();
+    // Re-render the flowchart with fresh positioning
     this.renderFlowchart();
+    // Then auto-fit to viewport
+    this.autoFitFlowchart();
   }
 
-  resetFlowchartZoom() {
+  autoFitFlowchart() {
+    // Wait a bit for DOM to be ready, then calculate auto-fit
+    setTimeout(() => {
+      const contentGroup = document.getElementById('flowchartContent');
+      const svg = document.getElementById('flowchartSvg');
+      const container = document.querySelector('.flowchart-container');
+      
+      if (!contentGroup || !svg || !container) return;
+      
+      try {
+        // Get the bounding box of all content
+        const bbox = contentGroup.getBBox();
+        
+        console.log('Raw bbox:', bbox);
+        
+        if (bbox.width === 0 || bbox.height === 0) {
+          // No content yet, use default positioning
+          this.currentZoom = 1;
+          this.currentPan = {x: 0, y: 0};
+          this.updateFlowchartTransform();
+          return;
+        }
+        
+        // Get container dimensions
+        const containerRect = container.getBoundingClientRect();
+        const legendHeight = 60; // Reduce legend space
+        const margin = 20; // Reduce margins
+        
+        const availableWidth = containerRect.width - (margin * 2);
+        const availableHeight = containerRect.height - legendHeight - (margin * 2);
+        
+        console.log('Container dimensions:', {
+          containerWidth: containerRect.width,
+          containerHeight: containerRect.height,
+          availableWidth,
+          availableHeight
+        });
+        
+        // Be much more aggressive with width usage
+        const targetWidthUsage = 0.95; // Use 95% of available width
+        const widthScale = (availableWidth * targetWidthUsage) / bbox.width;
+        const heightScale = availableHeight / bbox.height;
+        
+        console.log('Calculated scales:', { widthScale, heightScale });
+        
+        // Use the smaller scale to ensure everything fits, but prefer width
+        let scale = Math.min(widthScale, heightScale);
+        
+        // If the content is very small, allow some zoom-in up to 1.5x
+        scale = Math.min(scale, 1.5);
+        
+        // But don't go below a minimum useful scale
+        scale = Math.max(scale, 0.3);
+        
+        console.log('Final scale chosen:', scale);
+        
+        // Calculate positioning to center the content
+        const scaledWidth = bbox.width * scale;
+        const scaledHeight = bbox.height * scale;
+        
+        // Center horizontally and vertically in available space
+        const panX = (availableWidth - scaledWidth) / 2 - (bbox.x * scale) + margin;
+        const panY = (availableHeight - scaledHeight) / 2 - (bbox.y * scale) + margin + legendHeight;
+        
+        // Apply the calculated zoom and pan
+        this.currentZoom = scale;
+        this.currentPan = {x: panX, y: panY};
+        this.updateFlowchartTransform();
+        
+        console.log('Auto-fit result:', { 
+          scale: scale.toFixed(3), 
+          panX: panX.toFixed(0), 
+          panY: panY.toFixed(0), 
+          contentSize: `${bbox.width.toFixed(0)}x${bbox.height.toFixed(0)}`,
+          scaledSize: `${scaledWidth.toFixed(0)}x${scaledHeight.toFixed(0)}`,
+          containerSize: `${availableWidth.toFixed(0)}x${availableHeight.toFixed(0)}`,
+          widthUsage: `${((scaledWidth / availableWidth) * 100).toFixed(1)}%`,
+          heightUsage: `${((scaledHeight / availableHeight) * 100).toFixed(1)}%`
+        });
+        
+      } catch (error) {
+        console.warn('Auto-fit calculation failed:', error);
+        // Fallback to a larger default
+        this.currentZoom = 1;
+        this.currentPan = {x: 50, y: 100};
+        this.updateFlowchartTransform();
+      }
+    }, 250);
+  }
+
+  resetToInitialState() {
+    // Reset to initial load state - no zoom, no pan, just SVG viewBox sizing
     this.currentZoom = 1;
     this.currentPan = {x: 0, y: 0};
     this.updateFlowchartTransform();

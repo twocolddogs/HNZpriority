@@ -73,6 +73,30 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Symbols Nerd Font';
+  src: url('../fonts/SymbolsNerdFont-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ==========================================================================
+   Icon Fonts
+   ========================================================================== */
+.nerd-icon {
+  font-family: 'Symbols Nerd Font', monospace;
+  font-size: 1em;
+  line-height: 1;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* ==========================================================================
    1. Global Styles & Typography Variables
    ========================================================================== */
@@ -852,6 +876,152 @@ body {
   color: #FFFFFF;
   margin: 0;
   white-space: nowrap;
+  flex: 1;
+}
+
+/* ==========================================================================
+   19. Hamburger Menu Styles
+   ========================================================================== */
+.hamburger-menu {
+  position: relative;
+  margin-left: auto;
+}
+
+.hamburger-button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 4px;
+  padding: 8px;
+}
+
+.hamburger-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.hamburger-line {
+  width: 20px;
+  height: 2px;
+  background: #FFFFFF;
+  border-radius: 1px;
+  transition: all 0.2s ease;
+}
+
+.hamburger-button.active .hamburger-line:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger-button.active .hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-button.active .hamburger-line:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -6px);
+}
+
+.hamburger-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: fadeIn 0.2s ease;
+}
+
+.dropdown-section {
+  padding: 0.75rem 0;
+}
+
+.dropdown-section h4 {
+  margin: 0 0 0.5rem 0;
+  padding: 0 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  color: #374151;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  gap: 0.75rem;
+}
+
+.dropdown-item:hover {
+  background: #F3F4F6;
+  color: #1F2937;
+}
+
+.dropdown-item.toggle-item {
+  justify-content: space-between;
+}
+
+.dropdown-icon {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #E5E7EB;
+  margin: 0.5rem 0;
+}
+
+.toggle-indicator {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6B7280;
+  background: #F3F4F6;
+  border-radius: 12px;
+  padding: 0.25rem 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.toggle-indicator.on {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hamburger-dropdown {
+    right: -1rem;
+    left: -1rem;
+    margin-top: 4px;
+  }
+  
+  .brand-bar {
+    padding: 0.8rem 1rem;
+  }
 }
 
 .main-content {
