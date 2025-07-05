@@ -125,9 +125,25 @@ gemini @home.js @pathway-renderer.js "compare how both files load pathway data f
 - **Efficient Debugging**: Leverage Gemini's code understanding to identify issues faster
 
 ### Implementation:
+- **SESSION STARTUP REQUIREMENT**: At the start of EVERY coding session, ALWAYS use Gemini to load current codebase context
 - Start coding sessions by having Gemini read key files: `@home.js @pathway-renderer.js @styles.css`
 - Use Gemini for all file analysis before making changes
 - Only use Read tool for final verification of specific changes
+
+### Mandatory Session Initialization:
+**CRITICAL: Always run this at the start of every session to maintain Gemini's code context:**
+
+```bash
+# Load core codebase context into Gemini memory
+gemini @decision-support/builder/pathway-manager.js @decision-support/app-styles.css @decision-support/design-system.css @decision-support/home.js "Please analyze and remember the current state of the HNZ Decision Support codebase. Remember the file purposes, recent design system deployment on experimental/modern-design branch, architecture patterns, and any critical changes. This context will help you assist with future development work efficiently."
+```
+
+This ensures Gemini maintains comprehensive understanding of:
+- Current codebase architecture and file relationships
+- Recent changes and experimental branches
+- Design system implementation status
+- Code patterns and conventions
+- Critical functions and their locations
 
 ## Code Patterns
 
