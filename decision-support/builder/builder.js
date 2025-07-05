@@ -591,6 +591,7 @@ class DecisionTreeBuilder {
       this.editingVirtualEndpoint = false;
       this.updateUI();
       this.updateJSON();
+      this.updatePreview();
       this.closeModal();
       return;
     }
@@ -643,6 +644,7 @@ class DecisionTreeBuilder {
     this.closeModal();
     this.updateUI();
     this.updateJSON();
+    this.updatePreview();
   }
 
   deleteStep() {
@@ -653,6 +655,7 @@ class DecisionTreeBuilder {
       this.closeModal();
       this.updateUI();
       this.updateJSON();
+      this.updatePreview();
     }
   }
 
@@ -1971,6 +1974,7 @@ class DecisionTreeBuilder {
     this.updateOptionsList(step.options);
     this.updateUI();
     this.updateJSON();
+    this.updatePreview();
   }
 
   deleteOption() {
@@ -1982,6 +1986,7 @@ class DecisionTreeBuilder {
       this.closeOptionModal();
       this.updateOptionsList(step.options);
       this.updateJSON();
+      this.updatePreview();
     }
   }
 
