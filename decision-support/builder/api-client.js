@@ -80,8 +80,8 @@ class PathwayAPIClient {
   }
 }
 
-// Global API client instance
-window.pathwayAPI = new PathwayAPIClient();
+// Global API client instance - configure with your deployed API URL
+window.pathwayAPI = new PathwayAPIClient('https://hnz-pathway-api.alistair-rumball-smith.workers.dev');
 
 // Fallback to file-based system if API not available
 window.pathwayAPI.isAPIAvailable = async function() {
