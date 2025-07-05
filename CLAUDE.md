@@ -96,12 +96,38 @@ Since there's no package.json, this project doesn't use npm/node build tools. To
 
 This is a healthcare-critical application where uncontrolled changes to main could impact patient care. All development must follow proper branch management.
 
-## Code Search and Analysis
+## Code Analysis and File Reading Strategy
 
-When searching for code, functions, or specific implementations:
-- **ALWAYS use Gemini CLI** to load files and find code instead of using other search tools
-- Use the `@filename` syntax to have Gemini analyze specific files
-- This ensures more accurate code location and analysis
+**CRITICAL: Use Gemini CLI as your primary code assistant to maintain context and reduce repetitive file reading.**
+
+### When to Use Gemini CLI:
+- **File Reading**: ALWAYS use `@filename` syntax to have Gemini read and analyze files
+- **Code Search**: Use Gemini to find functions, classes, or specific implementations
+- **Context Building**: Load multiple related files with Gemini to build comprehensive understanding
+- **Code Understanding**: Ask Gemini to explain complex code sections or relationships between files
+
+### Gemini CLI Usage Patterns:
+```bash
+# Read specific files and build context
+gemini @styles.css @pathway-renderer.js "explain the protocol-card styling and how it's used"
+
+# Search for implementations
+gemini @app.js "find all the functions that handle pathway navigation"
+
+# Analyze multiple related files
+gemini @home.js @pathway-renderer.js "compare how both files load pathway data from the API"
+```
+
+### Benefits:
+- **Persistent Context**: Gemini maintains understanding of code throughout the session
+- **Reduced File Reading**: Avoid repetitive Read tool calls by building context once with Gemini
+- **Better Analysis**: Gemini can analyze relationships across multiple files simultaneously
+- **Efficient Debugging**: Leverage Gemini's code understanding to identify issues faster
+
+### Implementation:
+- Start coding sessions by having Gemini read key files: `@home.js @pathway-renderer.js @styles.css`
+- Use Gemini for all file analysis before making changes
+- Only use Read tool for final verification of specific changes
 
 ## Code Patterns
 
