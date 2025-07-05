@@ -68,14 +68,46 @@
         <div class="main-content">
             <!-- Navigation Tabs -->
             <div class="nav-tabs">
-                <button id="builderTab" class="nav-tab active">Builder</button>
+                <button id="libraryTab" class="nav-tab active">Library</button>
+                <button id="builderTab" class="nav-tab">Builder</button>
                 <button id="birdseyeTab" class="nav-tab">Birdseye</button>
                 <button id="previewTab" class="nav-tab">Preview</button>
                 <button id="jsonTab" class="nav-tab hidden">JSON</button>
             </div>
 
+            <!-- Library View -->
+            <div id="libraryView" class="view active">
+                <div class="library-layout">
+                    <div class="library-header">
+                        <h2>Pathway Library</h2>
+                        <div class="library-actions">
+                            <button id="newPathway" class="btn primary">New Pathway</button>
+                            <button id="refreshLibrary" class="btn secondary">Refresh</button>
+                        </div>
+                    </div>
+                    
+                    <div class="library-filters">
+                        <div class="filter-group">
+                            <label for="statusFilter">Status:</label>
+                            <select id="statusFilter">
+                                <option value="all">All</option>
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <input type="text" id="searchFilter" placeholder="Search pathways...">
+                        </div>
+                    </div>
+                    
+                    <div id="pathwaysList" class="pathways-list">
+                        <!-- Pathways will be listed here -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Builder View -->
-            <div id="builderView" class="view active">
+            <div id="builderView" class="view">
                 <div class="builder-layout">
                     <!-- Tree Properties Panel -->
                     <div class="properties-panel">
@@ -420,6 +452,7 @@
     </div>
 
     <script src="builder.js"></script>
+    <script src="pathway-manager.js"></script>
     <script src="renderer.js"></script>
 </body>
 </html>
