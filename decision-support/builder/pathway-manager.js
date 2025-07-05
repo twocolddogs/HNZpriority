@@ -7,20 +7,33 @@ const PathwayManager = {
   
   async loadPathways() {
     try {
-      console.log('Loading pathways from manifest...');
-      const response = await fetch('../pathways/manifest.json');
+      console.log('Loading pathways...');
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Try API first
+      if (await window.pathwayAPI.isAPIAvailable()) {
+        console.log('Using API to load pathways');
+        const pathways = await window.pathwayAPI.getPathways();
+        this.pathways = pathways;
+        this.filteredPathways = [...pathways];
+        this.renderPathwaysList();
+        console.log('Pathways loaded from API, count:', this.pathways.length);
+      } else {
+        // Fallback to file-based system
+        console.log('Falling back to file-based system');
+        const response = await fetch('../pathways/manifest.json');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const manifest = await response.json();
+        console.log('Loaded manifest:', manifest);
+        
+        this.pathways = manifest;
+        this.filteredPathways = [...manifest];
+        this.renderPathwaysList();
+        console.log('Pathways loaded from files, count:', this.pathways.length);
       }
-      
-      const manifest = await response.json();
-      console.log('Loaded manifest:', manifest);
-      
-      this.pathways = manifest;
-      this.filteredPathways = [...manifest];
-      this.renderPathwaysList();
-      console.log('Pathways loaded successfully, count:', this.pathways.length);
     } catch (error) {
       console.error('Error loading pathways:', error);
       this.pathways = [];
@@ -109,13 +122,24 @@ const PathwayManager = {
   async editPathway(filename) {
     try {
       console.log('Loading pathway:', filename);
-      const response = await fetch(`../pathways/${filename}`);
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Extract pathway ID from filename
+      const pathwayId = filename.replace('.json', '').replace('_draft', '').replace('_published', '');
+      
+      let pathway;
+      
+      // Try API first
+      if (await window.pathwayAPI.isAPIAvailable()) {
+        pathway = await window.pathwayAPI.getPathway(pathwayId);
+      } else {
+        // Fallback to file-based system
+        const response = await fetch(`../pathways/${filename}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        pathway = await response.json();
       }
       
-      const pathway = await response.json();
       console.log('Loaded pathway data:', pathway);
       
       this.currentTree = pathway;
@@ -135,16 +159,25 @@ const PathwayManager = {
     if (!confirm('Publish this pathway? It will be available to all users.')) return;
     
     try {
-      // Update status in manifest
-      const pathway = this.pathways.find(p => p.filename === filename);
-      if (pathway) {
-        pathway.status = 'published';
-        await this.updateManifest();
-        this.renderPathwaysList();
+      // Extract pathway ID from filename
+      const pathwayId = filename.replace('.json', '').replace('_draft', '').replace('_published', '');
+      
+      // Try API first
+      if (await window.pathwayAPI.isAPIAvailable()) {
+        await window.pathwayAPI.publishPathway(pathwayId);
+        await this.loadPathways(); // Reload to get updated data
+      } else {
+        // Fallback to file-based system
+        const pathway = this.pathways.find(p => p.filename === filename);
+        if (pathway) {
+          pathway.status = 'published';
+          await this.updateManifest();
+          this.renderPathwaysList();
+        }
       }
     } catch (error) {
       console.error('Error publishing pathway:', error);
-      alert('Error publishing pathway');
+      alert(`Error publishing pathway: ${error.message}`);
     }
   },
 
@@ -152,16 +185,25 @@ const PathwayManager = {
     if (!confirm('Unpublish this pathway? It will no longer be available to users.')) return;
     
     try {
-      // Update status in manifest
-      const pathway = this.pathways.find(p => p.filename === filename);
-      if (pathway) {
-        pathway.status = 'draft';
-        await this.updateManifest();
-        this.renderPathwaysList();
+      // Extract pathway ID from filename
+      const pathwayId = filename.replace('.json', '').replace('_draft', '').replace('_published', '');
+      
+      // Try API first
+      if (await window.pathwayAPI.isAPIAvailable()) {
+        await window.pathwayAPI.unpublishPathway(pathwayId);
+        await this.loadPathways(); // Reload to get updated data
+      } else {
+        // Fallback to file-based system
+        const pathway = this.pathways.find(p => p.filename === filename);
+        if (pathway) {
+          pathway.status = 'draft';
+          await this.updateManifest();
+          this.renderPathwaysList();
+        }
       }
     } catch (error) {
       console.error('Error unpublishing pathway:', error);
-      alert('Error unpublishing pathway');
+      alert(`Error unpublishing pathway: ${error.message}`);
     }
   },
 
@@ -169,13 +211,22 @@ const PathwayManager = {
     if (!confirm('Delete this pathway permanently? This cannot be undone.')) return;
     
     try {
-      // Remove from manifest
-      this.pathways = this.pathways.filter(p => p.filename !== filename);
-      await this.updateManifest();
-      this.loadPathways();
+      // Extract pathway ID from filename
+      const pathwayId = filename.replace('.json', '').replace('_draft', '').replace('_published', '');
+      
+      // Try API first
+      if (await window.pathwayAPI.isAPIAvailable()) {
+        await window.pathwayAPI.deletePathway(pathwayId);
+        await this.loadPathways(); // Reload to get updated data
+      } else {
+        // Fallback to file-based system
+        this.pathways = this.pathways.filter(p => p.filename !== filename);
+        await this.updateManifest();
+        this.loadPathways();
+      }
     } catch (error) {
       console.error('Error deleting pathway:', error);
-      alert('Error deleting pathway');
+      alert(`Error deleting pathway: ${error.message}`);
     }
   },
 

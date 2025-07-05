@@ -1165,31 +1165,47 @@ class DecisionTreeBuilder {
         return;
       }
 
-      // Create filename with draft suffix
-      const filename = `${this.currentTree.id}_draft.json`;
-      
       // Prepare the pathway data
       const pathwayData = {
-        ...this.currentTree
+        ...this.currentTree,
+        status: 'draft'
       };
 
-      // Download the draft file
-      const dataStr = JSON.stringify(pathwayData, null, 2);
-      const dataBlob = new Blob([dataStr], {type: 'application/json'});
-      
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(dataBlob);
-      link.download = filename;
-      link.click();
+      // Try API first
+      if (await window.pathwayAPI.isAPIAvailable()) {
+        console.log('Saving pathway via API');
+        const result = await window.pathwayAPI.savePathway(pathwayData);
+        console.log('Pathway saved:', result);
+        
+        // Refresh the library
+        await this.loadPathways();
+        
+        alert('Draft saved successfully!');
+      } else {
+        // Fallback to file-based system
+        console.log('API not available, falling back to file download');
+        
+        // Create filename with draft suffix
+        const filename = `${this.currentTree.id}_draft.json`;
+        
+        // Download the draft file
+        const dataStr = JSON.stringify(pathwayData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = filename;
+        link.click();
 
-      // Update/add to manifest
-      await this.updateManifestEntry(filename, 'draft');
-      
-      alert('Draft saved successfully! File downloaded. Please place it in the pathways/ directory.');
+        // Update/add to manifest
+        await this.updateManifestEntry(filename, 'draft');
+        
+        alert('Draft saved successfully! File downloaded. Please place it in the pathways/ directory.');
+      }
       
     } catch (error) {
       console.error('Error saving draft:', error);
-      alert('Error saving draft: ' + error.message);
+      alert(`Error saving draft: ${error.message}`);
     }
   }
 
