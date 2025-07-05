@@ -1402,6 +1402,20 @@ class DecisionTreeBuilder {
       }
     });
     
+    // Check for circular references
+    Object.keys(this.currentTree.steps || {}).forEach(stepId => {
+      const step = this.currentTree.steps[stepId];
+      if (step?.options) {
+        step.options.forEach((option, index) => {
+          if (option.action?.type === 'navigate' && option.action.nextStep) {
+            if (this.detectCircularReference(stepId, option.action.nextStep)) {
+              errors.push(`- Step "${stepId}" option ${index + 1} creates a circular reference (infinite loop)`);
+            }
+          }
+        });
+      }
+    });
+    
     return {
       isValid: errors.length === 0,
       errors
@@ -1916,6 +1930,12 @@ class DecisionTreeBuilder {
           };
         }
         
+        // Check for circular reference with new step
+        if (this.detectCircularReference(this.currentEditingStep, newStepId)) {
+          alert('This action would create a circular reference (infinite loop) in your pathway. Please choose a different target or create a different step structure.');
+          return;
+        }
+        
         this.currentTree.steps[newStepId] = newStep;
         
         option.action = {
@@ -1923,6 +1943,12 @@ class DecisionTreeBuilder {
           nextStep: newStepId
         };
       } else {
+        // Check for circular reference with existing step
+        if (this.detectCircularReference(this.currentEditingStep, targetStep)) {
+          alert('This action would create a circular reference (infinite loop) in your pathway. Please choose a different target step.');
+          return;
+        }
+        
         option.action = {
           type: 'navigate',
           nextStep: targetStep
@@ -2022,6 +2048,52 @@ class DecisionTreeBuilder {
       this.updateJSON();
       this.updatePreview();
     }
+  }
+
+  // ==========================================================================
+  // Circular Reference Detection
+  // ==========================================================================
+
+  detectCircularReference(fromStepId, toStepId) {
+    // If we're linking to the same step, that's immediately circular
+    if (fromStepId === toStepId) {
+      return true;
+    }
+
+    // Use depth-first search to detect if toStepId can eventually lead back to fromStepId
+    const visited = new Set();
+    const stack = [toStepId];
+
+    while (stack.length > 0) {
+      const currentStepId = stack.pop();
+      
+      // If we've already visited this step, skip it to avoid infinite loops
+      if (visited.has(currentStepId)) {
+        continue;
+      }
+      
+      visited.add(currentStepId);
+      
+      // If we've reached back to our starting step, we found a cycle
+      if (currentStepId === fromStepId) {
+        return true;
+      }
+
+      // Get the current step and examine its options
+      const currentStep = this.currentTree.steps[currentStepId];
+      if (!currentStep || !currentStep.options) {
+        continue;
+      }
+
+      // Add all navigation targets to the stack for further exploration
+      for (const option of currentStep.options) {
+        if (option.action && option.action.type === 'navigate' && option.action.nextStep) {
+          stack.push(option.action.nextStep);
+        }
+      }
+    }
+
+    return false; // No circular reference found
   }
 
   // ==========================================================================
