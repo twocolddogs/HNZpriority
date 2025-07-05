@@ -111,10 +111,10 @@ const PathwayManager = {
   renderPathwayItem(pathway) {
     return `
       <div class="pathway-item" data-id="${pathway.id}" data-filename="${pathway.filename}">
+        <span class="status-badge status-${pathway.status} pathway-status-badge">${pathway.status}</span>
         <div class="pathway-main">
           <div class="pathway-header">
             <h3 class="pathway-title">${pathway.title}</h3>
-            <span class="status-badge status-${pathway.status}">${pathway.status}</span>
           </div>
           <div class="pathway-description">${pathway.description}</div>
           <div class="pathway-meta">
@@ -122,14 +122,14 @@ const PathwayManager = {
             <span class="pathway-size">${this.formatFileSize(pathway.size)}</span>
             <span class="pathway-modified">${this.formatDate(pathway.lastModified)}</span>
           </div>
-        </div>
-        <div class="pathway-actions">
-          ${pathway.status === 'draft' ? 
-            `<button class="btn primary pathway-edit" data-filename="${pathway.filename}">Edit</button>
-             <button class="btn success pathway-publish" data-filename="${pathway.filename}">Publish</button>` :
-            `<button class="btn warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
-          }
-          <button class="btn danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
+          <div class="pathway-actions">
+            ${pathway.status === 'draft' ? 
+              `<button class="btn btn-sm primary pathway-edit" data-filename="${pathway.filename}">Edit</button>
+               <button class="btn btn-sm success pathway-publish" data-filename="${pathway.filename}">Publish</button>` :
+              `<button class="btn btn-sm warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
+            }
+            <button class="btn btn-sm danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
+          </div>
         </div>
       </div>
     `;
