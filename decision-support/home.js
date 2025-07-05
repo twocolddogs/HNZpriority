@@ -111,11 +111,16 @@ class DecisionSupportHome {
         this.pathways = this.pathways.filter(pathway => pathway !== null);
         
         console.log(`Loaded ${this.pathways.length} published pathways from API`);
+        
+        // If no published pathways, show empty state
+        if (this.pathways.length === 0) {
+          console.log('No published pathways found via API');
+        }
         return;
       }
       
       // Fallback to file-based system
-      console.log('API not available, falling back to file-based system');
+      console.warn('⚠️ API not available, falling back to file-based system - this should not happen in production!');
       
       // Try to discover pathways dynamically first, then fallback to known files
       let pathwayFiles = await this.discoverPathways();
@@ -172,10 +177,21 @@ class DecisionSupportHome {
 
   async isAPIAvailable() {
     try {
+      console.log('Checking API availability...');
       const response = await fetch('https://hnz-pathway-api.alistair-rumball-smith.workers.dev/api/published-pathways');
-      return response.ok;
+      console.log('API response status:', response.status, response.statusText);
+      console.log('API response headers:', response.headers);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('API returned data:', data);
+        return true;
+      } else {
+        console.warn('API returned non-OK status:', response.status);
+        return false;
+      }
     } catch (error) {
-      console.warn('API availability check failed:', error);
+      console.error('API availability check failed:', error);
       return false;
     }
   }
