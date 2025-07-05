@@ -1,0 +1,19 @@
+# Cloudflare Workers configuration for HNZ Pathway API
+name = "hnz-pathway-api"
+main = "pathway-api.js"
+compatibility_date = "2024-01-01"
+
+# KV namespace for pathway storage
+[[kv_namespaces]]
+binding = "PATHWAYS_KV"
+id = "b9bde0d5014243cebc7d61fcb687ea1c"  # Production KV namespace ID
+preview_id = "8fc97924692e45a9a748017669e1b9f0"  # Preview KV namespace ID
+
+# Environment variables (optional)
+[vars]
+ENVIRONMENT = "production"
+
+# Routes for custom domain (optional)
+# [[routes]]
+# pattern = "api.your-domain.com/*"
+# zone_name = "your-domain.com"
