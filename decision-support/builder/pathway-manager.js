@@ -59,9 +59,9 @@ const PathwayManager = {
           <span class="pathway-modified">${this.formatDate(pathway.lastModified)}</span>
         </div>
         <div class="pathway-actions">
-          <button class="btn primary pathway-edit" data-filename="${pathway.filename}">Edit</button>
           ${pathway.status === 'draft' ? 
-            `<button class="btn success pathway-publish" data-filename="${pathway.filename}">Publish</button>` :
+            `<button class="btn primary pathway-edit" data-filename="${pathway.filename}">Edit</button>
+             <button class="btn success pathway-publish" data-filename="${pathway.filename}">Publish</button>` :
             `<button class="btn warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
           }
           <button class="btn danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
@@ -119,8 +119,12 @@ const PathwayManager = {
       console.log('Loaded pathway data:', pathway);
       
       this.currentTree = pathway;
-      this.updateUI(); // Update the builder UI with loaded data
       this.showView('builder');
+      // Need to update UI after view is shown
+      setTimeout(() => {
+        this.updateUI(); // Update the builder UI with loaded data
+        this.updateTreeProperties(); // Ensure form fields are populated
+      }, 100);
     } catch (error) {
       console.error('Error loading pathway:', error);
       alert(`Error loading pathway: ${error.message}`);
