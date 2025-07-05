@@ -27,18 +27,6 @@
                     </button>
                     
                     <div id="hamburgerDropdown" class="hamburger-dropdown hidden">
-                        <div class="dropdown-section">
-                            <button id="menuSaveDraft" class="dropdown-item">
-                                <span class="dropdown-icon nerd-icon">󰆓</span>
-                                Save Draft
-                            </button>
-                            <button id="menuPublish" class="dropdown-item">
-                                <span class="dropdown-icon nerd-icon">󰅟</span>
-                                Publish
-                            </button>
-                        </div>
-                        
-                        <div class="dropdown-divider"></div>
                         
                         <div class="dropdown-section">
                             <a href="../index.html" id="menuLiveApp" class="dropdown-item">
@@ -119,7 +107,10 @@
                 <div class="builder-layout">
                     <!-- Tree Properties Panel -->
                     <div class="properties-panel">
-                        <h3>Pathway Properties</h3>
+                        <div class="panel-header">
+                            <h3>Pathway Properties</h3>
+                            <button id="publishButton" class="btn btn-success">Publish</button>
+                        </div>
                         <div class="form-group">
                             <label for="treeId">Pathway ID</label>
                             <input type="text" id="treeId" placeholder="unique-pathway-id">
@@ -150,7 +141,10 @@
                     <div class="steps-panel">
                         <div class="steps-header">
                             <h3>Decision Steps</h3>
-                            <button id="addStep" class="btn btn-primary">Add Step</button>
+                            <div class="steps-actions">
+                                <button id="saveDraftButton" class="btn btn-secondary">Save Draft</button>
+                                <button id="addStep" class="btn btn-primary">Add Step</button>
+                            </div>
                         </div>
                         <div id="stepsList" class="steps-list">
                             <!-- Steps will be listed here -->

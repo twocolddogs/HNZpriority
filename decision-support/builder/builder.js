@@ -166,8 +166,8 @@ class DecisionTreeBuilder {
       // Hamburger menu events
       console.log('Binding hamburger menu events...');
       document.getElementById('hamburgerToggle').addEventListener('click', () => this.toggleHamburgerMenu());
-      document.getElementById('menuSaveDraft').addEventListener('click', () => { this.closeHamburgerMenu(); this.saveDraft(); });
-      document.getElementById('menuPublish').addEventListener('click', () => { this.closeHamburgerMenu(); this.publishPathway(); });
+      document.getElementById('saveDraftButton').addEventListener('click', () => this.saveDraft());
+      document.getElementById('publishButton').addEventListener('click', () => this.publishPathway());
       document.getElementById('menuLiveApp').addEventListener('click', () => this.closeHamburgerMenu());
       document.getElementById('menuHelp').addEventListener('click', () => { this.closeHamburgerMenu(); this.showView('help'); });
       document.getElementById('menuAdvanced').addEventListener('click', () => this.toggleAdvancedMode());
