@@ -85,10 +85,23 @@ Since there's no package.json, this project doesn't use npm/node build tools. To
 2. **Switch to `develop` branch** if not already on it: `git checkout develop`
 3. **Make all code changes on `develop` branch only**
 4. **Test changes thoroughly** on develop branch
-5. **Create pull requests** from develop to main when changes are ready for production
-6. **Never commit directly to main** - this is a protected production branch
+5. **Automatically push commits to develop branch** after committing
+6. **Create pull requests** from develop to main when changes are ready for production
+7. **Never commit directly to main** - this is a protected production branch
+
+### Auto-Push Configuration:
+- **ALWAYS push commits immediately** after creating them on develop branch
+- Use `git push origin develop` or `git push` (if upstream is configured)
+- This ensures changes are backed up and available for collaboration
 
 This is a healthcare-critical application where uncontrolled changes to main could impact patient care. All development must follow proper branch management.
+
+## Code Search and Analysis
+
+When searching for code, functions, or specific implementations:
+- **ALWAYS use Gemini CLI** to load files and find code instead of using other search tools
+- Use the `@filename` syntax to have Gemini analyze specific files
+- This ensures more accurate code location and analysis
 
 ## Code Patterns
 
