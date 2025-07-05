@@ -6,6 +6,10 @@
     <meta http-equiv="Cache-Control" content="max-age=300, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <title>HNZ Decision Support Tools</title>
+    <link rel="stylesheet" href="../fonts/poppins.css">
+    <link rel="stylesheet" href="../fonts/publicsans.css">
+    <link rel="stylesheet" href="design-system.css">
+    <link rel="stylesheet" href="app-styles.css">
     <link rel="stylesheet" href="styles.css">
     <style>
         .pathways-container {
@@ -22,13 +26,13 @@
         }
 
         .pathway-card {
-            background: #FFFFFF;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            border: 1px solid #E5E7EB;
+            background: var(--color-white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-gray-200);
             overflow: hidden;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: var(--transition-base);
             position: relative;
         }
 
@@ -39,14 +43,14 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: #3B82F6;
-            transition: height 0.2s ease;
+            background: var(--color-primary);
+            transition: var(--transition-base);
         }
 
         .pathway-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-            border-color: #3B82F6;
+            box-shadow: var(--shadow-md);
+            border-color: var(--color-primary);
         }
 
         .pathway-card:hover::before {
@@ -54,26 +58,26 @@
         }
 
         .pathway-header {
-            background: #F8FAFC;
-            color: #1E293B;
-            padding: 1.5rem;
+            background: var(--color-gray-50);
+            color: var(--color-gray-800);
+            padding: var(--space-6);
             position: relative;
-            border-bottom: 1px solid #E2E8F0;
+            border-bottom: 1px solid var(--color-gray-200);
         }
 
         .pathway-title {
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.25rem;
-            font-weight: 600;
+            font-family: var(--font-family-primary);
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
             margin: 0;
-            line-height: 1.4;
+            line-height: var(--line-height-tight);
         }
 
         .pathway-subtitle {
-            font-size: 1.125rem;
-            opacity: 0.95;
+            font-size: var(--font-size-lg);
+            color: var(--color-gray-600);
             margin: 0;
-            line-height: 1.5;
+            line-height: var(--line-height-normal);
             position: relative;
             z-index: 1;
         }
@@ -147,12 +151,12 @@
 
         .error-state {
             text-align: center;
-            padding: var(--space-2xl);
-            color: var(--danger);
-            background: #FEF2F2;
-            border: 1px solid #FECACA;
-            border-radius: var(--radius-md);
-            margin: var(--space-xl) 0;
+            padding: var(--space-16);
+            color: var(--color-danger);
+            background: var(--color-danger-light);
+            border: 1px solid var(--color-danger);
+            border-radius: var(--radius-lg);
+            margin: var(--space-8) 0;
         }
 
         .intro-section {
@@ -169,29 +173,29 @@
         }
 
         .intro-text {
-            font-size: 1.125rem;
-            color: #374151;
+            font-size: var(--font-size-lg);
+            color: var(--color-gray-700);
             max-width: 600px;
             margin: 0 auto;
-            line-height: 1.6;
+            line-height: var(--line-height-relaxed);
         }
 
         .home-button {
             background: rgba(255, 255, 255, 0.15);
             border: 2px solid rgba(255, 255, 255, 0.3);
-            color: #FFFFFF;
-            padding: 0.4rem 1.5rem;
-            border-radius: 8px;
+            color: var(--color-white);
+            padding: var(--space-3) var(--space-6);
+            border-radius: var(--radius-base);
             text-decoration: none;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 600;
-            font-size: 0.9375rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: var(--font-family-primary);
+            font-weight: var(--font-weight-semibold);
+            font-size: var(--font-size-sm);
+            transition: var(--transition-slow);
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: var(--space-2);
             backdrop-filter: blur(10px);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-md);
             height: fit-content;
         }
 
@@ -199,7 +203,7 @@
             background: rgba(255, 255, 255, 0.25);
             border-color: rgba(255, 255, 255, 0.6);
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-lg);
         }
 
         .home-button-icon {
