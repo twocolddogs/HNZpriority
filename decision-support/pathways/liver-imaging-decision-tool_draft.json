@@ -40,12 +40,8 @@
           "text": "Cirrhosis or risk factors for cirrhosis and no other malignancy suspected. Outside CT or US showing liver lesion",
           "variant": "primary",
           "action": {
-            "type": "recommend",
-            "recommendation": {
-              "modality": "MRI liver",
-              "contrast": "with Gadovist (in line with Auckland unless specified by MDM)",
-              "notes": "Direct pathway for cirrhosis/risk factors with no other malignancy suspected"
-            }
+            "type": "navigate",
+            "nextStep": "endpoint-mri-liver-gadovist"
           }
         },
         {
@@ -95,7 +91,7 @@
       "title": "CT Pancreatic Mass Protocol",
       "question": "Has the CT already been completed?",
       "type": "yes-no",
-      "protocolInfo": {
+      "guideInfo": {
         "title": "CT Pancreatic Mass Protocol",
         "description": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis",
         "note": "MRI preferred, but CT undertaken first due to MRI resource constraints"
@@ -113,11 +109,8 @@
           "text": "No",
           "variant": "warning",
           "action": {
-            "type": "recommend",
-            "recommendation": {
-              "modality": "CT Pancreatic Mass Protocol",
-              "contrast": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis"
-            }
+            "type": "navigate",
+            "nextStep": "endpoint-ct-pancreatic-protocol"
           }
         }
       ]
@@ -132,11 +125,8 @@
           "text": "Yes",
           "variant": "success",
           "action": {
-            "type": "recommend",
-            "recommendation": {
-              "modality": "MRCP/MRI liver/pancreas",
-              "contrast": "with Gadolinium (see protocol reference for contrast selection)"
-            }
+            "type": "navigate",
+            "nextStep": "endpoint-mrcp-mri-gadolinium"
           }
         }
       ]
@@ -151,11 +141,8 @@
           "text": "Yes",
           "variant": "success",
           "action": {
-            "type": "recommend",
-            "recommendation": {
-              "modality": "MRCP",
-              "contrast": "(CT not required)"
-            }
+            "type": "navigate",
+            "nextStep": "endpoint-mrcp-no-ct"
           }
         },
         {
@@ -173,7 +160,7 @@
       "title": "CT Pancreatic Mass Protocol",
       "question": "Has the CT already been completed and there is still diagnostic uncertainty?",
       "type": "yes-no",
-      "protocolInfo": {
+      "guideInfo": {
         "title": "CT Pancreatic Mass Protocol",
         "description": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis"
       },
@@ -182,11 +169,8 @@
           "text": "Yes",
           "variant": "success",
           "action": {
-            "type": "recommend",
-            "recommendation": {
-              "modality": "MRCP/MRI liver/pancreas",
-              "contrast": "with Gadolinium (see protocol reference for contrast selection)"
-            }
+            "type": "navigate",
+            "nextStep": "endpoint-mrcp-mri-gadolinium"
           }
         }
       ]
@@ -220,7 +204,7 @@
       "title": "CT Pancreatic Mass Protocol",
       "question": "Has the CT already been completed?",
       "type": "yes-no",
-      "protocolInfo": {
+      "guideInfo": {
         "title": "CT Pancreatic Mass Protocol",
         "description": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis"
       },
@@ -237,11 +221,8 @@
           "text": "No",
           "variant": "warning",
           "action": {
-            "type": "recommend",
-            "recommendation": {
-              "modality": "CT Pancreatic Mass Protocol",
-              "contrast": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis"
-            }
+            "type": "navigate",
+            "nextStep": "endpoint-ct-pancreatic-protocol"
           }
         }
       ]
@@ -256,14 +237,53 @@
           "text": "Yes",
           "variant": "success",
           "action": {
-            "type": "recommend",
-            "recommendation": {
-              "modality": "MRCP/MRI liver/pancreas",
-              "contrast": "with Gadolinium (see protocol reference for contrast selection)"
-            }
+            "type": "navigate",
+            "nextStep": "endpoint-mrcp-mri-gadolinium"
           }
         }
       ]
+    },
+    "endpoint-mri-liver-gadovist": {
+      "id": "endpoint-mri-liver-gadovist",
+      "title": "MRI liver Recommendation",
+      "type": "endpoint",
+      "recommendation": {
+        "modality": "MRI liver",
+        "contrast": "with Gadovist (in line with Auckland unless specified by MDM)",
+        "notes": "Direct pathway for cirrhosis/risk factors with no other malignancy suspected"
+      }
+    },
+    "endpoint-ct-pancreatic-protocol": {
+      "id": "endpoint-ct-pancreatic-protocol",
+      "title": "CT Pancreatic Mass Protocol Recommendation",
+      "type": "endpoint",
+      "recommendation": {
+        "modality": "CT Pancreatic Mass Protocol",
+        "contrast": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis"
+      }
+    },
+    "endpoint-mrcp-mri-gadolinium": {
+      "id": "endpoint-mrcp-mri-gadolinium",
+      "title": "MRCP/MRI liver/pancreas Recommendation",
+      "type": "endpoint",
+      "recommendation": {
+        "modality": "MRCP/MRI liver/pancreas",
+        "contrast": "with Gadolinium (see protocol reference for contrast selection)"
+      }
+    },
+    "endpoint-mrcp-no-ct": {
+      "id": "endpoint-mrcp-no-ct",
+      "title": "MRCP Recommendation",
+      "type": "endpoint",
+      "recommendation": {
+        "modality": "MRCP",
+        "contrast": "(CT not required)"
+      }
     }
+  },
+  "metadata": {
+    "publishedAt": "2025-07-04T22:11:33.030Z",
+    "version": "1.0",
+    "status": "published"
   }
 }
