@@ -509,7 +509,6 @@
                         <option value="choice">Multiple Choice</option>
                         <option value="yes-no">Yes/No Decision</option>
                         <option value="endpoint">Endpoint (Recommendation)</option>
-                        <option value="guide">Guide</option>
                     </select>
                     <div id="stepTypeGuidance" class="step-type-guidance">
                         <!-- Dynamic guidance will be inserted here -->
@@ -535,11 +534,6 @@
                         <button type="button" class="btn-callout" data-callout="danger" title="Insert Danger callout">Danger</button>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="stepId">Step ID</label>
-                    <input type="text" id="stepId" placeholder="step-id">
-                </div>
-
                 <!-- Guide Info Section -->
                 <div id="protocolSection" class="form-section hidden">
                     <h4>Guide Information</h4>
@@ -563,7 +557,17 @@
                     <div id="optionsList" class="options-list">
                         <!-- Options will be listed here -->
                     </div>
+                    <div id="yesNoButtons" class="hidden">
+                        <button id="addYesOption" class="btn btn-success">Yes</button>
+                        <button id="addNoOption" class="btn btn-secondary">No</button>
+                    </div>
                     <button id="addOption" class="btn btn-secondary">Add Option</button>
+
+                    <!-- Step ID at bottom -->
+                    <div class="form-group">
+                        <label for="stepId">Step ID</label>
+                        <input type="text" id="stepId" placeholder="step-id">
+                    </div>
                 </div>
 
                 <!-- Endpoint Section -->
@@ -571,11 +575,33 @@
                     <h4>Recommendation Details</h4>
                     <div class="form-group">
                         <label for="endpointRecommendation">Recommendation Summary</label>
-                        <textarea id="endpointRecommendation" placeholder="Provide specific, actionable clinical recommendation" rows="3"></textarea>
+                        <textarea id="endpointRecommendation" placeholder="Provide specific, actionable clinical recommendation. You can use callouts like [info]Important note[/info]" rows="3"></textarea>
+                        <div class="callout-helpers">
+                            <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
+                            <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
+                            <button type="button" class="btn-callout" data-callout="info" title="Insert Info callout">Info</button>
+                            <button type="button" class="btn-callout" data-callout="warning" title="Insert Warning callout">Warning</button>
+                            <button type="button" class="btn-callout" data-callout="success" title="Insert Success callout">Success</button>
+                            <button type="button" class="btn-callout" data-callout="danger" title="Insert Danger callout">Danger</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="endpointNotes">Additional Notes (optional)</label>
-                        <textarea id="endpointNotes" placeholder="Additional context or instructions" rows="2"></textarea>
+                        <textarea id="endpointNotes" placeholder="Additional context or instructions. You can use callouts like [warning]Be careful[/warning]" rows="2"></textarea>
+                        <div class="callout-helpers">
+                            <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
+                            <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
+                            <button type="button" class="btn-callout" data-callout="info" title="Insert Info callout">Info</button>
+                            <button type="button" class="btn-callout" data-callout="warning" title="Insert Warning callout">Warning</button>
+                            <button type="button" class="btn-callout" data-callout="success" title="Insert Success callout">Success</button>
+                            <button type="button" class="btn-callout" data-callout="danger" title="Insert Danger callout">Danger</button>
+                        </div>
+                    </div>
+
+                    <!-- Step ID at bottom -->
+                    <div class="form-group">
+                        <label for="stepId">Step ID</label>
+                        <input type="text" id="stepId" placeholder="step-id">
                     </div>
                 </div>
             </div>
@@ -741,11 +767,15 @@
                 </div>
                 <div class="form-group">
                     <label for="sectionContent">Content</label>
-                    <textarea id="sectionContent" placeholder="Section content" rows="4"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="sectionItems">List Items (one per line, optional)</label>
-                    <textarea id="sectionItems" placeholder="• Item 1&#10;• Item 2&#10;• Item 3" rows="4"></textarea>
+                    <textarea id="sectionContent" placeholder="Section content. Use bullet points with • or - for lists. You can use callouts like [info]Important note[/info]" rows="6"></textarea>
+                    <div class="callout-helpers">
+                        <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
+                        <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
+                        <button type="button" class="btn-callout" data-callout="info" title="Insert Info callout">Info</button>
+                        <button type="button" class="btn-callout" data-callout="warning" title="Insert Warning callout">Warning</button>
+                        <button type="button" class="btn-callout" data-callout="success" title="Insert Success callout">Success</button>
+                        <button type="button" class="btn-callout" data-callout="danger" title="Insert Danger callout">Danger</button>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">

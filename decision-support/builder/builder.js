@@ -156,6 +156,8 @@ class DecisionTreeBuilder {
       // Options management
       console.log('Binding options management events...');
       document.getElementById('addOption').addEventListener('click', () => this.addOption());
+      document.getElementById('addYesOption').addEventListener('click', () => this.editYesNoOption(0));
+      document.getElementById('addNoOption').addEventListener('click', () => this.editYesNoOption(1));
       console.log('Options management events bound successfully');
     } catch (error) {
       console.error('Error binding options management events:', error);
@@ -325,13 +327,16 @@ class DecisionTreeBuilder {
     // Show regular steps
     Object.values(this.currentTree.steps).forEach(step => {
       const stepItem = document.createElement('div');
-      stepItem.className = 'step-item';
+      stepItem.className = `step-card-builder${step.id === this.currentTree.startStep ? ' start-step' : ''}`;
       stepItem.addEventListener('click', () => this.editStep(step.id));
 
+      const startBadge = step.id === this.currentTree.startStep ? '<span class="start-step-badge">Start</span>' : '';
+      
       stepItem.innerHTML = `
+        ${startBadge}
         <h4>${step.title || 'Untitled Step'}</h4>
-        <p>ID: ${step.id}</p>
-        <span class="step-type">${step.type}</span>
+        <p>${step.question || step.subtitle || 'No description'}</p>
+        <span class="step-type-badge ${step.type}">${step.type.replace('-', ' ').toUpperCase()}</span>
       `;
 
       stepsList.appendChild(stepItem);
@@ -422,24 +427,39 @@ class DecisionTreeBuilder {
   }
 
   addStep() {
+    // Create temporary step for editing - don't add to tree until saved
     const stepId = `step-${Date.now()}`;
-    const newStep = {
+    this.pendingStep = {
       id: stepId,
       title: '',
       type: 'choice',
       options: []
     };
-
-    this.currentTree.steps[stepId] = newStep;
     
-    // If no startStep is set, make this the startStep
-    if (!this.currentTree.startStep) {
-      this.currentTree.startStep = stepId;
-    }
+    // Set up modal for new step
+    this.currentEditingStep = stepId;
     
-    this.updateUI();
-    this.updatePreview();
-    this.editStep(stepId);
+    // Reset modal fields
+    document.getElementById('stepId').value = stepId;
+    document.getElementById('stepTitle').value = '';
+    document.getElementById('stepSubtitle').value = '';
+    document.getElementById('stepQuestion').value = '';
+    document.getElementById('stepType').value = 'choice';
+    
+    // Clear all sections
+    document.getElementById('protocolTitle').value = '';
+    document.getElementById('protocolDescription').value = '';
+    document.getElementById('protocolNote').value = '';
+    document.getElementById('endpointRecommendation').value = '';
+    document.getElementById('endpointNotes').value = '';
+    
+    // Update modal for new step
+    document.getElementById('modalTitle').textContent = 'Add New Step';
+    document.getElementById('deleteStep').style.display = 'none';
+    
+    this.updateStepTypeUI('choice');
+    this.updateOptionsList([]);
+    this.showModal();
   }
 
   editRecommendationEndpoint(endpointId) {
@@ -474,6 +494,10 @@ class DecisionTreeBuilder {
     const step = this.currentTree.steps[stepId];
     
     if (!step) return;
+
+    // Set modal for editing existing step
+    document.getElementById('modalTitle').textContent = 'Edit Step';
+    document.getElementById('deleteStep').style.display = 'inline-flex';
 
     // Populate modal fields
     document.getElementById('stepId').value = step.id;
@@ -528,19 +552,14 @@ class DecisionTreeBuilder {
         questionPlaceholder: 'Describe the clinical scenario or question that requires multiple choice selection. You can use callouts like [info]Important note[/info]'
       },
       'yes-no': {
-        guidance: '<h5>Yes/No Decision</h5><p>Binary clinical decisions with clear yes/no answers. Frame as a specific clinical question that can be answered definitively. Ideal for screening criteria or simple assessments.</p>',
+        guidance: '<h5>Yes/No Decision</h5><p>Binary clinical decisions with clear yes/no answers. Frame as a specific clinical question that can be answered definitively. Use two fixed options: Yes and No.</p>',
         questionLabel: 'Clinical Question',
         questionPlaceholder: 'Frame as a clear clinical question with a yes/no answer. You can use callouts like [warning]Be careful[/warning]'
       },
       'endpoint': {
         guidance: '<h5>Clinical Recommendation</h5><p>Final step that provides specific, actionable clinical recommendations. This ends the decision pathway with clear guidance for healthcare professionals.</p>',
-        questionLabel: 'Clinical Context',
-        questionPlaceholder: 'Provide clinical context for this recommendation. You can use callouts like [protocol]Important protocol[/protocol]'
-      },
-      'guide': {
-        guidance: '<h5>Informational Guide</h5><p>Provide detailed clinical guidance, procedures, or educational content. Use this for comprehensive information that supports decision-making but doesn\'t end the pathway.</p>',
-        questionLabel: 'Guide Introduction',
-        questionPlaceholder: 'Introduce this guide and its purpose. You can use callouts like [info]Key information[/info]'
+        questionLabel: 'Clinical Question',
+        questionPlaceholder: 'Describe the clinical scenario or question that leads to this recommendation. You can use callouts like [info]Important note[/info]'
       }
     };
 
@@ -555,22 +574,24 @@ class DecisionTreeBuilder {
     stepQuestion.placeholder = config.questionPlaceholder;
 
     // Show relevant sections and handle special cases
+    const addOptionBtn = document.getElementById('addOption');
+    const yesNoButtons = document.getElementById('yesNoButtons');
+    
     switch (stepType) {
-      case 'guide':
-        protocolSection.classList.remove('hidden');
-        break;
       case 'endpoint':
         endpointSection.classList.remove('hidden');
         break;
       case 'choice':
         optionsSection.classList.remove('hidden');
-        // For choice steps, ensure Add Option button is prominent
+        addOptionBtn.style.display = 'inline-flex';
+        yesNoButtons.classList.add('hidden');
         this.updateOptionsButtonText('Add Option');
         break;
       case 'yes-no':
         optionsSection.classList.remove('hidden');
-        // For yes-no steps, suggest binary options
-        this.updateOptionsButtonText('Add Yes/No Option');
+        addOptionBtn.style.display = 'none';
+        yesNoButtons.classList.remove('hidden');
+        this.ensureYesNoOptions();
         break;
     }
   }
@@ -580,6 +601,48 @@ class DecisionTreeBuilder {
     if (addOptionBtn) {
       addOptionBtn.textContent = text;
     }
+  }
+
+  ensureYesNoOptions() {
+    if (!this.currentEditingStep) return;
+    
+    const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
+    if (!step || step.type !== 'yes-no') return;
+    
+    // Ensure exactly two options: Yes and No
+    if (!step.options || step.options.length === 0) {
+      step.options = [
+        { text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } },
+        { text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } }
+      ];
+    } else if (step.options.length === 1) {
+      if (step.options[0].text.toLowerCase().includes('yes')) {
+        step.options.push({ text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } });
+      } else {
+        step.options.unshift({ text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } });
+      }
+    }
+    
+    // Fix any existing options to be Yes/No
+    if (step.options.length >= 2) {
+      step.options[0].text = 'Yes';
+      step.options[0].variant = 'success';
+      step.options[1].text = 'No';
+      step.options[1].variant = 'secondary';
+      
+      // Remove any extra options
+      step.options = step.options.slice(0, 2);
+    }
+    
+    this.updateOptionsList(step.options);
+  }
+
+  editYesNoOption(index) {
+    const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
+    if (!step) return;
+    
+    this.ensureYesNoOptions();
+    this.editOptionAtIndex(index);
   }
 
   updateOptionsList(options) {
@@ -615,7 +678,9 @@ class DecisionTreeBuilder {
   addOption() {
     if (!this.currentEditingStep) return;
 
-    const step = this.currentTree.steps[this.currentEditingStep];
+    const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
+    if (!step) return;
+    
     if (!step.options) step.options = [];
 
     const newOption = {
@@ -667,7 +732,23 @@ class DecisionTreeBuilder {
       return;
     }
 
-    const step = this.currentTree.steps[this.currentEditingStep];
+    // Handle new step creation vs editing existing step
+    let step;
+    if (this.pendingStep && !this.currentTree.steps[this.currentEditingStep]) {
+      // This is a new step - create it in the tree
+      step = this.pendingStep;
+      this.currentTree.steps[this.currentEditingStep] = step;
+      
+      // If no startStep is set, make this the startStep
+      if (!this.currentTree.startStep) {
+        this.currentTree.startStep = step.id;
+      }
+      
+      this.pendingStep = null;
+    } else {
+      // This is an existing step
+      step = this.currentTree.steps[this.currentEditingStep];
+    }
     
     // Basic properties
     const newId = document.getElementById('stepId').value;
@@ -846,7 +927,6 @@ class DecisionTreeBuilder {
     document.getElementById('sectionTitle').value = '';
     document.getElementById('sectionType').value = 'protocol';
     document.getElementById('sectionContent').value = '';
-    document.getElementById('sectionItems').value = '';
     document.getElementById('guideSectionModalTitle').textContent = 'Add Section';
     document.getElementById('deleteGuideSection').style.display = 'none';
     
@@ -863,7 +943,6 @@ class DecisionTreeBuilder {
     document.getElementById('sectionTitle').value = section.title || '';
     document.getElementById('sectionType').value = section.type || 'protocol';
     document.getElementById('sectionContent').value = section.content || '';
-    document.getElementById('sectionItems').value = section.items ? section.items.join('\n') : '';
     document.getElementById('guideSectionModalTitle').textContent = 'Edit Section';
     document.getElementById('deleteGuideSection').style.display = 'inline-flex';
     
@@ -886,7 +965,6 @@ class DecisionTreeBuilder {
     const title = document.getElementById('sectionTitle').value.trim();
     const type = document.getElementById('sectionType').value;
     const content = document.getElementById('sectionContent').value.trim();
-    const itemsText = document.getElementById('sectionItems').value.trim();
     
     if (!title) {
       alert('Please enter a section title');
@@ -898,10 +976,6 @@ class DecisionTreeBuilder {
       type: type,
       content: content
     };
-
-    if (itemsText) {
-      sectionData.items = itemsText.split('\n').map(item => item.trim()).filter(item => item);
-    }
 
     // Initialize guide editing object if needed
     if (!this.currentEditingGuide) {
