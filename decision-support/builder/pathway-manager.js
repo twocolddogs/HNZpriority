@@ -9,6 +9,9 @@ const PathwayManager = {
     try {
       console.log('Loading pathways...');
       
+      // Show loading spinner
+      this.showLoadingState();
+      
       // Try API first
       if (await window.pathwayAPI.isAPIAvailable()) {
         console.log('Using API to load pathways');
@@ -39,6 +42,23 @@ const PathwayManager = {
       this.pathways = [];
       this.filteredPathways = [];
       this.renderPathwaysList(); // Still render to show empty state
+    } finally {
+      // Hide loading spinner
+      this.hideLoadingState();
+    }
+  },
+
+  showLoadingState() {
+    const loadingElement = document.getElementById('pathwaysLoading');
+    if (loadingElement) {
+      loadingElement.style.display = 'flex';
+    }
+  },
+
+  hideLoadingState() {
+    const loadingElement = document.getElementById('pathwaysLoading');
+    if (loadingElement) {
+      loadingElement.style.display = 'none';
     }
   },
 
