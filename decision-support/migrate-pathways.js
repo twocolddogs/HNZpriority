@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Configuration
-const API_BASE = 'https://hnz-pathway-api.your-subdomain.workers.dev'; // Update this
+const API_BASE = 'https://hnz-pathway-api.alistair-rumball-smith.workers.dev'; // Updated with actual URL
 const PATHWAYS_DIR = './pathways';
 
 async function migratePathways() {
