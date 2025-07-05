@@ -171,8 +171,16 @@
 
             <!-- JSON View -->
             <div id="jsonView" class="view">
+                <div class="json-editor-header">
+                    <h3>JSON Editor</h3>
+                    <div class="json-controls">
+                        <button id="loadFromJson" class="btn btn-primary" style="display: none;">Load from JSON</button>
+                        <button id="formatJson" class="btn btn-secondary" style="display: none;">Format JSON</button>
+                        <span id="jsonStatus" class="json-status"></span>
+                    </div>
+                </div>
                 <div class="json-editor">
-                    <textarea id="jsonOutput" readonly></textarea>
+                    <textarea id="jsonOutput" readonly placeholder="JSON output will appear here. Enable Advanced mode to edit."></textarea>
                 </div>
                 <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
             </div>

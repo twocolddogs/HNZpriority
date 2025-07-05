@@ -192,6 +192,18 @@ class DecisionTreeBuilder {
     }
 
     try {
+      // JSON editor events
+      console.log('Binding JSON editor events...');
+      document.getElementById('loadFromJson').addEventListener('click', () => this.loadFromJson());
+      document.getElementById('formatJson').addEventListener('click', () => this.formatJson());
+      document.getElementById('jsonOutput').addEventListener('input', () => this.validateJson());
+      console.log('JSON editor events bound successfully');
+    } catch (error) {
+      console.error('Error binding JSON editor events:', error);
+      throw error;
+    }
+
+    try {
       // Close modal on overlay click
       console.log('Binding modal overlay events...');
       document.getElementById('stepModal').addEventListener('click', (e) => {
@@ -1048,20 +1060,137 @@ class DecisionTreeBuilder {
     
     const jsonTab = document.getElementById('jsonTab');
     const toggleIndicator = document.getElementById('advancedToggle');
+    const jsonOutput = document.getElementById('jsonOutput');
+    const loadFromJsonBtn = document.getElementById('loadFromJson');
+    const formatJsonBtn = document.getElementById('formatJson');
     
     if (this.advancedMode) {
       jsonTab.classList.remove('hidden');
       toggleIndicator.textContent = 'ON';
       toggleIndicator.classList.add('on');
+      
+      // Enable JSON editing
+      jsonOutput.readOnly = false;
+      jsonOutput.placeholder = 'Edit JSON directly here. Changes will be applied when you click "Load from JSON".';
+      loadFromJsonBtn.style.display = 'inline-flex';
+      formatJsonBtn.style.display = 'inline-flex';
+      
+      this.updateJsonStatus('editing', 'Editing enabled');
     } else {
       jsonTab.classList.add('hidden');
       toggleIndicator.textContent = 'OFF';
       toggleIndicator.classList.remove('on');
       
+      // Disable JSON editing
+      jsonOutput.readOnly = true;
+      jsonOutput.placeholder = 'JSON output will appear here. Enable Advanced mode to edit.';
+      loadFromJsonBtn.style.display = 'none';
+      formatJsonBtn.style.display = 'none';
+      
+      this.updateJsonStatus('', '');
+      
       // If JSON tab is currently active, switch to builder tab
       if (jsonTab.classList.contains('active')) {
         this.showView('builder');
       }
+    }
+  }
+
+  updateJsonStatus(type, message) {
+    const status = document.getElementById('jsonStatus');
+    status.className = `json-status ${type}`;
+    status.textContent = message;
+  }
+
+  validateJson() {
+    if (!this.advancedMode) return;
+    
+    const jsonOutput = document.getElementById('jsonOutput');
+    const jsonText = jsonOutput.value.trim();
+    
+    if (!jsonText) {
+      this.updateJsonStatus('editing', 'Editing enabled');
+      return;
+    }
+    
+    try {
+      JSON.parse(jsonText);
+      this.updateJsonStatus('valid', 'Valid JSON');
+    } catch (error) {
+      this.updateJsonStatus('invalid', `Invalid JSON: ${error.message}`);
+    }
+  }
+
+  formatJson() {
+    if (!this.advancedMode) return;
+    
+    const jsonOutput = document.getElementById('jsonOutput');
+    const jsonText = jsonOutput.value.trim();
+    
+    if (!jsonText) {
+      alert('No JSON content to format');
+      return;
+    }
+    
+    try {
+      const parsed = JSON.parse(jsonText);
+      jsonOutput.value = JSON.stringify(parsed, null, 2);
+      this.updateJsonStatus('valid', 'Formatted and valid');
+    } catch (error) {
+      alert(`Cannot format invalid JSON: ${error.message}`);
+      this.updateJsonStatus('invalid', `Invalid JSON: ${error.message}`);
+    }
+  }
+
+  loadFromJson() {
+    if (!this.advancedMode) return;
+    
+    const jsonOutput = document.getElementById('jsonOutput');
+    const jsonText = jsonOutput.value.trim();
+    
+    if (!jsonText) {
+      alert('No JSON content to load');
+      return;
+    }
+    
+    try {
+      const pathwayData = JSON.parse(jsonText);
+      
+      // Validate required fields
+      if (!pathwayData.id || !pathwayData.title) {
+        throw new Error('Pathway must have id and title fields');
+      }
+      
+      if (!pathwayData.steps || typeof pathwayData.steps !== 'object') {
+        throw new Error('Pathway must have a steps object');
+      }
+      
+      // Load the pathway data
+      this.currentTree = {
+        id: pathwayData.id || '',
+        title: pathwayData.title || '',
+        description: pathwayData.description || '',
+        startStep: pathwayData.startStep || '',
+        guides: pathwayData.guides || [],
+        steps: pathwayData.steps || {}
+      };
+      
+      // Update all UI elements
+      this.updateUI();
+      this.updateJSON();
+      this.updatePreview();
+      
+      // Switch to builder view to see the loaded pathway
+      this.showView('builder');
+      
+      this.updateJsonStatus('valid', 'Pathway loaded successfully!');
+      
+      // Show success message
+      alert('Pathway loaded successfully from JSON!');
+      
+    } catch (error) {
+      this.updateJsonStatus('invalid', `Load failed: ${error.message}`);
+      alert(`Failed to load pathway: ${error.message}`);
     }
   }
 

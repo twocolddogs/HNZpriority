@@ -1,0 +1,292 @@
+{
+  "id": "liver-imaging-decision-tool",
+  "title": "HNZ Liver Imaging Decision Support Tool",
+  "description": "Interactive guide for selecting appropriate imaging modality and contrast for liver imaging.",
+  "startStep": "start",
+  "guides": [
+    {
+      "id": "protocol-guide",
+      "title": "Protocol Reference Guide",
+      "sections": [
+        {
+          "title": "Pancreatic Protocol CT",
+          "content": "Early arterial phase upper abdomen + portal venous phase abdomen and pelvis",
+          "type": "protocol"
+        },
+        {
+          "title": "TYPE OF MRI CONTRAST",
+          "content": "Selection guidelines for MRI contrast agents:\n\n• Primovist: If there is evidence of malignancy on prior imaging\n• Primovist: Solid/complex liver lesion\n• Primovist: Gallbladder lesions ?malignancy\n• Primovist: Pancreatic malignancy including high risk or large/enlarging IPMNs\n• Dotarem or Gadovist: Question of haemangioma with no other malignancy\n• Dotarem or Gadovist: Routine low risk IPMN follow up",
+          "type": "info"
+        }
+      ]
+    }
+  ],
+  "steps": {
+    "start": {
+      "id": "start",
+      "title": "Patient Presentation",
+      "question": "What is the primary clinical scenario?",
+      "type": "choice",
+      "options": [
+        {
+          "text": "Cirrhosis or risk factors for cirrhosis and no other malignancy suspected. Outside CT or US showing liver lesion",
+          "variant": "primary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "endpoint-mri-liver-gadovist"
+          }
+        },
+        {
+          "text": "Patients less than 40 years old",
+          "variant": "primary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "under-40-branch"
+          }
+        },
+        {
+          "text": "Patients greater than 40 years old",
+          "variant": "primary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "over-40-branch"
+          }
+        }
+      ]
+    },
+    "under-40-branch": {
+      "id": "under-40-branch",
+      "title": "Patients Less Than 40 Years Old",
+      "question": "What was found on initial imaging?",
+      "type": "choice",
+      "options": [
+        {
+          "text": "Incidentally detected liver lesions on ultrasound",
+          "variant": "primary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "under-40-ct-pancreas"
+          }
+        },
+        {
+          "text": "Symptoms or abnormal LFTs and ultrasound/CT confirms gallstones",
+          "variant": "primary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "under-40-symptoms-decision"
+          }
+        }
+      ]
+    },
+    "under-40-ct-pancreas": {
+      "id": "under-40-ct-pancreas",
+      "title": "CT Pancreatic Mass Protocol",
+      "question": "Has the CT already been completed? [protocol]CT Pancreatic Mass Protocol: Early arterial phase upper abdomen + portal venous phase abdomen and pelvis[/protocol] [info]MRI preferred, but CT undertaken first due to MRI resource constraints[/info]",
+      "type": "yes-no",
+      "options": [
+        {
+          "text": "Yes",
+          "variant": "success",
+          "action": {
+            "type": "navigate",
+            "nextStep": "under-40-characterization"
+          }
+        },
+        {
+          "text": "No",
+          "variant": "secondary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "endpoint-ct-pancreatic-protocol"
+          }
+        }
+      ]
+    },
+    "under-40-characterization": {
+      "id": "under-40-characterization",
+      "title": "Pancreatic CT Completed",
+      "question": "Is further characterisation or assessment required?",
+      "type": "yes-no",
+      "options": [
+        {
+          "text": "Yes",
+          "variant": "success",
+          "action": {
+            "type": "navigate",
+            "nextStep": "endpoint-mrcp-mri-gadolinium"
+          }
+        },
+        {
+          "text": "No",
+          "variant": "secondary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "under-40-characterization"
+          }
+        }
+      ]
+    },
+    "under-40-symptoms-decision": {
+      "id": "under-40-symptoms-decision",
+      "title": "Patient < 40 symptoms or proven gallstones",
+      "question": "?CBD stone is the only question",
+      "type": "yes-no",
+      "options": [
+        {
+          "text": "Yes",
+          "variant": "success",
+          "action": {
+            "type": "navigate",
+            "nextStep": "endpoint-mrcp-no-ct"
+          }
+        },
+        {
+          "text": "No",
+          "variant": "secondary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "under-40-ct-check"
+          }
+        }
+      ]
+    },
+    "under-40-ct-check": {
+      "id": "under-40-ct-check",
+      "title": "CT Pancreatic Mass Protocol",
+      "question": "Has the CT already been completed and there is still diagnostic uncertainty? [protocol]CT Pancreatic Mass Protocol: Early arterial phase upper abdomen + portal venous phase abdomen and pelvis[/protocol]",
+      "type": "yes-no",
+      "options": [
+        {
+          "text": "Yes",
+          "variant": "success",
+          "action": {
+            "type": "navigate",
+            "nextStep": "endpoint-mrcp-mri-gadolinium"
+          }
+        },
+        {
+          "text": "No",
+          "variant": "secondary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "under-40-ct-check"
+          }
+        }
+      ]
+    },
+    "over-40-branch": {
+      "id": "over-40-branch",
+      "title": "Patients Greater Than 40 Years Old",
+      "question": "What clinical scenario applies?",
+      "type": "choice",
+      "options": [
+        {
+          "text": "Incidentally detected new/concerning liver lesions on ultrasound",
+          "variant": "primary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "over-40-ct-pancreas"
+          }
+        },
+        {
+          "text": "Abdominal ultrasound for abnormal LFTs. Question is ?gallstone or pancreaticobiliary pathology",
+          "variant": "primary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "over-40-ct-pancreas"
+          }
+        }
+      ]
+    },
+    "over-40-ct-pancreas": {
+      "id": "over-40-ct-pancreas",
+      "title": "CT Pancreatic Mass Protocol",
+      "question": "Has the CT already been completed? [protocol]CT Pancreatic Mass Protocol: Early arterial phase upper abdomen + portal venous phase abdomen and pelvis[/protocol]",
+      "type": "yes-no",
+      "options": [
+        {
+          "text": "Yes",
+          "variant": "success",
+          "action": {
+            "type": "navigate",
+            "nextStep": "over-40-characterization"
+          }
+        },
+        {
+          "text": "No",
+          "variant": "secondary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "endpoint-ct-pancreatic-protocol"
+          }
+        }
+      ]
+    },
+    "over-40-characterization": {
+      "id": "over-40-characterization",
+      "title": "Pancreatic CT Completed",
+      "question": "Is further characterisation or assessment required?",
+      "type": "yes-no",
+      "options": [
+        {
+          "text": "Yes",
+          "variant": "success",
+          "action": {
+            "type": "navigate",
+            "nextStep": "endpoint-mrcp-mri-gadolinium"
+          }
+        },
+        {
+          "text": "No",
+          "variant": "secondary",
+          "action": {
+            "type": "navigate",
+            "nextStep": "over-40-characterization"
+          }
+        }
+      ]
+    },
+    "endpoint-mri-liver-gadovist": {
+      "id": "endpoint-mri-liver-gadovist",
+      "title": "MRI Liver Recommendation",
+      "type": "endpoint",
+      "recommendation": {
+        "recommendation": "**MRI liver with Gadovist** (in line with Auckland unless specified by MDM)",
+        "notes": "Direct pathway for cirrhosis/risk factors with no other malignancy suspected"
+      }
+    },
+    "endpoint-ct-pancreatic-protocol": {
+      "id": "endpoint-ct-pancreatic-protocol",
+      "title": "CT Pancreatic Mass Protocol Recommendation",
+      "type": "endpoint",
+      "recommendation": {
+        "recommendation": "**CT Pancreatic Mass Protocol**: Early arterial phase upper abdomen + portal venous phase abdomen and pelvis"
+      }
+    },
+    "endpoint-mrcp-mri-gadolinium": {
+      "id": "endpoint-mrcp-mri-gadolinium",
+      "title": "MRCP/MRI Liver/Pancreas Recommendation",
+      "type": "endpoint",
+      "recommendation": {
+        "recommendation": "**MRCP/MRI liver/pancreas with Gadolinium**",
+        "notes": "See protocol reference guide for contrast selection guidelines"
+      }
+    },
+    "endpoint-mrcp-no-ct": {
+      "id": "endpoint-mrcp-no-ct",
+      "title": "MRCP Recommendation",
+      "type": "endpoint",
+      "recommendation": {
+        "recommendation": "**MRCP** (CT not required)"
+      }
+    }
+  },
+  "metadata": {
+    "publishedAt": "2025-07-04T22:11:33.030Z",
+    "version": "2.0",
+    "status": "published",
+    "migratedFrom": "1.0"
+  },
+  "lastModified": "2025-07-05T23:14:10.593Z",
+  "status": "published"
+}
