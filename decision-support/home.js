@@ -211,11 +211,14 @@ class DecisionSupportHome {
     // Get manifest data if available for richer display
     const manifestData = this.pathwaysManifest?.find(item => item.filename === filename);
     
-    // Calculate some metadata
+    // Calculate some metadata - check both API data and manifest data
     const stepCount = manifestData?.stepCount || Object.keys(data.steps || {}).length;
     const guideCount = manifestData?.guideCount || (data.guides || []).length;
     const description = manifestData?.description || data.description || this.generateDescription(data, stepCount, guideCount);
-    const lastModified = manifestData?.lastModified ? new Date(manifestData.lastModified).toLocaleDateString() : null;
+    
+    // Get last modified from pathway object (API) or manifest data (file-based)
+    const lastModified = pathway.lastModified || manifestData?.lastModified || data.lastModified;
+    const formattedDate = lastModified ? new Date(lastModified).toLocaleDateString() : null;
 
     card.innerHTML = `
       <div class="pathway-header">
@@ -224,7 +227,7 @@ class DecisionSupportHome {
       <div class="pathway-body">
         <div class="pathway-description">${description}</div>
         <div class="pathway-meta">
-          ${lastModified ? `<div class="pathway-modified">Last updated ${lastModified}</div>` : ''}
+          ${formattedDate ? `<div class="pathway-modified">Last updated ${formattedDate}</div>` : ''}
         </div>
       </div>
     `;
