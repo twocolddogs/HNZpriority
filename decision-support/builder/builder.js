@@ -527,7 +527,6 @@ class DecisionTreeBuilder {
     switch (stepType) {
       case 'guide':
         protocolSection.classList.remove('hidden');
-        optionsSection.classList.remove('hidden');
         break;
       case 'endpoint':
         endpointSection.classList.remove('hidden');

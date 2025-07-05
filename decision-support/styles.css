@@ -3018,6 +3018,12 @@ body {
   font-style: italic;
 }
 
+/* Modal Scrolling Fix */
+#optionModal .modal-container {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .help-content {
