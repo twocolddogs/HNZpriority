@@ -162,6 +162,30 @@ Editor mode generates two files on save:
 - Modify baseline configurations
 - Separate data management from the main triage tool
 
+## Available Font Icons
+
+### Nerd Font Icons (SymbolsNerdFont-Regular.ttf)
+The project has access to **10,413 icons** from Nerd Fonts. Some commonly useful icons include:
+
+**Interface Icons:**
+- `U+E0A0` () - Git branch
+- `U+E0B0` () - Hard divider left  
+- `U+E0B2` () - Hard divider right
+- `U+2665` (♥) - Heart
+- `U+26A1` (⚡) - Lightning/zap
+- `U+23FB` (⏻) - Power symbol
+- `U+276F` (❯) - Arrow right
+
+**Usage in CSS:**
+```css
+.icon::before {
+  font-family: 'Symbols Nerd Font', monospace;
+  content: '\E0A0'; /* Git branch icon */
+}
+```
+
+**Complete icon reference:** Run `python3 extract_nerd_font_names.py` in project root for full list.
+
 ## Important Notes
 
 - **CRITICAL: This is a healthcare application serving New Zealand's health system**
@@ -171,4 +195,5 @@ Editor mode generates two files on save:
 - All changes are tracked and logged for audit purposes
 - The application handles both desktop and mobile interfaces
 - Font files (Poppins, Public Sans) are locally hosted in the fonts/ directory
+- Nerd Font icons available via SymbolsNerdFont-Regular.ttf (10,413 icons)
 - Proper branch management is essential due to the healthcare-critical nature of this application
