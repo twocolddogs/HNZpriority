@@ -13,6 +13,10 @@ preview_id = "8fc97924692e45a9a748017669e1b9f0"  # Preview KV namespace ID
 [vars]
 ENVIRONMENT = "production"
 
+# Cache settings for development
+[env.dev.vars]
+CACHE_TTL = "60"
+
 # Routes for custom domain (optional)
 # [[routes]]
 # pattern = "api.your-domain.com/*"

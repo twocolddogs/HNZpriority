@@ -9,12 +9,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-// Response helper with CORS
+// Response helper with CORS and cache control
 function corsResponse(body, status = 200, headers = {}) {
   return new Response(body, {
     status,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=300, s-maxage=300', // 5 minutes cache
+      'Vary': 'Accept-Encoding',
       ...corsHeaders,
       ...headers,
     },
