@@ -73,8 +73,9 @@ class DecisionSupportHome {
     try {
       console.log('Starting to load pathways...');
       
-      // Try API first for published pathways only
-      if (await this.isAPIAvailable()) {
+      // FORCE API usage for debugging - remove this after testing
+      console.log('🔍 FORCE TESTING API - bypassing availability check');
+      if (true || await this.isAPIAvailable()) {
         console.log('Loading published pathways from API');
         const response = await fetch('https://hnz-pathway-api.alistair-rumball-smith.workers.dev/api/published-pathways');
         
