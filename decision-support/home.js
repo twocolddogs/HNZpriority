@@ -73,6 +73,50 @@ class DecisionSupportHome {
     try {
       console.log('Starting to load pathways...');
       
+      // Try API first for published pathways only
+      if (await this.isAPIAvailable()) {
+        console.log('Loading published pathways from API');
+        const response = await fetch('https://hnz-pathway-api.alistair-rumball-smith.workers.dev/api/published-pathways');
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const apiPathways = await response.json();
+        console.log('API returned pathways:', apiPathways);
+        
+        // Convert API data to expected format for rendering
+        this.pathways = await Promise.all(apiPathways.map(async (pathwayMeta) => {
+          try {
+            // Fetch the actual pathway data
+            const pathwayResponse = await fetch(`https://hnz-pathway-api.alistair-rumball-smith.workers.dev/api/pathways/${pathwayMeta.id}`);
+            if (!pathwayResponse.ok) {
+              console.warn(`Failed to load pathway data for ${pathwayMeta.id}`);
+              return null;
+            }
+            
+            const pathwayData = await pathwayResponse.json();
+            return {
+              filename: pathwayMeta.filename,
+              data: pathwayData,
+              lastModified: pathwayMeta.lastModified
+            };
+          } catch (error) {
+            console.warn(`Error loading pathway ${pathwayMeta.id}:`, error);
+            return null;
+          }
+        }));
+        
+        // Filter out failed loads
+        this.pathways = this.pathways.filter(pathway => pathway !== null);
+        
+        console.log(`Loaded ${this.pathways.length} published pathways from API`);
+        return;
+      }
+      
+      // Fallback to file-based system
+      console.log('API not available, falling back to file-based system');
+      
       // Try to discover pathways dynamically first, then fallback to known files
       let pathwayFiles = await this.discoverPathways();
       
@@ -106,8 +150,6 @@ class DecisionSupportHome {
           };
         } catch (error) {
           console.warn(`Failed to load pathway ${filename}:`, error);
-          
-          
           return null;
         }
       });
@@ -125,6 +167,16 @@ class DecisionSupportHome {
     } catch (error) {
       console.error('Error loading pathways:', error);
       throw error;
+    }
+  }
+
+  async isAPIAvailable() {
+    try {
+      const response = await fetch('https://hnz-pathway-api.alistair-rumball-smith.workers.dev/api/published-pathways');
+      return response.ok;
+    } catch (error) {
+      console.warn('API availability check failed:', error);
+      return false;
     }
   }
 
