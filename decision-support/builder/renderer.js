@@ -97,7 +97,7 @@ class DecisionTreeRenderer {
       // Title
       const title = document.createElement('h2');
       title.className = 'step-title';
-      title.textContent = 'Imaging Recommendation';
+      title.textContent = step.title || 'Clinical Recommendation';
       stepCard.appendChild(title);
       
       // Render recommendation card
@@ -221,7 +221,7 @@ class DecisionTreeRenderer {
     
     const title = document.createElement('h2');
     title.className = 'step-title';
-    title.textContent = 'Imaging Recommendation';
+    title.textContent = 'Clinical Recommendation';
     stepCard.appendChild(title);
     
     if (this.recommendation) {
@@ -245,7 +245,7 @@ class DecisionTreeRenderer {
     
     const title = document.createElement('h3');
     title.className = 'recommendation-title';
-    title.textContent = 'Recommended Imaging';
+    title.textContent = 'Clinical Recommendation';
     
     header.appendChild(icon);
     header.appendChild(title);
@@ -254,29 +254,20 @@ class DecisionTreeRenderer {
     const details = document.createElement('div');
     details.className = 'recommendation-details';
     
-    const modalityDetail = document.createElement('div');
-    modalityDetail.className = 'recommendation-detail';
-    modalityDetail.innerHTML = '<strong>Modality:</strong> <span>' + rec.modality + '</span>';
-    
-    const contrastDetail = document.createElement('div');
-    contrastDetail.className = 'recommendation-detail';
-    contrastDetail.innerHTML = '<strong>Contrast:</strong> <span>' + rec.contrast + '</span>';
-    
-    details.appendChild(modalityDetail);
-    details.appendChild(contrastDetail);
-    
-    if (rec.notes) {
-      const notesDetail = document.createElement('div');
-      notesDetail.className = 'recommendation-detail';
-      notesDetail.innerHTML = '<strong>Notes:</strong> <span>' + rec.notes + '</span>';
-      details.appendChild(notesDetail);
+    // Main recommendation text
+    if (rec.recommendation) {
+      const recommendationDetail = document.createElement('div');
+      recommendationDetail.className = 'recommendation-detail recommendation-main';
+      recommendationDetail.innerHTML = this.parseCallouts(rec.recommendation);
+      details.appendChild(recommendationDetail);
     }
     
-    if (rec.priority) {
-      const priorityDetail = document.createElement('div');
-      priorityDetail.className = 'recommendation-detail';
-      priorityDetail.innerHTML = '<strong>Priority:</strong> <span>' + rec.priority + '</span>';
-      details.appendChild(priorityDetail);
+    // Additional notes
+    if (rec.notes) {
+      const notesDetail = document.createElement('div');
+      notesDetail.className = 'recommendation-detail recommendation-notes';
+      notesDetail.innerHTML = '<strong>Additional Notes:</strong><br>' + this.parseCallouts(rec.notes);
+      details.appendChild(notesDetail);
     }
     
     container.appendChild(details);
