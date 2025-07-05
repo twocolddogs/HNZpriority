@@ -409,6 +409,7 @@ class DecisionTreeBuilder {
 
     this.currentTree.steps[stepId] = newStep;
     this.updateUI();
+    this.updatePreview();
     this.editStep(stepId);
   }
 
@@ -721,6 +722,7 @@ class DecisionTreeBuilder {
 
     this.updateGuidesList();
     this.updateJSON();
+    this.updatePreview();
     this.closeGuideModal();
   }
 
@@ -730,6 +732,7 @@ class DecisionTreeBuilder {
         this.currentTree.guides.splice(this.currentEditingGuideIndex, 1);
         this.updateGuidesList();
         this.updateJSON();
+        this.updatePreview();
         this.closeGuideModal();
       }
     }
@@ -1391,6 +1394,7 @@ class DecisionTreeBuilder {
         const importedTree = JSON.parse(e.target.result);
         this.currentTree = importedTree;
         this.updateUI();
+        this.updatePreview();
       } catch (error) {
         alert('Error importing file: ' + error.message);
       }
@@ -1687,6 +1691,7 @@ class DecisionTreeBuilder {
     
     this.currentTree = exampleTree;
     this.updateUI();
+    this.updatePreview();
   }
 
   // Public methods for button onclick handlers
@@ -1695,6 +1700,7 @@ class DecisionTreeBuilder {
       this.currentTree.guides.splice(index, 1);
       this.updateGuidesList();
       this.updateJSON();
+      this.updatePreview();
     }
   }
 
