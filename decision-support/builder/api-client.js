@@ -86,10 +86,13 @@ window.pathwayAPI = new PathwayAPIClient('https://hnz-pathway-api.alistair-rumba
 // Fallback to file-based system if API not available
 window.pathwayAPI.isAPIAvailable = async function() {
   try {
-    await this.getPathways();
+    console.log('Testing API availability at:', this.baseURL);
+    const result = await this.getPathways();
+    console.log('API test successful, got:', result);
     return true;
   } catch (error) {
     console.warn('API not available, falling back to file-based system:', error.message);
+    console.warn('Full error:', error);
     return false;
   }
 };
