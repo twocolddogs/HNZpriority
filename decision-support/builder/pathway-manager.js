@@ -15,7 +15,7 @@ const PathwayManager = {
         const pathways = await window.pathwayAPI.getPathways();
         this.pathways = pathways;
         this.filteredPathways = [...pathways];
-        this.renderPathwaysList();
+        this.filterPathways(); // Apply current filter state
         console.log('Pathways loaded from API, count:', this.pathways.length);
       } else {
         // Fallback to file-based system
@@ -31,7 +31,7 @@ const PathwayManager = {
         
         this.pathways = manifest;
         this.filteredPathways = [...manifest];
-        this.renderPathwaysList();
+        this.filterPathways(); // Apply current filter state
         console.log('Pathways loaded from files, count:', this.pathways.length);
       }
     } catch (error) {
