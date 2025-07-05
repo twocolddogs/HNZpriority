@@ -410,9 +410,11 @@
 
 .steps-actions .btn {
   padding: var(--space-3) var(--space-4);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-sm) !important;
+  font-weight: var(--font-weight-medium) !important;
   height: auto;
   min-height: 40px;
+  line-height: 1.5;
 }
 
 /* Step Cards */
