@@ -402,6 +402,23 @@ class PathwayPage {
     try {
       console.log(`Loading pathway: ${this.pathwayId}`);
       
+      // Try API first
+      if (await this.isAPIAvailable()) {
+        console.log('Loading pathway from API');
+        const response = await fetch(`https://hnz-pathway-api.alistair-rumball-smith.workers.dev/api/pathways/${this.pathwayId}`);
+        
+        if (response.ok) {
+          this.pathwayData = await response.json();
+          console.log('Successfully loaded pathway from API:', this.pathwayData);
+          this.renderPathway();
+          return;
+        } else {
+          console.warn(`API pathway not found: ${response.status} ${response.statusText}`);
+        }
+      }
+      
+      // Fallback to file-based system
+      console.log('Falling back to file-based pathway loading');
       try {
         const response = await fetch(`pathways/${this.pathwayId}.json`);
         if (!response.ok) {
@@ -409,12 +426,12 @@ class PathwayPage {
         }
         
         this.pathwayData = await response.json();
-        console.log('Successfully loaded pathway data:', this.pathwayData);
+        console.log('Successfully loaded pathway data from file:', this.pathwayData);
       } catch (fetchError) {
         console.warn('Failed to fetch pathway file, trying embedded fallback:', fetchError);
         
         // Fallback to embedded data
-        if (this.pathwayId === 'liver-imaging-example') {
+        if (this.pathwayId === 'liver-imaging-example' || this.pathwayId === 'liver-imaging-decision-tool') {
           this.pathwayData = this.getEmbeddedLiverPathway();
           console.log('Using embedded pathway data');
         } else {
@@ -427,6 +444,16 @@ class PathwayPage {
     } catch (error) {
       console.error('Error loading pathway:', error);
       this.showError(`Unable to load pathway: ${error.message}`);
+    }
+  }
+
+  async isAPIAvailable() {
+    try {
+      const response = await fetch('https://hnz-pathway-api.alistair-rumball-smith.workers.dev/api/published-pathways');
+      return response.ok;
+    } catch (error) {
+      console.warn('API availability check failed:', error);
+      return false;
     }
   }
 
