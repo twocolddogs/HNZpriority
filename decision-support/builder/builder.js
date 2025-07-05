@@ -99,6 +99,7 @@ class DecisionTreeBuilder {
       // Modal events
       console.log('Binding modal events...');
       document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
+      document.getElementById('closeHelp').addEventListener('click', () => this.showView('library'));
       document.getElementById('saveStep').addEventListener('click', () => this.saveStep());
       document.getElementById('deleteStep').addEventListener('click', () => this.deleteStep());
       document.getElementById('cancelStep').addEventListener('click', () => this.closeModal());
@@ -168,6 +169,7 @@ class DecisionTreeBuilder {
       document.getElementById('menuSaveDraft').addEventListener('click', () => { this.closeHamburgerMenu(); this.saveDraft(); });
       document.getElementById('menuPublish').addEventListener('click', () => { this.closeHamburgerMenu(); this.publishPathway(); });
       document.getElementById('menuLiveApp').addEventListener('click', () => this.closeHamburgerMenu());
+      document.getElementById('menuHelp').addEventListener('click', () => { this.closeHamburgerMenu(); this.showView('help'); });
       document.getElementById('menuAdvanced').addEventListener('click', () => this.toggleAdvancedMode());
       console.log('Hamburger menu events bound successfully');
     } catch (error) {

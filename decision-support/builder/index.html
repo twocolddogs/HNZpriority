@@ -46,6 +46,15 @@
                         <div class="dropdown-divider"></div>
                         
                         <div class="dropdown-section">
+                            <button id="menuHelp" class="dropdown-item">
+                                <span class="dropdown-icon nerd-icon">󰋖</span>
+                                Help
+                            </button>
+                        </div>
+                        
+                        <div class="dropdown-divider"></div>
+                        
+                        <div class="dropdown-section">
                             <button id="menuAdvanced" class="dropdown-item toggle-item">
                                 <span class="dropdown-icon nerd-icon">󰓔</span>
                                 <span>Advanced</span>
@@ -168,6 +177,322 @@
                     <textarea id="jsonOutput" readonly></textarea>
                 </div>
                 <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+            </div>
+
+            <!-- Help View -->
+            <div id="helpView" class="view help-view">
+                <div class="help-content">
+                    <div class="help-header">
+                        <h1>Decision Tree Builder Help</h1>
+                        <p class="help-subtitle">Complete guide to building clinical decision support pathways</p>
+                    </div>
+
+                    <div class="help-sections">
+                        <!-- Getting Started -->
+                        <section class="help-section">
+                            <h2>🚀 Getting Started</h2>
+                            <div class="help-card">
+                                <h3>1. Create a New Pathway</h3>
+                                <p>Click <strong>"New Pathway"</strong> in the Library tab to create a new decision tree. This initializes a pathway with a default title that you can customize.</p>
+                                
+                                <h3>2. Set Pathway Properties</h3>
+                                <p>In the Builder tab, configure:</p>
+                                <ul>
+                                    <li><strong>Title:</strong> Main pathway name (e.g., "Liver Imaging Decision Tool")</li>
+                                    <li><strong>Subtitle:</strong> Brief description or version info</li>
+                                    <li><strong>Description:</strong> Detailed explanation of the pathway's purpose</li>
+                                </ul>
+                                
+                                <h3>3. Add Your First Step</h3>
+                                <p>Click <strong>"Add Step"</strong> to create your first decision point. The first step automatically becomes the starting point of your pathway.</p>
+                            </div>
+                        </section>
+
+                        <!-- Step Types -->
+                        <section class="help-section">
+                            <h2>📋 Step Types</h2>
+                            <div class="help-card">
+                                <div class="step-type-grid">
+                                    <div class="step-type-item">
+                                        <h4>Multiple Choice</h4>
+                                        <p>Present several options to the user. Best for scenarios with 3+ possible paths.</p>
+                                        <div class="example">Example: "Patient age group?" → Under 18, 18-65, Over 65</div>
+                                    </div>
+                                    
+                                    <div class="step-type-item">
+                                        <h4>Yes/No Decision</h4>
+                                        <p>Simple binary choice. Ideal for clinical criteria or symptoms.</p>
+                                        <div class="example">Example: "Patient has fever?" → Yes, No</div>
+                                    </div>
+                                    
+                                    <div class="step-type-item">
+                                        <h4>Endpoint (Recommendation)</h4>
+                                        <p>Final step that provides imaging recommendation. No further navigation.</p>
+                                        <div class="example">Example: "Perform CT chest with contrast"</div>
+                                    </div>
+                                    
+                                    <div class="step-type-item">
+                                        <h4>Guide</h4>
+                                        <p>Informational step with protocol details. Can continue to other steps.</p>
+                                        <div class="example">Example: Protocol instructions for specific imaging procedures</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Building Steps -->
+                        <section class="help-section">
+                            <h2>🔧 Building Steps</h2>
+                            <div class="help-card">
+                                <h3>Step Configuration</h3>
+                                <p>When creating or editing a step:</p>
+                                <ol>
+                                    <li><strong>Step Type:</strong> Choose the appropriate type first (auto-prioritized)</li>
+                                    <li><strong>Title:</strong> Clear, concise question or statement</li>
+                                    <li><strong>Subtitle:</strong> Optional additional context</li>
+                                    <li><strong>Description:</strong> Detailed instructions or information</li>
+                                    <li><strong>Step ID:</strong> Technical identifier (auto-generated, editable)</li>
+                                </ol>
+
+                                <h3>Adding Options</h3>
+                                <p>For Choice and Yes/No steps:</p>
+                                <ul>
+                                    <li><strong>Option Text:</strong> What users will see and click</li>
+                                    <li><strong>Variant:</strong> Button style (primary, secondary, success, warning, etc.)</li>
+                                    <li><strong>Action:</strong> Where this option leads (navigate to step or recommend imaging)</li>
+                                </ul>
+
+                                <h3>Callouts and Formatting</h3>
+                                <p>Use callouts in descriptions to highlight important information:</p>
+                                <ul>
+                                    <li><code>[info]Important note[/info]</code> - Blue information box</li>
+                                    <li><code>[warning]Be careful[/warning]</code> - Yellow warning box</li>
+                                    <li><code>[protocol]Clinical protocol[/protocol]</code> - Green protocol box</li>
+                                    <li><code>[success]Good practice[/success]</code> - Green success box</li>
+                                    <li><code>[danger]Critical warning[/danger]</code> - Red danger box</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Navigation and Flow -->
+                        <section class="help-section">
+                            <h2>🔄 Navigation and Flow</h2>
+                            <div class="help-card">
+                                <h3>Creating Pathways</h3>
+                                <p>Options can lead to:</p>
+                                <ul>
+                                    <li><strong>Existing Step:</strong> Continue to another decision point</li>
+                                    <li><strong>New Step:</strong> Create and navigate to a new step</li>
+                                    <li><strong>Recommendation:</strong> End with imaging recommendation</li>
+                                </ul>
+
+                                <h3>Best Practices</h3>
+                                <ul>
+                                    <li>Keep step titles concise and clear</li>
+                                    <li>Use descriptive option text that clearly indicates the choice</li>
+                                    <li>Organize complex pathways with logical flow</li>
+                                    <li>Test your pathway flow using the Preview tab</li>
+                                    <li>Use the Birdseye view to visualize the overall structure</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Guides -->
+                        <section class="help-section">
+                            <h2>📚 Guides and Protocols</h2>
+                            <div class="help-card">
+                                <h3>Creating Guides</h3>
+                                <p>Guides provide detailed protocol information:</p>
+                                <ul>
+                                    <li><strong>Guide Title:</strong> Name of the protocol or procedure</li>
+                                    <li><strong>Sections:</strong> Organized content blocks with titles and descriptions</li>
+                                    <li><strong>Lists:</strong> Bullet points for step-by-step instructions</li>
+                                </ul>
+
+                                <h3>Guide Sections</h3>
+                                <p>Each guide can contain multiple sections:</p>
+                                <ul>
+                                    <li><strong>Text:</strong> Paragraph content</li>
+                                    <li><strong>List:</strong> Bulleted or numbered items</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Testing and Preview -->
+                        <section class="help-section">
+                            <h2>🔍 Testing Your Pathway</h2>
+                            <div class="help-card">
+                                <h3>Preview Tab</h3>
+                                <p>Use the Preview tab to test your pathway as users will experience it:</p>
+                                <ul>
+                                    <li>Automatically updates when you make changes</li>
+                                    <li>Test all decision paths and options</li>
+                                    <li>Verify that recommendations appear correctly</li>
+                                    <li>Check that guides display properly</li>
+                                </ul>
+
+                                <h3>Birdseye View</h3>
+                                <p>Visualize your pathway structure:</p>
+                                <ul>
+                                    <li>See all steps and their connections</li>
+                                    <li>Identify potential dead ends or missing connections</li>
+                                    <li>Use "Auto Layout" to organize the diagram</li>
+                                    <li>Different colors indicate different step types</li>
+                                </ul>
+
+                                <h3>Testing Checklist</h3>
+                                <ul>
+                                    <li>✓ All decision paths lead to appropriate endpoints</li>
+                                    <li>✓ No broken links or missing steps</li>
+                                    <li>✓ Recommendations include required imaging details</li>
+                                    <li>✓ Guides are accessible and informative</li>
+                                    <li>✓ Step titles and options are clear and clinical appropriate</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Publishing -->
+                        <section class="help-section">
+                            <h2>🚀 Publishing Your Pathway</h2>
+                            <div class="help-card">
+                                <h3>Before Publishing</h3>
+                                <ul>
+                                    <li>Complete testing in Preview tab</li>
+                                    <li>Verify all pathways lead to appropriate recommendations</li>
+                                    <li>Check clinical accuracy and completeness</li>
+                                    <li>Ensure guides contain necessary protocol information</li>
+                                </ul>
+
+                                <h3>Publishing Process</h3>
+                                <ol>
+                                    <li>Click the hamburger menu (☰)</li>
+                                    <li>Select <strong>"Publish"</strong></li>
+                                    <li>Confirm pathway validation</li>
+                                    <li>The pathway becomes available in the main application</li>
+                                    <li>Library automatically refreshes to show published pathway</li>
+                                </ol>
+
+                                <h3>Post-Publishing</h3>
+                                <ul>
+                                    <li>Published pathways appear in the Live App</li>
+                                    <li>Users can access them through the main decision support interface</li>
+                                    <li>Monitor usage and gather feedback for improvements</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Troubleshooting -->
+                        <section class="help-section">
+                            <h2>⚠️ Troubleshooting</h2>
+                            <div class="help-card">
+                                <h3>Common Issues</h3>
+                                
+                                <h4>Preview Not Showing Steps</h4>
+                                <ul>
+                                    <li>Ensure your pathway has a title</li>
+                                    <li>Check that a start step is selected</li>
+                                    <li>Verify steps have been saved properly</li>
+                                </ul>
+
+                                <h4>Cannot Publish</h4>
+                                <ul>
+                                    <li>All steps must have titles</li>
+                                    <li>All steps must have a valid type</li>
+                                    <li>Choice/Yes-No steps must have at least one option</li>
+                                    <li>Endpoint steps must have recommendation details</li>
+                                </ul>
+
+                                <h4>Broken Navigation</h4>
+                                <ul>
+                                    <li>Check that option actions point to valid steps</li>
+                                    <li>Ensure recommendation endpoints are properly configured</li>
+                                    <li>Use Birdseye view to identify connection issues</li>
+                                </ul>
+
+                                <h3>Validation Requirements</h3>
+                                <p>Your pathway must meet these requirements to publish:</p>
+                                <ul>
+                                    <li>✓ Pathway has a title</li>
+                                    <li>✓ At least one step exists</li>
+                                    <li>✓ Start step is specified</li>
+                                    <li>✓ All steps have titles and types</li>
+                                    <li>✓ All options have valid actions</li>
+                                    <li>✓ All recommendation endpoints are complete</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Tips and Best Practices -->
+                        <section class="help-section">
+                            <h2>💡 Tips and Best Practices</h2>
+                            <div class="help-card">
+                                <h3>Content Guidelines</h3>
+                                <ul>
+                                    <li>Use clear, clinical language appropriate for healthcare professionals</li>
+                                    <li>Keep step titles concise (under 10 words when possible)</li>
+                                    <li>Use option variants to indicate importance (primary for recommended actions)</li>
+                                    <li>Include relevant clinical context in step descriptions</li>
+                                    <li>Use callouts to highlight critical information</li>
+                                </ul>
+
+                                <h3>Structure Guidelines</h3>
+                                <ul>
+                                    <li>Start with broad categorization, then narrow down</li>
+                                    <li>Group related decision points together</li>
+                                    <li>Avoid overly deep decision trees (6+ levels)</li>
+                                    <li>Provide clear exit points with appropriate recommendations</li>
+                                    <li>Consider alternative pathways for edge cases</li>
+                                </ul>
+
+                                <h3>Workflow Tips</h3>
+                                <ul>
+                                    <li>Plan your pathway structure before building</li>
+                                    <li>Build incrementally and test frequently</li>
+                                    <li>Use the JSON view to backup your work</li>
+                                    <li>Collaborate with clinical experts for content validation</li>
+                                    <li>Document your pathway logic for future maintenance</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Keyboard Shortcuts -->
+                        <section class="help-section">
+                            <h2>⌨️ Interface Guide</h2>
+                            <div class="help-card">
+                                <h3>Navigation Tabs</h3>
+                                <ul>
+                                    <li><strong>Library:</strong> View and manage existing pathways</li>
+                                    <li><strong>Builder:</strong> Create and edit pathway structure</li>
+                                    <li><strong>Preview:</strong> Test pathway functionality</li>
+                                    <li><strong>Birdseye:</strong> Visualize pathway flow</li>
+                                    <li><strong>JSON:</strong> View/edit raw pathway data (Advanced mode)</li>
+                                </ul>
+
+                                <h3>Hamburger Menu</h3>
+                                <ul>
+                                    <li><strong>Save:</strong> Download pathway file</li>
+                                    <li><strong>Load:</strong> Import pathway from file</li>
+                                    <li><strong>Publish:</strong> Make pathway live</li>
+                                    <li><strong>View Live App:</strong> Open main decision support interface</li>
+                                    <li><strong>Advanced:</strong> Toggle advanced features (JSON tab)</li>
+                                </ul>
+
+                                <h3>Quick Actions</h3>
+                                <ul>
+                                    <li>Click step cards in Birdseye to quickly edit them</li>
+                                    <li>Use callout helper buttons in step descriptions</li>
+                                    <li>Preview automatically updates after changes</li>
+                                    <li>Library refreshes automatically after publishing</li>
+                                </ul>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="help-footer">
+                        <p>Need additional help? Contact the system administrator or refer to your organization's clinical protocols.</p>
+                        <button id="closeHelp" class="btn primary">Close Help</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
