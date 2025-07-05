@@ -139,16 +139,15 @@ const PathwayManager = {
           <div class="pathway-description">${pathway.description}</div>
           <div class="pathway-meta">
             <span class="pathway-steps">${pathway.stepCount} steps</span>
-            <span class="pathway-size">${this.formatFileSize(pathway.size)}</span>
             <span class="pathway-modified">${this.formatDate(pathway.lastModified)}</span>
           </div>
           <div class="pathway-actions">
             ${pathway.status === 'draft' ? 
-              `<button class="btn btn-sm primary pathway-edit" data-filename="${pathway.filename}">Edit</button>
-               <button class="btn btn-sm success pathway-publish" data-filename="${pathway.filename}">Publish</button>` :
-              `<button class="btn btn-sm warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
+              `<button class="btn btn-sm btn-primary pathway-edit" data-filename="${pathway.filename}">Edit</button>
+               <button class="btn btn-sm btn-success pathway-publish" data-filename="${pathway.filename}">Publish</button>` :
+              `<button class="btn btn-sm btn-warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
             }
-            <button class="btn btn-sm danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
+            <button class="btn btn-sm btn-danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
           </div>
         </div>
       </div>
@@ -347,13 +346,6 @@ const PathwayManager = {
     console.log('Manifest entry updated:', manifestEntry);
   },
 
-  formatFileSize(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  },
 
   formatDate(dateString) {
     return new Date(dateString).toLocaleDateString();
