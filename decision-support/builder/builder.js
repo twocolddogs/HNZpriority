@@ -279,9 +279,11 @@ class DecisionTreeBuilder {
   }
 
   showView(viewName) {
-    // Update tabs
+    // Update tabs (help view doesn't have a tab)
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-    document.getElementById(viewName + 'Tab').classList.add('active');
+    if (viewName !== 'help') {
+      document.getElementById(viewName + 'Tab').classList.add('active');
+    }
 
     // Update views
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
@@ -296,6 +298,8 @@ class DecisionTreeBuilder {
       this.updatePreview();
     } else if (viewName === 'json') {
       this.updateJSON();
+    } else if (viewName === 'help') {
+      // Help view is static, no special handling needed
     }
   }
 
