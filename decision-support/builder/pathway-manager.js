@@ -108,13 +108,22 @@ const PathwayManager = {
 
   async editPathway(filename) {
     try {
+      console.log('Loading pathway:', filename);
       const response = await fetch(`../pathways/${filename}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const pathway = await response.json();
+      console.log('Loaded pathway data:', pathway);
+      
       this.currentTree = pathway;
+      this.updateUI(); // Update the builder UI with loaded data
       this.showView('builder');
     } catch (error) {
       console.error('Error loading pathway:', error);
-      alert('Error loading pathway');
+      alert(`Error loading pathway: ${error.message}`);
     }
   },
 
