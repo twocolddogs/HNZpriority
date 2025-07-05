@@ -181,8 +181,13 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="stepId">Step ID</label>
-                    <input type="text" id="stepId" placeholder="step-id">
+                    <label for="stepType">Step Type</label>
+                    <select id="stepType">
+                        <option value="choice">Multiple Choice</option>
+                        <option value="yes-no">Yes/No Decision</option>
+                        <option value="endpoint">Endpoint (Recommendation)</option>
+                        <option value="guide">Guide</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="stepTitle">Title</label>
@@ -205,13 +210,8 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="stepType">Step Type</label>
-                    <select id="stepType">
-                        <option value="choice">Multiple Choice</option>
-                        <option value="yes-no">Yes/No Decision</option>
-                        <option value="endpoint">Endpoint (Recommendation)</option>
-                        <option value="guide">Guide</option>
-                    </select>
+                    <label for="stepId">Step ID</label>
+                    <input type="text" id="stepId" placeholder="step-id">
                 </div>
 
                 <!-- Guide Info Section -->
