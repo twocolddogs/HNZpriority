@@ -511,6 +511,9 @@
                         <option value="endpoint">Endpoint (Recommendation)</option>
                         <option value="guide">Guide</option>
                     </select>
+                    <div id="stepTypeGuidance" class="step-type-guidance">
+                        <!-- Dynamic guidance will be inserted here -->
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="stepTitle">Title</label>
@@ -521,7 +524,7 @@
                     <input type="text" id="stepSubtitle" placeholder="Optional subtitle">
                 </div>
                 <div class="form-group">
-                    <label for="stepQuestion">Description</label>
+                    <label for="stepQuestion" id="stepQuestionLabel">Description</label>
                     <textarea id="stepQuestion" placeholder="Describe this step. You can use callouts like [info]Important note[/info] or [warning]Be careful[/warning]" rows="3"></textarea>
                     <div class="callout-helpers">
                         <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
@@ -565,22 +568,14 @@
 
                 <!-- Endpoint Section -->
                 <div id="endpointSection" class="form-section hidden">
-                    <h4>Recommendation</h4>
+                    <h4>Recommendation Details</h4>
                     <div class="form-group">
-                        <label for="endpointModality">Modality</label>
-                        <input type="text" id="endpointModality" placeholder="MRI, CT, etc.">
+                        <label for="endpointRecommendation">Recommendation Summary</label>
+                        <textarea id="endpointRecommendation" placeholder="Provide specific, actionable clinical recommendation" rows="3"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="endpointContrast">Contrast</label>
-                        <input type="text" id="endpointContrast" placeholder="Contrast details">
-                    </div>
-                    <div class="form-group">
-                        <label for="endpointNotes">Notes (optional)</label>
-                        <textarea id="endpointNotes" placeholder="Additional notes"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="endpointPriority">Priority (optional)</label>
-                        <input type="text" id="endpointPriority" placeholder="P1, P2, etc.">
+                        <label for="endpointNotes">Additional Notes (optional)</label>
+                        <textarea id="endpointNotes" placeholder="Additional context or instructions" rows="2"></textarea>
                     </div>
                 </div>
             </div>
@@ -665,20 +660,12 @@
                     </div>
                     <div id="recommendationDetails" class="form-subsection">
                         <div class="form-group">
-                            <label for="recModality">Modality</label>
-                            <input type="text" id="recModality" placeholder="MRI, CT, Ultrasound, etc.">
+                            <label for="recRecommendation">Recommendation Summary</label>
+                            <textarea id="recRecommendation" placeholder="Provide specific, actionable clinical recommendation" rows="3"></textarea>
                         </div>
                         <div class="form-group">
-                            <label for="recContrast">Contrast</label>
-                            <input type="text" id="recContrast" placeholder="Contrast details">
-                        </div>
-                        <div class="form-group">
-                            <label for="recNotes">Notes (optional)</label>
-                            <textarea id="recNotes" placeholder="Additional notes or instructions"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="recPriority">Priority (optional)</label>
-                            <input type="text" id="recPriority" placeholder="P1, P2, S1, etc.">
+                            <label for="recNotes">Additional Notes (optional)</label>
+                            <textarea id="recNotes" placeholder="Additional context or instructions" rows="2"></textarea>
                         </div>
                     </div>
                     <div id="newEndpointSection" class="form-subsection hidden">

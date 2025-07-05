@@ -459,10 +459,8 @@ class DecisionTreeBuilder {
     document.getElementById('stepType').value = 'endpoint';
     
     // Populate endpoint fields
-    document.getElementById('endpointModality').value = endpoint.recommendation.modality || '';
-    document.getElementById('endpointContrast').value = endpoint.recommendation.contrast || '';
+    document.getElementById('endpointRecommendation').value = endpoint.recommendation.recommendation || '';
     document.getElementById('endpointNotes').value = endpoint.recommendation.notes || '';
-    document.getElementById('endpointPriority').value = endpoint.recommendation.priority || '';
     
     // Update UI to show endpoint section
     this.updateStepTypeUI('endpoint');
@@ -497,15 +495,11 @@ class DecisionTreeBuilder {
 
     // Endpoint info
     if (step.recommendation) {
-      document.getElementById('endpointModality').value = step.recommendation.modality || '';
-      document.getElementById('endpointContrast').value = step.recommendation.contrast || '';
+      document.getElementById('endpointRecommendation').value = step.recommendation.recommendation || '';
       document.getElementById('endpointNotes').value = step.recommendation.notes || '';
-      document.getElementById('endpointPriority').value = step.recommendation.priority || '';
     } else {
-      document.getElementById('endpointModality').value = '';
-      document.getElementById('endpointContrast').value = '';
+      document.getElementById('endpointRecommendation').value = '';
       document.getElementById('endpointNotes').value = '';
-      document.getElementById('endpointPriority').value = '';
     }
 
     this.updateStepTypeUI(step.type);
@@ -517,13 +511,50 @@ class DecisionTreeBuilder {
     const protocolSection = document.getElementById('protocolSection');
     const optionsSection = document.getElementById('optionsSection');
     const endpointSection = document.getElementById('endpointSection');
+    const stepTypeGuidance = document.getElementById('stepTypeGuidance');
+    const stepQuestionLabel = document.getElementById('stepQuestionLabel');
+    const stepQuestion = document.getElementById('stepQuestion');
 
     // Hide all sections first
     protocolSection.classList.add('hidden');
     optionsSection.classList.add('hidden');
     endpointSection.classList.add('hidden');
 
-    // Show relevant sections
+    // Update guidance and labels based on step type
+    const guidanceConfig = {
+      'choice': {
+        guidance: '<h5>Multiple Choice Decision</h5><p>Present 3+ options to guide decision-making. Create clear, distinct options that cover all scenarios. Best for complex decisions with multiple pathways.</p>',
+        questionLabel: 'Clinical Scenario',
+        questionPlaceholder: 'Describe the clinical scenario or question that requires multiple choice selection. You can use callouts like [info]Important note[/info]'
+      },
+      'yes-no': {
+        guidance: '<h5>Yes/No Decision</h5><p>Binary clinical decisions with clear yes/no answers. Frame as a specific clinical question that can be answered definitively. Ideal for screening criteria or simple assessments.</p>',
+        questionLabel: 'Clinical Question',
+        questionPlaceholder: 'Frame as a clear clinical question with a yes/no answer. You can use callouts like [warning]Be careful[/warning]'
+      },
+      'endpoint': {
+        guidance: '<h5>Clinical Recommendation</h5><p>Final step that provides specific, actionable clinical recommendations. This ends the decision pathway with clear guidance for healthcare professionals.</p>',
+        questionLabel: 'Clinical Context',
+        questionPlaceholder: 'Provide clinical context for this recommendation. You can use callouts like [protocol]Important protocol[/protocol]'
+      },
+      'guide': {
+        guidance: '<h5>Informational Guide</h5><p>Provide detailed clinical guidance, procedures, or educational content. Use this for comprehensive information that supports decision-making but doesn\'t end the pathway.</p>',
+        questionLabel: 'Guide Introduction',
+        questionPlaceholder: 'Introduce this guide and its purpose. You can use callouts like [info]Key information[/info]'
+      }
+    };
+
+    const config = guidanceConfig[stepType] || guidanceConfig['choice'];
+    
+    // Update guidance section
+    stepTypeGuidance.innerHTML = config.guidance;
+    stepTypeGuidance.className = `step-type-guidance ${stepType}`;
+    
+    // Update field labels and placeholders
+    stepQuestionLabel.textContent = config.questionLabel;
+    stepQuestion.placeholder = config.questionPlaceholder;
+
+    // Show relevant sections and handle special cases
     switch (stepType) {
       case 'guide':
         protocolSection.classList.remove('hidden');
@@ -532,9 +563,22 @@ class DecisionTreeBuilder {
         endpointSection.classList.remove('hidden');
         break;
       case 'choice':
+        optionsSection.classList.remove('hidden');
+        // For choice steps, ensure Add Option button is prominent
+        this.updateOptionsButtonText('Add Option');
+        break;
       case 'yes-no':
         optionsSection.classList.remove('hidden');
+        // For yes-no steps, suggest binary options
+        this.updateOptionsButtonText('Add Yes/No Option');
         break;
+    }
+  }
+
+  updateOptionsButtonText(text) {
+    const addOptionBtn = document.getElementById('addOption');
+    if (addOptionBtn) {
+      addOptionBtn.textContent = text;
     }
   }
 
@@ -550,7 +594,7 @@ class DecisionTreeBuilder {
       if (option.action.type === 'navigate') {
         actionText = `󰁔 ${option.action.nextStep}`;
       } else if (option.action.type === 'recommend') {
-        actionText = `󰯯 ${option.action.recommendation.modality}`;
+        actionText = `󰯯 ${option.action.recommendation.recommendation || 'Recommendation'}`;
       }
 
       optionItem.innerHTML = `
@@ -596,10 +640,8 @@ class DecisionTreeBuilder {
     if (this.editingVirtualEndpoint) {
       const endpointId = this.currentEditingStep;
       const newRecommendation = {
-        modality: document.getElementById('endpointModality').value,
-        contrast: document.getElementById('endpointContrast').value,
-        notes: document.getElementById('endpointNotes').value,
-        priority: document.getElementById('endpointPriority').value
+        recommendation: document.getElementById('endpointRecommendation').value,
+        notes: document.getElementById('endpointNotes').value
       };
       
       // Find all steps that point to this recommendation endpoint and update them
@@ -660,10 +702,8 @@ class DecisionTreeBuilder {
     // Endpoint info
     if (type === 'endpoint') {
       step.recommendation = {
-        modality: document.getElementById('endpointModality').value,
-        contrast: document.getElementById('endpointContrast').value,
-        notes: document.getElementById('endpointNotes').value,
-        priority: document.getElementById('endpointPriority').value
+        recommendation: document.getElementById('endpointRecommendation').value,
+        notes: document.getElementById('endpointNotes').value
       };
       delete step.options;
     } else {
@@ -1767,10 +1807,8 @@ class DecisionTreeBuilder {
     } else if (option.action.type === 'recommend') {
       this.populateExistingEndpoints();
       if (option.action.recommendation) {
-        document.getElementById('recModality').value = option.action.recommendation.modality || '';
-        document.getElementById('recContrast').value = option.action.recommendation.contrast || '';
+        document.getElementById('recRecommendation').value = option.action.recommendation.recommendation || '';
         document.getElementById('recNotes').value = option.action.recommendation.notes || '';
-        document.getElementById('recPriority').value = option.action.recommendation.priority || '';
       }
     }
     
@@ -1974,10 +2012,8 @@ class DecisionTreeBuilder {
         
         // Create the new endpoint step
         const recommendation = {
-          modality: document.getElementById('recModality').value,
-          contrast: document.getElementById('recContrast').value,
-          notes: document.getElementById('recNotes').value,
-          priority: document.getElementById('recPriority').value
+          recommendation: document.getElementById('recRecommendation').value,
+          notes: document.getElementById('recNotes').value
         };
         
         const newEndpointStep = {
@@ -2003,19 +2039,17 @@ class DecisionTreeBuilder {
         // Create new endpoint step for inline recommendation - make every recommendation reusable
         const timestamp = Date.now();
         const newEndpointId = `endpoint-${timestamp}`;
-        const modality = document.getElementById('recModality').value || 'Recommendation';
+        const recommendationText = document.getElementById('recRecommendation').value || 'Recommendation';
         
         // Create the new endpoint step
         const recommendation = {
-          modality: document.getElementById('recModality').value,
-          contrast: document.getElementById('recContrast').value,
-          notes: document.getElementById('recNotes').value,
-          priority: document.getElementById('recPriority').value
+          recommendation: document.getElementById('recRecommendation').value,
+          notes: document.getElementById('recNotes').value
         };
         
         const newEndpointStep = {
           id: newEndpointId,
-          title: `${modality} Recommendation`,
+          title: `${recommendationText} Recommendation`,
           type: 'endpoint',
           recommendation: recommendation
         };

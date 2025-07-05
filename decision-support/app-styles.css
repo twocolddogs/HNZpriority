@@ -876,6 +876,50 @@
   margin-bottom: var(--space-6);
 }
 
+/* Step Type Guidance */
+.step-type-guidance {
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-base);
+  border-left: 4px solid;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.step-type-guidance.choice {
+  background-color: var(--color-info-light);
+  border-left-color: var(--color-info);
+  color: #1D4ED8;
+}
+
+.step-type-guidance.yes-no {
+  background-color: var(--color-secondary-light);
+  border-left-color: var(--color-secondary);
+  color: #0F766E;
+}
+
+.step-type-guidance.endpoint {
+  background-color: var(--color-success-light);
+  border-left-color: var(--color-success);
+  color: #065F46;
+}
+
+.step-type-guidance.guide {
+  background-color: var(--color-accent-light);
+  border-left-color: var(--color-accent);
+  color: #92400E;
+}
+
+.step-type-guidance h5 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.step-type-guidance p {
+  margin: 0;
+}
+
 /* ==========================================================================
    9. Responsive Design
    ========================================================================== */
