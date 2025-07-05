@@ -1,6 +1,6 @@
 {
-  "id": "liver-imaging-decision-tool",
-  "title": "HNZ Liver Imaging Decision Support Tool",
+  "id": "liver-imaging-decision-tool-draft",
+  "title": "HNZ Liver Imaging Decision Support Tool (Draft)",
   "description": "Interactive guide for selecting appropriate imaging modality and contrast",
   "startStep": "start",
   "guides": [

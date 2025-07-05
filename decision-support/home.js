@@ -167,8 +167,6 @@ class DecisionSupportHome {
       <div class="pathway-body">
         <div class="pathway-description">${description}</div>
         <div class="pathway-meta">
-          <div class="pathway-steps">${stepCount} ${stepCount === 1 ? 'step' : 'steps'}</div>
-          ${guideCount > 0 ? `<div class="pathway-guides">${guideCount} ${guideCount === 1 ? 'guide' : 'guides'}</div>` : ''}
           ${lastModified ? `<div class="pathway-modified">Updated ${lastModified}</div>` : ''}
           <div class="pathway-badge">Available</div>
         </div>
@@ -185,13 +183,7 @@ class DecisionSupportHome {
     }
 
     // Default description
-    let description = `A clinical decision support pathway with ${stepCount} decision ${stepCount === 1 ? 'step' : 'steps'}`;
-    if (guideCount > 0) {
-      description += ` and ${guideCount} protocol ${guideCount === 1 ? 'guide' : 'guides'}`;
-    }
-    description += '.';
-
-    return description;
+    return 'Clinical decision support pathway to guide evidence-based care decisions.';
   }
 
   openPathway(filename) {
