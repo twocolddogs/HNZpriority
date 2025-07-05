@@ -9,16 +9,5 @@
     "status": "draft",
     "lastModified": "2025-07-05T01:02:44.261Z",
     "size": 6068
-  },
-  {
-    "filename": "published-liver-imaging-decision-tool.json",
-    "id": "liver-imaging-decision-tool-published",
-    "title": "HNZ Liver Imaging Decision Support Tool (Published)",
-    "description": "Interactive guide for selecting appropriate imaging modality and contrast",
-    "stepCount": 9,
-    "guideCount": 1,
-    "status": "published",
-    "lastModified": "2025-07-04T22:18:01.608Z",
-    "size": 8445
   }
 ]
