@@ -9,13 +9,16 @@ const PathwayManager = {
     try {
       console.log('Loading pathways...');
       
+      // Show loading spinner
+      this.showLoadingState();
+      
       // Try API first
       if (await window.pathwayAPI.isAPIAvailable()) {
         console.log('Using API to load pathways');
         const pathways = await window.pathwayAPI.getPathways();
         this.pathways = pathways;
         this.filteredPathways = [...pathways];
-        this.renderPathwaysList();
+        this.filterPathways(); // Apply current filter state
         console.log('Pathways loaded from API, count:', this.pathways.length);
       } else {
         // Fallback to file-based system
@@ -31,7 +34,7 @@ const PathwayManager = {
         
         this.pathways = manifest;
         this.filteredPathways = [...manifest];
-        this.renderPathwaysList();
+        this.filterPathways(); // Apply current filter state
         console.log('Pathways loaded from files, count:', this.pathways.length);
       }
     } catch (error) {
@@ -39,6 +42,23 @@ const PathwayManager = {
       this.pathways = [];
       this.filteredPathways = [];
       this.renderPathwaysList(); // Still render to show empty state
+    } finally {
+      // Hide loading spinner
+      this.hideLoadingState();
+    }
+  },
+
+  showLoadingState() {
+    const loadingElement = document.getElementById('pathwaysLoading');
+    if (loadingElement) {
+      loadingElement.style.display = 'flex';
+    }
+  },
+
+  hideLoadingState() {
+    const loadingElement = document.getElementById('pathwaysLoading');
+    if (loadingElement) {
+      loadingElement.style.display = 'none';
     }
   },
 
@@ -57,30 +77,41 @@ const PathwayManager = {
       return;
     }
 
-    container.innerHTML = this.filteredPathways.map(pathway => `
-      <div class="pathway-card" data-id="${pathway.id}" data-filename="${pathway.filename}">
-        <div class="pathway-header">
-          <h3 class="pathway-title">${pathway.title}</h3>
-          <div class="pathway-status">
-            <span class="status-badge status-${pathway.status}">${pathway.status}</span>
-          </div>
-        </div>
-        <div class="pathway-description">${pathway.description}</div>
-        <div class="pathway-meta">
-          <span class="pathway-steps">${pathway.stepCount} steps</span>
-          <span class="pathway-size">${this.formatFileSize(pathway.size)}</span>
-          <span class="pathway-modified">${this.formatDate(pathway.lastModified)}</span>
-        </div>
-        <div class="pathway-actions">
-          ${pathway.status === 'draft' ? 
-            `<button class="btn primary pathway-edit" data-filename="${pathway.filename}">Edit</button>
-             <button class="btn success pathway-publish" data-filename="${pathway.filename}">Publish</button>` :
-            `<button class="btn warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
-          }
-          <button class="btn danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
-        </div>
-      </div>
-    `).join('');
+    // Sort pathways by date (newest first)
+    const sortedPathways = [...this.filteredPathways].sort((a, b) => 
+      new Date(b.lastModified) - new Date(a.lastModified)
+    );
+
+    // Check if we should show sections (when "all" filter is selected)
+    const statusFilter = document.getElementById('statusFilter').value;
+    const showSections = statusFilter === 'all';
+
+    let html = '';
+
+    if (showSections) {
+      // Group pathways by status
+      const drafts = sortedPathways.filter(p => p.status === 'draft');
+      const published = sortedPathways.filter(p => p.status === 'published');
+
+      // Render drafts section
+      if (drafts.length > 0) {
+        html += '<div class="pathway-section"><h2 class="section-title">Drafts</h2>';
+        html += drafts.map(pathway => this.renderPathwayItem(pathway)).join('');
+        html += '</div>';
+      }
+
+      // Render published section
+      if (published.length > 0) {
+        html += '<div class="pathway-section"><h2 class="section-title">Published</h2>';
+        html += published.map(pathway => this.renderPathwayItem(pathway)).join('');
+        html += '</div>';
+      }
+    } else {
+      // Single list without sections
+      html = sortedPathways.map(pathway => this.renderPathwayItem(pathway)).join('');
+    }
+
+    container.innerHTML = html;
 
     // Bind action buttons
     container.querySelectorAll('.pathway-edit').forEach(btn => {
@@ -95,6 +126,33 @@ const PathwayManager = {
     container.querySelectorAll('.pathway-delete').forEach(btn => {
       btn.addEventListener('click', (e) => this.deletePathway(e.target.dataset.filename));
     });
+  },
+
+  renderPathwayItem(pathway) {
+    return `
+      <div class="pathway-item" data-id="${pathway.id}" data-filename="${pathway.filename}">
+        <span class="status-badge status-${pathway.status} pathway-status-badge">${pathway.status}</span>
+        <div class="pathway-main">
+          <div class="pathway-header">
+            <h3 class="pathway-title">${pathway.title}</h3>
+          </div>
+          <div class="pathway-description">${pathway.description}</div>
+          <div class="pathway-meta">
+            <span class="pathway-steps">${pathway.stepCount} steps</span>
+            <span class="pathway-size">${this.formatFileSize(pathway.size)}</span>
+            <span class="pathway-modified">${this.formatDate(pathway.lastModified)}</span>
+          </div>
+          <div class="pathway-actions">
+            ${pathway.status === 'draft' ? 
+              `<button class="btn btn-sm primary pathway-edit" data-filename="${pathway.filename}">Edit</button>
+               <button class="btn btn-sm success pathway-publish" data-filename="${pathway.filename}">Publish</button>` :
+              `<button class="btn btn-sm warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
+            }
+            <button class="btn btn-sm danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
   },
 
   async createPathway() {
