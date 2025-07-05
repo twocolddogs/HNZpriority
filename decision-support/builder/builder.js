@@ -259,6 +259,23 @@ class DecisionTreeBuilder {
     }
   }
 
+  createPathway() {
+    // Initialize a new empty pathway
+    this.currentTree = {
+      id: `pathway-${Date.now()}`,
+      title: 'New Pathway',
+      subtitle: '',
+      description: '',
+      startStep: '',
+      steps: {},
+      guides: []
+    };
+    
+    this.updateUI();
+    this.updatePreview();
+    this.showView('builder');
+  }
+
   showView(viewName) {
     // Update tabs
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
@@ -408,6 +425,12 @@ class DecisionTreeBuilder {
     };
 
     this.currentTree.steps[stepId] = newStep;
+    
+    // If no startStep is set, make this the startStep
+    if (!this.currentTree.startStep) {
+      this.currentTree.startStep = stepId;
+    }
+    
     this.updateUI();
     this.updatePreview();
     this.editStep(stepId);
