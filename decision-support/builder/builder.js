@@ -179,7 +179,6 @@ class DecisionTreeBuilder {
       // Library view events
       console.log('Binding library view events...');
       document.getElementById('newPathway').addEventListener('click', () => this.createPathway());
-      document.getElementById('refreshLibrary').addEventListener('click', () => this.loadPathways());
       document.getElementById('statusFilter').addEventListener('change', () => this.filterPathways());
       document.getElementById('searchFilter').addEventListener('input', () => this.filterPathways());
       console.log('Library view events bound successfully');
@@ -1250,6 +1249,9 @@ class DecisionTreeBuilder {
           `Saved as: ${filename}\n` +
           'Manifest updated automatically.'
         );
+        
+        // Auto-refresh the library to show updated pathways
+        await this.loadPathways();
         
       } catch (saveError) {
         console.error('Error saving pathway:', saveError);
