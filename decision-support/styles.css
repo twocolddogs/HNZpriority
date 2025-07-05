@@ -1132,7 +1132,7 @@ body {
 
 .decision-button {
   font-family: 'Public Sans', sans-serif;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 400;
   line-height: var(--line-height-normal);
   padding: 1.25rem 1.75rem;
