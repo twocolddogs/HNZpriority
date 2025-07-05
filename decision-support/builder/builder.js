@@ -16,6 +16,8 @@ class DecisionTreeBuilder {
     this.currentEditingStep = null;
     this.currentEditingOption = null;
     this.advancedMode = false;
+    this.pathways = [];
+    this.filteredPathways = [];
     
     this.init();
   }
@@ -25,8 +27,11 @@ class DecisionTreeBuilder {
     try {
       this.bindEvents();
       console.log('Events bound successfully');
+      this.loadPathways();
+      console.log('Pathways loaded successfully');
       this.updateUI();
       console.log('UI updated successfully');
+      this.showView('library');
       console.log('DecisionTreeBuilder initialization complete');
     } catch (error) {
       console.error('Error during initialization:', error);
@@ -40,6 +45,7 @@ class DecisionTreeBuilder {
     try {
       // Tab navigation
       console.log('Binding tab navigation events...');
+      document.getElementById('libraryTab').addEventListener('click', () => this.showView('library'));
       document.getElementById('builderTab').addEventListener('click', () => this.showView('builder'));
       document.getElementById('birdseyeTab').addEventListener('click', () => this.showView('birdseye'));
       document.getElementById('previewTab').addEventListener('click', () => this.showView('preview'));
@@ -173,6 +179,19 @@ class DecisionTreeBuilder {
     }
 
     try {
+      // Library view events
+      console.log('Binding library view events...');
+      document.getElementById('newPathway').addEventListener('click', () => this.createPathway());
+      document.getElementById('refreshLibrary').addEventListener('click', () => this.loadPathways());
+      document.getElementById('statusFilter').addEventListener('change', () => this.filterPathways());
+      document.getElementById('searchFilter').addEventListener('input', () => this.filterPathways());
+      console.log('Library view events bound successfully');
+    } catch (error) {
+      console.error('Error binding library view events:', error);
+      throw error;
+    }
+
+    try {
       // Close modal on overlay click
       console.log('Binding modal overlay events...');
       document.getElementById('stepModal').addEventListener('click', (e) => {
@@ -253,7 +272,9 @@ class DecisionTreeBuilder {
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
     document.getElementById(viewName + 'View').classList.add('active');
 
-    if (viewName === 'birdseye') {
+    if (viewName === 'library') {
+      this.renderPathwaysList();
+    } else if (viewName === 'birdseye') {
       this.updateBirdseye();
       // Don't auto-fit automatically - let user use Auto Layout button if needed
     } else if (viewName === 'preview') {
@@ -1147,28 +1168,27 @@ class DecisionTreeBuilder {
         return;
       }
 
-      // Add metadata for draft saving
-      const draftData = {
-        ...this.currentTree,
-        metadata: {
-          savedAt: new Date().toISOString(),
-          version: '1.0',
-          status: 'draft'
-        }
+      // Create filename with draft suffix
+      const filename = `${this.currentTree.id}_draft.json`;
+      
+      // Prepare the pathway data
+      const pathwayData = {
+        ...this.currentTree
       };
 
-      const dataStr = JSON.stringify(draftData, null, 2);
-      
-      // In a real implementation, this would POST to a server endpoint
-      // For now, we'll simulate by downloading to a drafts folder name
+      // Download the draft file
+      const dataStr = JSON.stringify(pathwayData, null, 2);
       const dataBlob = new Blob([dataStr], {type: 'application/json'});
       
       const link = document.createElement('a');
       link.href = URL.createObjectURL(dataBlob);
-      link.download = `draft-${this.currentTree.id || 'pathway'}.json`;
+      link.download = filename;
       link.click();
+
+      // Update/add to manifest
+      await this.updateManifestEntry(filename, 'draft');
       
-      alert('Draft saved successfully! File downloaded to your computer.');
+      alert('Draft saved successfully! File downloaded. Please place it in the pathways/ directory.');
       
     } catch (error) {
       console.error('Error saving draft:', error);
