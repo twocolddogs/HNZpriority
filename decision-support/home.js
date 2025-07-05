@@ -167,8 +167,7 @@ class DecisionSupportHome {
       <div class="pathway-body">
         <div class="pathway-description">${description}</div>
         <div class="pathway-meta">
-          ${lastModified ? `<div class="pathway-modified">Updated ${lastModified}</div>` : ''}
-          <div class="pathway-badge">Available</div>
+          ${lastModified ? `<div class="pathway-modified">Last updated ${lastModified}</div>` : ''}
         </div>
       </div>
     `;
