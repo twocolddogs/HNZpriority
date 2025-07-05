@@ -265,6 +265,43 @@ a.dropdown-item:hover {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* Override conflicting styles and ensure proper text colors */
+.btn.primary,
+.btn.primary:hover,
+.btn.primary:focus,
+.btn.primary:active {
+  color: white !important;
+}
+
+.btn.success,
+.btn.success:hover,
+.btn.success:focus,
+.btn.success:active {
+  color: white !important;
+}
+
+.btn.warning,
+.btn.warning:hover,
+.btn.warning:focus,
+.btn.warning:active {
+  color: white !important;
+}
+
+.btn.danger,
+.btn.danger:hover,
+.btn.danger:focus,
+.btn.danger:active {
+  color: white !important;
+}
+
+/* Ensure secondary buttons maintain proper contrast */
+.btn.secondary,
+.btn.secondary:hover,
+.btn.secondary:focus,
+.btn.secondary:active {
+  color: #475569 !important;
+}
+
 /* ==========================================================================
    Font Face Declarations
    ========================================================================== */
