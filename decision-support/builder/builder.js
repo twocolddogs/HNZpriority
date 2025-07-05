@@ -167,11 +167,8 @@ class DecisionTreeBuilder {
       document.getElementById('hamburgerToggle').addEventListener('click', () => this.toggleHamburgerMenu());
       document.getElementById('menuSaveDraft').addEventListener('click', () => { this.closeHamburgerMenu(); this.saveDraft(); });
       document.getElementById('menuPublish').addEventListener('click', () => { this.closeHamburgerMenu(); this.publishPathway(); });
-      document.getElementById('menuExport').addEventListener('click', () => { this.closeHamburgerMenu(); this.exportJSON(); });
-      document.getElementById('menuImport').addEventListener('click', () => { this.closeHamburgerMenu(); this.importJSON(); });
-      document.getElementById('menuDemo').addEventListener('click', () => { this.closeHamburgerMenu(); this.loadExample(); });
+      document.getElementById('menuLiveApp').addEventListener('click', () => this.closeHamburgerMenu());
       document.getElementById('menuAdvanced').addEventListener('click', () => this.toggleAdvancedMode());
-      document.getElementById('jsonFileInput').addEventListener('change', (e) => this.handleFileImport(e));
       console.log('Hamburger menu events bound successfully');
     } catch (error) {
       console.error('Error binding hamburger menu events:', error);
