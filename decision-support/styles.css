@@ -1374,8 +1374,6 @@ body {
 }
 
 .recommendation-icon {
-  width: 32px;
-  height: 32px;
   color: #10B981;
   flex-shrink: 0;
 }
@@ -2120,6 +2118,7 @@ body {
 /* Form Styles */
 .form-group {
   margin-bottom: 1.5rem;
+  margin-top:1rem;
 }
 
 .form-group label {
@@ -2235,9 +2234,6 @@ body {
 
 
 /* Options and Lists */
-.options-list {
-  margin-bottom: 1.5rem;
-}
 
 .option-item {
   background: #F3F4F6;
@@ -2439,7 +2435,6 @@ body {
 /* Endpoint/Recommendation step cards */
 .step-card-endpoint {
   border-left-color: #10B981;
-  background: linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%);
 }
 
 .step-card-endpoint .step-title {

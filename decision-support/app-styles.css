@@ -1033,7 +1033,6 @@
   color: var(--color-gray-600);
   margin-top: var(--space-3);
   padding: var(--space-3);
-  background-color: var(--color-gray-50);
   border-radius: var(--radius-base);
 }
 
