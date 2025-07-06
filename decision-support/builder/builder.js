@@ -1006,6 +1006,8 @@ class DecisionTreeBuilder {
     }
 
     this.updateGuideSectionsList(this.currentEditingGuide.sections);
+    this.updateJSON();
+    this.updatePreview();
     this.closeGuideSectionModal();
   }
 
@@ -1014,6 +1016,8 @@ class DecisionTreeBuilder {
       if (confirm('Are you sure you want to delete this section?')) {
         this.currentEditingGuide.sections.splice(this.currentEditingSectionIndex, 1);
         this.updateGuideSectionsList(this.currentEditingGuide.sections);
+        this.updateJSON();
+        this.updatePreview();
         this.closeGuideSectionModal();
       }
     }
@@ -1023,6 +1027,8 @@ class DecisionTreeBuilder {
     if (confirm('Are you sure you want to remove this section?')) {
       this.currentEditingGuide.sections.splice(index, 1);
       this.updateGuideSectionsList(this.currentEditingGuide.sections);
+      this.updateJSON();
+      this.updatePreview();
     }
   }
 

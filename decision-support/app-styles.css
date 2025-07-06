@@ -622,35 +622,31 @@
 }
 
 .decision-button.yes {
-  background: var(--color-white);
-  border-color: #D1FAE5;
+  background: #F0FDF4;
+  border: 2px solid #10B981;
   color: var(--color-gray-700);
-  border-left: 4px solid #10B981;
 }
 
 .decision-button.yes:hover {
-  background: #F0FDF4;
-  border-color: #A7F3D0;
+  background: #DCFCE7;
+  border-color: #059669;
   color: var(--color-gray-900);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
-  border-left-color: #059669;
 }
 
 .decision-button.no {
-  background: var(--color-white);
-  border-color: #FEE2E2;
+  background: #FEF2F2;
+  border: 2px solid #EF4444;
   color: var(--color-gray-700);
-  border-left: 4px solid #EF4444;
 }
 
 .decision-button.no:hover {
-  background: #FEF2F2;
-  border-color: #FECACA;
+  background: #FEE2E2;
+  border-color: #DC2626;
   color: var(--color-gray-900);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
-  border-left-color: #DC2626;
 }
 
 .decision-button.success {

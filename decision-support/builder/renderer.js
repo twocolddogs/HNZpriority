@@ -409,8 +409,9 @@ class DecisionTreeRenderer {
       title.textContent = sectionData.title;
       card.appendChild(title);
       
-      const content = document.createElement('p');
-      content.textContent = sectionData.content;
+      const content = document.createElement('div');
+      content.className = 'markdown-content';
+      content.innerHTML = this.parseCallouts(sectionData.content);
       card.appendChild(content);
       
       if (sectionData.items && sectionData.items.length > 0) {
