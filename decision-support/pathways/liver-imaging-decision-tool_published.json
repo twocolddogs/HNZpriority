@@ -81,7 +81,7 @@
     "under-40-ct-pancreas": {
       "id": "under-40-ct-pancreas",
       "title": "CT Pancreatic Mass Protocol",
-      "question": "Has the CT already been completed? [protocol]CT Pancreatic Mass Protocol: Early arterial phase upper abdomen + portal venous phase abdomen and pelvis[/protocol] [info]MRI preferred, but CT undertaken first due to MRI resource constraints[/info]",
+      "question": "Has the CT already been completed? [guide]CT Pancreatic Mass Protocol: Early arterial phase upper abdomen + portal venous phase abdomen and pelvis[/guide] [info]MRI preferred, but CT undertaken first due to MRI resource constraints[/info]",
       "type": "yes-no",
       "options": [
         {
@@ -153,7 +153,7 @@
     "under-40-ct-check": {
       "id": "under-40-ct-check",
       "title": "CT Pancreatic Mass Protocol",
-      "question": "Has the CT already been completed and there is still diagnostic uncertainty? [protocol]CT Pancreatic Mass Protocol: Early arterial phase upper abdomen + portal venous phase abdomen and pelvis[/protocol]",
+      "question": "Has the CT already been completed and there is still diagnostic uncertainty? [guide]CT Pancreatic Mass Protocol: Early arterial phase upper abdomen + portal venous phase abdomen and pelvis[/guide]",
       "type": "yes-no",
       "options": [
         {
@@ -201,7 +201,7 @@
     "over-40-ct-pancreas": {
       "id": "over-40-ct-pancreas",
       "title": "CT Pancreatic Mass Protocol",
-      "question": "Has the CT already been completed? [protocol]CT Pancreatic Mass Protocol: Early arterial phase upper abdomen + portal venous phase abdomen and pelvis[/protocol]",
+      "question": "Has the CT already been completed? [guide]CT Pancreatic Mass Protocol: Early arterial phase upper abdomen + portal venous phase abdomen and pelvis[/guide]",
       "type": "yes-no",
       "options": [
         {

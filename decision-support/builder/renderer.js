@@ -424,7 +424,7 @@ class DecisionTreeRenderer {
     let processedText = this.parseMarkdown(text);
     
     // Parse callout syntax: [type]content[/type]
-    const calloutRegex = /\[(protocol|guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
+    const calloutRegex = /\[(guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
     
     return processedText.replace(calloutRegex, (match, type, content) => {
       return `<div class="step-callout step-callout-${type}">${this.parseMarkdown(content.trim())}</div>`;

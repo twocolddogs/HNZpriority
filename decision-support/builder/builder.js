@@ -1007,7 +1007,7 @@ class DecisionTreeBuilder {
       sectionItem.className = 'option-item';
       
       const typeLabels = {
-        protocol: 'Guide (Blue)',
+        guide: 'Guide (Blue)',
         info: 'Information (Purple)', 
         warning: 'Warning (Orange)',
         success: 'Success (Green)',
@@ -1036,7 +1036,7 @@ class DecisionTreeBuilder {
     
     // Reset form
     document.getElementById('sectionTitle').value = '';
-    document.getElementById('sectionType').value = 'protocol';
+    document.getElementById('sectionType').value = 'guide';
     document.getElementById('sectionContent').value = '';
     document.getElementById('guideSectionModalTitle').textContent = 'Add Section';
     document.getElementById('deleteGuideSection').style.display = 'none';
@@ -1052,7 +1052,7 @@ class DecisionTreeBuilder {
     
     // Populate form
     document.getElementById('sectionTitle').value = section.title || '';
-    document.getElementById('sectionType').value = section.type || 'protocol';
+    document.getElementById('sectionType').value = section.type || 'guide';
     document.getElementById('sectionContent').value = section.content || '';
     document.getElementById('guideSectionModalTitle').textContent = 'Edit Section';
     document.getElementById('deleteGuideSection').style.display = 'inline-flex';
@@ -1594,7 +1594,7 @@ class DecisionTreeBuilder {
     if (!text) return '';
     
     // Parse callout syntax: [type]content[/type]
-    const calloutRegex = /\[(protocol|guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
+    const calloutRegex = /\[(guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
     
     return text.replace(calloutRegex, (match, type, content) => {
       return `<div class="mini-step-callout mini-step-callout-${type}">${content.trim()}</div>`;

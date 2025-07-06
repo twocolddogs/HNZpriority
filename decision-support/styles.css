@@ -853,11 +853,6 @@ a.dropdown-item:hover {
   border-left: 4px solid;
 }
 
-.step-callout-protocol {
-  background: #EBF8FF;
-  border-left-color: #3B82F6;
-  color: #1E3A8A;
-}
 
 .step-callout-info {
   background: #F0F9FF;
@@ -2429,7 +2424,6 @@ body {
   line-height: 1.5;
 }
 
-.step-callout-protocol,
 .step-callout-guide {
   background: #EBF8FF;
   border-left-color: #3B82F6;
@@ -2485,14 +2479,6 @@ body {
   border-color: #9CA3AF;
 }
 
-.btn-callout[data-callout="protocol"] {
-  color: #1E40AF;
-  border-color: #3B82F6;
-}
-
-.btn-callout[data-callout="protocol"]:hover {
-  background: #EBF8FF;
-}
 
 .btn-callout[data-callout="info"] {
   color: #6B46C1;
@@ -2758,7 +2744,6 @@ body {
   line-height: 1.4;
 }
 
-.mini-step-callout-protocol,
 .mini-step-callout-guide {
   background: rgba(59, 130, 246, 0.1);
   border-left-color: #3B82F6;
