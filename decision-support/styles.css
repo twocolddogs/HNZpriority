@@ -541,7 +541,7 @@ a.dropdown-item:hover {
 }
 
 .flow-node.endpoint {
-  fill: #2563EB;
+  fill: #F59E0B;
 }
 
 .flow-node.protocol-info {
@@ -658,7 +658,7 @@ a.dropdown-item:hover {
   background: #4338CA !important; /* Indigo for guide/protocol */
 }
 .legend-color.endpoint { 
-  background: #2563EB !important; /* Blue for endpoints */
+  background: #F59E0B !important; /* Orange for endpoints */
 }
 .legend-color.option { 
   background: #6B7280 !important; /* Grey for option buttons */
@@ -2336,11 +2336,11 @@ body {
 
 /* Endpoint/Recommendation step cards */
 .step-card-endpoint {
-  border-left-color: #10B981;
+  border-left-color: #F59E0B;
 }
 
 .step-card-endpoint .step-title {
-  color: #047857;
+  color: #92400E;
 }
 
 /* Result step cards */

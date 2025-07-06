@@ -532,8 +532,8 @@
 }
 
 .step-type-badge.endpoint {
-  background-color: var(--color-success-light);
-  color: #065F46;
+  background-color: var(--color-warning-light);
+  color: #92400E;
 }
 
 .step-type-badge.guide {
@@ -846,8 +846,8 @@
 }
 
 .flow-node.endpoint .node-rect {
-  fill: var(--color-success);
-  stroke: #065F46;
+  fill: var(--color-warning);
+  stroke: #B45309;
 }
 
 .flow-node.guide .node-rect {
@@ -997,9 +997,9 @@
 }
 
 .step-type-guidance.endpoint {
-  background-color: var(--color-success-light);
-  border-left-color: var(--color-success);
-  color: #065F46;
+  background-color: var(--color-warning-light);
+  border-left-color: var(--color-warning);
+  color: #92400E;
 }
 
 .step-type-guidance.guide {
@@ -1254,8 +1254,8 @@
 }
 
 .option-step-badge.endpoint {
-  background-color: var(--color-success-light);
-  color: #065F46;
+  background-color: var(--color-warning-light);
+  color: #92400E;
 }
 
 .option-step-badge.guide {
