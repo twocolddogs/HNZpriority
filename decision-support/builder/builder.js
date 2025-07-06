@@ -2658,7 +2658,8 @@ class DecisionTreeBuilder {
           targetNodeType = 'endpoint';
         }
         
-        if (targetStep && positions[optionId] && positions[targetStep]) {
+        // Don't draw connections back to start step
+        if (targetStep && positions[optionId] && positions[targetStep] && targetStep !== this.currentTree.startStep) {
           const optionToTarget = this.createConnection(
             positions[optionId], 
             positions[targetStep], 
