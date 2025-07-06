@@ -114,23 +114,27 @@ const PathwayManager = {
     container.innerHTML = html;
 
     // Bind action buttons
-    container.querySelectorAll('.pathway-edit').forEach(btn => {
-      btn.addEventListener('click', (e) => this.editPathway(e.target.dataset.filename));
-    });
-    container.querySelectorAll('.pathway-publish').forEach(btn => {
-      btn.addEventListener('click', (e) => this.publishPathway(e.target.dataset.filename));
-    });
-    container.querySelectorAll('.pathway-unpublish').forEach(btn => {
-      btn.addEventListener('click', (e) => this.unpublishPathway(e.target.dataset.filename));
-    });
     container.querySelectorAll('.pathway-delete').forEach(btn => {
-      btn.addEventListener('click', (e) => this.deletePathway(e.target.dataset.filename));
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click
+        this.deletePathway(e.target.dataset.filename);
+      });
+    });
+    
+    // Make entire card clickable to edit pathway
+    container.querySelectorAll('.pathway-item-clickable').forEach(card => {
+      card.addEventListener('click', (e) => {
+        // Don't trigger if delete button was clicked
+        if (e.target.closest('.pathway-delete')) return;
+        this.editPathway(card.dataset.filename);
+      });
+      card.style.cursor = 'pointer';
     });
   },
 
   renderPathwayItem(pathway) {
     return `
-      <div class="pathway-item" data-id="${pathway.id}" data-filename="${pathway.filename}">
+      <div class="pathway-item pathway-item-clickable" data-id="${pathway.id}" data-filename="${pathway.filename}">
         <span class="status-badge status-${pathway.status} pathway-status-badge">${pathway.status}</span>
         <div class="pathway-main">
           <div class="pathway-header">
@@ -141,14 +145,9 @@ const PathwayManager = {
             <span class="pathway-steps">${pathway.stepCount} steps</span>
             <span class="pathway-modified">${this.formatDate(pathway.lastModified)}</span>
           </div>
-          <div class="pathway-actions">
-            ${pathway.status === 'draft' ? 
-              `<button class="btn btn-sm btn-primary pathway-edit" data-filename="${pathway.filename}">Edit</button>
-               <button class="btn btn-sm btn-success pathway-publish" data-filename="${pathway.filename}">Publish</button>` :
-              `<button class="btn btn-sm btn-warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
-            }
-            <button class="btn btn-sm btn-danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
-          </div>
+        </div>
+        <div class="pathway-delete-container">
+          <button class="btn btn-sm btn-danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
         </div>
       </div>
     `;

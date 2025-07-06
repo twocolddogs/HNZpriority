@@ -85,6 +85,18 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.pathway-item-clickable:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #3B82F6;
+}
+
+.pathway-delete-container {
+  display: flex;
+  align-items: flex-start;
+  margin-left: 1rem;
+  flex-shrink: 0;
+}
+
 .pathway-main {
   flex: 1;
   min-width: 0;
@@ -287,6 +299,18 @@ a.dropdown-item:hover {
   box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3), 0 2px 4px rgba(217, 119, 6, 0.2);
 }
 
+.btn.orange {
+  background: #FB923C;
+  color: white;
+  border-color: #F97316;
+}
+
+.btn.orange:hover {
+  background: #F97316;
+  border-color: #EA580C;
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.3), 0 2px 4px rgba(251, 146, 60, 0.2);
+}
+
 .btn.danger {
   background: #dc2626;
   color: white;
@@ -346,6 +370,13 @@ a.dropdown-item:hover {
 .btn.warning:hover,
 .btn.warning:focus,
 .btn.warning:active {
+  color: white !important;
+}
+
+.btn.orange,
+.btn.orange:hover,
+.btn.orange:focus,
+.btn.orange:active {
   color: white !important;
 }
 
@@ -2121,12 +2152,14 @@ body {
 }
 
 .btn.danger {
+  background: #EF4444;
   border-color: #EF4444;
-  color: #1E293B;
+  color: #FFFFFF;
 }
 
 .btn.danger:hover {
-  background: #EF4444;
+  background: #DC2626;
+  border-color: #DC2626;
   color: #FFFFFF;
 }
 

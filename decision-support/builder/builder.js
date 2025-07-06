@@ -19,6 +19,10 @@ class DecisionTreeBuilder {
     this.pathways = [];
     this.filteredPathways = [];
     
+    // Change tracking for builder
+    this.hasUnsavedChanges = false;
+    this.initialTreeState = null;
+    
     this.init();
   }
 
@@ -279,6 +283,22 @@ class DecisionTreeBuilder {
     } catch (error) {
       console.error('Error binding callout helper events:', error);
     }
+
+    try {
+      // Tree property change tracking
+      console.log('Binding tree property change events...');
+      const treePropertyFields = ['treeId', 'treeTitle', 'treeDescription', 'startStep'];
+      treePropertyFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+          field.addEventListener('input', () => this.checkForTreeChanges());
+          field.addEventListener('change', () => this.checkForTreeChanges());
+        }
+      });
+      console.log('Tree property change events bound successfully');
+    } catch (error) {
+      console.error('Error binding tree property change events:', error);
+    }
   }
 
   createPathway() {
@@ -329,6 +349,11 @@ class DecisionTreeBuilder {
     this.updateStartStepSelect();
     this.updateGuidesList();
     this.updateJSON();
+    
+    // Capture initial state if not already captured
+    if (!this.initialTreeState) {
+      this.captureInitialTreeState();
+    }
   }
 
   updateTreeProperties() {
@@ -863,6 +888,9 @@ class DecisionTreeBuilder {
     this.updateUI();
     this.updateJSON();
     this.updatePreview();
+    
+    // Mark as changed
+    this.checkForTreeChanges();
   }
 
   updateStepIdReferences(oldId, newId) {
@@ -1117,6 +1145,15 @@ class DecisionTreeBuilder {
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     
+    // Store initial form state for change tracking
+    this.captureInitialStepState();
+    
+    // Set up change listeners
+    this.setupStepChangeListeners();
+    
+    // Hide save button initially
+    this.updateSaveButtonVisibility(false);
+    
     // Reset modal scroll to top
     setTimeout(() => {
       const modalContainer = modal.querySelector('.modal-container');
@@ -1127,11 +1164,108 @@ class DecisionTreeBuilder {
     }, 0);
   }
 
+  captureInitialStepState() {
+    this.initialStepState = {
+      stepId: document.getElementById('stepId').value,
+      stepTitle: document.getElementById('stepTitle').value,
+      stepSubtitle: document.getElementById('stepSubtitle').value,
+      stepQuestion: document.getElementById('stepQuestion').value,
+      stepType: document.querySelector('input[name="stepType"]:checked')?.value || '',
+      protocolTitle: document.getElementById('protocolTitle').value,
+      protocolDescription: document.getElementById('protocolDescription').value,
+      protocolNote: document.getElementById('protocolNote').value,
+      endpointRecommendation: document.getElementById('endpointRecommendation').value,
+      endpointNotes: document.getElementById('endpointNotes').value
+    };
+  }
+
+  setupStepChangeListeners() {
+    // Remove existing listeners to avoid duplicates
+    this.removeStepChangeListeners();
+    
+    const fields = [
+      'stepId', 'stepTitle', 'stepSubtitle', 'stepQuestion',
+      'protocolTitle', 'protocolDescription', 'protocolNote',
+      'endpointRecommendation', 'endpointNotes'
+    ];
+    
+    this.stepChangeHandler = () => this.checkForStepChanges();
+    
+    fields.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.addEventListener('input', this.stepChangeHandler);
+      }
+    });
+    
+    // Add listeners for radio buttons
+    const radioButtons = document.querySelectorAll('input[name="stepType"]');
+    radioButtons.forEach(radio => {
+      radio.addEventListener('change', this.stepChangeHandler);
+    });
+  }
+
+  removeStepChangeListeners() {
+    if (!this.stepChangeHandler) return;
+    
+    const fields = [
+      'stepId', 'stepTitle', 'stepSubtitle', 'stepQuestion',
+      'protocolTitle', 'protocolDescription', 'protocolNote',
+      'endpointRecommendation', 'endpointNotes'
+    ];
+    
+    fields.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.removeEventListener('input', this.stepChangeHandler);
+      }
+    });
+    
+    const radioButtons = document.querySelectorAll('input[name="stepType"]');
+    radioButtons.forEach(radio => {
+      radio.removeEventListener('change', this.stepChangeHandler);
+    });
+  }
+
+  checkForStepChanges() {
+    if (!this.initialStepState) return;
+    
+    const currentState = {
+      stepId: document.getElementById('stepId').value,
+      stepTitle: document.getElementById('stepTitle').value,
+      stepSubtitle: document.getElementById('stepSubtitle').value,
+      stepQuestion: document.getElementById('stepQuestion').value,
+      stepType: document.querySelector('input[name="stepType"]:checked')?.value || '',
+      protocolTitle: document.getElementById('protocolTitle').value,
+      protocolDescription: document.getElementById('protocolDescription').value,
+      protocolNote: document.getElementById('protocolNote').value,
+      endpointRecommendation: document.getElementById('endpointRecommendation').value,
+      endpointNotes: document.getElementById('endpointNotes').value
+    };
+    
+    const hasChanges = Object.keys(this.initialStepState).some(key => 
+      this.initialStepState[key] !== currentState[key]
+    );
+    
+    this.updateSaveButtonVisibility(hasChanges);
+  }
+
+  updateSaveButtonVisibility(hasChanges) {
+    const saveButton = document.getElementById('saveStep');
+    if (saveButton) {
+      saveButton.style.display = hasChanges ? 'inline-flex' : 'none';
+    }
+  }
+
   closeModal() {
     document.getElementById('stepModal').classList.add('hidden');
     document.body.style.overflow = 'auto';
     this.currentEditingStep = null;
     this.currentEditingOption = null;
+    
+    // Clean up change listeners
+    this.removeStepChangeListeners();
+    this.initialStepState = null;
   }
 
   toggleHamburgerMenu() {
@@ -1544,6 +1678,9 @@ class DecisionTreeBuilder {
         // Refresh the library
         await this.loadPathways();
         
+        // Reset change tracking
+        this.captureInitialTreeState();
+        
         alert('Draft saved successfully!');
       } else {
         // Fallback to file-based system
@@ -1563,6 +1700,9 @@ class DecisionTreeBuilder {
 
         // Update/add to manifest
         await this.updateManifestEntry(filename, 'draft');
+        
+        // Reset change tracking
+        this.captureInitialTreeState();
         
         alert('Draft saved successfully! File downloaded. Please place it in the pathways/ directory.');
       }
@@ -3441,6 +3581,33 @@ class DecisionTreeBuilder {
       .replace(/\s+/g, '-') // Replace spaces with hyphens
       .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
       .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+  }
+
+  // Change tracking for builder view
+  captureInitialTreeState() {
+    this.initialTreeState = JSON.stringify(this.currentTree);
+    this.hasUnsavedChanges = false;
+    this.updateSaveDraftVisibility();
+  }
+
+  checkForTreeChanges() {
+    if (!this.initialTreeState) return;
+    
+    const currentState = JSON.stringify(this.currentTree);
+    this.hasUnsavedChanges = this.initialTreeState !== currentState;
+    this.updateSaveDraftVisibility();
+  }
+
+  updateSaveDraftVisibility() {
+    const saveDraftButton = document.getElementById('saveDraftButton');
+    if (saveDraftButton) {
+      saveDraftButton.style.display = this.hasUnsavedChanges ? 'inline-flex' : 'none';
+    }
+  }
+
+  markAsChanged() {
+    this.hasUnsavedChanges = true;
+    this.updateSaveDraftVisibility();
   }
 }
 
