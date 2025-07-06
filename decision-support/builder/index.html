@@ -112,10 +112,6 @@
                             <button id="publishButton" class="btn btn-success">Publish</button>
                         </div>
                         <div class="form-group">
-                            <label for="treeId">Pathway ID</label>
-                            <input type="text" id="treeId" placeholder="unique-pathway-id">
-                        </div>
-                        <div class="form-group">
                             <label for="treeTitle">Title</label>
                             <input type="text" id="treeTitle" placeholder="Decision Pathway Title">
                         </div>
@@ -135,6 +131,12 @@
                             <!-- Guides will be listed here -->
                         </div>
                         <button id="addGuide" class="btn btn-secondary">Add Guide</button>
+                        
+                        <div class="form-group" style="margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-gray-200);">
+                            <label for="treeId">Pathway ID</label>
+                            <input type="text" id="treeId" placeholder="Auto-generated from title" readonly>
+                            <small class="text-muted">Automatically generated from the pathway title</small>
+                        </div>
                     </div>
 
                     <!-- Steps Editor -->
@@ -532,12 +534,12 @@
                 </div>
                 <div class="form-group">
                     <label for="stepQuestion" id="stepQuestionLabel">Description</label>
-                    <textarea id="stepQuestion" placeholder="Describe this step. Use **bold**, *italic*, `code`, • bullet points" rows="3"></textarea>
+                    <textarea id="stepQuestion" placeholder="Describe this step. Use **bold**, *italic*, `code`, * bullet points" rows="3"></textarea>
                     <div class="markdown-helpers">
                         <span class="markdown-syntax">**bold**</span>
                         <span class="markdown-syntax">*italic*</span>
                         <span class="markdown-syntax">`code`</span>
-                        <span class="markdown-syntax">• lists</span>
+                        <span class="markdown-syntax">* lists</span>
                     </div>
                     <div class="callout-helpers">
                         <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
@@ -589,12 +591,12 @@
                     <h4>Recommendation Details</h4>
                     <div class="form-group">
                         <label for="endpointRecommendation">Recommendation Summary</label>
-                        <textarea id="endpointRecommendation" placeholder="Provide specific, actionable clinical recommendation. Use **bold** for key terms, • for lists." rows="3"></textarea>
+                        <textarea id="endpointRecommendation" placeholder="Provide specific, actionable clinical recommendation. Use **bold** for key terms, * for lists." rows="3"></textarea>
                         <div class="markdown-helpers">
                             <span class="markdown-syntax">**bold**</span>
                             <span class="markdown-syntax">*italic*</span>
                             <span class="markdown-syntax">`code`</span>
-                            <span class="markdown-syntax">• lists</span>
+                            <span class="markdown-syntax">* lists</span>
                         </div>
                         <div class="callout-helpers">
                             <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
@@ -607,11 +609,11 @@
                     </div>
                     <div class="form-group">
                         <label for="endpointNotes">Additional Notes (optional)</label>
-                        <textarea id="endpointNotes" placeholder="Additional context or instructions. Use **bold** for emphasis, • for lists." rows="2"></textarea>
+                        <textarea id="endpointNotes" placeholder="Additional context or instructions. Use **bold** for emphasis, * for lists." rows="2"></textarea>
                         <div class="markdown-helpers">
                             <span class="markdown-syntax">**bold**</span>
                             <span class="markdown-syntax">*italic*</span>
-                            <span class="markdown-syntax">• lists</span>
+                            <span class="markdown-syntax">* lists</span>
                         </div>
                         <div class="callout-helpers">
                             <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
@@ -712,21 +714,21 @@
                     <div id="recommendationDetails" class="form-subsection">
                         <div class="form-group">
                             <label for="recRecommendation">Recommendation Summary</label>
-                            <textarea id="recRecommendation" placeholder="Provide specific, actionable clinical recommendation. Use **bold** for key terms, • for lists." rows="3"></textarea>
+                            <textarea id="recRecommendation" placeholder="Provide specific, actionable clinical recommendation. Use **bold** for key terms, * for lists." rows="3"></textarea>
                             <div class="markdown-helpers">
                                 <span class="markdown-syntax">**bold**</span>
                                 <span class="markdown-syntax">*italic*</span>
                                 <span class="markdown-syntax">`code`</span>
-                                <span class="markdown-syntax">• lists</span>
+                                <span class="markdown-syntax">* lists</span>
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="recNotes">Additional Notes (optional)</label>
-                            <textarea id="recNotes" placeholder="Additional context or instructions. Use **bold** for emphasis, • for lists." rows="2"></textarea>
+                            <textarea id="recNotes" placeholder="Additional context or instructions. Use **bold** for emphasis, * for lists." rows="2"></textarea>
                             <div class="markdown-helpers">
                                 <span class="markdown-syntax">**bold**</span>
                                 <span class="markdown-syntax">*italic*</span>
-                                <span class="markdown-syntax">• lists</span>
+                                <span class="markdown-syntax">* lists</span>
                             </div>
                         </div>
                     </div>
@@ -803,12 +805,12 @@
                 </div>
                 <div class="form-group">
                     <label for="sectionContent">Content</label>
-                    <textarea id="sectionContent" placeholder="Section content. Use **bold**, *italic*, • bullet points, numbered lists 1. 2. 3." rows="6"></textarea>
+                    <textarea id="sectionContent" placeholder="Section content. Use **bold**, *italic*, * bullet points, numbered lists 1. 2. 3." rows="6"></textarea>
                     <div class="markdown-helpers">
                         <span class="markdown-syntax">**bold**</span>
                         <span class="markdown-syntax">*italic*</span>
                         <span class="markdown-syntax">`code`</span>
-                        <span class="markdown-syntax">• bullets</span>
+                        <span class="markdown-syntax">* bullets</span>
                         <span class="markdown-syntax">1. numbers</span>
                     </div>
                     <div class="callout-helpers">

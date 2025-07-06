@@ -66,6 +66,8 @@ class DecisionTreeBuilder {
       
       document.getElementById('treeTitle').addEventListener('input', (e) => {
         this.currentTree.title = e.target.value;
+        this.currentTree.id = this.generateIdFromTitle(e.target.value);
+        document.getElementById('treeId').value = this.currentTree.id;
         this.updateJSON();
       });
       
@@ -964,6 +966,9 @@ class DecisionTreeBuilder {
   showGuideSectionModal() {
     document.getElementById('guideSectionModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    
+    // Bind callout buttons for guide section content
+    this.bindCalloutButtons('sectionContent');
   }
 
   closeGuideSectionModal() {
@@ -3285,6 +3290,20 @@ class DecisionTreeBuilder {
     
     // Focus the textarea
     textarea.focus();
+  }
+
+  generateIdFromTitle(title) {
+    if (!title || title.trim() === '') {
+      return '';
+    }
+    
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
   }
 }
 

@@ -473,10 +473,10 @@ class DecisionTreeRenderer {
     for (let line of lines) {
       const trimmed = line.trim();
       
-      // Check for bullet point (•, *, -, or number.)
-      if (trimmed.match(/^[•*-]\s/) || trimmed.match(/^\d+\.\s/)) {
+      // Check for bullet point (*, -, •, or number.)
+      if (trimmed.match(/^[\*\-•]\s/) || trimmed.match(/^\d+\.\s/)) {
         const isNumbered = trimmed.match(/^\d+\.\s/);
-        const content = trimmed.replace(/^[•*-]\s/, '').replace(/^\d+\.\s/, '');
+        const content = trimmed.replace(/^[\*\-•]\s/, '').replace(/^\d+\.\s/, '');
         
         if (!inList) {
           inList = true;
