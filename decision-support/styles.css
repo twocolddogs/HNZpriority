@@ -678,16 +678,13 @@ a.dropdown-item:hover {
 
 /* FINAL Legend Colors - Match flowchart exactly */
 .legend-color.start { 
-  background: #10B981 !important; /* Green for start steps */
+  background: #8B5CF6 !important; /* Purple for start steps */
 }
 .legend-color.choice { 
   background: #3B82F6 !important; /* Blue for multiple choice */
 }
 .legend-color.yes-no { 
   background: #10B981 !important; /* Green for yes/no */
-}
-.legend-color.guide { 
-  background: #4338CA !important; /* Indigo for guide/protocol */
 }
 .legend-color.endpoint { 
   background: #FB923C !important; /* Orange for endpoints */

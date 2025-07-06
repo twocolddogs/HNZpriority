@@ -2897,7 +2897,7 @@ class DecisionTreeBuilder {
     // Determine colors based on step type to match step card colors
     let fillColor = '#3B82F6'; // default blue for choice
     if (step.id === this.currentTree.startStep) {
-      fillColor = '#10B981'; // green for start step
+      fillColor = '#8B5CF6'; // purple for start step
     } else if (step.type === 'endpoint') {
       fillColor = '#FB923C'; // orange for endpoints
     } else if (step.type === 'yes-no') {
@@ -3302,10 +3302,6 @@ class DecisionTreeBuilder {
             <div class="legend-item">
               <div class="legend-color yes-no"></div>
               <span>Yes/No Decision</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color guide"></div>
-              <span>Guide/Protocol</span>
             </div>
             <div class="legend-item">
               <div class="legend-color endpoint"></div>
