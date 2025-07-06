@@ -109,7 +109,6 @@
                     <div class="properties-panel">
                         <div class="panel-header">
                             <h3>Pathway Properties</h3>
-                            <button id="publishButton" class="btn btn-success">Publish</button>
                         </div>
                         <div class="form-group">
                             <label for="treeTitle">Title</label>
@@ -144,8 +143,9 @@
                         <div class="steps-header">
                             <h3>Decision Steps</h3>
                             <div class="steps-actions">
-                                <button id="addStep" class="btn btn-primary">Add Step</button>
+                                <button id="addStep" class="btn btn-secondary">Add Step</button>
                                 <button id="saveDraftButton" class="btn btn-secondary">Save Draft</button>
+                                <button id="publishButton" class="btn btn-success">Publish</button>
                             </div>
                         </div>
                         <div id="stepsList" class="steps-list">
@@ -518,27 +518,18 @@
                         <div class="step-type-selection">
                             <label class="form-label">Step Type</label>
                             <div class="radio-group">
-                                <div class="radio-option">
+                                <label class="radio-item">
                                     <input type="radio" id="stepTypeChoice" name="stepType" value="choice">
-                                    <label for="stepTypeChoice" class="radio-label">
-                                        <span class="radio-dot"></span>
-                                        <span>Multiple Choice</span>
-                                    </label>
-                                </div>
-                                <div class="radio-option">
+                                    <span class="radio-text">Multiple Choice</span>
+                                </label>
+                                <label class="radio-item">
                                     <input type="radio" id="stepTypeYesNo" name="stepType" value="yes-no">
-                                    <label for="stepTypeYesNo" class="radio-label">
-                                        <span class="radio-dot"></span>
-                                        <span>Yes/No Decision</span>
-                                    </label>
-                                </div>
-                                <div class="radio-option">
+                                    <span class="radio-text">Yes/No Decision</span>
+                                </label>
+                                <label class="radio-item">
                                     <input type="radio" id="stepTypeEndpoint" name="stepType" value="endpoint">
-                                    <label for="stepTypeEndpoint" class="radio-label">
-                                        <span class="radio-dot"></span>
-                                        <span>Endpoint</span>
-                                    </label>
-                                </div>
+                                    <span class="radio-text">Endpoint</span>
+                                </label>
                             </div>
                         </div>
                         <div class="step-type-guidance-container">
@@ -596,10 +587,6 @@
                     <h4>Options</h4>
                     <div id="optionsList" class="options-list">
                         <!-- Options will be listed here -->
-                    </div>
-                    <div id="yesNoButtons" class="hidden">
-                        <button id="addYesOption" class="btn btn-success">Yes</button>
-                        <button id="addNoOption" class="btn btn-secondary">No</button>
                     </div>
                     <button id="addOption" class="btn btn-secondary">Add Option</button>
 

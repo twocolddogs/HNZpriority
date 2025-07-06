@@ -163,8 +163,7 @@ class DecisionTreeBuilder {
       // Options management
       console.log('Binding options management events...');
       document.getElementById('addOption').addEventListener('click', () => this.addOption());
-      document.getElementById('addYesOption').addEventListener('click', () => this.editYesNoOption(0));
-      document.getElementById('addNoOption').addEventListener('click', () => this.editYesNoOption(1));
+      // Yes/No options are now auto-populated
       console.log('Options management events bound successfully');
     } catch (error) {
       console.error('Error binding options management events:', error);
@@ -354,7 +353,7 @@ class DecisionTreeBuilder {
       stepItem.innerHTML = `
         ${startBadge}
         <h4>${step.title || 'Untitled Step'}</h4>
-        <p>${step.subtitle || 'No subtitle'}</p>
+        ${step.subtitle ? `<p>${step.subtitle}</p>` : ''}
         <span class="step-type-badge ${step.type}">${step.type.replace('-', ' ').toUpperCase()}</span>
       `;
 
@@ -595,7 +594,6 @@ class DecisionTreeBuilder {
 
     // Show relevant sections and handle special cases
     const addOptionBtn = document.getElementById('addOption');
-    const yesNoButtons = document.getElementById('yesNoButtons');
     
     switch (stepType) {
       case 'endpoint':
@@ -604,14 +602,13 @@ class DecisionTreeBuilder {
       case 'choice':
         optionsSection.classList.remove('hidden');
         addOptionBtn.style.display = 'inline-flex';
-        yesNoButtons.classList.add('hidden');
         this.updateOptionsButtonText('Add Option');
         break;
       case 'yes-no':
         optionsSection.classList.remove('hidden');
-        addOptionBtn.style.display = 'none';
-        yesNoButtons.classList.remove('hidden');
+        addOptionBtn.style.display = 'inline-flex';
         this.ensureYesNoOptions();
+        this.updateOptionsButtonText('Add Option');
         break;
     }
   }
