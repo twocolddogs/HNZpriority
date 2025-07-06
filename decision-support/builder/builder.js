@@ -506,8 +506,18 @@ class DecisionTreeBuilder {
     // Update UI to show endpoint section
     this.updateStepTypeUI('endpoint');
     
-    // Show the modal
-    document.getElementById('stepModal').classList.remove('hidden');
+    // Show the modal and reset scroll position
+    const modal = document.getElementById('stepModal');
+    modal.classList.remove('hidden');
+    
+    // Reset modal scroll to top
+    setTimeout(() => {
+      const modalContainer = modal.querySelector('.modal-container');
+      if (modalContainer) {
+        modalContainer.scrollTop = 0;
+      }
+      modal.scrollTop = 0;
+    }, 0);
   }
 
   editStep(stepId) {
@@ -608,9 +618,8 @@ class DecisionTreeBuilder {
         break;
       case 'yes-no':
         optionsSection.classList.remove('hidden');
-        addOptionBtn.style.display = 'inline-flex';
+        addOptionBtn.style.display = 'none'; // Hide add option button - yes/no has fixed 2 options
         this.ensureYesNoOptions();
-        this.updateOptionsButtonText('Add Option');
         break;
     }
   }
@@ -628,32 +637,15 @@ class DecisionTreeBuilder {
     const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
     if (!step || step.type !== 'yes-no') return;
     
-    // Ensure exactly two options: Yes and No
-    if (!step.options || step.options.length === 0) {
-      step.options = [
-        { text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } },
-        { text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } }
-      ];
-    } else if (step.options.length === 1) {
-      if (step.options[0].text.toLowerCase().includes('yes')) {
-        step.options.push({ text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } });
-      } else {
-        step.options.unshift({ text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } });
-      }
-    }
+    // Always create/reset to exactly two options: Yes and No
+    step.options = [
+      { text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } },
+      { text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } }
+    ];
     
-    // Fix any existing options to be Yes/No
-    if (step.options.length >= 2) {
-      step.options[0].text = 'Yes';
-      step.options[0].variant = 'success';
-      step.options[1].text = 'No';
-      step.options[1].variant = 'secondary';
-      
-      // Remove any extra options
-      step.options = step.options.slice(0, 2);
-    }
-    
+    // Force update the UI
     this.updateOptionsList(step.options);
+    console.log('Created Yes/No options for step:', step.id, step.options);
   }
 
   editYesNoOption(index) {
@@ -1044,8 +1036,18 @@ class DecisionTreeBuilder {
 
 
   showModal() {
-    document.getElementById('stepModal').classList.remove('hidden');
+    const modal = document.getElementById('stepModal');
+    modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    
+    // Reset modal scroll to top
+    setTimeout(() => {
+      const modalContainer = modal.querySelector('.modal-container');
+      if (modalContainer) {
+        modalContainer.scrollTop = 0;
+      }
+      modal.scrollTop = 0;
+    }, 0);
   }
 
   closeModal() {
@@ -2309,6 +2311,11 @@ class DecisionTreeBuilder {
   // ==========================================================================
 
   detectCircularReference(fromStepId, toStepId) {
+    // Special case: Allow navigation back to the start step (this is intentional pathway completion)
+    if (toStepId === this.currentTree.startStep && fromStepId !== this.currentTree.startStep) {
+      return false; // This is allowed - it's a "restart pathway" feature
+    }
+
     // If we're linking to the same step, that's immediately circular
     if (fromStepId === toStepId) {
       return true;
@@ -2342,7 +2349,10 @@ class DecisionTreeBuilder {
       // Add all navigation targets to the stack for further exploration
       for (const option of currentStep.options) {
         if (option.action && option.action.type === 'navigate' && option.action.nextStep) {
-          stack.push(option.action.nextStep);
+          // Skip checking paths that go back to start step (these are allowed)
+          if (option.action.nextStep !== this.currentTree.startStep) {
+            stack.push(option.action.nextStep);
+          }
         }
       }
     }
@@ -2797,24 +2807,24 @@ class DecisionTreeBuilder {
     titleText.setAttribute('font-weight', '600');
     titleText.textContent = '󰄬 Recommendation';
     
-    // Modality
-    const modalityText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    modalityText.setAttribute('class', 'flow-node-text');
-    modalityText.setAttribute('x', '110');
-    modalityText.setAttribute('y', '40');
-    modalityText.setAttribute('font-size', '11');
-    modalityText.setAttribute('font-weight', '600');
-    modalityText.textContent = rec.modality || 'Imaging';
+    // Recommendation title
+    const recTitleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    recTitleText.setAttribute('class', 'flow-node-text');
+    recTitleText.setAttribute('x', '110');
+    recTitleText.setAttribute('y', '40');
+    recTitleText.setAttribute('font-size', '11');
+    recTitleText.setAttribute('font-weight', '600');
+    recTitleText.textContent = rec.title || rec.modality || 'Recommendation';
     
-    // Contrast
-    if (rec.contrast) {
-      const contrastText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      contrastText.setAttribute('class', 'flow-node-text');
-      contrastText.setAttribute('x', '110');
-      contrastText.setAttribute('y', '55');
-      contrastText.setAttribute('font-size', '10');
-      contrastText.textContent = rec.contrast;
-      group.appendChild(contrastText);
+    // Action or description
+    if (rec.action || rec.description) {
+      const actionText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      actionText.setAttribute('class', 'flow-node-text');
+      actionText.setAttribute('x', '110');
+      actionText.setAttribute('y', '55');
+      actionText.setAttribute('font-size', '10');
+      actionText.textContent = rec.action || rec.description || rec.contrast || '';
+      group.appendChild(actionText);
     }
     
     // Priority
@@ -2852,7 +2862,7 @@ class DecisionTreeBuilder {
     
     group.appendChild(rect);
     group.appendChild(titleText);
-    group.appendChild(modalityText);
+    group.appendChild(recTitleText);
     group.appendChild(typeText);
     
     // Add hover handlers for recommendation node preview

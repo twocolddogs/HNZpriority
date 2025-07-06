@@ -215,6 +215,12 @@ class DecisionTreeRenderer {
     this.answers[stepId] = answer;
     
     if (action.type === 'navigate') {
+      // Check if navigating back to start step (pathway completion)
+      if (action.nextStep === this.tree.startStep && this.currentStep !== this.tree.startStep) {
+        // Show completion popup
+        alert('🎉 Pathway Complete!\n\nYou have completed this decision pathway and will now be taken back to the beginning to start again.');
+      }
+      
       this.currentStep = action.nextStep;
       this.stepHistory.push(action.nextStep);
     } else if (action.type === 'recommend') {
