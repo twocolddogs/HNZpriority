@@ -2513,8 +2513,8 @@ body {
 }
 
 .btn-callout[data-callout="success"] {
-  color: #EA580C;
-  border-color: #FB923C;
+  color: #047857;
+  border-color: #10B981;
 }
 
 .btn-callout[data-callout="success"]:hover {
@@ -2666,11 +2666,11 @@ body {
 
 .mini-option-item.variant-success {
   background: rgba(16, 185, 129, 0.1);
-  color: #EA580C;
+  color: #047857;
 }
 
 .mini-option-item.variant-success::before {
-  color: #FB923C;
+  color: #10B981;
 }
 
 .mini-option-item.variant-warning {
