@@ -236,10 +236,6 @@ class DecisionTreeRenderer {
     const stepCard = document.createElement('div');
     stepCard.className = 'step-card';
     
-    const title = document.createElement('h2');
-    title.className = 'step-title';
-    title.textContent = 'Clinical Recommendation';
-    stepCard.appendChild(title);
     
     if (this.recommendation) {
       const recommendationCard = this.createRecommendationCard(this.recommendation);
@@ -252,21 +248,6 @@ class DecisionTreeRenderer {
   createRecommendationCard(rec) {
     const container = document.createElement('div');
     container.className = 'recommendation-card';
-    
-    const header = document.createElement('div');
-    header.className = 'recommendation-header';
-    
-    const icon = document.createElement('span');
-    icon.className = 'recommendation-icon';
-    icon.innerHTML = '✓';
-    
-    const title = document.createElement('h3');
-    title.className = 'recommendation-title';
-    title.textContent = 'Clinical Recommendation';
-    
-    header.appendChild(icon);
-    header.appendChild(title);
-    container.appendChild(header);
     
     const details = document.createElement('div');
     details.className = 'recommendation-details';

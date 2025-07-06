@@ -33,9 +33,9 @@
   --color-gray-900: #212529;        /* Primary text */
 
   /* ## Semantic Colors */
-  --color-success: #10B981;         /* Emerald green */
-  --color-success-light: #D1FAE5;   
-  --color-success-hover: #0EA972;   /* Subtle success hover */
+  --color-success: #FB923C;         /* Light orange */
+  --color-success-light: #FED7AA;   
+  --color-success-hover: #F97316;   /* Subtle success hover */
   --color-warning: #F59E0B;         /* Amber */
   --color-warning-light: #FEF3C7;   
   --color-warning-hover: #E9940A;   /* Subtle warning hover */

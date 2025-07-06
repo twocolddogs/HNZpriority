@@ -133,8 +133,8 @@
 }
 
 .status-badge.status-published {
-  background: #d1fae5;
-  color: #059669;
+  background: #fed7aa;
+  color: #F97316;
 }
 
 .pathway-description {
@@ -266,14 +266,14 @@ a.dropdown-item:hover {
 }
 
 .btn.success {
-  background: #059669;
+  background: #F97316;
   color: white;
   border-color: #047857;
 }
 
 .btn.success:hover {
-  background: #047857;
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3), 0 2px 4px rgba(5, 150, 105, 0.2);
+  background: #EA580C;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3), 0 2px 4px rgba(249, 115, 22, 0.2);
 }
 
 .btn.warning {
@@ -529,7 +529,7 @@ a.dropdown-item:hover {
 }
 
 .flow-node.start {
-  fill: #10B981;
+  fill: #FB923C;
 }
 
 .flow-node.choice {
@@ -646,7 +646,7 @@ a.dropdown-item:hover {
 
 /* FINAL Legend Colors - Match flowchart exactly */
 .legend-color.start { 
-  background: #059669 !important; /* Dark green for start steps */
+  background: #F97316 !important; /* Dark green for start steps */
 }
 .legend-color.choice { 
   background: #F59E0B !important; /* Orange for multiple choice */
@@ -786,7 +786,7 @@ a.dropdown-item:hover {
 }
 
 .toggle-indicator.on {
-  color: #059669;
+  color: #F97316;
 }
 
 /* Callout Helpers */
@@ -840,9 +840,9 @@ a.dropdown-item:hover {
 }
 
 .step-callout-success {
-  background: #ECFDF5;
-  border-left-color: #10B981;
-  color: #065F46;
+  background: #FFF7ED;
+  border-left-color: #FB923C;
+  color: #9A3412;
 }
 
 .step-callout-danger {
@@ -894,7 +894,7 @@ a.dropdown-item:hover {
   --decision-primary: #3B82F6;     /* Blue primary */
   --decision-primary-dark: #2563EB; /* Blue primary dark */
   --decision-secondary: #6B7280;    /* Gray secondary */
-  --decision-success: #10B981;      /* Green success */
+  --decision-success: #FB923C;      /* Green success */
   --decision-warning: #F59E0B;      /* Orange warning */
   --decision-info: #6366F1;         /* Indigo info */
   --decision-background: #F9FAFB;   /* Light background */
@@ -1310,12 +1310,12 @@ body {
    7. Recommendation Cards
    ========================================================================== */
 .recommendation-card {
-  background: linear-gradient(135deg, #ECFDF5, #EBF8FF);
-  border: 1px solid #10B981;
+  background: linear-gradient(135deg, #FFF7ED, #FEF3C7);
+  border: 1px solid #FB923C;
   border-radius: 12px;
   padding: 2rem;
   margin: 2rem 0;
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 4px 16px rgba(251, 146, 60, 0.1);
 }
 
 .recommendation-header {
@@ -1326,7 +1326,7 @@ body {
 }
 
 .recommendation-icon {
-  color: #10B981;
+  color: #FB923C;
   flex-shrink: 0;
 }
 
@@ -1334,7 +1334,7 @@ body {
   font-family: var(--font-display);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
-  color: #065F46;
+  color: #9A3412;
   margin: 0;
 }
 
@@ -1343,11 +1343,6 @@ body {
   gap: 1rem;
 }
 
-.recommendation-detail {
-  display: flex;
-  align-items: start;
-  gap: 0.5rem;
-}
 
 .recommendation-detail strong {
   font-weight: var(--font-weight-semibold);
@@ -1519,7 +1514,7 @@ body {
 }
 
 .protocol-card.success {
-  background: #ECFDF5;
+  background: #FFF7ED;
   border-color: #86EFAC;
 }
 
@@ -1844,7 +1839,7 @@ body {
 }
 
 .toggle-indicator.on {
-  background: #10B981;
+  background: #FB923C;
   color: #FFFFFF;
 }
 
@@ -2110,12 +2105,12 @@ body {
 }
 
 .btn.success {
-  border-color: #10B981;
+  border-color: #FB923C;
   color: #1E293B;
 }
 
 .btn.success:hover {
-  background: #10B981;
+  background: #FB923C;
   color: #FFFFFF;
 }
 
@@ -2317,11 +2312,11 @@ body {
 
 /* Yes/No step cards */
 .step-card-yes-no {
-  border-left-color: #10B981;
+  border-left-color: #FB923C;
 }
 
 .step-card-yes-no .step-title {
-  color: #047857;
+  color: #EA580C;
 }
 
 /* Guide step cards */
@@ -2345,8 +2340,8 @@ body {
 
 /* Result step cards */
 .step-card-result {
-  border-left-color: #059669;
-  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+  border-left-color: #F97316;
+  background: linear-gradient(135deg, #FFF7ED 0%, #FED7AA 100%);
 }
 
 /* ==========================================================================
@@ -2420,9 +2415,9 @@ body {
 }
 
 .step-callout-success {
-  background: #ECFDF5;
-  border-left-color: #10B981;
-  color: #047857;
+  background: #FFF7ED;
+  border-left-color: #FB923C;
+  color: #EA580C;
 }
 
 .step-callout-danger {
@@ -2484,12 +2479,12 @@ body {
 }
 
 .btn-callout[data-callout="success"] {
-  color: #047857;
-  border-color: #10B981;
+  color: #EA580C;
+  border-color: #FB923C;
 }
 
 .btn-callout[data-callout="success"]:hover {
-  background: #ECFDF5;
+  background: #FFF7ED;
 }
 
 .btn-callout[data-callout="danger"] {
@@ -2636,12 +2631,12 @@ body {
 }
 
 .mini-option-item.variant-success {
-  background: rgba(16, 185, 129, 0.1);
-  color: #047857;
+  background: rgba(251, 146, 60, 0.1);
+  color: #EA580C;
 }
 
 .mini-option-item.variant-success::before {
-  color: #10B981;
+  color: #FB923C;
 }
 
 .mini-option-item.variant-warning {
@@ -2655,7 +2650,7 @@ body {
 
 .mini-recommendation-card {
   background: rgba(255, 255, 255, 0.8);
-  border: 1px solid #10B981;
+  border: 1px solid #FB923C;
   border-radius: 6px;
   padding: 0.75rem;
   margin: 0.5rem 0;
@@ -2665,7 +2660,7 @@ body {
   margin: 0 0 0.5rem 0;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #047857;
+  color: #EA580C;
 }
 
 .mini-recommendation-card div {
@@ -2698,8 +2693,8 @@ body {
 }
 
 .mini-option-card.variant-success {
-  background: rgba(16, 185, 129, 0.1);
-  border-left-color: #10B981;
+  background: rgba(251, 146, 60, 0.1);
+  border-left-color: #FB923C;
 }
 
 .mini-option-card.variant-warning {
@@ -2749,9 +2744,9 @@ body {
 }
 
 .mini-step-callout-success {
-  background: rgba(16, 185, 129, 0.1);
-  border-left-color: #10B981;
-  color: #047857;
+  background: rgba(251, 146, 60, 0.1);
+  border-left-color: #FB923C;
+  color: #EA580C;
 }
 
 .mini-step-callout-danger {
@@ -3159,7 +3154,7 @@ body {
 }
 
 .toggle-indicator.on {
-  color: #059669;
+  color: #F97316;
 }
 
 /* Version 2 - Lines 1900-1907 & 1920-1923 */
@@ -3174,6 +3169,6 @@ body {
 }
 
 .toggle-indicator.on {
-  background: #10B981;
+  background: #FB923C;
   color: #FFFFFF;
 }
