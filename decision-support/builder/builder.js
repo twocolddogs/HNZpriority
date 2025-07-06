@@ -2744,7 +2744,9 @@ class DecisionTreeBuilder {
             text: option.text,
             variant: option.variant || 'primary',
             parentStep: id,
-            isOptionNode: true
+            isOptionNode: true,
+            targetStep: option.action?.nextStep || null,
+            actionType: option.action?.type || null
           });
           
           levels[optionId] = optionLevel;
@@ -3104,30 +3106,39 @@ class DecisionTreeBuilder {
     group.setAttribute('class', 'flow-node option');
     group.setAttribute('transform', `translate(${x},${y})`);
     
-    // Determine color based on variant
+    // Check if this option targets the start step
+    const isBackToStart = optionData.targetStep === this.currentTree.startStep;
+    
+    // Determine color based on variant and target
     let fillColor = '#6B7280'; // grey for option buttons
     let strokeColor = '#2563EB';
     
-    switch (optionData.variant) {
-      case 'secondary':
-        fillColor = '#6B7280';
-        strokeColor = '#6B7280';
-        break;
-      case 'success':
-        fillColor = '#6B7280';
-        strokeColor = '#6B7280';
-        break;
-      case 'warning':
-        fillColor = '#6B7280';
-        strokeColor = '#6B7280';
-        break;
-      case 'danger':
-        fillColor = '#EF4444';
-        strokeColor = '#EF4444';
-        break;
-      default:
-        fillColor = '#6B7280';
-        strokeColor = '#6B7280';
+    if (isBackToStart) {
+      // Style as endpoint for back-to-start options
+      fillColor = '#FB923C'; // orange like endpoints
+      strokeColor = '#FB923C';
+    } else {
+      switch (optionData.variant) {
+        case 'secondary':
+          fillColor = '#6B7280';
+          strokeColor = '#6B7280';
+          break;
+        case 'success':
+          fillColor = '#6B7280';
+          strokeColor = '#6B7280';
+          break;
+        case 'warning':
+          fillColor = '#6B7280';
+          strokeColor = '#6B7280';
+          break;
+        case 'danger':
+          fillColor = '#EF4444';
+          strokeColor = '#EF4444';
+          break;
+        default:
+          fillColor = '#6B7280';
+          strokeColor = '#6B7280';
+      }
     }
     
     // Create smaller rectangle for option nodes
@@ -3136,8 +3147,16 @@ class DecisionTreeBuilder {
     rect.setAttribute('width', '140');
     rect.setAttribute('height', '50');
     rect.setAttribute('fill', fillColor);
-    rect.setAttribute('rx', '25'); // More rounded for button look
-    rect.setAttribute('ry', '25');
+    
+    // Use sharp corners for back-to-start options, rounded for others
+    if (isBackToStart) {
+      rect.setAttribute('rx', '0'); // Sharp rectangle for back-to-start
+      rect.setAttribute('ry', '0');
+    } else {
+      rect.setAttribute('rx', '25'); // More rounded for button look
+      rect.setAttribute('ry', '25');
+    }
+    
     rect.setAttribute('stroke', '#fff');
     rect.setAttribute('stroke-width', '2');
     
@@ -3256,16 +3275,9 @@ class DecisionTreeBuilder {
       connectionClass += ' recommendation';
     }
     
-    // Special styling for back-to-start connections
-    if (isBackToStart) {
-      connectionClass += ' back-to-start';
-      path.setAttribute('stroke', '#10B981'); // Green color for completion loops
-      path.setAttribute('stroke-width', '3');
-      path.setAttribute('stroke-dasharray', '12,8'); // Distinctive dash pattern
-    } else {
-      path.setAttribute('stroke', '#6B7280');
-      path.setAttribute('stroke-width', '2');
-    }
+    // Standard styling for all connections (removed special green styling for back-to-start)
+    path.setAttribute('stroke', '#6B7280');
+    path.setAttribute('stroke-width', '2');
     
     path.setAttribute('class', connectionClass);
     path.setAttribute('fill', 'none');
