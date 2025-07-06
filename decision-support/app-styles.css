@@ -101,7 +101,7 @@
   padding: var(--space-3) var(--space-4);
   font-family: var(--font-family-body);
   font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
+  color: var(--color-gray-700) !important;
   background: transparent;
   border: none;
   text-align: left;
@@ -122,14 +122,18 @@
 }
 
 .dropdown-icon {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   color: var(--color-gray-500);
-  width: 16px;
+  width: 20px;
   text-align: center;
 }
 
 .toggle-item {
   justify-content: space-between;
+}
+
+.toggle-item > span:first-of-type {
+  margin-left: 0;
 }
 
 .toggle-indicator {

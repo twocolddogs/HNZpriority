@@ -3053,7 +3053,7 @@ class DecisionTreeBuilder {
             </div>
           </div>
         </div>
-        <div class="legend-section" style="margin-top: 12px;">
+        <div class="legend-section" style="margin-top: 20px;">
           <div class="legend-controls" style="display: flex; gap: 6px; flex-wrap: wrap;">
             <button id="resetZoomLegend" style="padding: 4px 8px; font-size: 11px; height: auto; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">Reset Zoom</button>
             <button id="zoomInLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">+</button>
