@@ -825,6 +825,19 @@
   transition: var(--transition-base);
 }
 
+/* Back to start connections */
+.flow-connection.back-to-start {
+  stroke: var(--color-success) !important;
+  stroke-width: 3 !important;
+  stroke-dasharray: 12,8 !important;
+  opacity: 0.8;
+}
+
+.flow-connection.back-to-start:hover {
+  opacity: 1;
+  stroke-width: 4 !important;
+}
+
 .flow-node:hover .node-rect {
   stroke: var(--color-primary);
   stroke-width: 2;

@@ -619,6 +619,13 @@ class DecisionTreeBuilder {
       case 'yes-no':
         optionsSection.classList.remove('hidden');
         addOptionBtn.style.display = 'none'; // Hide add option button - yes/no has fixed 2 options
+        
+        // Update the step type in the data model
+        const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
+        if (step) {
+          step.type = 'yes-no';
+        }
+        
         this.ensureYesNoOptions();
         break;
     }
@@ -632,10 +639,28 @@ class DecisionTreeBuilder {
   }
 
   ensureYesNoOptions() {
-    if (!this.currentEditingStep) return;
+    console.log('ensureYesNoOptions called, currentEditingStep:', this.currentEditingStep);
+    console.log('pendingStep:', this.pendingStep);
+    
+    if (!this.currentEditingStep) {
+      console.log('No currentEditingStep, returning');
+      return;
+    }
     
     const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
-    if (!step || step.type !== 'yes-no') return;
+    console.log('Found step:', step);
+    
+    if (!step) {
+      console.log('No step found, returning');
+      return;
+    }
+    
+    if (step.type !== 'yes-no') {
+      console.log('Step type is not yes-no:', step.type, 'returning');
+      return;
+    }
+    
+    console.log('Step type is yes-no, checking options:', step.options);
     
     // Only auto-create options for new steps (pendingStep), not when editing existing ones
     if (this.pendingStep && (!step.options || step.options.length === 0)) {
@@ -644,7 +669,7 @@ class DecisionTreeBuilder {
         { text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } },
         { text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } }
       ];
-      console.log('Auto-created Yes/No options for new step:', step.id);
+      console.log('Auto-created Yes/No options for new step:', step.id, step.options);
     } else if (!this.pendingStep) {
       // For existing steps, just ensure we have the minimum structure but don't overwrite
       if (!step.options || step.options.length === 0) {
@@ -653,11 +678,14 @@ class DecisionTreeBuilder {
           { text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } }
         ];
         console.log('Added missing Yes/No options for existing step:', step.id);
+      } else {
+        console.log('Existing step has options, preserving them:', step.options);
       }
       // If options exist, leave them alone to preserve user's targets and details
     }
     
     // Update the UI with current options
+    console.log('Updating options list with:', step.options);
     this.updateOptionsList(step.options);
   }
 
@@ -2992,23 +3020,48 @@ class DecisionTreeBuilder {
       toY = toPos.y + 50;      // Middle of step node (100px tall)
     }
     
-    // Create horizontal curved path that always ends horizontally for proper arrowhead alignment
+    // Check if this is a "back to start" connection (going backwards/left significantly)
+    const isBackToStart = toX < fromX - 100; // Going left by more than 100px indicates back to start
+    
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const horizontalDistance = toX - fromX;
-    const verticalDistance = Math.abs(toY - fromY);
+    let pathData;
     
-    // Calculate control points to ensure horizontal entry
-    const midPoint = Math.max(80, horizontalDistance * 0.6); // Stronger horizontal preference
-    
-    // First control point: extends horizontally from start point
-    const cp1X = fromX + midPoint;
-    const cp1Y = fromY;
-    
-    // Second control point: positioned to ensure horizontal approach to target
-    const cp2X = toX - Math.max(40, horizontalDistance * 0.2); // Ensure horizontal approach
-    const cp2Y = toY; // Same Y as target for horizontal entry
-    
-    const pathData = `M ${fromX} ${fromY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${toX} ${toY}`;
+    if (isBackToStart) {
+      // Create elegant loop-back path that routes around content
+      const horizontalOffset = 300; // How far right to extend before looping back
+      const verticalOffset = 200;   // How far down/up to route around content
+      
+      // Determine if we should route above or below content
+      const routeBelow = fromY < toY + 100; // Route below if starting above target area
+      const verticalDirection = routeBelow ? 1 : -1;
+      
+      // Create multi-segment path that routes around content
+      const segmentY = fromY + (verticalOffset * verticalDirection);
+      
+      pathData = `M ${fromX} ${fromY} 
+                  L ${fromX + 60} ${fromY}
+                  C ${fromX + 100} ${fromY}, ${fromX + 100} ${segmentY}, ${fromX + 60} ${segmentY}
+                  L ${toX - 60} ${segmentY}
+                  C ${toX - 100} ${segmentY}, ${toX - 100} ${toY}, ${toX - 60} ${toY}
+                  L ${toX} ${toY}`;
+    } else {
+      // Standard curved path for normal connections
+      const horizontalDistance = toX - fromX;
+      const verticalDistance = Math.abs(toY - fromY);
+      
+      // Calculate control points to ensure horizontal entry
+      const midPoint = Math.max(80, horizontalDistance * 0.6); // Stronger horizontal preference
+      
+      // First control point: extends horizontally from start point
+      const cp1X = fromX + midPoint;
+      const cp1Y = fromY;
+      
+      // Second control point: positioned to ensure horizontal approach to target
+      const cp2X = toX - Math.max(40, horizontalDistance * 0.2); // Ensure horizontal approach
+      const cp2Y = toY; // Same Y as target for horizontal entry
+      
+      pathData = `M ${fromX} ${fromY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${toX} ${toY}`;
+    }
     
     path.setAttribute('d', pathData);
     
@@ -3022,10 +3075,19 @@ class DecisionTreeBuilder {
       connectionClass += ' recommendation';
     }
     
+    // Special styling for back-to-start connections
+    if (isBackToStart) {
+      connectionClass += ' back-to-start';
+      path.setAttribute('stroke', '#10B981'); // Green color for completion loops
+      path.setAttribute('stroke-width', '3');
+      path.setAttribute('stroke-dasharray', '12,8'); // Distinctive dash pattern
+    } else {
+      path.setAttribute('stroke', '#6B7280');
+      path.setAttribute('stroke-width', '2');
+    }
+    
     path.setAttribute('class', connectionClass);
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', '#6B7280');
-    path.setAttribute('stroke-width', '2');
     
     group.appendChild(path);
     
