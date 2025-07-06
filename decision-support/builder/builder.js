@@ -351,6 +351,7 @@ class DecisionTreeBuilder {
         <h4>${step.title || 'Untitled Step'}</h4>
         <p>${step.question || step.subtitle || 'No description'}</p>
         <span class="step-type-badge ${step.type}">${step.type.replace('-', ' ').toUpperCase()}</span>
+        <small class="step-id">ID: ${step.id}</small>
       `;
 
       stepsList.appendChild(stepItem);
@@ -407,7 +408,8 @@ class DecisionTreeBuilder {
     Object.values(this.currentTree.steps).forEach(step => {
       const option = document.createElement('option');
       option.value = step.id;
-      option.textContent = `${step.title || 'Untitled'} (${step.id})`;
+      const stepTypeText = step.type.replace('-', ' ').toUpperCase();
+      option.textContent = `[${stepTypeText}] ${step.title || 'Untitled'} (${step.id})`;
       select.appendChild(option);
     });
     
@@ -2075,7 +2077,8 @@ class DecisionTreeBuilder {
       if (step.id !== this.currentEditingStep) { // Don't allow self-reference
         const option = document.createElement('option');
         option.value = step.id;
-        option.textContent = `${step.title || 'Untitled'} (${step.id})`;
+        const stepTypeText = step.type.replace('-', ' ').toUpperCase();
+        option.textContent = `[${stepTypeText}] ${step.title || 'Untitled'} (${step.id})`;
         select.appendChild(option);
       }
     });

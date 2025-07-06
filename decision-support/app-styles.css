@@ -499,8 +499,17 @@
 .step-card-builder h4 {
   margin: 0 0 var(--space-2) 0;
   color: var(--color-gray-800);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   padding-left: 0;
+}
+
+.step-id {
+  position: absolute;
+  bottom: var(--space-3);
+  left: var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  font-family: var(--font-family-mono);
 }
 
 .step-type-badge.choice {
@@ -892,7 +901,8 @@
 
 /* Options List */
 .options-section {
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .options-list {
@@ -1205,6 +1215,50 @@
 .markdown-content h5:first-child,
 .markdown-content h6:first-child {
   margin-top: 0;
+}
+
+/* Navigation Dropdown Step Badges */
+.option-step-badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin-right: var(--space-2);
+}
+
+.option-step-badge.choice {
+  background-color: var(--color-info-light);
+  color: #1D4ED8;
+}
+
+.option-step-badge.yes-no {
+  background-color: var(--color-secondary-light);
+  color: #0F766E;
+}
+
+.option-step-badge.endpoint {
+  background-color: var(--color-success-light);
+  color: #065F46;
+}
+
+.option-step-badge.guide {
+  background-color: var(--color-accent-light);
+  color: #92400E;
+}
+
+/* Modal and Form Enhancements */
+.modal-body input,
+.modal-body textarea,
+.modal-body select {
+  font-size: var(--font-size-base) !important;
+}
+
+.modal-body label {
+  font-size: var(--font-size-base) !important;
+  font-weight: var(--font-weight-semibold);
 }
 
 /* ==========================================================================
