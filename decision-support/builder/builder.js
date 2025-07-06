@@ -369,11 +369,11 @@ class DecisionTreeBuilder {
       stepItem.addEventListener('click', () => this.editRecommendationEndpoint(endpoint.id));
       
       // Visual styling for recommendation endpoints
-      stepItem.style.border = '1px solid #10B981';
-      stepItem.style.backgroundColor = '#ECFDF5';
+      stepItem.style.border = '1px solid #FB923C';
+      stepItem.style.backgroundColor = '#FFF7ED';
 
       stepItem.innerHTML = `
-        <h4>✓ ${endpoint.recommendation.modality || 'Recommendation'}</h4>
+        <h4>Recommendation</h4>
         <p>From: ${endpoint.sourceStep} → "${endpoint.optionText}"</p>
         <span class="step-type">recommendation endpoint</span>
       `;
@@ -1427,13 +1427,6 @@ class DecisionTreeBuilder {
       recTitle.textContent = 'Recommendation';
       recCard.appendChild(recTitle);
       
-      const modality = document.createElement('div');
-      modality.innerHTML = `<strong>Modality:</strong> ${rec.modality}`;
-      recCard.appendChild(modality);
-      
-      const contrast = document.createElement('div');
-      contrast.innerHTML = `<strong>Contrast:</strong> ${rec.contrast}`;
-      recCard.appendChild(contrast);
       
       if (rec.notes) {
         const notes = document.createElement('div');

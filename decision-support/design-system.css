@@ -33,9 +33,23 @@
   --color-gray-900: #212529;        /* Primary text */
 
   /* ## Semantic Colors */
-  --color-success: #FB923C;         /* Light orange */
-  --color-success-light: #FED7AA;   
-  --color-success-hover: #F97316;   /* Subtle success hover */
+  --color-success: #10B981;         /* Emerald green */
+  --color-success-light: #D1FAE5;   
+  --color-success-hover: #0EA972;   /* Subtle success hover */
+  
+  /* ## Recommendation-specific colors */
+  --color-recommendation: #FB923C;      /* Light orange */
+  --color-recommendation-light: #FED7AA;
+  --color-recommendation-hover: #F97316;
+  --color-recommendation-text: #9A3412;
+  
+  /* ## Step type specific colors */
+  --color-choice: #3B82F6;              /* Blue for multiple choice */
+  --color-choice-light: #DBEAFE;
+  --color-yesno: #10B981;               /* Green for yes/no */
+  --color-yesno-light: #D1FAE5;
+  --color-endpoint: #FB923C;            /* Orange for recommendations */
+  --color-endpoint-light: #FED7AA;
   --color-warning: #F59E0B;         /* Amber */
   --color-warning-light: #FEF3C7;   
   --color-warning-hover: #E9940A;   /* Subtle warning hover */

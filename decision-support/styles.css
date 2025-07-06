@@ -133,8 +133,8 @@
 }
 
 .status-badge.status-published {
-  background: #fed7aa;
-  color: #F97316;
+  background: #d1fae5;
+  color: #059669;
 }
 
 .pathway-description {
@@ -266,14 +266,14 @@ a.dropdown-item:hover {
 }
 
 .btn.success {
-  background: #F97316;
+  background: #059669;
   color: white;
   border-color: #047857;
 }
 
 .btn.success:hover {
-  background: #EA580C;
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3), 0 2px 4px rgba(249, 115, 22, 0.2);
+  background: #047857;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3), 0 2px 4px rgba(5, 150, 105, 0.2);
 }
 
 .btn.warning {
@@ -529,19 +529,19 @@ a.dropdown-item:hover {
 }
 
 .flow-node.start {
-  fill: #FB923C;
+  fill: #10B981;
 }
 
 .flow-node.choice {
-  fill: #F59E0B;
+  fill: #3B82F6;
 }
 
 .flow-node.yes-no {
-  fill: #EA580C;
+  fill: #10B981;
 }
 
 .flow-node.endpoint {
-  fill: #F59E0B;
+  fill: #FB923C;
 }
 
 .flow-node.protocol-info {
@@ -646,19 +646,19 @@ a.dropdown-item:hover {
 
 /* FINAL Legend Colors - Match flowchart exactly */
 .legend-color.start { 
-  background: #F97316 !important; /* Dark green for start steps */
+  background: #10B981 !important; /* Green for start steps */
 }
 .legend-color.choice { 
-  background: #F59E0B !important; /* Orange for multiple choice */
+  background: #3B82F6 !important; /* Blue for multiple choice */
 }
 .legend-color.yes-no { 
-  background: #EA580C !important; /* Darker orange for yes/no */
+  background: #10B981 !important; /* Green for yes/no */
 }
 .legend-color.guide { 
   background: #4338CA !important; /* Indigo for guide/protocol */
 }
 .legend-color.endpoint { 
-  background: #F59E0B !important; /* Orange for endpoints */
+  background: #FB923C !important; /* Orange for endpoints */
 }
 .legend-color.option { 
   background: #6B7280 !important; /* Grey for option buttons */
@@ -786,7 +786,7 @@ a.dropdown-item:hover {
 }
 
 .toggle-indicator.on {
-  color: #F97316;
+  color: #059669;
 }
 
 /* Callout Helpers */
@@ -840,6 +840,12 @@ a.dropdown-item:hover {
 }
 
 .step-callout-success {
+  background: #ECFDF5;
+  border-left-color: #10B981;
+  color: #047857;
+}
+
+.step-callout-recommendation {
   background: #FFF7ED;
   border-left-color: #FB923C;
   color: #9A3412;
@@ -894,7 +900,7 @@ a.dropdown-item:hover {
   --decision-primary: #3B82F6;     /* Blue primary */
   --decision-primary-dark: #2563EB; /* Blue primary dark */
   --decision-secondary: #6B7280;    /* Gray secondary */
-  --decision-success: #FB923C;      /* Green success */
+  --decision-success: #10B981;      /* Green success */
   --decision-warning: #F59E0B;      /* Orange warning */
   --decision-info: #6366F1;         /* Indigo info */
   --decision-background: #F9FAFB;   /* Light background */
@@ -1311,7 +1317,7 @@ body {
    ========================================================================== */
 .recommendation-card {
   background: linear-gradient(135deg, #FFF7ED, #FEF3C7);
-  border: 1px solid #FB923C;
+  border: 1px solid #10B981;
   border-radius: 12px;
   padding: 2rem;
   margin: 2rem 0;
@@ -1514,7 +1520,7 @@ body {
 }
 
 .protocol-card.success {
-  background: #FFF7ED;
+  background: #ECFDF5;
   border-color: #86EFAC;
 }
 
@@ -2301,22 +2307,24 @@ body {
   transition: all 0.2s ease;
 }
 
-/* Choice step cards */
+/* Choice step cards - Light Blue Theme */
 .step-card-choice {
-  /* Removed blue border-left-color */
+  border-left-color: #3B82F6;
+  background: linear-gradient(135deg, #EBF8FF 0%, #F8FAFC 100%);
 }
 
 .step-card-choice .step-title {
   color: #1E40AF;
 }
 
-/* Yes/No step cards */
+/* Yes/No step cards - Light Green Theme */
 .step-card-yes-no {
-  border-left-color: #FB923C;
+  border-left-color: #10B981;
+  background: linear-gradient(135deg, #ECFDF5 0%, #F8FAFC 100%);
 }
 
 .step-card-yes-no .step-title {
-  color: #EA580C;
+  color: #047857;
 }
 
 /* Guide step cards */
@@ -2329,19 +2337,20 @@ body {
   color: #7C3AED;
 }
 
-/* Endpoint/Recommendation step cards */
+/* Endpoint/Recommendation step cards - Light Orange Theme */
 .step-card-endpoint {
-  border-left-color: #F59E0B;
+  border-left-color: #FB923C;
+  background: linear-gradient(135deg, #FFF7ED 0%, #F8FAFC 100%);
 }
 
 .step-card-endpoint .step-title {
-  color: #92400E;
+  color: #9A3412;
 }
 
 /* Result step cards */
 .step-card-result {
-  border-left-color: #F97316;
-  background: linear-gradient(135deg, #FFF7ED 0%, #FED7AA 100%);
+  border-left-color: #059669;
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
 }
 
 /* ==========================================================================
@@ -2409,15 +2418,15 @@ body {
 }
 
 .step-callout-warning {
-  background: #FFF7ED;
+  background: #ECFDF5;
   border-left-color: #F59E0B;
   color: #D97706;
 }
 
 .step-callout-success {
-  background: #FFF7ED;
-  border-left-color: #FB923C;
-  color: #EA580C;
+  background: #ECFDF5;
+  border-left-color: #10B981;
+  color: #047857;
 }
 
 .step-callout-danger {
@@ -2475,7 +2484,7 @@ body {
 }
 
 .btn-callout[data-callout="warning"]:hover {
-  background: #FFF7ED;
+  background: #ECFDF5;
 }
 
 .btn-callout[data-callout="success"] {
@@ -2484,7 +2493,7 @@ body {
 }
 
 .btn-callout[data-callout="success"]:hover {
-  background: #FFF7ED;
+  background: #ECFDF5;
 }
 
 .btn-callout[data-callout="danger"] {
@@ -2532,8 +2541,8 @@ body {
 }
 
 .mini-step-card-yes-no {
-  border-left: 3px solid #8B5CF6;
-  background: linear-gradient(135deg, #F3E8FF 0%, #F8FAFC 100%);
+  border-left: 3px solid #10B981;
+  background: linear-gradient(135deg, #ECFDF5 0%, #F8FAFC 100%);
 }
 
 .mini-step-card-guide {
@@ -2542,7 +2551,7 @@ body {
 }
 
 .mini-step-card-endpoint {
-  border-left: 3px solid #F59E0B;
+  border-left: 3px solid #FB923C;
   background: linear-gradient(135deg, #FFF7ED 0%, #F8FAFC 100%);
 }
 
@@ -2631,7 +2640,7 @@ body {
 }
 
 .mini-option-item.variant-success {
-  background: rgba(251, 146, 60, 0.1);
+  background: rgba(16, 185, 129, 0.1);
   color: #EA580C;
 }
 
@@ -2650,7 +2659,7 @@ body {
 
 .mini-recommendation-card {
   background: rgba(255, 255, 255, 0.8);
-  border: 1px solid #FB923C;
+  border: 1px solid #10B981;
   border-radius: 6px;
   padding: 0.75rem;
   margin: 0.5rem 0;
@@ -2693,8 +2702,8 @@ body {
 }
 
 .mini-option-card.variant-success {
-  background: rgba(251, 146, 60, 0.1);
-  border-left-color: #FB923C;
+  background: rgba(16, 185, 129, 0.1);
+  border-left-color: #10B981;
 }
 
 .mini-option-card.variant-warning {
@@ -2744,9 +2753,9 @@ body {
 }
 
 .mini-step-callout-success {
-  background: rgba(251, 146, 60, 0.1);
-  border-left-color: #FB923C;
-  color: #EA580C;
+  background: rgba(16, 185, 129, 0.1);
+  border-left-color: #10B981;
+  color: #047857;
 }
 
 .mini-step-callout-danger {
@@ -3154,7 +3163,7 @@ body {
 }
 
 .toggle-indicator.on {
-  color: #F97316;
+  color: #059669;
 }
 
 /* Version 2 - Lines 1900-1907 & 1920-1923 */
