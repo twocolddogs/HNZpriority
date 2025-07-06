@@ -2335,7 +2335,7 @@ body {
 .step-card.step-card-choice {
   border-left-color: #3B82F6;
   background: linear-gradient(135deg, #EBF8FF 0%, #F8FAFC 100%);
-  border-left-width: #4px;
+  border-left-width: 4px;
 }
 
 .step-card.step-card-choice .step-title {
@@ -2345,7 +2345,7 @@ body {
 /* Yes/No step cards - Light Green Theme */
 .step-card.step-card-yes-no {
   border-left-color: #10B981;
-  border-left-width: #4px;
+  border-left-width: 4px;
 }
 
 .step-card.step-card-yes-no .step-title {
@@ -2365,7 +2365,7 @@ body {
 /* Endpoint/Recommendation step cards - Light Orange Theme */
 .step-card.step-card-endpoint {
   border-left-color: #FB923C;
-  border-left-width: #4px;
+  border-left-width: 4px;
 }
 
 .step-card.step-card-endpoint .step-title {
