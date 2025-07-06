@@ -145,8 +145,13 @@ class DecisionTreeBuilder {
     try {
       // Step type change
       console.log('Binding step type events...');
-      document.getElementById('stepType').addEventListener('change', (e) => {
-        this.updateStepTypeUI(e.target.value);
+      // Handle radio button changes for step type
+      document.querySelectorAll('input[name="stepType"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            this.updateStepTypeUI(e.target.value);
+          }
+        });
       });
       console.log('Step type events bound successfully');
     } catch (error) {
@@ -460,7 +465,7 @@ class DecisionTreeBuilder {
     document.getElementById('stepTitle').value = '';
     document.getElementById('stepSubtitle').value = '';
     document.getElementById('stepQuestion').value = '';
-    document.getElementById('stepType').value = 'choice';
+    document.querySelector('input[name="stepType"][value="choice"]').checked = true;
     
     // Clear all sections
     document.getElementById('protocolTitle').value = '';
@@ -492,7 +497,7 @@ class DecisionTreeBuilder {
     document.getElementById('stepTitle').value = `${endpoint.recommendation.modality || 'Recommendation'} Endpoint`;
     document.getElementById('stepSubtitle').value = '';
     document.getElementById('stepQuestion').value = '';
-    document.getElementById('stepType').value = 'endpoint';
+    document.querySelector('input[name="stepType"][value="endpoint"]').checked = true;
     
     // Populate endpoint fields
     document.getElementById('endpointRecommendation').value = endpoint.recommendation.recommendation || '';
@@ -520,7 +525,7 @@ class DecisionTreeBuilder {
     document.getElementById('stepTitle').value = step.title || '';
     document.getElementById('stepSubtitle').value = step.subtitle || '';
     document.getElementById('stepQuestion').value = step.question || '';
-    document.getElementById('stepType').value = step.type;
+    document.querySelector(`input[name="stepType"][value="${step.type}"]`).checked = true;
 
     // Guide info
     if (step.guideInfo) {
@@ -771,7 +776,7 @@ class DecisionTreeBuilder {
     const title = document.getElementById('stepTitle').value;
     const subtitle = document.getElementById('stepSubtitle').value;
     const question = document.getElementById('stepQuestion').value;
-    const type = document.getElementById('stepType').value;
+    const type = document.querySelector('input[name="stepType"]:checked')?.value;
 
     // Handle ID change
     if (newId !== step.id) {
