@@ -637,15 +637,28 @@ class DecisionTreeBuilder {
     const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
     if (!step || step.type !== 'yes-no') return;
     
-    // Always create/reset to exactly two options: Yes and No
-    step.options = [
-      { text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } },
-      { text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } }
-    ];
+    // Only auto-create options for new steps (pendingStep), not when editing existing ones
+    if (this.pendingStep && (!step.options || step.options.length === 0)) {
+      // Auto-create Yes/No options for new yes-no steps
+      step.options = [
+        { text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } },
+        { text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } }
+      ];
+      console.log('Auto-created Yes/No options for new step:', step.id);
+    } else if (!this.pendingStep) {
+      // For existing steps, just ensure we have the minimum structure but don't overwrite
+      if (!step.options || step.options.length === 0) {
+        step.options = [
+          { text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } },
+          { text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } }
+        ];
+        console.log('Added missing Yes/No options for existing step:', step.id);
+      }
+      // If options exist, leave them alone to preserve user's targets and details
+    }
     
-    // Force update the UI
+    // Update the UI with current options
     this.updateOptionsList(step.options);
-    console.log('Created Yes/No options for step:', step.id, step.options);
   }
 
   editYesNoOption(index) {
