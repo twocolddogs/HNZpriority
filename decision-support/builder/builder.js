@@ -3300,62 +3300,60 @@ class DecisionTreeBuilder {
     const legend = document.createElement('div');
     legend.className = 'flowchart-legend';
     legend.innerHTML = `
-      <div class="legend-sections-horizontal">
-        <div class="legend-section">
-          <h4 style="margin: 0 0 8px 0; font-size: 14px;">Step Types</h4>
-          <div class="legend-items-horizontal">
-            <div class="legend-item">
-              <div class="legend-color start"></div>
-              <span>Start Step</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color choice"></div>
-              <span>Multiple Choice</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color yes-no"></div>
-              <span>Yes/No Decision</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color endpoint"></div>
-              <span>Endpoint</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color option"></div>
-              <span>Option Button</span>
-            </div>
+      <div class="legend-horizontal-layout" style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px; justify-content: center; padding: 16px;">
+        <!-- Step Types -->
+        <div class="legend-items-horizontal" style="display: flex; gap: 16px; align-items: center;">
+          <div class="legend-item">
+            <div class="legend-color start"></div>
+            <span>Start</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color choice"></div>
+            <span>Choice</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color yes-no"></div>
+            <span>Yes/No</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color endpoint"></div>
+            <span>Endpoint</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color option"></div>
+            <span>Option</span>
           </div>
         </div>
-        <div class="legend-section">
-          <h4 style="margin: 0 0 8px 0; font-size: 14px;">Line Types</h4>
-          <div class="legend-items-horizontal">
-            <div class="legend-item">
-              <div style="width: 20px; height: 2px; background: transparent; border-top: 2px dashed #9CA3AF;"></div>
-              <span>Options</span>
-            </div>
-            <div class="legend-item">
-              <div style="width: 20px; height: 2px; background: #6B7280;"></div>
-              <span>Next Step</span>
-            </div>
+        
+        <!-- Separator -->
+        <div style="height: 20px; width: 1px; background: #D1D5DB;"></div>
+        
+        <!-- Line Types -->
+        <div class="legend-items-horizontal" style="display: flex; gap: 16px; align-items: center;">
+          <div class="legend-item">
+            <div style="width: 20px; height: 2px; background: transparent; border-top: 2px dashed #9CA3AF;"></div>
+            <span>Options</span>
+          </div>
+          <div class="legend-item">
+            <div style="width: 20px; height: 2px; background: #6B7280;"></div>
+            <span>Flow</span>
           </div>
         </div>
-        <div class="legend-section" style="margin-top: 20px;">
-          <div class="legend-controls" style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button id="resetZoomLegend" style="padding: 4px 8px; font-size: 11px; height: auto; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">Reset Zoom</button>
-            <button id="zoomInLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">+</button>
-            <button id="zoomOutLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">-</button>
-          </div>
+        
+        <!-- Separator -->
+        <div style="height: 20px; width: 1px; background: #D1D5DB;"></div>
+        
+        <!-- Controls -->
+        <div class="legend-controls" style="display: flex; gap: 6px;">
+          <button id="resetZoomLegend" style="padding: 4px 8px; font-size: 11px; height: auto; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">Reset Zoom</button>
+          <button id="zoomInLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">+</button>
+          <button id="zoomOutLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">-</button>
         </div>
       </div>
     `;
     
-    // Insert legend at the beginning of the container (above the SVG)
-    const svgContainer = container.querySelector('.flowchart-svg-container');
-    if (svgContainer) {
-      container.insertBefore(legend, svgContainer);
-    } else {
-      container.insertBefore(legend, container.firstChild);
-    }
+    // Insert legend at the bottom of the container (below the SVG)
+    container.appendChild(legend);
     
     // Bind legend control events
     const resetZoomBtn = legend.querySelector('#resetZoomLegend');

@@ -1414,3 +1414,11 @@
     justify-content: center;
   }
 }
+
+/* Birdseye View Styling */
+#birdseyeView.view {
+  background: none;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+}
