@@ -468,20 +468,6 @@ a.dropdown-item:hover {
    ========================================================================== */
 
 /* Builder Layout */
-.builder-layout {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 2rem;
-  height: calc(100vh - 200px);
-}
-
-.properties-panel {
-  background: #FFFFFF;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
-}
 
 .steps-panel {
   background: #FFFFFF;
@@ -866,23 +852,6 @@ a.dropdown-item:hover {
 }
 
 /* Responsive Design for Builder */
-@media (max-width: 1024px) {
-  .builder-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    height: auto;
-  }
-  
-  .properties-panel {
-    order: 2;
-    height: auto;
-  }
-  
-  .steps-panel {
-    order: 1;
-    height: 400px;
-  }
-}
 
 /* ==========================================================================
    1. Global Styles & Typography Variables
@@ -1934,20 +1903,6 @@ body {
 }
 
 /* Builder Layout */
-.builder-layout {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 2rem;
-  height: calc(100vh - 200px);
-}
-
-.properties-panel {
-  background: #FFFFFF;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
-}
 
 .properties-panel h3 {
   margin: 0 0 1rem 0;
