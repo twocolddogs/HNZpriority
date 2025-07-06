@@ -216,11 +216,6 @@ class DecisionTreeBuilder {
     try {
       // Close modal on overlay click
       console.log('Binding modal overlay events...');
-      document.getElementById('stepModal').addEventListener('click', (e) => {
-        if (e.target.id === 'stepModal') {
-          this.closeModal();
-        }
-      });
       
       document.getElementById('optionModal').addEventListener('click', (e) => {
         if (e.target.id === 'optionModal') {
