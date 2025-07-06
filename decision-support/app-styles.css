@@ -347,8 +347,8 @@
   grid-template-columns: 1fr 2fr;
   gap: var(--space-6);
   padding: var(--space-6);
-  height: calc(100vh - 160px);
-  min-height: 820px;
+  min-height: fit-content;
+  align-items: start;
 }
 
 /* Properties Panel */
@@ -358,8 +358,8 @@
   border-radius: var(--radius-lg);
   padding: var(--space-6);
   box-shadow: var(--shadow-md);
-  overflow-y: auto;
-  max-height: calc(100vh - 180px);
+  height: fit-content;
+  min-height: 400px;
 }
 
 .properties-panel h3 {
@@ -393,9 +393,10 @@
   padding: var(--space-6);
   padding-top: 0 !important;
   box-shadow: var(--shadow-md);
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  height: fit-content;
+  min-height: 400px;
 }
 
 .steps-header {
