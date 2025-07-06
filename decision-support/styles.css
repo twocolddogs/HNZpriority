@@ -192,20 +192,6 @@
   font-size: 0.875rem;
 }
 
-.loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e5e7eb;
-  border-top: 3px solid #3b82f6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* Dropdown link styling */
 .dropdown-item a,
 a.dropdown-item {
@@ -774,15 +760,17 @@ a.dropdown-item:hover {
   background: none;
   border: none;
   text-align: left;
-  font-family: 'Public Sans', sans-serif;
+  font-family: var(--font-body);
   font-size: 0.875rem;
+  font-weight: 500;
   color: #374151;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .dropdown-item:hover {
   background: #F3F4F6;
+  color: #1F2937;
 }
 
 .dropdown-icon {
@@ -1793,10 +1781,6 @@ body {
 /* ==========================================================================
    19. Hamburger Menu Styles
    ========================================================================== */
-.hamburger-menu {
-  position: relative;
-  margin-left: auto;
-}
 
 .hamburger-button {
   display: flex;
@@ -1868,27 +1852,6 @@ body {
   letter-spacing: 0.5px;
 }
 
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: none;
-  background: none;
-  color: #374151;
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
-  gap: 0.75rem;
-}
-
-.dropdown-item:hover {
-  background: #F3F4F6;
-  color: #1F2937;
-}
 
 .dropdown-item.toggle-item {
   justify-content: space-between;
@@ -1899,12 +1862,6 @@ body {
   width: 20px;
   text-align: center;
   flex-shrink: 0;
-}
-
-.dropdown-divider {
-  height: 1px;
-  background: #E5E7EB;
-  margin: 0.5rem 0;
 }
 
 .toggle-indicator {
@@ -3030,4 +2987,238 @@ body {
   .help-section h2 {
     font-size: 1.5rem;
   }
+}
+
+/* ==========================================================================
+   DUPLICATE SELECTOR CONFLICTS SECTION
+   ========================================================================== */
+
+/* WARNING: This section contains both versions of duplicate selectors with conflicting properties.
+   These need to be reviewed and resolved to maintain consistent styling.
+   Choose one version and remove the other. */
+
+/* Conflicting @keyframes spin definitions */
+/* Version 1 - Lines 204-207 */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Version 2 - Line 949 */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Conflicting .loading-spinner definitions */
+/* Version 1 - Lines 195-202 */
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Version 2 - Lines 1043-1052 */
+.loading-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(59, 130, 246, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--decision-primary);
+  animation: spin 0.8s ease-in-out infinite;
+  margin-bottom: 1rem;
+}
+
+/* Conflicting .builder-layout definitions */
+/* Version 1 - Lines 485-490 */
+.builder-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 2rem;
+  height: calc(100vh - 200px);
+}
+
+/* Version 2 - Lines 1980-1985 */
+.builder-layout {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  height: calc(100vh - 200px);
+}
+
+/* Conflicting .properties-panel definitions */
+/* Version 1 - Lines 492-498 */
+.properties-panel {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+/* Version 2 - Lines 1987-1993 */
+.properties-panel {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+/* Conflicting .hamburger-button definitions */
+/* Version 1 - Lines 727-738 */
+.hamburger-button {
+  display: flex;
+  flex-direction: column;
+  width: 30px;
+  height: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  justify-content: space-between;
+}
+
+/* Version 2 - Lines 1801-1815 */
+.hamburger-button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 4px;
+  padding: 8px;
+}
+
+.hamburger-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Conflicting .hamburger-line definitions */
+/* Version 1 - Lines 740-744 */
+.hamburger-line {
+  width: 100%;
+  height: 2px;
+  background: #FFFFFF;
+  transition: all 0.3s ease;
+}
+
+/* Version 2 - Lines 1822-1828 */
+.hamburger-line {
+  width: 20px;
+  height: 2px;
+  background: #FFFFFF;
+  border-radius: 1px;
+  transition: all 0.2s ease;
+}
+
+/* Conflicting .hamburger-dropdown definitions */
+/* Version 1 - Lines 751-761 */
+.hamburger-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  z-index: 1000;
+  margin-top: 0.5rem;
+}
+
+/* Version 2 - Lines 1842-1854 */
+.hamburger-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Conflicting .dropdown-section definitions */
+/* Version 1 - Lines 764-766 */
+.dropdown-section {
+  padding: 0.5rem 0;
+}
+
+/* Version 2 - Lines 1857-1859 */
+.dropdown-section {
+  padding: 0.75rem 0;
+}
+
+.dropdown-section h4 {
+  margin: 0 0 0.5rem 0;
+  padding: 0 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Conflicting .dropdown-icon definitions */
+/* Version 1 - Lines 788-795 */
+.dropdown-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  font-size: 14px;
+}
+
+/* Version 2 - Lines 1893-1897 */
+.dropdown-icon {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Conflicting .toggle-indicator definitions */
+/* Version 1 - Lines 808-812 */
+.toggle-indicator {
+  font-size: 0.75rem;
+  color: #9CA3AF;
+  font-weight: 500;
+}
+
+.toggle-indicator.on {
+  color: #059669;
+}
+
+/* Version 2 - Lines 1900-1907 & 1920-1923 */
+.toggle-indicator {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6B7280;
+  background: #F3F4F6;
+  border-radius: 12px;
+  padding: 0.25rem 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.toggle-indicator.on {
+  background: #10B981;
+  color: #FFFFFF;
 }
