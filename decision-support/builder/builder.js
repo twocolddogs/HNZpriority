@@ -354,9 +354,8 @@ class DecisionTreeBuilder {
       stepItem.innerHTML = `
         ${startBadge}
         <h4>${step.title || 'Untitled Step'}</h4>
-        <p>${step.question || step.subtitle || 'No description'}</p>
+        <p>${step.subtitle || 'No subtitle'}</p>
         <span class="step-type-badge ${step.type}">${step.type.replace('-', ' ').toUpperCase()}</span>
-        <small class="step-id">ID: ${step.id}</small>
       `;
 
       stepsList.appendChild(stepItem);

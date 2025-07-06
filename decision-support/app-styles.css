@@ -347,8 +347,8 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--space-6);
   padding: var(--space-6);
-  height: calc(100vh - 200px);
-  min-height: 600px;
+  height: calc(100vh - 160px);
+  min-height: 700px;
 }
 
 /* Properties Panel */
@@ -440,7 +440,7 @@
 .start-step-badge {
   position: absolute;
   top: var(--space-3);
-  left: calc(var(--space-3) + 60px);
+  left: var(--space-3);
   padding: var(--space-1) var(--space-2);
   background: var(--color-primary);
   color: var(--color-white);
@@ -493,7 +493,7 @@
 }
 
 .step-card-builder.start-step .step-type-badge {
-  right: calc(var(--space-3) + 60px);
+  right: calc(var(--space-3) + 70px);
 }
 
 .step-card-builder h4 {
@@ -501,15 +501,6 @@
   color: var(--color-gray-800);
   font-size: var(--font-size-lg);
   padding-left: 0;
-}
-
-.step-id {
-  position: absolute;
-  bottom: var(--space-3);
-  left: var(--space-3);
-  font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
-  font-family: var(--font-family-mono);
 }
 
 .step-type-badge.choice {
@@ -902,7 +893,7 @@
 /* Options List */
 .options-section {
   margin-top: var(--space-4);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .options-list {
@@ -1275,7 +1266,7 @@
 .radio-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .radio-option {
@@ -1290,86 +1281,63 @@
 
 .radio-label {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 2px solid var(--color-gray-200);
-  border-radius: var(--radius-lg);
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-base);
   cursor: pointer;
   transition: var(--transition-base);
   background: var(--color-white);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .radio-label:hover {
   border-color: var(--color-primary);
-  background: var(--color-primary-light);
 }
 
 .radio-option input[type="radio"]:checked + .radio-label {
   border-color: var(--color-primary);
   background: var(--color-primary-light);
-  box-shadow: var(--shadow-sm);
+  color: var(--color-primary-dark);
 }
 
-.radio-custom {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--color-gray-300);
+.radio-dot {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-gray-400);
   border-radius: 50%;
   position: relative;
   flex-shrink: 0;
-  margin-top: 2px;
   transition: var(--transition-base);
 }
 
-.radio-option input[type="radio"]:checked + .radio-label .radio-custom {
+.radio-option input[type="radio"]:checked + .radio-label .radio-dot {
   border-color: var(--color-primary);
   background: var(--color-primary);
 }
 
-.radio-option input[type="radio"]:checked + .radio-label .radio-custom::after {
+.radio-option input[type="radio"]:checked + .radio-label .radio-dot::after {
   content: '';
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: var(--color-white);
   transform: translate(-50%, -50%);
 }
 
-.radio-text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.radio-text strong {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-800);
-}
-
-.radio-text small {
-  font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
-  font-weight: var(--font-weight-normal);
-}
-
-.radio-option input[type="radio"]:checked + .radio-label .radio-text strong {
-  color: var(--color-primary-dark);
-}
-
-.radio-option input[type="radio"]:checked + .radio-label .radio-text small {
-  color: var(--color-primary);
-}
-
 /* Modal and Form Enhancements */
 .modal-body input,
-.modal-body textarea,
-.modal-body select {
+.modal-body textarea {
   font-size: var(--font-size-base) !important;
+}
+
+.modal-body select {
+  font-size: 15px !important;
 }
 
 .modal-body label {
