@@ -811,9 +811,18 @@ class DecisionTreeBuilder {
 
     // Handle ID change
     if (newId !== step.id) {
-      delete this.currentTree.steps[step.id];
+      const oldId = step.id;
+      
+      // Update all references to the old ID throughout the tree
+      this.updateStepIdReferences(oldId, newId);
+      
+      // Update the step in the steps object
+      delete this.currentTree.steps[oldId];
       this.currentTree.steps[newId] = step;
       step.id = newId;
+      
+      // Update current editing reference
+      this.currentEditingStep = newId;
     }
 
     step.title = title;
@@ -847,6 +856,26 @@ class DecisionTreeBuilder {
     this.updateUI();
     this.updateJSON();
     this.updatePreview();
+  }
+
+  updateStepIdReferences(oldId, newId) {
+    // Update startStep if it matches the old ID
+    if (this.currentTree.startStep === oldId) {
+      this.currentTree.startStep = newId;
+    }
+    
+    // Update all option navigation targets that point to the old ID
+    Object.values(this.currentTree.steps).forEach(step => {
+      if (step.options) {
+        step.options.forEach(option => {
+          if (option.action && option.action.type === 'navigate' && option.action.nextStep === oldId) {
+            option.action.nextStep = newId;
+          }
+        });
+      }
+    });
+    
+    console.log(`Updated all references from step ID "${oldId}" to "${newId}"`);
   }
 
   deleteStep() {
@@ -2807,7 +2836,11 @@ class DecisionTreeBuilder {
     group.appendChild(rect);
     group.appendChild(titleText);
     
-    // Birdseye view is read-only - no click handlers to edit steps
+    // Add click handler to edit step
+    group.addEventListener('click', () => {
+      this.editStep(step.id);
+    });
+    group.style.cursor = 'pointer';
     
     // Add hover handlers for step preview modal
     group.addEventListener('mouseenter', (e) => {
@@ -2855,7 +2888,7 @@ class DecisionTreeBuilder {
     recTitleText.setAttribute('y', '40');
     recTitleText.setAttribute('font-size', '11');
     recTitleText.setAttribute('font-weight', '600');
-    recTitleText.textContent = rec.title || rec.modality || 'Recommendation';
+    recTitleText.textContent = step.title || rec.recommendation || 'Recommendation';
     
     // Action or description
     if (rec.action || rec.description) {
@@ -2864,7 +2897,7 @@ class DecisionTreeBuilder {
       actionText.setAttribute('x', '110');
       actionText.setAttribute('y', '55');
       actionText.setAttribute('font-size', '10');
-      actionText.textContent = rec.action || rec.description || rec.contrast || '';
+      actionText.textContent = rec.action || rec.notes || 'Clinical recommendation';
       group.appendChild(actionText);
     }
     
@@ -2905,6 +2938,12 @@ class DecisionTreeBuilder {
     group.appendChild(titleText);
     group.appendChild(recTitleText);
     group.appendChild(typeText);
+    
+    // Add click handler to edit step
+    group.addEventListener('click', () => {
+      this.editStep(step.id);
+    });
+    group.style.cursor = 'pointer';
     
     // Add hover handlers for recommendation node preview
     group.addEventListener('mouseenter', (e) => {
