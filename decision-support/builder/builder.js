@@ -3300,7 +3300,7 @@ class DecisionTreeBuilder {
     const legend = document.createElement('div');
     legend.className = 'flowchart-legend';
     legend.innerHTML = `
-      <div class="legend-horizontal-layout" style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px; justify-content: center; padding: 16px;">
+      <div class="legend-horizontal-layout" style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px; justify-content: center;">
         <!-- Step Types -->
         <div class="legend-items-horizontal" style="display: flex; gap: 16px; align-items: center;">
           <div class="legend-item">
