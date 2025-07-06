@@ -2376,8 +2376,8 @@ body {
 /* Yes/No step cards - Light Green Theme */
 .step-card-yes-no {
   border-left-color: #10B981;
-  background: linear-gradient(135deg, #ECFDF5 0%, #F8FAFC 100%);
-}
+ /* background: linear-gradient(135deg, #ECFDF5 0%, #F8FAFC 100%); 
+}*/
 
 .step-card-yes-no .step-title {
   color: #047857;
