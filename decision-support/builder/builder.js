@@ -365,7 +365,7 @@ class DecisionTreeBuilder {
     // Show regular steps
     Object.values(this.currentTree.steps).forEach(step => {
       const stepItem = document.createElement('div');
-      stepItem.className = `step-card-builder${step.id === this.currentTree.startStep ? ' start-step' : ''}`;
+      stepItem.className = `step-item step-card-builder${step.id === this.currentTree.startStep ? ' start-step' : ''}`;
       stepItem.addEventListener('click', () => this.editStep(step.id));
 
       const startBadge = step.id === this.currentTree.startStep ? '<span class="start-step-badge">Start</span>' : '';
@@ -375,11 +375,31 @@ class DecisionTreeBuilder {
           ${startBadge}
           <span class="step-type-badge ${step.type}">${step.type.replace('-', ' ').toUpperCase()}</span>
         </div>
-        <h4>${step.title || 'Untitled Step'}</h4>
-        ${step.subtitle ? `<p>${step.subtitle}</p>` : ''}
+        <div class="step-content">
+          <h4>${step.title || 'Untitled Step'}</h4>
+          ${step.subtitle ? `<p>${step.subtitle}</p>` : ''}
+        </div>
+        <div class="step-delete-container">
+          <button class="btn btn-sm btn-danger step-delete-btn" data-step-id="${step.id}">Delete</button>
+        </div>
       `;
 
       stepsList.appendChild(stepItem);
+    });
+
+    // Add event listeners for delete buttons
+    stepsList.querySelectorAll('.step-delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click
+        const stepId = btn.getAttribute('data-step-id');
+        if (confirm(`Are you sure you want to delete the step "${this.currentTree.steps[stepId]?.title || stepId}"?`)) {
+          delete this.currentTree.steps[stepId];
+          this.updateUI();
+          this.updateJSON();
+          this.updatePreview();
+          this.checkForTreeChanges();
+        }
+      });
     });
 
     // Show virtual recommendation endpoints

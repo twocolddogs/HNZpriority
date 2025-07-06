@@ -1986,6 +1986,9 @@ body {
   padding: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .step-item:hover {
@@ -1993,6 +1996,26 @@ body {
   border-color: #CBD5E1;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.step-content {
+  flex: 1;
+  margin-bottom: 1rem;
+}
+
+.step-delete-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+.step-delete-btn {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.step-item:hover .step-delete-btn {
+  opacity: 1;
 }
 
 .step-item h4 {
