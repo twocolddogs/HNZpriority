@@ -2894,18 +2894,18 @@ class DecisionTreeBuilder {
       return this.createRecommendationNode(step, x, y);
     }
     
-    // Determine colors based on step type with better differentiation
-    let fillColor = '#F59E0B'; // default orange for choice
+    // Determine colors based on step type to match step card colors
+    let fillColor = '#3B82F6'; // default blue for choice
     if (step.id === this.currentTree.startStep) {
-      fillColor = '#059669'; // darker green for start step
+      fillColor = '#10B981'; // green for start step
     } else if (step.type === 'endpoint') {
-      fillColor = '#2563EB'; // blue for endpoints
+      fillColor = '#FB923C'; // orange for endpoints
     } else if (step.type === 'yes-no') {
-      fillColor = '#EA580C'; // darker orange for yes/no
+      fillColor = '#10B981'; // green for yes/no
     } else if (step.type === 'guide') {
-      fillColor = '#4338CA'; // indigo for guide/protocol
+      fillColor = '#4338CA'; // indigo for guide
     } else if (step.type === 'choice') {
-      fillColor = '#F59E0B'; // orange for multiple choice
+      fillColor = '#3B82F6'; // blue for multiple choice
     }
     
     // Create larger rectangle for full title display
@@ -3008,7 +3008,7 @@ class DecisionTreeBuilder {
     rect.setAttribute('class', 'flow-node-rect');
     rect.setAttribute('width', '220');
     rect.setAttribute('height', '120');
-    rect.setAttribute('fill', '#2563EB'); // blue for recommendations to match endpoint color
+    rect.setAttribute('fill', '#FB923C'); // orange for recommendations to match endpoint color
     rect.setAttribute('rx', '8');
     rect.setAttribute('ry', '8');
     rect.setAttribute('stroke', '#fff');
