@@ -351,10 +351,12 @@ class DecisionTreeBuilder {
       const startBadge = step.id === this.currentTree.startStep ? '<span class="start-step-badge">Start</span>' : '';
       
       stepItem.innerHTML = `
-        ${startBadge}
+        <div class="step-badges">
+          ${startBadge}
+          <span class="step-type-badge ${step.type}">${step.type.replace('-', ' ').toUpperCase()}</span>
+        </div>
         <h4>${step.title || 'Untitled Step'}</h4>
         ${step.subtitle ? `<p>${step.subtitle}</p>` : ''}
-        <span class="step-type-badge ${step.type}">${step.type.replace('-', ' ').toUpperCase()}</span>
       `;
 
       stepsList.appendChild(stepItem);
