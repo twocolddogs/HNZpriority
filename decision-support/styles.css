@@ -1054,7 +1054,7 @@ body {
   animation: fadeIn 0.5s ease;
 }
 
-.step-card {
+/*.step-card {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -1062,7 +1062,7 @@ body {
   max-width: 800px;
   margin: 0 auto;
   border: 1px solid #E5E7EB;
-}
+}*/
 
 .step-title {
   font-family: var(--font-display);
@@ -2331,7 +2331,7 @@ body {
    ========================================================================== */
 
 /* Base step card styling */
-.step-card {
+/*.step-card {
   background: #FFFFFF;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
@@ -2339,7 +2339,7 @@ body {
   margin-bottom: 1.5rem;
   border-left: 4px solid #E5E7EB;
   transition: all 0.2s ease;
-}
+}*/
 
 /* Choice step cards - Light Blue Theme */
 .step-card-choice {
