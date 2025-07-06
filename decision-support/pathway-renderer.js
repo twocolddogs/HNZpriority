@@ -142,7 +142,18 @@ class DecisionTreeRenderer {
 
   createButton(option, step) {
     const button = document.createElement('button');
-    button.className = `decision-button ${option.variant || 'primary'}`;
+    
+    // Map yes/no button variants for better styling
+    let variant = option.variant || 'primary';
+    if (step.type === 'yes-no') {
+      if (option.text.toLowerCase() === 'yes' || variant === 'success') {
+        variant = 'yes';
+      } else if (option.text.toLowerCase() === 'no' || variant === 'secondary') {
+        variant = 'no';
+      }
+    }
+    
+    button.className = `decision-button ${variant}`;
     button.textContent = option.text;
     
     button.addEventListener('click', () => {
