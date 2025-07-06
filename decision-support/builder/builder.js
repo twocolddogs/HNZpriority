@@ -701,16 +701,23 @@ class DecisionTreeBuilder {
     const optionsList = document.getElementById('optionsList');
     optionsList.innerHTML = '';
 
+    // Get the current step to check its type
+    const currentStep = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
+    const isYesNoStep = currentStep && currentStep.type === 'yes-no';
+
     options.forEach((option, index) => {
       const optionItem = document.createElement('div');
       optionItem.className = 'option-item';
       
       let actionText = '';
       if (option.action.type === 'navigate') {
-        actionText = `󰁔 ${option.action.nextStep}`;
+        actionText = `→ ${option.action.nextStep}`;
       } else if (option.action.type === 'recommend') {
-        actionText = `󰯯 ${option.action.recommendation.recommendation || 'Recommendation'}`;
+        actionText = `⚡ ${option.action.recommendation.recommendation || 'Recommendation'}`;
       }
+
+      // For yes-no steps, hide the remove button to prevent deletion of Yes/No options
+      const removeButtonHtml = isYesNoStep ? '' : `<button class="btn danger small" onclick="builder.removeOptionAtIndex(${index})">Remove</button>`;
 
       optionItem.innerHTML = `
         <div class="option-content">
@@ -719,7 +726,7 @@ class DecisionTreeBuilder {
         </div>
         <div class="option-controls">
           <button class="btn secondary small" onclick="builder.editOptionAtIndex(${index})">Edit</button>
-          <button class="btn danger small" onclick="builder.removeOptionAtIndex(${index})">Remove</button>
+          ${removeButtonHtml}
         </div>
       `;
       
@@ -2110,6 +2117,13 @@ class DecisionTreeBuilder {
     if (!this.currentEditingStep) return;
     
     const step = this.currentTree.steps[this.currentEditingStep];
+    
+    // Prevent removal of options from yes-no steps
+    if (step.type === 'yes-no') {
+      alert('Cannot remove options from Yes/No steps. Yes and No options are required.');
+      return;
+    }
+    
     step.options.splice(index, 1);
     this.updateOptionsList(step.options);
     this.updateJSON();
