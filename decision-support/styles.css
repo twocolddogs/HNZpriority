@@ -1340,7 +1340,6 @@ body {
    ========================================================================== */
 .recommendation-card {
   background: linear-gradient(135deg, #FFF7ED, #FEF3C7);
-  border: 1px solid #10B981;
   border-radius: 12px;
   padding: 2rem;
   margin: 2rem 0;
