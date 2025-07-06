@@ -76,6 +76,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 1rem;
+  padding-bottom: 3rem; /* Extra space for bottom-right delete button */
   margin-bottom: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s;
@@ -91,10 +92,10 @@
 }
 
 .pathway-delete-container {
-  display: flex;
-  align-items: flex-start;
-  margin-left: 1rem;
-  flex-shrink: 0;
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 2;
 }
 
 .pathway-main {
@@ -1986,9 +1987,6 @@ body {
   padding: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  position: relative;
-  display: flex;
-  flex-direction: column;
 }
 
 .step-item:hover {
@@ -1996,26 +1994,6 @@ body {
   border-color: #CBD5E1;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.step-content {
-  flex: 1;
-  margin-bottom: 1rem;
-}
-
-.step-delete-container {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: auto;
-}
-
-.step-delete-btn {
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.step-item:hover .step-delete-btn {
-  opacity: 1;
 }
 
 .step-item h4 {
