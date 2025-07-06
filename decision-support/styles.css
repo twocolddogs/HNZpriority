@@ -505,12 +505,7 @@ a.dropdown-item:hover {
   overflow-y: auto;
 }
 
-.steps-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
+
 
 .steps-header h3 {
   margin: 0;
@@ -2025,12 +2020,7 @@ body {
   overflow-y: auto;
 }
 
-.steps-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
+
 
 .steps-header h3 {
   margin: 0;
