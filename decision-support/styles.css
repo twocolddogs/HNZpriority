@@ -2342,47 +2342,47 @@ body {
 }*/
 
 /* Choice step cards - Light Blue Theme */
-.step-card-choice {
+.step-card.step-card-choice {
   border-left-color: #3B82F6;
   background: linear-gradient(135deg, #EBF8FF 0%, #F8FAFC 100%);
 }
 
-.step-card-choice .step-title {
+.step-card.step-card-choice .step-title {
   color: #1E40AF;
 }
 
 /* Yes/No step cards - Light Green Theme */
-.step-card-yes-no {
+.step-card.step-card-yes-no {
   border-left-color: #10B981;
- /* background: linear-gradient(135deg, #ECFDF5 0%, #F8FAFC 100%); 
-}*/
+  background: linear-gradient(135deg, #ECFDF5 0%, #F8FAFC 100%);
+}
 
-.step-card-yes-no .step-title {
+.step-card.step-card-yes-no .step-title {
   color: #047857;
 }
 
 /* Guide step cards */
-.step-card-guide {
+.step-card.step-card-guide {
   border-left-color: #8B5CF6;
   background: linear-gradient(135deg, #FAFCFF 0%, #F3F4F6 100%);
 }
 
-.step-card-guide .step-title {
+.step-card.step-card-guide .step-title {
   color: #7C3AED;
 }
 
 /* Endpoint/Recommendation step cards - Light Orange Theme */
-.step-card-endpoint {
+.step-card.step-card-endpoint {
   border-left-color: #FB923C;
   background: linear-gradient(135deg, #FFF7ED 0%, #F8FAFC 100%);
 }
 
-.step-card-endpoint .step-title {
+.step-card.step-card-endpoint .step-title {
   color: #9A3412;
 }
 
 /* Result step cards */
-.step-card-result {
+.step-card.step-card-result {
   border-left-color: #059669;
   background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
 }
@@ -2569,22 +2569,22 @@ body {
   line-height: 1.4;
 }
 
-.mini-step-card-choice {
+.mini-step-card.mini-step-card-choice {
   border-left: 3px solid #3B82F6;
   background: linear-gradient(135deg, #EBF8FF 0%, #F8FAFC 100%);
 }
 
-.mini-step-card-yes-no {
+.mini-step-card.mini-step-card-yes-no {
   border-left: 3px solid #10B981;
   background: linear-gradient(135deg, #ECFDF5 0%, #F8FAFC 100%);
 }
 
-.mini-step-card-guide {
+.mini-step-card.mini-step-card-guide {
   border-left: 3px solid #6366F1;
   background: linear-gradient(135deg, #EEF2FF 0%, #F8FAFC 100%);
 }
 
-.mini-step-card-endpoint {
+.mini-step-card.mini-step-card-endpoint {
   border-left: 3px solid #FB923C;
   background: linear-gradient(135deg, #FFF7ED 0%, #F8FAFC 100%);
 }
