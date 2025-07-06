@@ -532,7 +532,10 @@
                 </div>
                 <div class="form-group">
                     <label for="stepQuestion" id="stepQuestionLabel">Description</label>
-                    <textarea id="stepQuestion" placeholder="Describe this step. You can use callouts like [info]Important note[/info] or [warning]Be careful[/warning]" rows="3"></textarea>
+                    <textarea id="stepQuestion" placeholder="Describe this step. Use **bold**, *italic*, `code`, • bullet points. Callouts: [info]Note[/info] [warning]Alert[/warning]" rows="3"></textarea>
+                    <div class="markdown-helpers">
+                        <small class="text-muted">Markdown: **bold** *italic* `code` • lists | Callouts: [info] [warning] [success] [danger] [protocol]</small>
+                    </div>
                     <div class="callout-helpers">
                         <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
                         <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
@@ -583,7 +586,10 @@
                     <h4>Recommendation Details</h4>
                     <div class="form-group">
                         <label for="endpointRecommendation">Recommendation Summary</label>
-                        <textarea id="endpointRecommendation" placeholder="Provide specific, actionable clinical recommendation. You can use callouts like [info]Important note[/info]" rows="3"></textarea>
+                        <textarea id="endpointRecommendation" placeholder="Provide specific, actionable clinical recommendation. Use **bold** for key terms, • for lists." rows="3"></textarea>
+                        <div class="markdown-helpers">
+                            <small class="text-muted">Markdown: **bold** *italic* `code` • lists | Callouts: [info] [warning] [success] [protocol]</small>
+                        </div>
                         <div class="callout-helpers">
                             <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
                             <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
@@ -595,7 +601,10 @@
                     </div>
                     <div class="form-group">
                         <label for="endpointNotes">Additional Notes (optional)</label>
-                        <textarea id="endpointNotes" placeholder="Additional context or instructions. You can use callouts like [warning]Be careful[/warning]" rows="2"></textarea>
+                        <textarea id="endpointNotes" placeholder="Additional context or instructions. Use **bold** for emphasis, • for lists." rows="2"></textarea>
+                        <div class="markdown-helpers">
+                            <small class="text-muted">Markdown: **bold** *italic* • lists | Callouts: [info] [warning] [success]</small>
+                        </div>
                         <div class="callout-helpers">
                             <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
                             <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
@@ -695,11 +704,17 @@
                     <div id="recommendationDetails" class="form-subsection">
                         <div class="form-group">
                             <label for="recRecommendation">Recommendation Summary</label>
-                            <textarea id="recRecommendation" placeholder="Provide specific, actionable clinical recommendation" rows="3"></textarea>
+                            <textarea id="recRecommendation" placeholder="Provide specific, actionable clinical recommendation. Use **bold** for key terms, • for lists." rows="3"></textarea>
+                            <div class="markdown-helpers">
+                                <small class="text-muted">Markdown: **bold** *italic* `code` • lists | Callouts: [info] [warning] [success] [protocol]</small>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="recNotes">Additional Notes (optional)</label>
-                            <textarea id="recNotes" placeholder="Additional context or instructions" rows="2"></textarea>
+                            <textarea id="recNotes" placeholder="Additional context or instructions. Use **bold** for emphasis, • for lists." rows="2"></textarea>
+                            <div class="markdown-helpers">
+                                <small class="text-muted">Markdown: **bold** *italic* • lists | Callouts: [info] [warning] [success]</small>
+                            </div>
                         </div>
                     </div>
                     <div id="newEndpointSection" class="form-subsection hidden">
@@ -775,7 +790,10 @@
                 </div>
                 <div class="form-group">
                     <label for="sectionContent">Content</label>
-                    <textarea id="sectionContent" placeholder="Section content. Use bullet points with • or - for lists. You can use callouts like [info]Important note[/info]" rows="6"></textarea>
+                    <textarea id="sectionContent" placeholder="Section content. Use **bold**, *italic*, • bullet points, numbered lists 1. 2. 3." rows="6"></textarea>
+                    <div class="markdown-helpers">
+                        <small class="text-muted">Markdown: **bold** *italic* `code` • bullets 1. numbers | Callouts: [info] [warning] [success] [protocol]</small>
+                    </div>
                     <div class="callout-helpers">
                         <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
                         <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>

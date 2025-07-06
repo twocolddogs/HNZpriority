@@ -135,7 +135,7 @@ class DecisionTreeRenderer {
     // Description (with callout parsing)
     if (step.question) {
       const description = document.createElement('div');
-      description.className = 'step-description';
+      description.className = 'step-description markdown-content';
       description.innerHTML = this.parseCallouts(step.question);
       stepCard.appendChild(description);
     }
@@ -257,7 +257,7 @@ class DecisionTreeRenderer {
     // Main recommendation text
     if (rec.recommendation) {
       const recommendationDetail = document.createElement('div');
-      recommendationDetail.className = 'recommendation-detail recommendation-main';
+      recommendationDetail.className = 'recommendation-detail recommendation-main markdown-content';
       recommendationDetail.innerHTML = this.parseCallouts(rec.recommendation);
       details.appendChild(recommendationDetail);
     }
@@ -265,7 +265,7 @@ class DecisionTreeRenderer {
     // Additional notes
     if (rec.notes) {
       const notesDetail = document.createElement('div');
-      notesDetail.className = 'recommendation-detail recommendation-notes';
+      notesDetail.className = 'recommendation-detail recommendation-notes markdown-content';
       notesDetail.innerHTML = '<strong>Additional Notes:</strong><br>' + this.parseCallouts(rec.notes);
       details.appendChild(notesDetail);
     }
@@ -421,12 +421,93 @@ class DecisionTreeRenderer {
   parseCallouts(text) {
     if (!text) return '';
     
+    // First parse markdown, then callouts
+    let processedText = this.parseMarkdown(text);
+    
     // Parse callout syntax: [type]content[/type]
     const calloutRegex = /\[(protocol|guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
     
-    return text.replace(calloutRegex, (match, type, content) => {
-      return `<div class="step-callout step-callout-${type}">${content.trim()}</div>`;
+    return processedText.replace(calloutRegex, (match, type, content) => {
+      return `<div class="step-callout step-callout-${type}">${this.parseMarkdown(content.trim())}</div>`;
     });
+  }
+
+  parseMarkdown(text) {
+    if (!text) return '';
+    
+    // Simple markdown parsing for common elements
+    let result = text;
+    
+    // Bold: **text** or __text__
+    result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    result = result.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    
+    // Italic: *text* or _text_
+    result = result.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    result = result.replace(/_(.*?)_/g, '<em>$1</em>');
+    
+    // Inline code: `text`
+    result = result.replace(/`(.*?)`/g, '<code>$1</code>');
+    
+    // Line breaks
+    result = result.replace(/\n/g, '<br>');
+    
+    // Lists - handle bullet points
+    const lines = result.split('<br>');
+    let inList = false;
+    let listItems = [];
+    let processedLines = [];
+    
+    for (let line of lines) {
+      const trimmed = line.trim();
+      
+      // Check for bullet point (•, *, -, or number.)
+      if (trimmed.match(/^[•*-]\s/) || trimmed.match(/^\d+\.\s/)) {
+        const isNumbered = trimmed.match(/^\d+\.\s/);
+        const content = trimmed.replace(/^[•*-]\s/, '').replace(/^\d+\.\s/, '');
+        
+        if (!inList) {
+          inList = true;
+          listItems = [];
+        }
+        
+        listItems.push({
+          content: content,
+          isNumbered: isNumbered
+        });
+      } else if (inList && trimmed === '') {
+        // Empty line continues the list
+        continue;
+      } else {
+        // End of list or non-list line
+        if (inList) {
+          const isNumbered = listItems.length > 0 && listItems[0].isNumbered;
+          const tag = isNumbered ? 'ol' : 'ul';
+          const listHtml = `<${tag}>` + 
+            listItems.map(item => `<li>${item.content}</li>`).join('') + 
+            `</${tag}>`;
+          processedLines.push(listHtml);
+          inList = false;
+          listItems = [];
+        }
+        
+        if (trimmed !== '') {
+          processedLines.push(line);
+        }
+      }
+    }
+    
+    // Handle any remaining list
+    if (inList) {
+      const isNumbered = listItems.length > 0 && listItems[0].isNumbered;
+      const tag = isNumbered ? 'ol' : 'ul';
+      const listHtml = `<${tag}>` + 
+        listItems.map(item => `<li>${item.content}</li>`).join('') + 
+        `</${tag}>`;
+      processedLines.push(listHtml);
+    }
+    
+    return processedLines.join('<br>');
   }
 
   hideProtocolModal() {
