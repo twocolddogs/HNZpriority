@@ -650,11 +650,14 @@ a.dropdown-item:hover {
 /* Legend */
 .flowchart-legend {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
   background: #FFFFFF;
-  border-top: 1px solid #E5E7EB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   font-size: 0.875rem;
   z-index: 100;
   pointer-events: auto;
