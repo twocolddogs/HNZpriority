@@ -195,7 +195,10 @@ const PathwayManager = {
             ? `<button class="btn btn-sm btn-success pathway-publish" data-filename="${pathway.filename}">Publish</button>`
             : `<button class="btn btn-sm btn-warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
           }
-          <button class="btn btn-sm btn-danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
+          ${pathway.status === 'draft' 
+            ? `<button class="btn btn-sm btn-danger pathway-delete" data-filename="${pathway.filename}">Delete</button>`
+            : ''
+          }
         </div>
       </div>
     `;
@@ -339,9 +342,11 @@ const PathwayManager = {
         if (pathway) {
           pathway.status = 'published';
           await this.updateManifest();
-          this.renderPathwaysList();
+          this.filterPathways(); // Apply current filter and re-render
         }
       }
+      
+      console.log('Pathway published successfully, list refreshed');
     } catch (error) {
       console.error('Error publishing pathway:', error);
       alert(`Error publishing pathway: ${error.message}`);
@@ -365,9 +370,11 @@ const PathwayManager = {
         if (pathway) {
           pathway.status = 'draft';
           await this.updateManifest();
-          this.renderPathwaysList();
+          this.filterPathways(); // Apply current filter and re-render
         }
       }
+      
+      console.log('Pathway unpublished successfully, list refreshed');
     } catch (error) {
       console.error('Error unpublishing pathway:', error);
       alert(`Error unpublishing pathway: ${error.message}`);
