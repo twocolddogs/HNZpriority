@@ -1552,11 +1552,14 @@ class DecisionTreeBuilder {
       const recCard = document.createElement('div');
       recCard.className = 'mini-recommendation-card';
       
-      const recTitle = document.createElement('h5');
-      recTitle.textContent = 'Recommendation';
-      recCard.appendChild(recTitle);
+      // Show main recommendation content
+      if (rec.recommendation) {
+        const recContent = document.createElement('div');
+        recContent.textContent = rec.recommendation;
+        recCard.appendChild(recContent);
+      }
       
-      
+      // Show notes if present
       if (rec.notes) {
         const notes = document.createElement('div');
         notes.innerHTML = `<strong>Notes:</strong> ${rec.notes}`;
