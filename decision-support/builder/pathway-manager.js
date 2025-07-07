@@ -56,6 +56,9 @@ const PathwayManager = {
       // Clear loading state and hide spinner
       this.isLoading = false;
       this.hideLoadingState();
+      
+      // Render pathways now that loading is complete
+      this.renderPathwaysList();
     }
   },
 
