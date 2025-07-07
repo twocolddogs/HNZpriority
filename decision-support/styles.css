@@ -663,6 +663,7 @@ a.dropdown-item:hover {
   font-size: 0.875rem;
   z-index: 100;
   pointer-events: auto;
+  width: 90%;
 }
 
 .legend-item {
