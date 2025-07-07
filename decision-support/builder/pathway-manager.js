@@ -332,15 +332,23 @@ const PathwayManager = {
       // Extract pathway ID from filename
       const pathwayId = filename.replace('.json', '').replace('_draft', '').replace('_published', '');
       
+      // Show loading state
+      this.isLoading = true;
+      this.showLoadingState();
+      
       // Try API first
       if (await window.pathwayAPI.isAPIAvailable()) {
         console.log('Publishing pathway via API:', pathwayId);
-        await window.pathwayAPI.publishPathway(pathwayId);
-        console.log('API publish complete, waiting and reloading pathways...');
+        const result = await window.pathwayAPI.publishPathway(pathwayId);
+        console.log('API publish response:', result);
         
-        // Wait for API to fully process the change (workaround for API race condition)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await this.loadPathways(); // Reload fresh data - this handles rendering internally
+        // Wait for successful response before reloading
+        if (result) {
+          console.log('Publish confirmed, reloading pathways...');
+          await this.loadPathways(); // Reload fresh data - this handles rendering internally
+        } else {
+          throw new Error('API did not confirm successful publish');
+        }
       } else {
         console.log('Publishing pathway via file system:', filename);
         // Fallback to file-based system
@@ -356,6 +364,10 @@ const PathwayManager = {
     } catch (error) {
       console.error('Error publishing pathway:', error);
       alert(`Error publishing pathway: ${error.message}`);
+    } finally {
+      // Hide loading state
+      this.isLoading = false;
+      this.hideLoadingState();
     }
   },
 
@@ -366,15 +378,23 @@ const PathwayManager = {
       // Extract pathway ID from filename
       const pathwayId = filename.replace('.json', '').replace('_draft', '').replace('_published', '');
       
+      // Show loading state
+      this.isLoading = true;
+      this.showLoadingState();
+      
       // Try API first
       if (await window.pathwayAPI.isAPIAvailable()) {
         console.log('Unpublishing pathway via API:', pathwayId);
-        await window.pathwayAPI.unpublishPathway(pathwayId);
-        console.log('API unpublish complete, waiting and reloading pathways...');
+        const result = await window.pathwayAPI.unpublishPathway(pathwayId);
+        console.log('API unpublish response:', result);
         
-        // Wait for API to fully process the change (workaround for API race condition)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await this.loadPathways(); // Reload fresh data - this handles rendering internally
+        // Wait for successful response before reloading
+        if (result) {
+          console.log('Unpublish confirmed, reloading pathways...');
+          await this.loadPathways(); // Reload fresh data - this handles rendering internally
+        } else {
+          throw new Error('API did not confirm successful unpublish');
+        }
       } else {
         console.log('Unpublishing pathway via file system:', filename);
         // Fallback to file-based system
@@ -390,6 +410,10 @@ const PathwayManager = {
     } catch (error) {
       console.error('Error unpublishing pathway:', error);
       alert(`Error unpublishing pathway: ${error.message}`);
+    } finally {
+      // Hide loading state
+      this.isLoading = false;
+      this.hideLoadingState();
     }
   },
 
