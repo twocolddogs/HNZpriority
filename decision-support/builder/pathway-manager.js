@@ -137,6 +137,13 @@ const PathwayManager = {
     container.innerHTML = html;
 
     // Bind action buttons
+    container.querySelectorAll('.pathway-edit').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click
+        this.editPathway(e.target.dataset.filename);
+      });
+    });
+    
     container.querySelectorAll('.pathway-delete').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation(); // Prevent card click
@@ -192,6 +199,10 @@ const PathwayManager = {
         </div>
         <div class="pathway-actions-container">
           ${pathway.status === 'draft' 
+            ? `<button class="btn btn-sm btn-primary pathway-edit" data-filename="${pathway.filename}">Edit</button>`
+            : ''
+          }
+          ${pathway.status === 'draft' 
             ? `<button class="btn btn-sm btn-success pathway-publish" data-filename="${pathway.filename}">Publish</button>`
             : `<button class="btn btn-sm btn-warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
           }
@@ -205,18 +216,14 @@ const PathwayManager = {
   },
 
   async createPathway() {
-    const id = prompt('Enter pathway ID:');
-    if (!id) return;
+    // Generate a unique ID with timestamp
+    const timestamp = Date.now();
+    const id = `pathway-${timestamp}`;
     
-    const title = prompt('Enter pathway title:');
-    if (!title) return;
-
-    const description = prompt('Enter pathway description:') || '';
-
     const newPathway = {
       id,
-      title,
-      description,
+      title: 'New Pathway',
+      description: 'Enter your pathway description here',
       startStep: '',
       guides: [],
       steps: {}
