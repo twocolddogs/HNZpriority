@@ -338,15 +338,9 @@ const PathwayManager = {
         await window.pathwayAPI.publishPathway(pathwayId);
         console.log('API publish complete, waiting and reloading pathways...');
         
-        // Wait a moment for API to update, then reload fresh data
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await this.loadPathways(); // Reload to get updated data
-        
-        // Force render after loading
-        setTimeout(() => {
-          console.log('Forcing render after API reload');
-          this.filterPathways();
-        }, 100);
+        // Wait for API to fully process the change (workaround for API race condition)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await this.loadPathways(); // Reload fresh data - this handles rendering internally
       } else {
         console.log('Publishing pathway via file system:', filename);
         // Fallback to file-based system
@@ -378,15 +372,9 @@ const PathwayManager = {
         await window.pathwayAPI.unpublishPathway(pathwayId);
         console.log('API unpublish complete, waiting and reloading pathways...');
         
-        // Wait a moment for API to update, then reload fresh data
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await this.loadPathways(); // Reload to get updated data
-        
-        // Force render after loading
-        setTimeout(() => {
-          console.log('Forcing render after API reload');
-          this.filterPathways();
-        }, 100);
+        // Wait for API to fully process the change (workaround for API race condition)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await this.loadPathways(); // Reload fresh data - this handles rendering internally
       } else {
         console.log('Unpublishing pathway via file system:', filename);
         // Fallback to file-based system
