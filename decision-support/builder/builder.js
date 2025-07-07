@@ -609,8 +609,8 @@ class DecisionTreeBuilder {
       },
       'endpoint': {
         guidance: '<h5>Clinical Recommendation</h5><p>Final step that provides specific, actionable clinical recommendations. This ends the decision pathway with clear guidance for healthcare professionals.</p>',
-        questionLabel: 'Clinical Question',
-        questionPlaceholder: 'Describe the clinical scenario or question that leads to this recommendation. You can use callouts like [info]Important note[/info]'
+        questionLabel: 'Details (optional)',
+        questionPlaceholder: 'You can add text here to provide more detail if required. You can use callouts like [info]Important note[/info]'
       }
     };
 
@@ -1526,25 +1526,7 @@ class DecisionTreeBuilder {
       card.appendChild(guideInfo);
     }
     
-    // Options (if exists)
-    if (step.options && step.options.length > 0) {
-      const optionsTitle = document.createElement('h5');
-      optionsTitle.className = 'mini-options-title';
-      optionsTitle.textContent = 'Options:';
-      card.appendChild(optionsTitle);
-      
-      const optionsList = document.createElement('ul');
-      optionsList.className = 'mini-options-list';
-      
-      step.options.forEach(option => {
-        const optionItem = document.createElement('li');
-        optionItem.className = `mini-option-item variant-${option.variant || 'primary'}`;
-        optionItem.textContent = option.text;
-        optionsList.appendChild(optionItem);
-      });
-      
-      card.appendChild(optionsList);
-    }
+    // Options - removed from mini cards display
     
     // Recommendation (if endpoint)
     if (step.type === 'endpoint' && step.recommendation) {
@@ -1599,7 +1581,8 @@ class DecisionTreeBuilder {
     if (!text) return '';
     
     // Parse callout syntax: [type]content[/type]
-    const calloutRegex = /\[(guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
+    // Using [\s\S] instead of . to match newlines
+    const calloutRegex = /\[(guide|info|warning|success|danger)\]([\s\S]*?)\[\/\1\]/g;
     
     return text.replace(calloutRegex, (match, type, content) => {
       return `<div class="mini-step-callout mini-step-callout-${type}">${content.trim()}</div>`;
