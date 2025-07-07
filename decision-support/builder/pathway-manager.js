@@ -121,11 +121,25 @@ const PathwayManager = {
       });
     });
     
+    container.querySelectorAll('.pathway-publish').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click
+        this.publishPathway(e.target.dataset.filename);
+      });
+    });
+    
+    container.querySelectorAll('.pathway-unpublish').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click
+        this.unpublishPathway(e.target.dataset.filename);
+      });
+    });
+    
     // Make entire card clickable to edit pathway
     container.querySelectorAll('.pathway-item-clickable').forEach(card => {
       card.addEventListener('click', (e) => {
-        // Don't trigger if delete button was clicked
-        if (e.target.closest('.pathway-delete')) return;
+        // Don't trigger if any action button was clicked
+        if (e.target.closest('.pathway-actions-container')) return;
         this.editPathway(card.dataset.filename);
       });
       card.style.cursor = 'pointer';
@@ -146,7 +160,11 @@ const PathwayManager = {
             <span class="pathway-modified">${this.formatDate(pathway.lastModified)}</span>
           </div>
         </div>
-        <div class="pathway-delete-container">
+        <div class="pathway-actions-container">
+          ${pathway.status === 'draft' 
+            ? `<button class="btn btn-sm btn-success pathway-publish" data-filename="${pathway.filename}">Publish</button>`
+            : `<button class="btn btn-sm btn-warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
+          }
           <button class="btn btn-sm btn-danger pathway-delete" data-filename="${pathway.filename}">Delete</button>
         </div>
       </div>
