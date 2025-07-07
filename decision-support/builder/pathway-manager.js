@@ -32,7 +32,7 @@ const PathwayManager = {
       } else {
         // Fallback to file-based system
         console.log('Falling back to file-based system');
-        const response = await fetch('../pathways/manifest.json');
+        const response = await fetch(`../pathways/manifest.json?_=${Date.now()}`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -238,8 +238,13 @@ const PathwayManager = {
     }
     
     this.showView('builder');
-    // Reset save draft state for new pathway
-    this.captureInitialTreeState();
+    
+    // Need to update UI after view is shown
+    setTimeout(() => {
+      this.updateUI(); // Update the builder UI with new pathway data
+      this.updateTreeProperties(); // Ensure form fields are populated
+      this.captureInitialTreeState(); // Reset save draft state for new pathway
+    }, 100);
   },
 
   async editPathway(filename) {
@@ -256,7 +261,7 @@ const PathwayManager = {
         pathway = await window.pathwayAPI.getPathway(pathwayId);
       } else {
         // Fallback to file-based system
-        const response = await fetch(`../pathways/${filename}`);
+        const response = await fetch(`../pathways/${filename}?_=${Date.now()}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -300,7 +305,7 @@ const PathwayManager = {
         pathway = await window.pathwayAPI.getPathway(pathwayId);
       } else {
         // Fallback to file-based system
-        const response = await fetch(`../pathways/${filename}`);
+        const response = await fetch(`../pathways/${filename}?_=${Date.now()}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
