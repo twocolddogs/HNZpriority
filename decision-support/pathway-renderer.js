@@ -73,7 +73,7 @@ class DecisionTreeRenderer {
       // Title
       const title = document.createElement('h2');
       title.className = 'step-title';
-      title.textContent = 'Imaging Recommendation';
+      title.textContent = step.title || 'Clinical Recommendation';
       stepCard.appendChild(title);
       
       // Render recommendation card
@@ -111,7 +111,7 @@ class DecisionTreeRenderer {
     // Description (with callout parsing)
     if (step.question) {
       const description = document.createElement('div');
-      description.className = 'step-description';
+      description.className = 'step-description markdown-content';
       description.innerHTML = this.parseCallouts(step.question);
       stepCard.appendChild(description);
     }
@@ -142,7 +142,18 @@ class DecisionTreeRenderer {
 
   createButton(option, step) {
     const button = document.createElement('button');
-    button.className = `decision-button ${option.variant || 'primary'}`;
+    
+    // Map yes/no button variants for better styling
+    let variant = option.variant || 'primary';
+    if (step.type === 'yes-no') {
+      if (option.text.toLowerCase() === 'yes' || variant === 'success') {
+        variant = 'yes';
+      } else if (option.text.toLowerCase() === 'no' || variant === 'secondary') {
+        variant = 'no';
+      }
+    }
+    
+    button.className = `decision-button ${variant}`;
     button.textContent = option.text;
     
     button.addEventListener('click', () => {
@@ -195,10 +206,6 @@ class DecisionTreeRenderer {
     const stepCard = document.createElement('div');
     stepCard.className = 'step-card';
     
-    const title = document.createElement('h2');
-    title.className = 'step-title';
-    title.textContent = 'Imaging Recommendation';
-    stepCard.appendChild(title);
     
     if (this.recommendation) {
       const recommendationCard = this.createRecommendationCard(this.recommendation);
@@ -212,47 +219,23 @@ class DecisionTreeRenderer {
     const container = document.createElement('div');
     container.className = 'recommendation-card';
     
-    const header = document.createElement('div');
-    header.className = 'recommendation-header';
-    
-    const icon = document.createElement('span');
-    icon.className = 'recommendation-icon';
-    icon.innerHTML = '✓';
-    
-    const title = document.createElement('h3');
-    title.className = 'recommendation-title';
-    title.textContent = 'Recommended Imaging';
-    
-    header.appendChild(icon);
-    header.appendChild(title);
-    container.appendChild(header);
-    
     const details = document.createElement('div');
     details.className = 'recommendation-details';
     
-    const modalityDetail = document.createElement('div');
-    modalityDetail.className = 'recommendation-detail';
-    modalityDetail.innerHTML = '<strong>Modality:</strong> <span>' + rec.modality + '</span>';
-    
-    const contrastDetail = document.createElement('div');
-    contrastDetail.className = 'recommendation-detail';
-    contrastDetail.innerHTML = '<strong>Contrast:</strong> <span>' + rec.contrast + '</span>';
-    
-    details.appendChild(modalityDetail);
-    details.appendChild(contrastDetail);
-    
-    if (rec.notes) {
-      const notesDetail = document.createElement('div');
-      notesDetail.className = 'recommendation-detail';
-      notesDetail.innerHTML = '<strong>Notes:</strong> <span>' + rec.notes + '</span>';
-      details.appendChild(notesDetail);
+    // Main recommendation text
+    if (rec.recommendation) {
+      const recommendationDetail = document.createElement('div');
+      recommendationDetail.className = 'recommendation-detail recommendation-main markdown-content';
+      recommendationDetail.innerHTML = this.parseCallouts(rec.recommendation);
+      details.appendChild(recommendationDetail);
     }
     
-    if (rec.priority) {
-      const priorityDetail = document.createElement('div');
-      priorityDetail.className = 'recommendation-detail';
-      priorityDetail.innerHTML = '<strong>Priority:</strong> <span>' + rec.priority + '</span>';
-      details.appendChild(priorityDetail);
+    // Additional notes
+    if (rec.notes) {
+      const notesDetail = document.createElement('div');
+      notesDetail.className = 'recommendation-detail recommendation-notes markdown-content';
+      notesDetail.innerHTML = '<strong>Additional Notes:</strong><br>' + this.parseCallouts(rec.notes);
+      details.appendChild(notesDetail);
     }
     
     container.appendChild(details);
@@ -334,12 +317,93 @@ class DecisionTreeRenderer {
   parseCallouts(text) {
     if (!text) return '';
     
-    // Parse callout syntax: [type]content[/type]
-    const calloutRegex = /\[(protocol|guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
+    // First parse markdown, then callouts
+    let processedText = this.parseMarkdown(text);
     
-    return text.replace(calloutRegex, (match, type, content) => {
-      return `<div class="step-callout step-callout-${type}">${content.trim()}</div>`;
+    // Parse callout syntax: [type]content[/type]
+    const calloutRegex = /\[(guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
+    
+    return processedText.replace(calloutRegex, (match, type, content) => {
+      return `<div class="step-callout step-callout-${type}">${this.parseMarkdown(content.trim())}</div>`;
     });
+  }
+
+  parseMarkdown(text) {
+    if (!text) return '';
+    
+    // Simple markdown parsing for common elements
+    let result = text;
+    
+    // Bold: **text** or __text__
+    result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    result = result.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    
+    // Italic: *text* or _text_
+    result = result.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    result = result.replace(/_(.*?)_/g, '<em>$1</em>');
+    
+    // Inline code: `text`
+    result = result.replace(/`(.*?)`/g, '<code>$1</code>');
+    
+    // Line breaks
+    result = result.replace(/\n/g, '<br>');
+    
+    // Lists - handle bullet points
+    const lines = result.split('<br>');
+    let inList = false;
+    let listItems = [];
+    let processedLines = [];
+    
+    for (let line of lines) {
+      const trimmed = line.trim();
+      
+      // Check for bullet point (*, -, •, or number.)
+      if (trimmed.match(/^[\*\-•]\s/) || trimmed.match(/^\d+\.\s/)) {
+        const isNumbered = trimmed.match(/^\d+\.\s/);
+        const content = trimmed.replace(/^[\*\-•]\s/, '').replace(/^\d+\.\s/, '');
+        
+        if (!inList) {
+          inList = true;
+          listItems = [];
+        }
+        
+        listItems.push({
+          content: content,
+          isNumbered: isNumbered
+        });
+      } else if (inList && trimmed === '') {
+        // Empty line continues the list
+        continue;
+      } else {
+        // End of list or non-list line
+        if (inList) {
+          const isNumbered = listItems.length > 0 && listItems[0].isNumbered;
+          const tag = isNumbered ? 'ol' : 'ul';
+          const listHtml = `<${tag}>` + 
+            listItems.map(item => `<li>${item.content}</li>`).join('') + 
+            `</${tag}>`;
+          processedLines.push(listHtml);
+          inList = false;
+          listItems = [];
+        }
+        
+        if (trimmed !== '') {
+          processedLines.push(line);
+        }
+      }
+    }
+    
+    // Handle any remaining list
+    if (inList) {
+      const isNumbered = listItems.length > 0 && listItems[0].isNumbered;
+      const tag = isNumbered ? 'ol' : 'ul';
+      const listHtml = `<${tag}>` + 
+        listItems.map(item => `<li>${item.content}</li>`).join('') + 
+        `</${tag}>`;
+      processedLines.push(listHtml);
+    }
+    
+    return processedLines.join('<br>');
   }
 
   createGuideSection(guide) {
@@ -354,8 +418,9 @@ class DecisionTreeRenderer {
       title.textContent = sectionData.title;
       card.appendChild(title);
       
-      const content = document.createElement('p');
-      content.textContent = sectionData.content;
+      const content = document.createElement('div');
+      content.className = 'markdown-content';
+      content.innerHTML = this.parseCallouts(sectionData.content);
       card.appendChild(content);
       
       if (sectionData.items && sectionData.items.length > 0) {
@@ -430,13 +495,9 @@ class PathwayPage {
       } catch (fetchError) {
         console.warn('Failed to fetch pathway file, trying embedded fallback:', fetchError);
         
-        // Fallback to embedded data
-        if (this.pathwayId === 'liver-imaging-example' || this.pathwayId === 'liver-imaging-decision-tool') {
-          this.pathwayData = this.getEmbeddedLiverPathway();
-          console.log('Using embedded pathway data');
-        } else {
-          throw new Error(`Pathway not found: ${this.pathwayId}`);
-        }
+        // Fallback to embedded data - DISABLED: embedded data uses old field structure
+        // TODO: Update embedded test data to use new recommendation format
+        throw new Error(`Pathway file not found: ${this.pathwayId}. Embedded fallback disabled due to field format changes.`);
       }
       
       this.renderPathway();

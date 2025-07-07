@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HNZ Decision Tree Builder</title>
+    <link rel="stylesheet" href="../../fonts/poppins.css">
+    <link rel="stylesheet" href="../../fonts/publicsans.css">
+    <link rel="stylesheet" href="../design-system.css">
+    <link rel="stylesheet" href="../app-styles.css">
     <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
@@ -23,24 +27,21 @@
                     </button>
                     
                     <div id="hamburgerDropdown" class="hamburger-dropdown hidden">
-                        <div class="dropdown-section">
-                            <button id="menuSaveDraft" class="dropdown-item">
-                                <span class="dropdown-icon nerd-icon">󰆓</span>
-                                Save Draft
-                            </button>
-                            <button id="menuPublish" class="dropdown-item">
-                                <span class="dropdown-icon nerd-icon">󰅟</span>
-                                Publish
-                            </button>
-                        </div>
-                        
-                        <div class="dropdown-divider"></div>
                         
                         <div class="dropdown-section">
                             <a href="../index.html" id="menuLiveApp" class="dropdown-item">
                                 <span class="dropdown-icon nerd-icon">󰖟</span>
                                 View Live App
                             </a>
+                        </div>
+                        
+                        <div class="dropdown-divider"></div>
+                        
+                        <div class="dropdown-section">
+                            <button id="menuHelp" class="dropdown-item">
+                                <span class="dropdown-icon nerd-icon">󰋖</span>
+                                Help
+                            </button>
                         </div>
                         
                         <div class="dropdown-divider"></div>
@@ -73,8 +74,7 @@
                     <div class="library-header">
                         <h2>Pathway Library</h2>
                         <div class="library-actions">
-                            <button id="newPathway" class="btn primary">New Pathway</button>
-                            <button id="refreshLibrary" class="btn secondary">Refresh</button>
+                            <button id="newPathway" class="btn btn-primary">New Pathway</button>
                         </div>
                     </div>
                     
@@ -107,10 +107,8 @@
                 <div class="builder-layout">
                     <!-- Tree Properties Panel -->
                     <div class="properties-panel">
-                        <h3>Pathway Properties</h3>
-                        <div class="form-group">
-                            <label for="treeId">Pathway ID</label>
-                            <input type="text" id="treeId" placeholder="unique-pathway-id">
+                        <div class="panel-header">
+                            <h3>Pathway Properties</h3>
                         </div>
                         <div class="form-group">
                             <label for="treeTitle">Title</label>
@@ -131,14 +129,23 @@
                         <div id="guidesList" class="guides-list">
                             <!-- Guides will be listed here -->
                         </div>
-                        <button id="addGuide" class="btn secondary">Add Guide</button>
+                        <button id="addGuide" class="btn btn-secondary">Add Guide</button>
+                        
+                        <div class="form-group" style="margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-gray-200);">
+                            <label for="treeId">Pathway ID</label>
+                            <input type="text" id="treeId" placeholder="Auto-generated from title" readonly>
+                            <small class="text-muted">Automatically generated from the pathway title</small>
+                        </div>
                     </div>
 
                     <!-- Steps Editor -->
                     <div class="steps-panel">
                         <div class="steps-header">
                             <h3>Decision Steps</h3>
-                            <button id="addStep" class="btn primary">Add Step</button>
+                            <div class="steps-actions">
+                                <button id="addStep" class="btn btn-secondary">Add Step</button>
+                                <button id="saveDraftButton" class="btn btn-orange">Save Draft</button>
+                            </div>
                         </div>
                         <div id="stepsList" class="steps-list">
                             <!-- Steps will be listed here -->
@@ -165,10 +172,354 @@
 
             <!-- JSON View -->
             <div id="jsonView" class="view">
+                <div class="json-editor-header">
+                    <h3>JSON Editor</h3>
+                    <div class="json-controls">
+                        <button id="loadFromJson" class="btn btn-primary" style="display: none;">Load from JSON</button>
+                        <button id="formatJson" class="btn btn-secondary" style="display: none;">Format JSON</button>
+                        <span id="jsonStatus" class="json-status"></span>
+                    </div>
+                </div>
                 <div class="json-editor">
-                    <textarea id="jsonOutput" readonly></textarea>
+                    <textarea id="jsonOutput" readonly placeholder="JSON output will appear here. Enable Advanced mode to edit."></textarea>
                 </div>
                 <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+            </div>
+
+            <!-- Help View -->
+            <div id="helpView" class="view help-view">
+                <div class="help-content">
+                    <div class="help-header">
+                        <h1>Decision Tree Builder Help</h1>
+                        <p class="help-subtitle">Complete guide to building clinical decision support pathways</p>
+                    </div>
+
+                    <div class="help-sections">
+                        <!-- Getting Started -->
+                        <section class="help-section">
+                            <h2>🚀 Getting Started</h2>
+                            <div class="help-card">
+                                <h3>1. Create a New Pathway</h3>
+                                <p>Click <strong>"New Pathway"</strong> in the Library tab to create a new decision tree. This initializes a pathway with a default title that you can customize.</p>
+                                
+                                <h3>2. Set Pathway Properties</h3>
+                                <p>In the Builder tab, configure:</p>
+                                <ul>
+                                    <li><strong>Title:</strong> Main pathway name (e.g., "Liver Imaging Decision Tool")</li>
+                                    <li><strong>Subtitle:</strong> Brief description or version info</li>
+                                    <li><strong>Description:</strong> Detailed explanation of the pathway's purpose</li>
+                                </ul>
+                                
+                                <h3>3. Add Your First Step</h3>
+                                <p>Click <strong>"Add Step"</strong> to create your first decision point. The first step automatically becomes the starting point of your pathway.</p>
+                            </div>
+                        </section>
+
+                        <!-- Step Types -->
+                        <section class="help-section">
+                            <h2>📋 Step Types</h2>
+                            <div class="help-card">
+                                <div class="step-type-grid">
+                                    <div class="step-type-item">
+                                        <h4>Multiple Choice</h4>
+                                        <p>Present several options to the user. Best for scenarios with 3+ possible paths.</p>
+                                        <div class="example">Example: "Patient age group?" → Under 18, 18-65, Over 65</div>
+                                    </div>
+                                    
+                                    <div class="step-type-item">
+                                        <h4>Yes/No Decision</h4>
+                                        <p>Simple binary choice. Ideal for clinical criteria or symptoms.</p>
+                                        <div class="example">Example: "Patient has fever?" → Yes, No</div>
+                                    </div>
+                                    
+                                    <div class="step-type-item">
+                                        <h4>Endpoint (Recommendation)</h4>
+                                        <p>Final step that provides clinical recommendation. No further navigation.</p>
+                                        <div class="example">Example: "Recommend specialist consultation" or "Perform CT chest with contrast"</div>
+                                    </div>
+                                    
+                                    <div class="step-type-item">
+                                        <h4>Guide</h4>
+                                        <p>Informational step with additional details. Can continue to other steps.</p>
+                                        <div class="example">Example: Additional guidance for specific clinical procedures</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Building Steps -->
+                        <section class="help-section">
+                            <h2>🔧 Building Steps</h2>
+                            <div class="help-card">
+                                <h3>Step Configuration</h3>
+                                <p>When creating or editing a step:</p>
+                                <ol>
+                                    <li><strong>Step Type:</strong> Choose the appropriate type first (auto-prioritized)</li>
+                                    <li><strong>Title:</strong> Clear, concise question or statement</li>
+                                    <li><strong>Details:</strong> For recommendation steps, this field is optional and provides additional context</li>
+                                    <li><strong>Clinical Question/Description:</strong> For other step types, detailed instructions or information</li>
+                                    <li><strong>Step ID:</strong> Technical identifier (auto-generated, editable)</li>
+                                </ol>
+
+                                <h3>Adding Options</h3>
+                                <p>For Choice and Yes/No steps:</p>
+                                <ul>
+                                    <li><strong>Option Text:</strong> What users will see and click</li>
+                                    <li><strong>Variant:</strong> Button style (primary, secondary, success, warning, etc.)</li>
+                                    <li><strong>Action:</strong> Where this option leads (navigate to step or recommend imaging)</li>
+                                </ul>
+
+                                <h3>Callouts and Formatting</h3>
+                                <p>Use callouts in descriptions to highlight important information:</p>
+                                <ul>
+                                    <li><code>[info]Important note[/info]</code> - Blue information box</li>
+                                    <li><code>[warning]Be careful[/warning]</code> - Yellow warning box</li>
+                                    <li><code>[guide]Clinical guidance[/guide]</code> - Blue guidance box</li>
+                                    <li><code>[success]Good practice[/success]</code> - Green success box</li>
+                                    <li><code>[danger]Critical warning[/danger]</code> - Red danger box</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Navigation and Flow -->
+                        <section class="help-section">
+                            <h2>🔄 Navigation and Flow</h2>
+                            <div class="help-card">
+                                <h3>Creating Pathways</h3>
+                                <p>Options can lead to:</p>
+                                <ul>
+                                    <li><strong>Existing Step:</strong> Continue to another decision point</li>
+                                    <li><strong>New Step:</strong> Create and navigate to a new step</li>
+                                    <li><strong>Recommendation:</strong> End with clinical recommendation</li>
+                                </ul>
+
+                                <h3>Best Practices</h3>
+                                <ul>
+                                    <li>Keep step titles concise and clear</li>
+                                    <li>Use descriptive option text that clearly indicates the choice</li>
+                                    <li>Organize complex pathways with logical flow</li>
+                                    <li>Test your pathway flow using the Preview tab</li>
+                                    <li>Use the Birdseye view to visualize the overall structure</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Guides -->
+                        <section class="help-section">
+                            <h2>📚 Guides and Additional Information</h2>
+                            <div class="help-card">
+                                <h3>Creating Guides</h3>
+                                <p>Guides provide additional information and clinical context:</p>
+                                <ul>
+                                    <li><strong>Guide Title:</strong> Name of the guidance or procedure</li>
+                                    <li><strong>Sections:</strong> Organized content blocks with titles and descriptions</li>
+                                    <li><strong>Lists:</strong> Bullet points for step-by-step instructions</li>
+                                </ul>
+
+                                <h3>Guide Sections</h3>
+                                <p>Each guide can contain multiple sections:</p>
+                                <ul>
+                                    <li><strong>Text:</strong> Paragraph content</li>
+                                    <li><strong>List:</strong> Bulleted or numbered items</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Testing and Preview -->
+                        <section class="help-section">
+                            <h2>🔍 Testing Your Pathway</h2>
+                            <div class="help-card">
+                                <h3>Preview Tab</h3>
+                                <p>Use the Preview tab to test your pathway as users will experience it:</p>
+                                <ul>
+                                    <li>Automatically updates when you make changes</li>
+                                    <li>Test all decision paths and options</li>
+                                    <li>Verify that recommendations appear correctly</li>
+                                    <li>Check that guides display properly</li>
+                                </ul>
+
+                                <h3>Birdseye View</h3>
+                                <p>Visualize your pathway structure:</p>
+                                <ul>
+                                    <li>See all steps and their connections</li>
+                                    <li>Hover over steps to see mini previews (options are not shown in previews)</li>
+                                    <li>Click on any step to quickly edit it</li>
+                                    <li>Identify potential dead ends or missing connections</li>
+                                    <li>Use "Auto Layout" to organize the diagram</li>
+                                    <li>Different colors indicate different step types</li>
+                                </ul>
+
+                                <h3>Testing Checklist</h3>
+                                <ul>
+                                    <li>✓ All decision paths lead to appropriate endpoints</li>
+                                    <li>✓ No broken links or missing steps</li>
+                                    <li>✓ Recommendations include required clinical details</li>
+                                    <li>✓ Guides are accessible and informative</li>
+                                    <li>✓ Step titles and options are clear and clinically appropriate</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Publishing -->
+                        <section class="help-section">
+                            <h2>🚀 Publishing and Managing Pathways</h2>
+                            <div class="help-card">
+                                <h3>Saving Your Work</h3>
+                                <ul>
+                                    <li>Use <strong>"Save Draft"</strong> to save your pathway as a draft</li>
+                                    <li>Draft pathways appear in the Library tab for further editing</li>
+                                    <li>Always save drafts before switching pathways or closing the builder</li>
+                                </ul>
+
+                                <h3>Publishing Process</h3>
+                                <ol>
+                                    <li>Save your pathway as a draft first</li>
+                                    <li>Go to the <strong>Library tab</strong></li>
+                                    <li>Find your draft pathway in the "Drafts" section</li>
+                                    <li>Click the <strong>"Publish"</strong> button next to your pathway</li>
+                                    <li>Confirm the publishing dialog</li>
+                                    <li>The pathway moves to the "Published" section and becomes available in the Live App</li>
+                                </ol>
+
+                                <h3>Managing Published Pathways</h3>
+                                <ul>
+                                    <li><strong>Viewing:</strong> Click on published pathways to preview them (builder tab is hidden for safety)</li>
+                                    <li><strong>Unpublishing:</strong> Click "Unpublish" to move back to drafts for editing</li>
+                                    <li><strong>Safety:</strong> Published pathways cannot be deleted - they must be unpublished first</li>
+                                    <li><strong>Editing:</strong> Only draft pathways can be edited in the builder</li>
+                                </ul>
+
+                                <h3>Publishing Requirements</h3>
+                                <ul>
+                                    <li>Complete testing in Preview tab</li>
+                                    <li>Verify all pathways lead to appropriate recommendations</li>
+                                    <li>Check clinical accuracy and completeness</li>
+                                    <li>Ensure guides contain necessary clinical information</li>
+                                    <li>All validation requirements must be met (see Troubleshooting section)</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Troubleshooting -->
+                        <section class="help-section">
+                            <h2>⚠️ Troubleshooting</h2>
+                            <div class="help-card">
+                                <h3>Common Issues</h3>
+                                
+                                <h4>Preview Not Showing Steps</h4>
+                                <ul>
+                                    <li>Ensure your pathway has a title</li>
+                                    <li>Check that a start step is selected</li>
+                                    <li>Verify steps have been saved properly</li>
+                                </ul>
+
+                                <h4>Cannot Publish</h4>
+                                <ul>
+                                    <li>All steps must have titles</li>
+                                    <li>All steps must have a valid type</li>
+                                    <li>Choice/Yes-No steps must have at least one option</li>
+                                    <li>Endpoint steps must have recommendation details</li>
+                                </ul>
+
+                                <h4>Broken Navigation</h4>
+                                <ul>
+                                    <li>Check that option actions point to valid steps</li>
+                                    <li>Ensure recommendation endpoints are properly configured</li>
+                                    <li>Use Birdseye view to identify connection issues</li>
+                                </ul>
+
+                                <h3>Validation Requirements</h3>
+                                <p>Your pathway must meet these requirements to publish:</p>
+                                <ul>
+                                    <li>✓ Pathway has a title</li>
+                                    <li>✓ At least one step exists</li>
+                                    <li>✓ Start step is specified</li>
+                                    <li>✓ All steps have titles and types</li>
+                                    <li>✓ All options have valid actions</li>
+                                    <li>✓ All recommendation endpoints are complete</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Tips and Best Practices -->
+                        <section class="help-section">
+                            <h2>💡 Tips and Best Practices</h2>
+                            <div class="help-card">
+                                <h3>Content Guidelines</h3>
+                                <ul>
+                                    <li>Use clear, clinical language appropriate for healthcare professionals</li>
+                                    <li>Keep step titles concise (under 10 words when possible)</li>
+                                    <li>Use option variants to indicate importance (primary for recommended actions)</li>
+                                    <li>Include relevant clinical context in step descriptions</li>
+                                    <li>Use callouts to highlight critical information</li>
+                                </ul>
+
+                                <h3>Structure Guidelines</h3>
+                                <ul>
+                                    <li>Start with broad categorization, then narrow down</li>
+                                    <li>Group related decision points together</li>
+                                    <li>Avoid overly deep decision trees (6+ levels)</li>
+                                    <li>Provide clear exit points with appropriate recommendations</li>
+                                    <li>Consider alternative pathways for edge cases</li>
+                                </ul>
+
+                                <h3>Workflow Tips</h3>
+                                <ul>
+                                    <li>Plan your pathway structure before building</li>
+                                    <li>Build incrementally and test frequently</li>
+                                    <li>Use the JSON view to backup your work</li>
+                                    <li>Collaborate with clinical experts for content validation</li>
+                                    <li>Document your pathway logic for future maintenance</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Keyboard Shortcuts -->
+                        <section class="help-section">
+                            <h2>⌨️ Interface Guide</h2>
+                            <div class="help-card">
+                                <h3>Navigation Tabs</h3>
+                                <ul>
+                                    <li><strong>Library:</strong> View and manage existing pathways</li>
+                                    <li><strong>Builder:</strong> Create and edit pathway structure</li>
+                                    <li><strong>Preview:</strong> Test pathway functionality</li>
+                                    <li><strong>Birdseye:</strong> Visualize pathway flow</li>
+                                    <li><strong>JSON:</strong> View/edit raw pathway data (Advanced mode)</li>
+                                </ul>
+
+                                <h3>Hamburger Menu</h3>
+                                <ul>
+                                    <li><strong>Save:</strong> Download pathway file</li>
+                                    <li><strong>Load:</strong> Import pathway from file</li>
+                                    <li><strong>View Live App:</strong> Open main decision support interface</li>
+                                    <li><strong>Advanced:</strong> Toggle advanced features (JSON tab)</li>
+                                </ul>
+                                
+                                <h3>Builder Actions</h3>
+                                <ul>
+                                    <li><strong>Add Step:</strong> Create a new decision step</li>
+                                    <li><strong>Save Draft:</strong> Save your pathway to the library as a draft</li>
+                                    <li><strong>Publishing:</strong> Done through the Library tab (see Publishing section above)</li>
+                                </ul>
+
+                                <h3>Quick Actions</h3>
+                                <ul>
+                                    <li>Click step cards in Birdseye to quickly edit them</li>
+                                    <li>Use callout helper buttons in step descriptions</li>
+                                    <li>Preview automatically updates after changes</li>
+                                    <li>Click draft pathways in Library to edit them</li>
+                                    <li>Click published pathways in Library to preview them</li>
+                                    <li>Library automatically shows loading spinner during operations</li>
+                                </ul>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="help-footer">
+                        <p>Need additional help? Contact the system administrator or refer to your organization's clinical guidelines.</p>
+                        <button id="closeHelp" class="btn btn-primary">Close Help</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -182,8 +533,30 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="stepId">Step ID</label>
-                    <input type="text" id="stepId" placeholder="step-id">
+                    <div class="step-type-layout">
+                        <div class="step-type-selection">
+                            <label class="form-label">Step Type</label>
+                            <div class="radio-group">
+                                <label class="radio-item">
+                                    <input type="radio" id="stepTypeChoice" name="stepType" value="choice">
+                                    <span class="radio-text">Multiple Choice</span>
+                                </label>
+                                <label class="radio-item">
+                                    <input type="radio" id="stepTypeYesNo" name="stepType" value="yes-no">
+                                    <span class="radio-text">Yes/No Decision</span>
+                                </label>
+                                <label class="radio-item">
+                                    <input type="radio" id="stepTypeEndpoint" name="stepType" value="endpoint">
+                                    <span class="radio-text">Endpoint</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="step-type-guidance-container">
+                            <div id="stepTypeGuidance" class="step-type-guidance">
+                                <!-- Dynamic guidance will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="stepTitle">Title</label>
@@ -194,8 +567,14 @@
                     <input type="text" id="stepSubtitle" placeholder="Optional subtitle">
                 </div>
                 <div class="form-group">
-                    <label for="stepQuestion">Description</label>
-                    <textarea id="stepQuestion" placeholder="Describe this step. You can use callouts like [info]Important note[/info] or [warning]Be careful[/warning]" rows="3"></textarea>
+                    <label for="stepQuestion" id="stepQuestionLabel">Description</label>
+                    <textarea id="stepQuestion" placeholder="Describe this step. Use **bold**, *italic*, `code`, * bullet points" rows="3"></textarea>
+                    <div class="markdown-helpers">
+                        <span class="markdown-syntax">**bold**</span>
+                        <span class="markdown-syntax">*italic*</span>
+                        <span class="markdown-syntax">`code`</span>
+                        <span class="markdown-syntax">* lists</span>
+                    </div>
                     <div class="callout-helpers">
                         <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
                         <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
@@ -205,16 +584,6 @@
                         <button type="button" class="btn-callout" data-callout="danger" title="Insert Danger callout">Danger</button>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="stepType">Step Type</label>
-                    <select id="stepType">
-                        <option value="choice">Multiple Choice</option>
-                        <option value="yes-no">Yes/No Decision</option>
-                        <option value="endpoint">Endpoint (Recommendation)</option>
-                        <option value="guide">Guide</option>
-                    </select>
-                </div>
-
                 <!-- Guide Info Section -->
                 <div id="protocolSection" class="form-section hidden">
                     <h4>Guide Information</h4>
@@ -238,34 +607,65 @@
                     <div id="optionsList" class="options-list">
                         <!-- Options will be listed here -->
                     </div>
-                    <button id="addOption" class="btn secondary">Add Option</button>
+                    <button id="addOption" class="btn btn-secondary">Add Option</button>
+
+                    <!-- Step ID at bottom -->
+                    <div class="form-group">
+                        <label for="stepId">Step ID</label>
+                        <input type="text" id="stepId" placeholder="step-id">
+                    </div>
                 </div>
 
                 <!-- Endpoint Section -->
                 <div id="endpointSection" class="form-section hidden">
-                    <h4>Recommendation</h4>
+                    <h4>Recommendation Details</h4>
                     <div class="form-group">
-                        <label for="endpointModality">Modality</label>
-                        <input type="text" id="endpointModality" placeholder="MRI, CT, etc.">
+                        <label for="endpointRecommendation">Recommendation Summary</label>
+                        <textarea id="endpointRecommendation" placeholder="Provide specific, actionable clinical recommendation. Use **bold** for key terms, * for lists." rows="3"></textarea>
+                        <div class="markdown-helpers">
+                            <span class="markdown-syntax">**bold**</span>
+                            <span class="markdown-syntax">*italic*</span>
+                            <span class="markdown-syntax">`code`</span>
+                            <span class="markdown-syntax">* lists</span>
+                        </div>
+                        <div class="callout-helpers">
+                            <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
+                            <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
+                            <button type="button" class="btn-callout" data-callout="info" title="Insert Info callout">Info</button>
+                            <button type="button" class="btn-callout" data-callout="warning" title="Insert Warning callout">Warning</button>
+                            <button type="button" class="btn-callout" data-callout="success" title="Insert Success callout">Success</button>
+                            <button type="button" class="btn-callout" data-callout="danger" title="Insert Danger callout">Danger</button>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="endpointContrast">Contrast</label>
-                        <input type="text" id="endpointContrast" placeholder="Contrast details">
+                        <label for="endpointNotes">Additional Notes (optional)</label>
+                        <textarea id="endpointNotes" placeholder="Additional context or instructions. Use **bold** for emphasis, * for lists." rows="2"></textarea>
+                        <div class="markdown-helpers">
+                            <span class="markdown-syntax">**bold**</span>
+                            <span class="markdown-syntax">*italic*</span>
+                            <span class="markdown-syntax">* lists</span>
+                        </div>
+                        <div class="callout-helpers">
+                            <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
+                            <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
+                            <button type="button" class="btn-callout" data-callout="info" title="Insert Info callout">Info</button>
+                            <button type="button" class="btn-callout" data-callout="warning" title="Insert Warning callout">Warning</button>
+                            <button type="button" class="btn-callout" data-callout="success" title="Insert Success callout">Success</button>
+                            <button type="button" class="btn-callout" data-callout="danger" title="Insert Danger callout">Danger</button>
+                        </div>
                     </div>
+
+                    <!-- Step ID at bottom -->
                     <div class="form-group">
-                        <label for="endpointNotes">Notes (optional)</label>
-                        <textarea id="endpointNotes" placeholder="Additional notes"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="endpointPriority">Priority (optional)</label>
-                        <input type="text" id="endpointPriority" placeholder="P1, P2, etc.">
+                        <label for="stepId">Step ID</label>
+                        <input type="text" id="stepId" placeholder="step-id">
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="saveStep" class="btn primary">Save Step</button>
-                <button id="deleteStep" class="btn danger">Delete Step</button>
-                <button id="cancelStep" class="btn secondary">Cancel</button>
+                <button id="saveStep" class="btn btn-primary">Save Step</button>
+                <button id="deleteStep" class="btn btn-danger">Delete Step</button>
+                <button id="cancelStep" class="btn btn-secondary">Cancel</button>
             </div>
         </div>
     </div>
@@ -343,20 +743,23 @@
                     </div>
                     <div id="recommendationDetails" class="form-subsection">
                         <div class="form-group">
-                            <label for="recModality">Modality</label>
-                            <input type="text" id="recModality" placeholder="MRI, CT, Ultrasound, etc.">
+                            <label for="recRecommendation">Recommendation Summary</label>
+                            <textarea id="recRecommendation" placeholder="Provide specific, actionable clinical recommendation. Use **bold** for key terms, * for lists." rows="3"></textarea>
+                            <div class="markdown-helpers">
+                                <span class="markdown-syntax">**bold**</span>
+                                <span class="markdown-syntax">*italic*</span>
+                                <span class="markdown-syntax">`code`</span>
+                                <span class="markdown-syntax">* lists</span>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="recContrast">Contrast</label>
-                            <input type="text" id="recContrast" placeholder="Contrast details">
-                        </div>
-                        <div class="form-group">
-                            <label for="recNotes">Notes (optional)</label>
-                            <textarea id="recNotes" placeholder="Additional notes or instructions"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="recPriority">Priority (optional)</label>
-                            <input type="text" id="recPriority" placeholder="P1, P2, S1, etc.">
+                            <label for="recNotes">Additional Notes (optional)</label>
+                            <textarea id="recNotes" placeholder="Additional context or instructions. Use **bold** for emphasis, * for lists." rows="2"></textarea>
+                            <div class="markdown-helpers">
+                                <span class="markdown-syntax">**bold**</span>
+                                <span class="markdown-syntax">*italic*</span>
+                                <span class="markdown-syntax">* lists</span>
+                            </div>
                         </div>
                     </div>
                     <div id="newEndpointSection" class="form-subsection hidden">
@@ -372,9 +775,9 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="saveOption" class="btn primary">Save Option</button>
-                <button id="deleteOption" class="btn danger">Delete Option</button>
-                <button id="cancelOption" class="btn secondary">Cancel</button>
+                <button id="saveOption" class="btn btn-primary">Save Option</button>
+                <button id="deleteOption" class="btn btn-danger">Delete Option</button>
+                <button id="cancelOption" class="btn btn-secondary">Cancel</button>
             </div>
         </div>
     </div>
@@ -397,13 +800,13 @@
                     <div id="guideSectionsList" class="options-list">
                         <!-- Guide sections will be listed here -->
                     </div>
-                    <button id="addGuideSection" class="btn secondary">Add Section</button>
+                    <button id="addGuideSection" class="btn btn-secondary">Add Section</button>
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="saveGuide" class="btn primary">Save Guide</button>
-                <button id="deleteGuide" class="btn danger">Delete Guide</button>
-                <button id="cancelGuide" class="btn secondary">Cancel</button>
+                <button id="saveGuide" class="btn btn-primary">Save Guide</button>
+                <button id="deleteGuide" class="btn btn-danger">Delete Guide</button>
+                <button id="cancelGuide" class="btn btn-secondary">Cancel</button>
             </div>
         </div>
     </div>
@@ -423,7 +826,7 @@
                 <div class="form-group">
                     <label for="sectionType">Section Type</label>
                     <select id="sectionType">
-                        <option value="protocol">Protocol (Blue)</option>
+                        <option value="guide">Guide (Blue)</option>
                         <option value="info">Information (Purple)</option>
                         <option value="warning">Warning (Orange)</option>
                         <option value="success">Success (Green)</option>
@@ -432,17 +835,28 @@
                 </div>
                 <div class="form-group">
                     <label for="sectionContent">Content</label>
-                    <textarea id="sectionContent" placeholder="Section content" rows="4"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="sectionItems">List Items (one per line, optional)</label>
-                    <textarea id="sectionItems" placeholder="• Item 1&#10;• Item 2&#10;• Item 3" rows="4"></textarea>
+                    <textarea id="sectionContent" placeholder="Section content. Use **bold**, *italic*, * bullet points, numbered lists 1. 2. 3." rows="6"></textarea>
+                    <div class="markdown-helpers">
+                        <span class="markdown-syntax">**bold**</span>
+                        <span class="markdown-syntax">*italic*</span>
+                        <span class="markdown-syntax">`code`</span>
+                        <span class="markdown-syntax">* bullets</span>
+                        <span class="markdown-syntax">1. numbers</span>
+                    </div>
+                    <div class="callout-helpers">
+                        <small style="color: #6B7280; margin-bottom: 0.5rem; display: block;">Insert callouts:</small>
+                        <button type="button" class="btn-callout" data-callout="protocol" title="Insert Protocol callout">Protocol</button>
+                        <button type="button" class="btn-callout" data-callout="info" title="Insert Info callout">Info</button>
+                        <button type="button" class="btn-callout" data-callout="warning" title="Insert Warning callout">Warning</button>
+                        <button type="button" class="btn-callout" data-callout="success" title="Insert Success callout">Success</button>
+                        <button type="button" class="btn-callout" data-callout="danger" title="Insert Danger callout">Danger</button>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="saveGuideSection" class="btn primary">Save Section</button>
-                <button id="deleteGuideSection" class="btn danger">Delete Section</button>
-                <button id="cancelGuideSection" class="btn secondary">Cancel</button>
+                <button id="saveGuideSection" class="btn btn-primary">Save Section</button>
+                <button id="deleteGuideSection" class="btn btn-danger">Delete Section</button>
+                <button id="cancelGuideSection" class="btn btn-secondary">Cancel</button>
             </div>
         </div>
     </div>

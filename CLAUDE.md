@@ -125,9 +125,58 @@ gemini @home.js @pathway-renderer.js "compare how both files load pathway data f
 - **Efficient Debugging**: Leverage Gemini's code understanding to identify issues faster
 
 ### Implementation:
+- **SESSION STARTUP REQUIREMENT**: At the start of EVERY coding session, ALWAYS use Gemini to load current codebase context
 - Start coding sessions by having Gemini read key files: `@home.js @pathway-renderer.js @styles.css`
 - Use Gemini for all file analysis before making changes
 - Only use Read tool for final verification of specific changes
+
+### Mandatory Session Initialization:
+**CRITICAL: Always run this at the start of every session to maintain Gemini's code context:**
+
+```bash
+# Load core codebase context into Gemini memory
+gemini @decision-support/builder/pathway-manager.js @decision-support/app-styles.css @decision-support/design-system.css @decision-support/home.js "Please analyze and remember the current state of the HNZ Decision Support codebase. Remember the file purposes, recent design system deployment on experimental/modern-design branch, architecture patterns, and any critical changes. This context will help you assist with future development work efficiently."
+```
+
+This ensures Gemini maintains comprehensive understanding of:
+- Current codebase architecture and file relationships
+- Recent changes and experimental branches
+- Design system implementation status
+- Code patterns and conventions
+- Critical functions and their locations
+
+### Continuous Context Updates During Session:
+**CRITICAL: Keep Gemini synchronized with code changes throughout the session:**
+
+1. **After Major Changes**: When you make significant modifications to any file, update Gemini:
+   ```bash
+   # Update Gemini with changes to specific files
+   gemini @modified-file.js "I just updated this file with [brief description of changes]. Please update your understanding of this file's current state and how it relates to the overall codebase."
+   ```
+
+2. **After Commits**: After committing code changes, sync Gemini with the new state:
+   ```bash
+   # Update Gemini after commits
+   gemini @changed-file1.js @changed-file2.css "I just committed changes to these files. The changes include: [brief summary]. Please update your context with these modifications and remember them for future development work."
+   ```
+
+3. **Before Complex Tasks**: Before starting complex development tasks, refresh Gemini's context:
+   ```bash
+   # Refresh context before major work
+   gemini @relevant-files "I'm about to work on [task description]. Please review these files and remind me of any important patterns, dependencies, or considerations I should keep in mind."
+   ```
+
+4. **Session Handoffs**: If switching between different areas of the codebase:
+   ```bash
+   # Context switching within session
+   gemini @new-area-files "I'm switching from working on [previous area] to [new area]. Please analyze these files and update your context for this new development focus."
+   ```
+
+**Benefits of Continuous Updates:**
+- Prevents context drift during long sessions
+- Maintains accurate understanding of current code state
+- Enables better suggestions and problem-solving
+- Reduces debugging time and improves code quality
 
 ## Code Patterns
 

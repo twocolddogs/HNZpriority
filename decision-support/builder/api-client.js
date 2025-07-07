@@ -37,7 +37,9 @@ class PathwayAPIClient {
 
   // Get all pathways (draft and published)
   async getPathways() {
-    return this.request('/pathways');
+    // Add cache-busting parameter to ensure fresh data
+    const timestamp = Date.now();
+    return this.request(`/pathways?_t=${timestamp}`);
   }
 
   // Get specific pathway by ID

@@ -19,6 +19,10 @@ class DecisionTreeBuilder {
     this.pathways = [];
     this.filteredPathways = [];
     
+    // Change tracking for builder
+    this.hasUnsavedChanges = false;
+    this.initialTreeState = null;
+    
     this.init();
   }
 
@@ -45,7 +49,7 @@ class DecisionTreeBuilder {
     try {
       // Tab navigation
       console.log('Binding tab navigation events...');
-      document.getElementById('libraryTab').addEventListener('click', () => this.showView('library'));
+      document.getElementById('libraryTab').addEventListener('click', () => this.navigateToLibrary());
       document.getElementById('builderTab').addEventListener('click', () => this.showView('builder'));
       document.getElementById('birdseyeTab').addEventListener('click', () => this.showView('birdseye'));
       document.getElementById('previewTab').addEventListener('click', () => this.showView('preview'));
@@ -66,6 +70,8 @@ class DecisionTreeBuilder {
       
       document.getElementById('treeTitle').addEventListener('input', (e) => {
         this.currentTree.title = e.target.value;
+        this.currentTree.id = this.generateIdFromTitle(e.target.value);
+        document.getElementById('treeId').value = this.currentTree.id;
         this.updateJSON();
       });
       
@@ -99,6 +105,7 @@ class DecisionTreeBuilder {
       // Modal events
       console.log('Binding modal events...');
       document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
+      document.getElementById('closeHelp').addEventListener('click', () => this.showView('library'));
       document.getElementById('saveStep').addEventListener('click', () => this.saveStep());
       document.getElementById('deleteStep').addEventListener('click', () => this.deleteStep());
       document.getElementById('cancelStep').addEventListener('click', () => this.closeModal());
@@ -142,8 +149,13 @@ class DecisionTreeBuilder {
     try {
       // Step type change
       console.log('Binding step type events...');
-      document.getElementById('stepType').addEventListener('change', (e) => {
-        this.updateStepTypeUI(e.target.value);
+      // Handle radio button changes for step type
+      document.querySelectorAll('input[name="stepType"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            this.updateStepTypeUI(e.target.value);
+          }
+        });
       });
       console.log('Step type events bound successfully');
     } catch (error) {
@@ -155,6 +167,7 @@ class DecisionTreeBuilder {
       // Options management
       console.log('Binding options management events...');
       document.getElementById('addOption').addEventListener('click', () => this.addOption());
+      // Yes/No options are now auto-populated
       console.log('Options management events bound successfully');
     } catch (error) {
       console.error('Error binding options management events:', error);
@@ -165,9 +178,9 @@ class DecisionTreeBuilder {
       // Hamburger menu events
       console.log('Binding hamburger menu events...');
       document.getElementById('hamburgerToggle').addEventListener('click', () => this.toggleHamburgerMenu());
-      document.getElementById('menuSaveDraft').addEventListener('click', () => { this.closeHamburgerMenu(); this.saveDraft(); });
-      document.getElementById('menuPublish').addEventListener('click', () => { this.closeHamburgerMenu(); this.publishPathway(); });
+      document.getElementById('saveDraftButton').addEventListener('click', () => this.saveDraft());
       document.getElementById('menuLiveApp').addEventListener('click', () => this.closeHamburgerMenu());
+      document.getElementById('menuHelp').addEventListener('click', () => { this.closeHamburgerMenu(); this.showView('help'); });
       document.getElementById('menuAdvanced').addEventListener('click', () => this.toggleAdvancedMode());
       console.log('Hamburger menu events bound successfully');
     } catch (error) {
@@ -179,7 +192,6 @@ class DecisionTreeBuilder {
       // Library view events
       console.log('Binding library view events...');
       document.getElementById('newPathway').addEventListener('click', () => this.createPathway());
-      document.getElementById('refreshLibrary').addEventListener('click', () => this.loadPathways());
       document.getElementById('statusFilter').addEventListener('change', () => this.filterPathways());
       document.getElementById('searchFilter').addEventListener('input', () => this.filterPathways());
       console.log('Library view events bound successfully');
@@ -189,13 +201,20 @@ class DecisionTreeBuilder {
     }
 
     try {
+      // JSON editor events
+      console.log('Binding JSON editor events...');
+      document.getElementById('loadFromJson').addEventListener('click', () => this.loadFromJson());
+      document.getElementById('formatJson').addEventListener('click', () => this.formatJson());
+      document.getElementById('jsonOutput').addEventListener('input', () => this.validateJson());
+      console.log('JSON editor events bound successfully');
+    } catch (error) {
+      console.error('Error binding JSON editor events:', error);
+      throw error;
+    }
+
+    try {
       // Close modal on overlay click
       console.log('Binding modal overlay events...');
-      document.getElementById('stepModal').addEventListener('click', (e) => {
-        if (e.target.id === 'stepModal') {
-          this.closeModal();
-        }
-      });
       
       document.getElementById('optionModal').addEventListener('click', (e) => {
         if (e.target.id === 'optionModal') {
@@ -258,12 +277,47 @@ class DecisionTreeBuilder {
     } catch (error) {
       console.error('Error binding callout helper events:', error);
     }
+
+    try {
+      // Tree property change tracking
+      console.log('Binding tree property change events...');
+      const treePropertyFields = ['treeId', 'treeTitle', 'treeDescription', 'startStep'];
+      treePropertyFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+          field.addEventListener('input', () => this.checkForTreeChanges());
+          field.addEventListener('change', () => this.checkForTreeChanges());
+        }
+      });
+      console.log('Tree property change events bound successfully');
+    } catch (error) {
+      console.error('Error binding tree property change events:', error);
+    }
+  }
+
+  createPathway() {
+    // Initialize a new empty pathway
+    this.currentTree = {
+      id: `pathway-${Date.now()}`,
+      title: 'New Pathway',
+      subtitle: '',
+      description: '',
+      startStep: '',
+      steps: {},
+      guides: []
+    };
+    
+    this.updateUI();
+    this.updatePreview();
+    this.showView('builder');
   }
 
   showView(viewName) {
-    // Update tabs
+    // Update tabs (help view doesn't have a tab)
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-    document.getElementById(viewName + 'Tab').classList.add('active');
+    if (viewName !== 'help') {
+      document.getElementById(viewName + 'Tab').classList.add('active');
+    }
 
     // Update views
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
@@ -278,6 +332,8 @@ class DecisionTreeBuilder {
       this.updatePreview();
     } else if (viewName === 'json') {
       this.updateJSON();
+    } else if (viewName === 'help') {
+      // Help view is static, no special handling needed
     }
   }
 
@@ -287,6 +343,11 @@ class DecisionTreeBuilder {
     this.updateStartStepSelect();
     this.updateGuidesList();
     this.updateJSON();
+    
+    // Capture initial state if not already captured
+    if (!this.initialTreeState) {
+      this.captureInitialTreeState();
+    }
   }
 
   updateTreeProperties() {
@@ -303,13 +364,18 @@ class DecisionTreeBuilder {
     // Show regular steps
     Object.values(this.currentTree.steps).forEach(step => {
       const stepItem = document.createElement('div');
-      stepItem.className = 'step-item';
+      stepItem.className = `step-card-builder${step.id === this.currentTree.startStep ? ' start-step' : ''}`;
       stepItem.addEventListener('click', () => this.editStep(step.id));
 
+      const startBadge = step.id === this.currentTree.startStep ? '<span class="start-step-badge">Start</span>' : '';
+      
       stepItem.innerHTML = `
+        <div class="step-badges">
+          ${startBadge}
+          <span class="step-type-badge ${step.type}">${step.type.replace('-', ' ').toUpperCase()}</span>
+        </div>
         <h4>${step.title || 'Untitled Step'}</h4>
-        <p>ID: ${step.id}</p>
-        <span class="step-type">${step.type}</span>
+        ${step.subtitle ? `<p>${step.subtitle}</p>` : ''}
       `;
 
       stepsList.appendChild(stepItem);
@@ -322,11 +388,11 @@ class DecisionTreeBuilder {
       stepItem.addEventListener('click', () => this.editRecommendationEndpoint(endpoint.id));
       
       // Visual styling for recommendation endpoints
-      stepItem.style.border = '1px solid #10B981';
-      stepItem.style.backgroundColor = '#ECFDF5';
+      stepItem.style.border = '1px solid #FB923C';
+      stepItem.style.backgroundColor = '#FFF7ED';
 
       stepItem.innerHTML = `
-        <h4>✓ ${endpoint.recommendation.modality || 'Recommendation'}</h4>
+        <h4>Recommendation</h4>
         <p>From: ${endpoint.sourceStep} → "${endpoint.optionText}"</p>
         <span class="step-type">recommendation endpoint</span>
       `;
@@ -366,7 +432,8 @@ class DecisionTreeBuilder {
     Object.values(this.currentTree.steps).forEach(step => {
       const option = document.createElement('option');
       option.value = step.id;
-      option.textContent = `${step.title || 'Untitled'} (${step.id})`;
+      const stepTypeText = step.type.replace('-', ' ').toUpperCase();
+      option.textContent = `[${stepTypeText}] ${step.title || 'Untitled'} (${step.id})`;
       select.appendChild(option);
     });
     
@@ -400,17 +467,39 @@ class DecisionTreeBuilder {
   }
 
   addStep() {
+    // Create temporary step for editing - don't add to tree until saved
     const stepId = `step-${Date.now()}`;
-    const newStep = {
+    this.pendingStep = {
       id: stepId,
       title: '',
       type: 'choice',
       options: []
     };
-
-    this.currentTree.steps[stepId] = newStep;
-    this.updateUI();
-    this.editStep(stepId);
+    
+    // Set up modal for new step
+    this.currentEditingStep = stepId;
+    
+    // Reset modal fields
+    document.getElementById('stepId').value = stepId;
+    document.getElementById('stepTitle').value = '';
+    document.getElementById('stepSubtitle').value = '';
+    document.getElementById('stepQuestion').value = '';
+    document.querySelector('input[name="stepType"][value="choice"]').checked = true;
+    
+    // Clear all sections
+    document.getElementById('protocolTitle').value = '';
+    document.getElementById('protocolDescription').value = '';
+    document.getElementById('protocolNote').value = '';
+    document.getElementById('endpointRecommendation').value = '';
+    document.getElementById('endpointNotes').value = '';
+    
+    // Update modal for new step
+    document.getElementById('modalTitle').textContent = 'Add New Step';
+    document.getElementById('deleteStep').style.display = 'none';
+    
+    this.updateStepTypeUI('choice');
+    this.updateOptionsList([]);
+    this.showModal();
   }
 
   editRecommendationEndpoint(endpointId) {
@@ -427,19 +516,27 @@ class DecisionTreeBuilder {
     document.getElementById('stepTitle').value = `${endpoint.recommendation.modality || 'Recommendation'} Endpoint`;
     document.getElementById('stepSubtitle').value = '';
     document.getElementById('stepQuestion').value = '';
-    document.getElementById('stepType').value = 'endpoint';
+    document.querySelector('input[name="stepType"][value="endpoint"]').checked = true;
     
     // Populate endpoint fields
-    document.getElementById('endpointModality').value = endpoint.recommendation.modality || '';
-    document.getElementById('endpointContrast').value = endpoint.recommendation.contrast || '';
+    document.getElementById('endpointRecommendation').value = endpoint.recommendation.recommendation || '';
     document.getElementById('endpointNotes').value = endpoint.recommendation.notes || '';
-    document.getElementById('endpointPriority').value = endpoint.recommendation.priority || '';
     
     // Update UI to show endpoint section
     this.updateStepTypeUI('endpoint');
     
-    // Show the modal
-    document.getElementById('stepModal').classList.remove('hidden');
+    // Show the modal and reset scroll position
+    const modal = document.getElementById('stepModal');
+    modal.classList.remove('hidden');
+    
+    // Reset modal scroll to top
+    setTimeout(() => {
+      const modalContainer = modal.querySelector('.modal-container');
+      if (modalContainer) {
+        modalContainer.scrollTop = 0;
+      }
+      modal.scrollTop = 0;
+    }, 0);
   }
 
   editStep(stepId) {
@@ -448,12 +545,16 @@ class DecisionTreeBuilder {
     
     if (!step) return;
 
+    // Set modal for editing existing step
+    document.getElementById('modalTitle').textContent = 'Edit Step';
+    document.getElementById('deleteStep').style.display = 'inline-flex';
+
     // Populate modal fields
     document.getElementById('stepId').value = step.id;
     document.getElementById('stepTitle').value = step.title || '';
     document.getElementById('stepSubtitle').value = step.subtitle || '';
     document.getElementById('stepQuestion').value = step.question || '';
-    document.getElementById('stepType').value = step.type;
+    document.querySelector(`input[name="stepType"][value="${step.type}"]`).checked = true;
 
     // Guide info
     if (step.guideInfo) {
@@ -468,15 +569,11 @@ class DecisionTreeBuilder {
 
     // Endpoint info
     if (step.recommendation) {
-      document.getElementById('endpointModality').value = step.recommendation.modality || '';
-      document.getElementById('endpointContrast').value = step.recommendation.contrast || '';
+      document.getElementById('endpointRecommendation').value = step.recommendation.recommendation || '';
       document.getElementById('endpointNotes').value = step.recommendation.notes || '';
-      document.getElementById('endpointPriority').value = step.recommendation.priority || '';
     } else {
-      document.getElementById('endpointModality').value = '';
-      document.getElementById('endpointContrast').value = '';
+      document.getElementById('endpointRecommendation').value = '';
       document.getElementById('endpointNotes').value = '';
-      document.getElementById('endpointPriority').value = '';
     }
 
     this.updateStepTypeUI(step.type);
@@ -488,31 +585,144 @@ class DecisionTreeBuilder {
     const protocolSection = document.getElementById('protocolSection');
     const optionsSection = document.getElementById('optionsSection');
     const endpointSection = document.getElementById('endpointSection');
+    const stepTypeGuidance = document.getElementById('stepTypeGuidance');
+    const stepQuestionLabel = document.getElementById('stepQuestionLabel');
+    const stepQuestion = document.getElementById('stepQuestion');
 
     // Hide all sections first
     protocolSection.classList.add('hidden');
     optionsSection.classList.add('hidden');
     endpointSection.classList.add('hidden');
 
-    // Show relevant sections
+    // Update guidance and labels based on step type
+    const guidanceConfig = {
+      'choice': {
+        guidance: '<h5>Multiple Choice Decision</h5><p>Present 3+ options to guide decision-making. Create clear, distinct options that cover all scenarios. Best for complex decisions with multiple pathways.</p>',
+        questionLabel: 'Clinical Scenario',
+        questionPlaceholder: 'Describe the clinical scenario or question that requires multiple choice selection. You can use callouts like [info]Important note[/info]'
+      },
+      'yes-no': {
+        guidance: '<h5>Yes/No Decision</h5><p>Binary clinical decisions with clear yes/no answers. Frame as a specific clinical question that can be answered definitively. Use two fixed options: Yes and No.</p>',
+        questionLabel: 'Clinical Question',
+        questionPlaceholder: 'Frame as a clear clinical question with a yes/no answer. You can use callouts like [warning]Be careful[/warning]'
+      },
+      'endpoint': {
+        guidance: '<h5>Clinical Recommendation</h5><p>Final step that provides specific, actionable clinical recommendations. This ends the decision pathway with clear guidance for healthcare professionals.</p>',
+        questionLabel: 'Details (optional)',
+        questionPlaceholder: 'You can add text here to provide more detail if required. You can use callouts like [info]Important note[/info]'
+      }
+    };
+
+    const config = guidanceConfig[stepType] || guidanceConfig['choice'];
+    
+    // Update guidance section
+    stepTypeGuidance.innerHTML = config.guidance;
+    stepTypeGuidance.className = `step-type-guidance ${stepType}`;
+    
+    // Update field labels and placeholders
+    stepQuestionLabel.textContent = config.questionLabel;
+    stepQuestion.placeholder = config.questionPlaceholder;
+
+    // Show relevant sections and handle special cases
+    const addOptionBtn = document.getElementById('addOption');
+    
     switch (stepType) {
-      case 'guide':
-        protocolSection.classList.remove('hidden');
-        optionsSection.classList.remove('hidden');
-        break;
       case 'endpoint':
         endpointSection.classList.remove('hidden');
         break;
       case 'choice':
+        optionsSection.classList.remove('hidden');
+        addOptionBtn.style.display = 'inline-flex';
+        this.updateOptionsButtonText('Add Option');
+        break;
       case 'yes-no':
         optionsSection.classList.remove('hidden');
+        addOptionBtn.style.display = 'none'; // Hide add option button - yes/no has fixed 2 options
+        
+        // Update the step type in the data model
+        const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
+        if (step) {
+          step.type = 'yes-no';
+        }
+        
+        this.ensureYesNoOptions();
         break;
     }
+  }
+
+  updateOptionsButtonText(text) {
+    const addOptionBtn = document.getElementById('addOption');
+    if (addOptionBtn) {
+      addOptionBtn.textContent = text;
+    }
+  }
+
+  ensureYesNoOptions() {
+    console.log('ensureYesNoOptions called, currentEditingStep:', this.currentEditingStep);
+    console.log('pendingStep:', this.pendingStep);
+    
+    if (!this.currentEditingStep) {
+      console.log('No currentEditingStep, returning');
+      return;
+    }
+    
+    const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
+    console.log('Found step:', step);
+    
+    if (!step) {
+      console.log('No step found, returning');
+      return;
+    }
+    
+    if (step.type !== 'yes-no') {
+      console.log('Step type is not yes-no:', step.type, 'returning');
+      return;
+    }
+    
+    console.log('Step type is yes-no, checking options:', step.options);
+    
+    // Only auto-create options for new steps (pendingStep), not when editing existing ones
+    if (this.pendingStep && (!step.options || step.options.length === 0)) {
+      // Auto-create Yes/No options for new yes-no steps
+      step.options = [
+        { text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } },
+        { text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } }
+      ];
+      console.log('Auto-created Yes/No options for new step:', step.id, step.options);
+    } else if (!this.pendingStep) {
+      // For existing steps, just ensure we have the minimum structure but don't overwrite
+      if (!step.options || step.options.length === 0) {
+        step.options = [
+          { text: 'Yes', variant: 'success', action: { type: 'navigate', nextStep: '' } },
+          { text: 'No', variant: 'secondary', action: { type: 'navigate', nextStep: '' } }
+        ];
+        console.log('Added missing Yes/No options for existing step:', step.id);
+      } else {
+        console.log('Existing step has options, preserving them:', step.options);
+      }
+      // If options exist, leave them alone to preserve user's targets and details
+    }
+    
+    // Update the UI with current options
+    console.log('Updating options list with:', step.options);
+    this.updateOptionsList(step.options);
+  }
+
+  editYesNoOption(index) {
+    const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
+    if (!step) return;
+    
+    this.ensureYesNoOptions();
+    this.editOptionAtIndex(index);
   }
 
   updateOptionsList(options) {
     const optionsList = document.getElementById('optionsList');
     optionsList.innerHTML = '';
+
+    // Get the current step to check its type
+    const currentStep = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
+    const isYesNoStep = currentStep && currentStep.type === 'yes-no';
 
     options.forEach((option, index) => {
       const optionItem = document.createElement('div');
@@ -520,10 +730,13 @@ class DecisionTreeBuilder {
       
       let actionText = '';
       if (option.action.type === 'navigate') {
-        actionText = `󰁔 ${option.action.nextStep}`;
+        actionText = `→ ${option.action.nextStep}`;
       } else if (option.action.type === 'recommend') {
-        actionText = `󰯯 ${option.action.recommendation.modality}`;
+        actionText = `⚡ ${option.action.recommendation.recommendation || 'Recommendation'}`;
       }
+
+      // For yes-no steps, hide the remove button to prevent deletion of Yes/No options
+      const removeButtonHtml = isYesNoStep ? '' : `<button class="btn danger small" onclick="builder.removeOptionAtIndex(${index})">Remove</button>`;
 
       optionItem.innerHTML = `
         <div class="option-content">
@@ -532,7 +745,7 @@ class DecisionTreeBuilder {
         </div>
         <div class="option-controls">
           <button class="btn secondary small" onclick="builder.editOptionAtIndex(${index})">Edit</button>
-          <button class="btn danger small" onclick="builder.removeOptionAtIndex(${index})">Remove</button>
+          ${removeButtonHtml}
         </div>
       `;
       
@@ -543,7 +756,9 @@ class DecisionTreeBuilder {
   addOption() {
     if (!this.currentEditingStep) return;
 
-    const step = this.currentTree.steps[this.currentEditingStep];
+    const step = this.pendingStep || this.currentTree.steps[this.currentEditingStep];
+    if (!step) return;
+    
     if (!step.options) step.options = [];
 
     const newOption = {
@@ -568,10 +783,8 @@ class DecisionTreeBuilder {
     if (this.editingVirtualEndpoint) {
       const endpointId = this.currentEditingStep;
       const newRecommendation = {
-        modality: document.getElementById('endpointModality').value,
-        contrast: document.getElementById('endpointContrast').value,
-        notes: document.getElementById('endpointNotes').value,
-        priority: document.getElementById('endpointPriority').value
+        recommendation: document.getElementById('endpointRecommendation').value,
+        notes: document.getElementById('endpointNotes').value
       };
       
       // Find all steps that point to this recommendation endpoint and update them
@@ -592,24 +805,50 @@ class DecisionTreeBuilder {
       this.editingVirtualEndpoint = false;
       this.updateUI();
       this.updateJSON();
+      this.updatePreview();
       this.closeModal();
       return;
     }
 
-    const step = this.currentTree.steps[this.currentEditingStep];
+    // Handle new step creation vs editing existing step
+    let step;
+    if (this.pendingStep && !this.currentTree.steps[this.currentEditingStep]) {
+      // This is a new step - create it in the tree
+      step = this.pendingStep;
+      this.currentTree.steps[this.currentEditingStep] = step;
+      
+      // If no startStep is set, make this the startStep
+      if (!this.currentTree.startStep) {
+        this.currentTree.startStep = step.id;
+      }
+      
+      this.pendingStep = null;
+    } else {
+      // This is an existing step
+      step = this.currentTree.steps[this.currentEditingStep];
+    }
     
     // Basic properties
     const newId = document.getElementById('stepId').value;
     const title = document.getElementById('stepTitle').value;
     const subtitle = document.getElementById('stepSubtitle').value;
     const question = document.getElementById('stepQuestion').value;
-    const type = document.getElementById('stepType').value;
+    const type = document.querySelector('input[name="stepType"]:checked')?.value;
 
     // Handle ID change
     if (newId !== step.id) {
-      delete this.currentTree.steps[step.id];
+      const oldId = step.id;
+      
+      // Update all references to the old ID throughout the tree
+      this.updateStepIdReferences(oldId, newId);
+      
+      // Update the step in the steps object
+      delete this.currentTree.steps[oldId];
       this.currentTree.steps[newId] = step;
       step.id = newId;
+      
+      // Update current editing reference
+      this.currentEditingStep = newId;
     }
 
     step.title = title;
@@ -631,10 +870,8 @@ class DecisionTreeBuilder {
     // Endpoint info
     if (type === 'endpoint') {
       step.recommendation = {
-        modality: document.getElementById('endpointModality').value,
-        contrast: document.getElementById('endpointContrast').value,
-        notes: document.getElementById('endpointNotes').value,
-        priority: document.getElementById('endpointPriority').value
+        recommendation: document.getElementById('endpointRecommendation').value,
+        notes: document.getElementById('endpointNotes').value
       };
       delete step.options;
     } else {
@@ -644,6 +881,30 @@ class DecisionTreeBuilder {
     this.closeModal();
     this.updateUI();
     this.updateJSON();
+    this.updatePreview();
+    
+    // Mark as changed
+    this.checkForTreeChanges();
+  }
+
+  updateStepIdReferences(oldId, newId) {
+    // Update startStep if it matches the old ID
+    if (this.currentTree.startStep === oldId) {
+      this.currentTree.startStep = newId;
+    }
+    
+    // Update all option navigation targets that point to the old ID
+    Object.values(this.currentTree.steps).forEach(step => {
+      if (step.options) {
+        step.options.forEach(option => {
+          if (option.action && option.action.type === 'navigate' && option.action.nextStep === oldId) {
+            option.action.nextStep = newId;
+          }
+        });
+      }
+    });
+    
+    console.log(`Updated all references from step ID "${oldId}" to "${newId}"`);
   }
 
   deleteStep() {
@@ -654,6 +915,7 @@ class DecisionTreeBuilder {
       this.closeModal();
       this.updateUI();
       this.updateJSON();
+      this.updatePreview();
     }
   }
 
@@ -719,6 +981,7 @@ class DecisionTreeBuilder {
 
     this.updateGuidesList();
     this.updateJSON();
+    this.updatePreview();
     this.closeGuideModal();
   }
 
@@ -728,6 +991,7 @@ class DecisionTreeBuilder {
         this.currentTree.guides.splice(this.currentEditingGuideIndex, 1);
         this.updateGuidesList();
         this.updateJSON();
+        this.updatePreview();
         this.closeGuideModal();
       }
     }
@@ -742,7 +1006,7 @@ class DecisionTreeBuilder {
       sectionItem.className = 'option-item';
       
       const typeLabels = {
-        protocol: 'Guide (Blue)',
+        guide: 'Guide (Blue)',
         info: 'Information (Purple)', 
         warning: 'Warning (Orange)',
         success: 'Success (Green)',
@@ -771,9 +1035,8 @@ class DecisionTreeBuilder {
     
     // Reset form
     document.getElementById('sectionTitle').value = '';
-    document.getElementById('sectionType').value = 'protocol';
+    document.getElementById('sectionType').value = 'guide';
     document.getElementById('sectionContent').value = '';
-    document.getElementById('sectionItems').value = '';
     document.getElementById('guideSectionModalTitle').textContent = 'Add Section';
     document.getElementById('deleteGuideSection').style.display = 'none';
     
@@ -788,9 +1051,8 @@ class DecisionTreeBuilder {
     
     // Populate form
     document.getElementById('sectionTitle').value = section.title || '';
-    document.getElementById('sectionType').value = section.type || 'protocol';
+    document.getElementById('sectionType').value = section.type || 'guide';
     document.getElementById('sectionContent').value = section.content || '';
-    document.getElementById('sectionItems').value = section.items ? section.items.join('\n') : '';
     document.getElementById('guideSectionModalTitle').textContent = 'Edit Section';
     document.getElementById('deleteGuideSection').style.display = 'inline-flex';
     
@@ -800,6 +1062,9 @@ class DecisionTreeBuilder {
   showGuideSectionModal() {
     document.getElementById('guideSectionModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    
+    // Bind callout buttons for guide section content
+    this.bindCalloutButtons('sectionContent');
   }
 
   closeGuideSectionModal() {
@@ -813,7 +1078,6 @@ class DecisionTreeBuilder {
     const title = document.getElementById('sectionTitle').value.trim();
     const type = document.getElementById('sectionType').value;
     const content = document.getElementById('sectionContent').value.trim();
-    const itemsText = document.getElementById('sectionItems').value.trim();
     
     if (!title) {
       alert('Please enter a section title');
@@ -825,10 +1089,6 @@ class DecisionTreeBuilder {
       type: type,
       content: content
     };
-
-    if (itemsText) {
-      sectionData.items = itemsText.split('\n').map(item => item.trim()).filter(item => item);
-    }
 
     // Initialize guide editing object if needed
     if (!this.currentEditingGuide) {
@@ -847,6 +1107,8 @@ class DecisionTreeBuilder {
     }
 
     this.updateGuideSectionsList(this.currentEditingGuide.sections);
+    this.updateJSON();
+    this.updatePreview();
     this.closeGuideSectionModal();
   }
 
@@ -855,6 +1117,8 @@ class DecisionTreeBuilder {
       if (confirm('Are you sure you want to delete this section?')) {
         this.currentEditingGuide.sections.splice(this.currentEditingSectionIndex, 1);
         this.updateGuideSectionsList(this.currentEditingGuide.sections);
+        this.updateJSON();
+        this.updatePreview();
         this.closeGuideSectionModal();
       }
     }
@@ -864,13 +1128,127 @@ class DecisionTreeBuilder {
     if (confirm('Are you sure you want to remove this section?')) {
       this.currentEditingGuide.sections.splice(index, 1);
       this.updateGuideSectionsList(this.currentEditingGuide.sections);
+      this.updateJSON();
+      this.updatePreview();
     }
   }
 
 
   showModal() {
-    document.getElementById('stepModal').classList.remove('hidden');
+    const modal = document.getElementById('stepModal');
+    modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    
+    // Store initial form state for change tracking
+    this.captureInitialStepState();
+    
+    // Set up change listeners
+    this.setupStepChangeListeners();
+    
+    // Hide save button initially
+    this.updateSaveButtonVisibility(false);
+    
+    // Reset modal scroll to top
+    setTimeout(() => {
+      const modalContainer = modal.querySelector('.modal-container');
+      if (modalContainer) {
+        modalContainer.scrollTop = 0;
+      }
+      modal.scrollTop = 0;
+    }, 0);
+  }
+
+  captureInitialStepState() {
+    this.initialStepState = {
+      stepId: document.getElementById('stepId').value,
+      stepTitle: document.getElementById('stepTitle').value,
+      stepSubtitle: document.getElementById('stepSubtitle').value,
+      stepQuestion: document.getElementById('stepQuestion').value,
+      stepType: document.querySelector('input[name="stepType"]:checked')?.value || '',
+      protocolTitle: document.getElementById('protocolTitle').value,
+      protocolDescription: document.getElementById('protocolDescription').value,
+      protocolNote: document.getElementById('protocolNote').value,
+      endpointRecommendation: document.getElementById('endpointRecommendation').value,
+      endpointNotes: document.getElementById('endpointNotes').value
+    };
+  }
+
+  setupStepChangeListeners() {
+    // Remove existing listeners to avoid duplicates
+    this.removeStepChangeListeners();
+    
+    const fields = [
+      'stepId', 'stepTitle', 'stepSubtitle', 'stepQuestion',
+      'protocolTitle', 'protocolDescription', 'protocolNote',
+      'endpointRecommendation', 'endpointNotes'
+    ];
+    
+    this.stepChangeHandler = () => this.checkForStepChanges();
+    
+    fields.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.addEventListener('input', this.stepChangeHandler);
+      }
+    });
+    
+    // Add listeners for radio buttons
+    const radioButtons = document.querySelectorAll('input[name="stepType"]');
+    radioButtons.forEach(radio => {
+      radio.addEventListener('change', this.stepChangeHandler);
+    });
+  }
+
+  removeStepChangeListeners() {
+    if (!this.stepChangeHandler) return;
+    
+    const fields = [
+      'stepId', 'stepTitle', 'stepSubtitle', 'stepQuestion',
+      'protocolTitle', 'protocolDescription', 'protocolNote',
+      'endpointRecommendation', 'endpointNotes'
+    ];
+    
+    fields.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.removeEventListener('input', this.stepChangeHandler);
+      }
+    });
+    
+    const radioButtons = document.querySelectorAll('input[name="stepType"]');
+    radioButtons.forEach(radio => {
+      radio.removeEventListener('change', this.stepChangeHandler);
+    });
+  }
+
+  checkForStepChanges() {
+    if (!this.initialStepState) return;
+    
+    const currentState = {
+      stepId: document.getElementById('stepId').value,
+      stepTitle: document.getElementById('stepTitle').value,
+      stepSubtitle: document.getElementById('stepSubtitle').value,
+      stepQuestion: document.getElementById('stepQuestion').value,
+      stepType: document.querySelector('input[name="stepType"]:checked')?.value || '',
+      protocolTitle: document.getElementById('protocolTitle').value,
+      protocolDescription: document.getElementById('protocolDescription').value,
+      protocolNote: document.getElementById('protocolNote').value,
+      endpointRecommendation: document.getElementById('endpointRecommendation').value,
+      endpointNotes: document.getElementById('endpointNotes').value
+    };
+    
+    const hasChanges = Object.keys(this.initialStepState).some(key => 
+      this.initialStepState[key] !== currentState[key]
+    );
+    
+    this.updateSaveButtonVisibility(hasChanges);
+  }
+
+  updateSaveButtonVisibility(hasChanges) {
+    const saveButton = document.getElementById('saveStep');
+    if (saveButton) {
+      saveButton.style.display = hasChanges ? 'inline-flex' : 'none';
+    }
   }
 
   closeModal() {
@@ -878,6 +1256,10 @@ class DecisionTreeBuilder {
     document.body.style.overflow = 'auto';
     this.currentEditingStep = null;
     this.currentEditingOption = null;
+    
+    // Clean up change listeners
+    this.removeStepChangeListeners();
+    this.initialStepState = null;
   }
 
   toggleHamburgerMenu() {
@@ -901,20 +1283,137 @@ class DecisionTreeBuilder {
     
     const jsonTab = document.getElementById('jsonTab');
     const toggleIndicator = document.getElementById('advancedToggle');
+    const jsonOutput = document.getElementById('jsonOutput');
+    const loadFromJsonBtn = document.getElementById('loadFromJson');
+    const formatJsonBtn = document.getElementById('formatJson');
     
     if (this.advancedMode) {
       jsonTab.classList.remove('hidden');
       toggleIndicator.textContent = 'ON';
       toggleIndicator.classList.add('on');
+      
+      // Enable JSON editing
+      jsonOutput.readOnly = false;
+      jsonOutput.placeholder = 'Edit JSON directly here. Changes will be applied when you click "Load from JSON".';
+      loadFromJsonBtn.style.display = 'inline-flex';
+      formatJsonBtn.style.display = 'inline-flex';
+      
+      this.updateJsonStatus('editing', 'Editing enabled');
     } else {
       jsonTab.classList.add('hidden');
       toggleIndicator.textContent = 'OFF';
       toggleIndicator.classList.remove('on');
       
+      // Disable JSON editing
+      jsonOutput.readOnly = true;
+      jsonOutput.placeholder = 'JSON output will appear here. Enable Advanced mode to edit.';
+      loadFromJsonBtn.style.display = 'none';
+      formatJsonBtn.style.display = 'none';
+      
+      this.updateJsonStatus('', '');
+      
       // If JSON tab is currently active, switch to builder tab
       if (jsonTab.classList.contains('active')) {
         this.showView('builder');
       }
+    }
+  }
+
+  updateJsonStatus(type, message) {
+    const status = document.getElementById('jsonStatus');
+    status.className = `json-status ${type}`;
+    status.textContent = message;
+  }
+
+  validateJson() {
+    if (!this.advancedMode) return;
+    
+    const jsonOutput = document.getElementById('jsonOutput');
+    const jsonText = jsonOutput.value.trim();
+    
+    if (!jsonText) {
+      this.updateJsonStatus('editing', 'Editing enabled');
+      return;
+    }
+    
+    try {
+      JSON.parse(jsonText);
+      this.updateJsonStatus('valid', 'Valid JSON');
+    } catch (error) {
+      this.updateJsonStatus('invalid', `Invalid JSON: ${error.message}`);
+    }
+  }
+
+  formatJson() {
+    if (!this.advancedMode) return;
+    
+    const jsonOutput = document.getElementById('jsonOutput');
+    const jsonText = jsonOutput.value.trim();
+    
+    if (!jsonText) {
+      alert('No JSON content to format');
+      return;
+    }
+    
+    try {
+      const parsed = JSON.parse(jsonText);
+      jsonOutput.value = JSON.stringify(parsed, null, 2);
+      this.updateJsonStatus('valid', 'Formatted and valid');
+    } catch (error) {
+      alert(`Cannot format invalid JSON: ${error.message}`);
+      this.updateJsonStatus('invalid', `Invalid JSON: ${error.message}`);
+    }
+  }
+
+  loadFromJson() {
+    if (!this.advancedMode) return;
+    
+    const jsonOutput = document.getElementById('jsonOutput');
+    const jsonText = jsonOutput.value.trim();
+    
+    if (!jsonText) {
+      alert('No JSON content to load');
+      return;
+    }
+    
+    try {
+      const pathwayData = JSON.parse(jsonText);
+      
+      // Validate required fields
+      if (!pathwayData.id || !pathwayData.title) {
+        throw new Error('Pathway must have id and title fields');
+      }
+      
+      if (!pathwayData.steps || typeof pathwayData.steps !== 'object') {
+        throw new Error('Pathway must have a steps object');
+      }
+      
+      // Load the pathway data
+      this.currentTree = {
+        id: pathwayData.id || '',
+        title: pathwayData.title || '',
+        description: pathwayData.description || '',
+        startStep: pathwayData.startStep || '',
+        guides: pathwayData.guides || [],
+        steps: pathwayData.steps || {}
+      };
+      
+      // Update all UI elements
+      this.updateUI();
+      this.updateJSON();
+      this.updatePreview();
+      
+      // Switch to builder view to see the loaded pathway
+      this.showView('builder');
+      
+      this.updateJsonStatus('valid', 'Pathway loaded successfully!');
+      
+      // Show success message
+      alert('Pathway loaded successfully from JSON!');
+      
+    } catch (error) {
+      this.updateJsonStatus('invalid', `Load failed: ${error.message}`);
+      alert(`Failed to load pathway: ${error.message}`);
     }
   }
 
@@ -1026,25 +1525,7 @@ class DecisionTreeBuilder {
       card.appendChild(guideInfo);
     }
     
-    // Options (if exists)
-    if (step.options && step.options.length > 0) {
-      const optionsTitle = document.createElement('h5');
-      optionsTitle.className = 'mini-options-title';
-      optionsTitle.textContent = 'Options:';
-      card.appendChild(optionsTitle);
-      
-      const optionsList = document.createElement('ul');
-      optionsList.className = 'mini-options-list';
-      
-      step.options.forEach(option => {
-        const optionItem = document.createElement('li');
-        optionItem.className = `mini-option-item variant-${option.variant || 'primary'}`;
-        optionItem.textContent = option.text;
-        optionsList.appendChild(optionItem);
-      });
-      
-      card.appendChild(optionsList);
-    }
+    // Options - removed from mini cards display
     
     // Recommendation (if endpoint)
     if (step.type === 'endpoint' && step.recommendation) {
@@ -1052,18 +1533,14 @@ class DecisionTreeBuilder {
       const recCard = document.createElement('div');
       recCard.className = 'mini-recommendation-card';
       
-      const recTitle = document.createElement('h5');
-      recTitle.textContent = 'Recommendation';
-      recCard.appendChild(recTitle);
+      // Show main recommendation content
+      if (rec.recommendation) {
+        const recContent = document.createElement('div');
+        recContent.textContent = rec.recommendation;
+        recCard.appendChild(recContent);
+      }
       
-      const modality = document.createElement('div');
-      modality.innerHTML = `<strong>Modality:</strong> ${rec.modality}`;
-      recCard.appendChild(modality);
-      
-      const contrast = document.createElement('div');
-      contrast.innerHTML = `<strong>Contrast:</strong> ${rec.contrast}`;
-      recCard.appendChild(contrast);
-      
+      // Show notes if present
       if (rec.notes) {
         const notes = document.createElement('div');
         notes.innerHTML = `<strong>Notes:</strong> ${rec.notes}`;
@@ -1087,10 +1564,12 @@ class DecisionTreeBuilder {
     
     const action = document.createElement('div');
     action.className = 'mini-option-action';
-    if (optionData.action.type === 'navigate') {
+    if (optionData.action && optionData.action.type === 'navigate') {
       action.textContent = `→ ${optionData.action.nextStep}`;
-    } else if (optionData.action.type === 'recommend') {
+    } else if (optionData.action && optionData.action.type === 'recommend') {
       action.textContent = '→ Recommendation';
+    } else {
+      action.textContent = '→ Unknown action';
     }
     card.appendChild(action);
     
@@ -1101,7 +1580,8 @@ class DecisionTreeBuilder {
     if (!text) return '';
     
     // Parse callout syntax: [type]content[/type]
-    const calloutRegex = /\[(protocol|guide|info|warning|success|danger)\](.*?)\[\/\1\]/g;
+    // Using [\s\S] instead of . to match newlines
+    const calloutRegex = /\[(guide|info|warning|success|danger)\]([\s\S]*?)\[\/\1\]/g;
     
     return text.replace(calloutRegex, (match, type, content) => {
       return `<div class="mini-step-callout mini-step-callout-${type}">${content.trim()}</div>`;
@@ -1180,6 +1660,9 @@ class DecisionTreeBuilder {
         // Refresh the library
         await this.loadPathways();
         
+        // Reset change tracking
+        this.captureInitialTreeState();
+        
         alert('Draft saved successfully!');
       } else {
         // Fallback to file-based system
@@ -1200,6 +1683,9 @@ class DecisionTreeBuilder {
         // Update/add to manifest
         await this.updateManifestEntry(filename, 'draft');
         
+        // Reset change tracking
+        this.captureInitialTreeState();
+        
         alert('Draft saved successfully! File downloaded. Please place it in the pathways/ directory.');
       }
       
@@ -1209,74 +1695,7 @@ class DecisionTreeBuilder {
     }
   }
 
-  async publishPathway() {
-    try {
-      // Validate the pathway is complete
-      const validation = this.validatePathway();
-      if (!validation.isValid) {
-        alert('Cannot publish pathway:\n' + validation.errors.join('\n'));
-        return;
-      }
-
-      // Confirm publication
-      const confirmed = confirm(
-        `Are you sure you want to publish "${this.currentTree.title}"?\n\n` +
-        'This will save the pathway to the pathways directory and update the manifest.'
-      );
-      
-      if (!confirmed) return;
-
-      // Add publication metadata
-      const publishData = {
-        ...this.currentTree,
-        metadata: {
-          publishedAt: new Date().toISOString(),
-          version: '1.0',
-          status: 'published'
-        }
-      };
-
-      const filename = `${this.currentTree.id || 'pathway'}.json`;
-      
-      try {
-        // Save the pathway file
-        await this.savePathwayFile(filename, publishData);
-        
-        // Regenerate the manifest
-        await this.regenerateManifest();
-        
-        alert(
-          `Pathway "${this.currentTree.title}" published successfully!\n\n` +
-          `Saved as: ${filename}\n` +
-          'Manifest updated automatically.'
-        );
-        
-      } catch (saveError) {
-        console.error('Error saving pathway:', saveError);
-        
-        // Fallback to download if save fails
-        console.log('Falling back to download method...');
-        const dataStr = JSON.stringify(publishData, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = filename;
-        link.click();
-        
-        alert(
-          `Unable to save directly to server.\n\n` +
-          `File downloaded as: ${filename}\n\n` +
-          'Please manually copy this file to the pathways/ directory and run:\n' +
-          'node generate-manifest.js'
-        );
-      }
-      
-    } catch (error) {
-      console.error('Error publishing pathway:', error);
-      alert('Error publishing pathway: ' + error.message);
-    }
-  }
+  // Publish functionality moved to pathway library - use library view to publish pathways
 
   async savePathwayFile(filename, data) {
     // Try to save the file using the publish endpoint
@@ -1366,6 +1785,20 @@ class DecisionTreeBuilder {
       }
     });
     
+    // Check for circular references
+    Object.keys(this.currentTree.steps || {}).forEach(stepId => {
+      const step = this.currentTree.steps[stepId];
+      if (step?.options) {
+        step.options.forEach((option, index) => {
+          if (option.action?.type === 'navigate' && option.action.nextStep) {
+            if (this.detectCircularReference(stepId, option.action.nextStep)) {
+              errors.push(`- Step "${stepId}" option ${index + 1} creates a circular reference (infinite loop)`);
+            }
+          }
+        });
+      }
+    });
+    
     return {
       isValid: errors.length === 0,
       errors
@@ -1386,6 +1819,7 @@ class DecisionTreeBuilder {
         const importedTree = JSON.parse(e.target.result);
         this.currentTree = importedTree;
         this.updateUI();
+        this.updatePreview();
       } catch (error) {
         alert('Error importing file: ' + error.message);
       }
@@ -1682,6 +2116,7 @@ class DecisionTreeBuilder {
     
     this.currentTree = exampleTree;
     this.updateUI();
+    this.updatePreview();
   }
 
   // Public methods for button onclick handlers
@@ -1690,6 +2125,7 @@ class DecisionTreeBuilder {
       this.currentTree.guides.splice(index, 1);
       this.updateGuidesList();
       this.updateJSON();
+      this.updatePreview();
     }
   }
 
@@ -1714,10 +2150,8 @@ class DecisionTreeBuilder {
     } else if (option.action.type === 'recommend') {
       this.populateExistingEndpoints();
       if (option.action.recommendation) {
-        document.getElementById('recModality').value = option.action.recommendation.modality || '';
-        document.getElementById('recContrast').value = option.action.recommendation.contrast || '';
+        document.getElementById('recRecommendation').value = option.action.recommendation.recommendation || '';
         document.getElementById('recNotes').value = option.action.recommendation.notes || '';
-        document.getElementById('recPriority').value = option.action.recommendation.priority || '';
       }
     }
     
@@ -1728,6 +2162,13 @@ class DecisionTreeBuilder {
     if (!this.currentEditingStep) return;
     
     const step = this.currentTree.steps[this.currentEditingStep];
+    
+    // Prevent removal of options from yes-no steps
+    if (step.type === 'yes-no') {
+      alert('Cannot remove options from Yes/No steps. Yes and No options are required.');
+      return;
+    }
+    
     step.options.splice(index, 1);
     this.updateOptionsList(step.options);
     this.updateJSON();
@@ -1770,7 +2211,8 @@ class DecisionTreeBuilder {
       if (step.id !== this.currentEditingStep) { // Don't allow self-reference
         const option = document.createElement('option');
         option.value = step.id;
-        option.textContent = `${step.title || 'Untitled'} (${step.id})`;
+        const stepTypeText = step.type.replace('-', ' ').toUpperCase();
+        option.textContent = `[${stepTypeText}] ${step.title || 'Untitled'} (${step.id})`;
         select.appendChild(option);
       }
     });
@@ -1877,6 +2319,12 @@ class DecisionTreeBuilder {
           };
         }
         
+        // Check for circular reference with new step
+        if (this.detectCircularReference(this.currentEditingStep, newStepId)) {
+          alert('This action would create a circular reference (infinite loop) in your pathway. Please choose a different target or create a different step structure.');
+          return;
+        }
+        
         this.currentTree.steps[newStepId] = newStep;
         
         option.action = {
@@ -1884,6 +2332,12 @@ class DecisionTreeBuilder {
           nextStep: newStepId
         };
       } else {
+        // Check for circular reference with existing step
+        if (this.detectCircularReference(this.currentEditingStep, targetStep)) {
+          alert('This action would create a circular reference (infinite loop) in your pathway. Please choose a different target step.');
+          return;
+        }
+        
         option.action = {
           type: 'navigate',
           nextStep: targetStep
@@ -1909,10 +2363,8 @@ class DecisionTreeBuilder {
         
         // Create the new endpoint step
         const recommendation = {
-          modality: document.getElementById('recModality').value,
-          contrast: document.getElementById('recContrast').value,
-          notes: document.getElementById('recNotes').value,
-          priority: document.getElementById('recPriority').value
+          recommendation: document.getElementById('recRecommendation').value,
+          notes: document.getElementById('recNotes').value
         };
         
         const newEndpointStep = {
@@ -1938,19 +2390,17 @@ class DecisionTreeBuilder {
         // Create new endpoint step for inline recommendation - make every recommendation reusable
         const timestamp = Date.now();
         const newEndpointId = `endpoint-${timestamp}`;
-        const modality = document.getElementById('recModality').value || 'Recommendation';
+        const recommendationText = document.getElementById('recRecommendation').value || 'Recommendation';
         
         // Create the new endpoint step
         const recommendation = {
-          modality: document.getElementById('recModality').value,
-          contrast: document.getElementById('recContrast').value,
-          notes: document.getElementById('recNotes').value,
-          priority: document.getElementById('recPriority').value
+          recommendation: document.getElementById('recRecommendation').value,
+          notes: document.getElementById('recNotes').value
         };
         
         const newEndpointStep = {
           id: newEndpointId,
-          title: `${modality} Recommendation`,
+          title: `${recommendationText} Recommendation`,
           type: 'endpoint',
           recommendation: recommendation
         };
@@ -1969,6 +2419,7 @@ class DecisionTreeBuilder {
     this.updateOptionsList(step.options);
     this.updateUI();
     this.updateJSON();
+    this.updatePreview();
   }
 
   deleteOption() {
@@ -1980,7 +2431,62 @@ class DecisionTreeBuilder {
       this.closeOptionModal();
       this.updateOptionsList(step.options);
       this.updateJSON();
+      this.updatePreview();
     }
+  }
+
+  // ==========================================================================
+  // Circular Reference Detection
+  // ==========================================================================
+
+  detectCircularReference(fromStepId, toStepId) {
+    // Special case: Allow navigation back to the start step (this is intentional pathway completion)
+    if (toStepId === this.currentTree.startStep && fromStepId !== this.currentTree.startStep) {
+      return false; // This is allowed - it's a "restart pathway" feature
+    }
+
+    // If we're linking to the same step, that's immediately circular
+    if (fromStepId === toStepId) {
+      return true;
+    }
+
+    // Use depth-first search to detect if toStepId can eventually lead back to fromStepId
+    const visited = new Set();
+    const stack = [toStepId];
+
+    while (stack.length > 0) {
+      const currentStepId = stack.pop();
+      
+      // If we've already visited this step, skip it to avoid infinite loops
+      if (visited.has(currentStepId)) {
+        continue;
+      }
+      
+      visited.add(currentStepId);
+      
+      // If we've reached back to our starting step, we found a cycle
+      if (currentStepId === fromStepId) {
+        return true;
+      }
+
+      // Get the current step and examine its options
+      const currentStep = this.currentTree.steps[currentStepId];
+      if (!currentStep || !currentStep.options) {
+        continue;
+      }
+
+      // Add all navigation targets to the stack for further exploration
+      for (const option of currentStep.options) {
+        if (option.action && option.action.type === 'navigate' && option.action.nextStep) {
+          // Skip checking paths that go back to start step (these are allowed)
+          if (option.action.nextStep !== this.currentTree.startStep) {
+            stack.push(option.action.nextStep);
+          }
+        }
+      }
+    }
+
+    return false; // No circular reference found
   }
 
   // ==========================================================================
@@ -2069,7 +2575,8 @@ class DecisionTreeBuilder {
           targetNodeType = 'endpoint';
         }
         
-        if (targetStep && positions[optionId] && positions[targetStep]) {
+        // Don't draw connections back to start step
+        if (targetStep && positions[optionId] && positions[targetStep] && targetStep !== this.currentTree.startStep) {
           const optionToTarget = this.createConnection(
             positions[optionId], 
             positions[targetStep], 
@@ -2155,7 +2662,9 @@ class DecisionTreeBuilder {
             text: option.text,
             variant: option.variant || 'primary',
             parentStep: id,
-            isOptionNode: true
+            isOptionNode: true,
+            targetStep: option.action?.nextStep || null,
+            actionType: option.action?.type || null
           });
           
           levels[optionId] = optionLevel;
@@ -2305,18 +2814,18 @@ class DecisionTreeBuilder {
       return this.createRecommendationNode(step, x, y);
     }
     
-    // Determine colors based on step type with better differentiation
-    let fillColor = '#F59E0B'; // default orange for choice
+    // Determine colors based on step type to match step card colors
+    let fillColor = '#3B82F6'; // default blue for choice
     if (step.id === this.currentTree.startStep) {
-      fillColor = '#059669'; // darker green for start step
+      fillColor = '#8B5CF6'; // purple for start step
     } else if (step.type === 'endpoint') {
-      fillColor = '#2563EB'; // blue for endpoints
+      fillColor = '#FB923C'; // orange for endpoints
     } else if (step.type === 'yes-no') {
-      fillColor = '#EA580C'; // darker orange for yes/no
+      fillColor = '#10B981'; // green for yes/no
     } else if (step.type === 'guide') {
-      fillColor = '#4338CA'; // indigo for guide/protocol
+      fillColor = '#4338CA'; // indigo for guide
     } else if (step.type === 'choice') {
-      fillColor = '#F59E0B'; // orange for multiple choice
+      fillColor = '#3B82F6'; // blue for multiple choice
     }
     
     // Create larger rectangle for full title display
@@ -2389,7 +2898,11 @@ class DecisionTreeBuilder {
     group.appendChild(rect);
     group.appendChild(titleText);
     
-    // Birdseye view is read-only - no click handlers to edit steps
+    // Add click handler to edit step
+    group.addEventListener('click', () => {
+      this.editStep(step.id);
+    });
+    group.style.cursor = 'pointer';
     
     // Add hover handlers for step preview modal
     group.addEventListener('mouseenter', (e) => {
@@ -2415,7 +2928,7 @@ class DecisionTreeBuilder {
     rect.setAttribute('class', 'flow-node-rect');
     rect.setAttribute('width', '220');
     rect.setAttribute('height', '120');
-    rect.setAttribute('fill', '#2563EB'); // blue for recommendations to match endpoint color
+    rect.setAttribute('fill', '#FB923C'); // orange for recommendations to match endpoint color
     rect.setAttribute('rx', '8');
     rect.setAttribute('ry', '8');
     rect.setAttribute('stroke', '#fff');
@@ -2430,24 +2943,24 @@ class DecisionTreeBuilder {
     titleText.setAttribute('font-weight', '600');
     titleText.textContent = '󰄬 Recommendation';
     
-    // Modality
-    const modalityText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    modalityText.setAttribute('class', 'flow-node-text');
-    modalityText.setAttribute('x', '110');
-    modalityText.setAttribute('y', '40');
-    modalityText.setAttribute('font-size', '11');
-    modalityText.setAttribute('font-weight', '600');
-    modalityText.textContent = rec.modality || 'Imaging';
+    // Recommendation title
+    const recTitleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    recTitleText.setAttribute('class', 'flow-node-text');
+    recTitleText.setAttribute('x', '110');
+    recTitleText.setAttribute('y', '40');
+    recTitleText.setAttribute('font-size', '11');
+    recTitleText.setAttribute('font-weight', '600');
+    recTitleText.textContent = step.title || rec.recommendation || 'Recommendation';
     
-    // Contrast
-    if (rec.contrast) {
-      const contrastText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      contrastText.setAttribute('class', 'flow-node-text');
-      contrastText.setAttribute('x', '110');
-      contrastText.setAttribute('y', '55');
-      contrastText.setAttribute('font-size', '10');
-      contrastText.textContent = rec.contrast;
-      group.appendChild(contrastText);
+    // Action or description
+    if (rec.action || rec.description) {
+      const actionText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      actionText.setAttribute('class', 'flow-node-text');
+      actionText.setAttribute('x', '110');
+      actionText.setAttribute('y', '55');
+      actionText.setAttribute('font-size', '10');
+      actionText.textContent = rec.action || rec.notes || 'Clinical recommendation';
+      group.appendChild(actionText);
     }
     
     // Priority
@@ -2485,8 +2998,14 @@ class DecisionTreeBuilder {
     
     group.appendChild(rect);
     group.appendChild(titleText);
-    group.appendChild(modalityText);
+    group.appendChild(recTitleText);
     group.appendChild(typeText);
+    
+    // Add click handler to edit step
+    group.addEventListener('click', () => {
+      this.editStep(step.id);
+    });
+    group.style.cursor = 'pointer';
     
     // Add hover handlers for recommendation node preview
     group.addEventListener('mouseenter', (e) => {
@@ -2505,30 +3024,39 @@ class DecisionTreeBuilder {
     group.setAttribute('class', 'flow-node option');
     group.setAttribute('transform', `translate(${x},${y})`);
     
-    // Determine color based on variant
+    // Check if this option targets the start step
+    const isBackToStart = optionData.targetStep === this.currentTree.startStep;
+    
+    // Determine color based on variant and target
     let fillColor = '#6B7280'; // grey for option buttons
     let strokeColor = '#2563EB';
     
-    switch (optionData.variant) {
-      case 'secondary':
-        fillColor = '#6B7280';
-        strokeColor = '#6B7280';
-        break;
-      case 'success':
-        fillColor = '#6B7280';
-        strokeColor = '#6B7280';
-        break;
-      case 'warning':
-        fillColor = '#6B7280';
-        strokeColor = '#6B7280';
-        break;
-      case 'danger':
-        fillColor = '#EF4444';
-        strokeColor = '#EF4444';
-        break;
-      default:
-        fillColor = '#6B7280';
-        strokeColor = '#6B7280';
+    if (isBackToStart) {
+      // Style as endpoint for back-to-start options
+      fillColor = '#FB923C'; // orange like endpoints
+      strokeColor = '#FB923C';
+    } else {
+      switch (optionData.variant) {
+        case 'secondary':
+          fillColor = '#6B7280';
+          strokeColor = '#6B7280';
+          break;
+        case 'success':
+          fillColor = '#6B7280';
+          strokeColor = '#6B7280';
+          break;
+        case 'warning':
+          fillColor = '#6B7280';
+          strokeColor = '#6B7280';
+          break;
+        case 'danger':
+          fillColor = '#EF4444';
+          strokeColor = '#EF4444';
+          break;
+        default:
+          fillColor = '#6B7280';
+          strokeColor = '#6B7280';
+      }
     }
     
     // Create smaller rectangle for option nodes
@@ -2537,8 +3065,16 @@ class DecisionTreeBuilder {
     rect.setAttribute('width', '140');
     rect.setAttribute('height', '50');
     rect.setAttribute('fill', fillColor);
-    rect.setAttribute('rx', '25'); // More rounded for button look
-    rect.setAttribute('ry', '25');
+    
+    // Use sharp corners for back-to-start options, rounded for others
+    if (isBackToStart) {
+      rect.setAttribute('rx', '0'); // Sharp rectangle for back-to-start
+      rect.setAttribute('ry', '0');
+    } else {
+      rect.setAttribute('rx', '25'); // More rounded for button look
+      rect.setAttribute('ry', '25');
+    }
+    
     rect.setAttribute('stroke', '#fff');
     rect.setAttribute('stroke-width', '2');
     
@@ -2563,14 +3099,7 @@ class DecisionTreeBuilder {
     group.appendChild(rect);
     group.appendChild(text);
     
-    // Add hover handlers for option preview
-    group.addEventListener('mouseenter', (e) => {
-      this.showOptionHoverModal(optionData, e);
-    });
-    
-    group.addEventListener('mouseleave', () => {
-      this.hideStepHoverModal();
-    });
+    // No hover handlers for options - we don't want to show mini cards for options
     
     return group;
   }
@@ -2602,23 +3131,48 @@ class DecisionTreeBuilder {
       toY = toPos.y + 50;      // Middle of step node (100px tall)
     }
     
-    // Create horizontal curved path that always ends horizontally for proper arrowhead alignment
+    // Check if this is a "back to start" connection (going backwards/left significantly)
+    const isBackToStart = toX < fromX - 100; // Going left by more than 100px indicates back to start
+    
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const horizontalDistance = toX - fromX;
-    const verticalDistance = Math.abs(toY - fromY);
+    let pathData;
     
-    // Calculate control points to ensure horizontal entry
-    const midPoint = Math.max(80, horizontalDistance * 0.6); // Stronger horizontal preference
-    
-    // First control point: extends horizontally from start point
-    const cp1X = fromX + midPoint;
-    const cp1Y = fromY;
-    
-    // Second control point: positioned to ensure horizontal approach to target
-    const cp2X = toX - Math.max(40, horizontalDistance * 0.2); // Ensure horizontal approach
-    const cp2Y = toY; // Same Y as target for horizontal entry
-    
-    const pathData = `M ${fromX} ${fromY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${toX} ${toY}`;
+    if (isBackToStart) {
+      // Create elegant loop-back path that routes around content
+      const horizontalOffset = 300; // How far right to extend before looping back
+      const verticalOffset = 200;   // How far down/up to route around content
+      
+      // Determine if we should route above or below content
+      const routeBelow = fromY < toY + 100; // Route below if starting above target area
+      const verticalDirection = routeBelow ? 1 : -1;
+      
+      // Create multi-segment path that routes around content
+      const segmentY = fromY + (verticalOffset * verticalDirection);
+      
+      pathData = `M ${fromX} ${fromY} 
+                  L ${fromX + 60} ${fromY}
+                  C ${fromX + 100} ${fromY}, ${fromX + 100} ${segmentY}, ${fromX + 60} ${segmentY}
+                  L ${toX - 60} ${segmentY}
+                  C ${toX - 100} ${segmentY}, ${toX - 100} ${toY}, ${toX - 60} ${toY}
+                  L ${toX} ${toY}`;
+    } else {
+      // Standard curved path for normal connections
+      const horizontalDistance = toX - fromX;
+      const verticalDistance = Math.abs(toY - fromY);
+      
+      // Calculate control points to ensure horizontal entry
+      const midPoint = Math.max(80, horizontalDistance * 0.6); // Stronger horizontal preference
+      
+      // First control point: extends horizontally from start point
+      const cp1X = fromX + midPoint;
+      const cp1Y = fromY;
+      
+      // Second control point: positioned to ensure horizontal approach to target
+      const cp2X = toX - Math.max(40, horizontalDistance * 0.2); // Ensure horizontal approach
+      const cp2Y = toY; // Same Y as target for horizontal entry
+      
+      pathData = `M ${fromX} ${fromY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${toX} ${toY}`;
+    }
     
     path.setAttribute('d', pathData);
     
@@ -2632,10 +3186,12 @@ class DecisionTreeBuilder {
       connectionClass += ' recommendation';
     }
     
-    path.setAttribute('class', connectionClass);
-    path.setAttribute('fill', 'none');
+    // Standard styling for all connections (removed special green styling for back-to-start)
     path.setAttribute('stroke', '#6B7280');
     path.setAttribute('stroke-width', '2');
+    
+    path.setAttribute('class', connectionClass);
+    path.setAttribute('fill', 'none');
     
     group.appendChild(path);
     
@@ -2654,66 +3210,60 @@ class DecisionTreeBuilder {
     const legend = document.createElement('div');
     legend.className = 'flowchart-legend';
     legend.innerHTML = `
-      <div class="legend-sections-horizontal">
-        <div class="legend-section">
-          <h4 style="margin: 0 0 8px 0; font-size: 14px;">Step Types</h4>
-          <div class="legend-items-horizontal">
-            <div class="legend-item">
-              <div class="legend-color start"></div>
-              <span>Start Step</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color choice"></div>
-              <span>Multiple Choice</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color yes-no"></div>
-              <span>Yes/No Decision</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color guide"></div>
-              <span>Guide/Protocol</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color endpoint"></div>
-              <span>Endpoint</span>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color option"></div>
-              <span>Option Button</span>
-            </div>
+      <div class="legend-horizontal-layout" style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px; justify-content: center;">
+        <!-- Step Types -->
+        <div class="legend-items-horizontal" style="display: flex; gap: 16px; align-items: center;">
+          <div class="legend-item">
+            <div class="legend-color start"></div>
+            <span>Start</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color choice"></div>
+            <span>Choice</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color yes-no"></div>
+            <span>Yes/No</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color endpoint"></div>
+            <span>Endpoint</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color option"></div>
+            <span>Option</span>
           </div>
         </div>
-        <div class="legend-section">
-          <h4 style="margin: 0 0 8px 0; font-size: 14px;">Line Types</h4>
-          <div class="legend-items-horizontal">
-            <div class="legend-item">
-              <div style="width: 20px; height: 2px; background: transparent; border-top: 2px dashed #9CA3AF;"></div>
-              <span>Options</span>
-            </div>
-            <div class="legend-item">
-              <div style="width: 20px; height: 2px; background: #6B7280;"></div>
-              <span>Next Step</span>
-            </div>
+        
+        <!-- Separator -->
+        <div style="height: 20px; width: 1px; background: #D1D5DB;"></div>
+        
+        <!-- Line Types -->
+        <div class="legend-items-horizontal" style="display: flex; gap: 16px; align-items: center;">
+          <div class="legend-item">
+            <div style="width: 20px; height: 2px; background: transparent; border-top: 2px dashed #9CA3AF;"></div>
+            <span>Options</span>
+          </div>
+          <div class="legend-item">
+            <div style="width: 20px; height: 2px; background: #6B7280;"></div>
+            <span>Flow</span>
           </div>
         </div>
-        <div class="legend-section" style="margin-top: 12px;">
-          <div class="legend-controls" style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button id="resetZoomLegend" style="padding: 4px 8px; font-size: 11px; height: auto; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">Reset Zoom</button>
-            <button id="zoomInLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">+</button>
-            <button id="zoomOutLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">-</button>
-          </div>
+        
+        <!-- Separator -->
+        <div style="height: 20px; width: 1px; background: #D1D5DB;"></div>
+        
+        <!-- Controls -->
+        <div class="legend-controls" style="display: flex; gap: 6px;">
+          <button id="resetZoomLegend" style="padding: 4px 8px; font-size: 11px; height: auto; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">Reset Zoom</button>
+          <button id="zoomInLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">+</button>
+          <button id="zoomOutLegend" style="padding: 4px 8px; font-size: 11px; height: auto; min-width: 28px; background: white; border: 1px solid #D1D5DB; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">-</button>
         </div>
       </div>
     `;
     
-    // Insert legend at the beginning of the container (above the SVG)
-    const svgContainer = container.querySelector('.flowchart-svg-container');
-    if (svgContainer) {
-      container.insertBefore(legend, svgContainer);
-    } else {
-      container.insertBefore(legend, container.firstChild);
-    }
+    // Insert legend at the bottom of the container (below the SVG)
+    container.appendChild(legend);
     
     // Bind legend control events
     const resetZoomBtn = legend.querySelector('#resetZoomLegend');
@@ -2929,6 +3479,65 @@ class DecisionTreeBuilder {
     
     // Focus the textarea
     textarea.focus();
+  }
+
+  generateIdFromTitle(title) {
+    if (!title || title.trim() === '') {
+      return '';
+    }
+    
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+  }
+
+  // Change tracking for builder view
+  captureInitialTreeState() {
+    this.initialTreeState = JSON.stringify(this.currentTree);
+    this.hasUnsavedChanges = false;
+    this.updateSaveDraftVisibility();
+  }
+
+  checkForTreeChanges() {
+    if (!this.initialTreeState) return;
+    
+    const currentState = JSON.stringify(this.currentTree);
+    this.hasUnsavedChanges = this.initialTreeState !== currentState;
+    this.updateSaveDraftVisibility();
+  }
+
+  updateSaveDraftVisibility() {
+    const saveDraftButton = document.getElementById('saveDraftButton');
+    if (saveDraftButton) {
+      saveDraftButton.style.display = this.hasUnsavedChanges ? 'inline-flex' : 'none';
+    }
+  }
+
+  markAsChanged() {
+    this.hasUnsavedChanges = true;
+    this.updateSaveDraftVisibility();
+  }
+
+  navigateToLibrary() {
+    // Check for unsaved changes before navigating to library
+    if (this.hasUnsavedChanges) {
+      const confirmNavigate = confirm(
+        'You have unsaved changes in your draft. If you navigate to the library, your changes will be lost. ' +
+        'Would you like to save your draft first?\n\n' +
+        'Click "OK" to go to library anyway (changes will be lost)\n' +
+        'Click "Cancel" to stay and save your changes'
+      );
+      
+      if (!confirmNavigate) {
+        return; // Stay on current view
+      }
+    }
+    
+    this.showView('library');
   }
 }
 
