@@ -307,7 +307,8 @@ a.dropdown-item:hover {
   border-color: #F97316;
 }
 
-.btn.orange:hover {
+.btn.orange:hover,
+#saveDraftButton:hover {
   background: #F97316;
   border-color: #EA580C;
   box-shadow: 0 4px 12px rgba(251, 146, 60, 0.3), 0 2px 4px rgba(251, 146, 60, 0.2);
