@@ -49,7 +49,7 @@ class DecisionTreeBuilder {
     try {
       // Tab navigation
       console.log('Binding tab navigation events...');
-      document.getElementById('libraryTab').addEventListener('click', () => this.showView('library'));
+      document.getElementById('libraryTab').addEventListener('click', () => this.navigateToLibrary());
       document.getElementById('builderTab').addEventListener('click', () => this.showView('builder'));
       document.getElementById('birdseyeTab').addEventListener('click', () => this.showView('birdseye'));
       document.getElementById('previewTab').addEventListener('click', () => this.showView('preview'));
@@ -3610,6 +3610,24 @@ class DecisionTreeBuilder {
   markAsChanged() {
     this.hasUnsavedChanges = true;
     this.updateSaveDraftVisibility();
+  }
+
+  navigateToLibrary() {
+    // Check for unsaved changes before navigating to library
+    if (this.hasUnsavedChanges) {
+      const confirmNavigate = confirm(
+        'You have unsaved changes in your draft. If you navigate to the library, your changes will be lost. ' +
+        'Would you like to save your draft first?\n\n' +
+        'Click "OK" to go to library anyway (changes will be lost)\n' +
+        'Click "Cancel" to stay and save your changes'
+      );
+      
+      if (!confirmNavigate) {
+        return; // Stay on current view
+      }
+    }
+    
+    this.showView('library');
   }
 }
 

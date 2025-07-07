@@ -191,6 +191,8 @@ const PathwayManager = {
 
     this.currentTree = newPathway;
     this.showView('builder');
+    // Reset save draft state for new pathway
+    this.captureInitialTreeState();
   },
 
   async editPathway(filename) {
@@ -222,6 +224,7 @@ const PathwayManager = {
       setTimeout(() => {
         this.updateUI(); // Update the builder UI with loaded data
         this.updateTreeProperties(); // Ensure form fields are populated
+        this.captureInitialTreeState(); // Reset save draft state for loaded pathway
       }, 100);
     } catch (error) {
       console.error('Error loading pathway:', error);
