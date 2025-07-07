@@ -140,7 +140,14 @@ const PathwayManager = {
       card.addEventListener('click', (e) => {
         // Don't trigger if any action button was clicked
         if (e.target.closest('.pathway-actions-container')) return;
-        this.editPathway(card.dataset.filename);
+        
+        // Check if pathway is published
+        const pathway = this.pathways.find(p => p.filename === card.dataset.filename);
+        if (pathway && pathway.status === 'published') {
+          this.previewPathway(card.dataset.filename);
+        } else {
+          this.editPathway(card.dataset.filename);
+        }
       });
       card.style.cursor = 'pointer';
     });
@@ -190,6 +197,13 @@ const PathwayManager = {
     };
 
     this.currentTree = newPathway;
+    
+    // Show builder tab for new pathways
+    const builderTab = document.getElementById('builderTab');
+    if (builderTab) {
+      builderTab.style.display = 'block';
+    }
+    
     this.showView('builder');
     // Reset save draft state for new pathway
     this.captureInitialTreeState();
@@ -219,6 +233,13 @@ const PathwayManager = {
       console.log('Loaded pathway data:', pathway);
       
       this.currentTree = pathway;
+      
+      // Show builder tab for draft pathways
+      const builderTab = document.getElementById('builderTab');
+      if (builderTab) {
+        builderTab.style.display = 'block';
+      }
+      
       this.showView('builder');
       // Need to update UI after view is shown
       setTimeout(() => {
@@ -228,6 +249,52 @@ const PathwayManager = {
       }, 100);
     } catch (error) {
       console.error('Error loading pathway:', error);
+      alert(`Error loading pathway: ${error.message}`);
+    }
+  },
+
+  async previewPathway(filename) {
+    try {
+      console.log('Loading pathway for preview:', filename);
+      
+      // Extract pathway ID from filename
+      const pathwayId = filename.replace('.json', '').replace('_draft', '').replace('_published', '');
+      
+      let pathway;
+      
+      // Try API first
+      if (await window.pathwayAPI.isAPIAvailable()) {
+        pathway = await window.pathwayAPI.getPathway(pathwayId);
+      } else {
+        // Fallback to file-based system
+        const response = await fetch(`../pathways/${filename}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        pathway = await response.json();
+      }
+      
+      console.log('Loaded pathway data for preview:', pathway);
+      
+      this.currentTree = pathway;
+      
+      // Hide builder tab for published pathways
+      const builderTab = document.getElementById('builderTab');
+      if (builderTab) {
+        builderTab.style.display = 'none';
+      }
+      
+      // Show preview tab
+      this.showView('preview');
+      
+      // Need to update UI after view is shown
+      setTimeout(() => {
+        this.updateUI(); // Update the builder UI with loaded data
+        this.updateTreeProperties(); // Ensure form fields are populated
+        this.captureInitialTreeState(); // Reset save draft state for loaded pathway
+      }, 100);
+    } catch (error) {
+      console.error('Error loading pathway for preview:', error);
       alert(`Error loading pathway: ${error.message}`);
     }
   },
