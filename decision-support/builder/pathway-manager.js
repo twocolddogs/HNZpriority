@@ -334,9 +334,12 @@ const PathwayManager = {
       
       // Try API first
       if (await window.pathwayAPI.isAPIAvailable()) {
+        console.log('Publishing pathway via API:', pathwayId);
         await window.pathwayAPI.publishPathway(pathwayId);
+        console.log('API publish complete, reloading pathways...');
         await this.loadPathways(); // Reload to get updated data
       } else {
+        console.log('Publishing pathway via file system:', filename);
         // Fallback to file-based system
         const pathway = this.pathways.find(p => p.filename === filename);
         if (pathway) {
@@ -345,6 +348,12 @@ const PathwayManager = {
           this.filterPathways(); // Apply current filter and re-render
         }
       }
+      
+      // Force a final refresh to ensure the UI is updated
+      setTimeout(() => {
+        console.log('Forcing final list refresh after publish');
+        this.filterPathways();
+      }, 100);
       
       console.log('Pathway published successfully, list refreshed');
     } catch (error) {
@@ -362,9 +371,12 @@ const PathwayManager = {
       
       // Try API first
       if (await window.pathwayAPI.isAPIAvailable()) {
+        console.log('Unpublishing pathway via API:', pathwayId);
         await window.pathwayAPI.unpublishPathway(pathwayId);
+        console.log('API unpublish complete, reloading pathways...');
         await this.loadPathways(); // Reload to get updated data
       } else {
+        console.log('Unpublishing pathway via file system:', filename);
         // Fallback to file-based system
         const pathway = this.pathways.find(p => p.filename === filename);
         if (pathway) {
@@ -373,6 +385,12 @@ const PathwayManager = {
           this.filterPathways(); // Apply current filter and re-render
         }
       }
+      
+      // Force a final refresh to ensure the UI is updated
+      setTimeout(() => {
+        console.log('Forcing final list refresh after unpublish');
+        this.filterPathways();
+      }, 100);
       
       console.log('Pathway unpublished successfully, list refreshed');
     } catch (error) {
