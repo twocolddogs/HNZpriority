@@ -4,10 +4,19 @@
 
 // Add to DecisionTreeBuilder class
 const PathwayManager = {
+  pathways: [],
+  filteredPathways: [],
+  currentTree: null,
+  isLoading: false,
+  hasError: false,
   
   async loadPathways() {
     try {
       console.log('Loading pathways...');
+      
+      // Set loading state
+      this.isLoading = true;
+      this.hasError = false;
       
       // Show loading spinner
       this.showLoadingState();
@@ -39,11 +48,13 @@ const PathwayManager = {
       }
     } catch (error) {
       console.error('Error loading pathways:', error);
+      this.hasError = true;
       this.pathways = [];
       this.filteredPathways = [];
-      this.renderPathwaysList(); // Still render to show empty state
+      this.renderPathwaysList(); // Still render to show error state
     } finally {
-      // Hide loading spinner
+      // Clear loading state and hide spinner
+      this.isLoading = false;
       this.hideLoadingState();
     }
   },
@@ -72,8 +83,17 @@ const PathwayManager = {
 
     console.log('Filtered pathways:', this.filteredPathways);
     
+    // Don't show empty state if we're still loading
+    if (this.isLoading) {
+      return; // Let the spinner handle the loading state
+    }
+    
     if (this.filteredPathways.length === 0) {
-      container.innerHTML = '<div class="empty-state">No pathways found. Try refreshing or check the console for errors.</div>';
+      if (this.hasError) {
+        container.innerHTML = '<div class="empty-state">Failed to load pathways. Please check your connection and try refreshing.</div>';
+      } else {
+        container.innerHTML = '<div class="empty-state">No pathways found. Create your first pathway to get started.</div>';
+      }
       return;
     }
 
