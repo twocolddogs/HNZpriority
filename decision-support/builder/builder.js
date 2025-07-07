@@ -3170,14 +3170,7 @@ class DecisionTreeBuilder {
     group.appendChild(rect);
     group.appendChild(text);
     
-    // Add hover handlers for option preview
-    group.addEventListener('mouseenter', (e) => {
-      this.showOptionHoverModal(optionData, e);
-    });
-    
-    group.addEventListener('mouseleave', () => {
-      this.hideStepHoverModal();
-    });
+    // No hover handlers for options - we don't want to show mini cards for options
     
     return group;
   }
