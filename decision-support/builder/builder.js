@@ -179,7 +179,6 @@ class DecisionTreeBuilder {
       console.log('Binding hamburger menu events...');
       document.getElementById('hamburgerToggle').addEventListener('click', () => this.toggleHamburgerMenu());
       document.getElementById('saveDraftButton').addEventListener('click', () => this.saveDraft());
-      document.getElementById('publishButton').addEventListener('click', () => this.publishPathway());
       document.getElementById('menuLiveApp').addEventListener('click', () => this.closeHamburgerMenu());
       document.getElementById('menuHelp').addEventListener('click', () => { this.closeHamburgerMenu(); this.showView('help'); });
       document.getElementById('menuAdvanced').addEventListener('click', () => this.toggleAdvancedMode());
@@ -1696,77 +1695,7 @@ class DecisionTreeBuilder {
     }
   }
 
-  async publishPathway() {
-    try {
-      // Validate the pathway is complete
-      const validation = this.validatePathway();
-      if (!validation.isValid) {
-        alert('Cannot publish pathway:\n' + validation.errors.join('\n'));
-        return;
-      }
-
-      // Confirm publication
-      const confirmed = confirm(
-        `Are you sure you want to publish "${this.currentTree.title}"?\n\n` +
-        'This will save the pathway to the pathways directory and update the manifest.'
-      );
-      
-      if (!confirmed) return;
-
-      // Add publication metadata
-      const publishData = {
-        ...this.currentTree,
-        metadata: {
-          publishedAt: new Date().toISOString(),
-          version: '1.0',
-          status: 'published'
-        }
-      };
-
-      const filename = `${this.currentTree.id || 'pathway'}.json`;
-      
-      try {
-        // Save the pathway file
-        await this.savePathwayFile(filename, publishData);
-        
-        // Regenerate the manifest
-        await this.regenerateManifest();
-        
-        alert(
-          `Pathway "${this.currentTree.title}" published successfully!\n\n` +
-          `Saved as: ${filename}\n` +
-          'Manifest updated automatically.'
-        );
-        
-        // Auto-refresh the library to show updated pathways
-        await this.loadPathways();
-        
-      } catch (saveError) {
-        console.error('Error saving pathway:', saveError);
-        
-        // Fallback to download if save fails
-        console.log('Falling back to download method...');
-        const dataStr = JSON.stringify(publishData, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = filename;
-        link.click();
-        
-        alert(
-          `Unable to save directly to server.\n\n` +
-          `File downloaded as: ${filename}\n\n` +
-          'Please manually copy this file to the pathways/ directory and run:\n' +
-          'node generate-manifest.js'
-        );
-      }
-      
-    } catch (error) {
-      console.error('Error publishing pathway:', error);
-      alert('Error publishing pathway: ' + error.message);
-    }
-  }
+  // Publish functionality moved to pathway library - use library view to publish pathways
 
   async savePathwayFile(filename, data) {
     // Try to save the file using the publish endpoint

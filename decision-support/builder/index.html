@@ -145,7 +145,6 @@
                             <div class="steps-actions">
                                 <button id="addStep" class="btn btn-secondary">Add Step</button>
                                 <button id="saveDraftButton" class="btn btn-orange">Save Draft</button>
-                                <button id="publishButton" class="btn btn-success">Publish</button>
                             </div>
                         </div>
                         <div id="stepsList" class="steps-list">
@@ -257,8 +256,8 @@
                                 <ol>
                                     <li><strong>Step Type:</strong> Choose the appropriate type first (auto-prioritized)</li>
                                     <li><strong>Title:</strong> Clear, concise question or statement</li>
-                                    <li><strong>Subtitle:</strong> Optional additional context</li>
-                                    <li><strong>Description:</strong> Detailed instructions or information</li>
+                                    <li><strong>Details:</strong> For recommendation steps, this field is optional and provides additional context</li>
+                                    <li><strong>Clinical Question/Description:</strong> For other step types, detailed instructions or information</li>
                                     <li><strong>Step ID:</strong> Technical identifier (auto-generated, editable)</li>
                                 </ol>
 
@@ -343,6 +342,8 @@
                                 <p>Visualize your pathway structure:</p>
                                 <ul>
                                     <li>See all steps and their connections</li>
+                                    <li>Hover over steps to see mini previews (options are not shown in previews)</li>
+                                    <li>Click on any step to quickly edit it</li>
                                     <li>Identify potential dead ends or missing connections</li>
                                     <li>Use "Auto Layout" to organize the diagram</li>
                                     <li>Different colors indicate different step types</li>
@@ -361,30 +362,40 @@
 
                         <!-- Publishing -->
                         <section class="help-section">
-                            <h2>🚀 Publishing Your Pathway</h2>
+                            <h2>🚀 Publishing and Managing Pathways</h2>
                             <div class="help-card">
-                                <h3>Before Publishing</h3>
+                                <h3>Saving Your Work</h3>
+                                <ul>
+                                    <li>Use <strong>"Save Draft"</strong> to save your pathway as a draft</li>
+                                    <li>Draft pathways appear in the Library tab for further editing</li>
+                                    <li>Always save drafts before switching pathways or closing the builder</li>
+                                </ul>
+
+                                <h3>Publishing Process</h3>
+                                <ol>
+                                    <li>Save your pathway as a draft first</li>
+                                    <li>Go to the <strong>Library tab</strong></li>
+                                    <li>Find your draft pathway in the "Drafts" section</li>
+                                    <li>Click the <strong>"Publish"</strong> button next to your pathway</li>
+                                    <li>Confirm the publishing dialog</li>
+                                    <li>The pathway moves to the "Published" section and becomes available in the Live App</li>
+                                </ol>
+
+                                <h3>Managing Published Pathways</h3>
+                                <ul>
+                                    <li><strong>Viewing:</strong> Click on published pathways to preview them (builder tab is hidden for safety)</li>
+                                    <li><strong>Unpublishing:</strong> Click "Unpublish" to move back to drafts for editing</li>
+                                    <li><strong>Safety:</strong> Published pathways cannot be deleted - they must be unpublished first</li>
+                                    <li><strong>Editing:</strong> Only draft pathways can be edited in the builder</li>
+                                </ul>
+
+                                <h3>Publishing Requirements</h3>
                                 <ul>
                                     <li>Complete testing in Preview tab</li>
                                     <li>Verify all pathways lead to appropriate recommendations</li>
                                     <li>Check clinical accuracy and completeness</li>
                                     <li>Ensure guides contain necessary clinical information</li>
-                                </ul>
-
-                                <h3>Publishing Process</h3>
-                                <ol>
-                                    <li>Click the hamburger menu (☰)</li>
-                                    <li>Select <strong>"Publish"</strong></li>
-                                    <li>Confirm pathway validation</li>
-                                    <li>The pathway becomes available in the main application</li>
-                                    <li>Library automatically refreshes to show published pathway</li>
-                                </ol>
-
-                                <h3>Post-Publishing</h3>
-                                <ul>
-                                    <li>Published pathways appear in the Live App</li>
-                                    <li>Users can access them through the main decision support interface</li>
-                                    <li>Monitor usage and gather feedback for improvements</li>
+                                    <li>All validation requirements must be met (see Troubleshooting section)</li>
                                 </ul>
                             </div>
                         </section>
@@ -480,9 +491,15 @@
                                 <ul>
                                     <li><strong>Save:</strong> Download pathway file</li>
                                     <li><strong>Load:</strong> Import pathway from file</li>
-                                    <li><strong>Publish:</strong> Make pathway live</li>
                                     <li><strong>View Live App:</strong> Open main decision support interface</li>
                                     <li><strong>Advanced:</strong> Toggle advanced features (JSON tab)</li>
+                                </ul>
+                                
+                                <h3>Builder Actions</h3>
+                                <ul>
+                                    <li><strong>Add Step:</strong> Create a new decision step</li>
+                                    <li><strong>Save Draft:</strong> Save your pathway to the library as a draft</li>
+                                    <li><strong>Publishing:</strong> Done through the Library tab (see Publishing section above)</li>
                                 </ul>
 
                                 <h3>Quick Actions</h3>
@@ -490,7 +507,9 @@
                                     <li>Click step cards in Birdseye to quickly edit them</li>
                                     <li>Use callout helper buttons in step descriptions</li>
                                     <li>Preview automatically updates after changes</li>
-                                    <li>Library refreshes automatically after publishing</li>
+                                    <li>Click draft pathways in Library to edit them</li>
+                                    <li>Click published pathways in Library to preview them</li>
+                                    <li>Library automatically shows loading spinner during operations</li>
                                 </ul>
                             </div>
                         </section>
