@@ -1580,10 +1580,12 @@ class DecisionTreeBuilder {
     
     const action = document.createElement('div');
     action.className = 'mini-option-action';
-    if (optionData.action.type === 'navigate') {
+    if (optionData.action && optionData.action.type === 'navigate') {
       action.textContent = `→ ${optionData.action.nextStep}`;
-    } else if (optionData.action.type === 'recommend') {
+    } else if (optionData.action && optionData.action.type === 'recommend') {
       action.textContent = '→ Recommendation';
+    } else {
+      action.textContent = '→ Unknown action';
     }
     card.appendChild(action);
     
