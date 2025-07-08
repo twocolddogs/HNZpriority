@@ -32,7 +32,7 @@ const PathwayManager = {
       } else {
         // Fallback to file-based system
         console.log('Falling back to file-based system');
-        const response = await fetch('../pathways/manifest.json');
+        const response = await fetch(`../pathways/manifest.json?_=${Date.now()}`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -137,6 +137,13 @@ const PathwayManager = {
     container.innerHTML = html;
 
     // Bind action buttons
+    container.querySelectorAll('.pathway-edit').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click
+        this.editPathway(e.target.dataset.filename);
+      });
+    });
+    
     container.querySelectorAll('.pathway-delete').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation(); // Prevent card click
@@ -192,6 +199,10 @@ const PathwayManager = {
         </div>
         <div class="pathway-actions-container">
           ${pathway.status === 'draft' 
+            ? `<button class="btn btn-sm btn-primary pathway-edit" data-filename="${pathway.filename}">Edit</button>`
+            : ''
+          }
+          ${pathway.status === 'draft' 
             ? `<button class="btn btn-sm btn-success pathway-publish" data-filename="${pathway.filename}">Publish</button>`
             : `<button class="btn btn-sm btn-warning pathway-unpublish" data-filename="${pathway.filename}">Unpublish</button>`
           }
@@ -205,18 +216,14 @@ const PathwayManager = {
   },
 
   async createPathway() {
-    const id = prompt('Enter pathway ID:');
-    if (!id) return;
+    // Generate a unique ID with timestamp
+    const timestamp = Date.now();
+    const id = `pathway-${timestamp}`;
     
-    const title = prompt('Enter pathway title:');
-    if (!title) return;
-
-    const description = prompt('Enter pathway description:') || '';
-
     const newPathway = {
       id,
-      title,
-      description,
+      title: 'New Pathway',
+      description: 'Enter your pathway description here',
       startStep: '',
       guides: [],
       steps: {}
@@ -231,8 +238,13 @@ const PathwayManager = {
     }
     
     this.showView('builder');
-    // Reset save draft state for new pathway
-    this.captureInitialTreeState();
+    
+    // Need to update UI after view is shown
+    setTimeout(() => {
+      this.updateUI(); // Update the builder UI with new pathway data
+      this.updateTreeProperties(); // Ensure form fields are populated
+      this.captureInitialTreeState(); // Reset save draft state for new pathway
+    }, 100);
   },
 
   async editPathway(filename) {
@@ -249,7 +261,7 @@ const PathwayManager = {
         pathway = await window.pathwayAPI.getPathway(pathwayId);
       } else {
         // Fallback to file-based system
-        const response = await fetch(`../pathways/${filename}`);
+        const response = await fetch(`../pathways/${filename}?_=${Date.now()}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -293,7 +305,7 @@ const PathwayManager = {
         pathway = await window.pathwayAPI.getPathway(pathwayId);
       } else {
         // Fallback to file-based system
-        const response = await fetch(`../pathways/${filename}`);
+        const response = await fetch(`../pathways/${filename}?_=${Date.now()}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
