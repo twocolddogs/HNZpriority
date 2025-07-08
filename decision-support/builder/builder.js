@@ -318,9 +318,9 @@ class DecisionTreeBuilder {
     if (navTabsContainer) {
       // Hide nav tabs for library and help views, show for others
       if (viewName === 'library' || viewName === 'help') {
-        navTabsContainer.style.display = 'none';
+        navTabsContainer.classList.add('hidden');
       } else {
-        navTabsContainer.style.display = 'flex';
+        navTabsContainer.classList.remove('hidden');
       }
     }
 
