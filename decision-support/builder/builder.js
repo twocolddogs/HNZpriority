@@ -313,6 +313,17 @@ class DecisionTreeBuilder {
   }
 
   showView(viewName) {
+    // Hide/show navigation tabs based on view
+    const navTabsContainer = document.querySelector('.nav-tabs');
+    if (navTabsContainer) {
+      // Hide nav tabs for library and help views, show for others
+      if (viewName === 'library' || viewName === 'help') {
+        navTabsContainer.style.display = 'none';
+      } else {
+        navTabsContainer.style.display = 'flex';
+      }
+    }
+
     // Update tabs (help view doesn't have a tab)
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
     if (viewName !== 'help') {
