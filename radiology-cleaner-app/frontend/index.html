@@ -584,44 +584,76 @@
             reader.onload = async function(e) {
                 try {
                     const codes = JSON.parse(e.target.result);
-                    for (let i = 0; i < codes.length; i++) {
-                        const code = codes[i];
-                        try {
-                            const response = await fetch(API_URL, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ exam_name: code.EXAM_NAME, modality_code: code.MODALITY_CODE })
-                            });
-                            if (!response.ok) throw new Error(`API returned status ${response.status}`);
-                            
-                            const parsed = await response.json();
-                            allMappings.push({
-                                data_source: code.DATA_SOURCE,
-                                modality_code: code.MODALITY_CODE,
-                                exam_code: code.EXAM_CODE,
-                                exam_name: code.EXAM_NAME,
-                                clean_name: parsed.standardized.clean_name,
-                                snomed: parsed.snomed || {},
-                                components: { 
-                                    anatomy: parsed.standardized.components.anatomy, 
-                                    laterality: parsed.standardized.components.laterality, 
-                                    contrast: parsed.standardized.components.contrast, 
-                                    technique: parsed.standardized.components.technique,
-                                    gender_context: parsed.standardized.components.gender_context,
-                                    clinical_context: parsed.standardized.components.clinical_context,
-                                    confidence: parsed.metadata.confidence,
-                                    clinical_equivalents: parsed.equivalence.clinical_equivalents
-                                }
-                            });
-                        } catch (error) {
-                            console.error(`Failed to parse code: ${code.EXAM_NAME}`, error);
-                            allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
-                        }
-                        progressFill.style.width = `${((i + 1) / codes.length) * 100}%`;
+                    if (!Array.isArray(codes) || codes.length === 0) {
+                        alert('JSON file is empty or not in the correct array format.');
+                        progressBar.style.display = 'none';
+                        return;
                     }
+
+                    // Use batch processing for efficiency
+                    progressFill.style.transition = 'width 1.5s ease-in-out';
+                    progressFill.style.width = '50%';
+
+                    // Map keys from file (UPPER_SNAKE_CASE) to API (snake_case)
+                    // The backend returns the original input, so we pass all fields
+                    const examsForBatch = codes.map(code => ({
+                        exam_name: code.EXAM_NAME,
+                        modality_code: code.MODALITY_CODE,
+                        data_source: code.DATA_SOURCE,
+                        exam_code: code.EXAM_CODE
+                    }));
+
+                    const BATCH_API_URL = API_URL.replace('/parse_enhanced', '/parse_batch');
+
+                    const response = await fetch(BATCH_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ exams: examsForBatch })
+                    });
+                    if (!response.ok) throw new Error(`API returned status ${response.status} ${await response.text()}`);
+
+                    const batchResult = await response.json();
+                    
+                    if (batchResult.errors && batchResult.errors.length > 0) {
+                        console.error('Errors returned from batch processing:', batchResult.errors);
+                    }
+
+                    // Reconstruct the allMappings array from the batch response
+                    allMappings = batchResult.results.map(item => ({
+                        data_source: item.input.data_source,
+                        modality_code: item.input.modality_code,
+                        exam_code: item.input.exam_code,
+                        exam_name: item.input.exam_name,
+                        clean_name: item.clean_name,
+                        snomed: item.snomed || {},
+                        components: { 
+                            ...item.components,
+                            confidence: item.confidence,
+                            clinical_equivalents: item.clinical_equivalents || []
+                        }
+                    }));
+                    
+                    // Handle any items that failed in the batch
+                    if (batchResult.errors && batchResult.errors.length > 0) {
+                        batchResult.errors.forEach(err => {
+                            allMappings.push({
+                                data_source: err.exam.data_source,
+                                modality_code: err.exam.modality_code,
+                                exam_code: err.exam.exam_code,
+                                exam_name: err.exam.exam_name,
+                                clean_name: `ERROR: ${err.error}`,
+                                components: {}
+                            });
+                        });
+                    }
+
+                    progressFill.style.transition = 'width 0.5s ease-out';
+                    progressFill.style.width = '100%';
+
                     runAnalysis(allMappings);
+
                 } catch (error) {
-                    alert('Error reading or parsing JSON file: ' + error.message);
+                    alert('Error processing file: ' + error.message);
                     progressBar.style.display = 'none';
                 }
             };
@@ -654,7 +686,7 @@
                 row.insertCell().textContent = item.exam_code;
                 row.insertCell().textContent = item.exam_name;
                 const cleanNameCell = row.insertCell();
-                if (item.clean_name.startsWith('ERROR')) {
+                if (item.clean_name && item.clean_name.startsWith('ERROR')) {
                     cleanNameCell.innerHTML = `<span class="error-message">${item.clean_name}</span>`;
                 } else {
                     cleanNameCell.innerHTML = `<strong>${item.clean_name}</strong>`;
@@ -710,7 +742,7 @@
         function generateAnalyticsSummary(mappings) {
             const summary = {
                 totalOriginalCodes: mappings.length,
-                uniqueCleanNames: new Set(mappings.map(m => m.clean_name).filter(n => !n.startsWith('ERROR'))).size,
+                uniqueCleanNames: new Set(mappings.map(m => m.clean_name).filter(n => n && !n.startsWith('ERROR'))).size,
                 modalityBreakdown: {}, 
                 contrastUsage: { with: 0, without: 0, 'with and without': 0, none: 0 },
                 lateralityDistribution: { left: 0, right: 0, bilateral: 0, none: 0 },
@@ -726,7 +758,7 @@
             let confidenceCount = 0;
             
             mappings.forEach(m => {
-                if (!m.components || m.clean_name.startsWith('ERROR')) return;
+                if (!m.components || (m.clean_name && m.clean_name.startsWith('ERROR'))) return;
                 const { modality_code, components } = m;
                 const modality = m.components.modality || modality_code;
                 if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
@@ -834,7 +866,7 @@
             
             // Group mappings by clean name
             mappings.forEach(mapping => {
-                if (mapping.clean_name.startsWith('ERROR')) return;
+                if (!mapping.clean_name || mapping.clean_name.startsWith('ERROR')) return;
                 
                 const cleanName = mapping.clean_name;
                 if (!consolidatedGroups[cleanName]) {
@@ -924,8 +956,8 @@
                                     <div class="source-code-header">
                                         <span>[${code.dataSource}] ${code.examCode}</span>
                                         <button class="feedback-button" onclick="openCorrectionModal({
-                                            exam_name: '${code.examName}',
-                                            clean_name: '${group.cleanName}',
+                                            exam_name: '${code.examName.replace(/'/g, "\\'")}',
+                                            clean_name: '${group.cleanName.replace(/'/g, "\\'")}',
                                             components: ${JSON.stringify(group.components).replace(/"/g, '&quot;')}
                                         })">Provide Feedback</button>
                                     </div>
@@ -1055,7 +1087,7 @@
             };
             
             try {
-                const response = await fetch(API_URL.replace('/parse', '/feedback'), {
+                const response = await fetch(API_URL.replace('/parse_enhanced', '/feedback'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
@@ -1098,7 +1130,7 @@
             originalMapping.innerHTML = `
                 <div><strong>Clean Name:</strong> ${originalData.clean_name}</div>
                 <div><strong>Components:</strong> ${generateComponentTags(originalData.components)}</div>
-                <div><strong>Confidence:</strong> ${Math.round(originalData.components.confidence * 100)}%</div>
+                <div><strong>Confidence:</strong> ${Math.round((originalData.components.confidence || 0) * 100)}%</div>
             `;
             
             // Pre-populate correction form with current values
@@ -1188,7 +1220,7 @@
             };
             
             try {
-                const response = await fetch(API_URL.replace('/parse', '/feedback'), {
+                const response = await fetch(API_URL.replace('/parse_enhanced', '/feedback'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
