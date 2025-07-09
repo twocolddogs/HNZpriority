@@ -12,10 +12,10 @@ Concept-ID
 419277007,Computed tomography angiography of upper limb artery (procedure),51440002,Right and left (qualifier value),Y,N,CT Angiogram upper limb Both
 419995000,Computed tomography cholangiogram (procedure),,,Y,N,CT Cholangiogram
 241545001,Computed tomography of brachial plexus (procedure),,,Y,N,CT Brachial plexus
-418891003,Computed tomography of chest and abdomen (procedure),,,Y,N,CT Thorax and abdomen
+418891003,Computed tomography of chest and abdomen (procedure),,,Y,N,CT Chest and abdomen
 420145009,Computed tomography of calcaneum (procedure),51440002,Right and left (qualifier value),Y,N,CT Calcaneus Both
-418023006,"Computed tomography of chest, abdomen and pelvis (procedure)",,,Y,N,CT Thorax abdomen and pelvis
-169069000,Computed tomography of chest (procedure),,,Y,N,CT Thorax
+418023006,"Computed tomography of chest, abdomen and pelvis (procedure)",,,Y,N,CT Chest abdomen and pelvis
+169069000,Computed tomography of chest (procedure),,,Y,N,CT Chest
 241578008,Computed tomography of cervical spine (procedure),,,Y,N,CT Spine cervical
 241590005,Computed tomography myelogram of cervical region (procedure),,,Y,N,CT Spine cervical myelogram
 22059005,"Computerized tomography, bone density study (procedure)",,,Y,N,CT Bone densitometry
@@ -120,7 +120,7 @@ Concept-ID
 418819002,Fluoroscopic venography of superior vena cava (procedure),,,Y,N,Superior vena cavogram
 418388008,Fluoroscopic venography of testicular vein (procedure),51440002,Right and left (qualifier value),Y,N,Venogram testicular Both
 419722002,Fluoroscopic thoracic myelogram (procedure),,,Y,N,Myelogram thoracic
-38930009,Fluoroscopy of chest (procedure),,,Y,N,Fluoroscopy thorax
+38930009,Fluoroscopy of chest (procedure),,,Y,N,Fluoroscopy chest
 419571009,Fluoroscopy of upper limb (procedure),51440002,Right and left (qualifier value),Y,N,Fluoroscopy upper limb Both
 420225005,Fluoroscopic cystourethrography (procedure),,,Y,N,Urethrocystogram
 419644004,Fluoroscopic urethrography (procedure),,,Y,N,Urethrogram
@@ -173,7 +173,7 @@ Concept-ID
 241617002,Magnetic resonance imaging of axilla (procedure),24028007,Right (qualifier value),Y,N,MRI Axilla Rt
 241618007,Magnetic resonance imaging of brachial plexus (procedure),,,Y,N,MRI Brachial plexus
 241620005,Magnetic resonance imaging of heart (procedure),,,Y,N,MRI Heart
-6007000,Magnetic resonance imaging of chest (procedure),,,Y,N,MRI Thorax
+6007000,Magnetic resonance imaging of chest (procedure),,,Y,N,MRI Chest
 418210005,Magnetic resonance imaging of colon (procedure),,,Y,N,MRI Colon
 419535008,Magnetic resonance imaging perfusion study of heart (procedure),,,Y,N,MRI Cardiac perfusion
 241646009,Magnetic resonance imaging of cervical spine (procedure),,,Y,N,MRI Spine cervical
@@ -340,7 +340,7 @@ Concept-ID
 418272005,Computed tomography angiography (procedure),,,Y,N,CT Angiogram
 277591006,Computed tomography guided biopsy (procedure),,,Y,N,CT Guided biopsy
 426005005,Cardiac computed tomography for calcium scoring (procedure),,,Y,N,CT Cardiac Cor artery calcium scoring
-75385009,Computed tomography of thorax with contrast (procedure),,,Y,N,CT Thorax with contrast
+75385009,Computed tomography of thorax with contrast (procedure),,,Y,N,CT Chest with contrast
 315941000000105,Computerised tomography of chest with high resolution (procedure),,,Y,N,CT Chest high resolution
 90523008,Computerized axial tomography of lumbar spine with contrast (procedure),,,Y,N,CT Spine lumbar with contrast
 74710000,Computerized axial tomography of pelvis with contrast (procedure),,,Y,N,CT Pelvis with contrast
@@ -585,8 +585,8 @@ Concept-ID
 431851001,Computed tomography of brachial plexus with contrast (procedure),,,Y,N,CT Brachial plexus with contrast
 432814005,Computed tomography of base of skull (procedure),,,Y,N,CT Base of skull
 431619004,Computed tomography of base of skull with contrast (procedure),,,Y,N,CT Base of skull with contrast
-429864007,Computed tomography of thorax and abdomen with contrast (procedure),,,Y,N,CT Thorax and abdomen with contrast
-433761009,"Computed tomography of thorax, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Thorax abdomen pelvis with contrast
+429864007,Computed tomography of thorax and abdomen with contrast (procedure),,,Y,N,CT Chest and abdomen with contrast
+433761009,"Computed tomography of thorax, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Chest abdomen pelvis with contrast
 431944009,Computed tomography with contrast enema (procedure),,,Y,N,CT Contrast enema
 432406007,Epidural injection using computed tomography guidance (procedure),,,N,Y,CT Guided epidural injection
 431714002,Computed tomography of face with contrast (procedure),,,Y,N,CT Face with contrast
@@ -612,8 +612,8 @@ Concept-ID
 429926006,Computed tomography of middle ear (procedure),,,Y,N,CT Middle ear
 433063003,Computed tomography with maximum intensity projection (procedure),,,Y,N,CT Maximum intensity projection study
 431190000,Respiratory and electrocardiography gated cardiac computed tomography of heart (procedure),,,Y,N,CT Cardiac multiple gated acquisition
-430448007,Computed tomography of neck and thorax (procedure),,,Y,N,CT Neck and thorax
-429927002,Computed tomography of neck and thorax with contrast (procedure),,,Y,N,CT Neck and thorax with contrast
+430448007,Computed tomography of neck and thorax (procedure),,,Y,N,CT Neck and chest
+429927002,Computed tomography of neck and thorax with contrast (procedure),,,Y,N,CT Neck and chest with contrast
 431326009,Computed tomography of neck with contrast (procedure),,,Y,N,CT Neck with contrast
 433029000,Nephrostomy using computed tomography guidance (procedure),51440002,Right and left (qualifier value),N,Y,CT Guided nephrostomy Both
 433029000,Nephrostomy using computed tomography guidance (procedure),7771000,Left (qualifier value),N,Y,CT Guided nephrostomy Lt
@@ -627,7 +627,7 @@ Concept-ID
 431247005,Computed tomography of nasopharynx with contrast (procedure),,,Y,N,CT Post nasal space with contrast
 429861004,Radiofrequency ablation of lesion of kidney using computed tomography guidance (procedure),51440002,Right and left (qualifier value),N,Y,CT Guided RF ablation kidney Both
 429923003,Computed tomography of urinary bladder for radiotherapy planning (procedure),,,N,Y,CT Radiotherapy planning scan bladder
-429851006,Computed tomography of thorax for radiotherapy planning (procedure),,,N,Y,CT Radiotherapy planning scan thorax
+429851006,Computed tomography of thorax for radiotherapy planning (procedure),,,N,Y,CT Radiotherapy planning scan chest
 429866009,Computed tomography of breast for radiotherapy planning (procedure),,,N,Y,CT Radiotherapy planning scan breast
 429877003,Computed tomography of neck for radiotherapy planning (procedure),,,N,Y,CT Radiotherapy planning scan neck
 430440000,Computed tomography of orbit for radiotherapy planning (procedure),51440002,Right and left (qualifier value),N,Y,CT Radiotherapy planning scan orbit Both
@@ -764,7 +764,7 @@ Concept-ID
 432768005,Repair of fracture of hip by nailing using fluoroscopic guidance (procedure),7771000,Left (qualifier value),N,Y,Orthopaedic pinning hip Lt
 431907009,Biopsy of soft tissue using fluoroscopic guidance (procedure),,,Y,N,Fluoroscopic guided biopsy soft tissue
 432811002,Insertion of stent using fluoroscopic guidance (procedure),,,N,Y,Fluoroscopic guided stent insertion
-432769002,X-ray of thorax using mobile image intensifier (procedure),,,Y,N,Mobile image intensifier thorax
+432769002,X-ray of thorax using mobile image intensifier (procedure),,,Y,N,Mobile image intensifier chest
 431780004,Fluoroscopy of thoracic spine (procedure),,,Y,N,Fluoroscopy thoracic spine
 432770001,X-ray of thoracic spine using mobile image intensifier (procedure),,,Y,N,Mobile image intensifier thoracic spine
 431677006,X-ray of upper limb using mobile image intensifier (procedure),51440002,Right and left (qualifier value),Y,N,Mobile image intensifier upper limb Both
@@ -909,7 +909,7 @@ Concept-ID
 432653003,Magnetic resonance imaging of calcaneus (procedure),24028007,Right (qualifier value),Y,N,MRI Calcaneus Rt
 432103005,Magnetic resonance angiography of carotid artery (procedure),51440002,Right and left (qualifier value),Y,N,MRA Carotid Both
 432877007,Magnetic resonance imaging of pulmonary perfusion (procedure),,,Y,N,MRI Pulmonary perfusion scan
-432815006,Magnetic resonance imaging of chest with contrast (procedure),,,Y,N,MRI Thorax with contrast
+432815006,Magnetic resonance imaging of chest with contrast (procedure),,,Y,N,MRI Chest with contrast
 432241009,Magnetic resonance imaging of coccyx (procedure),,,Y,N,MRI Spine coccyx
 431392001,Magnetic resonance imaging of rest perfusion of heart (procedure),,,Y,N,MRI Cardiac rest perfusion
 431225005,Magnetic resonance imaging of cerebrospinal fluid flow (procedure),,,Y,N,MRI Cerebrospinal fluid flow
@@ -979,7 +979,7 @@ Concept-ID
 432312003,Aspiration using magnetic resonance imaging guidance (procedure),,,N,Y,MRI Guided aspiration
 432883005,Magnetic resonance cholangiopancreatography with secretin stimulation (procedure),,,Y,N,MRCP and secretin study
 430143007,Magnetic resonance imaging of urinary bladder for radiotherapy planning (procedure),,,N,Y,MRI Radiotherapy planning scan bladder
-431766006,Magnetic resonance imaging of chest for radiotherapy planning (procedure),,,N,Y,MRI Radiotherapy planning scan thorax
+431766006,Magnetic resonance imaging of chest for radiotherapy planning (procedure),,,N,Y,MRI Radiotherapy planning scan chest
 430243000,Magnetic resonance imaging of breast for radiotherapy planning (procedure),,,N,Y,MRI Radiotherapy planning scan breast
 430164006,Magnetic resonance imaging of neck for radiotherapy planning (procedure),,,N,Y,MRI Radiotherapy planning scan neck
 430165007,Magnetic resonance imaging of orbit for radiotherapy planning (procedure),,,N,Y,MRI Radiotherapy planning scan orbits
@@ -1018,8 +1018,8 @@ Concept-ID
 429823002,Single photon emission computed tomography of brain perfusion (procedure),,,Y,N,NM Brain perfusion imaging SPECT
 431497006,Radionuclide bone imaging of head and neck (procedure),,,Y,N,NM Bone local skull and neck
 431837001,Single photon emission computed tomography of bone of head and neck (procedure),,,Y,N,NM Bone local skull and neck SPECT
-432399008,Radionuclide bone imaging of thorax (procedure),,,Y,N,NM Bone local thorax
-433130008,Single photon emission computed tomography of bone of thorax (procedure),,,Y,N,NM Bone local thorax SPECT
+432399008,Radionuclide bone imaging of thorax (procedure),,,Y,N,NM Bone local chest
+433130008,Single photon emission computed tomography of bone of thorax (procedure),,,Y,N,NM Bone local chest SPECT
 431228007,Positron emission tomography carbon 11 choline uptake study (procedure),,,Y,N,NM Choline local view PET C11
 431534004,Radionuclide ablation therapy of thyroid using iodine 131 (procedure),,,Y,N,NM Thyroid I131 Carcinoma thyroid Abl
 432026001,Positron emission tomography myocardial rest imaging using fluorodeoxyglucose (procedure),,,Y,N,NM Cardiac rest PET FDG
@@ -1030,7 +1030,7 @@ Concept-ID
 431644007,Radionuclide electrocardiography gated myocardial perfusion rest study using thallium 201 (procedure),,,Y,N,NM MPS Thallium rest gated
 432943001,Positron emission tomography electrocardiography gated myocardial rest study using N13 ammonia (procedure),,,Y,N,NM Cardiac rest gated PET NH3
 433027003,Radionuclide defecating proctography (procedure),,,Y,N,NM Defaecating proctogram
-431342002,Radiolabeled technetium 99m depreotide scan of thorax (procedure),,,Y,N,NM Thorax depreotide scan
+431342002,Radiolabeled technetium 99m depreotide scan of thorax (procedure),,,Y,N,NM Chest depreotide scan
 431729000,Single photon emission computed tomography of kidney using dimercaptosuccinic acid (procedure),,,Y,N,NM Renal DMSA with SPECT
 432056005,Radionuclide dynamic bone imaging (procedure),,,Y,N,NM Bone dynamic
 429818002,Single photon emission computed tomography using gallium (procedure),,,Y,N,NM Gallium scan SPECT
@@ -1131,9 +1131,9 @@ Concept-ID
 432812009,Biopsy of bone using ultrasound guidance (procedure),,,Y,N,US Guided biopsy bone
 433221009,Celiac plexus block using ultrasound guidance (procedure),,,N,Y,US Guided coeliac plexus block
 431514000,Cardiac septostomy using ultrasound guidance (procedure),,,N,Y,US Guided cardiac septostomy
-431757007,Ultrasonography of pleural cavity (procedure),,,Y,N,US Thorax and pleural cavity
-431618007,Insertion of drain into thorax using ultrasound guidance (procedure),,,N,Y,US Guided drainage thorax
-432539007,Aspiration of thorax using ultrasound guidance (procedure),,,N,Y,US Guided aspiration thorax
+431757007,Ultrasonography of pleural cavity (procedure),,,Y,N,US Chest and pleural cavity
+431618007,Insertion of drain into thorax using ultrasound guidance (procedure),,,N,Y,US Guided drainage chest
+432539007,Aspiration of thorax using ultrasound guidance (procedure),,,N,Y,US Guided aspiration chest
 433169002,Ultrasonography of clavicular region (procedure),51440002,Right and left (qualifier value),Y,N,US Clavicle Both
 433169002,Ultrasonography of clavicular region (procedure),7771000,Left (qualifier value),Y,N,US Clavicle Lt
 433169002,Ultrasonography of clavicular region (procedure),24028007,Right (qualifier value),Y,N,US Clavicle Rt
@@ -2113,14 +2113,14 @@ Concept-ID
 440513001,Computed tomography angiography of subclavian artery (procedure),7771000,Left (qualifier value),Y,N,CT Angiogram subclavian Left
 440513001,Computed tomography angiography of subclavian artery (procedure),24028007,Right (qualifier value),Y,N,CT Angiogram subclavian Right
 439087006,Percutaneous aspiration of abdomen using computed tomography guidance (procedure),,,N,Y,CT Guided aspiration abdomen
-440491000,Biopsy of thorax using computed tomography guidance (procedure),,,Y,N,CT Guided biopsy thorax
-439476007,Drainage of thorax using computed tomography guidance (procedure),,,N,Y,CT Guided drainage thorax
+440491000,Biopsy of thorax using computed tomography guidance (procedure),,,Y,N,CT Guided biopsy chest
+439476007,Drainage of thorax using computed tomography guidance (procedure),,,N,Y,CT Guided drainage chest
 438307007,Percutaneous aspiration of neck using computed tomography guidance (procedure),,,N,Y,CT Guided aspiration neck
 438308002,Percutaneous aspiration of pancreas using computed tomography guidance (procedure),,,N,Y,CT Guided aspiration pancreas
 439538003,Percutaneous aspiration of pelvis using computed tomography guidance (procedure),,,N,Y,CT Guided aspiration pelvis
 440498006,Percutaneous aspiration of thyroid using computed tomography guidance (procedure),,,N,Y,CT Guided aspiration thyroid
-438304000,Biopsy of thorax using fluoroscopic guidance (procedure),,,Y,N,Fluoroscopic guided biopsy thorax
-438812002,Aspiration of thorax using fluoroscopic guidance (procedure),,,N,Y,Fluoroscopic guided aspiration thorax
+438304000,Biopsy of thorax using fluoroscopic guidance (procedure),,,Y,N,Fluoroscopic guided biopsy chest
+438812002,Aspiration of thorax using fluoroscopic guidance (procedure),,,N,Y,Fluoroscopic guided aspiration chest
 438813007,Biopsy of kidney using ultrasound guidance (procedure),51440002,Right and left (qualifier value),Y,N,US Guided biopsy kidney Both
 438300009,Biopsy of liver using ultrasound guidance (procedure),,,Y,N,US Guided biopsy liver
 440452005,Percutaneous aspiration of pancreas using ultrasound guidance (procedure),,,N,Y,US Guided aspiration pancreas
@@ -2194,7 +2194,7 @@ Concept-ID
 438530000,Magnetic resonance angiography of coronary artery bypass graft (procedure),,,Y,N,MRA Coronary bypass graft
 439542000,Percutaneous transjugular embolization of esophageal vein using fluoroscopic guidance (procedure),,,N,Y,Pc transjugular Emb oesophageal vein
 439099004,Percutaneous transjugular embolization of gastric vein using fluoroscopic guidance (procedure),,,N,Y,Pc transjugular Emb gastric vein
-440331001,"Computed tomography of head, neck, thorax, abdomen and pelvis (procedure)",,,Y,N,CT Brain neck thorax Abdo and pelvis
+440331001,"Computed tomography of head, neck, thorax, abdomen and pelvis (procedure)",,,Y,N,CT Brain neck chest Abdo and pelvis
 439723001,Percutaneous measurement of cerebral venous sinus pressure using fluoroscopic guidance (procedure),,,Y,N,Pc cerebral venous sinus pressure
 438591004,Computed tomography triple phase study of liver (procedure),,,Y,N,CT Liver triple phase
 440332008,Fluoroscopic angiography of left ventricle and coronary artery bypass graft (procedure),,,Y,N,Cardiac Angio LV and Coronary Graft
@@ -2261,14 +2261,14 @@ Concept-ID
 430830005,Radionuclide two-phase bone imaging of pelvis (procedure),,,Y,N,NM Dual phase bone pelvis
 430829000,Radionuclide two-phase bone imaging of lumbar spine (procedure),,,Y,N,NM Dual phase bone lumbar spine
 432400001,Radionuclide two-phase bone imaging of head and neck (procedure),,,Y,N,NM Dual phase bone skull and neck
-430831009,Radionuclide two-phase bone imaging of thorax (procedure),,,Y,N,NM Dual phase bone thorax
+430831009,Radionuclide two-phase bone imaging of thorax (procedure),,,Y,N,NM Dual phase bone chest
 430825006,Radionuclide two-phase bone imaging of ankle and foot (procedure),51440002,Right and left (qualifier value),Y,N,NM Dual phase bone ankle and foot Both
 430826007,Radionuclide two-phase bone imaging of femur (procedure),51440002,Right and left (qualifier value),Y,N,NM Dual phase bone femur Both
 430827003,Radionuclide two-phase bone imaging of knee (procedure),51440002,Right and left (qualifier value),Y,N,NM Dual phase bone knee Both
 430828008,Radionuclide two-phase bone imaging of lower leg (procedure),51440002,Right and left (qualifier value),Y,N,NM Dual phase bone lower leg Both
 430832002,Radionuclide two-phase bone imaging of upper limb (procedure),51440002,Right and left (qualifier value),Y,N,NM Dual phase bone upper limb Both
 430266004,Radionuclide two-phase bone imaging of wrist (procedure),51440002,Right and left (qualifier value),Y,N,NM Dual phase bone wrist Both
-418332004,"Computerized tomography of neck, thorax, abdomen and pelvis (procedure)",,,Y,N,CT Neck thorax abdomen and pelvis
+418332004,"Computerized tomography of neck, thorax, abdomen and pelvis (procedure)",,,Y,N,CT Neck chest abdomen and pelvis
 241391008,Tc99m-methoxyisobutyl isonitrile parathyroid study (procedure),,,Y,N,NM Parathyroid MIBI
 65867009,Magnetic resonance imaging of mediastinum (procedure),,,Y,N,MRI Mediastinum
 442973008,Fine needle aspiration biopsy using computed tomography guidance (procedure),,,Y,N,CT Guided fine needle aspiration
@@ -2294,7 +2294,7 @@ Concept-ID
 443536006,Single photon emission computed tomography with computed tomography of bone of pelvis (procedure),,,Y,N,NM Bone pelvis and hips SPECT CT
 443638000,Single photon emission computed tomography with computed tomography of liver and spleen (procedure),,,Y,N,NM Liver and spleen SPECT CT
 444441005,Radionuclide imaging with computed tomography attenuation correction and diagnostic study (procedure),,,Y,N,NM CT Atten Correct and diagnostic study
-440331001,"Computed tomography of head, neck, thorax, abdomen and pelvis (procedure)",,,Y,N,CT Head neck thorax abdomen and pelvis
+440331001,"Computed tomography of head, neck, thorax, abdomen and pelvis (procedure)",,,Y,N,CT Head neck chest abdomen and pelvis
 443381006,Percutaneous sclerotherapy of lymphatic malformation using fluoroscopic guidance (procedure),,,N,Y,Pc sclerotherapy lymphatic malformation
 443382004,Percutaneous sclerotherapy of venous malformation using fluoroscopic guidance (procedure),,,N,Y,Pc sclerotherapy venous malformation
 443531001,Percutaneous insertion of stent into coarctation of aorta using fluoroscopic guidance (procedure),,,N,Y,Pc stent coarctation aorta
@@ -2312,7 +2312,7 @@ Concept-ID
 443368004,Single photon emission computed tomography with computed tomography ventriculography at cardiac rest (procedure),,,Y,N,NM Card ventriculography rest SPECT CT
 443365001,Single photon emission computed tomography with computed tomography of bone of head and neck (procedure),,,Y,N,NM Bone skull and neck SPECT CT
 443408003,Single photon emission computed tomography with computed tomography of bone (procedure),,,Y,N,NM Bone SPECT CT
-443537002,Single photon emission computed tomography with computed tomography of bone of thorax (procedure),,,Y,N,NM Bone thorax SPECT CT
+443537002,Single photon emission computed tomography with computed tomography of bone of thorax (procedure),,,Y,N,NM Bone chest SPECT CT
 444023008,Single photon emission computed tomography with computed tomography of bone of lower leg (procedure),51440002,Right and left (qualifier value),Y,N,NM Bone lower leg SPECT CT Both
 443595008,Single photon emission computed tomography with computed tomography of bone of wrist (procedure),51440002,Right and left (qualifier value),Y,N,NM Bone wrist SPECT CT Both
 443237001,Single photon emission computed tomography with computed tomography of perfusion of lung (procedure),,,Y,N,NM Lung perfusion SPECT CT
@@ -2387,16 +2387,16 @@ Concept-ID
 444614006,Percutaneous transapical insertion of aortic valve using fluoroscopic guidance (procedure),,,N,Y,Pc transapical insertion aortic valve
 444618009,"Computed tomography of head, abdomen and pelvis (procedure)",,,Y,N,CT Head abdomen and pelvis
 444628000,"Computed tomography of head, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Head abdomen pelvis with contrast
-444633001,"Computed tomography of head, thorax and abdomen (procedure)",,,Y,N,CT Head thorax and abdomen
+444633001,"Computed tomography of head, thorax and abdomen (procedure)",,,Y,N,CT Head chest and abdomen
 444634007,X-ray of thoracic and lumbar spine (procedure),,,Y,N,XR Thoracic and lumbar spine
 444636009,Percutaneous transfemoral insertion of aortic valve using fluoroscopic guidance (procedure),,,N,Y,Pc transfemoral insertion aortic valve
-444674001,"Computed tomography of head, thorax, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Head thorax Abdo pelvis with contrast
+444674001,"Computed tomography of head, thorax, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Head chest Abdo pelvis with contrast
 444687007,Fluoroscopy of catheter in situ (procedure),,,Y,N,Linogram
 444703002,Core needle biopsy using magnetic resonance imaging guidance (procedure),,,Y,N,MRI Guided core needle biopsy
 444704008,Core needle biopsy using ultrasound guidance (procedure),,,Y,N,US Guided core needle biopsy
-444708006,Computed tomography of head and thorax (procedure),,,Y,N,CT Head and thorax
+444708006,Computed tomography of head and thorax (procedure),,,Y,N,CT Head and chest
 444721004,Fluoroscopic percutaneous angiography of heart for complex congenital anomaly (procedure),,,Y,N,Pc Angio heart complex Congen anomaly
-444758004,"Computed tomography of head, thorax and abdomen with contrast (procedure)",,,Y,N,CT Head thorax abdomen with contrast
+444758004,"Computed tomography of head, thorax and abdomen with contrast (procedure)",,,Y,N,CT Head chest abdomen with contrast
 444796003,Core needle biopsy using computed tomography guidance (procedure),,,Y,N,CT Guided core needle biopsy
 444797007,Core needle biopsy using fluoroscopic guidance (procedure),,,Y,N,Fluoroscopy guided core needle biopsy
 444811001,Radiofrequency ablation of lesion of lung using computed tomography guidance (procedure),,,N,Y,CT Guided RF ablation lung
@@ -2410,10 +2410,10 @@ Concept-ID
 445317004,Fine needle aspiration using fluoroscopic guidance (procedure),,,Y,N,Fluoroscopy guided FNA
 445318009,Fine needle aspiration using magnetic resonance imaging guidance (procedure),,,Y,N,MRI Guided fine needle aspiration
 445515006,X-ray of cerebrospinal fluid shunt (procedure),,,Y,N,XR Cerebro-spinal fluid shunt
-445583005,"Computed tomography of head, thorax, abdomen and pelvis (procedure)",,,Y,N,CT Head thorax abdomen and pelvis
-433270008,"Computed tomography of neck, thorax and abdomen with contrast (procedure)",,,Y,N,CT Neck thorax and abdomen with contrast
-434438003,"Computed tomography of neck, thorax, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Neck thorax abdomen pelvis with Cont
-430439002,"Computed tomography of neck, thorax and abdomen (procedure)",,,Y,N,CT Neck thorax and abdomen
+445583005,"Computed tomography of head, thorax, abdomen and pelvis (procedure)",,,Y,N,CT Head chest abdomen and pelvis
+433270008,"Computed tomography of neck, thorax and abdomen with contrast (procedure)",,,Y,N,CT Neck chest and abdomen with contrast
+434438003,"Computed tomography of neck, thorax, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Neck chest abdomen pelvis with Cont
+430439002,"Computed tomography of neck, thorax and abdomen (procedure)",,,Y,N,CT Neck chest and abdomen
 418398002,Ultrasound scan of upper abdomen (procedure),,,Y,N,US Upper abdomen
 769671000000106,Intrathecal block using fluoroscopic guidance (procedure),,,N,Y,Fluoroscopy guided intrathecal block
 770371000000101,Revision of cardiac biventricular permanent pacemaker lead using fluoroscopic guidance (procedure),,,N,Y,Fluoro guided Rev biventricular PPM lead
@@ -2510,7 +2510,7 @@ Concept-ID
 235153008,Rigid sigmoidoscopy (procedure),,,Y,N,Rigid sigmoidoscopy
 42238002,Proctoscopy (procedure),,,Y,N,Proctoscopy
 169005008,Fluoroscopy of esophagus (procedure),,,Y,N,Fluoroscopy oesophagus
-444630003,"Computed tomography of head, neck, thorax, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Head neck thorax Abdo and pelvis Cont
+444630003,"Computed tomography of head, neck, thorax, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Head neck chest Abdo and pelvis Cont
 431759005,Percutaneous transluminal atherectomy using fluoroscopic guidance (procedure),,,N,Y,Transluminal atherectomy
 447699006,Injection of intervertebral disc using fluoroscopic guidance (procedure),,,N,Y,Fluoro guided Inj intervertebral disc
 447853006,Fine needle aspiration biopsy of neck using ultrasound guidance (procedure),,,Y,N,US Guided FNA biopsy neck
@@ -2533,7 +2533,7 @@ Concept-ID
 448336005,Radiofrequency biopsy of breast using X-ray guidance (procedure),24028007,Right (qualifier value),Y,N,XR Guided radiofrequency Bx breast Right
 448343004,Computed tomography perfusion study of neck (procedure),,,Y,N,CT Neck perfusion study
 448344005,Computed tomography perfusion study of pelvis (procedure),,,Y,N,CT Pelvis perfusion study
-448345006,Computed tomography perfusion study of thorax (procedure),,,Y,N,CT Thorax perfusion study
+448345006,Computed tomography perfusion study of thorax (procedure),,,Y,N,CT Chest perfusion study
 448351001,Magnetic resonance imaging of perineum (procedure),,,Y,N,MRI Perineum
 448431001,Gated computed tomography of heart with contrast (procedure),,,Y,N,CT Cardiac gated with contrast
 448433003,Radiofrequency ablation of nerve root of sacral spine using fluoroscopic guidance (procedure),,,N,Y,Fluoro guided RF Abl nerve root S spine
@@ -2553,7 +2553,7 @@ Concept-ID
 448706003,Magnetic resonance venography of iliac vein (procedure),24028007,Right (qualifier value),Y,N,MRV Iliac vein Right
 448740003,Magnetic resonance imaging of thoracic inlet with contrast (procedure),,,Y,N,MRI Thoracic inlet with contrast
 448752005,Magnetic resonance imaging of cervix using endocavity radiofrequency coil (procedure),,,Y,N,MRI Cervix endocavity RF coil
-448760006,Computed tomography of head and neck and thorax and abdomen with contrast (procedure),,,Y,N,CT Head neck thorax abdomen contrast
+448760006,Computed tomography of head and neck and thorax and abdomen with contrast (procedure),,,Y,N,CT Head neck chest abdomen contrast
 448761005,Intracardiac three dimensional echocardiography (procedure),,,Y,N,Intracardiac echocardiography complex
 448766000,Computed tomography angiography of pulmonary and abdominal and pelvic arteries (procedure),,,Y,N,CT Angiogram pulmonary abdomen pelvis A
 448770008,Computed tomography of mandible and maxilla (procedure),,,Y,N,CT Mandible and maxilla
@@ -2795,7 +2795,7 @@ Concept-ID
 432089005,Marking of skin over long saphenous vein using ultrasound guidance (procedure),51440002,Right and left (qualifier value),Y,N,US Skin marking long saphenous vein B
 843611000000109,Fine needle aspiration biopsy of chest wall using ultrasonography guidance (procedure),,,Y,N,US Guided FNA chest wall
 843631000000101,Core needle biopsy of chest wall using ultrasonography guidance (procedure),,,Y,N,US Guid core needle biopsy chest wall
-844031000000106,Insertion of fiducial marker into chest using computed tomography guidance (procedure),,,N,Y,CT Guided fiducial insertion thorax
+844031000000106,Insertion of fiducial marker into chest using computed tomography guidance (procedure),,,N,Y,CT Guided fiducial insertion chest
 847001000000106,Radionuclide localisation of tumour using methoxyisobutyl isonitrile (procedure),,,Y,N,NM Localisation tumour MIBI
 844621000000101,Ultrasonography of vocal cord (procedure),,,Y,N,Ultrasound vocal cord
 847011000000108,Insertion of oesophageal pH monitoring device using fluoroscopic guidance (procedure),,,N,Y,Insert Oesoph pH monitor Fluoro guided
@@ -2830,7 +2830,7 @@ Concept-ID
 853881000000103,Catheterisation of right side of heart for assessment of pulmonary vascular resistance using fluoroscopic guidance (procedure),,,Y,N,Fluoro Guid Cath Assess Pul Vasc Resist
 845521000000103,Three dimensional rotational fluoroscopic angiography of liver (procedure),,,Y,N,3 dimension rotational angiogram liver
 845531000000101,Three dimensional rotational fluoroscopic angiography of abdomen (procedure),,,Y,N,3 dimension rotational angiogram abdomen
-845591000000100,Three dimensional rotational fluoroscopic angiography of thorax (procedure),,,Y,N,3 dimension rotational angiogram thorax
+845591000000100,Three dimensional rotational fluoroscopic angiography of thorax (procedure),,,Y,N,3 dimension rotational angiogram chest
 845601000000106,Three dimensional rotational fluoroscopic angiography of pelvis (procedure),,,Y,N,3 dimension rotational angiogram pelvis
 845661000000105,Three dimensional rotational fluoroscopic angiography of head (procedure),,,Y,N,3 dimension rotational angiogram head
 845671000000103,Three dimensional rotational fluoroscopic angiography of neck (procedure),,,Y,N,3 dimension rotational angiogram neck
@@ -2876,7 +2876,7 @@ Concept-ID
 858321000000103,Positron emission tomography with computed tomography fluorodeoxyglucose imaging of head and neck (procedure),,,Y,N,NM Head and neck PET CT FDG
 858331000000101,Positron emission tomography using fluorodeoxyglucose with computed tomography myocardial stress imaging (procedure),,,Y,N,NM Cardiac stress PET CT FDG
 858281000000106,Computed tomography of entire skeleton (procedure),,,Y,N,CT Skeletal survey
-858161000000109,Electrocardiography gated computed tomography of thorax (procedure),,,Y,N,Gated CT thorax
+858161000000109,Electrocardiography gated computed tomography of thorax (procedure),,,Y,N,Gated CT chest
 872661000000104,Insertion of marker into breast using stereotactic mammography guidance (procedure),7771000,Left (qualifier value),Y,N,Stereo Mammo marker insertion breast Lt
 872661000000104,Insertion of marker into breast using stereotactic mammography guidance (procedure),24028007,Right (qualifier value),Y,N,Stereo Mammo marker insertion breast Rt
 872661000000104,Insertion of marker into breast using stereotactic mammography guidance (procedure),51440002,Right and left (qualifier value),Y,N,Stereo Mammo marker insertion breast B
@@ -2942,7 +2942,7 @@ Concept-ID
 699114003,Endovascular repair of abdominal aortic aneurysm using fluoroscopic guidance (procedure),,,N,Y,Endovascular repair Abdo aortic aneurysm
 699115002,Endovascular repair of thoracic aortic aneurysm using fluoroscopic guidance (procedure),,,N,Y,Endovascular repair T aortic aneurysm
 699582003,Magnetic resonance imaging of abdomen and pelvis with contrast (procedure),,,Y,N,MRI Abdomen and pelvis with contrast
-699583008,"Magnetic resonance imaging of thorax, abdomen and pelvis (procedure)",,,Y,N,MRI Thorax abdomen and pelvis
+699583008,"Magnetic resonance imaging of thorax, abdomen and pelvis (procedure)",,,Y,N,MRI Chest abdomen and pelvis
 699581005,Post mortem magnetic resonance imaging (procedure),,,Y,N,MRI Post mortem
 699094001,Radionuclide imaging using lutetium (177-Lu) labeled somatostatin analog (procedure),,,Y,N,NM Lu177 somatostatin analogue scan
 699578000,Doppler ultrasonography of inferior epigastric artery (procedure),51440002,Right and left (qualifier value),Y,N,US Doppler inferior epigastric artery B
@@ -3096,7 +3096,7 @@ Concept-ID
 307971000000105,Prone stereotactic X-ray guided vacuum assisted biopsy of breast (procedure),51440002,Right and left (qualifier value),Y,N,Prone Stereo Mammo and Vac Ass Bx Both
 430284002,Percutaneous laser ablation of short saphenous vein using fluoroscopy guidance (procedure),7771000,Left (qualifier value),N,Y,Pc laser ablation short saphenous V Lt
 849581000000100,Percutaneous transluminal coil embolisation occlusion of major systemic to pulmonary collateral artery using fluoroscopic guidance (procedure),,,N,Y,Fluoro Guid Pc coil Emb Occl MAPCA
-444709003,Computed tomography of head and thorax with contrast (procedure),,,Y,N,CT Head and thorax with contrast
+444709003,Computed tomography of head and thorax with contrast (procedure),,,Y,N,CT Head and chest with contrast
 439540008,Percutaneous embolization of spinal arteriovenous malformation using fluoroscopic guidance (procedure),,,N,Y,Pc embolisation spinal AVM
 431322006,Hydrodistention of glenohumeral joint using fluoroscopic guidance (procedure),7771000,Left (qualifier value),N,Y,Hydrodistension glenohumeral joint Lt
 431322006,Hydrodistention of glenohumeral joint using fluoroscopic guidance (procedure),24028007,Right (qualifier value),N,Y,Hydrodistension glenohumeral joint Rt
@@ -3110,7 +3110,7 @@ Concept-ID
 609171001,Percutaneous cryoablation of neoplasm of lung using computed tomography guidance (procedure),24028007,Right (qualifier value),N,Y,CT Pc cryotherapy tumour Abl lung Right
 711227002,Computed tomography cystography (procedure),,,Y,N,CT Cystogram
 441538004,Computed tomography of small intestine (procedure),,,Y,N,CT Enterography
-711278009,"Computed tomography of head, neck, thorax and abdomen (procedure)",,,Y,N,CT Head neck thorax and abdomen
+711278009,"Computed tomography of head, neck, thorax and abdomen (procedure)",,,Y,N,CT Head neck chest and abdomen
 711271003,Lumbar puncture using computed tomography guidance (procedure),,,Y,N,CT Guided lumbar puncture
 609173003,Percutaneous cryoablation of neoplasm using computed tomography guidance (procedure),,,N,Y,CT Pc cryotherapy tumour ablation
 702631007,Insertion of manometer catheter into pyloric antrum and duodenum using fluoroscopic guidance (procedure),,,N,Y,Insert antroduodenal manometry catheter
@@ -3149,7 +3149,7 @@ Concept-ID
 988801000000104,Insertion of cystogastric stent into pancreas using fluoroscopic guidance (procedure),,,N,Y,Fluoro guided Insert cystogastric stent
 989481000000102,X-ray skeletal survey of thorax with oblique ribs (procedure),,,Y,N,XR Skeletal survey chest oblique ribs
 990271000000107,Ultrasonography surveillance of liver for hepatocellular carcinoma (procedure),,,Y,N,US Surveillance liver hepatocellular Ca
-713548006,Low dose computed tomography of thorax (procedure),,,Y,N,CT Low dose thorax
+713548006,Low dose computed tomography of thorax (procedure),,,Y,N,CT Low dose chest
 712810001,Computed tomography of lower limb for bone length measurement (procedure),,,Y,N,CT Leg length measurement
 714150002,Computed tomography scanogram of spine (procedure),,,Y,N,CT Scanogram spine
 713912000,Computed tomography of trunk for assessment for solid organ injury (procedure),,,Y,N,CT Solid organ injury
@@ -3166,14 +3166,14 @@ Concept-ID
 713041007,Insertion of vagal nerve stimulator using fluoroscopic guidance (procedure),,,N,Y,Insertion vagal nerve stimulator
 713558005,Single photon emission computed tomography using gallium 67 with computed tomography of abdomen (procedure),,,Y,N,NM Gallium 67 abdomen SPECT CT
 713635004,Single photon emission computed tomography using gallium 67 with computed tomography of pelvis (procedure),,,Y,N,NM Gallium 67 pelvis SPECT CT
-713553001,Single photon emission computed tomography using gallium 67 with computed tomography of thorax (procedure),,,Y,N,NM Gallium 67 thorax SPECT CT
+713553001,Single photon emission computed tomography using gallium 67 with computed tomography of thorax (procedure),,,Y,N,NM Gallium 67 chest SPECT CT
 713561006,Single photon emission computed tomography with computed tomography of abdomen using indium (111-In) radiolabeled octreotide (procedure),,,Y,N,NM Indium 111 octreotide Abdo SPECT CT
 713557000,Single photon emission computed tomography with computed tomography of neck using indium (111-In) radiolabeled octreotide (procedure),,,Y,N,NM Indium 111 octreotide neck SPECT CT
 713560007,Single photon emission computed tomography with computed tomography of pelvis using indium (111-In) radiolabeled octreotide (procedure),,,Y,N,NM Indium 111 octreotide pelvis SPECT CT
-713559002,Single photon emission computed tomography with computed tomography of thorax using indium (111-In) radiolabeled octreotide (procedure),,,Y,N,NM Indium 111 octreotide thorax SPECT CT
+713559002,Single photon emission computed tomography with computed tomography of thorax using indium (111-In) radiolabeled octreotide (procedure),,,Y,N,NM Indium 111 octreotide chest SPECT CT
 713552006,Single photon emission computed tomography using iodine 123 meta-iodobenzylguanidine with computed tomography of abdomen (procedure),,,Y,N,NM MIBG iodine 123 abdomen SPECT CT
 714257005,Single photon emission computed tomography using iodine 123 meta-iodobenzylguanidine with computed tomography of pelvis (procedure),,,Y,N,NM MIBG iodine 123 pelvis SPECT CT
-714977007,Single photon emission computed tomography using iodine 123 meta-iodobenzylguanidine with computed tomography of thorax (procedure),,,Y,N,NM MIBG iodine 123 thorax SPECT CT
+714977007,Single photon emission computed tomography using iodine 123 meta-iodobenzylguanidine with computed tomography of thorax (procedure),,,Y,N,NM MIBG iodine 123 chest SPECT CT
 713562004,Single photon emission computed tomography using technetium 99m with computed tomography of thyroid (procedure),,,Y,N,NM Tc99m thyroid SPECT CT
 713856004,Ultrasonography of brachial plexus (procedure),51440002,Right and left (qualifier value),Y,N,US Brachial plexus Both
 713856004,Ultrasonography of brachial plexus (procedure),7771000,Left (qualifier value),Y,N,US Brachial plexus Left
@@ -3265,15 +3265,15 @@ Concept-ID
 715459001,Injection of marker into axilla using ultrasonographic guidance (procedure),24028007,Right (qualifier value),N,Y,US Guided marker insertion axilla Right
 715459001,Injection of marker into axilla using ultrasonographic guidance (procedure),51440002,Right and left (qualifier value),N,Y,US Guided marker insertion axilla Both
 715461005,Computed tomography of urinary bladder with contrast for radiotherapy planning (procedure),,,Y,N,CT Radiotherapy planning bladder Cont
-715494008,Computed tomography of thorax with contrast for radiotherapy planning (procedure),,,Y,N,CT Radiotherapy planning thorax contrast
+715494008,Computed tomography of thorax with contrast for radiotherapy planning (procedure),,,Y,N,CT Radiotherapy planning chest contrast
 715584001,Fluoroscopic defecating proctography with water soluble contrast (procedure),,,Y,N,Defaecating proctography water Sol Cont
 715588003,"Computed tomography of head, neck, abdomen and pelvis (procedure)",,,Y,N,CT Head neck abdomen and pelvis
 715681001,Computed tomography of pelvis for brachytherapy planning (procedure),,,Y,N,CT Brachytherapy planning scan pelvis
-715682008,Computed tomography of thorax for brachytherapy planning (procedure),,,Y,N,CT Brachytherapy planning scan thorax
+715682008,Computed tomography of thorax for brachytherapy planning (procedure),,,Y,N,CT Brachytherapy planning scan chest
 715683003,Computed tomography of prostate for brachytherapy planning (procedure),,,Y,N,CT Brachytherapy planning scan prostate
 715684009,Magnetic resonance imaging of prostate for brachytherapy planning (procedure),,,Y,N,MRI Brachytherapy planning scan prostate
 715685005,Magnetic resonance imaging of pelvis for brachytherapy planning (procedure),,,Y,N,MRI Brachytherapy planning scan pelvis
-715686006,Magnetic resonance imaging of thorax for brachytherapy planning (procedure),,,Y,N,MRI Brachytherapy planning scan thorax
+715686006,Magnetic resonance imaging of thorax for brachytherapy planning (procedure),,,Y,N,MRI Brachytherapy planning scan chest
 715687002,Computed tomography of prostate with contrast for radiotherapy planning (procedure),,,Y,N,CT Radiotherapy planning prostate Cont
 715688007,Computed tomography of lower leg for radiotherapy planning (procedure),7771000,Left (qualifier value),Y,N,CT Radiotherapy planning lower leg Lt
 715688007,Computed tomography of lower leg for radiotherapy planning (procedure),24028007,Right (qualifier value),Y,N,CT Radiotherapy planning lower leg Rt
@@ -3290,7 +3290,7 @@ Concept-ID
 717193008,Cone beam computed tomography (procedure),,,Y,N,CT Cone beam
 717340001,Aspiration using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided aspiration
 717341002,Aspiration of neck using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided aspiration neck
-717343004,Aspiration of chest using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided aspiration thorax
+717343004,Aspiration of chest using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided aspiration chest
 717344005,Aspiration of abdomen using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided aspiration abdomen
 717346007,Aspiration of pelvis using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided aspiration pelvis
 717347003,Aspiration of head using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided aspiration head
@@ -3298,14 +3298,14 @@ Concept-ID
 717687001,Insertion of drain using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided insertion drain
 717688006,Insertion of drain into neck using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided insertion drain neck
 717689003,Insertion of drain into head using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided insertion drain head
-717690007,Insertion of drain into chest using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT Guid insertion drain thorax
+717690007,Insertion of drain into chest using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT Guid insertion drain chest
 717691006,Insertion of drain into abdomen using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT guided insertion drain Abdo
 717692004,Insertion of drain into pelvis using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT Guid insertion drain pelvis
 717695002,Insertion of drain into spine using cone beam computed tomography guidance (procedure),,,N,Y,Cone beam CT Guid insertion drain spine
 717991009,Biopsy using cone beam computed tomography guidance (procedure),,,Y,N,Cone beam CT guided biopsy
 717992002,Biopsy of neck using cone beam computed tomography guidance (procedure),,,Y,N,Cone beam CT guided biopsy neck
 717993007,Biopsy of head using cone beam computed tomography guidance (procedure),,,Y,N,Cone beam CT guided biopsy head
-717994001,Biopsy of chest using cone beam computed tomography guidance (procedure),,,Y,N,Cone beam CT guided biopsy thorax
+717994001,Biopsy of chest using cone beam computed tomography guidance (procedure),,,Y,N,Cone beam CT guided biopsy chest
 717995000,Biopsy of abdomen using cone beam computed tomography guidance (procedure),,,Y,N,Cone beam CT guided biopsy abdomen
 717996004,Biopsy of pelvis using cone beam computed tomography guidance (procedure),,,Y,N,Cone beam CT guided biopsy pelvis
 717999006,Biopsy of spine using cone beam computed tomography guidance (procedure),,,Y,N,Cone beam CT guided biopsy spine
@@ -3323,13 +3323,13 @@ Concept-ID
 718010009,Cone beam computed tomography of nasal sinus (procedure),,,Y,N,CT Cone beam nasal sinus
 718012001,Cone beam computed tomography of brain perfusion (procedure),,,Y,N,CT Cone beam brain perfusion imaging
 718013006,Cone beam computed tomography of abdomen (procedure),,,Y,N,Cone beam CT abdomen
-718014000,Cone beam computed tomography of chest (procedure),,,Y,N,Cone beam CT thorax
+718014000,Cone beam computed tomography of chest (procedure),,,Y,N,Cone beam CT chest
 718015004,Cone beam computed tomography of neck (procedure),,,Y,N,Cone beam CT neck
 718078008,Doppler ultrasonography of transplanted liver (procedure),,,Y,N,US Doppler transplanted liver
-718144000,Removal of tunneled drain from thorax using ultrasonographic guidance (procedure),,,N,Y,US Guided removal tunnelled drain thorax
+718144000,Removal of tunneled drain from thorax using ultrasonographic guidance (procedure),,,N,Y,US Guided removal tunnelled drain chest
 718286004,Cone beam computed tomography of bone structure of face (procedure),,,Y,N,CT Cone beam facial bone
-718305004,Insertion of tunneled drain into thorax using ultrasonographic guidance (procedure),,,N,Y,US Guid insertion tunnelled drain thorax
-718306003,Removal of tunneled drain from thorax using fluoroscopic guidance (procedure),,,N,Y,Removal of tunnelled drain from thorax
+718305004,Insertion of tunneled drain into thorax using ultrasonographic guidance (procedure),,,N,Y,US Guid insertion tunnelled drain chest
+718306003,Removal of tunneled drain from thorax using fluoroscopic guidance (procedure),,,N,Y,Removal of tunnelled drain from chest
 718313003,Embolization of track using fluoroscopic guidance (procedure),,,N,Y,Fluoro guided track embolisation
 718475004,Ultrasonography for amniotic fluid index (procedure),,,Y,N,US Amniotic fluid index
 1048791000000101,Unblocking of peripherally inserted central catheter using fluoroscopic guidance (procedure),,,N,Y,PICC Line unblocking
@@ -3433,10 +3433,10 @@ Concept-ID
 720704002,Fluoroscopic arteriography of anterior tibial artery using contrast with insertion of drug eluting stent (procedure),51440002,Right and left (qualifier value),N,Y,Pc DES anterior tibial artery Both
 720705001,Magnetic resonance imaging of brain with arterial spin labeling (procedure),,,Y,N,MRI Arterial spin labelling of brain
 720707009,Plain X-ray of gastrointestinal tract with marker capsule for transit study (procedure),,,Y,N,XR GI tract marker capsule transit study
-721040001,Dual energy computed tomography of thorax (procedure),,,Y,N,DECT Thorax
-721041002,"Dual energy computed tomography of thorax, abdomen and pelvis (procedure)",,,Y,N,DECT Thorax abdomen and pelvis
+721040001,Dual energy computed tomography of thorax (procedure),,,Y,N,DECT Chest
+721041002,"Dual energy computed tomography of thorax, abdomen and pelvis (procedure)",,,Y,N,DECT Chest abdomen and pelvis
 721042009,Dual energy computed tomography of abdomen and pelvis (procedure),,,Y,N,DECT Abdomen and pelvis
-721043004,"Dual energy computed tomography of neck, thorax, abdomen and pelvis (procedure)",,,Y,N,DECT Neck thorax abdomen and pelvis
+721043004,"Dual energy computed tomography of neck, thorax, abdomen and pelvis (procedure)",,,Y,N,DECT Neck chest abdomen and pelvis
 721044005,Dual energy computed tomography angiography of pulmonary artery (procedure),,,Y,N,DECT Angiogram pulmonary arteries
 722611003,Fluoroscopic arteriography of peroneal artery using contrast with insertion of drug eluting stent (procedure),7771000,Left (qualifier value),N,Y,Pc drug eluting stent peroneal artery Lt
 722611003,Fluoroscopic arteriography of peroneal artery using contrast with insertion of drug eluting stent (procedure),24028007,Right (qualifier value),N,Y,Pc drug eluting stent peroneal artery Rt
@@ -3606,7 +3606,7 @@ Concept-ID
 1401000087103,Biopsy of right kidney using computed tomography guidance (procedure),24028007,Right (qualifier value),Y,N,CT Guided biopsy kidney Right
 1501000087104,Computed tomography of left shoulder with contrast (procedure),7771000,Left (qualifier value),Y,N,CT Shoulder with contrast Left
 1521000087105,Computed tomography of right shoulder with contrast (procedure),24028007,Right (qualifier value),Y,N,CT Shoulder with contrast Right
-726552004,"Computed tomography of thorax, abdomen and pelvis with oral contrast (procedure)",,,Y,N,CT Thorax Abdo pelvis oral contrast only
+726552004,"Computed tomography of thorax, abdomen and pelvis with oral contrast (procedure)",,,Y,N,CT Chest Abdo pelvis oral contrast only
 725822006,Injection of cervical spinal nerve root using fluoroscopic guidance (procedure),,,N,Y,Fluoro guided nerve root Inj cervical
 6451000087105,Biopsy of left kidney using fluoroscopic guidance (procedure),7771000,Left (qualifier value),Y,N,Fluoro guided biopsy kidney Left
 6461000087108,Biopsy of right kidney using fluoroscopic guidance (procedure),24028007,Right (qualifier value),Y,N,Fluoro guided biopsy kidney Right
@@ -3697,7 +3697,7 @@ Concept-ID
 442831001,Percutaneous needle biopsy of liver using fluoroscopic guidance (procedure),,,Y,N,Fluoro guided Pc needle biopsy of liver
 736276004,Insertion of central venous catheter using fluoroscopic guidance (procedure),,,N,Y,Fluoro guided central line insertion
 736793003,Magnetic resonance imaging of heart with contrast (procedure),,,Y,N,MRI Heart with contrast
-1095281000000107,"Magnetic resonance imaging of thorax, abdomen and pelvis with radiopaque contrast (procedure)",,,Y,N,MRI Thorax abdo and pelvis with contrast
+1095281000000107,"Magnetic resonance imaging of thorax, abdomen and pelvis with radiopaque contrast (procedure)",,,Y,N,MRI Chest abdo and pelvis with contrast
 736740004,Magnetic resonance imaging of female pelvis for radiotherapy planning (procedure),,,Y,N,MRI Radiotherapy Plan scan female pelvis
 1095381000000103,Insertion of iodine 125 radioactive seed into left axilla using X-ray guidance (procedure),7771000,Left (qualifier value),N,Y,XR Guided I125 insertion axilla Left
 1095371000000100,Insertion of iodine 125 radioactive seed into right axilla using X-ray guidance (procedure),24028007,Right (qualifier value),N,Y,XR Guided I125 insertion axilla Right
@@ -3867,7 +3867,7 @@ Concept-ID
 764574007,Magnetic resonance imaging with contrast for radiotherapy planning (procedure),,,Y,N,MRI Radiotherapy planning scan with Cont
 764575008,Magnetic resonance imaging for radiotherapy planning (procedure),,,N,Y,MRI Radiotherapy planning scan
 1097971000000109,Magnetic resonance imaging of spine with contrast for proton therapy planning (procedure),,,Y,N,MRI Spine Cont proton therapy planning
-1098061000000100,Magnetic resonance imaging of chest with contrast for proton therapy planning (procedure),,,Y,N,MRI Thorax Cont proton therapy planning
+1098061000000100,Magnetic resonance imaging of chest with contrast for proton therapy planning (procedure),,,Y,N,MRI Chest Cont proton therapy planning
 1103661000000108,Lutetium (177-Lu) labelled somatostatin analogue therapy (procedure),,,N,Y,NM Lu177 somatostatin analogue therapy
 764660008,Positron emission tomography of brain using fluorodeoxyglucose (18-F) (procedure),,,Y,N,NM Brain PET FDG
 764672002,Positron emission tomography of brain using Fluorocholine (18-F) (procedure),,,Y,N,NM Choline brain PET F18
@@ -3906,8 +3906,8 @@ Concept-ID
 1111021000000107,Dynamic computed tomography arthrography (procedure),,,Y,N,CT Dynamic arthrogram
 1111011000000101,Dynamic computed tomography of trachea (procedure),,,Y,N,CT Dynamic trachea
 1110571000000107,Computed tomography four phase scan of liver with contrast (procedure),,,Y,N,CT Liver four phase scan with contrast
-1110551000000103,"Computed tomography portal venography of thorax, abdomen and pelvis (procedure)",,,Y,N,CT Portal venogram thorax Abdo pelvis
-1110561000000100,Computed tomography portal venography of thorax and abdomen (procedure),,,Y,N,CT Portal venogram thorax abdomen
+1110551000000103,"Computed tomography portal venography of thorax, abdomen and pelvis (procedure)",,,Y,N,CT Portal venogram chest Abdo pelvis
+1110561000000100,Computed tomography portal venography of thorax and abdomen (procedure),,,Y,N,CT Portal venogram chest abdomen
 76517002,Endoscopy of ear (procedure),7771000,Left (qualifier value),Y,N,Endoscopy of ear Left
 76517002,Endoscopy of ear (procedure),24028007,Right (qualifier value),Y,N,Endoscopy of ear Right
 76517002,Endoscopy of ear (procedure),51440002,Right and left (qualifier value),Y,N,Endoscopy of ear Both
@@ -3921,7 +3921,7 @@ Concept-ID
 1111721000000105,Point of care Doppler ultrasonography of vein (procedure),,,Y,N,US Point of care Doppler vein
 1111731000000107,Point of care Doppler ultrasonography of vein of lower limb (procedure),,,Y,N,US Point of care Doppler lower limb vein
 1111781000000106,Point of care ultrasonography of musculoskeletal system (procedure),,,Y,N,US Point of care musculoskeletal
-1111751000000100,Point of care ultrasonography of thorax (procedure),,,Y,N,US Point of care of thorax
+1111751000000100,Point of care ultrasonography of thorax (procedure),,,Y,N,US Point of care of chest
 1105071000000106,Dual energy X-ray photon absorptiometry of left femur (procedure),7771000,Left (qualifier value),Y,N,DEXA Scan of femur Left
 1105061000000104,Dual energy X-ray photon absorptiometry of right femur (procedure),24028007,Right (qualifier value),Y,N,DEXA Scan of femur Right
 1105121000000106,Dual energy X-ray photon absorptiometry of bilateral femurs (procedure),51440002,Right and left (qualifier value),Y,N,DEXA Scan of femur Both
@@ -3929,8 +3929,8 @@ Concept-ID
 1111001000000103,Computed tomography dual phase of bilateral kidneys with contrast (procedure),51440002,Right and left (qualifier value),Y,N,CT Dual phase kidney with contrast Both
 1110821000000105,Four dimensional computed tomography of parathyroid with contrast (procedure),,,Y,N,CT 4D parathyroid with contrast
 1105171000000105,Gated computed tomography of thoracic aorta with contrast (procedure),,,Y,N,CT Gated thoracic aorta with contrast
-1105231000000100,"Computed tomography of neck, thorax, abdomen and pelvis with oral and intravenous contrast (procedure)",,,Y,N,CT Neck thorax Abdo pelvis IV oral Cont
-1111431000000104,Pleural phase computed tomography of thorax with contrast (procedure),,,Y,N,CT Pleural phase thorax with contrast
+1105231000000100,"Computed tomography of neck, thorax, abdomen and pelvis with oral and intravenous contrast (procedure)",,,Y,N,CT Neck chest Abdo pelvis IV oral Cont
+1111431000000104,Pleural phase computed tomography of thorax with contrast (procedure),,,Y,N,CT Pleural phase chest with contrast
 702487007,Computed tomography of thoracic and lumbar spine (procedure),,,Y,N,CT Thoracic and lumbar spine
 1111441000000108,Computed tomography triple phase of bilateral adrenal glands with contrast (procedure),51440002,Right and left (qualifier value),Y,N,CT Triple phase adrenals with Cont Both
 1111801000000107,Computed tomography triple phase of bilateral kidneys with contrast (procedure),51440002,Right and left (qualifier value),Y,N,CT Triple phase kidney with contrast B
@@ -3988,11 +3988,11 @@ Concept-ID
 770893006,Extracorporeal shockwave lithotripsy of calculus of right ureter using fluoroscopic guidance (procedure),24028007,Right (qualifier value),N,Y,Fluoro guided ESWL ureter Right
 772997003,Fast field-cycling magnetic resonance imaging (procedure),,,Y,N,MRI Fast field-cycling
 440457004,Percutaneous transluminal insertion of plastic stent into bile duct using fluoroscopic guidance (procedure),,,N,Y,Biliary bile duct stent plastic
-709787009,Thoracentesis using computed tomography guidance (procedure),,,N,Y,CT Guided aspiration thorax
+709787009,Thoracentesis using computed tomography guidance (procedure),,,N,Y,CT Guided aspiration chest
 785805004,Measurement of cervical length using transvaginal ultrasonography (procedure),,,Y,N,US Obstetric cervical length TA
 431558000,Insertion of cardiac pressure wire using fluoroscopic guidance (procedure),,,N,Y,Cardiac pressure wire and Cath insertion
 770568001,Biopsy of right breast using digital tomosynthesis guidance (procedure),24028007,Right (qualifier value),Y,N,XR Tomosynthesis Guid biopsy breast Rt
-16326461000119108,Computed tomography angiography of chest and abdomen with contrast (procedure),,,Y,N,CT Angiography thorax and abdomen
+16326461000119108,Computed tomography angiography of chest and abdomen with contrast (procedure),,,Y,N,CT Angiography chest and abdomen
 419680004,Fluoroscopic venography of hepatic vein with contrast (procedure),,,Y,N,Venogram hepatic percutaneous
 866220000,Computed tomography arthrography of temporomandibular joint with contrast (procedure),24028007,Right (qualifier value),Y,N,CT Arthrogram temporomandibular joint Rt
 770557001,Insertion of peripherally inserted central catheter using ultrasonographic guidance (procedure),,,N,Y,US Guided PICC line insertion
@@ -4018,7 +4018,7 @@ Concept-ID
 788433009,Positron emission tomography myocardial stress imaging using rubidium-82 (procedure),,,Y,N,NM Cardiac stress PET Rb81
 440112003,Defecating proctogram using magnetic resonance imaging (procedure),,,Y,N,MRI Defaecating proctogram
 784163001,Implantation of cardiac biventricular permanent pacemaker using fluoroscopic guidance (procedure),,,N,Y,Cardiac biventricular PPM insertion
-433761009,"Computed tomography of thorax, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Thorax Abdo pelvis oral and IV Cont
+433761009,"Computed tomography of thorax, abdomen and pelvis with contrast (procedure)",,,Y,N,CT Chest Abdo pelvis oral and IV Cont
 866222008,Computed tomography arthrography of bilateral temporomandibular joints (procedure),51440002,Right and left (qualifier value),Y,N,CT Temporomandibular joint Both
 773131009,Plain X-ray for ulnar variance view (procedure),7771000,Left (qualifier value),Y,N,X-ray for ulnar variance view Left
 770701008,Insert of stent into esophagus using fluoroscopic guidance (procedure),,,N,Y,Oesophageal stent insertion

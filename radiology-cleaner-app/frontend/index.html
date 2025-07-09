@@ -152,7 +152,7 @@
                     <h3>Sample Mappings</h3>
                     <div class="table-container">
                         <table class="results-table" id="resultsTable">
-                            <thead><tr><th>Source</th><th>Original Code</th><th>Original Name</th><th>Clean Name</th><th>Components</th><th>Context</th><th>Confidence</th></tr></thead>
+                            <thead><tr><th>Source</th><th>Original Code</th><th>Original Name</th><th>Clean Name</th><th>SNOMED Code</th><th>SNOMED FSN</th><th>Components</th><th>Context</th><th>Confidence</th></tr></thead>
                             <tbody id="resultsBody"></tbody>
                         </table>
                     </div>
@@ -174,8 +174,8 @@
             </div>
         </div>
 
-        <!-- Feedback System -->
-        <div class="main-card feedback-section">
+        <!-- Feedback System (Hidden) -->
+        <div class="main-card feedback-section" style="display: none;">
             <h2>💬 Feedback System</h2>
             <div class="feedback-tabs">
                 <div class="feedback-tab active" data-tab="general">General Suggestions</div>
@@ -344,9 +344,9 @@
     window.addEventListener('DOMContentLoaded', function() {
         // --- DYNAMIC API CONFIGURATION ---
         // Local development API URL
-        const LOCAL_API_URL = 'http://localhost:5000/parse';
-        const STAGING_API_URL = 'https://radiology-api-staging.onrender.com/parse';
-        const PRODUCTION_API_URL = 'https://radiology-api-prod.onrender.com/parse';
+        const LOCAL_API_URL = 'http://localhost:5000/parse_enhanced';
+        const STAGING_API_URL = 'https://radiology-api-staging.onrender.com/parse_enhanced';
+        const PRODUCTION_API_URL = 'https://radiology-api-prod.onrender.com/parse_enhanced';
         const PRODUCTION_HOSTNAME = 'radiology-cleaner.pages.dev'; // Use your final Cloudflare Pages production domain here.
 
         // Automatically select the correct API based on the frontend's URL
@@ -439,16 +439,17 @@
                                 modality_code: code.MODALITY_CODE,
                                 exam_code: code.EXAM_CODE,
                                 exam_name: code.EXAM_NAME,
-                                clean_name: parsed.cleanName,
+                                clean_name: parsed.standardized.clean_name,
+                                snomed: parsed.snomed || {},
                                 components: { 
-                                    anatomy: parsed.anatomy, 
-                                    laterality: parsed.laterality, 
-                                    contrast: parsed.contrast, 
-                                    technique: parsed.technique,
-                                    gender_context: parsed.gender_context,
-                                    clinical_context: parsed.clinical_context,
-                                    confidence: parsed.confidence,
-                                    clinical_equivalents: parsed.clinical_equivalents
+                                    anatomy: parsed.standardized.components.anatomy, 
+                                    laterality: parsed.standardized.components.laterality, 
+                                    contrast: parsed.standardized.components.contrast, 
+                                    technique: parsed.standardized.components.technique,
+                                    gender_context: parsed.standardized.components.gender_context,
+                                    clinical_context: parsed.standardized.components.clinical_context,
+                                    confidence: parsed.metadata.confidence,
+                                    clinical_equivalents: parsed.equivalence.clinical_equivalents
                                 }
                             });
                         } catch (error) {
@@ -496,6 +497,22 @@
                     cleanNameCell.innerHTML = `<span class="error-message">${item.clean_name}</span>`;
                 } else {
                     cleanNameCell.innerHTML = `<strong>${item.clean_name}</strong>`;
+                }
+
+                // Add SNOMED Code cell
+                const snomedCodeCell = row.insertCell();
+                if (item.snomed && item.snomed.snomed_concept_id) {
+                    snomedCodeCell.textContent = item.snomed.snomed_concept_id;
+                } else {
+                    snomedCodeCell.innerHTML = '<span style="color: #999;">-</span>';
+                }
+
+                // Add SNOMED FSN cell
+                const snomedFsnCell = row.insertCell();
+                if (item.snomed && item.snomed.snomed_fsn) {
+                    snomedFsnCell.textContent = item.snomed.snomed_fsn;
+                } else {
+                    snomedFsnCell.innerHTML = '<span style="color: #999;">-</span>';
                 }
 
                 const componentsCell = row.insertCell();

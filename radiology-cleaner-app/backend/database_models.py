@@ -472,23 +472,60 @@ class DatabaseManager:
 
     def load_snomed_from_csv(self, csv_path: str):
         """Load SNOMED reference data from CSV file."""
+        import io
+        
         with self.get_connection() as conn:
             # Check if table is already populated
-            cursor = conn.execute('SELECT COUNT(*) FROM snomed_reference')
+            cursor = conn.execute('SELECT COUNT(*) FROM snomed_reference WHERE clean_name IS NOT NULL')
             if cursor.fetchone()[0] > 0:
                 print("SNOMED reference table already populated.")
                 return
 
             with open(csv_path, 'r', encoding='utf-8') as f:
-                # Clean up header row
-                header = [h.strip().replace('\n', '') for h in f.readline().split(',')]
-                reader = csv.reader(f)
-
+                # Use the same fixed CSV parsing as in train.py
+                content = f.read()
+                
+                # Replace the multiline header issue
+                content = content.replace('"SNOMED CT \nConcept-ID\n"', '"SNOMED CT Concept-ID"')
+                content = content.replace('"Clean Name\n"', '"Clean Name"')
+                
+                lines = content.strip().split('\n')
+                
+                # Find the data start (skip malformed headers)
+                data_start = 0
+                for i, line in enumerate(lines):
+                    if line.strip() and line[0].isdigit():  # First line with actual data
+                        data_start = i
+                        break
+                
+                if data_start == 0:
+                    print("No data rows found in CSV")
+                    return
+                    
+                # Use the corrected header from a few lines back
+                header = lines[data_start - 1] if data_start > 0 else lines[0]
+                data_lines = lines[data_start:]
+                
+                # Create a cleaned CSV content
+                cleaned_csv = header + '\n' + '\n'.join(data_lines)
+                
+                # Parse the cleaned CSV
+                reader = csv.DictReader(io.StringIO(cleaned_csv))
+                
+                count = 0
                 for row in reader:
-                    if len(row) != len(header):
+                    if not row.get('SNOMED CT FSN') or not row.get('Clean Name'):
                         continue
-                    # Create a dictionary for easier access
-                    row_dict = {header[i]: val for i, val in enumerate(row)}
+                    
+                    try:
+                        snomed_concept_id = int(row.get('SNOMED CT Concept-ID', 0))
+                    except ValueError:
+                        snomed_concept_id = 0
+                    
+                    try:
+                        laterality_concept_id = int(row.get('SNOMED CT Concept-ID of Laterality', 0)) if row.get('SNOMED CT Concept-ID of Laterality') else None
+                    except ValueError:
+                        laterality_concept_id = None
 
                     conn.execute('''
                         INSERT INTO snomed_reference (
@@ -496,15 +533,17 @@ class DatabaseManager:
                             snomed_laterality_fsn, is_diagnostic, is_interventional, clean_name
                         ) VALUES (?, ?, ?, ?, ?, ?, ?)
                     ''', (
-                        int(row_dict.get('"SNOMED CT Concept-ID"', 0)),
-                        row_dict.get('SNOMED CT FSN'),
-                        int(row_dict.get('SNOMED CT Concept-ID of Laterality', 0)) if row_dict.get('SNOMED CT Concept-ID of Laterality') else None,
-                        row_dict.get('SNOMED FSN of Laterality'),
-                        True if row_dict.get('Diagnostic procedure') == 'Y' else False,
-                        True if row_dict.get('Interventional Procedure') == 'Y' else False,
-                        row_dict.get('"Clean Name"')
+                        snomed_concept_id,
+                        row.get('SNOMED CT FSN'),
+                        laterality_concept_id,
+                        row.get('SNOMED FSN of Laterality'),
+                        True if row.get('Diagnostic procedure') == 'Y' else False,
+                        True if row.get('Interventional Procedure') == 'Y' else False,
+                        row.get('Clean Name')
                     ))
-            print("Successfully loaded SNOMED reference data.")
+                    count += 1
+                    
+            print(f"Successfully loaded {count} SNOMED reference entries.")
 
     def get_snomed_code(self, clean_name: str) -> Optional[Dict]:
         """Get SNOMED code for a given clean name."""
@@ -529,6 +568,105 @@ class DatabaseManager:
             if row:
                 return dict(row)
             return None
+
+    def get_all_clean_names(self) -> List[Dict]:
+        """Get all clean names from the database for fuzzy matching."""
+        with self.get_connection() as conn:
+            cursor = conn.execute(
+                'SELECT id, clean_name, snomed_concept_id, snomed_fsn, snomed_laterality_concept_id, snomed_laterality_fsn FROM snomed_reference WHERE clean_name IS NOT NULL'
+            )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def fuzzy_match_clean_names(self, target_clean_name: str, threshold: float = 0.6) -> List[Dict]:
+        """Find fuzzy matches for a clean name with similarity scores."""
+        from difflib import SequenceMatcher
+        import re
+        
+        all_clean_names = self.get_all_clean_names()
+        matches = []
+        
+        # Normalize target for better matching
+        target_normalized = re.sub(r'[^\w\s]', '', target_clean_name.lower().strip())
+        target_words = set(target_normalized.split())
+        
+        # Extract modality for CT/MRI abdomen-pelvis equivalence
+        modality = target_normalized.split()[0] if target_normalized.split() else ""
+        is_ct_or_mri = modality in ['ct', 'mri', 'mr']
+        
+        for entry in all_clean_names:
+            if not entry['clean_name']:
+                continue
+                
+            candidate = entry['clean_name']
+            candidate_normalized = re.sub(r'[^\w\s]', '', candidate.lower().strip())
+            candidate_words = set(candidate_normalized.split())
+            
+            # Apply CT/MRI abdomen-pelvis equivalence
+            target_for_comparison = target_normalized
+            candidate_for_comparison = candidate_normalized
+            
+            if is_ct_or_mri:
+                # For CT/MRI: treat "abdomen pelvis" as equivalent to "abdomen"
+                if 'abdomen' in target_words and 'pelvis' not in target_words:
+                    # Target has abdomen but not pelvis - also match "abdomen pelvis" patterns
+                    if 'abdomen' in candidate_words and 'pelvis' in candidate_words:
+                        # Boost similarity for abdomen+pelvis matching abdomen-only
+                        candidate_for_comparison = candidate_normalized.replace('pelvis', '').strip()
+                        candidate_words = set(candidate_for_comparison.split())
+                
+                elif 'abdomen' in target_words and 'pelvis' in target_words:
+                    # Target has both - also match abdomen-only patterns
+                    if 'abdomen' in candidate_words and 'pelvis' not in candidate_words:
+                        # Allow abdomen-only to match abdomen+pelvis
+                        target_for_comparison = target_normalized.replace('pelvis', '').strip()
+                        target_words = set(target_for_comparison.split())
+            
+            # Calculate multiple similarity metrics
+            # 1. Sequence similarity
+            seq_similarity = SequenceMatcher(None, target_for_comparison, candidate_for_comparison).ratio()
+            
+            # 2. Word overlap similarity (Jaccard coefficient)
+            comparison_target_words = set(target_for_comparison.split())
+            comparison_candidate_words = set(candidate_for_comparison.split())
+            
+            if comparison_target_words and comparison_candidate_words:
+                word_similarity = len(comparison_target_words.intersection(comparison_candidate_words)) / len(comparison_target_words.union(comparison_candidate_words))
+            else:
+                word_similarity = 0.0
+            
+            # 3. Prefix similarity (for cases like "CT Head" vs "CT Head with Contrast")
+            prefix_similarity = 0.0
+            if target_for_comparison.startswith(candidate_for_comparison) or candidate_for_comparison.startswith(target_for_comparison):
+                shorter_len = min(len(target_for_comparison), len(candidate_for_comparison))
+                longer_len = max(len(target_for_comparison), len(candidate_for_comparison))
+                prefix_similarity = shorter_len / longer_len if longer_len > 0 else 0
+            
+            # Combined similarity score (weighted average)
+            combined_score = (seq_similarity * 0.4 + word_similarity * 0.4 + prefix_similarity * 0.2)
+            
+            # Boost score for exact anatomy matches in CT/MRI
+            if is_ct_or_mri and 'abdomen' in target_words:
+                if ('abdomen' in candidate_words and 'pelvis' in candidate_words and 'pelvis' not in target_words) or \
+                   ('abdomen' in candidate_words and 'pelvis' not in candidate_words and 'pelvis' in target_words):
+                    combined_score = min(1.0, combined_score + 0.1)  # Small boost for abdomen/pelvis equivalence
+            
+            if combined_score >= threshold:
+                matches.append({
+                    'clean_name': candidate,
+                    'similarity_score': combined_score,
+                    'sequence_similarity': seq_similarity,
+                    'word_similarity': word_similarity,
+                    'prefix_similarity': prefix_similarity,
+                    'snomed_concept_id': entry.get('snomed_concept_id'),
+                    'snomed_fsn': entry.get('snomed_fsn'),
+                    'snomed_laterality_concept_id': entry.get('snomed_laterality_concept_id'),
+                    'snomed_laterality_fsn': entry.get('snomed_laterality_fsn'),
+                    'database_id': entry['id']
+                })
+        
+        # Sort by similarity score (highest first)
+        matches.sort(key=lambda x: x['similarity_score'], reverse=True)
+        return matches
 
     def load_abbreviations_from_csv(self, csv_path: str):
         """Load abbreviations from CSV file."""
