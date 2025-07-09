@@ -103,9 +103,18 @@
 
     <script>
     window.addEventListener('DOMContentLoaded', function() {
-        // --- CONFIGURATION ---
-        // IMPORTANT: Replace this with your actual Render.com backend URL
-        const API_URL = 'https://your-backend-app-name.onrender.com/parse';
+        // --- DYNAMIC API CONFIGURATION ---
+        // IMPORTANT: Replace these placeholder URLs with the actual URLs from your Render and Cloudflare dashboards.
+        const STAGING_API_URL = 'https://radiology-api-staging.onrender.com/parse';
+        const PRODUCTION_API_URL = 'https://radiology-api-prod.onrender.com/parse';
+        const PRODUCTION_HOSTNAME = 'radiology-cleaner.pages.dev'; // Use your final Cloudflare Pages production domain here.
+
+        // Automatically select the correct API based on the frontend's URL
+        const isProduction = window.location.hostname === PRODUCTION_HOSTNAME;
+        const API_URL = isProduction ? PRODUCTION_API_URL : STAGING_API_URL;
+        
+        console.log(`Frontend running in ${isProduction ? 'PRODUCTION' : 'STAGING'} mode.`);
+        console.log(`API endpoint set to: ${API_URL}`);
 
         // --- STATE ---
         let allMappings = [];
@@ -241,12 +250,13 @@
             const cleanNameGroups = {};
             mappings.forEach(m => {
                 if (!m.components || m.clean_name.startsWith('ERROR')) return;
-                const { modality } = m.components;
+                const { modality_code, components } = m;
+                const modality = m.components.modality || modality_code;
                 if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
-                const contrastType = m.components.contrast || 'none';
-                summary.contrastUsage[contrastType.toLowerCase()]++;
-                const laterality = (m.components.laterality || 'none').toLowerCase();
-                summary.lateralityDistribution[laterality]++;
+                const contrastType = (components.contrast || 'none').replace(' ', '_');
+                if(summary.contrastUsage.hasOwnProperty(contrastType)) summary.contrastUsage[contrastType]++;
+                const laterality = (components.laterality || 'none').toLowerCase();
+                if(summary.lateralityDistribution.hasOwnProperty(laterality)) summary.lateralityDistribution[laterality]++;
 
                 if (!cleanNameGroups[m.clean_name]) cleanNameGroups[m.clean_name] = [];
                 cleanNameGroups[m.clean_name].push(m);
