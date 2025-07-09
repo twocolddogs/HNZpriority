@@ -131,7 +131,7 @@ class RadiologySemanticParser:
         self.sorted_anatomy_terms = sorted(self.anatomy_lookup.keys(), key=len, reverse=True)
 
 
-    def parse_exam_name(self, exam_name, modality_code, scispacy_entities=None):
+    def parse_exam_name(self, exam_name, modality_code, scispacy_entities=None, skip_ml: bool = False):
         """
         Enhanced parsing with fuzzy matching and ML integration.
         Flow: Standardize -> Parse with NLP/ML -> Generate clean_name -> Fuzzy match -> Return best match
@@ -152,7 +152,7 @@ class RadiologySemanticParser:
                 return result
 
         # Step 3: Parse exam name using hybrid approach (NLP + ML + Rules)
-        parsed_components = self._parse_with_hybrid_approach(exam_name, modality_code, scispacy_entities)
+        parsed_components = self._parse_with_hybrid_approach(exam_name, modality_code, scispacy_entities, skip_ml=skip_ml)
         
         # Step 4: Generate clean name from parsed components
         generated_clean_name = self._build_clean_name(parsed_components, original_exam_name)
@@ -248,7 +248,7 @@ class RadiologySemanticParser:
         
         return result
 
-    def _parse_with_hybrid_approach(self, exam_name, modality_code, scispacy_entities):
+    def _parse_with_hybrid_approach(self, exam_name, modality_code, scispacy_entities, skip_ml: bool = False):
         """Parse using NLP, ML, and rule-based approaches."""
         result = {
             'modality': self.modality_map.get(modality_code, modality_code),
@@ -281,14 +281,15 @@ class RadiologySemanticParser:
                 info = self.anatomy_lookup[term]
                 found_anatomy.add(info['standardName'])
 
-        # 1c. ML-based anatomy extraction
-        ml_anatomy = self._extract_anatomy_with_ml(exam_name)
-        found_anatomy.update(ml_anatomy)
+        # 1c. ML-based predictions (anatomy and other components)
+        ml_predictions = self._get_ml_predictions(exam_name)
+        if ml_predictions:
+            found_anatomy.update(ml_predictions.get('anatomy', []))
 
         result['anatomy'] = sorted(list(found_anatomy))
 
         # --- STEP 2: COMPONENT PARSING ---
-        # Laterality (NLP first, then rules)
+        # Laterality (NLP first, then rules, then ML fallback)
         directions = scispacy_entities.get('DIRECTION', [])
         result['laterality'] = directions[0] if directions else None
 
@@ -297,8 +298,10 @@ class RadiologySemanticParser:
                 if pattern.search(lower_name):
                     result['laterality'] = lat
                     break
+        if not result['laterality'] and ml_predictions and ml_predictions.get('laterality'):
+            result['laterality'] = ml_predictions['laterality']
         
-        # Contrast detection - check 'with and without' first for specificity
+        # Contrast detection - check 'with and without' first for specificity, then ML fallback
         contrast_order = ['with and without', 'with', 'without']
         for con in contrast_order:
             if con in self.contrast_patterns:
@@ -306,56 +309,41 @@ class RadiologySemanticParser:
                 if any(p.search(lower_name) for p in patterns):
                     result['contrast'] = con
                     break
+        if not result['contrast'] and ml_predictions and ml_predictions.get('contrast'):
+            result['contrast'] = ml_predictions['contrast']
 
         # Technique detection
         for tech, patterns in self.technique_patterns.items():
             if any(p.search(lower_name) for p in patterns) and tech not in result['technique']:
                 result['technique'].append(tech)
 
-        # Gender context detection
+        # Gender context detection (rules, then ML fallback)
         result['gender_context'] = self._detect_gender_context(lower_name)
+        if not result['gender_context'] and ml_predictions and ml_predictions.get('gender_context'):
+            result['gender_context'] = ml_predictions['gender_context']
         
         # Clinical context detection
         result['clinical_context'] = self._detect_clinical_context(lower_name)
         
         # --- STEP 3: ML ENHANCEMENT ---
-        ml_enhancements = self._get_ml_predictions(exam_name)
-        if ml_enhancements:
-            # Merge ML predictions with rule-based results
-            result = self._merge_ml_predictions(result, ml_enhancements)
+        ml_predictions = None
+        if not skip_ml:
+            ml_predictions = self._get_ml_predictions(exam_name)
+            if ml_predictions:
+                # Merge ML predictions with rule-based results
+                # Anatomy is already merged in STEP 1
+                
+                # Use ML predictions as fallback for missing components
+                if not result['laterality'] and ml_predictions.get('laterality'):
+                    result['laterality'] = ml_predictions['laterality']
+                    
+                if not result['contrast'] and ml_predictions.get('contrast'):
+                    result['contrast'] = ml_predictions['contrast']
+                    
+                if not result['gender_context'] and ml_predictions.get('gender_context'):
+                    result['gender_context'] = ml_predictions['gender_context']
         
         # --- STEP 4: CONFIDENCE CALCULATION ---
-        result['confidence'] = self._calculate_confidence(result, exam_name)
-        
-        # Add clinical equivalents, which was missing from this path
-        result['clinical_equivalents'] = self._find_clinical_equivalents(result['anatomy'])
-        
-        return result
-
-    def _extract_anatomy_with_ml(self, exam_name):
-        """Extract anatomy using ML model predictions."""
-        try:
-            # Load models if available (these are loaded in app.py)
-            from app import classifier, vectorizer, mlb
-            
-            if classifier is None or vectorizer is None or mlb is None:
-                return set()
-            
-            # Vectorize the exam name
-            X = vectorizer.transform([exam_name])
-            
-            # Get predictions
-            predictions = classifier.predict(X)
-            predicted_labels = mlb.inverse_transform(predictions)[0]
-            
-            # Extract anatomy labels
-            anatomy_labels = [label.split(':')[1] for label in predicted_labels if label.startswith('Anatomy:')]
-            
-            return set(anatomy_labels)
-            
-        except Exception as e:
-            # ML model not available or error occurred
-            return set()
 
     def _get_ml_predictions(self, exam_name):
         """Get ML model predictions for all components."""
@@ -413,28 +401,6 @@ class RadiologySemanticParser:
             # ML model not available or error occurred
             return None
 
-    def _merge_ml_predictions(self, rule_result, ml_predictions):
-        """Merge ML predictions with rule-based results."""
-        result = rule_result.copy()
-        
-        # Merge anatomy (combine rule-based and ML)
-        ml_anatomy = set(ml_predictions.get('anatomy', []))
-        rule_anatomy = set(result['anatomy'])
-        combined_anatomy = rule_anatomy.union(ml_anatomy)
-        result['anatomy'] = sorted(list(combined_anatomy))
-        
-        # Use ML predictions as fallback for missing components
-        if not result['laterality'] and ml_predictions.get('laterality'):
-            result['laterality'] = ml_predictions['laterality']
-            
-        if not result['contrast'] and ml_predictions.get('contrast'):
-            result['contrast'] = ml_predictions['contrast']
-            
-        if not result['gender_context'] and ml_predictions.get('gender_context'):
-            result['gender_context'] = ml_predictions['gender_context']
-        
-        return result
-
     def _fuzzy_match_by_components(self, parsed_components):
         """Try fuzzy matching by building clean names with different component combinations."""
         if not self.db_manager:
@@ -473,7 +439,7 @@ class RadiologySemanticParser:
         from itertools import combinations
         return combinations(items, count)
 
-    def _build_clean_name(self, parsed, original_exam_name):
+    def _build_clean_name(self, parsed, original_exam_name=None):
         parts = [parsed['modality']]
         
         if parsed['anatomy']:
@@ -587,7 +553,7 @@ class RadiologySemanticParser:
             confidence -= 0.3
         
         # Reduce confidence if very short exam name (likely ambiguous)
-        if len(original_exam_name) < 5:
+        if original_exam_name and len(original_exam_name) < 5:
             confidence -= 0.2
         
         # HIGH PRIORITY: Boost confidence for contrast mentions
@@ -600,10 +566,11 @@ class RadiologySemanticParser:
             # Note: 'without' contrast (C-) doesn't get a boost as it's baseline state
         
         # Additional boost if contrast patterns are detected in original exam name
-        lower_exam_name = original_exam_name.lower()
-        contrast_terms = ['contrast', 'c+', 'c-', 'enhanced', 'post contrast', 'post gad']
-        if any(term in lower_exam_name for term in contrast_terms):
-            confidence += 0.15  # High rating for any contrast mention
+        if original_exam_name:
+            lower_exam_name = original_exam_name.lower()
+            contrast_terms = ['contrast', 'c+', 'c-', 'enhanced', 'post contrast', 'post gad']
+            if any(term in lower_exam_name for term in contrast_terms):
+                confidence += 0.15  # High rating for any contrast mention
         
         # Increase confidence if multiple components detected
         components_found = sum([

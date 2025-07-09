@@ -17,6 +17,7 @@ class DatabaseManager:
     def __init__(self, db_path: str = "radiology_cleaner.db"):
         self.db_path = db_path
         self.lock = threading.Lock()
+        self.all_clean_names_cache = [] # In-memory cache for clean names
         self._init_database()
     
     def _init_database(self):
@@ -137,6 +138,7 @@ class DatabaseManager:
                 )
             ''')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_snomed_clean_name ON snomed_reference(clean_name)')
+            self._load_all_clean_names_into_memory()
 
             # Abbreviations table
             conn.execute('''
@@ -544,6 +546,7 @@ class DatabaseManager:
                     count += 1
                     
             print(f"Successfully loaded {count} SNOMED reference entries.")
+            self._load_all_clean_names_into_memory()
 
     def get_snomed_code(self, clean_name: str) -> Optional[Dict]:
         """Get SNOMED code for a given clean name."""
@@ -571,22 +574,30 @@ class DatabaseManager:
 
     def get_all_clean_names(self) -> List[Dict]:
         """Get all clean names from the database for fuzzy matching."""
+        # This method is now primarily for internal use during initialization
         with self.get_connection() as conn:
             cursor = conn.execute(
                 'SELECT id, clean_name, snomed_concept_id, snomed_fsn, snomed_laterality_concept_id, snomed_laterality_fsn FROM snomed_reference WHERE clean_name IS NOT NULL'
             )
             return [dict(row) for row in cursor.fetchall()]
 
+    def _load_all_clean_names_into_memory(self):
+        """Loads all clean names from the database into an in-memory cache."""
+        self.all_clean_names_cache = self.get_all_clean_names()
+        print(f"Loaded {len(self.all_clean_names_cache)} clean names into memory for fuzzy matching.")
+
     def fuzzy_match_clean_names(self, target_clean_name: str, threshold: float = 0.6) -> List[Dict]:
         """Find fuzzy matches for a clean name with similarity scores."""
         from difflib import SequenceMatcher
         import re
         
-        all_clean_names = self.get_all_clean_names()
+        # Use the in-memory cache instead of fetching from DB every time
+        all_clean_names = self.all_clean_names_cache
         matches = []
         
         # Normalize target for better matching
-        target_normalized = re.sub(r'[^\w\s]', '', target_clean_name.lower().strip())
+        target_normalized = re.sub(r'[^
+\w\s]', '', target_clean_name.lower().strip())
         target_words = set(target_normalized.split())
         
         # Extract modality for CT/MRI abdomen-pelvis equivalence
@@ -598,7 +609,8 @@ class DatabaseManager:
                 continue
                 
             candidate = entry['clean_name']
-            candidate_normalized = re.sub(r'[^\w\s]', '', candidate.lower().strip())
+            candidate_normalized = re.sub(r'[^
+\w\s]', '', candidate.lower().strip())
             candidate_words = set(candidate_normalized.split())
             
             # Apply CT/MRI abdomen-pelvis equivalence
@@ -752,3 +764,20 @@ class CacheManager:
                 'max_size': self.max_size,
                 'usage_percent': (len(self.cache) / self.max_size) * 100
             }
+
+    def bulk_set(self, items: Dict[str, Dict]):
+        """Set multiple cached values."""
+        with self.lock:
+            for key, value in items.items():
+                # Remove if already exists
+                if key in self.cache:
+                    self.access_order.remove(key)
+                
+                # Add new entry
+                self.cache[key] = value
+                self.access_order.append(key)
+                
+            # Evict if over capacity after adding all new items
+            while len(self.cache) > self.max_size:
+                oldest_key = self.access_order.pop(0)
+                del self.cache[oldest_key]

@@ -1,5 +1,4 @@
 import spacy
-import joblib
 import time
 import json
 from flask import Flask, request, jsonify
@@ -39,15 +38,7 @@ except OSError:
     print("ScispaCy model not found. Please run: pip install https://...")
     nlp = None
 
-print("Loading ML models...")
-try:
-    classifier = joblib.load('radiology_classifier.pkl')
-    vectorizer = joblib.load('radiology_vectorizer.pkl')
-    mlb = joblib.load('radiology_mlb.pkl')
-    print("ML models loaded.")
-except FileNotFoundError:
-    print("ML model files not found. Run train.py to create placeholders.")
-    classifier = vectorizer = mlb = None
+# ML models are loaded on demand within parser.py if not skipped
 
 import os
 
@@ -359,6 +350,15 @@ def parse_batch():
         # Combine cached and processed results
         all_results = cached_results + results
         
+        # Bulk cache results
+        cache_items = {}
+        for res in results:
+            if 'input' in res and 'exam_name' in res['input'] and 'modality_code' in res['input']:
+                cache_key = f"{res['input']['exam_name']}|{res['input']['modality_code']}"
+                cache_items[cache_key] = res
+        if cache_items:
+            cache_manager.bulk_set(cache_items)
+        
         # Find equivalence groups
         equivalence_groups = standardization_engine.find_equivalence_groups(
             [{'name': r['clean_name'], 'source': r['input'].get('source', 'unknown')} 
@@ -491,6 +491,15 @@ def parse_batch_chunked():
             # Combine cached and processed results
             all_chunk_results = cached_results + chunk_results
             
+            # Bulk cache results for this chunk
+            cache_items_chunk = {}
+            for res in chunk_results:
+                if 'input' in res and 'exam_name' in res['input'] and 'modality_code' in res['input']:
+                    cache_key = f"{res['input']['exam_name']}|{res['input']['modality_code']}"
+                    cache_items_chunk[cache_key] = res
+            if cache_items_chunk:
+                cache_manager.bulk_set(cache_items_chunk)
+            
             # Add chunk results to overall results
             all_results.extend(all_chunk_results)
             all_errors.extend(chunk_errors)
@@ -575,7 +584,7 @@ def parse_batch_fast():
                     modality = exam_data['modality_code']
                     
                     # Skip heavy NLP processing, use rule-based only
-                    parsed_result = semantic_parser.parse_exam_name(exam_name, modality, {})
+                    parsed_result = semantic_parser.parse_exam_name(exam_name, modality, {}, skip_ml=True)
                     
                     result = {
                         'input': exam_data,
@@ -589,9 +598,9 @@ def parse_batch_fast():
                         'confidence': parsed_result['confidence']
                     }
                     
-                    # Cache result
-                    cache_key = f"{exam_name}|{modality}"
-                    cache_manager.set(cache_key, result)
+                    # Cache result (will be bulk set later)
+                    # cache_key = f"{exam_name}|{modality}"
+                    # cache_manager.set(cache_key, result)
                     
                     return result
                     
@@ -614,6 +623,15 @@ def parse_batch_fast():
         
         # Combine results
         all_results = cached_results + results
+        
+        # Bulk cache results
+        cache_items = {}
+        for res in results:
+            if 'input' in res and 'exam_name' in res['input'] and 'modality_code' in res['input']:
+                cache_key = f"{res['input']['exam_name']}|{res['input']['modality_code']}"
+                cache_items[cache_key] = res
+        if cache_items:
+            cache_manager.bulk_set(cache_items)
         
         # Generate minimal statistics
         processing_stats = {
@@ -1062,20 +1080,9 @@ def health_check():
         cache_stats = cache_manager.stats()
         
         # Check models
+        # ML models are loaded on demand within parser.py if not skipped
         models_loaded = {
-            'scispacy': nlp is not None,
-            'classifier': classifier is not None,
-            'vectorizer': vectorizer is not None,
-            'mlb': mlb is not None
-        }
-        
-        health_status = {
-            'status': 'healthy',
-            'timestamp': datetime.now().isoformat(),
-            'database': 'connected',
-            'cache': f"{cache_stats['usage_percent']:.1f}% full",
-            'models': models_loaded,
-            'version': '2.1.0'
+            'scispacy': nlp is not None
         }
         
         return jsonify(health_status)
