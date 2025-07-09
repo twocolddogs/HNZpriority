@@ -243,6 +243,8 @@ class RadiologySemanticParser:
             'matched_clean_name': fuzzy_match['clean_name'],
             'generated_clean_name': generated_clean_name
         }
+
+        result['clinical_equivalents'] = self._find_clinical_equivalents(result['anatomy'])
         
         return result
 
