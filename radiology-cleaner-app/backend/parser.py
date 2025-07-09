@@ -1,4 +1,7 @@
 import re
+import numpy as np
+from collections import defaultdict
+from datetime import datetime
 
 class RadiologySemanticParser:
     """
@@ -75,7 +78,53 @@ class RadiologySemanticParser:
             'Left': re.compile(r'\b(left|lt)\b', re.I),
             'Right': re.compile(r'\b(right|rt)\b', re.I),
         }
-        self.anatomy_lookup = {term.lower(): {'key': key, **config} for key, config in self.anatomy_mappings.items() for term in config['terms']}
+
+        # Gender detection patterns
+        self.gender_patterns = {
+            'male': [re.compile(p, re.I) for p in [r'\bmale\b', r'\bm\b(?=\s|$)', r'\bmen\b', r'\bprostate\b', r'\bmale pelvis\b']],
+            'female': [re.compile(p, re.I) for p in [r'\bfemale\b', r'\bf\b(?=\s|$)', r'\bwomen\b', r'\bpelvic\b(?=.*female)', 
+                       r'\bgynaecology\b', r'\bmammography\b', r'\bbreast\b', r'\bfemale pelvis\b', r'\bovarian\b', r'\buterine\b']],
+            'pregnancy': [re.compile(p, re.I) for p in [r'\bpregnant\b', r'\bpregnancy\b', r'\bobstetric\b', r'\bfetal\b', r'\bmaternal\b']]
+        }
+        
+        # Clinical context patterns
+        self.clinical_context = {
+            'emergency': [re.compile(p, re.I) for p in [r'\btrauma\b', r'\bstat\b', r'\bemergency\b', r'\bpe protocol\b', r'\bctpa\b', r'\bacute\b']],
+            'screening': [re.compile(p, re.I) for p in [r'\bscreening\b', r'\broutine\b', r'\bpreventive\b', r'\bwellness\b']],
+            'follow_up': [re.compile(p, re.I) for p in [r'\bfollow.?up\b', r'\bpost.?op\b', r'\bsurveillance\b', r'\bmonitoring\b', r'\brepeat\b']],
+            'intervention': [re.compile(p, re.I) for p in [r'\bbiopsy\b', r'\bdrainage\b', r'\binjection\b', r'\bguided\b', r'\bprocedure\b']]
+        }
+        
+        # Anatomical hierarchy and relationships
+        self.anatomical_hierarchy = {
+            'contains': {
+                'Abdomen': ['Liver', 'Pancreas', 'Kidneys', 'Small Bowel', 'Colon'],
+                'Pelvis': ['Prostate', 'Female Pelvis', 'Urinary Tract'],
+                'Chest': ['Ribs', 'Sternum', 'Clavicle', 'Pulmonary Vessels'],
+                'Head': ['Sinuses', 'Orbits', 'Facial Bones', 'Pituitary', 'Temporal Bones'],
+                'Neck': ['Carotid'],
+                'Whole Spine': ['Cervical Spine', 'Thoracic Spine', 'Lumbar Spine', 'Sacrum/Coccyx']
+            },
+            'overlaps': {
+                'Abdomen': ['Pelvis'],  # Abdomen+Pelvis is often clinically equivalent
+                'Chest': ['Ribs', 'Sternum', 'Clavicle'],
+                'Head': ['Neck'],  # Head+Neck scans are common
+                'Cervical Spine': ['Neck']
+            },
+            'equivalents': {
+                'Abdomen/Pelvis': ['Abdomen', 'Pelvis'],
+                'Head/Neck': ['Head', 'Neck'],
+                'Chest/Abdomen/Pelvis': ['Chest', 'Abdomen', 'Pelvis']
+            }
+        }
+        
+        # Build a reverse lookup for fast searching
+        self.anatomy_lookup = {}
+        for key, config in self.anatomy_mappings.items():
+            for term in config['terms']:
+                self.anatomy_lookup[term.lower()] = {'key': key, **config}
+        
+        # Sort terms by length (desc) to match longer phrases first (e.g., "cervical spine" before "spine")
         self.sorted_anatomy_terms = sorted(self.anatomy_lookup.keys(), key=len, reverse=True)
 
 
@@ -88,7 +137,10 @@ class RadiologySemanticParser:
             'anatomy': [],
             'laterality': None,
             'contrast': None,
-            'technique': []
+            'technique': [],
+            'gender_context': None,
+            'clinical_context': [],
+            'confidence': 1.0
         }
         
         lower_name = exam_name.lower()
@@ -139,10 +191,37 @@ class RadiologySemanticParser:
         if 'Pulmonary Vessels' in result['anatomy'] and 'Chest' in result['anatomy']: result['anatomy'].remove('Chest')
         if 'Coronary' in result['anatomy'] and 'Heart' in result['anatomy']: result['anatomy'].remove('Heart')
 
-        if all(x in lower_name for x in ['chest', 'abdomen', 'pelvis']):
-            result['anatomy'] = ['Abdomen', 'Chest', 'Pelvis']
+        # 3. Gender context detection
+        result['gender_context'] = self._detect_gender_context(lower_name)
         
+        # 4. Clinical context detection
+        result['clinical_context'] = self._detect_clinical_context(lower_name)
+        
+        # 5. Post-processing and refinement
+        # Remove general terms if a specific sub-part is already present
+        if 'Cerebral Vessels' in result['anatomy'] and 'Head' in result['anatomy']:
+            result['anatomy'].remove('Head')
+        if 'Pulmonary Vessels' in result['anatomy'] and 'Chest' in result['anatomy']:
+            result['anatomy'].remove('Chest')
+        if 'Pituitary' in result['anatomy'] and 'Head' in result['anatomy']:
+            result['anatomy'].remove('Head')
+            
+        # Handle special combined scan names
+        if 'chest' in lower_name and 'abdomen' in lower_name and 'pelvis' in lower_name:
+            result['anatomy'] = ['Chest', 'Abdomen', 'Pelvis']
+        elif 'head' in lower_name and 'neck' in lower_name:
+            result['anatomy'] = ['Head', 'Neck']
+            
+        # Apply anatomical hierarchy and equivalence rules
+        result['anatomy'] = self._apply_anatomical_hierarchy(result['anatomy'], result['modality'])
+        
+        # Calculate confidence score
+        result['confidence'] = self._calculate_confidence(result, exam_name)
+        
+        # Generate enhanced clean name
         result['cleanName'] = self._build_clean_name(result)
+        result['clinical_equivalents'] = self._find_clinical_equivalents(result['anatomy'])
+        
         return result
 
     def _build_clean_name(self, parsed):
@@ -166,3 +245,99 @@ class RadiologySemanticParser:
             clean_name += f" ({parsed['contrast']} contrast)"
             
         return clean_name.strip()
+    
+    def _detect_gender_context(self, exam_name_lower):
+        """Detect gender context from exam name."""
+        for gender, patterns in self.gender_patterns.items():
+            if any(pattern.search(exam_name_lower) for pattern in patterns):
+                return gender
+        return None
+    
+    def _detect_clinical_context(self, exam_name_lower):
+        """Detect clinical context from exam name."""
+        contexts = []
+        for context, patterns in self.clinical_context.items():
+            if any(pattern.search(exam_name_lower) for pattern in patterns):
+                contexts.append(context)
+        return contexts
+    
+    def _apply_anatomical_hierarchy(self, anatomy_list, modality):
+        """Apply anatomical hierarchy and equivalence rules."""
+        if not anatomy_list:
+            return anatomy_list
+            
+        # Sort anatomy list for consistent processing
+        anatomy_set = set(anatomy_list)
+        
+        # Handle common clinical equivalences
+        if 'Abdomen' in anatomy_set and 'Pelvis' in anatomy_set:
+            # For CT scans, Abdomen+Pelvis is often clinically equivalent to Abdomen/Pelvis
+            if modality == 'CT':
+                return ['Abdomen/Pelvis']
+            else:
+                return ['Abdomen', 'Pelvis']
+        
+        if 'Head' in anatomy_set and 'Neck' in anatomy_set:
+            return ['Head/Neck']
+            
+        if 'Chest' in anatomy_set and 'Abdomen' in anatomy_set and 'Pelvis' in anatomy_set:
+            return ['Chest/Abdomen/Pelvis']
+        
+        # Remove redundant anatomy based on hierarchy
+        filtered_anatomy = []
+        for anatomy in anatomy_list:
+            is_redundant = False
+            
+            # Check if this anatomy is contained within another anatomy in the list
+            for container, contained in self.anatomical_hierarchy.get('contains', {}).items():
+                if container in anatomy_set and anatomy in contained:
+                    is_redundant = True
+                    break
+            
+            if not is_redundant:
+                filtered_anatomy.append(anatomy)
+        
+        return sorted(filtered_anatomy) if filtered_anatomy else anatomy_list
+    
+    def _calculate_confidence(self, result, original_exam_name):
+        """Calculate confidence score based on parsing results."""
+        confidence = 1.0
+        
+        # Reduce confidence if no anatomy found
+        if not result['anatomy']:
+            confidence -= 0.3
+        
+        # Reduce confidence if very short exam name (likely ambiguous)
+        if len(original_exam_name) < 5:
+            confidence -= 0.2
+        
+        # Increase confidence if multiple components detected
+        components_found = sum([
+            1 if result['anatomy'] else 0,
+            1 if result['laterality'] else 0,
+            1 if result['contrast'] else 0,
+            1 if result['technique'] else 0
+        ])
+        
+        if components_found >= 3:
+            confidence += 0.1
+        elif components_found == 1:
+            confidence -= 0.1
+        
+        # Ensure confidence is between 0 and 1
+        return max(0.0, min(1.0, confidence))
+    
+    def _find_clinical_equivalents(self, anatomy_list):
+        """Find clinical equivalents for the given anatomy combination."""
+        equivalents = []
+        
+        # Check for known equivalents
+        for equiv_name, equiv_parts in self.anatomical_hierarchy.get('equivalents', {}).items():
+            if set(anatomy_list) == set(equiv_parts):
+                equivalents.append(equiv_name)
+        
+        # Add individual anatomy parts as potential equivalents
+        if len(anatomy_list) > 1:
+            equivalents.extend(anatomy_list)
+        
+        return list(set(equivalents))

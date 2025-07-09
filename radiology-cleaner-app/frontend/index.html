@@ -35,6 +35,26 @@
         .tag.laterality { background: #fff3e0; color: #f57c00; }
         .tag.contrast { background: #fce4ec; color: #c2185b; }
         .tag.technique { background: #f3e5f5; color: #7b1fa2; }
+        .tag.gender { background: #e1f5fe; color: #0277bd; }
+        .tag.clinical { background: #fff8e1; color: #ff8f00; }
+        .tag.equivalent { background: #f1f8e9; color: #689f38; }
+        .confidence-bar { display: inline-block; width: 50px; height: 10px; background: #e0e0e0; border-radius: 5px; position: relative; }
+        .confidence-fill { height: 100%; background: #4caf50; border-radius: 5px; }
+        .confidence-low { background: #ff9800 !important; }
+        .confidence-medium { background: #ffeb3b !important; }
+        .confidence-high { background: #4caf50 !important; }
+        .consolidated-group { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; overflow: hidden; }
+        .consolidated-header { background: #2a5298; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .consolidated-title { font-size: 1.2rem; font-weight: bold; }
+        .consolidated-count { background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.9rem; }
+        .consolidated-body { padding: 1rem; }
+        .consolidated-meta { display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: #666; }
+        .consolidated-components { margin-bottom: 1rem; }
+        .source-codes { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 0.5rem; }
+        .source-code { background: #f8f9fa; padding: 0.75rem; border-radius: 4px; border-left: 4px solid #2a5298; }
+        .source-code-header { font-weight: bold; color: #2a5298; margin-bottom: 0.25rem; }
+        .source-code-name { font-size: 0.9rem; color: #666; }
+        .view-toggle button.active { background: #2a5298; color: white; }
         .progress-bar { width: 100%; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; margin-top: 1rem; display: none; }
         .progress-fill { height: 100%; background: #2a5298; width: 0%; transition: width 0.3s ease; }
         .action-buttons { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; }
@@ -76,18 +96,44 @@
                     <div class="stat-card"><div class="stat-value" id="cleanCount">0</div><div class="stat-label">Clean Names</div></div>
                     <div class="stat-card"><div class="stat-value" id="consolidationRatio">0</div><div class="stat-label">Consolidation Ratio</div></div>
                     <div class="stat-card"><div class="stat-value" id="modalityCount">0</div><div class="stat-label">Modalities</div></div>
+                    <div class="stat-card"><div class="stat-value" id="avgConfidence">0</div><div class="stat-label">Avg Confidence</div></div>
+                    <div class="stat-card"><div class="stat-value" id="genderContext">0</div><div class="stat-label">Gender Context</div></div>
                 </div>
                 <div class="action-buttons">
                     <button class="button success" id="exportMappingsBtn">💾 Export Clean Mappings</button>
                     <button class="button secondary" id="exportSummaryBtn">📋 Export Summary Report</button>
                     <button class="button secondary" id="viewConsolidationsBtn">🔍 View Top Consolidations</button>
                 </div>
-                <h3 style="margin-top: 2rem;">Sample Mappings</h3>
-                <div class="table-container">
-                    <table class="results-table" id="resultsTable">
-                        <thead><tr><th>Source</th><th>Original Code</th><th>Original Name</th><th>Clean Name</th><th>Components</th></tr></thead>
-                        <tbody id="resultsBody"></tbody>
-                    </table>
+                
+                <!-- View Toggle -->
+                <div class="view-toggle" style="margin: 2rem 0; text-align: center;">
+                    <button class="button active" id="sampleViewBtn">📋 Sample View</button>
+                    <button class="button secondary" id="consolidatedViewBtn">📊 Consolidated View</button>
+                </div>
+                
+                <!-- Sample View -->
+                <div id="sampleView">
+                    <h3>Sample Mappings</h3>
+                    <div class="table-container">
+                        <table class="results-table" id="resultsTable">
+                            <thead><tr><th>Source</th><th>Original Code</th><th>Original Name</th><th>Clean Name</th><th>Components</th><th>Context</th><th>Confidence</th></tr></thead>
+                            <tbody id="resultsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Consolidated View -->
+                <div id="consolidatedView" style="display: none;">
+                    <h3>Consolidated Results</h3>
+                    <div class="consolidated-controls" style="margin-bottom: 1rem;">
+                        <input type="text" id="consolidatedSearch" placeholder="Search consolidated names..." style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; width: 300px;">
+                        <select id="consolidatedSort" style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; margin-left: 1rem;">
+                            <option value="count">Sort by Count</option>
+                            <option value="name">Sort by Name</option>
+                            <option value="confidence">Sort by Confidence</option>
+                        </select>
+                    </div>
+                    <div id="consolidatedResults"></div>
                 </div>
             </div>
         </div>
@@ -145,6 +191,12 @@
         document.getElementById('viewConsolidationsBtn').addEventListener('click', showConsolidationExamples);
         document.getElementById('closeModalBtn').addEventListener('click', closeModal);
         document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
+        
+        // View toggle event listeners
+        document.getElementById('sampleViewBtn').addEventListener('click', showSampleView);
+        document.getElementById('consolidatedViewBtn').addEventListener('click', showConsolidatedView);
+        document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
+        document.getElementById('consolidatedSort').addEventListener('change', sortConsolidatedResults);
 
         // --- CORE LOGIC ---
         async function processFile(file) {
@@ -182,7 +234,16 @@
                                 exam_code: code.EXAM_CODE,
                                 exam_name: code.EXAM_NAME,
                                 clean_name: parsed.cleanName,
-                                components: { anatomy: parsed.anatomy, laterality: parsed.laterality, contrast: parsed.contrast, technique: parsed.technique }
+                                components: { 
+                                    anatomy: parsed.anatomy, 
+                                    laterality: parsed.laterality, 
+                                    contrast: parsed.contrast, 
+                                    technique: parsed.technique,
+                                    gender_context: parsed.gender_context,
+                                    clinical_context: parsed.clinical_context,
+                                    confidence: parsed.confidence,
+                                    clinical_equivalents: parsed.clinical_equivalents
+                                }
                             });
                         } catch (error) {
                             console.error(`Failed to parse code: ${code.EXAM_NAME}`, error);
@@ -203,6 +264,7 @@
             summaryData = generateAnalyticsSummary(mappings);
             updateStatsUI(summaryData);
             displaySampleResults(mappings.slice(0, 100));
+            generateConsolidatedResults(mappings);
             resultsSection.style.display = 'block';
         }
 
@@ -212,6 +274,8 @@
             document.getElementById('cleanCount').textContent = summary.uniqueCleanNames;
             document.getElementById('consolidationRatio').textContent = `${summary.consolidationRatio}:1`;
             document.getElementById('modalityCount').textContent = Object.keys(summary.modalityBreakdown).length;
+            document.getElementById('avgConfidence').textContent = `${summary.avgConfidence}%`;
+            document.getElementById('genderContext').textContent = summary.genderContextCount;
         }
 
         function displaySampleResults(samples) {
@@ -234,6 +298,27 @@
                 if(laterality) componentsCell.innerHTML += `<span class="tag laterality">${laterality}</span>`;
                 if(contrast) componentsCell.innerHTML += `<span class="tag contrast">${contrast}</span>`;
                 if(technique) technique.forEach(t => componentsCell.innerHTML += `<span class="tag technique">${t}</span>`);
+                
+                // Add context cell
+                const contextCell = row.insertCell();
+                const { gender_context, clinical_context, clinical_equivalents } = item.components;
+                if(gender_context) contextCell.innerHTML += `<span class="tag gender">${gender_context}</span>`;
+                if(clinical_context) clinical_context.forEach(c => contextCell.innerHTML += `<span class="tag clinical">${c}</span>`);
+                if(clinical_equivalents && clinical_equivalents.length > 0) {
+                    clinical_equivalents.slice(0, 2).forEach(e => contextCell.innerHTML += `<span class="tag equivalent">${e}</span>`);
+                }
+                
+                // Add confidence cell
+                const confidenceCell = row.insertCell();
+                const confidence = item.components.confidence || 0;
+                const confidencePercent = Math.round(confidence * 100);
+                const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
+                confidenceCell.innerHTML = `
+                    <div class="confidence-bar">
+                        <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
+                    </div>
+                    <small>${confidencePercent}%</small>
+                `;
             });
         }
 
@@ -242,25 +327,60 @@
             const summary = {
                 totalOriginalCodes: mappings.length,
                 uniqueCleanNames: new Set(mappings.map(m => m.clean_name).filter(n => !n.startsWith('ERROR'))).size,
-                modalityBreakdown: {}, contrastUsage: { with: 0, without: 0, 'with and without': 0, none: 0 },
+                modalityBreakdown: {}, 
+                contrastUsage: { with: 0, without: 0, 'with and without': 0, none: 0 },
                 lateralityDistribution: { left: 0, right: 0, bilateral: 0, none: 0 },
+                genderContextBreakdown: { male: 0, female: 0, pregnancy: 0, none: 0 },
+                clinicalContextBreakdown: { emergency: 0, screening: 0, follow_up: 0, intervention: 0, none: 0 },
+                avgConfidence: 0,
+                genderContextCount: 0
             };
             summary.consolidationRatio = summary.uniqueCleanNames > 0 ? (summary.totalOriginalCodes / summary.uniqueCleanNames).toFixed(2) : "0.00";
             
             const cleanNameGroups = {};
+            let totalConfidence = 0;
+            let confidenceCount = 0;
+            
             mappings.forEach(m => {
                 if (!m.components || m.clean_name.startsWith('ERROR')) return;
                 const { modality_code, components } = m;
                 const modality = m.components.modality || modality_code;
                 if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
+                
                 const contrastType = (components.contrast || 'none').replace(' ', '_');
                 if(summary.contrastUsage.hasOwnProperty(contrastType)) summary.contrastUsage[contrastType]++;
+                
                 const laterality = (components.laterality || 'none').toLowerCase();
                 if(summary.lateralityDistribution.hasOwnProperty(laterality)) summary.lateralityDistribution[laterality]++;
+                
+                // Enhanced analytics
+                const genderContext = components.gender_context || 'none';
+                if(summary.genderContextBreakdown.hasOwnProperty(genderContext)) {
+                    summary.genderContextBreakdown[genderContext]++;
+                    if(genderContext !== 'none') summary.genderContextCount++;
+                }
+                
+                const clinicalContexts = components.clinical_context || [];
+                if(clinicalContexts.length > 0) {
+                    clinicalContexts.forEach(context => {
+                        if(summary.clinicalContextBreakdown.hasOwnProperty(context)) {
+                            summary.clinicalContextBreakdown[context]++;
+                        }
+                    });
+                } else {
+                    summary.clinicalContextBreakdown.none++;
+                }
+                
+                if(components.confidence !== undefined) {
+                    totalConfidence += components.confidence;
+                    confidenceCount++;
+                }
 
                 if (!cleanNameGroups[m.clean_name]) cleanNameGroups[m.clean_name] = [];
                 cleanNameGroups[m.clean_name].push(m);
             });
+            
+            summary.avgConfidence = confidenceCount > 0 ? Math.round((totalConfidence / confidenceCount) * 100) : 0;
             summary.topConsolidatedExams = Object.entries(cleanNameGroups)
                 .filter(([, group]) => group.length > 1).sort((a, b) => b[1].length - a[1].length).slice(0, 10)
                 .map(([cleanName, group]) => ({
@@ -277,16 +397,29 @@
 
         function exportSummary() {
             if (!summaryData) return alert('No summary to export.');
-            let report = `RADIOLOGY CODE CLEANING SUMMARY\n=================================\n`;
+            let report = `ENHANCED RADIOLOGY CODE CLEANING SUMMARY\n========================================\n`;
             report += `Total Original Codes: ${summaryData.totalOriginalCodes}\n`;
             report += `Unique Clean Names: ${summaryData.uniqueCleanNames}\n`;
-            report += `Consolidation Ratio: ${summaryData.consolidationRatio}:1\n\n`;
-            report += `TOP CONSOLIDATED EXAMS\n----------------------\n`;
+            report += `Consolidation Ratio: ${summaryData.consolidationRatio}:1\n`;
+            report += `Average Confidence: ${summaryData.avgConfidence}%\n`;
+            report += `Gender Context Detected: ${summaryData.genderContextCount} codes\n\n`;
+            
+            report += `GENDER CONTEXT BREAKDOWN\n-----------------------\n`;
+            Object.entries(summaryData.genderContextBreakdown).forEach(([context, count]) => {
+                if(count > 0) report += `${context}: ${count}\n`;
+            });
+            
+            report += `\nCLINICAL CONTEXT BREAKDOWN\n-------------------------\n`;
+            Object.entries(summaryData.clinicalContextBreakdown).forEach(([context, count]) => {
+                if(count > 0) report += `${context}: ${count}\n`;
+            });
+            
+            report += `\nTOP CONSOLIDATED EXAMS\n----------------------\n`;
             summaryData.topConsolidatedExams.forEach(exam => {
                 report += `\n"${exam.cleanName}" (${exam.originalCount} codes)\n`;
                 exam.examples.forEach(ex => report += `   - [${ex.source}] ${ex.code}: ${ex.name}\n`);
             });
-            downloadText(report, 'radiology_cleaning_summary.txt');
+            downloadText(report, 'enhanced_radiology_cleaning_summary.txt');
         }
         
         function showConsolidationExamples() {
@@ -307,6 +440,176 @@
         }
 
         function closeModal() { document.getElementById('consolidationModal').style.display = 'none'; }
+        
+        // --- CONSOLIDATED VIEW FUNCTIONS ---
+        let consolidatedData = [];
+        let filteredConsolidatedData = [];
+        
+        function generateConsolidatedResults(mappings) {
+            const consolidatedGroups = {};
+            
+            // Group mappings by clean name
+            mappings.forEach(mapping => {
+                if (mapping.clean_name.startsWith('ERROR')) return;
+                
+                const cleanName = mapping.clean_name;
+                if (!consolidatedGroups[cleanName]) {
+                    consolidatedGroups[cleanName] = {
+                        cleanName: cleanName,
+                        sourceCodes: [],
+                        totalCount: 0,
+                        avgConfidence: 0,
+                        components: mapping.components,
+                        dataSources: new Set(),
+                        modalities: new Set()
+                    };
+                }
+                
+                consolidatedGroups[cleanName].sourceCodes.push({
+                    dataSource: mapping.data_source,
+                    examCode: mapping.exam_code,
+                    examName: mapping.exam_name,
+                    confidence: mapping.components.confidence || 0
+                });
+                
+                consolidatedGroups[cleanName].totalCount++;
+                consolidatedGroups[cleanName].dataSources.add(mapping.data_source);
+                consolidatedGroups[cleanName].modalities.add(mapping.modality_code);
+            });
+            
+            // Calculate average confidence for each group
+            Object.values(consolidatedGroups).forEach(group => {
+                const totalConfidence = group.sourceCodes.reduce((sum, code) => sum + code.confidence, 0);
+                group.avgConfidence = totalConfidence / group.sourceCodes.length;
+            });
+            
+            consolidatedData = Object.values(consolidatedGroups);
+            filteredConsolidatedData = [...consolidatedData];
+            sortConsolidatedResults();
+        }
+        
+        function showSampleView() {
+            document.getElementById('sampleView').style.display = 'block';
+            document.getElementById('consolidatedView').style.display = 'none';
+            document.getElementById('sampleViewBtn').classList.add('active');
+            document.getElementById('consolidatedViewBtn').classList.remove('active');
+        }
+        
+        function showConsolidatedView() {
+            document.getElementById('sampleView').style.display = 'none';
+            document.getElementById('consolidatedView').style.display = 'block';
+            document.getElementById('sampleViewBtn').classList.remove('active');
+            document.getElementById('consolidatedViewBtn').classList.add('active');
+            displayConsolidatedResults();
+        }
+        
+        function displayConsolidatedResults() {
+            const container = document.getElementById('consolidatedResults');
+            container.innerHTML = '';
+            
+            filteredConsolidatedData.forEach(group => {
+                const groupElement = document.createElement('div');
+                groupElement.className = 'consolidated-group';
+                
+                const confidencePercent = Math.round(group.avgConfidence * 100);
+                const confidenceClass = group.avgConfidence >= 0.8 ? 'confidence-high' : 
+                                       group.avgConfidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
+                
+                groupElement.innerHTML = `
+                    <div class="consolidated-header">
+                        <div class="consolidated-title">${group.cleanName}</div>
+                        <div class="consolidated-count">${group.totalCount} codes</div>
+                    </div>
+                    <div class="consolidated-body">
+                        <div class="consolidated-meta">
+                            <div><strong>Sources:</strong> ${Array.from(group.dataSources).join(', ')}</div>
+                            <div><strong>Modalities:</strong> ${Array.from(group.modalities).join(', ')}</div>
+                            <div><strong>Avg Confidence:</strong> 
+                                <span class="confidence-bar">
+                                    <span class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></span>
+                                </span>
+                                ${confidencePercent}%
+                            </div>
+                        </div>
+                        <div class="consolidated-components">
+                            ${generateComponentTags(group.components)}
+                        </div>
+                        <div class="source-codes">
+                            ${group.sourceCodes.map(code => `
+                                <div class="source-code">
+                                    <div class="source-code-header">[${code.dataSource}] ${code.examCode}</div>
+                                    <div class="source-code-name">${code.examName}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(groupElement);
+            });
+        }
+        
+        function generateComponentTags(components) {
+            let tags = '';
+            
+            if (components.anatomy) {
+                components.anatomy.forEach(a => tags += `<span class="tag anatomy">${a}</span>`);
+            }
+            if (components.laterality) {
+                tags += `<span class="tag laterality">${components.laterality}</span>`;
+            }
+            if (components.contrast) {
+                tags += `<span class="tag contrast">${components.contrast}</span>`;
+            }
+            if (components.technique) {
+                components.technique.forEach(t => tags += `<span class="tag technique">${t}</span>`);
+            }
+            if (components.gender_context) {
+                tags += `<span class="tag gender">${components.gender_context}</span>`;
+            }
+            if (components.clinical_context) {
+                components.clinical_context.forEach(c => tags += `<span class="tag clinical">${c}</span>`);
+            }
+            
+            return tags;
+        }
+        
+        function filterConsolidatedResults() {
+            const searchTerm = document.getElementById('consolidatedSearch').value.toLowerCase();
+            
+            if (searchTerm === '') {
+                filteredConsolidatedData = [...consolidatedData];
+            } else {
+                filteredConsolidatedData = consolidatedData.filter(group => 
+                    group.cleanName.toLowerCase().includes(searchTerm) ||
+                    group.sourceCodes.some(code => 
+                        code.examName.toLowerCase().includes(searchTerm) ||
+                        code.examCode.toLowerCase().includes(searchTerm)
+                    )
+                );
+            }
+            
+            sortConsolidatedResults();
+        }
+        
+        function sortConsolidatedResults() {
+            const sortBy = document.getElementById('consolidatedSort').value;
+            
+            filteredConsolidatedData.sort((a, b) => {
+                switch (sortBy) {
+                    case 'count':
+                        return b.totalCount - a.totalCount;
+                    case 'name':
+                        return a.cleanName.localeCompare(b.cleanName);
+                    case 'confidence':
+                        return b.avgConfidence - a.avgConfidence;
+                    default:
+                        return b.totalCount - a.totalCount;
+                }
+            });
+            
+            displayConsolidatedResults();
+        }
         function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';

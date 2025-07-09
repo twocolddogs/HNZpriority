@@ -59,7 +59,20 @@ def parse_exam():
     # If rules find no anatomy, you could use the ML model here.
     # For now, we'll just return the rule-based result.
 
-    return jsonify(result)
+    # Format the response with enhanced metadata
+    response = {
+        'cleanName': result['cleanName'],
+        'anatomy': result['anatomy'],
+        'laterality': result['laterality'],
+        'contrast': result['contrast'],
+        'technique': result['technique'],
+        'gender_context': result['gender_context'],
+        'clinical_context': result['clinical_context'],
+        'confidence': result['confidence'],
+        'clinical_equivalents': result['clinical_equivalents']
+    }
+
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
