@@ -324,6 +324,9 @@ class RadiologySemanticParser:
         # --- STEP 4: CONFIDENCE CALCULATION ---
         result['confidence'] = self._calculate_confidence(result, exam_name)
         
+        # Add clinical equivalents, which was missing from this path
+        result['clinical_equivalents'] = self._find_clinical_equivalents(result['anatomy'])
+        
         return result
 
     def _extract_anatomy_with_ml(self, exam_name):
