@@ -10,7 +10,10 @@ class RadiologySemanticParser:
     hybrid approach, combining NLP entities with rule-based matching for
     maximum accuracy.
     """
-    def __init__(self):
+    def __init__(self, db_manager=None, standardization_engine=None):
+        self.db_manager = db_manager
+        self.standardization_engine = standardization_engine
+        self.db_manager = db_manager
         # (The entire __init__ section with all the mappings and patterns remains unchanged)
         self.anatomy_mappings = {
             'head': {'terms': ['head', 'brain', 'skull', 'cranial', 'cerebral', 'cranium'], 'standardName': 'Head', 'category': 'neurological'},
@@ -129,8 +132,43 @@ class RadiologySemanticParser:
 
 
     def parse_exam_name(self, exam_name, modality_code, scispacy_entities=None):
+        if self.standardization_engine:
+            exam_name = self.standardization_engine.expand_abbreviations(exam_name)
         if scispacy_entities is None:
             scispacy_entities = {}
+
+        # Check for a direct match in the reference table
+        if self.db_manager:
+            reference_data = self.db_manager.get_snomed_reference_by_exam_name(exam_name)
+            if reference_data:
+                result = {
+                    'modality': self.modality_map.get(modality_code, modality_code),
+                    'anatomy': [],
+                    'laterality': None,
+                    'contrast': None,
+                    'technique': [],
+                    'gender_context': None,
+                    'clinical_context': [],
+                    'confidence': 1.0, # High confidence for direct match
+                    'cleanName': reference_data['clean_name'],
+                    'snomed': {
+                        'snomed_concept_id': reference_data.get('snomed_concept_id'),
+                        'snomed_fsn': reference_data.get('snomed_fsn'),
+                        'snomed_laterality_concept_id': reference_data.get('snomed_laterality_concept_id'),
+                        'snomed_laterality_fsn': reference_data.get('snomed_laterality_fsn')
+                    }
+                }
+                # We can still parse the original name for other components
+                lower_name = exam_name.lower()
+                for lat, pattern in self.laterality_patterns.items():
+                    if pattern.search(lower_name):
+                        result['laterality'] = lat
+                        break
+                for con, patterns in self.contrast_patterns.items():
+                    if any(p.search(lower_name) for p in patterns):
+                        result['contrast'] = con
+                        break
+                return result
 
         result = {
             'modality': self.modality_map.get(modality_code, modality_code),
@@ -221,7 +259,18 @@ class RadiologySemanticParser:
         # Generate enhanced clean name
         result['cleanName'] = self._build_clean_name(result)
         result['clinical_equivalents'] = self._find_clinical_equivalents(result['anatomy'])
-        
+
+        # Get SNOMED code
+        if self.db_manager:
+            snomed_code = self.db_manager.get_snomed_code(result['cleanName'])
+            if snomed_code:
+                result['snomed'] = {
+                    'snomed_concept_id': snomed_code.get('snomed_concept_id'),
+                    'snomed_fsn': snomed_code.get('snomed_fsn'),
+                    'snomed_laterality_concept_id': snomed_code.get('snomed_laterality_concept_id'),
+                    'snomed_laterality_fsn': snomed_code.get('snomed_laterality_fsn')
+                }
+
         return result
 
     def _build_clean_name(self, parsed):

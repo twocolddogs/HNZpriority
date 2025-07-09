@@ -8,6 +8,7 @@ from typing import List, Dict, Optional
 from datetime import datetime
 import logging
 import threading
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Import our enhanced components
@@ -26,8 +27,8 @@ CORS(app) # Allows our frontend to call the API
 # Initialize enhanced components
 db_manager = DatabaseManager()
 cache_manager = CacheManager()
-standardization_engine = StandardizationEngine()
-semantic_parser = RadiologySemanticParser()
+standardization_engine = StandardizationEngine(db_manager=db_manager)
+semantic_parser = RadiologySemanticParser(db_manager=db_manager, standardization_engine=standardization_engine)
 
 # --- Load Models on Startup ---
 print("Loading ScispaCy model...")
@@ -47,6 +48,18 @@ try:
 except FileNotFoundError:
     print("ML model files not found. Run train.py to create placeholders.")
     classifier = vectorizer = mlb = None
+
+import os
+
+# --- Load SNOMED Data ---
+print("Loading SNOMED reference data...")
+csv_path = os.path.join(os.path.dirname(__file__), 'base_code_set.csv')
+db_manager.load_snomed_from_csv(csv_path)
+
+# --- Load Abbreviations ---
+print("Loading abbreviations data...")
+abbreviations_csv_path = os.path.join(os.path.dirname(__file__), 'abbreviations.csv')
+db_manager.load_abbreviations_from_csv(abbreviations_csv_path)
 
 def record_performance(endpoint: str, processing_time_ms: int, input_size: int, 
                       success: bool, error_message: Optional[str] = None):
@@ -186,6 +199,7 @@ def parse_enhanced():
                 },
                 'quality_score': quality_metrics['overall_quality']
             },
+            'snomed': parsed_result.get('snomed', {}),
             'quality_metrics': quality_metrics,
             'equivalence': {
                 'clinical_equivalents': parsed_result['clinical_equivalents']

@@ -12,7 +12,10 @@ class StandardizationEngine:
     Provides normalization, similarity scoring, and equivalence detection.
     """
     
-    def __init__(self):
+    def __init__(self, db_manager=None):
+        self.abbreviations = {}
+        if db_manager:
+            self.abbreviations = db_manager.get_all_abbreviations()
         # Common variations and their standardized forms
         self.modality_normalizations = {
             'ct scan': 'CT',
@@ -106,6 +109,32 @@ class StandardizationEngine:
         
         # Cache for similarity calculations
         self.similarity_cache = {}
+
+    def clean_z_codes(self, exam_name: str) -> str:
+        """
+        Clean Z-code exam names that have format: 'ZCODE^Actual Name'
+        Example: 'ZCRUSV200^US of Limb Veins for DVT (1 Li' -> 'US of Limb Veins for DVT (1 Li'
+        """
+        # Pattern to match Z-code followed by ^ and capture the actual name
+        z_code_pattern = r'^Z[A-Z0-9]+\^(.+)$'
+        match = re.match(z_code_pattern, exam_name)
+        
+        if match:
+            # Extract the actual exam name after the ^
+            actual_name = match.group(1).strip()
+            return actual_name
+        
+        return exam_name
+    
+    def expand_abbreviations(self, exam_name: str) -> str:
+        """Expand abbreviations in an exam name."""
+        # First clean Z-codes before expanding abbreviations
+        exam_name = self.clean_z_codes(exam_name)
+        
+        for abbr, full_text in self.abbreviations.items():
+            # Use regex to match whole words only
+            exam_name = re.sub(rf'\b{re.escape(abbr)}\b', full_text, exam_name, flags=re.IGNORECASE)
+        return exam_name
     
     def normalize_exam_name(self, exam_name: str) -> Dict:
         """
@@ -118,6 +147,7 @@ class StandardizationEngine:
             Dict with normalized components and metadata
         """
         original_name = exam_name
+        exam_name = self.expand_abbreviations(exam_name)
         normalized_name = exam_name.lower().strip()
         
         # Remove common prefixes/suffixes

@@ -5,6 +5,8 @@ import json
 import hashlib
 from contextlib import contextmanager
 import threading
+import csv
+import io
 
 class DatabaseManager:
     """
@@ -120,6 +122,31 @@ class DatabaseManager:
             conn.execute('CREATE INDEX IF NOT EXISTS idx_equiv_group ON equivalence_groups(group_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_comparison_id ON system_comparisons(comparison_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_perf_endpoint ON performance_metrics(endpoint)')
+
+            # SNOMED reference table
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS snomed_reference (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    snomed_concept_id INTEGER,
+                    snomed_fsn TEXT,
+                    snomed_laterality_concept_id INTEGER,
+                    snomed_laterality_fsn TEXT,
+                    is_diagnostic BOOLEAN,
+                    is_interventional BOOLEAN,
+                    clean_name TEXT
+                )
+            ''')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_snomed_clean_name ON snomed_reference(clean_name)')
+
+            # Abbreviations table
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS abbreviations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    abbreviation TEXT UNIQUE NOT NULL,
+                    full_text TEXT NOT NULL
+                )
+            ''')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_abbreviation ON abbreviations(abbreviation)')
     
     @contextmanager
     def get_connection(self):
@@ -442,6 +469,93 @@ class DatabaseManager:
         sorted_systems = sorted(systems)
         systems_str = "|".join(sorted_systems)
         return hashlib.md5(systems_str.encode()).hexdigest()
+
+    def load_snomed_from_csv(self, csv_path: str):
+        """Load SNOMED reference data from CSV file."""
+        with self.get_connection() as conn:
+            # Check if table is already populated
+            cursor = conn.execute('SELECT COUNT(*) FROM snomed_reference')
+            if cursor.fetchone()[0] > 0:
+                print("SNOMED reference table already populated.")
+                return
+
+            with open(csv_path, 'r', encoding='utf-8') as f:
+                # Clean up header row
+                header = [h.strip().replace('\n', '') for h in f.readline().split(',')]
+                reader = csv.reader(f)
+
+                for row in reader:
+                    if len(row) != len(header):
+                        continue
+                    # Create a dictionary for easier access
+                    row_dict = {header[i]: val for i, val in enumerate(row)}
+
+                    conn.execute('''
+                        INSERT INTO snomed_reference (
+                            snomed_concept_id, snomed_fsn, snomed_laterality_concept_id, 
+                            snomed_laterality_fsn, is_diagnostic, is_interventional, clean_name
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        int(row_dict.get('"SNOMED CT Concept-ID"', 0)),
+                        row_dict.get('SNOMED CT FSN'),
+                        int(row_dict.get('SNOMED CT Concept-ID of Laterality', 0)) if row_dict.get('SNOMED CT Concept-ID of Laterality') else None,
+                        row_dict.get('SNOMED FSN of Laterality'),
+                        True if row_dict.get('Diagnostic procedure') == 'Y' else False,
+                        True if row_dict.get('Interventional Procedure') == 'Y' else False,
+                        row_dict.get('"Clean Name"')
+                    ))
+            print("Successfully loaded SNOMED reference data.")
+
+    def get_snomed_code(self, clean_name: str) -> Optional[Dict]:
+        """Get SNOMED code for a given clean name."""
+        with self.get_connection() as conn:
+            cursor = conn.execute(
+                'SELECT * FROM snomed_reference WHERE clean_name = ?',
+                (clean_name,)
+            )
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+            return None
+
+    def get_snomed_reference_by_exam_name(self, exam_name: str) -> Optional[Dict]:
+        """Get SNOMED reference data for a given exam name."""
+        with self.get_connection() as conn:
+            cursor = conn.execute(
+                'SELECT * FROM snomed_reference WHERE snomed_fsn = ?',
+                (exam_name,)
+            )
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+            return None
+
+    def load_abbreviations_from_csv(self, csv_path: str):
+        """Load abbreviations from CSV file."""
+        with self.get_connection() as conn:
+            # Check if table is already populated
+            cursor = conn.execute('SELECT COUNT(*) FROM abbreviations')
+            if cursor.fetchone()[0] > 0:
+                print("Abbreviations table already populated.")
+                return
+
+            with open(csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader) # skip header
+                next(reader) # skip header
+                for row in reader:
+                    if row and row[0] and row[1]:
+                        conn.execute('''
+                            INSERT OR IGNORE INTO abbreviations (abbreviation, full_text)
+                            VALUES (?, ?)
+                        ''', (row[0].strip(), row[1].strip()))
+            print("Successfully loaded abbreviations data.")
+
+    def get_all_abbreviations(self) -> Dict[str, str]:
+        """Get all abbreviations from the database."""
+        with self.get_connection() as conn:
+            cursor = conn.execute('SELECT abbreviation, full_text FROM abbreviations')
+            return {row['abbreviation']: row['full_text'] for row in cursor.fetchall()}
 
 
 class CacheManager:
