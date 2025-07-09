@@ -310,6 +310,7 @@ def parse_batch():
                         'input': exam_data,
                         'clean_name': parsed_result['cleanName'],
                         'canonical_form': standardized['canonical_form'],
+                        'snomed': parsed_result.get('snomed', {}),
                         'components': {
                             'anatomy': parsed_result['anatomy'],
                             'laterality': parsed_result['laterality'],
@@ -318,7 +319,8 @@ def parse_batch():
                             'gender_context': parsed_result['gender_context'],
                             'clinical_context': parsed_result['clinical_context']
                         },
-                        'confidence': parsed_result['confidence']
+                        'confidence': parsed_result['confidence'],
+                        'clinical_equivalents': parsed_result.get('clinical_equivalents', [])
                     }
                     
                     # Cache result
