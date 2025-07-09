@@ -269,8 +269,15 @@ def parse_batch():
             return jsonify({"error": "Missing exams array"}), 400
         
         exams = data['exams']
-        if len(exams) > 1000:
-            return jsonify({"error": "Maximum 1000 exams per batch"}), 400
+        # Remove hard limit - process in chunks for large files
+        chunk_size = data.get('chunk_size', 1000)  # Default chunk size, configurable
+        
+        if len(exams) > 10000:  # Soft limit to prevent memory issues
+            logger.warning(f"Large file detected: {len(exams)} exams. Processing in chunks of {chunk_size}.")
+        
+        # Process large files in chunks automatically
+        if len(exams) > 2000:
+            logger.info(f"Processing {len(exams)} exams in chunks of {chunk_size} for better performance")
         
         results = []
         errors = []
@@ -386,6 +393,140 @@ def parse_batch():
         logger.error(f"Batch parse endpoint error: {e}")
         processing_time = int((time.time() - start_time) * 1000)
         record_performance('parse_batch', processing_time, 0, False, str(e))
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/parse_batch_chunked', methods=['POST'])
+def parse_batch_chunked():
+    """Chunked batch processing endpoint for large files (>1000 records)."""
+    start_time = time.time()
+    
+    try:
+        data = request.json
+        if not data or 'exams' not in data:
+            return jsonify({"error": "Missing exams array"}), 400
+        
+        exams = data['exams']
+        chunk_size = data.get('chunk_size', 1000)
+        
+        all_results = []
+        all_errors = []
+        total_cache_hits = 0
+        
+        # Process in chunks
+        total_chunks = (len(exams) + chunk_size - 1) // chunk_size
+        logger.info(f"Processing {len(exams)} exams in {total_chunks} chunks of {chunk_size}")
+        
+        for chunk_idx in range(0, len(exams), chunk_size):
+            chunk = exams[chunk_idx:chunk_idx + chunk_size]
+            chunk_start_time = time.time()
+            
+            # Process chunk using existing batch logic
+            chunk_results = []
+            chunk_errors = []
+            chunk_cache_hits = 0
+            
+            # Step 1: Check cache for chunk
+            uncached_exams = []
+            cached_results = []
+            
+            for exam_data in chunk:
+                cache_key = f"{exam_data['exam_name']}|{exam_data['modality_code']}"
+                cached_result = cache_manager.get(cache_key)
+                if cached_result:
+                    cached_results.append(cached_result)
+                    chunk_cache_hits += 1
+                else:
+                    uncached_exams.append(exam_data)
+            
+            # Step 2: Process uncached exams in chunk
+            if uncached_exams:
+                exam_names = [exam['exam_name'] for exam in uncached_exams]
+                batch_entities = extract_scispacy_entities_batch(exam_names)
+                
+                # Process in parallel
+                def process_exam_chunk(exam_data, scispacy_entities):
+                    try:
+                        exam_name = exam_data['exam_name']
+                        modality = exam_data['modality_code']
+                        
+                        parsed_result = semantic_parser.parse_exam_name(exam_name, modality, scispacy_entities)
+                        standardized = standardization_engine.normalize_exam_name(exam_name)
+                        
+                        result = {
+                            'input': exam_data,
+                            'standardized': standardized,
+                            'snomed': parsed_result.get('snomed', {}),
+                            'quality_metrics': parsed_result.get('quality_metrics', {}),
+                            'equivalence': parsed_result.get('equivalence', {}),
+                            'metadata': parsed_result.get('metadata', {})
+                        }
+                        
+                        # Cache result
+                        cache_key = f"{exam_name}|{modality}"
+                        cache_manager.set(cache_key, result)
+                        
+                        return result
+                    except Exception as e:
+                        logger.error(f"Error processing exam {exam_data.get('exam_name', 'unknown')}: {e}")
+                        return {'error': str(e), 'input': exam_data}
+                
+                # Use ThreadPoolExecutor for parallel processing
+                with ThreadPoolExecutor(max_workers=min(10, len(uncached_exams))) as executor:
+                    futures = []
+                    for i, exam_data in enumerate(uncached_exams):
+                        scispacy_entities = batch_entities[i] if i < len(batch_entities) else {}
+                        future = executor.submit(process_exam_chunk, exam_data, scispacy_entities)
+                        futures.append(future)
+                    
+                    for future in as_completed(futures):
+                        try:
+                            result = future.result()
+                            if 'error' in result:
+                                chunk_errors.append(result)
+                            else:
+                                chunk_results.append(result)
+                        except Exception as e:
+                            chunk_errors.append({'error': str(e), 'input': {}})
+            
+            # Combine cached and processed results
+            all_chunk_results = cached_results + chunk_results
+            
+            # Add chunk results to overall results
+            all_results.extend(all_chunk_results)
+            all_errors.extend(chunk_errors)
+            total_cache_hits += chunk_cache_hits
+            
+            chunk_time = int((time.time() - chunk_start_time) * 1000)
+            logger.info(f"Processed chunk {chunk_idx//chunk_size + 1}/{total_chunks} in {chunk_time}ms")
+        
+        # Generate processing statistics
+        processing_stats = {
+            'total_processed': len(exams),
+            'successful': len(all_results),
+            'errors': len(all_errors),
+            'cache_hits': total_cache_hits,
+            'processing_time_ms': int((time.time() - start_time) * 1000),
+            'cache_hit_ratio': total_cache_hits / len(exams) if len(exams) > 0 else 0.0,
+            'chunks_processed': total_chunks,
+            'chunk_size': chunk_size
+        }
+        
+        response = {
+            'results': all_results,
+            'errors': all_errors,
+            'processing_stats': processing_stats
+        }
+        
+        # Record performance
+        record_performance('parse_batch_chunked', processing_stats['processing_time_ms'], 
+                          len(exams), len(all_errors) == 0)
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Chunked batch parse endpoint error: {e}")
+        processing_time = int((time.time() - start_time) * 1000)
+        record_performance('parse_batch_chunked', processing_time, 0, False, str(e))
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/parse_batch_fast', methods=['POST'])

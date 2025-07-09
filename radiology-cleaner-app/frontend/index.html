@@ -415,16 +415,20 @@
     <script>
     window.addEventListener('DOMContentLoaded', function() {
         // --- DYNAMIC API CONFIGURATION ---
-        // Local development API URL
+        // Local development API URLs
         const LOCAL_API_URL = 'http://localhost:5001/parse_enhanced';
+        const LOCAL_BATCH_API_URL = 'http://localhost:5001/parse_batch';
         const STAGING_API_URL = 'https://radiology-api-staging.onrender.com/parse_enhanced';
+        const STAGING_BATCH_API_URL = 'https://radiology-api-staging.onrender.com/parse_batch';
         const PRODUCTION_API_URL = 'https://radiology-api-prod.onrender.com/parse_enhanced';
+        const PRODUCTION_BATCH_API_URL = 'https://radiology-api-prod.onrender.com/parse_batch';
         const PRODUCTION_HOSTNAME = 'radiology-cleaner.pages.dev'; // Use your final Cloudflare Pages production domain here.
 
         // Automatically select the correct API based on the frontend's URL
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const isProduction = window.location.hostname === PRODUCTION_HOSTNAME;
         const API_URL = isLocalhost ? LOCAL_API_URL : (isProduction ? PRODUCTION_API_URL : STAGING_API_URL);
+        const BATCH_API_URL = isLocalhost ? LOCAL_BATCH_API_URL : (isProduction ? PRODUCTION_BATCH_API_URL : STAGING_BATCH_API_URL);
         
         console.log(`Frontend running in ${isProduction ? 'PRODUCTION' : 'STAGING'} mode.`);
         console.log(`API endpoint set to: ${API_URL}`);
@@ -590,51 +594,115 @@
                         return;
                     }
 
-                    // Use batch processing for efficiency
-                    progressFill.style.transition = 'width 1.5s ease-in-out';
-                    progressFill.style.width = '50%';
+                    console.log(`Processing ${codes.length} exam records...`);
+                    
+                    // Use batch processing for larger files (>50 records) or for efficiency
+                    if (codes.length > 50) {
+                        await processBatch(codes);
+                    } else {
+                        // Use batch processing even for smaller files for consistency
+                        await processBatch(codes);
+                    }
+                    
+                    runAnalysis(allMappings);
 
-                    // Map keys from file (UPPER_SNAKE_CASE) to API (snake_case)
-                    // The backend returns the original input, so we pass all fields
-                    const examsForBatch = codes.map(code => ({
+                } catch (error) {
+                    alert('Error processing file: ' + error.message);
+                    progressBar.style.display = 'none';
+                }
+            };
+            
+            // Process files individually (for small files)
+            async function processIndividually(codes) {
+                for (let i = 0; i < codes.length; i++) {
+                    const code = codes[i];
+                    try {
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ exam_name: code.EXAM_NAME, modality_code: code.MODALITY_CODE })
+                        });
+                        if (!response.ok) throw new Error(`API returned status ${response.status}`);
+                        
+                        const parsed = await response.json();
+                        allMappings.push({
+                            data_source: code.DATA_SOURCE,
+                            modality_code: code.MODALITY_CODE,
+                            exam_code: code.EXAM_CODE,
+                            exam_name: code.EXAM_NAME,
+                            clean_name: parsed.standardized.clean_name,
+                            snomed: parsed.snomed || {},
+                            components: { 
+                                anatomy: parsed.standardized.components.anatomy, 
+                                laterality: parsed.standardized.components.laterality, 
+                                contrast: parsed.standardized.components.contrast, 
+                                technique: parsed.standardized.components.technique,
+                                gender_context: parsed.standardized.components.gender_context,
+                                clinical_context: parsed.standardized.components.clinical_context,
+                                confidence: parsed.metadata.confidence,
+                                clinical_equivalents: parsed.equivalence.clinical_equivalents
+                            }
+                        });
+                    } catch (error) {
+                        console.error(`Failed to parse code: ${code.EXAM_NAME}`, error);
+                        allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
+                    }
+                    progressFill.style.width = `${((i + 1) / codes.length) * 100}%`;
+                }
+            }
+            
+            // Process files in batches (for large files)
+            async function processBatch(codes) {
+                console.log(`Using batch processing for ${codes.length} records...`);
+                
+                try {
+                    // Transform codes to the expected format for batch API
+                    const exams = codes.map(code => ({
                         exam_name: code.EXAM_NAME,
                         modality_code: code.MODALITY_CODE,
                         data_source: code.DATA_SOURCE,
                         exam_code: code.EXAM_CODE
                     }));
-
-                    const BATCH_API_URL = API_URL.replace('/parse_enhanced', '/parse_batch');
-
+                    
+                    // Set progress to 25% while sending batch request
+                    progressFill.style.width = '25%';
+                    
                     const response = await fetch(BATCH_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ exams: examsForBatch })
+                        body: JSON.stringify({ 
+                            exams: exams,
+                            chunk_size: 1000 // Process in chunks of 1000
+                        })
                     });
-                    if (!response.ok) throw new Error(`API returned status ${response.status} ${await response.text()}`);
-
+                    
+                    if (!response.ok) throw new Error(`Batch API returned status ${response.status}`);
+                    
+                    // Set progress to 75% while processing response
+                    progressFill.style.width = '75%';
+                    
                     const batchResult = await response.json();
                     
+                    // Process batch results - updated format from HEAD
+                    if (batchResult.results) {
+                        allMappings = batchResult.results.map(item => ({
+                            data_source: item.input.data_source,
+                            modality_code: item.input.modality_code,
+                            exam_code: item.input.exam_code,
+                            exam_name: item.input.exam_name,
+                            clean_name: item.clean_name,
+                            snomed: item.snomed || {},
+                            components: { 
+                                ...item.components,
+                                confidence: item.confidence,
+                                clinical_equivalents: item.clinical_equivalents || []
+                            }
+                        }));
+                    }
+                    
+                    // Handle any errors from batch processing - updated format from HEAD
                     if (batchResult.errors && batchResult.errors.length > 0) {
                         console.error('Errors returned from batch processing:', batchResult.errors);
-                    }
-
-                    // Reconstruct the allMappings array from the batch response
-                    allMappings = batchResult.results.map(item => ({
-                        data_source: item.input.data_source,
-                        modality_code: item.input.modality_code,
-                        exam_code: item.input.exam_code,
-                        exam_name: item.input.exam_name,
-                        clean_name: item.clean_name,
-                        snomed: item.snomed || {},
-                        components: { 
-                            ...item.components,
-                            confidence: item.confidence,
-                            clinical_equivalents: item.clinical_equivalents || []
-                        }
-                    }));
-                    
-                    // Handle any items that failed in the batch
-                    if (batchResult.errors && batchResult.errors.length > 0) {
                         batchResult.errors.forEach(err => {
                             allMappings.push({
                                 data_source: err.exam.data_source,
@@ -646,17 +714,23 @@
                             });
                         });
                     }
-
-                    progressFill.style.transition = 'width 0.5s ease-out';
-                    progressFill.style.width = '100%';
-
-                    runAnalysis(allMappings);
-
+                    
+                    // Log batch processing stats
+                    if (batchResult.processing_stats) {
+                        const stats = batchResult.processing_stats;
+                        console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${(stats.cache_hit_ratio * 100).toFixed(1)}% hit rate), ${stats.processing_time_ms}ms total`);
+                    }
+                    
                 } catch (error) {
-                    alert('Error processing file: ' + error.message);
-                    progressBar.style.display = 'none';
+                    console.error('Batch processing failed:', error);
+                    // Fall back to individual processing if batch fails
+                    console.log('Falling back to individual processing...');
+                    await processIndividually(codes);
                 }
-            };
+                
+                // Set progress to 100%
+                progressFill.style.width = '100%';
+            }
             reader.readAsText(file);
         }
 
