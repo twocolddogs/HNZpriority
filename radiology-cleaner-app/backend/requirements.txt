@@ -2,12 +2,11 @@
 flask
 gunicorn
 
-# Core ML/NLP libraries - using recent, stable versions with good wheel support
+# Core ML/NLP libraries
 spacy==3.7.2
 scikit-learn==1.3.2
 pandas==2.1.4
 joblib==1.3.2
 
 # The specific ScispaCy model compatible with spacy v3.7.x
-# This is a different URL than before.
 https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
