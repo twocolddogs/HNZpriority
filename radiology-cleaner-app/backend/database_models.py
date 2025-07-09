@@ -48,6 +48,22 @@ class DatabaseManager:
                 )
             ''')
             
+            # General suggestions table
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS general_feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT,
+                    user_name TEXT,
+                    suggestion_text TEXT NOT NULL,
+                    confidence_level TEXT NOT NULL,
+                    category TEXT DEFAULT 'general',
+                    notes TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status TEXT DEFAULT 'pending',
+                    processed_rules TEXT
+                )
+            ''')
+            
             # Configuration table for settings
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS configuration (
@@ -171,6 +187,23 @@ class DatabaseManager:
             ))
             return cursor.lastrowid
     
+    def submit_general_feedback(self, feedback_data: Dict) -> int:
+        """Submit general feedback suggestion."""
+        with self.get_connection() as conn:
+            cursor = conn.execute('''
+                INSERT INTO general_feedback (
+                    user_id, user_name, suggestion_text, confidence_level, category, notes
+                ) VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                feedback_data.get('user_id'),
+                feedback_data.get('user_name'),
+                feedback_data['suggestion_text'],
+                feedback_data['confidence_level'],
+                feedback_data.get('category', 'general'),
+                feedback_data.get('notes')
+            ))
+            return cursor.lastrowid
+    
     def get_feedback_data(self, status: str = 'pending') -> List[Dict]:
         """Get feedback data for training."""
         with self.get_connection() as conn:
@@ -191,6 +224,31 @@ class DatabaseManager:
                     'notes': row['notes'],
                     'created_at': row['created_at'],
                     'status': row['status']
+                })
+            
+            return results
+    
+    def get_general_feedback_data(self, status: str = 'pending') -> List[Dict]:
+        """Get general feedback suggestions."""
+        with self.get_connection() as conn:
+            cursor = conn.execute(
+                'SELECT * FROM general_feedback WHERE status = ? ORDER BY created_at DESC',
+                (status,)
+            )
+            
+            results = []
+            for row in cursor.fetchall():
+                results.append({
+                    'id': row['id'],
+                    'user_id': row['user_id'],
+                    'user_name': row['user_name'],
+                    'suggestion_text': row['suggestion_text'],
+                    'confidence_level': row['confidence_level'],
+                    'category': row['category'],
+                    'notes': row['notes'],
+                    'created_at': row['created_at'],
+                    'status': row['status'],
+                    'processed_rules': row['processed_rules']
                 })
             
             return results

@@ -431,22 +431,42 @@ def submit_feedback():
     
     try:
         data = request.json
-        required_fields = ['original_exam_name', 'original_mapping', 'corrected_mapping', 'confidence_level']
+        feedback_type = data.get('type', 'correction')
         
-        if not all(field in data for field in required_fields):
-            return jsonify({"error": "Missing required fields"}), 400
-        
-        # Validate confidence level
-        if data['confidence_level'] not in ['low', 'medium', 'high']:
-            return jsonify({"error": "Invalid confidence level"}), 400
-        
-        # Submit feedback
-        feedback_id = db_manager.submit_feedback(data)
+        if feedback_type == 'general':
+            # Handle general text suggestions
+            required_fields = ['suggestion_text', 'confidence_level']
+            if not all(field in data for field in required_fields):
+                return jsonify({"error": "Missing required fields for general feedback"}), 400
+            
+            # Validate confidence level
+            if data['confidence_level'] not in ['low', 'medium', 'high']:
+                return jsonify({"error": "Invalid confidence level"}), 400
+            
+            # Submit general feedback
+            feedback_id = db_manager.submit_general_feedback(data)
+            
+        elif feedback_type == 'correction':
+            # Handle specific corrections
+            required_fields = ['original_exam_name', 'original_mapping', 'corrected_mapping', 'confidence_level']
+            if not all(field in data for field in required_fields):
+                return jsonify({"error": "Missing required fields for correction feedback"}), 400
+            
+            # Validate confidence level
+            if data['confidence_level'] not in ['low', 'medium', 'high']:
+                return jsonify({"error": "Invalid confidence level"}), 400
+            
+            # Submit correction feedback
+            feedback_id = db_manager.submit_feedback(data)
+            
+        else:
+            return jsonify({"error": "Invalid feedback type. Use 'general' or 'correction'"}), 400
         
         response = {
             'feedback_id': feedback_id,
+            'type': feedback_type,
             'status': 'submitted',
-            'message': 'Feedback submitted successfully',
+            'message': f'{feedback_type.title()} feedback submitted successfully',
             'processing_time_ms': int((time.time() - start_time) * 1000)
         }
         
@@ -460,6 +480,45 @@ def submit_feedback():
         logger.error(f"Feedback endpoint error: {e}")
         processing_time = int((time.time() - start_time) * 1000)
         record_performance('feedback', processing_time, 0, False, str(e))
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/feedback/list', methods=['GET'])
+def list_feedback():
+    """List all feedback submissions for management."""
+    start_time = time.time()
+    
+    try:
+        feedback_type = request.args.get('type', 'all')
+        status = request.args.get('status', 'pending')
+        
+        response = {
+            'feedback_data': [],
+            'processing_time_ms': int((time.time() - start_time) * 1000)
+        }
+        
+        if feedback_type in ['all', 'correction']:
+            correction_feedback = db_manager.get_feedback_data(status)
+            response['feedback_data'].extend([{
+                **item,
+                'type': 'correction'
+            } for item in correction_feedback])
+        
+        if feedback_type in ['all', 'general']:
+            general_feedback = db_manager.get_general_feedback_data(status)
+            response['feedback_data'].extend([{
+                **item,
+                'type': 'general'
+            } for item in general_feedback])
+        
+        # Sort by creation date
+        response['feedback_data'].sort(key=lambda x: x['created_at'], reverse=True)
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"List feedback endpoint error: {e}")
+        processing_time = int((time.time() - start_time) * 1000)
+        record_performance('feedback_list', processing_time, 0, False, str(e))
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/compare_systems', methods=['POST'])
