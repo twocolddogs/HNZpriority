@@ -161,13 +161,6 @@
                                 System Documentation
                             </button>
                         </div>
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-section">
-                            <button id="menuAbout" class="dropdown-item">
-                                <span class="dropdown-icon nerd-icon">ℹ</span>
-                                About
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -423,7 +416,7 @@
     window.addEventListener('DOMContentLoaded', function() {
         // --- DYNAMIC API CONFIGURATION ---
         // Local development API URL
-        const LOCAL_API_URL = 'http://localhost:5000/parse_enhanced';
+        const LOCAL_API_URL = 'http://localhost:5001/parse_enhanced';
         const STAGING_API_URL = 'https://radiology-api-staging.onrender.com/parse_enhanced';
         const PRODUCTION_API_URL = 'https://radiology-api-prod.onrender.com/parse_enhanced';
         const PRODUCTION_HOSTNAME = 'radiology-cleaner.pages.dev'; // Use your final Cloudflare Pages production domain here.
