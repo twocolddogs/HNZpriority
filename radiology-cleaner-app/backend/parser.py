@@ -72,7 +72,7 @@ class RadiologySemanticParser:
             'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', r'injection']],
         }
         self.contrast_patterns = {
-            'with': [re.compile(p, re.I) for p in [r'\bC\+', r'with contrast', r'post contrast', r'enhanced', r'post gad']],
+            'with': [re.compile(p, re.I) for p in [r'\bC\+', r'with contrast', r'post contrast', r'(?<!un)enhanced', r'post gad']],
             'without': [re.compile(p, re.I) for p in [r'\bC-', r'without contrast', r'no contrast', r'non-?contrast', r'unenhanced']],
             'with and without': [re.compile(p, re.I) for p in [r'C\+\/?-', r'\+\/?-', r'with and without', r'pre and post', r'pre & post']],
         }
@@ -155,7 +155,7 @@ class RadiologySemanticParser:
         parsed_components = self._parse_with_hybrid_approach(exam_name, modality_code, scispacy_entities)
         
         # Step 4: Generate clean name from parsed components
-        generated_clean_name = self._build_clean_name(parsed_components)
+        generated_clean_name = self._build_clean_name(parsed_components, original_exam_name)
         
         # Step 5: Try fuzzy matching against database clean names
         if self.db_manager:
@@ -298,11 +298,14 @@ class RadiologySemanticParser:
                     result['laterality'] = lat
                     break
         
-        # Contrast detection
-        for con, patterns in self.contrast_patterns.items():
-            if any(p.search(lower_name) for p in patterns):
-                result['contrast'] = con
-                break
+        # Contrast detection - check 'with and without' first for specificity
+        contrast_order = ['with and without', 'with', 'without']
+        for con in contrast_order:
+            if con in self.contrast_patterns:
+                patterns = self.contrast_patterns[con]
+                if any(p.search(lower_name) for p in patterns):
+                    result['contrast'] = con
+                    break
 
         # Technique detection
         for tech, patterns in self.technique_patterns.items():
@@ -470,7 +473,7 @@ class RadiologySemanticParser:
         from itertools import combinations
         return combinations(items, count)
 
-    def _build_clean_name(self, parsed):
+    def _build_clean_name(self, parsed, original_exam_name):
         parts = [parsed['modality']]
         
         if parsed['anatomy']:
@@ -513,8 +516,12 @@ class RadiologySemanticParser:
         
         clean_name = " ".join(parts)
         
+        # Handle contrast in clean name
         if parsed['contrast']:
-            clean_name += f" ({parsed['contrast']} contrast)"
+            if parsed['contrast'] == 'without':
+                clean_name += " (without contrast)"
+            else:
+                clean_name += f" ({parsed['contrast']} contrast)"
             
         return clean_name.strip()
     
@@ -582,6 +589,21 @@ class RadiologySemanticParser:
         # Reduce confidence if very short exam name (likely ambiguous)
         if len(original_exam_name) < 5:
             confidence -= 0.2
+        
+        # HIGH PRIORITY: Boost confidence for contrast mentions
+        if result['contrast']:
+            # High confidence boost for explicit contrast mentions
+            if result['contrast'] == 'with':
+                confidence += 0.2  # Strong boost for with contrast/C+
+            elif result['contrast'] == 'with and without':
+                confidence += 0.25  # Highest boost for dual contrast studies
+            # Note: 'without' contrast (C-) doesn't get a boost as it's baseline state
+        
+        # Additional boost if contrast patterns are detected in original exam name
+        lower_exam_name = original_exam_name.lower()
+        contrast_terms = ['contrast', 'c+', 'c-', 'enhanced', 'post contrast', 'post gad']
+        if any(term in lower_exam_name for term in contrast_terms):
+            confidence += 0.15  # High rating for any contrast mention
         
         # Increase confidence if multiple components detected
         components_found = sum([
