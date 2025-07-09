@@ -92,6 +92,38 @@ def extract_scispacy_entities(exam_name: str) -> Dict:
     
     return scispacy_entities
 
+def extract_scispacy_entities_batch(exam_names: List[str]) -> List[Dict]:
+    """Extract entities for multiple exam names in batch for better performance."""
+    results = []
+    
+    if not nlp:
+        return [{'ANATOMY': [], 'DIRECTION': []} for _ in exam_names]
+    
+    try:
+        # Process in batches to avoid memory issues
+        batch_size = 100
+        for i in range(0, len(exam_names), batch_size):
+            batch = exam_names[i:i+batch_size]
+            
+            # Process batch with nlp.pipe for better performance
+            docs = nlp.pipe(batch)
+            
+            for doc in docs:
+                entities = {'ANATOMY': [], 'DIRECTION': []}
+                for ent in doc.ents:
+                    if ent.label_ in ['ANATOMY', 'BODY_PART_OR_ORGAN']:
+                        entities['ANATOMY'].append(ent.text.capitalize())
+                    elif ent.label_ == 'DIRECTION':
+                        entities['DIRECTION'].append(ent.text.capitalize())
+                results.append(entities)
+                
+    except Exception as e:
+        logger.error(f"Batch ScispaCy processing failed: {e}")
+        # Fallback to individual processing
+        results = [extract_scispacy_entities(name) for name in exam_names]
+    
+    return results
+
 # --- Original API Endpoint (Enhanced) ---
 @app.route('/parse', methods=['POST'])
 def parse_exam():
@@ -228,7 +260,7 @@ def parse_enhanced():
 
 @app.route('/parse_batch', methods=['POST'])
 def parse_batch():
-    """Batch processing endpoint for high-volume data."""
+    """Optimized batch processing endpoint for high-volume data."""
     start_time = time.time()
     
     try:
@@ -244,81 +276,99 @@ def parse_batch():
         errors = []
         cache_hits = 0
         
-        def process_exam(exam_data):
-            try:
-                exam_name = exam_data['exam_name']
-                modality = exam_data['modality_code']
-                
-                # Check cache
-                cache_key = f"{exam_name}|{modality}"
-                cached_result = cache_manager.get(cache_key)
-                if cached_result:
-                    return cached_result, True
-                
-                # Extract entities
-                scispacy_entities = extract_scispacy_entities(exam_name)
-                
-                # Parse
-                parsed_result = semantic_parser.parse_exam_name(exam_name, modality, scispacy_entities)
-                
-                # Standardize
-                standardized = standardization_engine.normalize_exam_name(exam_name)
-                
-                result = {
-                    'input': exam_data,
-                    'clean_name': parsed_result['cleanName'],
-                    'canonical_form': standardized['canonical_form'],
-                    'components': {
-                        'anatomy': parsed_result['anatomy'],
-                        'laterality': parsed_result['laterality'],
-                        'contrast': parsed_result['contrast'],
-                        'technique': parsed_result['technique'],
-                        'gender_context': parsed_result['gender_context'],
-                        'clinical_context': parsed_result['clinical_context']
-                    },
-                    'confidence': parsed_result['confidence']
+        # Step 1: Check cache for all exams first
+        uncached_exams = []
+        cached_results = []
+        
+        for exam_data in exams:
+            cache_key = f"{exam_data['exam_name']}|{exam_data['modality_code']}"
+            cached_result = cache_manager.get(cache_key)
+            if cached_result:
+                cached_results.append(cached_result)
+                cache_hits += 1
+            else:
+                uncached_exams.append(exam_data)
+        
+        # Step 2: Batch process NLP for uncached exams
+        if uncached_exams:
+            exam_names = [exam['exam_name'] for exam in uncached_exams]
+            batch_entities = extract_scispacy_entities_batch(exam_names)
+            
+            # Step 3: Process uncached exams in optimized parallel batches
+            def process_exam_batch(exam_data, scispacy_entities):
+                try:
+                    exam_name = exam_data['exam_name']
+                    modality = exam_data['modality_code']
+                    
+                    # Parse with pre-extracted entities
+                    parsed_result = semantic_parser.parse_exam_name(exam_name, modality, scispacy_entities)
+                    
+                    # Standardize
+                    standardized = standardization_engine.normalize_exam_name(exam_name)
+                    
+                    result = {
+                        'input': exam_data,
+                        'clean_name': parsed_result['cleanName'],
+                        'canonical_form': standardized['canonical_form'],
+                        'components': {
+                            'anatomy': parsed_result['anatomy'],
+                            'laterality': parsed_result['laterality'],
+                            'contrast': parsed_result['contrast'],
+                            'technique': parsed_result['technique'],
+                            'gender_context': parsed_result['gender_context'],
+                            'clinical_context': parsed_result['clinical_context']
+                        },
+                        'confidence': parsed_result['confidence']
+                    }
+                    
+                    # Cache result
+                    cache_key = f"{exam_name}|{modality}"
+                    cache_manager.set(cache_key, result)
+                    
+                    return result
+                    
+                except Exception as e:
+                    return {"error": str(e), "exam": exam_data}
+            
+            # Process with increased parallelism
+            import multiprocessing
+            max_workers = min(multiprocessing.cpu_count() * 2, 20)  # Optimize based on CPU cores
+            
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(process_exam_batch, exam, entities): exam 
+                    for exam, entities in zip(uncached_exams, batch_entities)
                 }
                 
-                # Cache result
-                cache_manager.set(cache_key, result)
-                
-                return result, False
-                
-            except Exception as e:
-                return {"error": str(e), "exam": exam_data}, False
+                for future in as_completed(futures):
+                    result = future.result()
+                    if 'error' in result:
+                        errors.append(result)
+                    else:
+                        results.append(result)
         
-        # Process in parallel
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = {executor.submit(process_exam, exam): exam for exam in exams}
-            
-            for future in as_completed(futures):
-                result, was_cached = future.result()
-                if was_cached:
-                    cache_hits += 1
-                
-                if 'error' in result:
-                    errors.append(result)
-                else:
-                    results.append(result)
+        # Combine cached and processed results
+        all_results = cached_results + results
         
         # Find equivalence groups
         equivalence_groups = standardization_engine.find_equivalence_groups(
             [{'name': r['clean_name'], 'source': r['input'].get('source', 'unknown')} 
-             for r in results]
+             for r in all_results]
         )
         
         # Generate processing statistics
         processing_stats = {
             'total_processed': len(exams),
-            'successful': len(results),
+            'successful': len(all_results),
             'errors': len(errors),
             'cache_hits': cache_hits,
             'processing_time_ms': int((time.time() - start_time) * 1000),
-            'equivalence_groups_found': len(equivalence_groups)
+            'equivalence_groups_found': len(equivalence_groups),
+            'cache_hit_ratio': cache_hits / len(exams) if len(exams) > 0 else 0.0
         }
         
         response = {
-            'results': results,
+            'results': all_results,
             'errors': errors,
             'processing_stats': processing_stats,
             'equivalence_groups': equivalence_groups
@@ -334,6 +384,121 @@ def parse_batch():
         logger.error(f"Batch parse endpoint error: {e}")
         processing_time = int((time.time() - start_time) * 1000)
         record_performance('parse_batch', processing_time, 0, False, str(e))
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/parse_batch_fast', methods=['POST'])
+def parse_batch_fast():
+    """Ultra-fast batch processing endpoint for high-volume data (minimal features)."""
+    start_time = time.time()
+    
+    try:
+        data = request.json
+        if not data or 'exams' not in data:
+            return jsonify({"error": "Missing exams array"}), 400
+        
+        exams = data['exams']
+        if len(exams) > 5000:  # Higher limit for fast endpoint
+            return jsonify({"error": "Maximum 5000 exams per batch"}), 400
+        
+        results = []
+        errors = []
+        cache_hits = 0
+        
+        # Step 1: Batch cache lookup
+        uncached_exams = []
+        cached_results = []
+        
+        for exam_data in exams:
+            cache_key = f"{exam_data['exam_name']}|{exam_data['modality_code']}"
+            cached_result = cache_manager.get(cache_key)
+            if cached_result:
+                # Extract minimal data for fast endpoint
+                fast_result = {
+                    'input': exam_data,
+                    'clean_name': cached_result['clean_name'],
+                    'components': cached_result['components'],
+                    'confidence': cached_result['confidence']
+                }
+                cached_results.append(fast_result)
+                cache_hits += 1
+            else:
+                uncached_exams.append(exam_data)
+        
+        # Step 2: Ultra-fast processing for uncached exams
+        if uncached_exams:
+            def process_exam_fast(exam_data):
+                try:
+                    exam_name = exam_data['exam_name']
+                    modality = exam_data['modality_code']
+                    
+                    # Skip heavy NLP processing, use rule-based only
+                    parsed_result = semantic_parser.parse_exam_name(exam_name, modality, {})
+                    
+                    result = {
+                        'input': exam_data,
+                        'clean_name': parsed_result['cleanName'],
+                        'components': {
+                            'anatomy': parsed_result['anatomy'],
+                            'laterality': parsed_result['laterality'],
+                            'contrast': parsed_result['contrast'],
+                            'technique': parsed_result['technique']
+                        },
+                        'confidence': parsed_result['confidence']
+                    }
+                    
+                    # Cache result
+                    cache_key = f"{exam_name}|{modality}"
+                    cache_manager.set(cache_key, result)
+                    
+                    return result
+                    
+                except Exception as e:
+                    return {"error": str(e), "exam": exam_data}
+            
+            # Maximum parallelism for fast processing
+            import multiprocessing
+            max_workers = min(multiprocessing.cpu_count() * 4, 40)
+            
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {executor.submit(process_exam_fast, exam): exam for exam in uncached_exams}
+                
+                for future in as_completed(futures):
+                    result = future.result()
+                    if 'error' in result:
+                        errors.append(result)
+                    else:
+                        results.append(result)
+        
+        # Combine results
+        all_results = cached_results + results
+        
+        # Generate minimal statistics
+        processing_stats = {
+            'total_processed': len(exams),
+            'successful': len(all_results),
+            'errors': len(errors),
+            'cache_hits': cache_hits,
+            'processing_time_ms': int((time.time() - start_time) * 1000),
+            'cache_hit_ratio': cache_hits / len(exams) if len(exams) > 0 else 0.0,
+            'throughput_per_second': len(exams) / ((time.time() - start_time) + 0.001)
+        }
+        
+        response = {
+            'results': all_results,
+            'errors': errors,
+            'processing_stats': processing_stats
+        }
+        
+        # Record performance
+        record_performance('parse_batch_fast', processing_stats['processing_time_ms'], 
+                          len(exams), len(errors) == 0)
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Fast batch parse endpoint error: {e}")
+        processing_time = int((time.time() - start_time) * 1000)
+        record_performance('parse_batch_fast', processing_time, 0, False, str(e))
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/equivalence_groups', methods=['POST'])
