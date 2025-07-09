@@ -1,17 +1,18 @@
+# This file defines both our staging and production backend services.
+# Render will create and manage both based on this configuration.
+
 services:
+  # --- Staging Service ---
+  # Deploys automatically from the 'develop' branch
   - type: web
-    name: radiology-api
+    name: radiology-api-staging
     env: python
-    plan: free
-    # IMPORTANT: Make sure this is the correct URL to your main repository
-    repo: https://github.com/your-username/hnzpriority.git
-    branch: main
-    # --- The key fix is here ---
-    # Tell Render to look inside this subdirectory for the backend code.
+    plan: free # Can be changed to a paid plan if needed
+    repo: https://github.com/your-username/hnzpriority.git # IMPORTANT: Change this!
+    branch: develop # Watches the develop branch
     rootDir: ./radiology-cleaner-app/backend
     buildFilter:
       paths:
-        # Only trigger a new build if files in the backend folder change.
         - "radiology-cleaner-app/backend/**"
     envVars:
       - key: PYTHON_VERSION
@@ -20,3 +21,25 @@ services:
         value: 23.2.1
     buildCommand: "./build.sh"
     startCommand: "gunicorn app:app"
+    autoDeploy: true # Automatically deploy on push to 'develop'
+
+  # --- Production Service ---
+  # Deploys manually from the 'main' branch
+  - type: web
+    name: radiology-api-prod
+    env: python
+    plan: free # Can be changed to a paid plan for production
+    repo: https://github.com/your-username/hnzpriority.git # IMPORTANT: Change this!
+    branch: main # Watches the main branch
+    rootDir: ./radiology-cleaner-app/backend
+    buildFilter:
+      paths:
+        - "radiology-cleaner-app/backend/**"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.6
+      - key: PIP_VERSION
+        value: 23.2.1
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn app:app"
+    autoDeploy: false # CRITICAL: Prevents accidental deployments to production
