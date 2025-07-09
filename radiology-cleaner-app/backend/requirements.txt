@@ -1,0 +1,9 @@
+flask
+gunicorn
+spacy==3.5.0
+scikit-learn==1.2.2
+pandas==1.5.3
+joblib==1.2.0
+
+# Install the specific ScispaCy model
+https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.1/en_core_sci_sm-0.5.1.tar.gz
