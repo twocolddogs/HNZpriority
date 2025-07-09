@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: radiology-api
+    env: python
+    plan: free
+    repo: https://github.com/your-username/radiology-cleaner-app # IMPORTANT: Change this to your repo URL
+    branch: main
+    rootDir: ./backend
+    buildFilter:
+      paths:
+        - "backend/**"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.6 # Explicitly set a stable Python version
+      - key: PIP_VERSION
+        value: 23.2.1 # Pin pip version for stability
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn app:app"
