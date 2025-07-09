@@ -52,7 +52,7 @@
         .consolidated-components { margin-bottom: 1rem; }
         .source-codes { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 0.5rem; }
         .source-code { background: #f8f9fa; padding: 0.75rem; border-radius: 4px; border-left: 4px solid #2a5298; }
-        .source-code-header { font-weight: bold; color: #2a5298; margin-bottom: 0.25rem; }
+        .source-code-header { font-weight: bold; color: #2a5298; margin-bottom: 0.25rem; display: flex; justify-content: space-between; align-items: center; }
         .source-code-name { font-size: 0.9rem; color: #666; }
         .view-toggle button.active { background: #2a5298; color: white; }
         .progress-bar { width: 100%; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; margin-top: 1rem; display: none; }
@@ -69,6 +69,42 @@
         .close-modal { float: right; font-size: 1.5rem; cursor: pointer; color: #666; }
         .close-modal:hover { color: #333; }
         .error-message { color: #d32f2f; font-weight: bold; }
+        
+        /* Feedback System Styles */
+        .feedback-section { margin-top: 2rem; }
+        .feedback-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .feedback-tab { padding: 0.5rem 1rem; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px 4px 0 0; cursor: pointer; transition: all 0.3s ease; }
+        .feedback-tab.active { background: #2a5298; color: white; border-bottom: 1px solid #2a5298; }
+        .feedback-tab:hover { background: #e3f2fd; }
+        .feedback-tab.active:hover { background: #1e3c72; }
+        .feedback-panel { display: none; background: white; border: 1px solid #ddd; border-radius: 0 4px 4px 4px; padding: 1.5rem; }
+        .feedback-panel.active { display: block; }
+        .feedback-form { display: flex; flex-direction: column; gap: 1rem; }
+        .feedback-form label { font-weight: bold; margin-bottom: 0.25rem; }
+        .feedback-form input, .feedback-form select, .feedback-form textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+        .feedback-form textarea { resize: vertical; min-height: 100px; }
+        .feedback-form .form-row { display: flex; gap: 1rem; }
+        .feedback-form .form-row > div { flex: 1; }
+        .feedback-success { background: #d4edda; color: #155724; padding: 1rem; border-radius: 4px; margin-top: 1rem; }
+        .feedback-error { background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 4px; margin-top: 1rem; }
+        .correction-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; }
+        .correction-modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 8px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .correction-form { display: flex; flex-direction: column; gap: 1rem; }
+        .correction-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+        .correction-original, .correction-corrected { padding: 1rem; border-radius: 4px; }
+        .correction-original { background: #fff3cd; border: 1px solid #ffeaa7; }
+        .correction-corrected { background: #d1ecf1; border: 1px solid #b8daff; }
+        .correction-buttons { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem; }
+        .feedback-button { background: #17a2b8; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; cursor: pointer; font-size: 0.8rem; transition: background 0.3s ease; }
+        .feedback-button:hover { background: #138496; }
+        .component-editor { display: flex; flex-direction: column; gap: 0.5rem; }
+        .component-editor label { font-size: 0.9rem; font-weight: bold; }
+        .component-editor input, .component-editor select { padding: 0.25rem; font-size: 0.9rem; }
+        .component-tags { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem; }
+        .editable-tag { background: #e3f2fd; color: #1976d2; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.8rem; cursor: pointer; border: 1px solid #90caf9; }
+        .editable-tag:hover { background: #bbdefb; }
+        .add-anatomy-btn { background: #28a745; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; cursor: pointer; font-size: 0.8rem; }
+        .add-anatomy-btn:hover { background: #218838; }
     </style>
 </head>
 <body>
@@ -137,6 +173,55 @@
                 </div>
             </div>
         </div>
+
+        <!-- Feedback System -->
+        <div class="main-card feedback-section">
+            <h2>💬 Feedback System</h2>
+            <div class="feedback-tabs">
+                <div class="feedback-tab active" data-tab="general">General Suggestions</div>
+                <div class="feedback-tab" data-tab="corrections">Code Corrections</div>
+            </div>
+            
+            <!-- General Suggestions Panel -->
+            <div id="generalFeedbackPanel" class="feedback-panel active">
+                <form class="feedback-form" id="generalFeedbackForm">
+                    <div class="form-row">
+                        <div>
+                            <label for="generalUserName">Your Name:</label>
+                            <input type="text" id="generalUserName" placeholder="Dr. Smith" required>
+                        </div>
+                        <div>
+                            <label for="generalConfidence">Confidence Level:</label>
+                            <select id="generalConfidence" required>
+                                <option value="">Select confidence...</option>
+                                <option value="low">Low - Suggestion for consideration</option>
+                                <option value="medium">Medium - Likely improvement</option>
+                                <option value="high">High - Definite improvement needed</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="generalSuggestion">Suggestion:</label>
+                        <textarea id="generalSuggestion" placeholder="Example: 'KUB stands for Kidneys Ureter and Bladder but is typically its own specific type of Abdominal study'" required></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="generalNotes">Additional Notes (Optional):</label>
+                        <textarea id="generalNotes" placeholder="Any additional context or examples..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="button">Submit Suggestion</button>
+                </form>
+                <div id="generalFeedbackResult"></div>
+            </div>
+            
+            <!-- Corrections Panel -->
+            <div id="correctionsFeedbackPanel" class="feedback-panel">
+                <p>Use the "Provide Feedback" buttons in the consolidated view above to submit corrections for specific radiology codes.</p>
+                <div id="correctionsFeedbackResult"></div>
+            </div>
+        </div>
     </div>
 
     <div class="modal" id="consolidationModal">
@@ -147,17 +232,127 @@
         </div>
     </div>
 
+    <!-- Correction Modal -->
+    <div id="correctionModal" class="correction-modal">
+        <div class="correction-modal-content">
+            <span id="closeCorrectionModalBtn" class="close-modal">&times;</span>
+            <h2>📝 Provide Correction</h2>
+            <form class="correction-form" id="correctionForm">
+                <div class="form-row">
+                    <div>
+                        <label for="correctionUserName">Your Name:</label>
+                        <input type="text" id="correctionUserName" placeholder="Dr. Smith" required>
+                    </div>
+                    <div>
+                        <label for="correctionConfidence">Confidence Level:</label>
+                        <select id="correctionConfidence" required>
+                            <option value="">Select confidence...</option>
+                            <option value="low">Low - Minor improvement</option>
+                            <option value="medium">Medium - Significant improvement</option>
+                            <option value="high">High - Critical correction needed</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label>Original Exam Name:</label>
+                    <div id="correctionOriginalName" style="padding: 0.5rem; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-weight: bold;"></div>
+                </div>
+                
+                <div class="correction-comparison">
+                    <div class="correction-original">
+                        <h4>Current Parsing</h4>
+                        <div id="correctionOriginalMapping"></div>
+                    </div>
+                    <div class="correction-corrected">
+                        <h4>Your Correction</h4>
+                        <div id="correctionCorrectedMapping">
+                            <div class="component-editor">
+                                <label for="correctedCleanName">Clean Name:</label>
+                                <input type="text" id="correctedCleanName" placeholder="CT Chest with Contrast">
+                            </div>
+                            
+                            <div class="component-editor">
+                                <label>Anatomy:</label>
+                                <div id="correctedAnatomyTags" class="component-tags"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="correctedAnatomyInput" placeholder="Add anatomy...">
+                                    <button type="button" class="add-anatomy-btn" onclick="addAnatomyTag()">Add</button>
+                                </div>
+                            </div>
+                            
+                            <div class="component-editor">
+                                <label for="correctedLaterality">Laterality:</label>
+                                <select id="correctedLaterality">
+                                    <option value="">None</option>
+                                    <option value="left">Left</option>
+                                    <option value="right">Right</option>
+                                    <option value="bilateral">Bilateral</option>
+                                </select>
+                            </div>
+                            
+                            <div class="component-editor">
+                                <label for="correctedContrast">Contrast:</label>
+                                <select id="correctedContrast">
+                                    <option value="">None</option>
+                                    <option value="with">With Contrast</option>
+                                    <option value="without">Without Contrast</option>
+                                    <option value="with and without">With and Without Contrast</option>
+                                </select>
+                            </div>
+                            
+                            <div class="component-editor">
+                                <label for="correctedGenderContext">Gender Context:</label>
+                                <select id="correctedGenderContext">
+                                    <option value="">None</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="pregnancy">Pregnancy</option>
+                                </select>
+                            </div>
+                            
+                            <div class="component-editor">
+                                <label for="correctedClinicalContext">Clinical Context:</label>
+                                <select id="correctedClinicalContext">
+                                    <option value="">None</option>
+                                    <option value="emergency">Emergency</option>
+                                    <option value="screening">Screening</option>
+                                    <option value="follow-up">Follow-up</option>
+                                    <option value="intervention">Intervention</option>
+                                    <option value="routine">Routine</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="correctionNotes">Correction Notes:</label>
+                    <textarea id="correctionNotes" placeholder="Explain why this correction is needed..."></textarea>
+                </div>
+                
+                <div class="correction-buttons">
+                    <button type="button" class="button secondary" onclick="closeCorrectionModal()">Cancel</button>
+                    <button type="submit" class="button success">Submit Correction</button>
+                </div>
+            </form>
+            <div id="correctionResult"></div>
+        </div>
+    </div>
+
     <script>
     window.addEventListener('DOMContentLoaded', function() {
         // --- DYNAMIC API CONFIGURATION ---
-        // IMPORTANT: Replace these placeholder URLs with the actual URLs from your Render and Cloudflare dashboards.
+        // Local development API URL
+        const LOCAL_API_URL = 'http://localhost:5000/parse';
         const STAGING_API_URL = 'https://radiology-api-staging.onrender.com/parse';
         const PRODUCTION_API_URL = 'https://radiology-api-prod.onrender.com/parse';
         const PRODUCTION_HOSTNAME = 'radiology-cleaner.pages.dev'; // Use your final Cloudflare Pages production domain here.
 
         // Automatically select the correct API based on the frontend's URL
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const isProduction = window.location.hostname === PRODUCTION_HOSTNAME;
-        const API_URL = isProduction ? PRODUCTION_API_URL : STAGING_API_URL;
+        const API_URL = isLocalhost ? LOCAL_API_URL : (isProduction ? PRODUCTION_API_URL : STAGING_API_URL);
         
         console.log(`Frontend running in ${isProduction ? 'PRODUCTION' : 'STAGING'} mode.`);
         console.log(`API endpoint set to: ${API_URL}`);
@@ -197,6 +392,17 @@
         document.getElementById('consolidatedViewBtn').addEventListener('click', showConsolidatedView);
         document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
         document.getElementById('consolidatedSort').addEventListener('change', sortConsolidatedResults);
+        
+        // Feedback system event listeners
+        document.querySelectorAll('.feedback-tab').forEach(tab => {
+            tab.addEventListener('click', () => switchFeedbackTab(tab.dataset.tab));
+        });
+        document.getElementById('generalFeedbackForm').addEventListener('submit', submitGeneralFeedback);
+        document.getElementById('correctionForm').addEventListener('submit', submitCorrectionFeedback);
+        document.getElementById('closeCorrectionModalBtn').addEventListener('click', closeCorrectionModal);
+        document.getElementById('correctionModal').addEventListener('click', (e) => {
+            if (e.target.id === 'correctionModal') closeCorrectionModal();
+        });
 
         // --- CORE LOGIC ---
         async function processFile(file) {
@@ -537,7 +743,14 @@
                         <div class="source-codes">
                             ${group.sourceCodes.map(code => `
                                 <div class="source-code">
-                                    <div class="source-code-header">[${code.dataSource}] ${code.examCode}</div>
+                                    <div class="source-code-header">
+                                        <span>[${code.dataSource}] ${code.examCode}</span>
+                                        <button class="feedback-button" onclick="openCorrectionModal({
+                                            exam_name: '${code.examName}',
+                                            clean_name: '${group.cleanName}',
+                                            components: ${JSON.stringify(group.components).replace(/"/g, '&quot;')}
+                                        })">Provide Feedback</button>
+                                    </div>
                                     <div class="source-code-name">${code.examName}</div>
                                 </div>
                             `).join('')}
@@ -635,6 +848,201 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
+        
+        // --- FEEDBACK SYSTEM FUNCTIONS ---
+        
+        function switchFeedbackTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.feedback-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // Update panels
+            document.querySelectorAll('.feedback-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.getElementById(`${tabName}FeedbackPanel`).classList.add('active');
+        }
+        
+        async function submitGeneralFeedback(e) {
+            e.preventDefault();
+            
+            const formData = {
+                type: 'general',
+                user_name: document.getElementById('generalUserName').value,
+                suggestion_text: document.getElementById('generalSuggestion').value,
+                confidence_level: document.getElementById('generalConfidence').value,
+                notes: document.getElementById('generalNotes').value
+            };
+            
+            try {
+                const response = await fetch(API_URL.replace('/parse', '/feedback'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                const resultDiv = document.getElementById('generalFeedbackResult');
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="feedback-success">
+                        <strong>Thank you!</strong> Your suggestion has been submitted successfully. 
+                        Reference ID: ${result.feedback_id}
+                    </div>`;
+                    
+                    // Reset form
+                    document.getElementById('generalFeedbackForm').reset();
+                } else {
+                    resultDiv.innerHTML = `<div class="feedback-error">
+                        <strong>Error:</strong> ${result.error || 'Failed to submit feedback'}
+                    </div>`;
+                }
+            } catch (error) {
+                console.error('Feedback submission error:', error);
+                document.getElementById('generalFeedbackResult').innerHTML = `<div class="feedback-error">
+                    <strong>Error:</strong> Unable to submit feedback. Please try again.
+                </div>`;
+            }
+        }
+        
+        let currentCorrectionData = null;
+        
+        function openCorrectionModal(originalData) {
+            currentCorrectionData = originalData;
+            
+            // Populate original data
+            document.getElementById('correctionOriginalName').textContent = originalData.exam_name;
+            
+            // Display current parsing
+            const originalMapping = document.getElementById('correctionOriginalMapping');
+            originalMapping.innerHTML = `
+                <div><strong>Clean Name:</strong> ${originalData.clean_name}</div>
+                <div><strong>Components:</strong> ${generateComponentTags(originalData.components)}</div>
+                <div><strong>Confidence:</strong> ${Math.round(originalData.components.confidence * 100)}%</div>
+            `;
+            
+            // Pre-populate correction form with current values
+            document.getElementById('correctedCleanName').value = originalData.clean_name;
+            document.getElementById('correctedLaterality').value = originalData.components.laterality || '';
+            document.getElementById('correctedContrast').value = originalData.components.contrast || '';
+            document.getElementById('correctedGenderContext').value = originalData.components.gender_context || '';
+            document.getElementById('correctedClinicalContext').value = originalData.components.clinical_context?.[0] || '';
+            
+            // Populate anatomy tags
+            updateAnatomyTags(originalData.components.anatomy || []);
+            
+            // Show modal
+            document.getElementById('correctionModal').style.display = 'block';
+        }
+        
+        function closeCorrectionModal() {
+            document.getElementById('correctionModal').style.display = 'none';
+            currentCorrectionData = null;
+            
+            // Clear form
+            document.getElementById('correctionForm').reset();
+            document.getElementById('correctionResult').innerHTML = '';
+            document.getElementById('correctedAnatomyTags').innerHTML = '';
+        }
+        
+        let correctedAnatomy = [];
+        
+        function updateAnatomyTags(anatomy) {
+            correctedAnatomy = [...anatomy];
+            const container = document.getElementById('correctedAnatomyTags');
+            container.innerHTML = '';
+            
+            correctedAnatomy.forEach((item, index) => {
+                const tag = document.createElement('span');
+                tag.className = 'editable-tag';
+                tag.innerHTML = `${item} <span onclick="removeAnatomyTag(${index})" style="cursor: pointer; margin-left: 4px;">×</span>`;
+                container.appendChild(tag);
+            });
+        }
+        
+        function addAnatomyTag() {
+            const input = document.getElementById('correctedAnatomyInput');
+            const value = input.value.trim();
+            
+            if (value && !correctedAnatomy.includes(value)) {
+                correctedAnatomy.push(value);
+                updateAnatomyTags(correctedAnatomy);
+                input.value = '';
+            }
+        }
+        
+        function removeAnatomyTag(index) {
+            correctedAnatomy.splice(index, 1);
+            updateAnatomyTags(correctedAnatomy);
+        }
+        
+        // Make addAnatomyTag globally accessible
+        window.addAnatomyTag = addAnatomyTag;
+        window.removeAnatomyTag = removeAnatomyTag;
+        
+        async function submitCorrectionFeedback(e) {
+            e.preventDefault();
+            
+            if (!currentCorrectionData) return;
+            
+            const correctedMapping = {
+                cleanName: document.getElementById('correctedCleanName').value,
+                anatomy: correctedAnatomy,
+                laterality: document.getElementById('correctedLaterality').value || null,
+                contrast: document.getElementById('correctedContrast').value || null,
+                technique: currentCorrectionData.components.technique || [],
+                gender_context: document.getElementById('correctedGenderContext').value || null,
+                clinical_context: document.getElementById('correctedClinicalContext').value ? 
+                    [document.getElementById('correctedClinicalContext').value] : [],
+                confidence: currentCorrectionData.components.confidence
+            };
+            
+            const formData = {
+                type: 'correction',
+                user_name: document.getElementById('correctionUserName').value,
+                original_exam_name: currentCorrectionData.exam_name,
+                original_mapping: currentCorrectionData.components,
+                corrected_mapping: correctedMapping,
+                confidence_level: document.getElementById('correctionConfidence').value,
+                notes: document.getElementById('correctionNotes').value
+            };
+            
+            try {
+                const response = await fetch(API_URL.replace('/parse', '/feedback'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                const resultDiv = document.getElementById('correctionResult');
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="feedback-success">
+                        <strong>Thank you!</strong> Your correction has been submitted successfully. 
+                        Reference ID: ${result.feedback_id}
+                    </div>`;
+                    
+                    // Auto-close modal after 3 seconds
+                    setTimeout(() => closeCorrectionModal(), 3000);
+                } else {
+                    resultDiv.innerHTML = `<div class="feedback-error">
+                        <strong>Error:</strong> ${result.error || 'Failed to submit correction'}
+                    </div>`;
+                }
+            } catch (error) {
+                console.error('Correction submission error:', error);
+                document.getElementById('correctionResult').innerHTML = `<div class="feedback-error">
+                    <strong>Error:</strong> Unable to submit correction. Please try again.
+                </div>`;
+            }
+        }
+        
+        // Make correction functions globally accessible
+        window.openCorrectionModal = openCorrectionModal;
+        window.closeCorrectionModal = closeCorrectionModal;
     });
     </script>
 </body>
