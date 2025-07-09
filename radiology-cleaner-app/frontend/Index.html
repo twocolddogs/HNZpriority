@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radiology Code Semantic Cleaner</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .header { text-align: center; color: white; margin-bottom: 3rem; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.2rem; opacity: 0.9; }
+        .main-card { background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 2rem; margin-bottom: 2rem; }
+        .upload-section { text-align: center; padding: 3rem; border: 2px dashed #ccc; border-radius: 8px; transition: all 0.3s ease; cursor: pointer; }
+        .upload-section:hover, .upload-section.dragover { border-color: #2a5298; background: #f0f4ff; }
+        .upload-icon { font-size: 3rem; margin-bottom: 1rem; color: #2a5298; }
+        .button { display: inline-block; padding: 0.75rem 2rem; background: #2a5298; color: white; border-radius: 6px; border: none; cursor: pointer; font-size: 1rem; transition: all 0.3s ease; text-decoration: none; }
+        .button:hover { background: #1e3c72; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .button:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .button.secondary { background: #6c757d; }
+        .button.success { background: #28a745; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+        .stat-card { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; text-align: center; border: 1px solid #e0e0e0; }
+        .stat-value { font-size: 2.5rem; font-weight: bold; color: #2a5298; margin-bottom: 0.5rem; }
+        .stat-label { font-size: 0.9rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+        .results-section { margin-top: 2rem; display: none; }
+        .results-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+        .results-table th { background: #2a5298; color: white; padding: 0.75rem; text-align: left; position: sticky; top: 0; }
+        .results-table td { padding: 0.75rem; border-bottom: 1px solid #e0e0e0; }
+        .results-table tr:hover { background: #f8f9fa; }
+        .table-container { max-height: 400px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 4px; }
+        .tag { display: inline-block; padding: 0.25rem 0.5rem; background: #e3f2fd; color: #1976d2; border-radius: 4px; font-size: 0.8rem; margin: 0.125rem; }
+        .tag.anatomy { background: #e8f5e9; color: #388e3c; }
+        .tag.laterality { background: #fff3e0; color: #f57c00; }
+        .tag.contrast { background: #fce4ec; color: #c2185b; }
+        .tag.technique { background: #f3e5f5; color: #7b1fa2; }
+        .progress-bar { width: 100%; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; margin-top: 1rem; display: none; }
+        .progress-fill { height: 100%; background: #2a5298; width: 0%; transition: width 0.3s ease; }
+        .action-buttons { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; }
+        .file-info { margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; display: none; }
+        .consolidation-examples { margin-top: 2rem; }
+        .example-card { background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; border-left: 4px solid #2a5298; }
+        .example-card h4 { color: #2a5298; margin-bottom: 0.5rem; }
+        .original-codes { font-size: 0.85rem; color: #666; margin-left: 1rem; }
+        #fileInput { display: none; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 2rem; border-radius: 8px; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        .close-modal { float: right; font-size: 1.5rem; cursor: pointer; color: #666; }
+        .close-modal:hover { color: #333; }
+        .error-message { color: #d32f2f; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Radiology Code Semantic Cleaner</h1>
+            <p>Transform disparate radiology codes into standardized clean names using a Python backend with ScispaCy NLP</p>
+        </div>
+
+        <div class="main-card">
+            <div id="uploadSection" class="upload-section">
+                <div class="upload-icon">📤</div>
+                <h2>Upload Radiology Codes JSON</h2>
+                <p>Drop your codes.json file here or click to browse. You can also <a href="./example-codes.json" download>download a sample file</a>.</p>
+                <input type="file" id="fileInput" accept=".json" />
+            </div>
+
+            <div class="file-info" id="fileInfo"></div>
+            <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+
+            <div class="results-section" id="resultsSection">
+                <h2>📊 Cleaning Results</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value" id="originalCount">0</div><div class="stat-label">Original Codes</div></div>
+                    <div class="stat-card"><div class="stat-value" id="cleanCount">0</div><div class="stat-label">Clean Names</div></div>
+                    <div class="stat-card"><div class="stat-value" id="consolidationRatio">0</div><div class="stat-label">Consolidation Ratio</div></div>
+                    <div class="stat-card"><div class="stat-value" id="modalityCount">0</div><div class="stat-label">Modalities</div></div>
+                </div>
+                <div class="action-buttons">
+                    <button class="button success" id="exportMappingsBtn">💾 Export Clean Mappings</button>
+                    <button class="button secondary" id="exportSummaryBtn">📋 Export Summary Report</button>
+                    <button class="button secondary" id="viewConsolidationsBtn">🔍 View Top Consolidations</button>
+                </div>
+                <h3 style="margin-top: 2rem;">Sample Mappings</h3>
+                <div class="table-container">
+                    <table class="results-table" id="resultsTable">
+                        <thead><tr><th>Source</th><th>Original Code</th><th>Original Name</th><th>Clean Name</th><th>Components</th></tr></thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="consolidationModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModalBtn">×</span>
+            <h2>Top Consolidation Examples</h2>
+            <div id="consolidationExamples" class="consolidation-examples"></div>
+        </div>
+    </div>
+
+    <script>
+    window.addEventListener('DOMContentLoaded', function() {
+        // --- CONFIGURATION ---
+        // IMPORTANT: Replace this with your actual Render.com backend URL
+        const API_URL = 'https://your-backend-app-name.onrender.com/parse';
+
+        // --- STATE ---
+        let allMappings = [];
+        let summaryData = null;
+
+        // --- DOM ELEMENTS ---
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsBody = document.getElementById('resultsBody');
+
+        // --- EVENT LISTENERS ---
+        uploadSection.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => e.target.files[0] && processFile(e.target.files[0]));
+        ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadSection.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.add('dragover'), false));
+        ['dragleave', 'drop'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('dragover'), false));
+        uploadSection.addEventListener('drop', (e) => e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]), false);
+
+        document.getElementById('exportMappingsBtn').addEventListener('click', exportResults);
+        document.getElementById('exportSummaryBtn').addEventListener('click', exportSummary);
+        document.getElementById('viewConsolidationsBtn').addEventListener('click', showConsolidationExamples);
+        document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+        document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
+
+        // --- CORE LOGIC ---
+        async function processFile(file) {
+            if (!file.name.endsWith('.json')) {
+                alert('Please upload a valid JSON file.');
+                return;
+            }
+
+            fileInfo.innerHTML = `<strong>File loaded:</strong> ${file.name} (${formatFileSize(file.size)})`;
+            fileInfo.style.display = 'block';
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            resultsSection.style.display = 'none';
+            allMappings = [];
+            summaryData = null;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const codes = JSON.parse(e.target.result);
+                    for (let i = 0; i < codes.length; i++) {
+                        const code = codes[i];
+                        try {
+                            const response = await fetch(API_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ exam_name: code.EXAM_NAME, modality_code: code.MODALITY_CODE })
+                            });
+                            if (!response.ok) throw new Error(`API returned status ${response.status}`);
+                            
+                            const parsed = await response.json();
+                            allMappings.push({
+                                data_source: code.DATA_SOURCE,
+                                modality_code: code.MODALITY_CODE,
+                                exam_code: code.EXAM_CODE,
+                                exam_name: code.EXAM_NAME,
+                                clean_name: parsed.cleanName,
+                                components: { anatomy: parsed.anatomy, laterality: parsed.laterality, contrast: parsed.contrast, technique: parsed.technique }
+                            });
+                        } catch (error) {
+                            console.error(`Failed to parse code: ${code.EXAM_NAME}`, error);
+                            allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
+                        }
+                        progressFill.style.width = `${((i + 1) / codes.length) * 100}%`;
+                    }
+                    runAnalysis(allMappings);
+                } catch (error) {
+                    alert('Error reading or parsing JSON file: ' + error.message);
+                    progressBar.style.display = 'none';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function runAnalysis(mappings) {
+            summaryData = generateAnalyticsSummary(mappings);
+            updateStatsUI(summaryData);
+            displaySampleResults(mappings.slice(0, 100));
+            resultsSection.style.display = 'block';
+        }
+
+        // --- UI & DISPLAY FUNCTIONS ---
+        function updateStatsUI(summary) {
+            document.getElementById('originalCount').textContent = summary.totalOriginalCodes;
+            document.getElementById('cleanCount').textContent = summary.uniqueCleanNames;
+            document.getElementById('consolidationRatio').textContent = `${summary.consolidationRatio}:1`;
+            document.getElementById('modalityCount').textContent = Object.keys(summary.modalityBreakdown).length;
+        }
+
+        function displaySampleResults(samples) {
+            resultsBody.innerHTML = '';
+            samples.forEach(item => {
+                const row = resultsBody.insertRow();
+                row.insertCell().textContent = item.data_source;
+                row.insertCell().textContent = item.exam_code;
+                row.insertCell().textContent = item.exam_name;
+                const cleanNameCell = row.insertCell();
+                if (item.clean_name.startsWith('ERROR')) {
+                    cleanNameCell.innerHTML = `<span class="error-message">${item.clean_name}</span>`;
+                } else {
+                    cleanNameCell.innerHTML = `<strong>${item.clean_name}</strong>`;
+                }
+
+                const componentsCell = row.insertCell();
+                const { anatomy, laterality, contrast, technique } = item.components;
+                if(anatomy) anatomy.forEach(a => componentsCell.innerHTML += `<span class="tag anatomy">${a}</span>`);
+                if(laterality) componentsCell.innerHTML += `<span class="tag laterality">${laterality}</span>`;
+                if(contrast) componentsCell.innerHTML += `<span class="tag contrast">${contrast}</span>`;
+                if(technique) technique.forEach(t => componentsCell.innerHTML += `<span class="tag technique">${t}</span>`);
+            });
+        }
+
+        // --- UTILITY & EXPORT FUNCTIONS ---
+        function generateAnalyticsSummary(mappings) {
+            const summary = {
+                totalOriginalCodes: mappings.length,
+                uniqueCleanNames: new Set(mappings.map(m => m.clean_name).filter(n => !n.startsWith('ERROR'))).size,
+                modalityBreakdown: {}, contrastUsage: { with: 0, without: 0, 'with and without': 0, none: 0 },
+                lateralityDistribution: { left: 0, right: 0, bilateral: 0, none: 0 },
+            };
+            summary.consolidationRatio = summary.uniqueCleanNames > 0 ? (summary.totalOriginalCodes / summary.uniqueCleanNames).toFixed(2) : "0.00";
+            
+            const cleanNameGroups = {};
+            mappings.forEach(m => {
+                if (!m.components || m.clean_name.startsWith('ERROR')) return;
+                const { modality } = m.components;
+                if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
+                const contrastType = m.components.contrast || 'none';
+                summary.contrastUsage[contrastType.toLowerCase()]++;
+                const laterality = (m.components.laterality || 'none').toLowerCase();
+                summary.lateralityDistribution[laterality]++;
+
+                if (!cleanNameGroups[m.clean_name]) cleanNameGroups[m.clean_name] = [];
+                cleanNameGroups[m.clean_name].push(m);
+            });
+            summary.topConsolidatedExams = Object.entries(cleanNameGroups)
+                .filter(([, group]) => group.length > 1).sort((a, b) => b[1].length - a[1].length).slice(0, 10)
+                .map(([cleanName, group]) => ({
+                    cleanName, originalCount: group.length,
+                    examples: group.slice(0, 3).map(m => ({ source: m.data_source, code: m.exam_code, name: m.exam_name }))
+                }));
+            return summary;
+        }
+
+        function exportResults() {
+            if (!allMappings.length) return alert('No data to export.');
+            downloadJSON(allMappings, 'radiology_codes_cleaned.json');
+        }
+
+        function exportSummary() {
+            if (!summaryData) return alert('No summary to export.');
+            let report = `RADIOLOGY CODE CLEANING SUMMARY\n=================================\n`;
+            report += `Total Original Codes: ${summaryData.totalOriginalCodes}\n`;
+            report += `Unique Clean Names: ${summaryData.uniqueCleanNames}\n`;
+            report += `Consolidation Ratio: ${summaryData.consolidationRatio}:1\n\n`;
+            report += `TOP CONSOLIDATED EXAMS\n----------------------\n`;
+            summaryData.topConsolidatedExams.forEach(exam => {
+                report += `\n"${exam.cleanName}" (${exam.originalCount} codes)\n`;
+                exam.examples.forEach(ex => report += `   - [${ex.source}] ${ex.code}: ${ex.name}\n`);
+            });
+            downloadText(report, 'radiology_cleaning_summary.txt');
+        }
+        
+        function showConsolidationExamples() {
+            if (!summaryData || !summaryData.topConsolidatedExams.length) return alert('No consolidation data available.');
+            const examplesDiv = document.getElementById('consolidationExamples');
+            examplesDiv.innerHTML = '';
+            summaryData.topConsolidatedExams.forEach(exam => {
+                const card = document.createElement('div');
+                card.className = 'example-card';
+                card.innerHTML = `<h4>${exam.cleanName} (${exam.originalCount} original codes)</h4>
+                                  <div class="original-codes">
+                                      ${exam.examples.map(ex => `• [${ex.source}] ${ex.code}: "${ex.name}"`).join('<br>')}
+                                      ${exam.originalCount > 3 ? `<br>• ... and ${exam.originalCount - 3} more` : ''}
+                                  </div>`;
+                examplesDiv.appendChild(card);
+            });
+            document.getElementById('consolidationModal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('consolidationModal').style.display = 'none'; }
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+        }
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            triggerDownload(blob, filename);
+        }
+        function downloadText(text, filename) {
+            const blob = new Blob([text], { type: 'text/plain' });
+            triggerDownload(blob, filename);
+        }
+        function triggerDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    });
+    </script>
+</body>
+</html>
