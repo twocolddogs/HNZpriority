@@ -1,5 +1,6 @@
 # Web server
 flask
+flask-cors
 gunicorn
 
 # Core ML/NLP libraries
