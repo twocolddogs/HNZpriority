@@ -11,7 +11,7 @@ pip install --upgrade pip setuptools wheel
 # --- Step 2: Install all dependencies from requirements.txt ---
 # This is the command that actually installs your packages.
 echo "--> Installing all application requirements from requirements.txt..."
-pip install --only-binary :all: -r requirements.txt
+pip install --only-binary :all: --no-binary medspacy -r requirements.txt
 
 # --- Step 3: Download the Compatible ScispaCy Model ---
 # The model version must match the scispacy version (0.5.4).
