@@ -69,7 +69,7 @@ class RadiologySemanticParser:
             'HRCT': [re.compile(p, re.I) for p in [r'hrct', r'high resolution']],
             'Colonography': [re.compile(p, re.I) for p in [r'colonography', r'virtual colonoscopy']],
             'Doppler': [re.compile(p, re.I) for p in [r'doppler', r'duplex']],
-            'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', 'aspir', r'injection', r'guided', r'procedure', 'ablation']],
+            'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', 'aspir', r'injection', r'guided', r'procedure', 'ablation', 'placement', 'loc', 'bx']],
         }
         
         self.contrast_patterns = {
@@ -95,7 +95,16 @@ class RadiologySemanticParser:
 
     def parse_exam_name(self, exam_name: str, modality_code: str, scispacy_entities: Optional[Dict] = None) -> Dict:
         """
-        Parses a radiology exam name using a hybrid approach.
+        Parses a radiology exam name using a hybrid approach combining NLP entities
+        with rule-based matching for maximum accuracy.
+
+        Args:
+            exam_name: The raw exam name string.
+            modality_code: The modality code (e.g., 'CT', 'MR').
+            scispacy_entities: A dictionary of entities extracted by the NLPProcessor.
+
+        Returns:
+            A dictionary containing the parsed components and a clean name.
         """
         if scispacy_entities is None:
             scispacy_entities = {}
@@ -108,7 +117,7 @@ class RadiologySemanticParser:
         
         # Step 2: Parse Other Components
         parsed = {
-            'modality': self.modality_map.get(modality_code, modality_code),
+            'modality': self.modality_map.get(modality_code.upper(), modality_code),
             'anatomy': sorted([self.anatomy_mappings[key]['standardName'] for key in found_anatomy_keys]),
             'laterality': self._parse_laterality(lower_name, scispacy_entities),
             'contrast': self._parse_contrast(lower_name),
@@ -144,6 +153,7 @@ class RadiologySemanticParser:
 
     def _parse_laterality(self, lower_name: str, scispacy_entities: Dict) -> Optional[str]:
         """Parse laterality using NLP first, then regex fallback."""
+        # NLP is often better at contextual direction
         nlp_directions = [d.lower() for d in scispacy_entities.get('DIRECTION', [])]
         if 'left' in nlp_directions:
             return 'Left'
@@ -152,6 +162,7 @@ class RadiologySemanticParser:
         if 'bilateral' in nlp_directions:
              return 'Bilateral'
 
+        # Regex as a fallback
         for lat, pattern in self.laterality_patterns.items():
             if pattern.search(lower_name):
                 return lat
@@ -159,6 +170,7 @@ class RadiologySemanticParser:
 
     def _parse_contrast(self, lower_name: str) -> Optional[str]:
         """Parse contrast status, prioritizing more specific terms."""
+        # Check for the most specific case first
         if any(p.search(lower_name) for p in self.contrast_patterns['with and without']):
             return 'with and without'
         if any(p.search(lower_name) for p in self.contrast_patterns['with']):
@@ -180,6 +192,7 @@ class RadiologySemanticParser:
         parts = [parsed['modality']]
         
         if parsed['anatomy']:
+            # A simple join is effective. More complex ordering could be added.
             parts.append(" ".join(parsed['anatomy']))
         else:
             parts.append("Unknown Anatomy")
@@ -207,13 +220,15 @@ class RadiologySemanticParser:
         score = 0.5  # Base confidence
 
         if result.get('anatomy'):
-            score += 0.30
+            score += 0.25
         if result.get('modality') != 'Unknown':
             score += 0.1
         if result.get('contrast'):
             score += 0.1
+        if result.get('laterality'):
+            score += 0.05
         
-        # Small penalty for very short names
+        # Penalty for very short names which are often ambiguous
         if len(original_exam_name.split()) < 3:
             score -= 0.1
             
