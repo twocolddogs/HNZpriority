@@ -1176,18 +1176,25 @@ cleanup_thread = threading.Thread(target=cleanup_old_data, daemon=True)
 cleanup_thread.start()
 
 if __name__ == '__main__':
-    # Get port from environment variable (Render sets this)
-    port = int(os.environ.get('PORT', 5000))
+    # This block is for LOCAL DEVELOPMENT ONLY.
+    # It is NOT used when deploying with a production WSGI server like Gunicorn.
+    #
+    # The error "No open ports detected" on Render is likely because Gunicorn is not
+    # being told to listen on the correct host and port. Gunicorn is started
+    # directly by Render, and this `if __name__ == '__main__'` block is NOT executed.
+    #
+    # TO FIX THE DEPLOYMENT:
+    # In your Render service settings, ensure your "Start Command" is:
+    # gunicorn --bind 0.0.0.0:$PORT app:app
+    #
+    # The code below is only for running the server on your local machine.
+
+    # For local development, we'll use a default port and run in debug mode.
+    port = int(os.environ.get('PORT', 5001))
     
-    # Get environment mode
-    debug_mode = os.environ.get('FLASK_ENV', 'production') == 'development'
+    logger.info(f"--- Starting Flask app in LOCAL DEVELOPMENT mode on http://0.0.0.0:{port} ---")
+    logger.warning("--- This is a development server. Do not use it in a production deployment. ---")
     
-    logger.info(f"Starting Flask app on port {port} in {'debug' if debug_mode else 'production'} mode")
-    
-    # For production deployment (like Render), use the configured port
-    # For development, allow override
-    if debug_mode:
-        app.run(host='0.0.0.0', port=port, debug=True)
-    else:
-        # Production mode - let gunicorn handle this, but keep for direct execution
-        app.run(host='0.0.0.0', port=port, debug=False)
+    # Run the app with Flask's built-in server.
+    # The 'debug=True' flag enables auto-reloading and an interactive debugger.
+    app.run(host='0.0.0.0', port=port, debug=True)
