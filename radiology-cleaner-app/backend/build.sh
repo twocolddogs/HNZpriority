@@ -9,20 +9,29 @@ echo "=== Starting Build Process on $(date) ==="
 echo "--> Upgrading pip, setuptools, and wheel..."
 pip install --upgrade pip setuptools wheel
 
-# --- Step 2: Pre-install Problematic C++ Dependencies ---
-# This is the key fix. We install the pre-built binary wheel for nmslib
-# *before* any other package can trigger a source build.
-echo "--> Pre-installing nmslib from a binary wheel to avoid compilation..."
-pip install nmslib-metabrainz
-
-# --- Step 3: Install All Other Python Dependencies ---
-# Now, when pip processes requirements.txt, it will see that 'nmslib' is
-# already satisfied by 'nmslib-metabrainz' and will not attempt to build it.
-echo "--> Installing the rest of the requirements from requirements.txt..."
+# --- Step 2: Install Base Python Dependencies ---
+# Install the simple dependencies from requirements.txt first.
+echo "--> Installing base requirements..."
 pip install -r requirements.txt
 
-# --- Step 4: Download the ScispaCy Model ---
-# This model version is compatible with scispacy==0.5.3 from requirements.
+# --- Step 3: Install NLP Stack in a Specific, Controlled Order ---
+# This multi-step process prevents build failures by installing pre-compiled
+# wheels for packages with complex C++ dependencies.
+
+echo "--> Installing spaCy (v3.6.1)..."
+pip install spacy==3.6.1
+
+echo "--> Installing nmslib pre-built wheel..."
+pip install nmslib-metabrainz
+
+echo "--> Installing scispacy (v0.5.3)..."
+pip install scispacy==0.5.3
+
+echo "--> Installing medspacy (v1.1.2)..."
+pip install medspacy==1.1.2
+
+# --- Step 4: Download the Compatible ScispaCy Model ---
+# This model version is compatible with scispacy==0.5.3.
 echo "--> Downloading ScispaCy model 'en_core_sci_sm' v0.5.3 from URL..."
 pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.3/en_core_sci_sm-0.5.3.tar.gz || {
     echo "--- !!! WARNING !!! ---"
