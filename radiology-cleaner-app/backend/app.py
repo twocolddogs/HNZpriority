@@ -1186,22 +1186,4 @@ cleanup_thread = threading.Thread(target=cleanup_old_data, daemon=True)
 cleanup_thread.start()
 
 if __name__ == '__main__':
-    # Get port from environment variable (Render sets this automatically)
-    port = int(os.environ.get('PORT', 5000))
-    
-    # Get environment mode
-    debug_mode = os.environ.get('FLASK_ENV', 'production') == 'development'
-    
-    logger.info(f"Starting Flask app on port {port} in {'debug' if debug_mode else 'production'} mode")
-    
-    try:
-        # For production deployment (like Render), use the configured port
-        if debug_mode:
-            app.run(host='0.0.0.0', port=port, debug=True)
-        else:
-            # Production mode - but this shouldn't be called when using Gunicorn
-            logger.warning("Running Flask dev server in production mode - use Gunicorn instead")
-            app.run(host='0.0.0.0', port=port, debug=False)
-    except Exception as e:
-        logger.error(f"Failed to start Flask app: {e}")
-        raise
+    app.run(host='0.0.0.0', port=5000)
