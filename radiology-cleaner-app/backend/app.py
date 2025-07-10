@@ -1184,6 +1184,3 @@ def cleanup_old_data():
 # Start background cleanup task
 cleanup_thread = threading.Thread(target=cleanup_old_data, daemon=True)
 cleanup_thread.start()
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
