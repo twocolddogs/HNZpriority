@@ -1,64 +1,81 @@
 #!/usr/bin/env bash
 
-# Exit on error
+# Exit immediately if a command exits with a non-zero status.
 set -o errexit
 
-echo "=== Starting build process ==="
+echo "=== Starting Build Process on $(date) ==="
 
-# Upgrade pip, setuptools, and wheel to ensure they can handle modern packages
-echo "Upgrading pip, setuptools, and wheel..."
-# CORRECTED: Used --upgrade (two hyphens) instead of -upgrade
+# --- Step 1: Upgrade Core Packaging Tools ---
+echo "--> Upgrading pip, setuptools, and wheel..."
 pip install --upgrade pip setuptools wheel
 
-# Install the dependencies from requirements.txt
-echo "Installing requirements..."
+# --- Step 2: Install Python Dependencies ---
+# This will install all libraries, including Flask, Spacy, SciSpacy, and MedSpacy.
+echo "--> Installing requirements from requirements.txt..."
 pip install -r requirements.txt
 
-# Install the ScispaCy model separately to handle potential failures
-echo "Installing ScispaCy model..."
-pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz || {
-    echo "Warning: ScispaCy model installation failed, but continuing build"
+# --- Step 3: Download the ScispaCy Model ---
+# This is the modern, recommended way to install the model. It's more reliable
+# than installing from a direct URL and ensures compatibility with the installed libraries.
+echo "--> Downloading ScispaCy model 'en_core_sci_sm'..."
+python -m spacy download en_core_sci_sm || {
+    echo "--- !!! WARNING !!! ---"
+    echo "ScispaCy model 'en_core_sci_sm' download failed."
+    echo "The application will run, but NLP features will be disabled."
+    echo "This may be due to a network issue or the model server being down."
+    echo "Continuing build without NLP model..."
+    echo "-----------------------"
 }
 
-# Verify installations
-echo "=== Verifying installations ==="
-# CORRECTED: Replaced smart quotes and used --version (two hyphens)
-echo "Python version: $(python --version)"
-echo "Pip version: $(pip --version)"
+# --- Step 4: Verification Checks ---
+echo ""
+echo "=== Verifying Installations ==="
 
-# List installed packages
-echo "=== Installed packages ==="
-pip list
+# Check Python and Pip versions
+echo "--> Checking tool versions..."
+echo "    Python version: $(python --version)"
+echo "    Pip version: $(pip --version)"
 
-# Test critical imports
-# CORRECTED: All smart quotes (“ ”) are replaced with standard quotes (" ")
-echo "=== Testing imports ==="
-python -c "import flask; print('Flask imported successfully')" || echo "Flask import failed"
-python -c "import flask_cors; print('Flask-CORS imported successfully')" || echo "Flask-CORS import failed"
-python -c "import gunicorn; print('Gunicorn imported successfully')" || echo "Gunicorn import failed"
-python -c "import spacy; print('SpaCy imported successfully')" || echo "SpaCy import failed"
-python -c "import sklearn; print('Scikit-learn imported successfully')" || echo "Scikit-learn import failed"
-python -c "import pandas; print('Pandas imported successfully')" || echo "Pandas import failed"
+# List installed packages for debugging
+# echo "--> Listing installed packages..."
+# pip list
 
-# Try to load the SpaCy model
-echo "=== Testing SpaCy model loading ==="
+# Test critical Python package imports
+echo "--> Testing critical package imports..."
+python -c "import flask; print('    ✅ Flask imported successfully')"
+python -c "import spacy; print('    ✅ SpaCy imported successfully')"
+python -c "import scispacy; print('    ✅ SciSpacy imported successfully')"
+python -c "import medspacy; print('    ✅ Medspacy imported successfully')"
+python -c "import sklearn; print('    ✅ Scikit-learn imported successfully')"
+python -c "import pandas; print('    ✅ Pandas imported successfully')"
+
+# Test loading the SpaCy model
+echo "--> Testing SpaCy model loading..."
 python -c "
+import spacy
+import sys
 try:
-    import spacy
     nlp = spacy.load('en_core_sci_sm')
-    print('SpaCy model loaded successfully')
-except:
-    print('SpaCy model not available - app will run without NLP features')
-" || echo "SpaCy model test failed"
+    print('    ✅ SpaCy model en_core_sci_sm loaded successfully')
+except Exception as e:
+    print('    ❌ WARNING: SpaCy model not available. App will run without NLP features.', file=sys.stderr)
+"
 
-# Check for required data files
-echo "=== Checking for data files ==="
-[ -f "base_code_set.csv" ] && echo "base_code_set.csv found" || echo "base_code_set.csv not found"
-[ -f "abbreviations.csv" ] && echo "abbreviations.csv found" || echo "abbreviations.csv not found"
+# Check for required modules and data files
+echo "--> Checking for required application files..."
+for f in app.py parser.py nlp_processor.py database_models.py feedback_training.py USA.json NHS.json; do
+  [ -f "$f" ] && echo "    ✅ $f found." || { echo "    ❌ CRITICAL: $f not found!"; exit 1; }
+done
 
-# Check if app.py exists and is valid
-echo "=== Checking app.py ==="
-[ -f "app.py" ] && echo "app.py found" || { echo "app.py not found!"; exit 1; }
-python -m py_compile app.py && echo "app.py syntax is valid" || { echo "app.py has syntax errors!"; exit 1; }
+# Check syntax of core Python files
+echo "--> Checking Python file syntax..."
+python -m py_compile app.py
+python -m py_compile parser.py
+python -m py_compile nlp_processor.py
+python -m py_compile database_models.py
+python -m py_compile feedback_training.py
+echo "    ✅ Core Python files syntax is valid."
 
-echo "=== Build completed successfully ==="
+
+echo ""
+echo "=== Build Completed Successfully on $(date) ==="
