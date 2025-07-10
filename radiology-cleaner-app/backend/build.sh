@@ -10,11 +10,19 @@ echo "--> Upgrading pip, setuptools, and wheel..."
 pip install --upgrade pip setuptools wheel
 
 # --- Step 2: Install Python Dependencies ---
-echo "--> Installing requirements from requirements.txt..."
-pip install -r requirements.txt
+# We will install most requirements first.
+echo "--> Installing requirements from requirements.txt (excluding medspacy for now)..."
+pip install -r <(grep -v "medspacy" requirements.txt)
 
-# --- Step 3: Download the ScispaCy Model via Direct URL ---
-# CORRECTED: Using the direct URL for the model that matches scispacy==0.5.3.
+# --- Step 3: Install medspacy and its dependencies from pre-built wheels ---
+# This is the key fix to bypass the build error on Render's environment.
+# We are installing known-good wheels directly.
+echo "--> Installing medspacy and its dependencies from pre-built wheels..."
+pip install https://github.com/medspacy/medspacy/releases/download/v1.1.2/medspacy-1.1.2-py3-none-any.whl
+pip install https://github.com/medspacy/medspacy-quickumls/releases/download/v3.0/medspacy_quickumls-3.0-py3-none-any.whl
+
+# --- Step 4: Download the ScispaCy Model ---
+# This model version is compatible with the scispacy==0.5.3 installed in Step 2.
 echo "--> Downloading ScispaCy model 'en_core_sci_sm' v0.5.3 from URL..."
 pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.3/en_core_sci_sm-0.5.3.tar.gz || {
     echo "--- !!! WARNING !!! ---"
@@ -24,7 +32,7 @@ pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.3/e
     echo "-----------------------"
 }
 
-# --- Step 4: Verification Checks ---
+# --- Step 5: Verification Checks ---
 echo ""
 echo "=== Verifying Installations ==="
 
@@ -50,12 +58,10 @@ except Exception as e:
 "
 
 echo "--> Checking for required application files..."
-# Assumes your data files are in a 'core' subdirectory relative to your app.py
 for f in app.py parser.py nlp_processor.py database_models.py feedback_training.py comprehensive_preprocessor.py; do
   [ -f "$f" ] && echo "    ✅ $f found." || { echo "    ❌ CRITICAL: $f not found!"; exit 1; }
 done
 
-# Check for data files in their subdirectory
 for f in core/USA.json core/NHS.json; do
   [ -f "$f" ] && echo "    ✅ $f found." || { echo "    ❌ CRITICAL: $f not found!"; exit 1; }
 done
