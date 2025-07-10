@@ -1085,6 +1085,14 @@ def health_check():
             'scispacy': nlp is not None
         }
         
+        health_status = {
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'database': 'connected' if db_stats else 'disconnected',
+            'memory_cache': 'active' if cache_stats else 'inactive',
+            'models': models_loaded
+        }
+        
         return jsonify(health_status)
         
     except Exception as e:

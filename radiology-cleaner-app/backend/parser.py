@@ -344,12 +344,22 @@ class RadiologySemanticParser:
                     result['gender_context'] = ml_predictions['gender_context']
         
         # --- STEP 4: CONFIDENCE CALCULATION ---
+        result['confidence'] = self._calculate_confidence(result, exam_name)
+        
+        return result
 
     def _get_ml_predictions(self, exam_name):
         """Get ML model predictions for all components."""
         try:
-            # Load models if available
-            from app import classifier, vectorizer, mlb
+            # Load models if available (circular import protection)
+            import sys
+            if 'app' in sys.modules:
+                app_module = sys.modules['app']
+                classifier = getattr(app_module, 'classifier', None)
+                vectorizer = getattr(app_module, 'vectorizer', None)
+                mlb = getattr(app_module, 'mlb', None)
+            else:
+                classifier = vectorizer = mlb = None
             
             if classifier is None or vectorizer is None or mlb is None:
                 return None

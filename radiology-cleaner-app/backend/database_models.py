@@ -596,8 +596,7 @@ class DatabaseManager:
         matches = []
         
         # Normalize target for better matching
-        target_normalized = re.sub(r'[^
-\w\s]', '', target_clean_name.lower().strip())
+        target_normalized = re.sub(r'[^\w\s]', '', target_clean_name.lower().strip())
         target_words = set(target_normalized.split())
         
         # Extract modality for CT/MRI abdomen-pelvis equivalence
@@ -609,8 +608,7 @@ class DatabaseManager:
                 continue
                 
             candidate = entry['clean_name']
-            candidate_normalized = re.sub(r'[^
-\w\s]', '', candidate.lower().strip())
+            candidate_normalized = re.sub(r'[^\w\s]', '', candidate.lower().strip())
             candidate_words = set(candidate_normalized.split())
             
             # Apply CT/MRI abdomen-pelvis equivalence
