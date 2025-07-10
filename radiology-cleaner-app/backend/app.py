@@ -10,6 +10,7 @@ import os
 import sys
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from feedback_training import FeedbackTrainingManager, FeedbackEnhancedPreprocessor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,8 @@ CORS(app)  # Allows our frontend to call the API
 
 # 1. Initialize lightweight components as None. They will be loaded on the first request.
 comprehensive_preprocessor = None
+feedback_enhanced_preprocessor = None
+feedback_manager = None
 cache_manager = None
 
 # 2. Create a lock to ensure initialization only happens once, even with multiple threads.
@@ -34,7 +37,7 @@ def _initialize_app():
     This function contains the lightweight loading for NHS-first architecture.
     It will only be called once, controlled by the _ensure_app_is_initialized function.
     """
-    global comprehensive_preprocessor, cache_manager
+    global comprehensive_preprocessor, feedback_enhanced_preprocessor, feedback_manager, cache_manager
 
     logger.info("--- Performing lightweight application initialization... ---")
     start_time = time.time()
@@ -48,6 +51,10 @@ def _initialize_app():
         cache_manager = CacheManager()
         logger.info("Cache manager initialized.")
 
+        # Initialize feedback manager
+        feedback_manager = FeedbackTrainingManager()
+        logger.info("Feedback training manager initialized.")
+
         # Initialize comprehensive preprocessor with NHS and USA data
         nhs_json_path = os.path.join(os.path.dirname(__file__), '../core/NHS.json')
         usa_json_path = os.path.join(os.path.dirname(__file__), '../core/USA.json')
@@ -59,18 +66,25 @@ def _initialize_app():
             else:
                 comprehensive_preprocessor = ComprehensivePreprocessor(nhs_json_path)
                 logger.info("Comprehensive preprocessor initialized with NHS data only.")
+                
+            # Initialize feedback-enhanced preprocessor
+            feedback_enhanced_preprocessor = FeedbackEnhancedPreprocessor(
+                comprehensive_preprocessor, feedback_manager
+            )
+            logger.info("Feedback-enhanced preprocessor initialized.")
         else:
             logger.error(f"NHS JSON file not found at {nhs_json_path}")
             # Create dummy preprocessor to prevent crashes
             class DummyPreprocessor:
-                def preprocess_exam_name(self, exam_name):
+                def preprocess_exam_name(self, exam_name, modality=None, organization=None):
                     return {
-                        'components': {'original': exam_name, 'modality': None, 'anatomy': []},
+                        'components': {'original': exam_name, 'modality': modality, 'anatomy': []},
                         'nhs_candidates': [],
                         'confidence': 0.0,
                         'best_match': None
                     }
             comprehensive_preprocessor = DummyPreprocessor()
+            feedback_enhanced_preprocessor = DummyPreprocessor()
 
     except Exception as e:
         logger.error(f"FATAL: Failed to initialize components: {e}")
@@ -81,6 +95,8 @@ def _initialize_app():
 
         cache_manager = cache_manager or DummyComponent()
         comprehensive_preprocessor = comprehensive_preprocessor or DummyComponent()
+        feedback_enhanced_preprocessor = feedback_enhanced_preprocessor or DummyComponent()
+        feedback_manager = feedback_manager or DummyComponent()
 
     logger.info(f"--- Lightweight initialization completed in {time.time() - start_time:.2f} seconds. ---")
 
@@ -529,6 +545,141 @@ def cleanup_old_data():
 # Start background cleanup task
 cleanup_thread = threading.Thread(target=cleanup_old_data, daemon=True)
 cleanup_thread.start()
+
+
+# --- FEEDBACK TRAINING ENDPOINTS ---
+
+@app.route('/feedback/submit', methods=['POST'])
+def submit_feedback():
+    """Submit user feedback for active learning"""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    
+    try:
+        data = request.json
+        required_fields = ['original_exam_name', 'predicted_clean_name', 'feedback_type']
+        
+        if not data or not all(field in data for field in required_fields):
+            return jsonify({"error": "Missing required fields"}), 400
+        
+        if data['feedback_type'] not in ['correct', 'incorrect', 'suggestion']:
+            return jsonify({"error": "Invalid feedback_type"}), 400
+        
+        # Submit feedback
+        feedback_id = feedback_manager.submit_user_feedback(data)
+        
+        response = {
+            'feedback_id': feedback_id,
+            'status': 'received',
+            'message': 'Feedback submitted successfully',
+            'processing_time_ms': int((time.time() - start_time) * 1000)
+        }
+        
+        record_performance('feedback_submit', response['processing_time_ms'], 1, True)
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Feedback submission error: {e}")
+        processing_time = int((time.time() - start_time) * 1000)
+        record_performance('feedback_submit', processing_time, 0, False, str(e))
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/feedback/stats', methods=['GET'])
+def get_feedback_stats():
+    """Get feedback statistics for monitoring"""
+    _ensure_app_is_initialized()
+    
+    try:
+        days = request.args.get('days', 30, type=int)
+        stats = feedback_manager.get_feedback_stats(days)
+        
+        return jsonify({
+            'stats': stats,
+            'period_days': days,
+            'generated_at': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Feedback stats error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/parse_with_learning', methods=['POST'])
+def parse_with_learning():
+    """Enhanced parsing endpoint that uses learned patterns from feedback"""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    
+    try:
+        data = request.json
+        if not data or 'exam_name' not in data:
+            return jsonify({"error": "Missing exam_name"}), 400
+
+        exam_name = data['exam_name']
+        modality = data.get('modality_code', 'Unknown')
+        organization = data.get('organization', data.get('DATA_SOURCE'))
+
+        cache_key = f"learning_{exam_name}|{modality}|{organization}"
+        cached_result = cache_manager.get(cache_key)
+        if cached_result:
+            return jsonify(cached_result)
+
+        # Use feedback-enhanced preprocessor
+        result = feedback_enhanced_preprocessor.preprocess_exam_name(
+            exam_name, modality, organization
+        )
+        
+        # Convert to API format
+        components = result.get('components', {})
+        best_match = result.get('best_match')
+        
+        response = {
+            'cleanName': best_match['clean_name'] if best_match else components.get('expanded', exam_name),
+            'anatomy': components.get('anatomy', []),
+            'laterality': components.get('laterality'),
+            'contrast': components.get('contrast'),
+            'technique': [],
+            'gender_context': components.get('gender_context'),
+            'clinical_context': [],
+            'confidence': result.get('confidence', 0.0),
+            'snomed': best_match.get('snomed_data', {}) if best_match else {},
+            'modality': components.get('modality', modality),
+            'is_paediatric': components.get('is_paediatric', False),
+            'learning_metadata': result.get('learning_metadata', {}),
+            'source': result.get('source', 'base_preprocessor')
+        }
+        
+        cache_manager.set(cache_key, response)
+        processing_time = int((time.time() - start_time) * 1000)
+        record_performance('parse_with_learning', processing_time, len(exam_name), True)
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Parse with learning endpoint error: {e}")
+        processing_time = int((time.time() - start_time) * 1000)
+        record_performance('parse_with_learning', processing_time, 0, False, str(e))
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/admin/retrain', methods=['POST'])
+def retrain_patterns():
+    """Administrative endpoint to retrain patterns from feedback"""
+    _ensure_app_is_initialized()
+    
+    try:
+        # Check if admin authentication is needed
+        auth_header = request.headers.get('Authorization')
+        # Add your authentication logic here
+        
+        feedback_manager.retrain_patterns()
+        
+        return jsonify({
+            'status': 'completed',
+            'message': 'Patterns retrained successfully',
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Retraining error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 if __name__ == '__main__':
