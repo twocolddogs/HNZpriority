@@ -12,11 +12,11 @@ import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- Import Custom Modules ---
+# These are assumed to be in the same directory or accessible via PYTHONPATH
 from parser import RadiologySemanticParser
 from nlp_processor import NLPProcessor
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager, FeedbackEnhancedPreprocessor
-# This import is from your original file, so we keep it.
 from comprehensive_preprocessor import ComprehensivePreprocessor
 
 # --- Configure logging ---
@@ -74,22 +74,34 @@ def _initialize_app():
         if not nlp_processor.nlp:
             logger.error("NLP Processor failed to initialize. Parsing will be limited to rules.")
 
-        # Initialize the core parser and other systems
+        # Initialize the core parser
         semantic_parser = RadiologySemanticParser(db_manager=db_manager)
         
-        # This preprocessor is from your original code, initialize it as well
-        nhs_json_path = os.path.join(os.path.dirname(__file__), 'NHS.json')
-        usa_json_path = os.path.join(os.path.dirname(__file__), 'USA.json')
+        # --- CORRECTED FILE PATHS ---
+        # Build absolute paths from the directory where this script (app.py) is located.
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # This preprocessor is from your original code, initialize it with correct paths
+        nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
+        usa_json_path = os.path.join(base_dir, 'core', 'USA.json')
+        
         if os.path.exists(nhs_json_path):
             comprehensive_preprocessor = ComprehensivePreprocessor(nhs_json_path, usa_json_path if os.path.exists(usa_json_path) else None)
-        
+            logger.info("Comprehensive preprocessor initialized.")
+        else:
+            logger.error(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
+            comprehensive_preprocessor = None # Ensure it's None if data is missing
+
         # This preprocessor uses the comprehensive one and adds learning
         if comprehensive_preprocessor:
              feedback_enhanced_preprocessor = FeedbackEnhancedPreprocessor(
                 comprehensive_preprocessor, feedback_manager
             )
-        
-        logger.info("Parsers and preprocessors initialized.")
+             logger.info("Feedback-enhanced preprocessor initialized.")
+        else:
+            feedback_enhanced_preprocessor = None
+            logger.warning("Feedback-enhanced preprocessor could not be initialized because ComprehensivePreprocessor failed.")
+
 
     except Exception as e:
         logger.error(f"FATAL: Failed to initialize components: {e}", exc_info=True)
@@ -129,16 +141,34 @@ def record_performance(endpoint: str, processing_time_ms: int, input_size: int,
     except Exception as e:
         logger.error(f"Failed to record performance metric: {e}")
 
-# --- CORE PROCESSING FUNCTION (using the new parser) ---
-def process_single_exam_hybrid(exam_data: Dict) -> Dict:
-    exam_name = exam_data['exam_name']
-    modality = exam_data.get('modality_code', 'Unknown')
+# This is the processing function from your original file, adapted for lazy-loading
+def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) -> Dict:
+    _ensure_app_is_initialized()
     
-    # NLP is now the first step
-    scispacy_entities = nlp_processor.extract_entities(exam_name)
+    if not comprehensive_preprocessor:
+        logger.error("Comprehensive preprocessor not available")
+        return {'error': 'Preprocessor not initialized'}
     
-    # The hybrid parser uses both rules and NLP entities
-    return semantic_parser.parse_exam_name(exam_name, modality, scispacy_entities)
+    try:
+        result = comprehensive_preprocessor.preprocess_exam_name(exam_name, modality_code)
+        components = result.get('components', {})
+        best_match = result.get('best_match')
+        
+        response = {
+            'cleanName': best_match['clean_name'] if best_match else components.get('expanded', exam_name),
+            'anatomy': components.get('anatomy', []),
+            'laterality': components.get('laterality'),
+            'contrast': components.get('contrast'),
+            'technique': [], 'gender_context': components.get('gender_context'),
+            'clinical_context': [], 'confidence': result.get('confidence', 0.0),
+            'snomed': best_match.get('snomed_data', {}) if best_match else {},
+            'clinical_equivalents': [], 'is_paediatric': components.get('is_paediatric', False),
+            'modality': components.get('modality', modality_code)
+        }
+        return response
+    except Exception as e:
+        logger.error(f"Comprehensive preprocessing failed for '{exam_name}': {e}", exc_info=True)
+        return {'error': str(e)}
 
 # --- API Endpoints ---
 @app.route('/health', methods=['GET'])
@@ -151,7 +181,7 @@ def health_check():
 
 @app.route('/parse', methods=['POST'])
 def parse_exam():
-    """Parses a single exam name using the hybrid NLP/rule-based approach."""
+    """Legacy parsing endpoint using comprehensive preprocessor."""
     _ensure_app_is_initialized()
     start_time = time.time()
     
@@ -160,16 +190,19 @@ def parse_exam():
         if not data or 'exam_name' not in data:
             return jsonify({"error": "Missing exam_name"}), 400
 
-        cache_key = f"hybrid_{data['exam_name']}|{data.get('modality_code', 'Unknown')}"
+        exam_name = data['exam_name']
+        modality = data.get('modality_code', 'Unknown')
+
+        cache_key = f"legacy_{exam_name}|{modality}"
         cached_result = cache_manager.get(cache_key)
         if cached_result:
             return jsonify(cached_result)
 
-        result = process_single_exam_hybrid(data)
+        result = process_exam_with_preprocessor(exam_name, modality)
         
         cache_manager.set(cache_key, result)
         processing_time = int((time.time() - start_time) * 1000)
-        record_performance('parse', processing_time, len(data['exam_name']), True)
+        record_performance('parse', processing_time, len(exam_name), 'error' not in result)
         return jsonify(result)
         
     except Exception as e:
@@ -178,7 +211,7 @@ def parse_exam():
 
 @app.route('/parse_enhanced', methods=['POST'])
 def parse_enhanced():
-    """Enhanced parsing endpoint using the new hybrid parser."""
+    """Enhanced parsing endpoint using the new hybrid NLP parser."""
     _ensure_app_is_initialized()
     start_time = time.time()
     
@@ -187,10 +220,18 @@ def parse_enhanced():
         if not data or 'exam_name' not in data:
             return jsonify({"error": "Missing exam_name"}), 400
         
-        # This now uses the new hybrid parser
-        parsed_result = process_single_exam_hybrid(data)
+        exam_name = data['exam_name']
+        modality = data.get('modality_code', 'Unknown')
         
-        # Format the response to match the detailed structure you had
+        cache_key = f"enhanced_v2_{exam_name}|{modality}"
+        cached_result = cache_manager.get(cache_key)
+        if cached_result:
+            return jsonify(cached_result)
+
+        # Use the new hybrid parser
+        scispacy_entities = nlp_processor.extract_entities(exam_name)
+        parsed_result = semantic_parser.parse_exam_name(exam_name, modality, scispacy_entities)
+        
         response = {
             'input': data,
             'standardized': {
@@ -211,9 +252,8 @@ def parse_enhanced():
             }
         }
         
-        cache_key = f"enhanced_{data['exam_name']}|{data.get('modality_code', 'Unknown')}"
         cache_manager.set(cache_key, response)
-        record_performance('parse_enhanced', response['metadata']['processing_time_ms'], len(data['exam_name']), True)
+        record_performance('parse_enhanced', response['metadata']['processing_time_ms'], len(exam_name), True)
         return jsonify(response)
         
     except Exception as e:
@@ -222,6 +262,7 @@ def parse_enhanced():
 
 @app.route('/parse_batch', methods=['POST'])
 def parse_batch():
+    """Optimized batch processing using the new hybrid parser."""
     _ensure_app_is_initialized()
     start_time = time.time()
     
@@ -231,33 +272,49 @@ def parse_batch():
             return jsonify({"error": "Missing exams array"}), 400
         
         exams = data['exams']
-        results, errors = [], []
+        results, errors, cache_hits, uncached_exams, cached_results = [], [], 0, [], []
 
-        max_workers = get_optimal_worker_count(max_items=len(exams))
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_exam = {executor.submit(process_single_exam_hybrid, exam): exam for exam in exams}
-            
-            for future in as_completed(future_to_exam):
-                exam_data = future_to_exam[future]
+        for exam_data in exams:
+            cache_key = f"hybrid_{exam_data['exam_name']}|{exam_data.get('modality_code', 'Unknown')}"
+            cached = cache_manager.get(cache_key)
+            if cached:
+                cached_results.append({"input": exam_data, "output": cached})
+                cache_hits += 1
+            else:
+                uncached_exams.append(exam_data)
+        
+        if uncached_exams:
+            def process_exam_batch(exam_data):
                 try:
-                    result = future.result()
-                    results.append({"input": exam_data, "output": result})
-                except Exception as exc:
-                    errors.append({"error": str(exc), "original_exam": exam_data})
+                    return process_single_exam_hybrid(exam_data)
+                except Exception as e:
+                    return {"error": str(e)}
 
-        processing_time = int((time.time() - start_time) * 1000)
-        response = {
-            'results': results, 
-            'errors': errors, 
-            'processing_stats': {
-                'total_exams': len(exams),
-                'successful': len(results),
-                'failed': len(errors),
-                'processing_time_ms': processing_time
-            }
+            max_workers = get_optimal_worker_count(max_items=len(uncached_exams))
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_exam = {executor.submit(process_exam_batch, exam): exam for exam in uncached_exams}
+                for future in as_completed(future_to_exam):
+                    exam_data = future_to_exam[future]
+                    result = future.result()
+                    if 'error' in result:
+                        errors.append({"error": result['error'], "original_exam": exam_data})
+                    else:
+                        results.append({"input": exam_data, "output": result})
+                        cache_key = f"hybrid_{exam_data['exam_name']}|{exam_data.get('modality_code', 'Unknown')}"
+                        cache_manager.set(cache_key, result)
+
+        all_results = cached_results + results
+        
+        processing_stats = {
+            'total_processed': len(exams), 'successful': len(all_results),
+            'errors': len(errors), 'cache_hits': cache_hits,
+            'processing_time_ms': int((time.time() - start_time) * 1000),
+            'cache_hit_ratio': cache_hits / len(exams) if exams else 0.0
         }
         
-        record_performance('parse_batch', processing_time, len(exams), len(errors) == 0)
+        response = {'results': all_results, 'errors': errors, 'processing_stats': processing_stats}
+        record_performance('parse_batch', processing_stats['processing_time_ms'], len(exams), len(errors) == 0)
+        
         return jsonify(response)
         
     except Exception as e:
@@ -274,20 +331,15 @@ def validate_exam_data():
             return jsonify({"error": "Missing exam_name"}), 400
         
         exam_name = data['exam_name']
-        
-        # This endpoint uses the placeholder `standardization_engine` for compatibility
         normalized = standardization_engine.normalize_exam_name(exam_name)
-        parsed_result = process_single_exam_hybrid(data) # Use the new hybrid parser
+        parsed_result = process_single_exam_hybrid(data)
         quality_metrics = standardization_engine.calculate_quality_metrics(exam_name, parsed_result)
         
         is_valid = quality_metrics['overall_quality'] >= 0.7
         response = {
-            'valid': is_valid,
-            'quality_score': quality_metrics['overall_quality'],
-            'warnings': quality_metrics.get('flags', []),
-            'suggestions': quality_metrics.get('suggestions', []),
-            'normalized_name': normalized['normalized'],
-            'transformations_applied': normalized['transformations_applied'],
+            'valid': is_valid, 'quality_score': quality_metrics['overall_quality'],
+            'warnings': quality_metrics.get('flags', []), 'suggestions': quality_metrics.get('suggestions', []),
+            'normalized_name': normalized['normalized'], 'transformations_applied': normalized['transformations_applied'],
             'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000)}
         }
         record_performance('validate', response['metadata']['processing_time_ms'], len(exam_name), True)
@@ -296,22 +348,15 @@ def validate_exam_data():
         logger.error(f"Validation endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
+# --- FEEDBACK & TRAINING ENDPOINTS ---
+
 @app.route('/feedback', methods=['POST'])
-def feedback_endpoint(): # Renamed to avoid conflict with the other feedback endpoint
+def feedback_endpoint():
     _ensure_app_is_initialized()
     start_time = time.time()
     try:
         data = request.json
         feedback_type = data.get('type', 'correction')
-        required_fields = {
-            'correction': ['original_exam_name', 'original_mapping', 'corrected_mapping', 'confidence_level'],
-            'general': ['suggestion_text', 'confidence_level']
-        }
-        if feedback_type not in required_fields or not all(field in data for field in required_fields[feedback_type]):
-            return jsonify({"error": f"Missing required fields for {feedback_type} feedback"}), 400
-        if data['confidence_level'] not in ['low', 'medium', 'high']:
-            return jsonify({"error": "Invalid confidence level"}), 400
-
         if feedback_type == 'general':
             feedback_id = db_manager.submit_general_feedback(data)
         else:
@@ -330,22 +375,18 @@ def feedback_endpoint(): # Renamed to avoid conflict with the other feedback end
         logger.error(f"Feedback endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
-# --- FEEDBACK TRAINING ENDPOINTS ---
 @app.route('/feedback/submit', methods=['POST'])
-def submit_feedback_training_route(): # Renamed to avoid conflict
+def submit_feedback_training_route():
     _ensure_app_is_initialized()
     start_time = time.time()
     try:
         data = request.json
-        required_fields = ['original_exam_name', 'predicted_clean_name', 'feedback_type']
-        if not data or not all(field in data for field in required_fields):
+        if not data or 'original_exam_name' not in data:
             return jsonify({"error": "Missing required fields"}), 400
         
         feedback_id = feedback_manager.submit_user_feedback(data)
-        
         response = {
-            'feedback_id': feedback_id,
-            'status': 'received',
+            'feedback_id': feedback_id, 'status': 'received',
             'message': 'Feedback for training submitted successfully',
             'processing_time_ms': int((time.time() - start_time) * 1000)
         }
