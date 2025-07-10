@@ -7,7 +7,10 @@ echo "=== Starting Build Process on $(date) ==="
 echo "--> Upgrading pip, setuptools, and wheel..."
 pip install --upgrade pip setuptools wheel
 
-# --- Step 2: Install Base Dependencies First ---
+# --- Step 2: Clear pip cache and Install Base Dependencies First ---
+echo "--> Clearing pip cache to avoid nmslib conflicts..."
+pip cache purge 2>/dev/null || echo "Cache purge not supported, continuing..."
+
 # Install everything except scispacy to isolate the problematic package
 echo "--> Installing base requirements..."
 pip install Flask==3.0.3
