@@ -1,6 +1,6 @@
 services:
 
-# — Staging Service —
+# - Staging Service -
 
 - type: web
   name: radiology-api-staging
@@ -10,23 +10,22 @@ services:
   branch: develop
   rootDir: ./radiology-cleaner-app/backend
   buildFilter:
-  paths:
-  - “radiology-cleaner-app/backend/**”
+    paths:
+      - "radiology-cleaner-app/backend/**"
   envVars:
-  - key: PYTHON_VERSION
-    value: 3.11.6
-  - key: PIP_VERSION
-    value: 23.2.1
-  
-  # Memory optimization for SpaCy
-  - key: SPACY_MAX_LENGTH
-    value: 1000000
-    buildCommand: “chmod +x build.sh && ./build.sh”
-    startCommand: “gunicorn –bind 0.0.0.0:$PORT –workers 1 –threads 1 –timeout 120 –preload –log-level debug app:app”
-    autoDeploy: true
-    healthCheckPath: /
+    - key: PYTHON_VERSION
+      value: 3.11.6
+    - key: PIP_VERSION
+      value: 23.2.1
+    # Memory optimization for SpaCy
+    - key: SPACY_MAX_LENGTH
+      value: 1000000
+  buildCommand: "chmod +x build.sh && ./build.sh"
+  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 120 --preload --log-level debug app:app"
+  autoDeploy: true
+  healthCheckPath: /
 
-# — Production Service —
+# - Production Service -
 
 - type: web
   name: radiology-api-prod
@@ -36,16 +35,16 @@ services:
   branch: main
   rootDir: ./radiology-cleaner-app/backend
   buildFilter:
-  paths:
-  - “radiology-cleaner-app/backend/**”
+    paths:
+      - "radiology-cleaner-app/backend/**"
   envVars:
-  - key: PYTHON_VERSION
-    value: 3.11.6
-  - key: PIP_VERSION
-    value: 23.2.1
-  - key: SPACY_MAX_LENGTH
-    value: 1000000
-    buildCommand: “chmod +x build.sh && ./build.sh”
-    startCommand: “gunicorn –bind 0.0.0.0:$PORT –workers 1 –threads 1 –timeout 120 –preload –log-level info app:app”
-    autoDeploy: false
-    healthCheckPath: /
+    - key: PYTHON_VERSION
+      value: 3.11.6
+    - key: PIP_VERSION
+      value: 23.2.1
+    - key: SPACY_MAX_LENGTH
+      value: 1000000
+  buildCommand: "chmod +x build.sh && ./build.sh"
+  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 120 --preload --log-level info app:app"
+  autoDeploy: false
+  healthCheckPath: /
