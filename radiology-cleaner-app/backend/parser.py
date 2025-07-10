@@ -1,20 +1,18 @@
 import re
-import numpy as np
 from collections import defaultdict
-from datetime import datetime
+from typing import Dict, List, Optional, Set
 
 class RadiologySemanticParser:
     """
-    A Python port of the radiology semantic parser, designed to standardize
-    radiology exam names by extracting key components. This version uses a
-    hybrid approach, combining NLP entities with rule-based matching for
-    maximum accuracy.
+    A Python parser that standardizes radiology exam names by extracting key
+    components using a hybrid approach. It combines NLP-extracted entities
+    with a robust, regex-based rule system for high accuracy.
     """
-    def __init__(self, db_manager=None, standardization_engine=None, model_manager=None):
+    def __init__(self, db_manager=None, standardization_engine=None):
         self.db_manager = db_manager
         self.standardization_engine = standardization_engine
-        self.model_manager = model_manager
-        # (The entire __init__ section with all the mappings and patterns remains unchanged)
+        
+        # --- Mappings and Patterns ---
         self.anatomy_mappings = {
             'head': {'terms': ['head', 'brain', 'skull', 'cranial', 'cerebral', 'cranium'], 'standardName': 'Head', 'category': 'neurological'},
             'neck': {'terms': ['neck', 'cervical soft tissue', 'pharynx', 'larynx'], 'standardName': 'Neck', 'category': 'head_neck'},
@@ -27,8 +25,8 @@ class RadiologySemanticParser:
             't_spine': {'terms': ['thoracic spine', 't spine', 'tspine', 'dorsal spine'], 'standardName': 'Thoracic Spine', 'category': 'spine'},
             'l_spine': {'terms': ['lumbar spine', 'l spine', 'lspine', 'lumbosacral'], 'standardName': 'Lumbar Spine', 'category': 'spine'},
             'sacrum': {'terms': ['sacrum', 'sacral', 'sacrococcygeal', 'coccyx', 'sacroiliac', 'si joint'], 'standardName': 'Sacrum/Coccyx', 'category': 'spine'},
-            'whole_spine': {'terms': ['whole spine', 'full spine', 'entire spine'], 'standardName': 'Whole Spine', 'category': 'spine'},
-            'chest': {'terms': ['chest', 'thorax', 'thoracic', 'lung'], 'standardName': 'Chest', 'category': 'chest'},
+            'whole_spine': {'terms': ['whole spine', 'full spine', 'entire spine', 'spine'], 'standardName': 'Whole Spine', 'category': 'spine'},
+            'chest': {'terms': ['chest', 'thorax', 'thoracic', 'lung', 'lungs'], 'standardName': 'Chest', 'category': 'chest'},
             'ribs': {'terms': ['rib', 'ribs', 'thoracic cage'], 'standardName': 'Ribs', 'category': 'chest'},
             'sternum': {'terms': ['sternum', 'sternal'], 'standardName': 'Sternum', 'category': 'chest'},
             'clavicle': {'terms': ['clavicle', 'clavicular', 'acromioclavicular', 'ac joint'], 'standardName': 'Clavicle', 'category': 'chest'},
@@ -37,13 +35,13 @@ class RadiologySemanticParser:
             'liver': {'terms': ['liver', 'hepatic'], 'standardName': 'Liver', 'category': 'abdomen'},
             'pancreas': {'terms': ['pancreas', 'pancreatic'], 'standardName': 'Pancreas', 'category': 'abdomen'},
             'kidneys': {'terms': ['kidney', 'renal', 'nephro', 'kub'], 'standardName': 'Kidneys', 'category': 'abdomen'},
-            'urinary_tract': {'terms': ['bladder', 'ureter', 'urethra', 'urinary', 'urography', 'ctu', 'ivu'], 'standardName': 'Urinary Tract', 'category': 'genitourinary'},
+            'urinary_tract': {'terms': ['bladder', 'ureter', 'urethra', 'urinary', 'urography', 'ctu', 'ivu', 'cystogram'], 'standardName': 'Urinary Tract', 'category': 'genitourinary'},
             'small_bowel': {'terms': ['bowel', 'intestine', 'small bowel', 'enterography', 'enteroclysis'], 'standardName': 'Small Bowel', 'category': 'abdomen'},
             'colon': {'terms': ['colon', 'colonography', 'large bowel'], 'standardName': 'Colon', 'category': 'abdomen'},
             'prostate': {'terms': ['prostate', 'prostatic'], 'standardName': 'Prostate', 'category': 'pelvis'},
             'female_pelvis': {'terms': ['uterus', 'ovary', 'ovarian', 'endometrial', 'female pelvis', 'gynaecology'], 'standardName': 'Female Pelvis', 'category': 'pelvis'},
             'shoulder': {'terms': ['shoulder'], 'standardName': 'Shoulder', 'category': 'musculoskeletal'},
-            'humerus': {'terms': ['humerus', 'humeral'], 'standardName': 'Humerus', 'category': 'musculoskeletal'},
+            'humerus': {'terms': ['humerus', 'humeral', 'upper arm', 'arm'], 'standardName': 'Humerus', 'category': 'musculoskeletal'},
             'elbow': {'terms': ['elbow'], 'standardName': 'Elbow', 'category': 'musculoskeletal'},
             'forearm': {'terms': ['forearm', 'radius', 'ulna', 'radial', 'ulnar'], 'standardName': 'Forearm', 'category': 'musculoskeletal'},
             'wrist': {'terms': ['wrist', 'carpal', 'scaphoid'], 'standardName': 'Wrist', 'category': 'musculoskeletal'},
@@ -52,73 +50,38 @@ class RadiologySemanticParser:
             'hip': {'terms': ['hip', 'acetabulum'], 'standardName': 'Hip', 'category': 'musculoskeletal'},
             'femur': {'terms': ['femur', 'femoral', 'thigh'], 'standardName': 'Femur', 'category': 'musculoskeletal'},
             'knee': {'terms': ['knee', 'patella', 'patellar'], 'standardName': 'Knee', 'category': 'musculoskeletal'},
-            'tibia_fibula': {'terms': ['tibia', 'fibula', 'tibial', 'fibular', 'tib fib', 'leg'], 'standardName': 'Tibia/Fibula', 'category': 'musculoskeletal'},
+            'tibia_fibula': {'terms': ['tibia', 'fibula', 'tibial', 'fibular', 'tib fib', 'leg', 'lower extremity'], 'standardName': 'Tibia/Fibula', 'category': 'musculoskeletal'},
             'ankle': {'terms': ['ankle', 'talar', 'talus'], 'standardName': 'Ankle', 'category': 'musculoskeletal'},
             'foot': {'terms': ['foot', 'feet', 'metatarsal', 'tarsal'], 'standardName': 'Foot', 'category': 'musculoskeletal'},
-            'toe': {'terms': ['toe', 'phalanges'], 'standardName': 'Toe', 'category': 'musculoskeletal'},
+            'toe': {'terms': ['toe', 'toes', 'phalanges'], 'standardName': 'Toe', 'category': 'musculoskeletal'},
             'calcaneus': {'terms': ['calcaneus', 'calcaneum', 'os calcis', 'heel'], 'standardName': 'Calcaneus', 'category': 'musculoskeletal'},
             'aorta': {'terms': ['aorta', 'aortic'], 'standardName': 'Aorta', 'category': 'vascular'},
             'carotid': {'terms': ['carotid'], 'standardName': 'Carotid', 'category': 'vascular'},
-            'cerebral_vessels': {'terms': ['circle of willis', 'cow', 'intracranial'], 'standardName': 'Cerebral Vessels', 'category': 'vascular'},
-            'coronary': {'terms': ['coronary', 'cardiac vessel'], 'standardName': 'Coronary', 'category': 'vascular'},
-            'pulmonary_vessels': {'terms': ['pulmonary artery', 'pulmonary angiogram', 'ctpa', 'pe protocol'], 'standardName': 'Pulmonary Vessels', 'category': 'vascular'},
+            'cerebral_vessels': {'terms': ['circle of willis', 'cow', 'intracranial', 'cerebral vessel'], 'standardName': 'Cerebral Vessels', 'category': 'vascular'},
+            'coronary': {'terms': ['coronary', 'cardiac vessel', 'heart vessel'], 'standardName': 'Coronary', 'category': 'vascular'},
+            'pulmonary_vessels': {'terms': ['pulmonary artery', 'pulmonary angiogram', 'ctpa', 'pe protocol', 'pulmonary embolus'], 'standardName': 'Pulmonary Vessels', 'category': 'vascular'},
         }
-        self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'Mamm': 'Mammography', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'Other': 'Other', 'BR': 'Mammography'}
+        
+        self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'MG': 'Mammography', 'Mammo':'Mammography', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'Other': 'Other', 'BR': 'Mammography'}
+        
         self.technique_patterns = {
-            'Angiography': [re.compile(p, re.I) for p in [r'angiogram', r'angiography', r'cta', r'mra', r'venogram']],
+            'Angiography': [re.compile(p, re.I) for p in [r'angiogram', r'angiography', r'\bcta\b', r'\bmra\b', r'venogram', r'angio']],
             'HRCT': [re.compile(p, re.I) for p in [r'hrct', r'high resolution']],
             'Colonography': [re.compile(p, re.I) for p in [r'colonography', r'virtual colonoscopy']],
             'Doppler': [re.compile(p, re.I) for p in [r'doppler', r'duplex']],
-            'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', r'injection']],
+            'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', 'aspir', r'injection', r'guided', r'procedure', 'ablation']],
         }
+        
         self.contrast_patterns = {
-            'with': [re.compile(p, re.I) for p in [r'\bC\+', r'with contrast', r'post contrast', r'(?<!un)enhanced', r'post gad']],
-            'without': [re.compile(p, re.I) for p in [r'\bC-', r'without contrast', r'no contrast', r'non-?contrast', r'unenhanced']],
-            'with and without': [re.compile(p, re.I) for p in [r'C\+\/?-', r'\+\/?-', r'with and without', r'pre and post', r'pre & post']],
+            'with and without': [re.compile(p, re.I) for p in [r'w/wo', r'c\+\/?-', r'\+\/?-', r'with and without', r'pre and post', r'pre & post', r'w and wo']],
+            'with': [re.compile(p, re.I) for p in [r'\b(w|c|with)\s*\+', r'\b(w|with)\b(?!o|out)', r'post contrast', r'\bce\b', r'iv contrast', r'(?<!un)enhanced', r'post gad']],
+            'without': [re.compile(p, re.I) for p in [r'\b(w|c|wo)\s*-', r'without contrast', r'no contrast', r'non-?contrast', r'unenhanced', r'\bwo\b']],
         }
+        
         self.laterality_patterns = {
             'Bilateral': re.compile(r'\b(bilateral|bilat|both|b/l)\b', re.I),
             'Left': re.compile(r'\b(left|lt)\b', re.I),
             'Right': re.compile(r'\b(right|rt)\b', re.I),
-        }
-
-        # Gender detection patterns
-        self.gender_patterns = {
-            'male': [re.compile(p, re.I) for p in [r'\bmale\b', r'\bm\b(?=\s|$)', r'\bmen\b', r'\bprostate\b', r'\bmale pelvis\b']],
-            'female': [re.compile(p, re.I) for p in [r'\bfemale\b', r'\bf\b(?=\s|$)', r'\bwomen\b', r'\bpelvic\b(?=.*female)', 
-                       r'\bgynaecology\b', r'\bmammography\b', r'\bbreast\b', r'\bfemale pelvis\b', r'\bovarian\b', r'\buterine\b']],
-            'pregnancy': [re.compile(p, re.I) for p in [r'\bpregnant\b', r'\bpregnancy\b', r'\bobstetric\b', r'\bfetal\b', r'\bmaternal\b']]
-        }
-        
-        # Clinical context patterns
-        self.clinical_context = {
-            'emergency': [re.compile(p, re.I) for p in [r'\btrauma\b', r'\bstat\b', r'\bemergency\b', r'\bpe protocol\b', r'\bctpa\b', r'\bacute\b']],
-            'screening': [re.compile(p, re.I) for p in [r'\bscreening\b', r'\broutine\b', r'\bpreventive\b', r'\bwellness\b']],
-            'follow_up': [re.compile(p, re.I) for p in [r'\bfollow.?up\b', r'\bpost.?op\b', r'\bsurveillance\b', r'\bmonitoring\b', r'\brepeat\b']],
-            'intervention': [re.compile(p, re.I) for p in [r'\bbiopsy\b', r'\bdrainage\b', r'\binjection\b', r'\bguided\b', r'\bprocedure\b']]
-        }
-        
-        # Anatomical hierarchy and relationships
-        self.anatomical_hierarchy = {
-            'contains': {
-                'Abdomen': ['Liver', 'Pancreas', 'Kidneys', 'Small Bowel', 'Colon'],
-                'Pelvis': ['Prostate', 'Female Pelvis', 'Urinary Tract'],
-                'Chest': ['Ribs', 'Sternum', 'Clavicle', 'Pulmonary Vessels'],
-                'Head': ['Sinuses', 'Orbits', 'Facial Bones', 'Pituitary', 'Temporal Bones'],
-                'Neck': ['Carotid'],
-                'Whole Spine': ['Cervical Spine', 'Thoracic Spine', 'Lumbar Spine', 'Sacrum/Coccyx']
-            },
-            'overlaps': {
-                'Abdomen': ['Pelvis'],  # Abdomen+Pelvis is often clinically equivalent
-                'Chest': ['Ribs', 'Sternum', 'Clavicle'],
-                'Head': ['Neck'],  # Head+Neck scans are common
-                'Cervical Spine': ['Neck']
-            },
-            'equivalents': {
-                'Abdomen/Pelvis': ['Abdomen', 'Pelvis'],
-                'Head/Neck': ['Head', 'Neck'],
-                'Chest/Abdomen/Pelvis': ['Chest', 'Abdomen', 'Pelvis']
-            }
         }
         
         # Build a reverse lookup for fast searching
@@ -127,432 +90,131 @@ class RadiologySemanticParser:
             for term in config['terms']:
                 self.anatomy_lookup[term.lower()] = {'key': key, **config}
         
-        # Sort terms by length (desc) to match longer phrases first (e.g., "cervical spine" before "spine")
+        # Sort terms by length (desc) to match longer phrases first
         self.sorted_anatomy_terms = sorted(self.anatomy_lookup.keys(), key=len, reverse=True)
 
-
-    def parse_exam_name(self, exam_name, modality_code, scispacy_entities=None, skip_ml: bool = False):
+    def parse_exam_name(self, exam_name: str, modality_code: str, scispacy_entities: Optional[Dict] = None) -> Dict:
         """
-        Enhanced parsing with fuzzy matching and ML integration.
-        Flow: Standardize -> Parse with NLP/ML -> Generate clean_name -> Fuzzy match -> Return best match
+        Parses a radiology exam name using a hybrid approach.
         """
-        original_exam_name = exam_name
-        
-        # Step 1: Standardize the exam name
-        if self.standardization_engine:
-            exam_name = self.standardization_engine.expand_abbreviations(exam_name)
         if scispacy_entities is None:
             scispacy_entities = {}
-
-        # Step 2: Check for exact match in SNOMED FSN first (legacy support)
-        if self.db_manager:
-            exact_match = self.db_manager.get_snomed_reference_by_exam_name(exam_name)
-            if exact_match:
-                result = self._create_result_from_exact_match(exact_match, exam_name, modality_code)
-                return result
-
-        # Step 3: Parse exam name using hybrid approach (NLP + ML + Rules)
-        parsed_components = self._parse_with_hybrid_approach(exam_name, modality_code, scispacy_entities, skip_ml=skip_ml)
-        
-        # Step 4: Generate clean name from parsed components
-        generated_clean_name = self._build_clean_name(parsed_components, original_exam_name)
-        
-        # Step 5: Try fuzzy matching against database clean names
-        if self.db_manager:
-            fuzzy_matches = self.db_manager.fuzzy_match_clean_names(generated_clean_name, threshold=0.6)
             
-            if fuzzy_matches:
-                # Use the best fuzzy match
-                best_match = fuzzy_matches[0]
-                result = self._create_result_from_fuzzy_match(best_match, parsed_components, generated_clean_name)
-                return result
-            
-            # Step 6: Try fuzzy matching with individual components if no clean name match
-            component_matches = self._fuzzy_match_by_components(parsed_components)
-            if component_matches:
-                best_match = component_matches[0]
-                result = self._create_result_from_fuzzy_match(best_match, parsed_components, generated_clean_name)
-                return result
+        lower_name = exam_name.lower()
         
-        # Step 7: No matches found - return generated result without SNOMED codes
-        result = parsed_components.copy()
-        result['cleanName'] = generated_clean_name
-        result['confidence'] = max(0.3, parsed_components.get('confidence', 0.5))  # Lower confidence for no match
-        result['clinical_equivalents'] = self._find_clinical_equivalents(result['anatomy'])
+        # Step 1: Hybrid Anatomy Parsing
+        nlp_anatomy_terms = [term.lower() for term in scispacy_entities.get('ANATOMY', [])]
+        found_anatomy_keys = self._parse_anatomy_hybrid(lower_name, nlp_anatomy_terms)
+        
+        # Step 2: Parse Other Components
+        parsed = {
+            'modality': self.modality_map.get(modality_code, modality_code),
+            'anatomy': sorted([self.anatomy_mappings[key]['standardName'] for key in found_anatomy_keys]),
+            'laterality': self._parse_laterality(lower_name, scispacy_entities),
+            'contrast': self._parse_contrast(lower_name),
+            'technique': self._parse_technique(lower_name),
+        }
+        
+        # Step 3: Post-processing and Confidence Calculation
+        result = {
+            'cleanName': self._build_clean_name(parsed),
+            'confidence': self._calculate_confidence(parsed, exam_name),
+            **parsed
+        }
         
         return result
 
-    def _create_result_from_exact_match(self, exact_match, exam_name, modality_code):
-        """Create result object from exact database match."""
-        result = {
-            'modality': self.modality_map.get(modality_code, modality_code),
-            'anatomy': [],
-            'laterality': None,
-            'contrast': None,
-            'technique': [],
-            'gender_context': None,
-            'clinical_context': [],
-            'confidence': 1.0,  # High confidence for exact match
-            'cleanName': exact_match['clean_name'],
-            'snomed': {
-                'snomed_concept_id': exact_match.get('snomed_concept_id'),
-                'snomed_fsn': exact_match.get('snomed_fsn'),
-                'snomed_laterality_concept_id': exact_match.get('snomed_laterality_concept_id'),
-                'snomed_laterality_fsn': exact_match.get('snomed_laterality_fsn')
-            }
-        }
+    def _parse_anatomy_hybrid(self, lower_name: str, nlp_terms: List[str]) -> Set[str]:
+        """Combines NLP and rule-based anatomy extraction for higher accuracy."""
+        found_keys: Set[str] = set()
         
-        # Still parse for additional components
-        lower_name = exam_name.lower()
+        # 1. Process NLP-extracted terms first to get a baseline
+        for term in nlp_terms:
+            for registered_term, info in self.anatomy_lookup.items():
+                if term in registered_term or registered_term in term:
+                    found_keys.add(info['key'])
+        
+        # 2. Apply rule-based matching to catch specifics and confirm
+        # This is crucial for compound terms like 'cervical spine'.
+        for term_key in self.sorted_anatomy_terms:
+            if term_key in lower_name:
+                found_keys.add(self.anatomy_lookup[term_key]['key'])
+                
+        return found_keys
+
+    def _parse_laterality(self, lower_name: str, scispacy_entities: Dict) -> Optional[str]:
+        """Parse laterality using NLP first, then regex fallback."""
+        nlp_directions = [d.lower() for d in scispacy_entities.get('DIRECTION', [])]
+        if 'left' in nlp_directions:
+            return 'Left'
+        if 'right' in nlp_directions:
+            return 'Right'
+        if 'bilateral' in nlp_directions:
+             return 'Bilateral'
+
         for lat, pattern in self.laterality_patterns.items():
             if pattern.search(lower_name):
-                result['laterality'] = lat
-                break
-        for con, patterns in self.contrast_patterns.items():
-            if any(p.search(lower_name) for p in patterns):
-                result['contrast'] = con
-                break
-                
-        result['clinical_equivalents'] = self._find_clinical_equivalents(result['anatomy'])
-        return result
+                return lat
+        return None
 
-    def _create_result_from_fuzzy_match(self, fuzzy_match, parsed_components, generated_clean_name):
-        """Create result object from fuzzy database match."""
-        result = parsed_components.copy()
-        
-        # Use the database clean name instead of generated one
-        result['cleanName'] = fuzzy_match['clean_name']
-        
-        # Add SNOMED data from database
-        result['snomed'] = {
-            'snomed_concept_id': fuzzy_match.get('snomed_concept_id'),
-            'snomed_fsn': fuzzy_match.get('snomed_fsn'),
-            'snomed_laterality_concept_id': fuzzy_match.get('snomed_laterality_concept_id'),
-            'snomed_laterality_fsn': fuzzy_match.get('snomed_laterality_fsn')
-        }
-        
-        # Adjust confidence based on fuzzy match quality
-        similarity_score = fuzzy_match.get('similarity_score', 0.0)
-        base_confidence = parsed_components.get('confidence', 0.5)
-        result['confidence'] = min(0.95, base_confidence * similarity_score)
-        
-        # Add match metadata
-        result['match_info'] = {
-            'type': 'fuzzy_match',
-            'similarity_score': similarity_score,
-            'matched_clean_name': fuzzy_match['clean_name'],
-            'generated_clean_name': generated_clean_name
-        }
+    def _parse_contrast(self, lower_name: str) -> Optional[str]:
+        """Parse contrast status, prioritizing more specific terms."""
+        if any(p.search(lower_name) for p in self.contrast_patterns['with and without']):
+            return 'with and without'
+        if any(p.search(lower_name) for p in self.contrast_patterns['with']):
+            return 'with'
+        if any(p.search(lower_name) for p in self.contrast_patterns['without']):
+            return 'without'
+        return None
 
-        result['clinical_equivalents'] = self._find_clinical_equivalents(result['anatomy'])
-        
-        return result
-
-    def _parse_with_hybrid_approach(self, exam_name, modality_code, scispacy_entities, skip_ml: bool = False):
-        """Parse using NLP, ML, and rule-based approaches."""
-        result = {
-            'modality': self.modality_map.get(modality_code, modality_code),
-            'anatomy': [],
-            'laterality': None,
-            'contrast': None,
-            'technique': [],
-            'gender_context': None,
-            'clinical_context': [],
-            'confidence': 1.0
-        }
-        
-        lower_name = exam_name.lower()
-
-        # --- STEP 1: HYBRID ANATOMY PARSING ---
-        found_anatomy = set()
-        
-        # 1a. NLP-based anatomy extraction (ScispaCy)
-        nlp_anatomy = scispacy_entities.get('ANATOMY', [])
-        for item in nlp_anatomy:
-            term_key = item.lower()
-            if term_key in self.anatomy_lookup:
-                found_anatomy.add(self.anatomy_lookup[term_key]['standardName'])
-            else:
-                found_anatomy.add(item.capitalize())
-        
-        # 1b. Rule-based anatomy extraction
-        for term in self.sorted_anatomy_terms:
-            if term in lower_name:
-                info = self.anatomy_lookup[term]
-                found_anatomy.add(info['standardName'])
-
-        # 1c. ML-based predictions (anatomy and other components)
-        ml_predictions = self._get_ml_predictions(exam_name)
-        if ml_predictions:
-            found_anatomy.update(ml_predictions.get('anatomy', []))
-
-        result['anatomy'] = sorted(list(found_anatomy))
-
-        # --- STEP 2: COMPONENT PARSING ---
-        # Laterality (NLP first, then rules, then ML fallback)
-        directions = scispacy_entities.get('DIRECTION', [])
-        result['laterality'] = directions[0] if directions else None
-
-        if not result['laterality']:
-            for lat, pattern in self.laterality_patterns.items():
-                if pattern.search(lower_name):
-                    result['laterality'] = lat
-                    break
-        if not result['laterality'] and ml_predictions and ml_predictions.get('laterality'):
-            result['laterality'] = ml_predictions['laterality']
-        
-        # Contrast detection - check 'with and without' first for specificity, then ML fallback
-        contrast_order = ['with and without', 'with', 'without']
-        for con in contrast_order:
-            if con in self.contrast_patterns:
-                patterns = self.contrast_patterns[con]
-                if any(p.search(lower_name) for p in patterns):
-                    result['contrast'] = con
-                    break
-        if not result['contrast'] and ml_predictions and ml_predictions.get('contrast'):
-            result['contrast'] = ml_predictions['contrast']
-
-        # Technique detection
+    def _parse_technique(self, lower_name: str) -> List[str]:
+        """Parse techniques using regex patterns."""
+        techniques = []
         for tech, patterns in self.technique_patterns.items():
-            if any(p.search(lower_name) for p in patterns) and tech not in result['technique']:
-                result['technique'].append(tech)
+            if any(p.search(lower_name) for p in patterns):
+                techniques.append(tech)
+        return sorted(list(set(techniques)))
 
-        # Gender context detection (rules, then ML fallback)
-        result['gender_context'] = self._detect_gender_context(lower_name)
-        if not result['gender_context'] and ml_predictions and ml_predictions.get('gender_context'):
-            result['gender_context'] = ml_predictions['gender_context']
-        
-        # Clinical context detection
-        result['clinical_context'] = self._detect_clinical_context(lower_name)
-        
-        # --- STEP 3: ML ENHANCEMENT ---
-        ml_predictions = None
-        if not skip_ml:
-            ml_predictions = self._get_ml_predictions(exam_name)
-            if ml_predictions:
-                # Merge ML predictions with rule-based results
-                # Anatomy is already merged in STEP 1
-                
-                # Use ML predictions as fallback for missing components
-                if not result['laterality'] and ml_predictions.get('laterality'):
-                    result['laterality'] = ml_predictions['laterality']
-                    
-                if not result['contrast'] and ml_predictions.get('contrast'):
-                    result['contrast'] = ml_predictions['contrast']
-                    
-                if not result['gender_context'] and ml_predictions.get('gender_context'):
-                    result['gender_context'] = ml_predictions['gender_context']
-        
-        # --- STEP 4: CONFIDENCE CALCULATION ---
-        result['confidence'] = self._calculate_confidence(result, exam_name)
-        
-        return result
-
-    def _get_ml_predictions(self, exam_name):
-        """Get ML model predictions for all components."""
-        if not self.model_manager or not self.model_manager.are_ml_models_available():
-            return None
-        
-        return self.model_manager.get_ml_predictions(exam_name)
-
-    def _fuzzy_match_by_components(self, parsed_components):
-        """Try fuzzy matching by building clean names with different component combinations."""
-        if not self.db_manager:
-            return []
-        
-        matches = []
-        modality = parsed_components['modality']
-        anatomy_list = parsed_components['anatomy']
-        
-        # Try different combinations of components
-        for anatomy_count in range(len(anatomy_list), 0, -1):
-            for anatomy_subset in self._get_combinations(anatomy_list, anatomy_count):
-                # Build a clean name with this anatomy subset
-                test_components = parsed_components.copy()
-                test_components['anatomy'] = list(anatomy_subset)
-                test_clean_name = self._build_clean_name(test_components)
-                
-                # Try fuzzy matching
-                component_matches = self.db_manager.fuzzy_match_clean_names(test_clean_name, threshold=0.7)
-                matches.extend(component_matches)
-        
-        # Remove duplicates and sort by similarity
-        seen = set()
-        unique_matches = []
-        for match in matches:
-            match_key = match['clean_name']
-            if match_key not in seen:
-                seen.add(match_key)
-                unique_matches.append(match)
-        
-        unique_matches.sort(key=lambda x: x['similarity_score'], reverse=True)
-        return unique_matches
-
-    def _get_combinations(self, items, count):
-        """Get all combinations of items with specified count."""
-        from itertools import combinations
-        return combinations(items, count)
-
-    def _build_clean_name(self, parsed, original_exam_name=None):
+    def _build_clean_name(self, parsed: Dict) -> str:
+        """Constructs a standardized, human-readable clean name."""
         parts = [parsed['modality']]
         
         if parsed['anatomy']:
-            # Sort anatomy from cranial to caudal (Head → Neck → Chest → Abdomen → Pelvis)
-            cranial_to_caudal_order = [
-                'Head', 'Brain', 'Orbits', 'Sinuses', 'Temporal Bones', 'Facial Bones', 'Pituitary',
-                'Neck', 'Cervical Spine',
-                'Chest', 'Thoracic Spine', 'Ribs', 'Sternum', 'Clavicle', 'Heart', 'Lung',
-                'Abdomen', 'Liver', 'Pancreas', 'Kidneys', 'Small Bowel', 'Colon',
-                'Pelvis', 'Female Pelvis', 'Prostate', 'Urinary Tract',
-                'Lumbar Spine', 'Sacrum/Coccyx', 'Whole Spine',
-                'Shoulder', 'Humerus', 'Elbow', 'Forearm', 'Wrist', 'Hand',
-                'Hip', 'Femur', 'Knee', 'Tibia', 'Fibula', 'Ankle', 'Foot'
-            ]
-            
-            # Sort anatomy based on cranial-to-caudal order
-            anatomy_list = parsed['anatomy']
-            ordered_anatomy = []
-            for anatomical_region in cranial_to_caudal_order:
-                if anatomical_region in anatomy_list:
-                    ordered_anatomy.append(anatomical_region)
-            
-            # Add any anatomy not in the predefined order (in case of new terms)
-            for anatomy in anatomy_list:
-                if anatomy not in ordered_anatomy:
-                    ordered_anatomy.append(anatomy)
-            
-            parts.append(" ".join(ordered_anatomy))
+            parts.append(" ".join(parsed['anatomy']))
         else:
             parts.append("Unknown Anatomy")
-        
-        if 'Angiography' in parsed['technique']: 
-            parts.append('Angiography')
-        elif 'HRCT' in parsed['technique']: 
-            parts.append('HRCT')
-        
-        relevant_anatomy_for_laterality = {'Shoulder', 'Knee', 'Hip', 'Elbow', 'Wrist', 'Hand', 'Ankle', 'Foot', 'Femur', 'Humerus', 'Clavicle'}
-        if parsed['laterality'] and any(a in relevant_anatomy_for_laterality for a in parsed['anatomy']):
+
+        if 'Angiography' in parsed['technique']:
+            parts.append("Angiography")
+
+        if parsed['laterality']:
             parts.append(parsed['laterality'])
-        
+            
         clean_name = " ".join(parts)
-        
-        # Handle contrast in clean name
+
         if parsed['contrast']:
-            if parsed['contrast'] == 'without':
-                clean_name += " (without contrast)"
-            else:
-                clean_name += f" ({parsed['contrast']} contrast)"
-            
+            if parsed['contrast'] == 'with and without':
+                clean_name += " with/without Contrast"
+            elif parsed['contrast'] == 'with':
+                 clean_name += " with Contrast"
+            elif parsed['contrast'] == 'without':
+                 clean_name += " without Contrast"
+                 
         return clean_name.strip()
-    
-    def _detect_gender_context(self, exam_name_lower):
-        """Detect gender context from exam name."""
-        for gender, patterns in self.gender_patterns.items():
-            if any(pattern.search(exam_name_lower) for pattern in patterns):
-                return gender
-        return None
-    
-    def _detect_clinical_context(self, exam_name_lower):
-        """Detect clinical context from exam name."""
-        contexts = []
-        for context, patterns in self.clinical_context.items():
-            if any(pattern.search(exam_name_lower) for pattern in patterns):
-                contexts.append(context)
-        return contexts
-    
-    def _apply_anatomical_hierarchy(self, anatomy_list, modality):
-        """Apply anatomical hierarchy and equivalence rules."""
-        if not anatomy_list:
-            return anatomy_list
+
+    def _calculate_confidence(self, result: Dict, original_exam_name: str) -> float:
+        """Calculates a confidence score based on the completeness of the parse."""
+        score = 0.5  # Base confidence
+
+        if result.get('anatomy'):
+            score += 0.30
+        if result.get('modality') != 'Unknown':
+            score += 0.1
+        if result.get('contrast'):
+            score += 0.1
+        
+        # Small penalty for very short names
+        if len(original_exam_name.split()) < 3:
+            score -= 0.1
             
-        # Sort anatomy list for consistent processing
-        anatomy_set = set(anatomy_list)
-        
-        # Handle common clinical equivalences
-        if 'Abdomen' in anatomy_set and 'Pelvis' in anatomy_set:
-            # For CT scans, Abdomen+Pelvis is often clinically equivalent to Abdomen/Pelvis
-            if modality == 'CT':
-                return ['Abdomen/Pelvis']
-            else:
-                return ['Abdomen', 'Pelvis']
-        
-        if 'Head' in anatomy_set and 'Neck' in anatomy_set:
-            return ['Head/Neck']
-            
-        if 'Chest' in anatomy_set and 'Abdomen' in anatomy_set and 'Pelvis' in anatomy_set:
-            return ['Chest/Abdomen/Pelvis']
-        
-        # Remove redundant anatomy based on hierarchy
-        filtered_anatomy = []
-        for anatomy in anatomy_list:
-            is_redundant = False
-            
-            # Check if this anatomy is contained within another anatomy in the list
-            for container, contained in self.anatomical_hierarchy.get('contains', {}).items():
-                if container in anatomy_set and anatomy in contained:
-                    is_redundant = True
-                    break
-            
-            if not is_redundant:
-                filtered_anatomy.append(anatomy)
-        
-        return sorted(filtered_anatomy) if filtered_anatomy else anatomy_list
-    
-    def _calculate_confidence(self, result, original_exam_name):
-        """Calculate confidence score based on parsing results."""
-        confidence = 1.0
-        
-        # Reduce confidence if no anatomy found
-        if not result['anatomy']:
-            confidence -= 0.3
-        
-        # Reduce confidence if very short exam name (likely ambiguous)
-        if original_exam_name and len(original_exam_name) < 5:
-            confidence -= 0.2
-        
-        # HIGH PRIORITY: Boost confidence for contrast mentions
-        if result['contrast']:
-            # High confidence boost for explicit contrast mentions
-            if result['contrast'] == 'with':
-                confidence += 0.2  # Strong boost for with contrast/C+
-            elif result['contrast'] == 'with and without':
-                confidence += 0.25  # Highest boost for dual contrast studies
-            # Note: 'without' contrast (C-) doesn't get a boost as it's baseline state
-        
-        # Additional boost if contrast patterns are detected in original exam name
-        if original_exam_name:
-            lower_exam_name = original_exam_name.lower()
-            contrast_terms = ['contrast', 'c+', 'c-', 'enhanced', 'post contrast', 'post gad']
-            if any(term in lower_exam_name for term in contrast_terms):
-                confidence += 0.15  # High rating for any contrast mention
-        
-        # Increase confidence if multiple components detected
-        components_found = sum([
-            1 if result['anatomy'] else 0,
-            1 if result['laterality'] else 0,
-            1 if result['contrast'] else 0,
-            1 if result['technique'] else 0
-        ])
-        
-        if components_found >= 3:
-            confidence += 0.1
-        elif components_found == 1:
-            confidence -= 0.1
-        
-        # Ensure confidence is between 0 and 1
-        return max(0.0, min(1.0, confidence))
-    
-    def _find_clinical_equivalents(self, anatomy_list):
-        """Find clinical equivalents for the given anatomy combination."""
-        equivalents = []
-        
-        # Check for known equivalents
-        for equiv_name, equiv_parts in self.anatomical_hierarchy.get('equivalents', {}).items():
-            if set(anatomy_list) == set(equiv_parts):
-                equivalents.append(equiv_name)
-        
-        # Add individual anatomy parts as potential equivalents
-        if len(anatomy_list) > 1:
-            equivalents.extend(anatomy_list)
-        
-        return list(set(equivalents))
+        return max(0.1, min(1.0, round(score, 2)))
