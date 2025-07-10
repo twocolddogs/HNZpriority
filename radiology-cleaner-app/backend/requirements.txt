@@ -1,23 +1,20 @@
 # Web server
-
 Flask==3.0.0
 Flask-CORS==4.0.0
 gunicorn==21.2.0
 
 # Core ML/NLP libraries
-
 scikit-learn==1.3.2
 pandas==2.1.4
 joblib==1.3.2
 
 # Enhanced dependencies for comprehensive API
-
 numpy==1.24.3  # Compatible with scikit-learn 1.3.2
-spacy==3.7.2  # Pinned version for consistency
+# CORRECTED: Updated to meet the ScispaCy model's requirement
+spacy==3.7.4
 typing-extensions==4.9.0
 python-dateutil==2.8.2
 psutil==5.9.6
 
-# The specific ScispaCy model compatible with spacy v3.7.x
-
-https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
+# NOTE: The ScispaCy model URL has been removed from this file.
+# It is now installed ONLY by your build.sh script, which is the correct approach.
