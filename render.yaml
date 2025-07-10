@@ -1,5 +1,3 @@
-# render.yaml - Fixed configuration
-
 services:
 
 # — Staging Service —
@@ -19,9 +17,14 @@ services:
     value: 3.11.6
   - key: PIP_VERSION
     value: 23.2.1
+  
+  # Memory optimization for SpaCy
+  - key: SPACY_MAX_LENGTH
+    value: 1000000
     buildCommand: “chmod +x build.sh && ./build.sh”
-    startCommand: “gunicorn –bind 0.0.0.0:$PORT –workers 1 –threads 2 –timeout 120 –log-level info app:app”
+    startCommand: “gunicorn –bind 0.0.0.0:$PORT –workers 1 –threads 1 –timeout 120 –preload –log-level debug app:app”
     autoDeploy: true
+    healthCheckPath: /
 
 # — Production Service —
 
@@ -40,6 +43,9 @@ services:
     value: 3.11.6
   - key: PIP_VERSION
     value: 23.2.1
+  - key: SPACY_MAX_LENGTH
+    value: 1000000
     buildCommand: “chmod +x build.sh && ./build.sh”
-    startCommand: “gunicorn –bind 0.0.0.0:$PORT –workers 1 –threads 2 –timeout 120 –log-level info app:app”
+    startCommand: “gunicorn –bind 0.0.0.0:$PORT –workers 1 –threads 1 –timeout 120 –preload –log-level info app:app”
     autoDeploy: false
+    healthCheckPath: /
