@@ -5,6 +5,8 @@ services:
 - type: web
   name: radiology-api-staging
   env: python
+  # NOTE: The free plan has very limited memory (512MB). If you continue to see
+  # memory-related errors, you will need to upgrade to the "Starter" plan.
   plan: free
   repo: https://github.com/twocolddogs/HNZpriority.git
   branch: develop
@@ -21,9 +23,10 @@ services:
     - key: SPACY_MAX_LENGTH
       value: 1000000
   buildCommand: "chmod +x build.sh && ./build.sh"
-  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 400 --preload --log-level debug app:app"
+  # CORRECTED: Increased timeout to 300s to allow for heavy model loading on first request.
+  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 300 --preload --log-level debug app:app"
   autoDeploy: true
-  # CORRECTED: Changed path to match the /health endpoint in app.py
+  # CORRECTED: Pointed health check to the correct /health endpoint in your app.py
   healthCheckPath: /health
 
 # - Production Service -
@@ -31,6 +34,8 @@ services:
 - type: web
   name: radiology-api-prod
   env: python
+  # NOTE: The free plan has very limited memory (512MB). If you continue to see
+  # memory-related errors, you will need to upgrade to the "Starter" plan.
   plan: free
   repo: https://github.com/twocolddogs/HNZpriority.git
   branch: main
@@ -46,7 +51,8 @@ services:
     - key: SPACY_MAX_LENGTH
       value: 1000000
   buildCommand: "chmod +x build.sh && ./build.sh"
-  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 120 --preload --log-level info app:app"
+  # CORRECTED: Increased timeout to 300s to allow for heavy model loading on first request.
+  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 300 --preload --log-level info app:app"
   autoDeploy: false
-  # CORRECTED: Changed path to match the /health endpoint in app.py
+  # CORRECTED: Pointed health check to the correct /health endpoint in your app.py
   healthCheckPath: /health
