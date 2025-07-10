@@ -14,15 +14,12 @@ pip install --upgrade pip setuptools wheel
 echo "--> Installing base requirements..."
 pip install -r requirements.txt
 
-# --- Step 3: Manually Install the NLP Stack in a Controlled Order ---
+# --- Step 3: Manually Install the NLP Stack (The Fix) ---
 # This multi-step process prevents build failures by installing components
-# in a specific sequence, forcing pre-compiled wheels where needed.
+# in a specific order, forcing pre-compiled wheels where needed.
 
-echo "--> Force-installing nmslib from a pre-built binary wheel..."
+echo "--> Force-installing nmslib from a pre-built binary wheel to avoid compilation..."
 pip install nmslib-metabrainz
-
-echo "--> Installing a compatible version of pybind11..."
-pip install pybind11==2.6.2
 
 echo "--> Installing spacy (v3.6.1)..."
 pip install spacy==3.6.1
