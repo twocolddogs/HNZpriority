@@ -13,7 +13,7 @@ numpy==1.26.4
 
 # --- SpaCy and MedspaCy NLP Pipeline Dependencies ---
 # Pinning to a known stable combination.
-spacy==3.6.1
+spacy==3.5.4
 scispacy==0.5.3
 medspacy==1.1.2
 
