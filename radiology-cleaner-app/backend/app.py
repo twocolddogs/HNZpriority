@@ -8,14 +8,9 @@ from datetime import datetime
 import logging
 import threading
 import os
+import sys
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-# Import our enhanced components
-from parser import RadiologySemanticParser
-from standardization_engine import StandardizationEngine
-from database_models import DatabaseManager, CacheManager
-from model_manager import ModelManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,45 +18,99 @@ logger = logging.getLogger(__name__)
 
 # --- App Initialization ---
 app = Flask(__name__)
-CORS(app) # Allows our frontend to call the API
+CORS(app)  # Allows our frontend to call the API
 
-# Initialize enhanced components
-db_manager = DatabaseManager()
-cache_manager = CacheManager()
-model_manager = ModelManager()
-standardization_engine = StandardizationEngine(db_manager=db_manager)
-semantic_parser = RadiologySemanticParser(db_manager=db_manager, standardization_engine=standardization_engine, model_manager=model_manager)
+# Initialize variables first
+nlp = None
+db_manager = None
+cache_manager = None
+model_manager = None
+standardization_engine = None
+semantic_parser = None
+
+try:
+    # Import our enhanced components
+    from parser import RadiologySemanticParser
+    from standardization_engine import StandardizationEngine
+    from database_models import DatabaseManager, CacheManager
+    from model_manager import ModelManager
+    
+    # Initialize enhanced components
+    db_manager = DatabaseManager()
+    cache_manager = CacheManager()
+    model_manager = ModelManager()
+    standardization_engine = StandardizationEngine(db_manager=db_manager)
+    semantic_parser = RadiologySemanticParser(
+        db_manager=db_manager, 
+        standardization_engine=standardization_engine, 
+        model_manager=model_manager
+    )
+    
+except Exception as e:
+    logger.error(f"Failed to initialize components: {e}")
+    # Create dummy components to prevent crashes
+    class DummyComponent:
+        def __getattr__(self, name):
+            return lambda *args, **kwargs: None
+    
+    db_manager = db_manager or DummyComponent()
+    cache_manager = cache_manager or DummyComponent()
+    model_manager = model_manager or DummyComponent()
+    standardization_engine = standardization_engine or DummyComponent()
+    semantic_parser = semantic_parser or DummyComponent()
 
 # --- Load Models on Startup ---
 print("Loading ScispaCy model...")
 try:
+    # First try to load the model if it's already installed
     nlp = spacy.load("en_core_sci_sm")
     print("ScispaCy model loaded successfully.")
-except OSError as e:
-    logger.error(f"ScispaCy model not found: {e}")
-    logger.error("Please install ScispaCy model: pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.3/en_core_sci_sm-0.5.3.tar.gz")
-    nlp = None
+except OSError:
+    # Model not found, try to install it
+    logger.warning("ScispaCy model not found. Attempting to install...")
+    try:
+        import subprocess
+        # Install the model using pip
+        subprocess.check_call([
+            sys.executable, "-m", "pip", "install",
+            "https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz"
+        ])
+        # Try loading again
+        nlp = spacy.load("en_core_sci_sm")
+        print("ScispaCy model installed and loaded successfully.")
+    except Exception as install_error:
+        logger.error(f"Failed to install ScispaCy model: {install_error}")
+        logger.warning("App will continue without ScispaCy NLP features")
+        nlp = None
 except Exception as e:
     logger.error(f"Error loading ScispaCy model: {e}")
+    logger.warning("App will continue without ScispaCy NLP features")
     nlp = None
 
 # Load ML models via ModelManager
 print("Loading ML models...")
-ml_models_loaded = model_manager.load_ml_models()
-if ml_models_loaded:
-    print("All ML models loaded successfully.")
-else:
-    logger.warning("Some ML models failed to load. Check model files.")
-    print(f"Model status: {model_manager.get_model_status()}")
-
-import os
+try:
+    if model_manager and hasattr(model_manager, 'load_ml_models'):
+        ml_models_loaded = model_manager.load_ml_models()
+        if ml_models_loaded:
+            print("All ML models loaded successfully.")
+        else:
+            logger.warning("Some ML models failed to load. Check model files.")
+            if hasattr(model_manager, 'get_model_status'):
+                print(f"Model status: {model_manager.get_model_status()}")
+except Exception as e:
+    logger.error(f"Failed to load ML models: {e}")
+    logger.warning("App will continue without ML models")
 
 # --- Load SNOMED Data ---
 print("Loading SNOMED reference data...")
 try:
     csv_path = os.path.join(os.path.dirname(__file__), 'base_code_set.csv')
-    db_manager.load_snomed_from_csv(csv_path)
-    print("SNOMED data loaded successfully.")
+    if os.path.exists(csv_path) and db_manager and hasattr(db_manager, 'load_snomed_from_csv'):
+        db_manager.load_snomed_from_csv(csv_path)
+        print("SNOMED data loaded successfully.")
+    else:
+        logger.warning(f"SNOMED data file not found at {csv_path}")
 except Exception as e:
     logger.error(f"Failed to load SNOMED data: {e}")
     logger.warning("App will continue without SNOMED data")
@@ -70,8 +119,11 @@ except Exception as e:
 print("Loading abbreviations data...")
 try:
     abbreviations_csv_path = os.path.join(os.path.dirname(__file__), 'abbreviations.csv')
-    db_manager.load_abbreviations_from_csv(abbreviations_csv_path)
-    print("Abbreviations data loaded successfully.")
+    if os.path.exists(abbreviations_csv_path) and db_manager and hasattr(db_manager, 'load_abbreviations_from_csv'):
+        db_manager.load_abbreviations_from_csv(abbreviations_csv_path)
+        print("Abbreviations data loaded successfully.")
+    else:
+        logger.warning(f"Abbreviations file not found at {abbreviations_csv_path}")
 except Exception as e:
     logger.error(f"Failed to load abbreviations data: {e}")
     logger.warning("App will continue without abbreviations data")
