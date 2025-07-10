@@ -37,12 +37,12 @@ pip list
 # Test critical imports
 
 echo “=== Testing imports ===”
-python -c “import flask; print(‘✓ Flask imported successfully’)” || echo “✗ Flask import failed”
-python -c “import flask_cors; print(‘✓ Flask-CORS imported successfully’)” || echo “✗ Flask-CORS import failed”
-python -c “import gunicorn; print(‘✓ Gunicorn imported successfully’)” || echo “✗ Gunicorn import failed”
-python -c “import spacy; print(‘✓ SpaCy imported successfully’)” || echo “✗ SpaCy import failed”
-python -c “import sklearn; print(‘✓ Scikit-learn imported successfully’)” || echo “✗ Scikit-learn import failed”
-python -c “import pandas; print(‘✓ Pandas imported successfully’)” || echo “✗ Pandas import failed”
+python -c “import flask; print(‘Flask imported successfully’)” || echo “Flask import failed”
+python -c “import flask_cors; print(‘Flask-CORS imported successfully’)” || echo “Flask-CORS import failed”
+python -c “import gunicorn; print(‘Gunicorn imported successfully’)” || echo “Gunicorn import failed”
+python -c “import spacy; print(‘SpaCy imported successfully’)” || echo “SpaCy import failed”
+python -c “import sklearn; print(‘Scikit-learn imported successfully’)” || echo “Scikit-learn import failed”
+python -c “import pandas; print(‘Pandas imported successfully’)” || echo “Pandas import failed”
 
 # Try to load the SpaCy model
 
@@ -51,21 +51,21 @@ python -c “
 try:
 import spacy
 nlp = spacy.load(‘en_core_sci_sm’)
-print(‘✓ SpaCy model loaded successfully’)
+print(‘SpaCy model loaded successfully’)
 except:
-print(‘✗ SpaCy model not available - app will run without NLP features’)
+print(‘SpaCy model not available - app will run without NLP features’)
 “ || echo “SpaCy model test failed”
 
 # Check for required data files
 
 echo “=== Checking for data files ===”
-[ -f “base_code_set.csv” ] && echo “✓ base_code_set.csv found” || echo “✗ base_code_set.csv not found”
-[ -f “abbreviations.csv” ] && echo “✓ abbreviations.csv found” || echo “✗ abbreviations.csv not found”
+[ -f “base_code_set.csv” ] && echo “base_code_set.csv found” || echo “base_code_set.csv not found”
+[ -f “abbreviations.csv” ] && echo “abbreviations.csv found” || echo “abbreviations.csv not found”
 
 # Check if app.py exists and is valid
 
 echo “=== Checking app.py ===”
-[ -f “app.py” ] && echo “✓ app.py found” || { echo “✗ app.py not found!”; exit 1; }
-python -m py_compile app.py && echo “✓ app.py syntax is valid” || { echo “✗ app.py has syntax errors!”; exit 1; }
+[ -f “app.py” ] && echo “app.py found” || { echo “app.py not found!”; exit 1; }
+python -m py_compile app.py && echo “app.py syntax is valid” || { echo “app.py has syntax errors!”; exit 1; }
 
 echo “=== Build completed successfully ===”
