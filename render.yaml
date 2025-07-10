@@ -21,7 +21,7 @@ services:
     - key: SPACY_MAX_LENGTH
       value: 1000000
   buildCommand: "chmod +x build.sh && ./build.sh"
-  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 120 --preload --log-level debug app:app"
+  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 400 --preload --log-level debug app:app"
   autoDeploy: true
   # CORRECTED: Changed path to match the /health endpoint in app.py
   healthCheckPath: /health
