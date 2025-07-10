@@ -12,10 +12,11 @@ joblib==1.4.2
 numpy==1.26.4
 
 # --- SpaCy and MedspaCy NLP Pipeline Dependencies ---
-# Pinning to a known stable combination to resolve build errors.
-spacy==3.7.2
+# Pinning to a specific, known-compatible combination to resolve build conflicts.
+# scispacy 0.5.3 requires spacy < 3.7.
+spacy==3.6.1
 scispacy==0.5.3
-medspacy==1.2.0
+medspacy==1.1.2
 
 # Other core dependencies
 typing-extensions==4.12.2
