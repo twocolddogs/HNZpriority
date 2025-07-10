@@ -46,6 +46,11 @@ class ModalityExtractor:
                 r'\bCXR\b',  # Chest X-ray
                 r'\bAXR\b',  # Abdominal X-ray
                 r'\bKUB\b',  # Kidneys, Ureters, Bladder
+                r'\bsingle projection\b',  # Common XR term
+                r'\btwo views?\b',  # Two view X-ray
+                r'\bAP and lateral\b',  # Standard X-ray views
+                r'\bplain radiograph\b',
+                r'\bbone film\b',
             ],
             'NM': [
                 r'\bNM\b',
@@ -483,7 +488,7 @@ class ComprehensivePreprocessor:
         
         return patterns
     
-    def preprocess_exam_name(self, exam_name: str) -> Dict:
+    def preprocess_exam_name(self, exam_name: str, provided_modality: str = None) -> Dict:
         """Complete preprocessing pipeline"""
         original = exam_name.strip()
         
@@ -491,10 +496,16 @@ class ComprehensivePreprocessor:
         expanded = self.abbreviation_expander.expand(original)
         
         # Step 2: Extract all components
+        # Use provided modality first, fall back to extraction
+        detected_modality = self.modality_extractor.extract(expanded)
+        final_modality = provided_modality or detected_modality
+        
         components = {
             'original': original,
             'expanded': expanded,
-            'modality': self.modality_extractor.extract(expanded),
+            'modality': final_modality,
+            'detected_modality': detected_modality,  # Keep for debugging
+            'provided_modality': provided_modality,  # Keep for debugging
             'anatomy': self.anatomy_extractor.extract(expanded),
             'laterality': self.laterality_detector.detect(expanded),
             'contrast': self.contrast_mapper.detect_contrast(expanded),

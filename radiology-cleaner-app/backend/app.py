@@ -149,7 +149,7 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
     
     try:
         # Process with comprehensive preprocessor
-        result = comprehensive_preprocessor.preprocess_exam_name(exam_name)
+        result = comprehensive_preprocessor.preprocess_exam_name(exam_name, modality_code)
         
         # Convert to legacy format for backward compatibility
         components = result.get('components', {})
