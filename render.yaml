@@ -23,7 +23,8 @@ services:
   buildCommand: "chmod +x build.sh && ./build.sh"
   startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 120 --preload --log-level debug app:app"
   autoDeploy: true
-  healthCheckPath: /
+  # CORRECTED: Changed path to match the /health endpoint in app.py
+  healthCheckPath: /health
 
 # - Production Service -
 
@@ -47,4 +48,5 @@ services:
   buildCommand: "chmod +x build.sh && ./build.sh"
   startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 120 --preload --log-level info app:app"
   autoDeploy: false
-  healthCheckPath: /
+  # CORRECTED: Changed path to match the /health endpoint in app.py
+  healthCheckPath: /health
