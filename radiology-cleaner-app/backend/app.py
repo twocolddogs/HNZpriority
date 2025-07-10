@@ -1184,3 +1184,7 @@ def cleanup_old_data():
 # Start background cleanup task
 cleanup_thread = threading.Thread(target=cleanup_old_data, daemon=True)
 cleanup_thread.start()
+
+# In your app.py or main Flask file
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
