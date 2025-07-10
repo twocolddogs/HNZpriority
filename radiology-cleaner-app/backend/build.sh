@@ -9,7 +9,7 @@ echo “=== Starting build process ===”
 # Upgrade pip, setuptools, and wheel to ensure they can handle modern packages
 
 echo “Upgrading pip, setuptools, and wheel…”
-pip install –upgrade pip setuptools wheel
+pip install -upgrade pip setuptools wheel
 
 # Install the dependencies from requirements.txt
 
