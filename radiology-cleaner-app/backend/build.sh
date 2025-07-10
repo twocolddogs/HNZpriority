@@ -14,10 +14,9 @@ echo "--> Installing requirements from requirements.txt..."
 pip install -r requirements.txt
 
 # --- Step 3: Download the ScispaCy Model via Direct URL ---
-# This is the most reliable method for this specific model.
-# The model version 0.5.4 is compatible with scispacy==0.5.4.
-echo "--> Downloading ScispaCy model 'en_core_sci_sm' v0.5.4 from URL..."
-pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz || {
+# CORRECTED: Using the direct URL for the model that matches scispacy==0.5.3
+echo "--> Downloading ScispaCy model 'en_core_sci_sm' v0.5.3 from URL..."
+pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.3/en_core_sci_sm-0.5.3.tar.gz || {
     echo "--- !!! WARNING !!! ---"
     echo "ScispaCy model 'en_core_sci_sm' download failed."
     echo "The application will run, but NLP features will be disabled."
@@ -50,9 +49,8 @@ except Exception as e:
     print(f'    ❌ WARNING: SpaCy model not available. Error: {e}', file=sys.stderr)
 "
 
-# --- CORRECTED FILE CHECKING ---
-# Assumes your data files are in a 'core' subdirectory relative to your app.py
 echo "--> Checking for required application files..."
+# Assumes your data files are in a 'core' subdirectory
 for f in app.py parser.py nlp_processor.py database_models.py feedback_training.py comprehensive_preprocessor.py; do
   [ -f "$f" ] && echo "    ✅ $f found." || { echo "    ❌ CRITICAL: $f not found!"; exit 1; }
 done
