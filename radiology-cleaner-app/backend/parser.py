@@ -95,7 +95,7 @@ class RadiologySemanticParser:
 
     def parse_exam_name(self, exam_name: str, modality_code: str, scispacy_entities: Optional[Dict] = None) -> Dict:
         """
-        Parses a radiology exam name using a hybrid approach combining NLP entities
+        Parses a radiology exam name using a hybrid approach combining NLP entities 
         with rule-based matching for maximum accuracy.
 
         Args:
@@ -104,18 +104,18 @@ class RadiologySemanticParser:
             scispacy_entities: A dictionary of entities extracted by the NLPProcessor.
 
         Returns:
-            A dictionary containing the parsed components and a clean name.
+            A dictionary containing the parsed components.
         """
         if scispacy_entities is None:
             scispacy_entities = {}
             
         lower_name = exam_name.lower()
         
-        # Step 1: Hybrid Anatomy Parsing
+        # --- Step 1: Hybrid Anatomy Parsing ---
         nlp_anatomy_terms = [term.lower() for term in scispacy_entities.get('ANATOMY', [])]
         found_anatomy_keys = self._parse_anatomy_hybrid(lower_name, nlp_anatomy_terms)
         
-        # Step 2: Parse Other Components
+        # --- Step 2: Parse Other Components ---
         parsed = {
             'modality': self.modality_map.get(modality_code.upper(), modality_code),
             'anatomy': sorted([self.anatomy_mappings[key]['standardName'] for key in found_anatomy_keys]),
@@ -153,7 +153,6 @@ class RadiologySemanticParser:
 
     def _parse_laterality(self, lower_name: str, scispacy_entities: Dict) -> Optional[str]:
         """Parse laterality using NLP first, then regex fallback."""
-        # NLP is often better at contextual direction
         nlp_directions = [d.lower() for d in scispacy_entities.get('DIRECTION', [])]
         if 'left' in nlp_directions:
             return 'Left'
@@ -162,7 +161,6 @@ class RadiologySemanticParser:
         if 'bilateral' in nlp_directions:
              return 'Bilateral'
 
-        # Regex as a fallback
         for lat, pattern in self.laterality_patterns.items():
             if pattern.search(lower_name):
                 return lat
