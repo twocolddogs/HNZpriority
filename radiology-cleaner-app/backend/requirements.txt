@@ -16,7 +16,7 @@ spacy==3.6.1
 
 # IMPORTANT: Installing scispacy[spacy] to avoid the broken nmslib dependency
 scispacy[spacy]==0.5.3
-medspacy==1.1.2
+medspacy==1.1.0
 
 # -- Vector Similarity Library --
 # Using hnswlib which has reliable pre-built binaries
