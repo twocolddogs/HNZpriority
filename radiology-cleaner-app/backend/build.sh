@@ -9,20 +9,20 @@ echo "=== Starting Build Process on $(date) ==="
 echo "--> Upgrading pip, setuptools, and wheel..."
 pip install --upgrade pip setuptools wheel
 
-# --- Step 2: Install Python Dependencies ---
-# We will install most requirements first.
-echo "--> Installing requirements from requirements.txt (excluding medspacy for now)..."
-pip install -r <(grep -v "medspacy" requirements.txt)
+# --- Step 2: Pre-install Problematic C++ Dependencies ---
+# This is the key fix. We install the pre-built binary wheel for nmslib
+# *before* any other package can trigger a source build.
+echo "--> Pre-installing nmslib from a binary wheel to avoid compilation..."
+pip install nmslib-metabrainz
 
-# --- Step 3: Install medspacy and its dependencies from pre-built wheels ---
-# This is the key fix to bypass the build error on Render's environment.
-# We are installing known-good wheels directly.
-echo "--> Installing medspacy and its dependencies from pre-built wheels..."
-pip install https://github.com/medspacy/medspacy/releases/download/v1.1.2/medspacy-1.1.2-py3-none-any.whl
-pip install https://github.com/medspacy/medspacy-quickumls/releases/download/v3.0/medspacy_quickumls-3.0-py3-none-any.whl
+# --- Step 3: Install All Other Python Dependencies ---
+# Now, when pip processes requirements.txt, it will see that 'nmslib' is
+# already satisfied by 'nmslib-metabrainz' and will not attempt to build it.
+echo "--> Installing the rest of the requirements from requirements.txt..."
+pip install -r requirements.txt
 
 # --- Step 4: Download the ScispaCy Model ---
-# This model version is compatible with the scispacy==0.5.3 installed in Step 2.
+# This model version is compatible with scispacy==0.5.3 from requirements.
 echo "--> Downloading ScispaCy model 'en_core_sci_sm' v0.5.3 from URL..."
 pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.3/en_core_sci_sm-0.5.3.tar.gz || {
     echo "--- !!! WARNING !!! ---"
@@ -45,6 +45,7 @@ python -c "import flask; print('    ✅ Flask imported successfully')"
 python -c "import spacy; print('    ✅ SpaCy imported successfully')"
 python -c "import scispacy; print('    ✅ SciSpacy imported successfully')"
 python -c "import medspacy; print('    ✅ Medspacy imported successfully')"
+python -c "import nmslib; print('    ✅ NMSLIB imported successfully')"
 
 echo "--> Testing SpaCy model loading..."
 python -c "
