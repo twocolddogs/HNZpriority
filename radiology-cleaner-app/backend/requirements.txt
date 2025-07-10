@@ -12,11 +12,15 @@ joblib==1.4.2
 numpy==1.26.4
 
 # --- SpaCy and MedspaCy NLP Pipeline Dependencies ---
-# Pinning to a specific, known-compatible combination to resolve build conflicts.
-# scispacy 0.5.3 requires spacy < 3.7.
+# Pinning to a known stable combination to resolve build conflicts.
 spacy==3.6.1
 scispacy==0.5.3
 medspacy==1.1.2
+
+# --- Dependency Resolution for Build Errors ---
+# Use the pre-built binary wheel for nmslib to avoid C++ compilation issues on Render.
+# This package is a dependency of scispacy/medspacy.
+nmslib-metabrainz
 
 # Other core dependencies
 typing-extensions==4.12.2
