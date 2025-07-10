@@ -13,15 +13,14 @@ numpy==1.26.4
 
 # --- SpaCy and MedspaCy NLP Pipeline Dependencies ---
 # Pinning to a known stable combination.
-# Downgrading spacy to be compatible with scispacy 0.5.3
-spacy==3.5.4 
+# The correct version for scispacy 0.5.3 is spacy 3.6.x
+spacy==3.6.1
 # IMPORTANT: Installing scispacy without its default (broken) nmslib dependency
 scispacy[spacy]==0.5.3
 medspacy==1.1.2
 
 # --- Dependency Resolution for Build Errors ---
-# Using hnswlib, which has reliable pre-built binaries and avoids
-# the C++ compilation errors seen with nmslib.
+# Using hnswlib, which has reliable pre-built binaries.
 hnswlib==0.8.0
 
 # Other core dependencies
