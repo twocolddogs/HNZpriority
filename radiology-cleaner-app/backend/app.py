@@ -8,12 +8,14 @@ from datetime import datetime
 import logging
 import threading
 import os
+import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Import our enhanced components
 from parser import RadiologySemanticParser
 from standardization_engine import StandardizationEngine
 from database_models import DatabaseManager, CacheManager
+from model_manager import ModelManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,19 +28,31 @@ CORS(app) # Allows our frontend to call the API
 # Initialize enhanced components
 db_manager = DatabaseManager()
 cache_manager = CacheManager()
+model_manager = ModelManager()
 standardization_engine = StandardizationEngine(db_manager=db_manager)
-semantic_parser = RadiologySemanticParser(db_manager=db_manager, standardization_engine=standardization_engine)
+semantic_parser = RadiologySemanticParser(db_manager=db_manager, standardization_engine=standardization_engine, model_manager=model_manager)
 
 # --- Load Models on Startup ---
 print("Loading ScispaCy model...")
 try:
     nlp = spacy.load("en_core_sci_sm")
-    print("ScispaCy model loaded.")
-except OSError:
-    print("ScispaCy model not found. Please run: pip install https://...")
+    print("ScispaCy model loaded successfully.")
+except OSError as e:
+    logger.error(f"ScispaCy model not found: {e}")
+    logger.error("Please install ScispaCy model: pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.3/en_core_sci_sm-0.5.3.tar.gz")
+    nlp = None
+except Exception as e:
+    logger.error(f"Error loading ScispaCy model: {e}")
     nlp = None
 
-# ML models are loaded on demand within parser.py if not skipped
+# Load ML models via ModelManager
+print("Loading ML models...")
+ml_models_loaded = model_manager.load_ml_models()
+if ml_models_loaded:
+    print("All ML models loaded successfully.")
+else:
+    logger.warning("Some ML models failed to load. Check model files.")
+    print(f"Model status: {model_manager.get_model_status()}")
 
 import os
 
@@ -51,6 +65,20 @@ db_manager.load_snomed_from_csv(csv_path)
 print("Loading abbreviations data...")
 abbreviations_csv_path = os.path.join(os.path.dirname(__file__), 'abbreviations.csv')
 db_manager.load_abbreviations_from_csv(abbreviations_csv_path)
+
+def get_optimal_worker_count(task_type: str = 'mixed', max_items: int = 100) -> int:
+    """Calculate optimal worker count based on task type and workload."""
+    cpu_count = multiprocessing.cpu_count()
+    
+    if task_type == 'cpu_bound':
+        # For CPU-bound tasks, use CPU count
+        return min(cpu_count, max_items)
+    elif task_type == 'io_bound':
+        # For I/O-bound tasks, use more workers
+        return min(cpu_count * 2, max_items, 20)
+    else:
+        # Mixed workload - moderate parallelism
+        return min(cpu_count + 2, max_items, 16)
 
 def record_performance(endpoint: str, processing_time_ms: int, input_size: int, 
                       success: bool, error_message: Optional[str] = None):
@@ -67,28 +95,36 @@ def record_performance(endpoint: str, processing_time_ms: int, input_size: int,
         logger.error(f"Failed to record performance metric: {e}")
 
 def extract_scispacy_entities(exam_name: str) -> Dict:
-    """Extract entities using ScispaCy."""
+    """Extract entities using ScispaCy with proper error handling."""
     scispacy_entities = {'ANATOMY': [], 'DIRECTION': []}
     
-    if nlp:
-        try:
-            doc = nlp(exam_name)
-            for ent in doc.ents:
-                if ent.label_ in ['ANATOMY', 'BODY_PART_OR_ORGAN']:
-                    scispacy_entities['ANATOMY'].append(ent.text.capitalize())
-                elif ent.label_ == 'DIRECTION':
-                    scispacy_entities['DIRECTION'].append(ent.text.capitalize())
-        except Exception as e:
-            logger.error(f"ScispaCy processing failed: {e}")
+    if nlp is None:
+        logger.debug("ScispaCy model not available, returning empty entities")
+        return scispacy_entities
+    
+    try:
+        doc = nlp(exam_name)
+        for ent in doc.ents:
+            if ent.label_ in ['ANATOMY', 'BODY_PART_OR_ORGAN']:
+                scispacy_entities['ANATOMY'].append(ent.text.capitalize())
+            elif ent.label_ == 'DIRECTION':
+                scispacy_entities['DIRECTION'].append(ent.text.capitalize())
+    except Exception as e:
+        logger.error(f"ScispaCy processing failed for '{exam_name}': {e}")
+        # Return empty entities rather than failing
     
     return scispacy_entities
 
 def extract_scispacy_entities_batch(exam_names: List[str]) -> List[Dict]:
-    """Extract entities for multiple exam names in batch for better performance."""
-    results = []
-    
+    """Extract entities for multiple exam names in batch with robust error handling."""
     if not nlp:
+        logger.debug("ScispaCy model not available, returning empty entities for batch")
         return [{'ANATOMY': [], 'DIRECTION': []} for _ in exam_names]
+    
+    if not exam_names:
+        return []
+    
+    results = []
     
     try:
         # Process in batches to avoid memory issues
@@ -96,21 +132,28 @@ def extract_scispacy_entities_batch(exam_names: List[str]) -> List[Dict]:
         for i in range(0, len(exam_names), batch_size):
             batch = exam_names[i:i+batch_size]
             
-            # Process batch with nlp.pipe for better performance
-            docs = nlp.pipe(batch)
-            
-            for doc in docs:
-                entities = {'ANATOMY': [], 'DIRECTION': []}
-                for ent in doc.ents:
-                    if ent.label_ in ['ANATOMY', 'BODY_PART_OR_ORGAN']:
-                        entities['ANATOMY'].append(ent.text.capitalize())
-                    elif ent.label_ == 'DIRECTION':
-                        entities['DIRECTION'].append(ent.text.capitalize())
-                results.append(entities)
+            try:
+                # Process batch with nlp.pipe for better performance
+                docs = nlp.pipe(batch)
+                
+                for doc in docs:
+                    entities = {'ANATOMY': [], 'DIRECTION': []}
+                    for ent in doc.ents:
+                        if ent.label_ in ['ANATOMY', 'BODY_PART_OR_ORGAN']:
+                            entities['ANATOMY'].append(ent.text.capitalize())
+                        elif ent.label_ == 'DIRECTION':
+                            entities['DIRECTION'].append(ent.text.capitalize())
+                    results.append(entities)
+                    
+            except Exception as e:
+                logger.error(f"Batch processing failed for batch {i//batch_size + 1}: {e}")
+                # Fallback to individual processing for this batch
+                for name in batch:
+                    results.append(extract_scispacy_entities(name))
                 
     except Exception as e:
-        logger.error(f"Batch ScispaCy processing failed: {e}")
-        # Fallback to individual processing
+        logger.error(f"Batch ScispaCy processing completely failed: {e}")
+        # Complete fallback to individual processing
         results = [extract_scispacy_entities(name) for name in exam_names]
     
     return results
@@ -330,9 +373,8 @@ def parse_batch():
                 except Exception as e:
                     return {"error": str(e), "exam": exam_data}
             
-            # Process with increased parallelism
-            import multiprocessing
-            max_workers = min(multiprocessing.cpu_count() * 2, 20)  # Optimize based on CPU cores
+            # Process with optimized parallelism for mixed workload
+            max_workers = get_optimal_worker_count('mixed', len(uncached_exams))
             
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {
@@ -387,7 +429,13 @@ def parse_batch():
         record_performance('parse_batch', processing_stats['processing_time_ms'], 
                           len(exams), len(errors) == 0)
         
-        return jsonify(response)
+        # Return appropriate HTTP status code
+        if len(errors) == 0:
+            return jsonify(response), 200
+        elif len(errors) / len(exams) < 0.5:  # Less than 50% failed
+            return jsonify(response), 207  # Multi-Status
+        else:
+            return jsonify(response), 500  # Server Error
         
     except Exception as e:
         logger.error(f"Batch parse endpoint error: {e}")
@@ -530,7 +578,13 @@ def parse_batch_chunked():
         record_performance('parse_batch_chunked', processing_stats['processing_time_ms'], 
                           len(exams), len(all_errors) == 0)
         
-        return jsonify(response)
+        # Return appropriate HTTP status code
+        if len(all_errors) == 0:
+            return jsonify(response), 200
+        elif len(all_errors) / len(exams) < 0.5:  # Less than 50% failed
+            return jsonify(response), 207  # Multi-Status
+        else:
+            return jsonify(response), 500  # Server Error
         
     except Exception as e:
         logger.error(f"Chunked batch parse endpoint error: {e}")
@@ -607,9 +661,8 @@ def parse_batch_fast():
                 except Exception as e:
                     return {"error": str(e), "exam": exam_data}
             
-            # Maximum parallelism for fast processing
-            import multiprocessing
-            max_workers = min(multiprocessing.cpu_count() * 4, 40)
+            # Optimized parallelism for fast processing (CPU-bound)
+            max_workers = get_optimal_worker_count('cpu_bound', len(uncached_exams))
             
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(process_exam_fast, exam): exam for exam in uncached_exams}
@@ -654,7 +707,13 @@ def parse_batch_fast():
         record_performance('parse_batch_fast', processing_stats['processing_time_ms'], 
                           len(exams), len(errors) == 0)
         
-        return jsonify(response)
+        # Return appropriate HTTP status code
+        if len(errors) == 0:
+            return jsonify(response), 200
+        elif len(errors) / len(exams) < 0.5:  # Less than 50% failed
+            return jsonify(response), 207  # Multi-Status
+        else:
+            return jsonify(response), 500  # Server Error
         
     except Exception as e:
         logger.error(f"Fast batch parse endpoint error: {e}")
@@ -1117,5 +1176,18 @@ cleanup_thread = threading.Thread(target=cleanup_old_data, daemon=True)
 cleanup_thread.start()
 
 if __name__ == '__main__':
+    # Get port from environment variable (Render sets this)
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    
+    # Get environment mode
+    debug_mode = os.environ.get('FLASK_ENV', 'production') == 'development'
+    
+    logger.info(f"Starting Flask app on port {port} in {'debug' if debug_mode else 'production'} mode")
+    
+    # For production deployment (like Render), use the configured port
+    # For development, allow override
+    if debug_mode:
+        app.run(host='0.0.0.0', port=port, debug=True)
+    else:
+        # Production mode - let gunicorn handle this, but keep for direct execution
+        app.run(host='0.0.0.0', port=port, debug=False)

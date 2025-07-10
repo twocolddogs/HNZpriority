@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: radiology-cleaner-api
+    env: python
+    buildCommand: "cd backend && pip install --upgrade pip setuptools wheel && pip install -r requirements.txt"
+    startCommand: "cd backend && gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 app:app"
+    plan: free
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHONPATH
+        value: /opt/render/project/src/backend
+    healthCheckPath: /health

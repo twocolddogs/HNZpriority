@@ -10,10 +10,10 @@ class RadiologySemanticParser:
     hybrid approach, combining NLP entities with rule-based matching for
     maximum accuracy.
     """
-    def __init__(self, db_manager=None, standardization_engine=None):
+    def __init__(self, db_manager=None, standardization_engine=None, model_manager=None):
         self.db_manager = db_manager
         self.standardization_engine = standardization_engine
-        self.db_manager = db_manager
+        self.model_manager = model_manager
         # (The entire __init__ section with all the mappings and patterns remains unchanged)
         self.anatomy_mappings = {
             'head': {'terms': ['head', 'brain', 'skull', 'cranial', 'cerebral', 'cranium'], 'standardName': 'Head', 'category': 'neurological'},
@@ -350,66 +350,10 @@ class RadiologySemanticParser:
 
     def _get_ml_predictions(self, exam_name):
         """Get ML model predictions for all components."""
-        try:
-            # Load models if available (circular import protection)
-            import sys
-            if 'app' in sys.modules:
-                app_module = sys.modules['app']
-                classifier = getattr(app_module, 'classifier', None)
-                vectorizer = getattr(app_module, 'vectorizer', None)
-                mlb = getattr(app_module, 'mlb', None)
-            else:
-                classifier = vectorizer = mlb = None
-            
-            if classifier is None or vectorizer is None or mlb is None:
-                return None
-            
-            # Vectorize the exam name
-            X = vectorizer.transform([exam_name])
-            
-            # Get predictions with probabilities
-            try:
-                predictions = classifier.predict(X)
-                probabilities = classifier.predict_proba(X)
-            except:
-                predictions = classifier.predict(X)
-                probabilities = None
-            
-            predicted_labels = mlb.inverse_transform(predictions)[0]
-            
-            # Organize predictions by category
-            ml_predictions = {
-                'anatomy': [],
-                'modality': [],
-                'laterality': None,
-                'contrast': None,
-                'gender_context': None,
-                'confidence_scores': {}
-            }
-            
-            for label in predicted_labels:
-                if ':' not in label:
-                    continue
-                    
-                category, value = label.split(':', 1)
-                category = category.lower()
-                
-                if category == 'anatomy':
-                    ml_predictions['anatomy'].append(value)
-                elif category == 'modality':
-                    ml_predictions['modality'].append(value)
-                elif category == 'laterality':
-                    ml_predictions['laterality'] = value.lower()
-                elif category == 'contrast':
-                    ml_predictions['contrast'] = value.lower().replace('with', 'with').replace('without', 'without')
-                elif category == 'gender':
-                    ml_predictions['gender_context'] = value.lower()
-            
-            return ml_predictions
-            
-        except Exception as e:
-            # ML model not available or error occurred
+        if not self.model_manager or not self.model_manager.are_ml_models_available():
             return None
+        
+        return self.model_manager.get_ml_predictions(exam_name)
 
     def _fuzzy_match_by_components(self, parsed_components):
         """Try fuzzy matching by building clean names with different component combinations."""
