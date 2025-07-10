@@ -15,7 +15,7 @@ scispacy[spacy]==0.5.4
 medspacy==1.0.0
 
 # -- Vector Similarity Library --
-hnswlib
+hnswlib==0.8.0
 
 # -- Other Core Dependencies --
 typing-extensions==4.12.2
