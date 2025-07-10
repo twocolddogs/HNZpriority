@@ -415,23 +415,74 @@
     <script>
     window.addEventListener('DOMContentLoaded', function() {
         // --- DYNAMIC API CONFIGURATION ---
-        // Local development API URLs
-        const LOCAL_API_URL = 'http://localhost:5001/parse_enhanced';
-        const LOCAL_BATCH_API_URL = 'http://localhost:5001/parse_batch';
-        const STAGING_API_URL = 'https://radiology-api-staging.onrender.com/parse_enhanced';
-        const STAGING_BATCH_API_URL = 'https://radiology-api-staging.onrender.com/parse_batch';
-        const PRODUCTION_API_URL = 'https://radiology-api-prod.onrender.com/parse_enhanced';
-        const PRODUCTION_BATCH_API_URL = 'https://radiology-api-prod.onrender.com/parse_batch';
-        const PRODUCTION_HOSTNAME = 'radiology-cleaner.pages.dev'; // Use your final Cloudflare Pages production domain here.
-
-        // Automatically select the correct API based on the frontend's URL
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const isProduction = window.location.hostname === PRODUCTION_HOSTNAME;
-        const API_URL = isLocalhost ? LOCAL_API_URL : (isProduction ? PRODUCTION_API_URL : STAGING_API_URL);
-        const BATCH_API_URL = isLocalhost ? LOCAL_BATCH_API_URL : (isProduction ? PRODUCTION_BATCH_API_URL : STAGING_BATCH_API_URL);
+        // Environment-aware API URL detection
+        function detectApiUrls() {
+            const hostname = window.location.hostname;
+            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+            const isProduction = hostname === 'radiology-cleaner.pages.dev' || hostname.includes('hnzradtools');
+            
+            // API base URLs
+            const apiConfigs = {
+                local: {
+                    base: 'http://localhost:5001',
+                    mode: 'LOCAL DEVELOPMENT'
+                },
+                staging: {
+                    base: 'https://radiology-api-staging.onrender.com',
+                    mode: 'STAGING'
+                },
+                production: {
+                    base: 'https://radiology-api-prod.onrender.com',
+                    mode: 'PRODUCTION'
+                }
+            };
+            
+            let config;
+            if (isLocalhost) {
+                config = apiConfigs.local;
+            } else if (isProduction) {
+                config = apiConfigs.production;
+            } else {
+                config = apiConfigs.staging;
+            }
+            
+            return {
+                API_URL: `${config.base}/parse_enhanced`,
+                BATCH_API_URL: `${config.base}/parse_batch`,
+                FEEDBACK_URL: `${config.base}/feedback`,
+                mode: config.mode,
+                baseUrl: config.base
+            };
+        }
         
-        console.log(`Frontend running in ${isProduction ? 'PRODUCTION' : 'STAGING'} mode.`);
-        console.log(`API endpoint set to: ${API_URL}`);
+        const apiConfig = detectApiUrls();
+        const API_URL = apiConfig.API_URL;
+        const BATCH_API_URL = apiConfig.BATCH_API_URL;
+        const FEEDBACK_URL = apiConfig.FEEDBACK_URL;
+        
+        console.log(`Frontend running in ${apiConfig.mode} mode`);
+        console.log(`API endpoints: ${apiConfig.baseUrl}`);
+        
+        // Test API connectivity on page load
+        async function testApiConnectivity() {
+            try {
+                const response = await fetch(`${apiConfig.baseUrl}/health`, { 
+                    method: 'GET',
+                    timeout: 5000 
+                });
+                if (response.ok) {
+                    console.log('✓ API connectivity test passed');
+                } else {
+                    console.warn('⚠ API health check returned non-200 status:', response.status);
+                }
+            } catch (error) {
+                console.error('✗ API connectivity test failed:', error);
+                console.error(`Check if backend is deployed at: ${apiConfig.baseUrl}`);
+            }
+        }
+        
+        // Test API on page load
+        testApiConnectivity();
 
         // --- STATE ---
         let allMappings = [];
@@ -1161,7 +1212,7 @@
             };
             
             try {
-                const response = await fetch(API_URL.replace('/parse_enhanced', '/feedback'), {
+                const response = await fetch(FEEDBACK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
@@ -1294,7 +1345,7 @@
             };
             
             try {
-                const response = await fetch(API_URL.replace('/parse_enhanced', '/feedback'), {
+                const response = await fetch(FEEDBACK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)

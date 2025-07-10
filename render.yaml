@@ -8,7 +8,7 @@ services:
     name: radiology-api-staging
     env: python
     plan: free # Can be changed to a paid plan if needed
-    repo: https://github.com/twocolddogs/hnzpriority.git # IMPORTANT: Change this!
+    repo: https://github.com/twocolddogs/HNZpriority.git
     branch: develop # Watches the develop branch
     rootDir: ./radiology-cleaner-app/backend
     buildFilter:
@@ -30,7 +30,7 @@ services:
     name: radiology-api-prod
     env: python
     plan: free # Can be changed to a paid plan for production
-    repo: https://github.com/twocolddogs/hnzpriority.git # IMPORTANT: Change this!
+    repo: https://github.com/twocolddogs/HNZpriority.git
     branch: main # Watches the main branch
     rootDir: ./radiology-cleaner-app/backend
     buildFilter:
