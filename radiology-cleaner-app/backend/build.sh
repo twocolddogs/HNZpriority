@@ -14,7 +14,7 @@ echo "--> Installing requirements from requirements.txt..."
 pip install -r requirements.txt
 
 # --- Step 3: Download the ScispaCy Model via Direct URL ---
-# CORRECTED: Using the direct URL for the model that matches scispacy==0.5.3
+# CORRECTED: Using the direct URL for the model that matches scispacy==0.5.3.
 echo "--> Downloading ScispaCy model 'en_core_sci_sm' v0.5.3 from URL..."
 pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.3/en_core_sci_sm-0.5.3.tar.gz || {
     echo "--- !!! WARNING !!! ---"
@@ -50,7 +50,7 @@ except Exception as e:
 "
 
 echo "--> Checking for required application files..."
-# Assumes your data files are in a 'core' subdirectory
+# Assumes your data files are in a 'core' subdirectory relative to your app.py
 for f in app.py parser.py nlp_processor.py database_models.py feedback_training.py comprehensive_preprocessor.py; do
   [ -f "$f" ] && echo "    ✅ $f found." || { echo "    ❌ CRITICAL: $f not found!"; exit 1; }
 done
