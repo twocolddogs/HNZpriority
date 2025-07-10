@@ -1,4 +1,3 @@
-import spacy
 import time
 import json
 from flask import Flask, request, jsonify
@@ -22,13 +21,9 @@ CORS(app)  # Allows our frontend to call the API
 
 # --- START: LAZY LOADING IMPLEMENTATION ---
 
-# 1. Initialize all heavy components as None. They will be loaded on the first request.
-nlp = None
-db_manager = None
+# 1. Initialize lightweight components as None. They will be loaded on the first request.
+comprehensive_preprocessor = None
 cache_manager = None
-model_manager = None
-standardization_engine = None
-semantic_parser = None
 
 # 2. Create a lock to ensure initialization only happens once, even with multiple threads.
 _init_lock = threading.Lock()
@@ -36,89 +31,58 @@ _app_initialized = False
 
 def _initialize_app():
     """
-    This function contains all the slow, heavy loading.
+    This function contains the lightweight loading for NHS-first architecture.
     It will only be called once, controlled by the _ensure_app_is_initialized function.
     """
-    global nlp, db_manager, cache_manager, model_manager, standardization_engine, semantic_parser
+    global comprehensive_preprocessor, cache_manager
 
-    logger.info("--- Performing one-time application initialization... ---")
+    logger.info("--- Performing lightweight application initialization... ---")
     start_time = time.time()
 
     try:
-        # Import our enhanced components
-        from parser import RadiologySemanticParser
-        from standardization_engine import StandardizationEngine
-        from database_models import DatabaseManager, CacheManager
-        from model_manager import ModelManager
+        # Import lightweight components
+        from comprehensive_preprocessor import ComprehensivePreprocessor
+        from database_models import CacheManager
 
-        # Initialize enhanced components
-        db_manager = DatabaseManager()
+        # Initialize cache manager
         cache_manager = CacheManager()
-        model_manager = ModelManager()
-        standardization_engine = StandardizationEngine(db_manager=db_manager)
-        semantic_parser = RadiologySemanticParser(
-            db_manager=db_manager,
-            standardization_engine=standardization_engine,
-            model_manager=model_manager
-        )
-        logger.info("Core components initialized.")
+        logger.info("Cache manager initialized.")
+
+        # Initialize comprehensive preprocessor with NHS and USA data
+        nhs_json_path = os.path.join(os.path.dirname(__file__), '../core/NHS.json')
+        usa_json_path = os.path.join(os.path.dirname(__file__), '../core/USA.json')
+        
+        if os.path.exists(nhs_json_path):
+            if os.path.exists(usa_json_path):
+                comprehensive_preprocessor = ComprehensivePreprocessor(nhs_json_path, usa_json_path)
+                logger.info("Comprehensive preprocessor initialized with NHS and USA data.")
+            else:
+                comprehensive_preprocessor = ComprehensivePreprocessor(nhs_json_path)
+                logger.info("Comprehensive preprocessor initialized with NHS data only.")
+        else:
+            logger.error(f"NHS JSON file not found at {nhs_json_path}")
+            # Create dummy preprocessor to prevent crashes
+            class DummyPreprocessor:
+                def preprocess_exam_name(self, exam_name):
+                    return {
+                        'components': {'original': exam_name, 'modality': None, 'anatomy': []},
+                        'nhs_candidates': [],
+                        'confidence': 0.0,
+                        'best_match': None
+                    }
+            comprehensive_preprocessor = DummyPreprocessor()
 
     except Exception as e:
-        logger.error(f"FATAL: Failed to initialize core components: {e}")
-        # In case of failure, create dummy components to prevent crashes
+        logger.error(f"FATAL: Failed to initialize components: {e}")
+        # Create dummy components to prevent crashes
         class DummyComponent:
             def __getattr__(self, name):
-                return lambda *args, **kwargs: None
+                return lambda *args, **kwargs: {}
 
-        db_manager = db_manager or DummyComponent()
         cache_manager = cache_manager or DummyComponent()
-        model_manager = model_manager or DummyComponent()
-        standardization_engine = standardization_engine or DummyComponent()
-        semantic_parser = semantic_parser or DummyComponent()
+        comprehensive_preprocessor = comprehensive_preprocessor or DummyComponent()
 
-    # --- Load Models on Startup ---
-    logger.info("Loading ScispaCy model...")
-    try:
-        # This model was installed by the build.sh script
-        nlp = spacy.load("en_core_sci_sm")
-        logger.info("ScispaCy model loaded successfully.")
-    except Exception as e:
-        logger.error(f"Error loading ScispaCy model: {e}")
-        logger.warning("App will continue without ScispaCy NLP features")
-        nlp = None
-
-    # Load ML models via ModelManager
-    logger.info("Loading ML models...")
-    try:
-        if model_manager and hasattr(model_manager, 'load_ml_models'):
-            ml_models_loaded = model_manager.load_ml_models()
-            if ml_models_loaded:
-                logger.info("All ML models loaded successfully.")
-            else:
-                logger.warning("Some ML models failed to load. Check model files.")
-    except Exception as e:
-        logger.error(f"Failed to load ML models: {e}")
-
-    # --- Load Data Files ---
-    logger.info("Loading SNOMED and Abbreviations data...")
-    try:
-        csv_path = os.path.join(os.path.dirname(__file__), 'base_code_set.csv')
-        if os.path.exists(csv_path) and db_manager and hasattr(db_manager, 'load_snomed_from_csv'):
-            db_manager.load_snomed_from_csv(csv_path)
-            logger.info("SNOMED data loaded.")
-        else:
-            logger.warning(f"SNOMED data file not found at {csv_path}")
-
-        abbreviations_csv_path = os.path.join(os.path.dirname(__file__), 'abbreviations.csv')
-        if os.path.exists(abbreviations_csv_path) and db_manager and hasattr(db_manager, 'load_abbreviations_from_csv'):
-            db_manager.load_abbreviations_from_csv(abbreviations_csv_path)
-            logger.info("Abbreviations data loaded.")
-        else:
-            logger.warning(f"Abbreviations file not found at {abbreviations_csv_path}")
-    except Exception as e:
-        logger.error(f"Failed to load reference data files: {e}")
-
-    logger.info(f"--- One-time initialization completed in {time.time() - start_time:.2f} seconds. ---")
+    logger.info(f"--- Lightweight initialization completed in {time.time() - start_time:.2f} seconds. ---")
 
 def _ensure_app_is_initialized():
     """
@@ -164,104 +128,95 @@ def record_performance(endpoint: str, processing_time_ms: int, input_size: int,
     except Exception as e:
         logger.error(f"Failed to record performance metric: {e}")
 
-def extract_scispacy_entities(exam_name: str) -> Dict:
-    """Extract entities using ScispaCy with proper error handling."""
+def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) -> Dict:
+    """Process exam name using comprehensive preprocessor."""
     _ensure_app_is_initialized()
-    scispacy_entities = {'ANATOMY': [], 'DIRECTION': []}
     
-    if nlp is None:
-        logger.debug("ScispaCy model not available, returning empty entities")
-        return scispacy_entities
+    if not comprehensive_preprocessor:
+        logger.error("Comprehensive preprocessor not available")
+        return {
+            'cleanName': exam_name,
+            'anatomy': [],
+            'laterality': None,
+            'contrast': None,
+            'technique': [],
+            'gender_context': None,
+            'clinical_context': [],
+            'confidence': 0.0,
+            'snomed': {},
+            'clinical_equivalents': []
+        }
     
     try:
-        doc = nlp(exam_name)
-        for ent in doc.ents:
-            if ent.label_ in ['ANATOMY', 'BODY_PART_OR_ORGAN']:
-                scispacy_entities['ANATOMY'].append(ent.text.capitalize())
-            elif ent.label_ == 'DIRECTION':
-                scispacy_entities['DIRECTION'].append(ent.text.capitalize())
+        # Process with comprehensive preprocessor
+        result = comprehensive_preprocessor.preprocess_exam_name(exam_name)
+        
+        # Convert to legacy format for backward compatibility
+        components = result.get('components', {})
+        best_match = result.get('best_match')
+        
+        response = {
+            'cleanName': best_match['clean_name'] if best_match else components.get('expanded', exam_name),
+            'anatomy': components.get('anatomy', []),
+            'laterality': components.get('laterality'),
+            'contrast': components.get('contrast'),
+            'technique': [],  # Will be enhanced later
+            'gender_context': components.get('gender_context'),
+            'clinical_context': [],  # Will be enhanced later
+            'confidence': result.get('confidence', 0.0),
+            'snomed': best_match['snomed_data'] if best_match else {},
+            'clinical_equivalents': [],  # Will be enhanced later
+            'is_paediatric': components.get('is_paediatric', False),
+            'modality': components.get('modality', modality_code)
+        }
+        
+        return response
+        
     except Exception as e:
-        logger.error(f"ScispaCy processing failed for '{exam_name}': {e}")
-    
-    return scispacy_entities
-
-def extract_scispacy_entities_batch(exam_names: List[str]) -> List[Dict]:
-    """Extract entities for multiple exam names in batch with robust error handling."""
-    _ensure_app_is_initialized()
-    if not nlp:
-        logger.debug("ScispaCy model not available, returning empty entities for batch")
-        return [{'ANATOMY': [], 'DIRECTION': []} for _ in exam_names]
-    
-    if not exam_names:
-        return []
-    
-    results = []
-    
-    try:
-        batch_size = 100
-        for i in range(0, len(exam_names), batch_size):
-            batch = exam_names[i:i+batch_size]
-            try:
-                docs = nlp.pipe(batch)
-                for doc in docs:
-                    entities = {'ANATOMY': [], 'DIRECTION': []}
-                    for ent in doc.ents:
-                        if ent.label_ in ['ANATOMY', 'BODY_PART_OR_ORGAN']:
-                            entities['ANATOMY'].append(ent.text.capitalize())
-                        elif ent.label_ == 'DIRECTION':
-                            entities['DIRECTION'].append(ent.text.capitalize())
-                    results.append(entities)
-            except Exception as e:
-                logger.error(f"Batch processing failed for batch {i//batch_size + 1}: {e}")
-                for name in batch:
-                    results.append(extract_scispacy_entities(name))
-    except Exception as e:
-        logger.error(f"Batch ScispaCy processing completely failed: {e}")
-        results = [extract_scispacy_entities(name) for name in exam_names]
-    
-    return results
+        logger.error(f"Comprehensive preprocessing failed for '{exam_name}': {e}")
+        return {
+            'cleanName': exam_name,
+            'anatomy': [],
+            'laterality': None,
+            'contrast': None,
+            'technique': [],
+            'gender_context': None,
+            'clinical_context': [],
+            'confidence': 0.0,
+            'snomed': {},
+            'clinical_equivalents': [],
+            'error': str(e)
+        }
 
 # --- API Endpoints ---
 # All endpoints now call _ensure_app_is_initialized() first.
 
 @app.route('/parse', methods=['POST'])
 def parse_exam():
-    """Original parsing endpoint with enhancements."""
+    """Lightweight parsing endpoint using comprehensive preprocessor."""
     _ensure_app_is_initialized()
     start_time = time.time()
     
     try:
         data = request.json
-        if not data or 'exam_name' not in data or 'modality_code' not in data:
-            return jsonify({"error": "Missing exam_name or modality_code"}), 400
+        if not data or 'exam_name' not in data:
+            return jsonify({"error": "Missing exam_name"}), 400
 
         exam_name = data['exam_name']
-        modality = data['modality_code']
+        modality = data.get('modality_code', 'Unknown')
 
         cache_key = f"{exam_name}|{modality}"
         cached_result = cache_manager.get(cache_key)
         if cached_result:
             return jsonify(cached_result)
 
-        scispacy_entities = extract_scispacy_entities(exam_name)
-        result = semantic_parser.parse_exam_name(exam_name, modality, scispacy_entities)
+        # Use comprehensive preprocessor instead of heavy models
+        result = process_exam_with_preprocessor(exam_name, modality)
         
-        response = {
-            'cleanName': result['cleanName'],
-            'anatomy': result['anatomy'],
-            'laterality': result['laterality'],
-            'contrast': result['contrast'],
-            'technique': result['technique'],
-            'gender_context': result['gender_context'],
-            'clinical_context': result['clinical_context'],
-            'confidence': result['confidence'],
-            'clinical_equivalents': result['clinical_equivalents']
-        }
-        
-        cache_manager.set(cache_key, response)
+        cache_manager.set(cache_key, result)
         processing_time = int((time.time() - start_time) * 1000)
         record_performance('parse', processing_time, len(exam_name), True)
-        return jsonify(response)
+        return jsonify(result)
         
     except Exception as e:
         logger.error(f"Parse endpoint error: {e}")
@@ -271,56 +226,64 @@ def parse_exam():
 
 @app.route('/parse_enhanced', methods=['POST'])
 def parse_enhanced():
-    """Enhanced parsing endpoint with full standardization."""
+    """Enhanced parsing endpoint using comprehensive preprocessor with NHS authority."""
     _ensure_app_is_initialized()
     start_time = time.time()
     
     try:
         data = request.json
-        if not data or 'exam_name' not in data or 'modality_code' not in data:
-            return jsonify({"error": "Missing exam_name or modality_code"}), 400
+        if not data or 'exam_name' not in data:
+            return jsonify({"error": "Missing exam_name"}), 400
         
         exam_name = data['exam_name']
-        modality = data['modality_code']
+        modality = data.get('modality_code', 'Unknown')
         
-        cached_result = db_manager.get_cached_result(data)
+        cache_key = f"enhanced_{exam_name}|{modality}"
+        cached_result = cache_manager.get(cache_key)
         if cached_result:
             return jsonify(cached_result)
         
-        scispacy_entities = extract_scispacy_entities(exam_name)
-        parsed_result = semantic_parser.parse_exam_name(exam_name, modality, scispacy_entities)
-        standardized = standardization_engine.normalize_exam_name(exam_name)
-        quality_metrics = standardization_engine.calculate_quality_metrics(exam_name, parsed_result)
+        # Use comprehensive preprocessor for enhanced processing
+        parsed_result = process_exam_with_preprocessor(exam_name, modality)
         
+        # Build enhanced response format
         response = {
             'input': data,
             'standardized': {
                 'clean_name': parsed_result['cleanName'],
-                'canonical_form': standardized['canonical_form'],
-                'normalized_name': standardized['normalized'],
+                'canonical_form': parsed_result['cleanName'],  # NHS clean name is canonical
+                'normalized_name': parsed_result['cleanName'],
                 'components': {
                     'anatomy': parsed_result['anatomy'],
                     'laterality': parsed_result['laterality'],
                     'contrast': parsed_result['contrast'],
                     'technique': parsed_result['technique'],
                     'gender_context': parsed_result['gender_context'],
-                    'clinical_context': parsed_result['clinical_context']
+                    'clinical_context': parsed_result['clinical_context'],
+                    'modality': parsed_result['modality'],
+                    'is_paediatric': parsed_result.get('is_paediatric', False)
                 },
-                'quality_score': quality_metrics['overall_quality']
+                'quality_score': parsed_result['confidence']
             },
             'snomed': parsed_result.get('snomed', {}),
-            'quality_metrics': quality_metrics,
+            'quality_metrics': {
+                'overall_quality': parsed_result['confidence'],
+                'nhs_authority_match': parsed_result.get('snomed', {}) != {},
+                'flags': [],
+                'suggestions': []
+            },
             'equivalence': {
                 'clinical_equivalents': parsed_result['clinical_equivalents']
             },
             'metadata': {
                 'processing_time_ms': int((time.time() - start_time) * 1000),
-                'model_version': '2.1.0',
-                'confidence': parsed_result['confidence']
+                'model_version': 'NHS-First-v1.0',
+                'confidence': parsed_result['confidence'],
+                'source': 'comprehensive_preprocessor'
             }
         }
         
-        db_manager.cache_result(data, response)
+        cache_manager.set(cache_key, response)
         processing_time = int((time.time() - start_time) * 1000)
         record_performance('parse_enhanced', processing_time, len(exam_name), True)
         return jsonify(response)
@@ -365,20 +328,18 @@ def parse_batch():
                 uncached_exams.append(exam_data)
         
         if uncached_exams:
-            exam_names = [exam['exam_name'] for exam in uncached_exams]
-            batch_entities = extract_scispacy_entities_batch(exam_names)
-            
-            def process_exam_batch(exam_data, scispacy_entities):
+            def process_exam_batch(exam_data):
                 try:
                     exam_name = exam_data['exam_name']
-                    modality = exam_data['modality_code']
-                    parsed_result = semantic_parser.parse_exam_name(exam_name, modality, scispacy_entities)
-                    standardized = standardization_engine.normalize_exam_name(exam_name)
+                    modality = exam_data.get('modality_code', 'Unknown')
+                    
+                    # Use lightweight comprehensive preprocessor
+                    parsed_result = process_exam_with_preprocessor(exam_name, modality)
                     
                     result = {
                         'input': exam_data,
                         'clean_name': parsed_result['cleanName'],
-                        'canonical_form': standardized['canonical_form'],
+                        'canonical_form': parsed_result['cleanName'],  # NHS is canonical
                         'snomed': parsed_result.get('snomed', {}),
                         'components': {
                             'anatomy': parsed_result['anatomy'],
@@ -386,7 +347,9 @@ def parse_batch():
                             'contrast': parsed_result['contrast'],
                             'technique': parsed_result['technique'],
                             'gender_context': parsed_result['gender_context'],
-                            'clinical_context': parsed_result['clinical_context']
+                            'clinical_context': parsed_result['clinical_context'],
+                            'modality': parsed_result['modality'],
+                            'is_paediatric': parsed_result.get('is_paediatric', False)
                         },
                         'confidence': parsed_result['confidence'],
                         'clinical_equivalents': parsed_result.get('clinical_equivalents', [])
@@ -400,7 +363,7 @@ def parse_batch():
             
             max_workers = get_optimal_worker_count('mixed', len(uncached_exams))
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = {executor.submit(process_exam_batch, exam, entities): exam for exam, entities in zip(uncached_exams, batch_entities)}
+                futures = {executor.submit(process_exam_batch, exam): exam for exam in uncached_exams}
                 for future in as_completed(futures):
                     result = future.result()
                     if 'error' in result:
@@ -410,11 +373,12 @@ def parse_batch():
         
         all_results = cached_results + results
         
-        cache_items = {f"{res['input']['exam_name']}|{res['input']['modality_code']}": res for res in results if 'input' in res}
+        cache_items = {f"{res['input']['exam_name']}|{res['input'].get('modality_code', 'Unknown')}": res for res in results if 'input' in res}
         if cache_items:
             cache_manager.bulk_set(cache_items)
         
-        equivalence_groups = standardization_engine.find_equivalence_groups([{'name': r['clean_name'], 'source': r['input'].get('source', 'unknown')} for r in all_results])
+        # Simplified equivalence groups for now (can be enhanced later)
+        equivalence_groups = []
         
         processing_stats = {
             'total_processed': len(exams),
