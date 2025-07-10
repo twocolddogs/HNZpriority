@@ -20,7 +20,8 @@ services:
       - key: PIP_VERSION
         value: 23.2.1
     buildCommand: "./build.sh"
-    startCommand: "gunicorn app:app"
+    # --- FIXED START COMMAND ---
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT app:app"
     autoDeploy: true # Automatically deploy on push to 'develop'
 
   # --- Production Service ---
@@ -41,5 +42,6 @@ services:
       - key: PIP_VERSION
         value: 23.2.1
     buildCommand: "./build.sh"
-    startCommand: "gunicorn app:app"
+    # --- FIXED START COMMAND ---
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT app:app"
     autoDeploy: false # CRITICAL: Prevents accidental deployments to production
