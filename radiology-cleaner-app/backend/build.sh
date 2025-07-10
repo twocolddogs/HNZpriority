@@ -10,24 +10,23 @@ echo "--> Upgrading pip, setuptools, and wheel..."
 pip install --upgrade pip setuptools wheel
 
 # --- Step 2: Install Base Python Dependencies ---
-# Install the simple dependencies from requirements.txt first.
-echo "--> Installing base requirements..."
+echo "--> Installing base requirements from requirements.txt..."
 pip install -r requirements.txt
 
-# --- Step 3: Install NLP Stack in a Specific, Controlled Order ---
-# This multi-step process prevents build failures by installing pre-compiled
-# wheels for packages with complex C++ dependencies.
+# --- Step 3: Manually Install the NLP Stack (The Fix) ---
+# This multi-step process prevents build failures by installing components
+# in a specific order and using pre-compiled wheels for C++-heavy packages.
 
-echo "--> Installing spaCy (v3.6.1)..."
-pip install spacy==3.6.1
-
-echo "--> Installing nmslib pre-built wheel..."
+echo "--> Installing nmslib pre-built wheel to avoid compilation..."
 pip install nmslib-metabrainz
 
-echo "--> Installing scispacy (v0.5.3)..."
+echo "--> Installing spacy==3.6.1..."
+pip install spacy==3.6.1
+
+echo "--> Installing scispacy==0.5.3 (will use the pre-installed nmslib)..."
 pip install scispacy==0.5.3
 
-echo "--> Installing medspacy (v1.1.2)..."
+echo "--> Installing medspacy==1.1.2..."
 pip install medspacy==1.1.2
 
 # --- Step 4: Download the Compatible ScispaCy Model ---
