@@ -1,3 +1,6 @@
+# requirements.txt
+
+# Web server
 Flask==3.0.3
 Flask-CORS==4.0.1
 gunicorn==22.0.0
@@ -6,13 +9,14 @@ gunicorn==22.0.0
 scikit-learn==1.5.0
 pandas==2.2.2
 joblib==1.4.2
-numpy==1.26.4 # Latest numpy compatible with scikit-learn
+numpy==1.26.4
 
 # --- SpaCy and MedspaCy NLP Pipeline Dependencies ---
-# Using the latest stable versions compatible with Python 3.11
-spacy==3.7.5
-scispacy==0.5.4 # CORRECTED: Using the latest available version on PyPI
-medspacy==1.1.0 # CORRECTED: Updated to latest version
+# We are letting pip resolve the latest compatible versions of these libraries
+# to avoid version conflicts in the deployment environment.
+spacy
+scispacy
+medspacy
 
 # Other core dependencies
 typing-extensions==4.12.2
@@ -20,5 +24,4 @@ python-dateutil==2.9.0.post0
 psutil==5.9.8
 
 # NOTE: The ScispaCy model itself is not listed here.
-# It should be installed separately via your build script (e.g., build.sh) using:
-# python -m spacy download en_core_sci_sm
+# It should be installed separately via your build script.
