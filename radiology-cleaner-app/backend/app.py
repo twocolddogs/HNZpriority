@@ -18,6 +18,7 @@ from nlp_processor import NLPProcessor
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager, FeedbackEnhancedPreprocessor
 from comprehensive_preprocessor import ComprehensivePreprocessor
+from nhs_lookup_engine import NHSLookupEngine
 
 # --- Configure logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -36,6 +37,7 @@ feedback_manager: Optional[FeedbackTrainingManager] = None
 feedback_enhanced_preprocessor: Optional[FeedbackEnhancedPreprocessor] = None
 nlp_processor: Optional[NLPProcessor] = None
 comprehensive_preprocessor: Optional[ComprehensivePreprocessor] = None
+nhs_lookup_engine: Optional[NHSLookupEngine] = None
 
 # Placeholder for StandardizationEngine to make the /validate endpoint runnable
 class StandardizationEnginePlaceholder:
@@ -56,7 +58,7 @@ def _initialize_app():
     It will only be called once, controlled by _ensure_app_is_initialized.
     """
     global semantic_parser, db_manager, cache_manager, feedback_manager, \
-           feedback_enhanced_preprocessor, nlp_processor, comprehensive_preprocessor
+           feedback_enhanced_preprocessor, nlp_processor, comprehensive_preprocessor, nhs_lookup_engine
 
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
@@ -99,6 +101,16 @@ def _initialize_app():
         else:
             logger.error(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
             comprehensive_preprocessor = None # Ensure it's None if data is missing
+
+        # Initialize NHS Lookup Engine - the single source of truth
+        if os.path.exists(nhs_json_path):
+            nhs_lookup_engine = NHSLookupEngine(nhs_json_path)
+            # Validate NHS data consistency
+            consistency_report = nhs_lookup_engine.validate_consistency()
+            logger.info(f"NHS Lookup Engine initialized: {consistency_report}")
+        else:
+            logger.error(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
+            nhs_lookup_engine = None
 
         # This preprocessor uses the comprehensive one and adds learning
         if comprehensive_preprocessor:
@@ -426,6 +438,112 @@ def _validate_nhs_match(input_exam_name: str, nhs_clean_name: str, parsed_anatom
     return True
 
 # This is the processing function from your original file, adapted for lazy-loading
+def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> Dict:
+    """
+    NHS-first processing pipeline that uses NHS.json as the single source of truth.
+    This ensures consistent clean names and SNOMED codes.
+    """
+    _ensure_app_is_initialized()
+    
+    if not nhs_lookup_engine:
+        logger.error("NHS Lookup Engine not available")
+        return {'error': 'NHS Lookup Engine not initialized'}
+    
+    try:
+        # Step 1: Preprocessing - Clean exam name (Z codes, etc.)
+        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        if cleaned_exam_name != exam_name:
+            logger.debug(f"Preprocessed exam name: '{exam_name}' -> '{cleaned_exam_name}'")
+        
+        logger.info(f"Processing exam: '{cleaned_exam_name}' with modality: '{modality_code}'")
+        
+        # Step 2: Extract entities using NLP
+        nlp_entities = {}
+        if nlp_processor and nlp_processor.nlp:
+            try:
+                nlp_entities = nlp_processor.extract_entities(cleaned_exam_name)
+                logger.info(f"NLP entities extracted: {nlp_entities}")
+            except Exception as e:
+                logger.warning(f"NLP entity extraction failed: {e}")
+                nlp_entities = {}
+        
+        # Step 3: Extract components using semantic parser (enhanced with NLP)
+        if semantic_parser:
+            parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other', nlp_entities)
+            logger.debug(f"Semantic parser result: {parsed_result}")
+        else:
+            parsed_result = {}
+        
+        # Step 4: Prepare components for NHS lookup
+        extracted_components = {
+            'modality': [],
+            'anatomy': [],
+            'laterality': [],
+            'contrast': [],
+            'procedure_type': []
+        }
+        
+        # Add components from NLP
+        if nlp_entities:
+            extracted_components['modality'].extend(nlp_entities.get('MODALITY', []))
+            extracted_components['anatomy'].extend(nlp_entities.get('ANATOMY', []))
+            extracted_components['laterality'].extend(nlp_entities.get('LATERALITY', []))
+            extracted_components['contrast'].extend(nlp_entities.get('CONTRAST', []))
+        
+        # Add components from semantic parser
+        if parsed_result:
+            if parsed_result.get('modality'):
+                extracted_components['modality'].append(parsed_result['modality'].lower())
+            if parsed_result.get('anatomy'):
+                extracted_components['anatomy'].extend([a.lower() for a in parsed_result['anatomy']])
+            if parsed_result.get('laterality'):
+                extracted_components['laterality'].append(parsed_result['laterality'].lower())
+            if parsed_result.get('contrast'):
+                extracted_components['contrast'].append(parsed_result['contrast'].lower())
+        
+        # Add modality from input parameter
+        if modality_code:
+            extracted_components['modality'].append(modality_code.lower())
+        
+        # Remove duplicates
+        for key in extracted_components:
+            extracted_components[key] = list(set(extracted_components[key]))
+        
+        logger.info(f"Final extracted components: {extracted_components}")
+        
+        # Step 5: NHS Lookup - Single source of truth
+        nhs_result = nhs_lookup_engine.standardize_exam(exam_name, extracted_components)
+        
+        # Step 6: Format final result
+        result = {
+            'input_exam': exam_name,
+            'cleaned_exam': cleaned_exam_name,
+            'clean_name': nhs_result['clean_name'],
+            'anatomy': extracted_components['anatomy'],
+            'laterality': extracted_components['laterality'],
+            'modality': extracted_components['modality'],
+            'contrast': extracted_components['contrast'],
+            'snomed_id': nhs_result['snomed_id'],
+            'snomed_fsn': nhs_result['snomed_fsn'],
+            'confidence': nhs_result['confidence'],
+            'source': nhs_result['source'],
+            'snomed_found': bool(nhs_result['snomed_id'])
+        }
+        
+        logger.info(f"NHS processing complete for '{exam_name}': clean_name='{result['clean_name']}', snomed_id={result['snomed_id']}, confidence={result['confidence']:.2f}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error processing exam '{exam_name}': {e}", exc_info=True)
+        return {
+            'error': str(e),
+            'input_exam': exam_name,
+            'clean_name': exam_name,
+            'confidence': 0.0,
+            'snomed_found': False
+        }
+
 def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) -> Dict:
     _ensure_app_is_initialized()
     
@@ -672,18 +790,22 @@ def parse_enhanced():
         if cached_result:
             return jsonify(cached_result)
 
-        # Use the comprehensive hybrid parser that includes SNOMED data
-        result = process_exam_with_preprocessor(exam_name, modality)
+        # Use the NHS-first parser that ensures consistent clean names and SNOMED codes
+        result = process_exam_with_nhs_lookup(exam_name, modality)
         
         response = {
-            'clean_name': result.get('cleanName', ''),
-            'snomed': result.get('snomed', {}),
+            'clean_name': result.get('clean_name', ''),
+            'snomed': {
+                'id': result.get('snomed_id', ''),
+                'fsn': result.get('snomed_fsn', ''),
+                'found': result.get('snomed_found', False)
+            },
             'components': {
                 'anatomy': result.get('anatomy', []),
-                'laterality': result.get('laterality'),
-                'contrast': result.get('contrast'),
+                'laterality': result.get('laterality', []),
+                'contrast': result.get('contrast', []),
                 'technique': result.get('technique', []),
-                'modality': result.get('modality'),
+                'modality': result.get('modality', []),
                 'confidence': result.get('confidence', 0.0)
             },
             'clinical_equivalents': result.get('equivalence', {}).get('clinical_equivalents', []),
@@ -730,21 +852,25 @@ def parse_batch():
                 try:
                     exam_name = exam_data.get('exam_name', '')
                     modality_code = exam_data.get('modality_code')
-                    result = process_exam_with_preprocessor(exam_name, modality_code)
+                    result = process_exam_with_nhs_lookup(exam_name, modality_code)
                     
                     # Format response to match frontend expectations
                     formatted_result = {
-                        'clean_name': result.get('cleanName', ''),
-                        'snomed': result.get('snomed', {}),
+                        'clean_name': result.get('clean_name', ''),
+                        'snomed': {
+                            'id': result.get('snomed_id', ''),
+                            'fsn': result.get('snomed_fsn', ''),
+                            'found': result.get('snomed_found', False)
+                        },
                         'components': {
                             'anatomy': result.get('anatomy', []),
-                            'laterality': result.get('laterality'),
-                            'contrast': result.get('contrast'),
+                            'laterality': result.get('laterality', []),
+                            'contrast': result.get('contrast', []),
                             'technique': result.get('technique', []),
-                            'gender_context': result.get('gender_context'),
+                            'gender_context': result.get('gender_context', ''),
                             'clinical_context': result.get('clinical_context', []),
                             'confidence': result.get('confidence', 0.0),
-                            'modality': result.get('modality')
+                            'modality': result.get('modality', [])
                         },
                         'clinical_equivalents': result.get('equivalence', {}).get('clinical_equivalents', []),
                         'original_exam': exam_data
