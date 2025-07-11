@@ -58,6 +58,16 @@ class NLPProcessor:
         doc = self.nlp(text)
         entities = defaultdict(list)
         
+        # Log all entity types found for debugging
+        all_entity_types = set()
+        for ent in doc.ents:
+            all_entity_types.add(ent.label_)
+            
+        if all_entity_types:
+            logger.debug(f"Found entity types in '{text}': {all_entity_types}")
+        else:
+            logger.debug(f"No entities found in '{text}'")
+        
         for ent in doc.ents:
             # We are primarily interested in anatomical and directional entities
             if ent.label_ in ['ANATOMICAL_SYSTEM', 'BODY_SUBSTANCE', 'BODY_PART', 'DIRECTION']:
