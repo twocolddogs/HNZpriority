@@ -162,7 +162,11 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
             'technique': [], 'gender_context': components.get('gender_context'),
             'clinical_context': [], 'confidence': result.get('confidence', 0.0),
             'snomed': best_match.get('snomed_data', {}) if best_match else {},
-            'clinical_equivalents': [], 'is_paediatric': components.get('is_paediatric', False),
+            'equivalence': {
+                'clinical_equivalents': [],
+                'procedural_equivalents': []
+            },
+            'is_paediatric': components.get('is_paediatric', False),
             'modality': components.get('modality', modality_code)
         }
         return response
@@ -286,9 +290,14 @@ def parse_batch():
         if uncached_exams:
             def process_exam_batch(exam_data):
                 try:
-                    return process_single_exam_hybrid(exam_data)
+                    exam_name = exam_data.get('exam_name', '')
+                    modality_code = exam_data.get('modality_code')
+                    result = process_exam_with_preprocessor(exam_name, modality_code)
+                    # Add original exam data for context
+                    result['original_exam'] = exam_data
+                    return result
                 except Exception as e:
-                    return {"error": str(e)}
+                    return {"error": str(e), "original_exam": exam_data}
 
             max_workers = get_optimal_worker_count(max_items=len(uncached_exams))
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -332,7 +341,8 @@ def validate_exam_data():
         
         exam_name = data['exam_name']
         normalized = standardization_engine.normalize_exam_name(exam_name)
-        parsed_result = process_single_exam_hybrid(data)
+        modality_code = data.get('modality_code')
+        parsed_result = process_exam_with_preprocessor(exam_name, modality_code)
         quality_metrics = standardization_engine.calculate_quality_metrics(exam_name, parsed_result)
         
         is_valid = quality_metrics['overall_quality'] >= 0.7
