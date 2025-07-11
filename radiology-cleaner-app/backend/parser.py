@@ -38,6 +38,7 @@ class RadiologySemanticParser:
             'colon': {'terms': ['colon', 'colonography', 'large bowel'], 'standardName': 'Colon', 'category': 'abdomen'},
             'prostate': {'terms': ['prostate', 'prostatic'], 'standardName': 'Prostate', 'category': 'pelvis'},
             'female_pelvis': {'terms': ['uterus', 'ovary', 'ovarian', 'endometrial', 'female pelvis', 'gynaecology'], 'standardName': 'Female Pelvis', 'category': 'pelvis'},
+            'obstetric': {'terms': ['obstetric', 'pregnancy', 'pregnant', 'fetal', 'foetal', 'fetus', 'foetus', 'trimester', 'prenatal', 'antenatal', 'gravid'], 'standardName': 'Obstetric', 'category': 'obstetric'},
             'shoulder': {'terms': ['shoulder'], 'standardName': 'Shoulder', 'category': 'musculoskeletal'},
             'humerus': {'terms': ['humerus', 'humeral', 'upper arm', 'arm'], 'standardName': 'Humerus', 'category': 'musculoskeletal'},
             'elbow': {'terms': ['elbow'], 'standardName': 'Elbow', 'category': 'musculoskeletal'},

@@ -159,6 +159,9 @@ def _preprocess_exam_name(exam_name: str) -> str:
     - "CT CHEST/ABDOMEN" -> "CT CHEST ABDOMEN"
     - "MR BRAIN/NECK" -> "MR BRAIN NECK"
     - "X-RAY HAND/WRIST" -> "X-RAY HAND WRIST"
+    - "US OBSTETRIC 1ST TRIMESTER" -> "US Obstetric First Trimester"
+    - "US OBSTETRIC 2ND TRIMESTER" -> "US Obstetric Second Trimester"
+    - "US OBSTETRIC 3RD TRIMESTER" -> "US Obstetric Third Trimester"
     """
     if not exam_name:
         return exam_name
@@ -175,10 +178,168 @@ def _preprocess_exam_name(exam_name: str) -> str:
     if '/' in cleaned:
         cleaned = cleaned.replace('/', ' ')
     
+    # Smart handling of ordinal numbers for obstetric exams
+    cleaned = _normalize_ordinals(cleaned)
+    
     # Clean up extra whitespace that might result from replacements
     cleaned = ' '.join(cleaned.split())
     
     return cleaned
+
+def _normalize_ordinals(text: str) -> str:
+    """
+    Normalize ordinal numbers in obstetric exam names for better parsing.
+    
+    Examples:
+    - "1ST TRIMESTER" -> "First Trimester"
+    - "2ND TRIMESTER" -> "Second Trimester"
+    - "3RD TRIMESTER" -> "Third Trimester"
+    - "1ST VISIT" -> "First Visit"
+    - "SECOND TRIMESTER" -> "Second Trimester" (already correct)
+    """
+    import re
+    
+    # Dictionary for ordinal replacements
+    ordinal_replacements = {
+        # Numeric ordinals to word ordinals
+        r'\b1ST\b': 'First',
+        r'\b2ND\b': 'Second', 
+        r'\b3RD\b': 'Third',
+        r'\b4TH\b': 'Fourth',
+        r'\b5TH\b': 'Fifth',
+        r'\b6TH\b': 'Sixth',
+        r'\b7TH\b': 'Seventh',
+        r'\b8TH\b': 'Eighth',
+        r'\b9TH\b': 'Ninth',
+        r'\b10TH\b': 'Tenth',
+        
+        # Alternative formats
+        r'\b1st\b': 'First',
+        r'\b2nd\b': 'Second',
+        r'\b3rd\b': 'Third',
+        r'\b4th\b': 'Fourth',
+        r'\b5th\b': 'Fifth',
+        r'\b6th\b': 'Sixth',
+        r'\b7th\b': 'Seventh',
+        r'\b8th\b': 'Eighth',
+        r'\b9th\b': 'Ninth',
+        r'\b10th\b': 'Tenth',
+        
+        # Ensure consistent capitalization for already-spelled ordinals
+        r'\bfirst\b': 'First',
+        r'\bsecond\b': 'Second',
+        r'\bthird\b': 'Third',
+        r'\bfourth\b': 'Fourth',
+        r'\bfifth\b': 'Fifth',
+        r'\bsixth\b': 'Sixth',
+        r'\bseventh\b': 'Seventh',
+        r'\beighth\b': 'Eighth',
+        r'\bninth\b': 'Ninth',
+        r'\btenth\b': 'Tenth',
+        
+        # Common obstetric terms
+        r'\btrimester\b': 'Trimester',
+        r'\bTRIMESTER\b': 'Trimester',
+        r'\bobstetric\b': 'Obstetric',
+        r'\bOBSTETRIC\b': 'Obstetric',
+        r'\bvisit\b': 'Visit',
+        r'\bVISIT\b': 'Visit',
+        r'\bscan\b': 'Scan',
+        r'\bSCAN\b': 'Scan',
+        r'\bultrasound\b': 'Ultrasound',
+        r'\bULTRASOUND\b': 'Ultrasound'
+    }
+    
+    # Apply replacements
+    result = text
+    for pattern, replacement in ordinal_replacements.items():
+        result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+    
+    return result
+
+def _detect_gender_context(exam_name: str, anatomy: List[str]) -> Optional[str]:
+    """
+    Detect gender/pregnancy context from exam name and anatomy.
+    
+    Returns: 'pregnancy', 'female', 'male', or None
+    """
+    import re
+    
+    exam_lower = exam_name.lower()
+    
+    # Pregnancy/obstetric indicators (highest priority)
+    pregnancy_patterns = [
+        r'\b(obstetric|pregnancy|pregnant|prenatal|antenatal|gravid)\b',
+        r'\b(fetal|foetal|fetus|foetus)\b',
+        r'\b(trimester|first|second|third)\b.*\b(trimester|scan|visit)\b',
+        r'\b(dating|nuchal|anomaly|morphology)\b.*\b(scan|ultrasound)\b'
+    ]
+    
+    for pattern in pregnancy_patterns:
+        if re.search(pattern, exam_lower):
+            return 'pregnancy'
+    
+    # Female-specific anatomy (medium priority)
+    female_anatomy = ['female pelvis', 'obstetric', 'uterus', 'ovary', 'ovarian', 'endometrial']
+    if any(term.lower() in exam_lower for term in female_anatomy):
+        return 'female'
+    
+    # Male-specific anatomy (medium priority)
+    male_anatomy = ['prostate', 'prostatic', 'testicular', 'scrotal']
+    if any(term.lower() in exam_lower for term in male_anatomy):
+        return 'male'
+    
+    # Check anatomy list for gender-specific terms
+    if anatomy:
+        anatomy_lower = [a.lower() for a in anatomy]
+        if any(term in anatomy_lower for term in ['female pelvis', 'obstetric']):
+            return 'female'
+        if any(term in anatomy_lower for term in ['prostate']):
+            return 'male'
+    
+    return None
+
+def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
+    """
+    Detect clinical context from exam name.
+    
+    Returns: List of clinical contexts (e.g., ['screening', 'emergency'])
+    """
+    import re
+    
+    exam_lower = exam_name.lower()
+    contexts = []
+    
+    # Clinical context patterns
+    context_patterns = {
+        'screening': [
+            r'\b(screening|screen)\b',
+            r'\b(routine|annual|check)\b',
+            r'\b(surveillance|follow.?up)\b'
+        ],
+        'emergency': [
+            r'\b(emergency|urgent|stat|trauma)\b',
+            r'\b(acute|sudden|severe)\b'
+        ],
+        'follow-up': [
+            r'\b(follow.?up|surveillance)\b',
+            r'\b(post.?op|post.?operative)\b',
+            r'\b(repeat|serial)\b'
+        ],
+        'intervention': [
+            r'\b(biopsy|drainage|aspiration|injection)\b',
+            r'\b(guided|needle|catheter)\b',
+            r'\b(placement|removal)\b'
+        ]
+    }
+    
+    for context, patterns in context_patterns.items():
+        for pattern in patterns:
+            if re.search(pattern, exam_lower):
+                contexts.append(context)
+                break  # Only add each context once
+    
+    return contexts
 
 # This is the processing function from your original file, adapted for lazy-loading
 def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) -> Dict:
@@ -288,7 +449,11 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
                 'snomed_laterality_fsn': snomed_raw.get('snomed_laterality_fsn')
             }
         
-        # Step 5: FIXED: Calculate balanced hybrid confidence score
+        # Step 5: Enhanced gender/clinical context detection
+        gender_context = _detect_gender_context(cleaned_exam_name, anatomy)
+        clinical_context = _detect_clinical_context(cleaned_exam_name, anatomy)
+        
+        # Step 6: FIXED: Calculate balanced hybrid confidence score
         confidence = 0.0
         
         # Primary: Component extraction confidence (80% - this is the core functionality)
@@ -314,8 +479,8 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
             'laterality': laterality,
             'contrast': contrast,
             'technique': technique,
-            'gender_context': comprehensive_result.get('components', {}).get('gender_context'),
-            'clinical_context': [],
+            'gender_context': gender_context,
+            'clinical_context': clinical_context,
             'confidence': min(confidence, 1.0),  # Cap at 1.0
             'snomed': snomed_data,
             'equivalence': {
