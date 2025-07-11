@@ -13,6 +13,13 @@
         /* App-specific overrides for legacy compatibility */
         #fileInput { display: none; }
         
+        /* Sanity test specific styles */
+        .file-details.error {
+            border-left: 4px solid #dc3545;
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
         /* Specific color overrides for the radiology app branding */
         .stat-value { 
             color: var(--color-primary); 
@@ -172,6 +179,15 @@
                 <h2>Upload Radiology Codes JSON</h2>
                 <p>Drop your codes.json file here or click to browse. You can also <a href="./example-codes.json" download>download a sample file</a>.</p>
                 <input type="file" id="fileInput" accept=".json" />
+                
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                    <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white;">
+                        🧪 Run Sanity Test
+                    </button>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
+                        Load and process the built-in sanity test dataset to verify engine performance
+                    </p>
+                </div>
             </div>
 
             <div class="file-info" id="fileInfo"></div>
@@ -507,6 +523,7 @@
         uploadSection.addEventListener('drop', (e) => e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]), false);
 
         document.getElementById('exportMappingsBtn').addEventListener('click', exportResults);
+        document.getElementById('sanityTestBtn').addEventListener('click', runSanityTest);
         document.getElementById('closeModalBtn').addEventListener('click', closeModal);
         document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
         
@@ -778,6 +795,68 @@
                 progressFill.style.width = '100%';
             }
             reader.readAsText(file);
+        }
+
+        async function runSanityTest() {
+            try {
+                // Update button state
+                const button = document.getElementById('sanityTestBtn');
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '⏳ Loading Test Data...';
+                
+                // Fetch the sanity test file
+                const response = await fetch('./sanity_test.json');
+                if (!response.ok) {
+                    throw new Error(`Failed to load sanity test file: ${response.statusText}`);
+                }
+                
+                const sanityData = await response.json();
+                console.log(`Loaded sanity test file with ${sanityData.length} test cases`);
+                
+                // Update UI to show we're starting
+                fileInfo.innerHTML = `
+                    <div class="file-details">
+                        <h3>🧪 Sanity Test Dataset</h3>
+                        <p><strong>Test Cases:</strong> ${sanityData.length}</p>
+                        <p><strong>Purpose:</strong> Engine performance verification</p>
+                    </div>
+                `;
+                
+                // Show progress bar
+                progressBar.style.display = 'block';
+                progressFill.style.width = '0%';
+                
+                button.innerHTML = '🔄 Processing Test Cases...';
+                
+                // Process the sanity test data exactly like a regular file
+                const mappings = await processBatch(sanityData);
+                
+                // Run analysis on the results
+                runAnalysis(mappings);
+                
+                // Restore button state
+                button.disabled = false;
+                button.innerHTML = originalText;
+                
+                console.log('Sanity test completed successfully');
+                
+            } catch (error) {
+                console.error('Sanity test failed:', error);
+                
+                // Show error in UI
+                fileInfo.innerHTML = `
+                    <div class="file-details error">
+                        <h3>❌ Sanity Test Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+                
+                // Restore button state
+                const button = document.getElementById('sanityTestBtn');
+                button.disabled = false;
+                button.innerHTML = '🧪 Run Sanity Test';
+            }
         }
 
         function runAnalysis(mappings) {
