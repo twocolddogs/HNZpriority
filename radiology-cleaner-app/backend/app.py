@@ -199,10 +199,37 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
         # Step 4: Get SNOMED data - FIXED: prioritize semantic parser results
         snomed_data = {}
         
-        # Primary: Use semantic parser anatomy results for database lookup
-        if db_manager and anatomy:
-            anatomy_name = anatomy[0] if anatomy else exam_name
-            snomed_match = db_manager.get_snomed_reference_by_exam_name(anatomy_name)
+        # Primary: Use constructed clean name and anatomy for database lookup
+        if db_manager:
+            snomed_match = None
+            
+            # Try 1: Constructed clean name using clean_name field (e.g., "XR Chest" -> "CT Chest")
+            if clean_name and clean_name != exam_name:
+                snomed_match = db_manager.get_snomed_code(clean_name)
+                if snomed_match:
+                    logger.debug(f"Found SNOMED match for constructed clean name: '{clean_name}'")
+            
+            # Try 2: Fuzzy matching for clean names if exact match failed
+            if not snomed_match and clean_name:
+                fuzzy_matches = db_manager.fuzzy_match_clean_names(clean_name, threshold=0.8)
+                if fuzzy_matches:
+                    snomed_match = fuzzy_matches[0]  # Take the best match
+                    logger.debug(f"Found SNOMED fuzzy match for clean name: '{clean_name}' -> '{snomed_match['clean_name']}'")
+            
+            # Try 3: Individual anatomy terms in clean_name field
+            if not snomed_match and anatomy:
+                for anatomy_term in anatomy:
+                    snomed_match = db_manager.get_snomed_code(anatomy_term)
+                    if snomed_match:
+                        logger.debug(f"Found SNOMED match for anatomy term: '{anatomy_term}'")
+                        break
+            
+            # Try 4: Original exam name in FSN field (for full procedure names)
+            if not snomed_match:
+                snomed_match = db_manager.get_snomed_reference_by_exam_name(exam_name)
+                if snomed_match:
+                    logger.debug(f"Found SNOMED match for original exam name: '{exam_name}'")
+            
             if snomed_match:
                 snomed_data = {
                     'concept_id': snomed_match.get('snomed_concept_id'),
@@ -210,6 +237,8 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
                     'laterality_concept_id': snomed_match.get('snomed_laterality_concept_id'),
                     'laterality_fsn': snomed_match.get('snomed_laterality_fsn')
                 }
+            else:
+                logger.debug(f"No SNOMED match found for exam: '{exam_name}', clean_name: '{clean_name}', anatomy: {anatomy}")
         
         # Secondary: Use comprehensive preprocessor's SNOMED data for validation/fallback
         if not snomed_data and best_match and best_match.get('snomed_data'):
