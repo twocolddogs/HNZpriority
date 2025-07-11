@@ -149,6 +149,26 @@ def record_performance(endpoint: str, processing_time_ms: int, input_size: int,
     except Exception as e:
         logger.error(f"Failed to record performance metric: {e}")
 
+def _preprocess_exam_name(exam_name: str) -> str:
+    """
+    Preprocess exam name to clean up common formatting issues.
+    
+    Examples:
+    - "Z123^CT HEAD" -> "CT HEAD"
+    - "Z456^MR CHEST" -> "MR CHEST"
+    - "ABC123^X-RAY ABDOMEN" -> "X-RAY ABDOMEN"
+    """
+    if not exam_name:
+        return exam_name
+    
+    # Strip caret and everything before it (common in coded systems)
+    if '^' in exam_name:
+        cleaned = exam_name.split('^', 1)[1].strip()
+        return cleaned
+    
+    # Return original if no preprocessing needed
+    return exam_name.strip()
+
 # This is the processing function from your original file, adapted for lazy-loading
 def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) -> Dict:
     _ensure_app_is_initialized()
@@ -158,15 +178,20 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
         return {'error': 'Parser not initialized'}
     
     try:
+        # PREPROCESSING: Clean exam name before processing
+        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        if cleaned_exam_name != exam_name:
+            logger.debug(f"Preprocessed exam name: '{exam_name}' -> '{cleaned_exam_name}'")
+        
         # HYBRID APPROACH: Best of both worlds
-        logger.info(f"Processing exam: '{exam_name}' with modality: '{modality_code}'")
+        logger.info(f"Processing exam: '{cleaned_exam_name}' with modality: '{modality_code}'")
         
         # Step 1: Use semantic parser for superior component extraction (NLP + longest-match-first)
-        parsed_result = semantic_parser.parse_exam_name(exam_name, modality_code or 'Other')
+        parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
         logger.debug(f"Semantic parser result: {parsed_result}")
         
         # Step 2: Use comprehensive preprocessor for authority-file mapping to get official standards
-        comprehensive_result = comprehensive_preprocessor.preprocess_exam_name(exam_name, modality_code)
+        comprehensive_result = comprehensive_preprocessor.preprocess_exam_name(cleaned_exam_name, modality_code)
         logger.debug(f"Comprehensive preprocessor result: best_match={comprehensive_result.get('best_match') is not None}, confidence={comprehensive_result.get('confidence', 0)}")
         
         # Step 3: Combine the best from both systems
@@ -194,9 +219,9 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
             clean_name = f"{modality} {anatomy_str}{laterality_str}{contrast_str}".strip()
             logger.debug(f"Constructed clean name from semantic parser: '{clean_name}' (anatomy: {anatomy}, modality: {modality})")
         else:
-            # Fallback to enhanced original
-            clean_name = exam_name
-            logger.warning(f"No anatomy or modality found, using original name: '{clean_name}'")
+            # Fallback to cleaned exam name
+            clean_name = cleaned_exam_name
+            logger.warning(f"No anatomy or modality found, using cleaned name: '{clean_name}'")
         
         # Step 4: Get SNOMED data - FIXED: prioritize semantic parser results
         snomed_data = {}
@@ -228,9 +253,9 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
             
             # Try 4: Original exam name in FSN field (for full procedure names)
             if not snomed_match:
-                snomed_match = db_manager.get_snomed_reference_by_exam_name(exam_name)
+                snomed_match = db_manager.get_snomed_reference_by_exam_name(cleaned_exam_name)
                 if snomed_match:
-                    logger.debug(f"Found SNOMED match for original exam name: '{exam_name}'")
+                    logger.debug(f"Found SNOMED match for cleaned exam name: '{cleaned_exam_name}'")
             
             if snomed_match:
                 snomed_data = {
@@ -240,7 +265,7 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
                     'snomed_laterality_fsn': snomed_match.get('snomed_laterality_fsn')
                 }
             else:
-                logger.debug(f"No SNOMED match found for exam: '{exam_name}', clean_name: '{clean_name}', anatomy: {anatomy}")
+                logger.debug(f"No SNOMED match found for exam: '{cleaned_exam_name}', clean_name: '{clean_name}', anatomy: {anatomy}")
         
         # Secondary: Use comprehensive preprocessor's SNOMED data for validation/fallback
         if not snomed_data and best_match and best_match.get('snomed_data'):
@@ -270,7 +295,7 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
         # Bonus: SNOMED data found (10% - indicates successful integration)
         if snomed_data: confidence += 0.1
         
-        logger.info(f"Processing complete for '{exam_name}': clean_name='{clean_name}', anatomy={anatomy}, confidence={confidence:.2f}, snomed_found={bool(snomed_data)}")
+        logger.info(f"Processing complete for '{cleaned_exam_name}': clean_name='{clean_name}', anatomy={anatomy}, confidence={confidence:.2f}, snomed_found={bool(snomed_data)}")
         
         response = {
             'cleanName': clean_name,
@@ -289,11 +314,18 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
             'is_paediatric': comprehensive_result.get('components', {}).get('is_paediatric', False),
             'modality': modality,  # Use parsed modality from exam name
             'best_match': best_match,  # Include for debugging
-            'parsing_method': 'hybrid'  # Indicate this used the hybrid approach
+            'parsing_method': 'hybrid',  # Indicate this used the hybrid approach
+            'original_exam_name': exam_name,  # Preserve original for reference
+            'cleaned_exam_name': cleaned_exam_name  # Show preprocessing result
         }
         return response
     except Exception as e:
-        logger.error(f"Hybrid parsing failed for '{exam_name}': {e}", exc_info=True)
+        # Use cleaned exam name if available for error logging
+        try:
+            cleaned_exam_name = _preprocess_exam_name(exam_name)
+            logger.error(f"Hybrid parsing failed for '{exam_name}' (cleaned: '{cleaned_exam_name}'): {e}", exc_info=True)
+        except:
+            logger.error(f"Hybrid parsing failed for '{exam_name}': {e}", exc_info=True)
         return {'error': str(e)}
 
 # --- API Endpoints ---
