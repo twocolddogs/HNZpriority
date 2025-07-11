@@ -832,8 +832,9 @@
                 const { anatomy, laterality, contrast, technique } = item.components;
                 if(anatomy && anatomy.length > 0) anatomy.forEach(a => { if (a && a.trim()) componentsCell.innerHTML += `<span class="tag anatomy">${a}</span>`});
                 if(laterality && Array.isArray(laterality)) laterality.forEach(l => { if (l && l.trim()) componentsCell.innerHTML += `<span class="tag laterality">${l}</span>`});
-                else if(laterality && laterality.trim()) componentsCell.innerHTML += `<span class="tag laterality">${laterality}</span>`;
-                if(contrast && contrast.trim()) componentsCell.innerHTML += `<span class="tag contrast">${contrast}</span>`;
+                else if(laterality && typeof laterality === 'string' && laterality.trim()) componentsCell.innerHTML += `<span class="tag laterality">${laterality}</span>`;
+                if(contrast && Array.isArray(contrast)) contrast.forEach(c => { if (c && c.trim()) componentsCell.innerHTML += `<span class="tag contrast">${c}</span>`});
+                else if(contrast && typeof contrast === 'string' && contrast.trim()) componentsCell.innerHTML += `<span class="tag contrast">${contrast}</span>`;
                 if(technique && technique.length > 0) technique.forEach(t => { if (t && t.trim()) componentsCell.innerHTML += `<span class="tag technique">${t}</span>`});
                 
                 // Add context cell
