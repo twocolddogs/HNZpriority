@@ -13,6 +13,10 @@ pip install --upgrade pip setuptools wheel
 echo "--> Installing all application requirements from requirements.txt..."
 pip install --only-binary :all: --no-binary medspacy -r requirements.txt
 
+# Install scispacy separately without its nmslib dependency since we use nmslib-metabrainz
+echo "--> Installing scispacy without nmslib dependency..."
+pip install --only-binary :all: --no-deps scispacy==0.5.4
+
 # --- Step 3: Download the Compatible ScispaCy Model ---
 # The model version must match the scispacy version (0.5.4).
 echo "--> Downloading and installing ScispaCy model 'en_core_sci_sm' v0.5.4..."
