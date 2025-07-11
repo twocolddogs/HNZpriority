@@ -188,20 +188,18 @@
                     <div class="stat-card"><div class="stat-value" id="genderContext">0</div><div class="stat-label">Gender Context</div></div>
                 </div>
                 <div class="action-buttons">
-                    <button class="button success" id="exportMappingsBtn">💾 Export Clean Mappings</button>
-                    <button class="button secondary" id="exportSummaryBtn">📋 Export Summary Report</button>
-                    <button class="button secondary" id="viewConsolidationsBtn">🔍 View Top Consolidations</button>
+                    <button class="button success" id="exportMappingsBtn">💾 Export Mappings</button>
                 </div>
                 
                 <!-- View Toggle -->
                 <div class="view-toggle" style="margin: 2rem 0; text-align: center;">
-                    <button class="button active" id="sampleViewBtn">📋 Sample View</button>
+                    <button class="button active" id="fullViewBtn">📋 Full View</button>
                     <button class="button secondary" id="consolidatedViewBtn">📊 Consolidated View</button>
                 </div>
                 
-                <!-- Sample View -->
-                <div id="sampleView">
-                    <h3>Sample Mappings</h3>
+                <!-- Full View -->
+                <div id="fullView">
+                    <h3>Mappings</h3>
                     <div class="table-container">
                         <table class="results-table" id="resultsTable">
                             <thead><tr><th>Source</th><th>Original Code</th><th>Original Name</th><th>Clean Name</th><th>SNOMED Code</th><th>SNOMED FSN</th><th>Components</th><th>Context</th><th>Confidence</th></tr></thead>
@@ -509,13 +507,11 @@
         uploadSection.addEventListener('drop', (e) => e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]), false);
 
         document.getElementById('exportMappingsBtn').addEventListener('click', exportResults);
-        document.getElementById('exportSummaryBtn').addEventListener('click', exportSummary);
-        document.getElementById('viewConsolidationsBtn').addEventListener('click', showConsolidationExamples);
         document.getElementById('closeModalBtn').addEventListener('click', closeModal);
         document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
         
         // View toggle event listeners
-        document.getElementById('sampleViewBtn').addEventListener('click', showSampleView);
+        document.getElementById('fullViewBtn').addEventListener('click', showFullView);
         document.getElementById('consolidatedViewBtn').addEventListener('click', showConsolidatedView);
         document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
         document.getElementById('consolidatedSort').addEventListener('change', sortConsolidatedResults);
@@ -787,7 +783,7 @@
         function runAnalysis(mappings) {
             summaryData = generateAnalyticsSummary(mappings);
             updateStatsUI(summaryData);
-            displaySampleResults(mappings.slice(0, 100));
+            displayResults(mappings);
             generateConsolidatedResults(mappings);
             resultsSection.style.display = 'block';
         }
@@ -802,9 +798,9 @@
             document.getElementById('genderContext').textContent = summary.genderContextCount;
         }
 
-        function displaySampleResults(samples) {
+        function displayResults(results) {
             resultsBody.innerHTML = '';
-            samples.forEach(item => {
+            results.forEach(item => {
                 const row = resultsBody.insertRow();
                 row.insertCell().textContent = item.data_source;
                 row.insertCell().textContent = item.exam_code;
@@ -1032,17 +1028,17 @@
             sortConsolidatedResults();
         }
         
-        function showSampleView() {
-            document.getElementById('sampleView').style.display = 'block';
+        function showFullView() {
+            document.getElementById('fullView').style.display = 'block';
             document.getElementById('consolidatedView').style.display = 'none';
-            document.getElementById('sampleViewBtn').classList.add('active');
+            document.getElementById('fullViewBtn').classList.add('active');
             document.getElementById('consolidatedViewBtn').classList.remove('active');
         }
         
         function showConsolidatedView() {
-            document.getElementById('sampleView').style.display = 'none';
+            document.getElementById('fullView').style.display = 'none';
             document.getElementById('consolidatedView').style.display = 'block';
-            document.getElementById('sampleViewBtn').classList.remove('active');
+            document.getElementById('fullViewBtn').classList.remove('active');
             document.getElementById('consolidatedViewBtn').classList.add('active');
             displayConsolidatedResults();
         }
