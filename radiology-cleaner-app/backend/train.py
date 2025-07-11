@@ -5,53 +5,25 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.model_selection import train_test_split
 import pandas as pd
-import csv
+import json
 import os
-import io
 
 def create_training_data_from_snomed():
-    """Create training data from the SNOMED reference CSV."""
+    """Create training data from the SNOMED reference JSON."""
     training_data = []
     
-    csv_path = 'base_code_set.csv'
-    if not os.path.exists(csv_path):
-        print(f"Warning: {csv_path} not found. Creating minimal placeholder models.")
+    json_path = 'code_set.json'
+    if not os.path.exists(json_path):
+        print(f"Warning: {json_path} not found. Creating minimal placeholder models.")
         return create_placeholder_models()
     
     print("Loading training data from SNOMED reference...")
     
-    with open(csv_path, 'r', encoding='utf-8') as f:
-        # Read and fix the problematic header formatting
-        content = f.read()
+    with open(json_path, 'r', encoding='utf-8') as f:
+        # Load JSON data directly - much simpler than CSV parsing
+        data = json.load(f)
         
-        # Replace the multiline header issue
-        content = content.replace('"SNOMED CT \nConcept-ID\n"', '"SNOMED CT Concept-ID"')
-        content = content.replace('"Clean Name\n"', '"Clean Name"')
-        
-        lines = content.strip().split('\n')
-        
-        # Find the data start (skip malformed headers)
-        data_start = 0
-        for i, line in enumerate(lines):
-            if line.strip() and line[0].isdigit():  # First line with actual data
-                data_start = i
-                break
-        
-        if data_start == 0:
-            print("No data rows found in CSV")
-            return []
-            
-        # Use the corrected header from a few lines back
-        header = lines[data_start - 1] if data_start > 0 else lines[0]
-        data_lines = lines[data_start:]
-        
-        # Create a cleaned CSV content
-        cleaned_csv = header + '\n' + '\n'.join(data_lines)
-        
-        # Parse the cleaned CSV
-        reader = csv.DictReader(io.StringIO(cleaned_csv))
-        
-        for row in reader:
+        for row in data:
             if not row.get('SNOMED CT FSN') or not row.get('Clean Name'):
                 continue
                 

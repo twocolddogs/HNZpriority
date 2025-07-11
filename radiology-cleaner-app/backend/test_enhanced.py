@@ -18,8 +18,8 @@ def test_enhanced_parsing():
     parser = RadiologySemanticParser(db_manager=db_manager, standardization_engine=standardization_engine)
     
     # Load SNOMED data
-    csv_path = 'base_code_set.csv'
-    db_manager.load_snomed_from_csv(csv_path)
+    json_path = 'code_set.json'
+    db_manager.load_snomed_from_json(json_path)
     
     # Test cases
     test_cases = [

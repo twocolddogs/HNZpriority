@@ -2,7 +2,7 @@ from database_models import DatabaseManager
 
 def debug_snomed():
     db = DatabaseManager()
-    db.load_snomed_from_csv('base_code_set.csv')
+    db.load_snomed_from_json('code_set.json')
     
     # Test exact match
     test_name = "Computed tomography of abdomen (procedure)"

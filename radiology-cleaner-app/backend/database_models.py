@@ -473,6 +473,61 @@ class DatabaseManager:
         systems_str = "|".join(sorted_systems)
         return hashlib.md5(systems_str.encode()).hexdigest()
 
+    def load_snomed_from_json(self, json_path: str):
+        """Load SNOMED reference data from JSON file (faster than CSV)."""
+        import json
+        
+        with self.get_connection() as conn:
+            # Check if table is already populated
+            cursor = conn.execute('SELECT COUNT(*) FROM snomed_reference WHERE clean_name IS NOT NULL')
+            if cursor.fetchone()[0] > 0:
+                print("SNOMED reference table already populated.")
+                return
+
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                count = 0
+                for row in data:
+                    if not row.get('SNOMED CT FSN') or not row.get('Clean Name'):
+                        continue
+                    
+                    try:
+                        # Handle the malformed key name from CSV conversion
+                        snomed_concept_id = int(row.get('SNOMED CT \nConcept-ID', 0))
+                    except (ValueError, TypeError):
+                        snomed_concept_id = 0
+                    
+                    try:
+                        laterality_concept_id = int(row.get('SNOMED CT Concept-ID of Laterality', 0)) if row.get('SNOMED CT Concept-ID of Laterality') else None
+                    except (ValueError, TypeError):
+                        laterality_concept_id = None
+
+                    # Convert Y/N to boolean
+                    is_diagnostic = row.get('Diagnostic procedure', '').strip().upper() == 'Y'
+                    is_interventional = row.get('Interventional Procedure', '').strip().upper() == 'Y'
+
+                    conn.execute('''
+                        INSERT INTO snomed_reference (
+                            snomed_concept_id, snomed_fsn, snomed_laterality_concept_id, 
+                            snomed_laterality_fsn, is_diagnostic, is_interventional, clean_name
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        snomed_concept_id,
+                        row.get('SNOMED CT FSN', '').strip(),
+                        laterality_concept_id,
+                        row.get('SNOMED FSN of Laterality', '').strip() if row.get('SNOMED FSN of Laterality') else None,
+                        is_diagnostic,
+                        is_interventional,
+                        row.get('Clean Name', '').strip()
+                    ))
+                    count += 1
+                    
+                    if count % 1000 == 0:
+                        print(f"Loaded {count} SNOMED records...")
+                        
+                print(f"Successfully loaded {count} SNOMED records from JSON.")
+
     def load_snomed_from_csv(self, csv_path: str):
         """Load SNOMED reference data from CSV file."""
         import io
