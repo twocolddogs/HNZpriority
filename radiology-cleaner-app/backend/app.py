@@ -178,14 +178,16 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
         contrast = parsed_result.get('contrast')
         technique = parsed_result.get('technique', [])
         
+        # Use parsed modality from exam name, not the passed modality_code
+        modality = parsed_result.get('modality', modality_code)
+        
         # Clean name priority: 1) NHS official name if high confidence, 2) semantic parser construction, 3) enhanced original
         if best_match and comprehensive_result.get('confidence', 0) > 0.7:
             # High confidence NHS match - use official clean name
             clean_name = best_match['clean_name']
             logger.debug(f"Using NHS official clean name: '{clean_name}' (confidence: {comprehensive_result.get('confidence', 0):.2f})")
-        elif anatomy and parsed_result.get('modality'):
+        elif anatomy and modality:
             # Construct clean name from semantic parser results
-            modality = parsed_result.get('modality', '')
             anatomy_str = ' '.join(anatomy)
             laterality_str = f" {laterality}" if laterality else ""
             contrast_str = f" {contrast}" if contrast else ""
@@ -285,7 +287,7 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
                 'procedural_equivalents': []
             },
             'is_paediatric': comprehensive_result.get('components', {}).get('is_paediatric', False),
-            'modality': parsed_result.get('modality', modality_code),
+            'modality': modality,  # Use parsed modality from exam name
             'best_match': best_match,  # Include for debugging
             'parsing_method': 'hybrid'  # Indicate this used the hybrid approach
         }

@@ -115,7 +115,7 @@ class RadiologySemanticParser:
         
         # --- Step 2: Parse Other Components ---
         parsed = {
-            'modality': self.modality_map.get(modality_code.upper(), modality_code),
+            'modality': self._parse_modality(lower_name, modality_code),
             'anatomy': sorted([self.anatomy_mappings[key]['standardName'] for key in found_anatomy_keys]),
             'laterality': self._parse_laterality(lower_name, scispacy_entities),
             'contrast': self._parse_contrast(lower_name),
@@ -143,19 +143,58 @@ class RadiologySemanticParser:
                 
         return found_keys
 
-    def _parse_laterality(self, lower_name: str, scispacy_entities: Dict) -> Optional[str]:
-        """Parse laterality using NLP first, then regex fallback."""
-        nlp_directions = [d.lower() for d in scispacy_entities.get('DIRECTION', [])]
-        if 'left' in nlp_directions:
-            return 'Left'
-        if 'right' in nlp_directions:
-            return 'Right'
-        if 'bilateral' in nlp_directions:
-             return 'Bilateral'
-
-        for lat, pattern in self.laterality_patterns.items():
+    def _parse_modality(self, lower_name: str, modality_code: str) -> str:
+        """Parse modality from exam name first, fall back to modality_code."""
+        # Priority 1: Parse from exam name for clear modality indicators
+        modality_patterns = {
+            'CT': re.compile(r'\b(ct|computed tomography)\b', re.I),
+            'MRI': re.compile(r'\b(mr|mri|magnetic resonance)\b', re.I),
+            'XR': re.compile(r'\b(xr|x-ray|radiograph|plain film)\b', re.I),
+            'US': re.compile(r'\b(us|ultrasound|sonogram)\b', re.I),
+            'NM': re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy)\b', re.I),
+            'PET': re.compile(r'\b(pet|positron emission)\b', re.I),
+            'Mammography': re.compile(r'\b(mg|mammo|mammography|breast)\b', re.I),
+            'Fluoroscopy': re.compile(r'\b(fl|fluoroscopy|screening)\b', re.I),
+            'DEXA': re.compile(r'\b(dexa|bone density)\b', re.I)
+        }
+        
+        # Check exam name for modality indicators
+        for modality, pattern in modality_patterns.items():
             if pattern.search(lower_name):
-                return lat
+                return modality
+        
+        # Priority 2: Use provided modality_code if no clear indication in name
+        if modality_code and modality_code.upper() in self.modality_map:
+            return self.modality_map[modality_code.upper()]
+        
+        # Priority 3: Default fallback
+        return modality_code or 'Other'
+
+    def _parse_laterality(self, lower_name: str, scispacy_entities: Dict) -> Optional[str]:
+        """Parse laterality conservatively - only when clearly indicated."""
+        # More conservative laterality patterns to avoid false positives
+        conservative_patterns = {
+            'Bilateral': re.compile(r'\b(bilateral|bilat|both|b/l)\b', re.I),
+            'Left': re.compile(r'\b(left|lt)\b(?!\s*(sided|hand|foot))', re.I),  # Avoid "left handed" etc
+            'Right': re.compile(r'\b(right|rt)\b(?!\s*(sided|hand|foot))', re.I),  # Avoid "right handed" etc
+        }
+        
+        # Check for clear laterality indicators in exam name
+        for laterality, pattern in conservative_patterns.items():
+            if pattern.search(lower_name):
+                return laterality
+        
+        # Only use NLP if it's confident and aligns with text patterns
+        nlp_directions = [d.lower() for d in scispacy_entities.get('DIRECTION', [])]
+        if nlp_directions:
+            # Cross-validate NLP with text patterns
+            if 'left' in nlp_directions and re.search(r'\b(left|lt)\b', lower_name, re.I):
+                return 'Left'
+            if 'right' in nlp_directions and re.search(r'\b(right|rt)\b', lower_name, re.I):
+                return 'Right'
+            if 'bilateral' in nlp_directions and re.search(r'\b(bilateral|bilat|both|b/l)\b', lower_name, re.I):
+                return 'Bilateral'
+        
         return None
 
     def _parse_contrast(self, lower_name: str) -> Optional[str]:
