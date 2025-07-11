@@ -13,8 +13,8 @@ pip install --upgrade pip setuptools wheel
 echo "--> Installing all application requirements from requirements.txt..."
 pip install --only-binary :all: --no-binary medspacy -r requirements.txt
 
-# Install scispacy separately without its nmslib dependency since we use nmslib-metabrainz
-echo "--> Installing scispacy without nmslib dependency..."
+# Install scispacy without dependency checks since we provide nmslib-metabrainz and compatible scipy
+echo "--> Installing scispacy without dependency verification..."
 pip install --only-binary :all: --no-deps scispacy==0.5.4
 
 # Install medspacy from local source with modified requirements (medspacy-quickumls removed)
