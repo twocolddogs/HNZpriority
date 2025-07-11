@@ -178,6 +178,17 @@ This ensures Gemini maintains comprehensive understanding of:
 - Enables better suggestions and problem-solving
 - Reduces debugging time and improves code quality
 
+## Testing Policy
+
+**CRITICAL: Never attempt to run local tests automatically.**
+
+- **DO NOT** run `python app.py`, `npm start`, or any local server commands
+- **DO NOT** execute test commands like `pytest`, `npm test`, or similar
+- **DO NOT** assume the local environment is configured for running the application
+- Local testing environment may be broken or misconfigured
+- Focus on code analysis, file modification, and static code review only
+- When testing is needed, recommend the user run tests in their own environment
+
 ## Code Patterns
 
 ### HNZ Radiology Triage Tool (React Application)
