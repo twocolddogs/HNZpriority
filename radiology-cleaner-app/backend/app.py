@@ -66,7 +66,7 @@ def _initialize_app():
         # Assuming your DatabaseManager and FeedbackTrainingManager don't have heavy init
         db_manager = DatabaseManager()
         cache_manager = CacheManager()
-        feedback_manager = FeedbackTrainingManager(db_manager=db_manager)
+        feedback_manager = FeedbackTrainingManager()
         logger.info("Database, Cache, and Feedback managers initialized.")
 
         # Initialize NLP Processor
