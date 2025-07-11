@@ -188,6 +188,16 @@ class NHSLookupEngine:
                 intersection = len(input_comps & nhs_comps)
                 union = len(input_comps | nhs_comps)
                 similarity = intersection / union if union > 0 else 0
+
+                # Special handling for anatomy to penalize extra terms in NHS entry
+                if comp_type == 'anatomy':
+                    nhs_only_terms = nhs_comps - input_comps
+                    if nhs_only_terms:
+                        # Reduce similarity based on the proportion of NHS-only terms
+                        if len(nhs_comps) > 0:
+                            penalty_ratio = len(nhs_only_terms) / len(nhs_comps)
+                            similarity *= (1 - penalty_ratio)
+                            logger.debug(f"Anatomy penalty applied. NHS-only terms: {nhs_only_terms}, new similarity: {similarity:.2f}")
                 
                 total_score += similarity * weight
                 total_weight += weight

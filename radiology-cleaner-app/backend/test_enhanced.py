@@ -15,7 +15,7 @@ def test_enhanced_parsing():
     # Initialize components
     db_manager = DatabaseManager()
     standardization_engine = StandardizationEngine(db_manager=db_manager)
-    parser = RadiologySemanticParser(db_manager=db_manager, standardization_engine=standardization_engine)
+    parser = RadiologySemanticParser()
     
     # Load SNOMED data
     json_path = 'code_set.json'
