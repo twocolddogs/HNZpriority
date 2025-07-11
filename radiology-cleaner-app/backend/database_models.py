@@ -138,7 +138,8 @@ class DatabaseManager:
                 )
             ''')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_snomed_clean_name ON snomed_reference(clean_name)')
-            self._load_all_clean_names_into_memory()
+            # Load cache lazily to avoid blocking initialization
+            self.all_clean_names_cache = None
 
             # Abbreviations table
             conn.execute('''
@@ -590,6 +591,10 @@ class DatabaseManager:
         """Find fuzzy matches for a clean name with similarity scores."""
         from difflib import SequenceMatcher
         import re
+        
+        # Load cache lazily if not already loaded
+        if self.all_clean_names_cache is None:
+            self._load_all_clean_names_into_memory()
         
         # Use the in-memory cache instead of fetching from DB every time
         all_clean_names = self.all_clean_names_cache
