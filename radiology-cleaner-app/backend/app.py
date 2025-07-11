@@ -153,20 +153,44 @@ def record_performance(endpoint: str, processing_time_ms: int, input_size: int,
 def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) -> Dict:
     _ensure_app_is_initialized()
     
-    if not semantic_parser:
-        logger.error("Semantic parser not available")
+    if not semantic_parser or not comprehensive_preprocessor:
+        logger.error("Parser components not available")
         return {'error': 'Parser not initialized'}
     
     try:
-        # Use the sophisticated semantic parser with longest-match-first anatomy parsing
+        # HYBRID APPROACH: Best of both worlds
+        # Step 1: Use semantic parser for superior component extraction (NLP + longest-match-first)
         parsed_result = semantic_parser.parse_exam_name(exam_name, modality_code or 'Other')
         
-        # Get SNOMED data if available
+        # Step 2: Use comprehensive preprocessor for authority-file mapping to get official standards
+        comprehensive_result = comprehensive_preprocessor.preprocess_exam_name(exam_name, modality_code)
+        
+        # Step 3: Combine the best from both systems
+        best_match = comprehensive_result.get('best_match')
+        
+        # Use comprehensive preprocessor's official clean name if available, else use original
+        clean_name = best_match['clean_name'] if best_match else exam_name
+        
+        # Use semantic parser's superior component extraction
+        anatomy = parsed_result.get('anatomy', [])
+        laterality = parsed_result.get('laterality')
+        contrast = parsed_result.get('contrast')
+        technique = parsed_result.get('technique', [])
+        
+        # Step 4: Get SNOMED data from database for verification
         snomed_data = {}
-        clean_name = exam_name
-        if db_manager and parsed_result.get('anatomy'):
-            # Try to get SNOMED data for the first anatomy match
-            anatomy_name = parsed_result['anatomy'][0] if parsed_result['anatomy'] else exam_name
+        if best_match and best_match.get('snomed_data'):
+            # Use comprehensive preprocessor's SNOMED data (from NHS.json)
+            snomed_raw = best_match['snomed_data']
+            snomed_data = {
+                'concept_id': snomed_raw.get('snomed_concept_id'),
+                'fsn': snomed_raw.get('snomed_fsn'),
+                'laterality_concept_id': snomed_raw.get('snomed_laterality_id'),
+                'laterality_fsn': snomed_raw.get('snomed_laterality_fsn')
+            }
+        elif db_manager and anatomy:
+            # Fallback to database lookup
+            anatomy_name = anatomy[0] if anatomy else exam_name
             snomed_match = db_manager.get_snomed_reference_by_exam_name(anatomy_name)
             if snomed_match:
                 snomed_data = {
@@ -175,36 +199,44 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
                     'laterality_concept_id': snomed_match.get('snomed_laterality_concept_id'),
                     'laterality_fsn': snomed_match.get('snomed_laterality_fsn')
                 }
-                clean_name = snomed_match.get('clean_name', exam_name)
         
-        # Calculate confidence based on parsing completeness
+        # Step 5: Calculate hybrid confidence score
         confidence = 0.0
-        if parsed_result.get('anatomy'): confidence += 0.4
-        if parsed_result.get('modality') and parsed_result['modality'] != 'Other': confidence += 0.3
-        if parsed_result.get('laterality'): confidence += 0.1
-        if parsed_result.get('contrast'): confidence += 0.1
+        # Authority mapping confidence (30%)
+        if best_match:
+            authority_confidence = comprehensive_result.get('confidence', 0.0)
+            confidence += authority_confidence * 0.3
+        
+        # Component extraction confidence (70%)
+        if anatomy: confidence += 0.3
+        if parsed_result.get('modality') and parsed_result['modality'] != 'Other': confidence += 0.2
+        if laterality: confidence += 0.1
+        if contrast: confidence += 0.05
+        if technique: confidence += 0.05
         if snomed_data: confidence += 0.1
         
         response = {
             'cleanName': clean_name,
-            'anatomy': parsed_result.get('anatomy', []),
-            'laterality': parsed_result.get('laterality'),
-            'contrast': parsed_result.get('contrast'),
-            'technique': parsed_result.get('technique', []),
-            'gender_context': None,
+            'anatomy': anatomy,
+            'laterality': laterality,
+            'contrast': contrast,
+            'technique': technique,
+            'gender_context': comprehensive_result.get('components', {}).get('gender_context'),
             'clinical_context': [],
-            'confidence': confidence,
+            'confidence': min(confidence, 1.0),  # Cap at 1.0
             'snomed': snomed_data,
             'equivalence': {
                 'clinical_equivalents': [],
                 'procedural_equivalents': []
             },
-            'is_paediatric': False,
-            'modality': parsed_result.get('modality', modality_code)
+            'is_paediatric': comprehensive_result.get('components', {}).get('is_paediatric', False),
+            'modality': parsed_result.get('modality', modality_code),
+            'best_match': best_match,  # Include for debugging
+            'parsing_method': 'hybrid'  # Indicate this used the hybrid approach
         }
         return response
     except Exception as e:
-        logger.error(f"Semantic parsing failed for '{exam_name}': {e}", exc_info=True)
+        logger.error(f"Hybrid parsing failed for '{exam_name}': {e}", exc_info=True)
         return {'error': str(e)}
 
 # --- API Endpoints ---
