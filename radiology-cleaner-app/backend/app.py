@@ -75,7 +75,7 @@ def _initialize_app():
             logger.error("NLP Processor failed to initialize. Parsing will be limited to rules.")
 
         # Initialize the core parser
-        semantic_parser = RadiologySemanticParser(db_manager=db_manager)
+        semantic_parser = RadiologySemanticParser()
         
         # --- CORRECTED FILE PATHS ---
         # Build absolute paths from the directory where this script (app.py) is located.
@@ -159,37 +159,48 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
     
     try:
         # HYBRID APPROACH: Best of both worlds
+        logger.info(f"Processing exam: '{exam_name}' with modality: '{modality_code}'")
+        
         # Step 1: Use semantic parser for superior component extraction (NLP + longest-match-first)
         parsed_result = semantic_parser.parse_exam_name(exam_name, modality_code or 'Other')
+        logger.debug(f"Semantic parser result: {parsed_result}")
         
         # Step 2: Use comprehensive preprocessor for authority-file mapping to get official standards
         comprehensive_result = comprehensive_preprocessor.preprocess_exam_name(exam_name, modality_code)
+        logger.debug(f"Comprehensive preprocessor result: best_match={comprehensive_result.get('best_match') is not None}, confidence={comprehensive_result.get('confidence', 0)}")
         
         # Step 3: Combine the best from both systems
         best_match = comprehensive_result.get('best_match')
         
-        # Use comprehensive preprocessor's official clean name if available, else use original
-        clean_name = best_match['clean_name'] if best_match else exam_name
-        
-        # Use semantic parser's superior component extraction
+        # FIXED: Prioritize semantic parser results, use comprehensive preprocessor for official standardization
         anatomy = parsed_result.get('anatomy', [])
         laterality = parsed_result.get('laterality')
         contrast = parsed_result.get('contrast')
         technique = parsed_result.get('technique', [])
         
-        # Step 4: Get SNOMED data from database for verification
+        # Clean name priority: 1) NHS official name if high confidence, 2) semantic parser construction, 3) enhanced original
+        if best_match and comprehensive_result.get('confidence', 0) > 0.7:
+            # High confidence NHS match - use official clean name
+            clean_name = best_match['clean_name']
+            logger.debug(f"Using NHS official clean name: '{clean_name}' (confidence: {comprehensive_result.get('confidence', 0):.2f})")
+        elif anatomy and parsed_result.get('modality'):
+            # Construct clean name from semantic parser results
+            modality = parsed_result.get('modality', '')
+            anatomy_str = ' '.join(anatomy)
+            laterality_str = f" {laterality}" if laterality else ""
+            contrast_str = f" {contrast}" if contrast else ""
+            clean_name = f"{modality} {anatomy_str}{laterality_str}{contrast_str}".strip()
+            logger.debug(f"Constructed clean name from semantic parser: '{clean_name}' (anatomy: {anatomy}, modality: {modality})")
+        else:
+            # Fallback to enhanced original
+            clean_name = exam_name
+            logger.warning(f"No anatomy or modality found, using original name: '{clean_name}'")
+        
+        # Step 4: Get SNOMED data - FIXED: prioritize semantic parser results
         snomed_data = {}
-        if best_match and best_match.get('snomed_data'):
-            # Use comprehensive preprocessor's SNOMED data (from NHS.json)
-            snomed_raw = best_match['snomed_data']
-            snomed_data = {
-                'concept_id': snomed_raw.get('snomed_concept_id'),
-                'fsn': snomed_raw.get('snomed_fsn'),
-                'laterality_concept_id': snomed_raw.get('snomed_laterality_id'),
-                'laterality_fsn': snomed_raw.get('snomed_laterality_fsn')
-            }
-        elif db_manager and anatomy:
-            # Fallback to database lookup
+        
+        # Primary: Use semantic parser anatomy results for database lookup
+        if db_manager and anatomy:
             anatomy_name = anatomy[0] if anatomy else exam_name
             snomed_match = db_manager.get_snomed_reference_by_exam_name(anatomy_name)
             if snomed_match:
@@ -200,20 +211,35 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
                     'laterality_fsn': snomed_match.get('snomed_laterality_fsn')
                 }
         
-        # Step 5: Calculate hybrid confidence score
-        confidence = 0.0
-        # Authority mapping confidence (30%)
-        if best_match:
-            authority_confidence = comprehensive_result.get('confidence', 0.0)
-            confidence += authority_confidence * 0.3
+        # Secondary: Use comprehensive preprocessor's SNOMED data for validation/fallback
+        if not snomed_data and best_match and best_match.get('snomed_data'):
+            snomed_raw = best_match['snomed_data']
+            snomed_data = {
+                'concept_id': snomed_raw.get('snomed_concept_id'),
+                'fsn': snomed_raw.get('snomed_fsn'),
+                'laterality_concept_id': snomed_raw.get('snomed_laterality_id'),
+                'laterality_fsn': snomed_raw.get('snomed_laterality_fsn')
+            }
         
-        # Component extraction confidence (70%)
-        if anatomy: confidence += 0.3
+        # Step 5: FIXED: Calculate balanced hybrid confidence score
+        confidence = 0.0
+        
+        # Primary: Component extraction confidence (80% - this is the core functionality)
+        if anatomy: confidence += 0.4  # Most important - did we identify anatomy?
         if parsed_result.get('modality') and parsed_result['modality'] != 'Other': confidence += 0.2
         if laterality: confidence += 0.1
         if contrast: confidence += 0.05
         if technique: confidence += 0.05
+        
+        # Secondary: Authority mapping bonus (20% - nice to have but not essential)
+        if best_match:
+            authority_confidence = comprehensive_result.get('confidence', 0.0)
+            confidence += authority_confidence * 0.2
+        
+        # Bonus: SNOMED data found (10% - indicates successful integration)
         if snomed_data: confidence += 0.1
+        
+        logger.info(f"Processing complete for '{exam_name}': clean_name='{clean_name}', anatomy={anatomy}, confidence={confidence:.2f}, snomed_found={bool(snomed_data)}")
         
         response = {
             'cleanName': clean_name,

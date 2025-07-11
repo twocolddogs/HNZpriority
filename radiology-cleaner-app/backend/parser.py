@@ -8,9 +8,7 @@ class RadiologySemanticParser:
     components using a hybrid approach. It combines NLP-extracted entities
     with a robust, regex-based rule system for high accuracy.
     """
-    def __init__(self, db_manager=None, standardization_engine=None):
-        self.db_manager = db_manager
-        self.standardization_engine = standardization_engine
+    def __init__(self):
         
         # --- Mappings and Patterns ---
         self.anatomy_mappings = {
@@ -134,17 +132,11 @@ class RadiologySemanticParser:
         return result
 
     def _parse_anatomy_hybrid(self, lower_name: str, nlp_terms: List[str]) -> Set[str]:
-        """Combines NLP and rule-based anatomy extraction for higher accuracy."""
+        """Uses precise longest-match-first rule-based anatomy extraction for maximum accuracy."""
         found_keys: Set[str] = set()
         
-        # 1. Process NLP-extracted terms first to get a baseline
-        for term in nlp_terms:
-            for registered_term, info in self.anatomy_lookup.items():
-                if term in registered_term or registered_term in term:
-                    found_keys.add(info['key'])
-        
-        # 2. Apply rule-based matching to catch specifics and confirm
-        # This is crucial for compound terms like 'cervical spine'.
+        # Use rule-based matching with longest-match-first logic
+        # This is crucial for compound terms like 'cervical spine' vs 'spine'
         for term_key in self.sorted_anatomy_terms:
             if term_key in lower_name:
                 found_keys.add(self.anatomy_lookup[term_key]['key'])
