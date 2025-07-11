@@ -311,6 +311,37 @@ def _detect_gender_context(exam_name: str, anatomy: List[str]) -> Optional[str]:
     
     return None
 
+def _detect_age_context(exam_name: str) -> Optional[str]:
+    """
+    Detect age context from exam name (e.g., paediatric, adult).
+    
+    Returns: 'paediatric', 'adult', or None
+    """
+    import re
+    
+    exam_lower = exam_name.lower()
+    
+    # Paediatric patterns
+    paediatric_patterns = [
+        r'\b(paediatric|pediatric|paed|peds)\b',
+        r'\b(child|infant|newborn|neonate|neonatal)\b',
+        r'\b(adolescent|teen|teenager)\b'
+    ]
+    
+    # Adult patterns
+    adult_patterns = [
+        r'\b(adult|grown-up)\b',
+        r'\b(elderly|senior|geriatric)\b'
+    ]
+    
+    if any(re.search(pattern, exam_lower) for pattern in paediatric_patterns):
+        return 'paediatric'
+    
+    if any(re.search(pattern, exam_lower) for pattern in adult_patterns):
+        return 'adult'
+        
+    return None
+
 def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
     """
     Detect clinical context from exam name.
@@ -527,7 +558,8 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> D
             'snomed_fsn': nhs_result['snomed_fsn'],
             'confidence': nhs_result['confidence'],
             'source': nhs_result['source'],
-            'snomed_found': bool(nhs_result['snomed_id'])
+            'snomed_found': bool(nhs_result['snomed_id']),
+            'age_context': _detect_age_context(cleaned_exam_name)
         }
         
         logger.info(f"NHS processing complete for '{exam_name}': clean_name='{result['clean_name']}', snomed_id={result['snomed_id']}, confidence={result['confidence']:.2f}")
@@ -679,6 +711,7 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
         
         # Step 5: Enhanced gender/clinical context detection
         gender_context = _detect_gender_context(cleaned_exam_name, anatomy)
+        age_context = _detect_age_context(cleaned_exam_name)
         clinical_context = _detect_clinical_context(cleaned_exam_name, anatomy)
         
         # Step 6: FIXED: Calculate balanced hybrid confidence score
@@ -708,6 +741,7 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
             'contrast': contrast,
             'technique': technique,
             'gender_context': gender_context,
+            'age_context': age_context,
             'clinical_context': clinical_context,
             'confidence': min(confidence, 1.0),  # Cap at 1.0
             'snomed': snomed_data,
@@ -868,6 +902,7 @@ def parse_batch():
                             'contrast': result.get('contrast', []),
                             'technique': result.get('technique', []),
                             'gender_context': result.get('gender_context', ''),
+                            'age_context': result.get('age_context', ''),
                             'clinical_context': result.get('clinical_context', []),
                             'confidence': result.get('confidence', 0.0),
                             'modality': result.get('modality', [])

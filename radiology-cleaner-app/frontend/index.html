@@ -814,11 +814,11 @@
 
                 // Add SNOMED Code cell
                 const snomedCodeCell = row.insertCell();
-                if (item.snomed && item.snomed.id) {
+                /*if (item.snomed && item.snomed.id) {
                     snomedCodeCell.textContent = item.snomed.id;
                 } else {
                     snomedCodeCell.innerHTML = '<span style="color: #999;">-</span>';
-                }
+                }*/
 
                 // Add SNOMED FSN cell
                 const snomedFsnCell = row.insertCell();
@@ -830,18 +830,18 @@
 
                 const componentsCell = row.insertCell();
                 const { anatomy, laterality, contrast, technique } = item.components;
-                if(anatomy) anatomy.forEach(a => componentsCell.innerHTML += `<span class="tag anatomy">${a}</span>`);
-                if(laterality) componentsCell.innerHTML += `<span class="tag laterality">${laterality}</span>`;
-                if(contrast) componentsCell.innerHTML += `<span class="tag contrast">${contrast}</span>`;
-                if(technique) technique.forEach(t => componentsCell.innerHTML += `<span class="tag technique">${t}</span>`);
+                if(anatomy && anatomy.length > 0) anatomy.forEach(a => { if (a && a.trim()) componentsCell.innerHTML += `<span class="tag anatomy">${a}</span>`});
+                if(laterality && laterality.trim()) componentsCell.innerHTML += `<span class="tag laterality">${laterality}</span>`;
+                if(contrast && contrast.trim()) componentsCell.innerHTML += `<span class="tag contrast">${contrast}</span>`;
+                if(technique && technique.length > 0) technique.forEach(t => { if (t && t.trim()) componentsCell.innerHTML += `<span class="tag technique">${t}</span>`});
                 
                 // Add context cell
                 const contextCell = row.insertCell();
                 const { gender_context, clinical_context, clinical_equivalents } = item.components;
-                if(gender_context) contextCell.innerHTML += `<span class="tag gender">${gender_context}</span>`;
-                if(clinical_context) clinical_context.forEach(c => contextCell.innerHTML += `<span class="tag clinical">${c}</span>`);
+                if(gender_context && gender_context.trim()) contextCell.innerHTML += `<span class="tag gender">${gender_context}</span>`;
+                if(clinical_context && clinical_context.length > 0) clinical_context.forEach(c => { if (c && c.trim()) contextCell.innerHTML += `<span class="tag clinical">${c}</span>`});
                 if(clinical_equivalents && clinical_equivalents.length > 0) {
-                    clinical_equivalents.slice(0, 2).forEach(e => contextCell.innerHTML += `<span class="tag equivalent">${e}</span>`);
+                    clinical_equivalents.slice(0, 2).forEach(e => { if (e && e.trim()) contextCell.innerHTML += `<span class="tag equivalent">${e}</span>`});
                 }
                 
                 // Add confidence cell

@@ -118,6 +118,10 @@ class NHSLookupEngine:
             components['procedure_type'].append('angiography')
         if 'venography' in fsn or 'venogram' in clean_name:
             components['procedure_type'].append('venography')
+        if 'biopsy' in fsn or 'biopsy' in clean_name:
+            components['procedure_type'].append('biopsy')
+        if 'drainage' in fsn or 'drainage' in clean_name:
+            components['procedure_type'].append('drainage')
         
         return components
     
@@ -152,6 +156,17 @@ class NHSLookupEngine:
     
     def _calculate_component_match_confidence(self, input_components: Dict, nhs_components: Dict) -> float:
         """Calculate confidence score between input and NHS components."""
+        # --- START: STRICT ANATOMY MATCHING ---
+        input_anatomy = set(input_components.get('anatomy', []))
+        nhs_anatomy = set(nhs_components.get('anatomy', []))
+
+        # If the input specifies anatomy, it MUST have some overlap with the NHS entry's anatomy.
+        # This prevents matching completely different body parts, e.g., "head" vs "foot".
+        if input_anatomy and not input_anatomy.intersection(nhs_anatomy):
+            logger.debug(f"Anatomy mismatch: Input anatomy {input_anatomy} has no overlap with NHS anatomy {nhs_anatomy}.")
+            return 0.0
+        # --- END: STRICT ANATOMY MATCHING ---
+        
         total_score = 0
         total_weight = 0
         
