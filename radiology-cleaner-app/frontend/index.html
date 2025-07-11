@@ -890,7 +890,7 @@
                 const contrastType = String(components.contrast || 'none').replace(' ', '_');
                 if(summary.contrastUsage.hasOwnProperty(contrastType)) summary.contrastUsage[contrastType]++;
                 
-                const laterality = (components.laterality || 'none').toLowerCase();
+                const laterality = String(components.laterality || 'none').toLowerCase();
                 if(summary.lateralityDistribution.hasOwnProperty(laterality)) summary.lateralityDistribution[laterality]++;
                 
                 // Enhanced analytics
