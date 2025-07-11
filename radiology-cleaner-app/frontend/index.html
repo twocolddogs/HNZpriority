@@ -887,7 +887,7 @@
                 const modality = m.components.modality || modality_code;
                 if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
                 
-                const contrastType = (components.contrast || 'none').replace(' ', '_');
+                const contrastType = String(components.contrast || 'none').replace(' ', '_');
                 if(summary.contrastUsage.hasOwnProperty(contrastType)) summary.contrastUsage[contrastType]++;
                 
                 const laterality = (components.laterality || 'none').toLowerCase();
