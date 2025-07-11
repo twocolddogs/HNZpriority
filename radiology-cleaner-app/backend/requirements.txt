@@ -11,8 +11,7 @@ numpy==1.26.4
 
 # -- SpaCy and MedspaCy NLP Pipeline Dependencies (Latest Stable Versions) --
 spacy==3.7.5
-# scispacy installed separately to avoid nmslib dependency conflict
-medspacy==1.3.1
+# scispacy and medspacy installed separately to avoid dependency conflicts
 
 # -- Vector Similarity Library --
 nmslib-metabrainz==2.1.3
