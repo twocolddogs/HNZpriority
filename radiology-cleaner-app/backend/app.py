@@ -86,6 +86,14 @@ def _initialize_app():
         usa_json_path = os.path.join(base_dir, 'core', 'USA.json')
         
         if os.path.exists(nhs_json_path):
+            # Load SNOMED data from JSON into database first
+            json_path = os.path.join(base_dir, 'code_set.json')
+            if os.path.exists(json_path):
+                db_manager.load_snomed_from_json(json_path)
+                logger.info("SNOMED data loaded from JSON into database.")
+            else:
+                logger.warning(f"SNOMED JSON file not found at {json_path}")
+            
             comprehensive_preprocessor = ComprehensivePreprocessor(nhs_json_path, usa_json_path if os.path.exists(usa_json_path) else None)
             logger.info("Comprehensive preprocessor initialized.")
         else:
