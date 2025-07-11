@@ -156,18 +156,29 @@ def _preprocess_exam_name(exam_name: str) -> str:
     Examples:
     - "Z123^CT HEAD" -> "CT HEAD"
     - "Z456^MR CHEST" -> "MR CHEST"
-    - "ABC123^X-RAY ABDOMEN" -> "X-RAY ABDOMEN"
+    - "CT CHEST/ABDOMEN" -> "CT CHEST ABDOMEN"
+    - "MR BRAIN/NECK" -> "MR BRAIN NECK"
+    - "X-RAY HAND/WRIST" -> "X-RAY HAND WRIST"
     """
     if not exam_name:
         return exam_name
     
-    # Strip caret and everything before it (common in coded systems)
-    if '^' in exam_name:
-        cleaned = exam_name.split('^', 1)[1].strip()
-        return cleaned
+    # Start with original exam name
+    cleaned = exam_name
     
-    # Return original if no preprocessing needed
-    return exam_name.strip()
+    # Strip caret and everything before it (common in coded systems)
+    if '^' in cleaned:
+        cleaned = cleaned.split('^', 1)[1].strip()
+    
+    # Replace forward slashes with spaces to ensure discrete words are parsable
+    # This helps with cases like "CHEST/ABDOMEN" -> "CHEST ABDOMEN"
+    if '/' in cleaned:
+        cleaned = cleaned.replace('/', ' ')
+    
+    # Clean up extra whitespace that might result from replacements
+    cleaned = ' '.join(cleaned.split())
+    
+    return cleaned
 
 # This is the processing function from your original file, adapted for lazy-loading
 def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) -> Dict:
