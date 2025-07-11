@@ -341,6 +341,90 @@ def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
     
     return contexts
 
+def _validate_nhs_match(input_exam_name: str, nhs_clean_name: str, parsed_anatomy: List[str]) -> bool:
+    """
+    Validate that an NHS official clean name makes sense for the input exam name.
+    
+    This prevents cases where "CT Abdomen and Pelvis" gets matched to 
+    "CT Head neck abdomen and pelvis" due to fuzzy matching issues.
+    
+    Args:
+        input_exam_name: The original cleaned exam name
+        nhs_clean_name: The NHS official clean name from comprehensive preprocessor
+        parsed_anatomy: The anatomy components parsed from the input
+    
+    Returns:
+        bool: True if the NHS match is valid, False if it should be rejected
+    """
+    import re
+    
+    # Convert to lowercase for comparison
+    input_lower = input_exam_name.lower()
+    nhs_lower = nhs_clean_name.lower()
+    
+    # Extract anatomy terms from both names
+    anatomy_terms = [
+        'head', 'neck', 'brain', 'skull', 'sinuses', 'orbit', 'face',
+        'chest', 'thorax', 'lung', 'heart', 'mediastinum',
+        'abdomen', 'pelvis', 'liver', 'kidney', 'pancreas', 'spleen',
+        'spine', 'cervical', 'thoracic', 'lumbar', 'sacrum',
+        'shoulder', 'arm', 'elbow', 'wrist', 'hand', 'finger',
+        'hip', 'thigh', 'knee', 'leg', 'ankle', 'foot', 'toe'
+    ]
+    
+    # Find anatomy terms in input and NHS clean name
+    input_anatomy_terms = set()
+    nhs_anatomy_terms = set()
+    
+    for term in anatomy_terms:
+        if re.search(r'\b' + re.escape(term) + r'\b', input_lower):
+            input_anatomy_terms.add(term)
+        if re.search(r'\b' + re.escape(term) + r'\b', nhs_lower):
+            nhs_anatomy_terms.add(term)
+    
+    # VALIDATION RULE 1: NHS clean name should not contain major anatomy terms not in input
+    # This prevents "CT Abdomen Pelvis" from matching "CT Head Neck Abdomen Pelvis"
+    extra_anatomy = nhs_anatomy_terms - input_anatomy_terms
+    if extra_anatomy:
+        logger.warning(f"NHS match contains extra anatomy terms not in input: {extra_anatomy}")
+        return False
+    
+    # VALIDATION RULE 2: NHS clean name should contain the major anatomy terms from input
+    # Allow some flexibility for synonyms (e.g., "thorax" vs "chest")
+    major_missing = input_anatomy_terms - nhs_anatomy_terms
+    if major_missing:
+        # Check for common synonyms
+        synonym_map = {
+            'thorax': 'chest',
+            'chest': 'thorax',
+            'brain': 'head',
+            'skull': 'head'
+        }
+        
+        # Remove synonyms from missing terms
+        for missing in list(major_missing):
+            if missing in synonym_map:
+                synonym = synonym_map[missing]
+                if synonym in nhs_anatomy_terms:
+                    major_missing.remove(missing)
+        
+        # If still missing major terms, reject
+        if major_missing:
+            logger.warning(f"NHS match missing major anatomy terms from input: {major_missing}")
+            return False
+    
+    # VALIDATION RULE 3: Check parsed anatomy alignment
+    if parsed_anatomy:
+        parsed_lower = [a.lower() for a in parsed_anatomy]
+        for parsed_term in parsed_lower:
+            # Check if parsed anatomy term is represented in NHS clean name
+            if not any(parsed_term in nhs_lower or term in parsed_term for term in nhs_anatomy_terms):
+                logger.warning(f"NHS match doesn't align with parsed anatomy: {parsed_term}")
+                return False
+    
+    logger.debug(f"NHS match validation passed for '{input_exam_name}' -> '{nhs_clean_name}'")
+    return True
+
 # This is the processing function from your original file, adapted for lazy-loading
 def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) -> Dict:
     _ensure_app_is_initialized()
@@ -378,11 +462,25 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
         # Use parsed modality from exam name, not the passed modality_code
         modality = parsed_result.get('modality', modality_code)
         
-        # Clean name priority: 1) NHS official name if high confidence, 2) semantic parser construction, 3) enhanced original
+        # Clean name priority: 1) NHS official name if high confidence AND validates against input, 2) semantic parser construction, 3) enhanced original
         if best_match and comprehensive_result.get('confidence', 0) > 0.7:
-            # High confidence NHS match - use official clean name
-            clean_name = best_match['clean_name']
-            logger.debug(f"Using NHS official clean name: '{clean_name}' (confidence: {comprehensive_result.get('confidence', 0):.2f})")
+            # VALIDATION: Check if NHS official name makes sense for the input
+            nhs_clean_name = best_match['clean_name']
+            if _validate_nhs_match(cleaned_exam_name, nhs_clean_name, anatomy):
+                clean_name = nhs_clean_name
+                logger.debug(f"Using validated NHS official clean name: '{clean_name}' (confidence: {comprehensive_result.get('confidence', 0):.2f})")
+            else:
+                logger.warning(f"NHS match validation failed - rejecting '{nhs_clean_name}' for input '{cleaned_exam_name}'")
+                # Fall through to semantic parser construction
+                if anatomy and modality:
+                    anatomy_str = ' '.join(anatomy)
+                    laterality_str = f" {laterality}" if laterality else ""
+                    contrast_str = f" {contrast}" if contrast else ""
+                    clean_name = f"{modality} {anatomy_str}{laterality_str}{contrast_str}".strip()
+                    logger.debug(f"Constructed clean name from semantic parser: '{clean_name}' (anatomy: {anatomy}, modality: {modality})")
+                else:
+                    clean_name = cleaned_exam_name
+                    logger.warning(f"No anatomy or modality found, using cleaned name: '{clean_name}'")
         elif anatomy and modality:
             # Construct clean name from semantic parser results
             anatomy_str = ' '.join(anatomy)
