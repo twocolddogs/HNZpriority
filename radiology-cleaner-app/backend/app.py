@@ -232,10 +232,10 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
             
             if snomed_match:
                 snomed_data = {
-                    'concept_id': snomed_match.get('snomed_concept_id'),
-                    'fsn': snomed_match.get('snomed_fsn'),
-                    'laterality_concept_id': snomed_match.get('snomed_laterality_concept_id'),
-                    'laterality_fsn': snomed_match.get('snomed_laterality_fsn')
+                    'snomed_concept_id': snomed_match.get('snomed_concept_id'),
+                    'snomed_fsn': snomed_match.get('snomed_fsn'),
+                    'snomed_laterality_concept_id': snomed_match.get('snomed_laterality_concept_id'),
+                    'snomed_laterality_fsn': snomed_match.get('snomed_laterality_fsn')
                 }
             else:
                 logger.debug(f"No SNOMED match found for exam: '{exam_name}', clean_name: '{clean_name}', anatomy: {anatomy}")
@@ -244,10 +244,10 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
         if not snomed_data and best_match and best_match.get('snomed_data'):
             snomed_raw = best_match['snomed_data']
             snomed_data = {
-                'concept_id': snomed_raw.get('snomed_concept_id'),
-                'fsn': snomed_raw.get('snomed_fsn'),
-                'laterality_concept_id': snomed_raw.get('snomed_laterality_id'),
-                'laterality_fsn': snomed_raw.get('snomed_laterality_fsn')
+                'snomed_concept_id': snomed_raw.get('snomed_concept_id'),
+                'snomed_fsn': snomed_raw.get('snomed_fsn'),
+                'snomed_laterality_concept_id': snomed_raw.get('snomed_laterality_id'),
+                'snomed_laterality_fsn': snomed_raw.get('snomed_laterality_fsn')
             }
         
         # Step 5: FIXED: Calculate balanced hybrid confidence score
