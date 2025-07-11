@@ -352,26 +352,24 @@ def parse_enhanced():
         if cached_result:
             return jsonify(cached_result)
 
-        # Use the new hybrid parser
-        scispacy_entities = nlp_processor.extract_entities(exam_name)
-        parsed_result = semantic_parser.parse_exam_name(exam_name, modality, scispacy_entities)
+        # Use the comprehensive hybrid parser that includes SNOMED data
+        result = process_exam_with_preprocessor(exam_name, modality)
         
         response = {
-            'input': data,
-            'standardized': {
-                'clean_name': parsed_result['cleanName'],
-                'components': {
-                    'anatomy': parsed_result['anatomy'],
-                    'laterality': parsed_result['laterality'],
-                    'contrast': parsed_result['contrast'],
-                    'technique': parsed_result['technique'],
-                    'modality': parsed_result['modality'],
-                },
-                'quality_score': parsed_result['confidence']
+            'clean_name': result.get('cleanName', ''),
+            'snomed': result.get('snomed', {}),
+            'components': {
+                'anatomy': result.get('anatomy', []),
+                'laterality': result.get('laterality'),
+                'contrast': result.get('contrast'),
+                'technique': result.get('technique', []),
+                'modality': result.get('modality'),
+                'confidence': result.get('confidence', 0.0)
             },
+            'clinical_equivalents': result.get('equivalence', {}).get('clinical_equivalents', []),
             'metadata': {
                 'processing_time_ms': int((time.time() - start_time) * 1000),
-                'confidence': parsed_result['confidence'],
+                'confidence': result.get('confidence', 0.0),
                 'source': 'hybrid_parser_v2'
             }
         }
@@ -413,9 +411,26 @@ def parse_batch():
                     exam_name = exam_data.get('exam_name', '')
                     modality_code = exam_data.get('modality_code')
                     result = process_exam_with_preprocessor(exam_name, modality_code)
-                    # Add original exam data for context
-                    result['original_exam'] = exam_data
-                    return result
+                    
+                    # Format response to match frontend expectations
+                    formatted_result = {
+                        'clean_name': result.get('cleanName', ''),
+                        'snomed': result.get('snomed', {}),
+                        'components': {
+                            'anatomy': result.get('anatomy', []),
+                            'laterality': result.get('laterality'),
+                            'contrast': result.get('contrast'),
+                            'technique': result.get('technique', []),
+                            'gender_context': result.get('gender_context'),
+                            'clinical_context': result.get('clinical_context', []),
+                            'confidence': result.get('confidence', 0.0),
+                            'modality': result.get('modality')
+                        },
+                        'clinical_equivalents': result.get('equivalence', {}).get('clinical_equivalents', []),
+                        'original_exam': exam_data
+                    }
+                    
+                    return formatted_result
                 except Exception as e:
                     return {"error": str(e), "original_exam": exam_data}
 

@@ -681,17 +681,17 @@
                             modality_code: code.MODALITY_CODE,
                             exam_code: code.EXAM_CODE,
                             exam_name: code.EXAM_NAME,
-                            clean_name: parsed.standardized.clean_name,
+                            clean_name: parsed.clean_name,
                             snomed: parsed.snomed || {},
                             components: { 
-                                anatomy: parsed.standardized.components.anatomy, 
-                                laterality: parsed.standardized.components.laterality, 
-                                contrast: parsed.standardized.components.contrast, 
-                                technique: parsed.standardized.components.technique,
-                                gender_context: parsed.standardized.components.gender_context,
-                                clinical_context: parsed.standardized.components.clinical_context,
-                                confidence: parsed.metadata.confidence,
-                                clinical_equivalents: parsed.equivalence.clinical_equivalents
+                                anatomy: parsed.components.anatomy, 
+                                laterality: parsed.components.laterality, 
+                                contrast: parsed.components.contrast, 
+                                technique: parsed.components.technique,
+                                gender_context: parsed.components.gender_context,
+                                clinical_context: parsed.components.clinical_context,
+                                confidence: parsed.components.confidence,
+                                clinical_equivalents: parsed.clinical_equivalents
                             }
                         });
                     } catch (error) {
@@ -741,12 +741,11 @@
                             modality_code: item.input.modality_code,
                             exam_code: item.input.exam_code,
                             exam_name: item.input.exam_name,
-                            clean_name: item.clean_name,
-                            snomed: item.snomed || {},
+                            clean_name: item.output.clean_name,
+                            snomed: item.output.snomed || {},
                             components: { 
-                                ...item.components,
-                                confidence: item.confidence,
-                                clinical_equivalents: item.clinical_equivalents || []
+                                ...item.output.components,
+                                clinical_equivalents: item.output.clinical_equivalents || []
                             }
                         }));
                     }
@@ -756,10 +755,10 @@
                         console.error('Errors returned from batch processing:', batchResult.errors);
                         batchResult.errors.forEach(err => {
                             allMappings.push({
-                                data_source: err.exam.data_source,
-                                modality_code: err.exam.modality_code,
-                                exam_code: err.exam.exam_code,
-                                exam_name: err.exam.exam_name,
+                                data_source: err.original_exam.data_source,
+                                modality_code: err.original_exam.modality_code,
+                                exam_code: err.original_exam.exam_code,
+                                exam_name: err.original_exam.exam_name,
                                 clean_name: `ERROR: ${err.error}`,
                                 components: {}
                             });
