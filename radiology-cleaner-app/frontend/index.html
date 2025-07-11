@@ -818,16 +818,16 @@
 
                 // Add SNOMED Code cell
                 const snomedCodeCell = row.insertCell();
-                if (item.snomed && item.snomed.snomed_concept_id) {
-                    snomedCodeCell.textContent = item.snomed.snomed_concept_id;
+                if (item.snomed && item.snomed.id) {
+                    snomedCodeCell.textContent = item.snomed.id;
                 } else {
                     snomedCodeCell.innerHTML = '<span style="color: #999;">-</span>';
                 }
 
                 // Add SNOMED FSN cell
                 const snomedFsnCell = row.insertCell();
-                if (item.snomed && item.snomed.snomed_fsn) {
-                    snomedFsnCell.textContent = item.snomed.snomed_fsn;
+                if (item.snomed && item.snomed.fsn) {
+                    snomedFsnCell.textContent = item.snomed.fsn;
                 } else {
                     snomedFsnCell.innerHTML = '<span style="color: #999;">-</span>';
                 }
@@ -887,10 +887,14 @@
                 const modality = m.components.modality || modality_code;
                 if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
                 
-                const contrastType = String(components.contrast || 'none').replace(' ', '_');
+                const contrastType = (Array.isArray(components.contrast) 
+                    ? (components.contrast.length > 0 ? components.contrast[0] : 'none')
+                    : String(components.contrast || 'none')).replace(' ', '_');
                 if(summary.contrastUsage.hasOwnProperty(contrastType)) summary.contrastUsage[contrastType]++;
                 
-                const laterality = String(components.laterality || 'none').toLowerCase();
+                const laterality = (Array.isArray(components.laterality) 
+                    ? (components.laterality.length > 0 ? components.laterality[0] : 'none')
+                    : (components.laterality || 'none')).toLowerCase();
                 if(summary.lateralityDistribution.hasOwnProperty(laterality)) summary.lateralityDistribution[laterality]++;
                 
                 // Enhanced analytics
@@ -1102,11 +1106,17 @@
             if (components.anatomy) {
                 components.anatomy.forEach(a => tags += `<span class="tag anatomy">${a}</span>`);
             }
-            if (components.laterality) {
-                tags += `<span class="tag laterality">${components.laterality}</span>`;
+            if (components.laterality && components.laterality.length > 0) {
+                const lateralityValue = Array.isArray(components.laterality) 
+                    ? components.laterality.join(', ') 
+                    : components.laterality;
+                tags += `<span class="tag laterality">${lateralityValue}</span>`;
             }
-            if (components.contrast) {
-                tags += `<span class="tag contrast">${components.contrast}</span>`;
+            if (components.contrast && components.contrast.length > 0) {
+                const contrastValue = Array.isArray(components.contrast) 
+                    ? components.contrast.join(', ') 
+                    : components.contrast;
+                tags += `<span class="tag contrast">${contrastValue}</span>`;
             }
             if (components.technique) {
                 components.technique.forEach(t => tags += `<span class="tag technique">${t}</span>`);
@@ -1259,8 +1269,12 @@
             
             // Pre-populate correction form with current values
             document.getElementById('correctedCleanName').value = originalData.clean_name;
-            document.getElementById('correctedLaterality').value = originalData.components.laterality || '';
-            document.getElementById('correctedContrast').value = originalData.components.contrast || '';
+            document.getElementById('correctedLaterality').value = (Array.isArray(originalData.components.laterality) 
+                ? originalData.components.laterality.join(', ') 
+                : originalData.components.laterality) || '';
+            document.getElementById('correctedContrast').value = (Array.isArray(originalData.components.contrast) 
+                ? originalData.components.contrast.join(', ') 
+                : originalData.components.contrast) || '';
             document.getElementById('correctedGenderContext').value = originalData.components.gender_context || '';
             document.getElementById('correctedClinicalContext').value = originalData.components.clinical_context?.[0] || '';
             
