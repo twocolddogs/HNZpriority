@@ -1,0 +1,133 @@
+import re
+from typing import Dict, List, Optional
+
+class AbbreviationExpander:
+    """Comprehensive abbreviation expansion"""
+
+    def __init__(self, usa_patterns: Dict = None):
+        self.usa_abbreviations = usa_patterns.get('common_abbreviations', {}) if usa_patterns else {}
+
+        # Medical abbreviations from radiology
+        self.medical_abbreviations = {
+            # Anatomy
+            'abd': 'abdomen', 'abdo': 'abdomen', 'pelv': 'pelvis', 'ext': 'extremity',
+            'ue': 'upper extremity', 'le': 'lower extremity', 'lle': 'left lower extremity',
+            'rle': 'right lower extremity', 'rue': 'right upper extremity', 'lue': 'left upper extremity',
+            # Modality
+            'cta': 'ct angiography', 'mra': 'mr angiography', 'ctpa': 'ct pulmonary angiography',
+            'cxr': 'chest xray', 'axr': 'abdominal xray', 'kub': 'kidneys ureters bladder',
+            # Contrast
+            'w': 'with', 'wo': 'without', 'gad': 'gadolinium', 'iv': 'intravenous',
+            # Gender/Age
+            'm': 'male', 'f': 'female', 'paed': 'paediatric', 'ped': 'pediatric',
+            # Laterality
+            'rt': 'right', 'lt': 'left', 'bil': 'bilateral', 'bilat': 'bilateral', 'r': 'right', 'l': 'left',
+            # Common terms
+            'angio': 'angiography', 'venous': 'venography', 'arterial': 'arteriography',
+            'fx': 'fracture', 'eval': 'evaluation', 'f/u': 'follow up',
+            'post-op': 'post operative', 'pre-op': 'pre operative',
+        }
+        self.all_abbreviations = {**self.medical_abbreviations, **self.usa_abbreviations}
+
+    def expand(self, text: str) -> str:
+        """Expand abbreviations in text"""
+        words = text.split()
+        expanded = []
+        for word in words:
+            clean_word = word.lower().rstrip('.,()[]')
+            expanded.append(self.all_abbreviations.get(clean_word, word))
+        return ' '.join(expanded)
+
+class AnatomyExtractor:
+    """Extract anatomy using NHS authority and USA patterns"""
+
+    def __init__(self, nhs_authority: Dict, usa_patterns: Dict = None):
+        self.nhs_authority = nhs_authority
+        self.usa_patterns = usa_patterns or {}
+        self.anatomy_terms = self._build_anatomy_vocabulary()
+
+    def _build_anatomy_vocabulary(self) -> Dict[str, str]:
+        """Build comprehensive anatomy vocabulary from NHS clean names"""
+        anatomy_vocab = {
+            'head': 'head', 'brain': 'brain', 'skull': 'head', 'cranium': 'head', 'sinus': 'sinuses',
+            'sinuses': 'sinuses', 'orbit': 'orbit', 'face': 'face', 'neck': 'neck', 'chest': 'chest',
+            'thorax': 'chest', 'lung': 'chest', 'lungs': 'chest', 'heart': 'heart', 'cardiac': 'heart',
+            'mediastinum': 'mediastinum', 'pulmonary': 'chest', 'abdomen': 'abdomen', 'abdo': 'abdomen',
+            'belly': 'abdomen', 'tummy': 'abdomen', 'pelvis': 'pelvis', 'pelvic': 'pelvis', 'liver': 'liver',
+            'kidney': 'kidney', 'kidneys': 'kidney', 'renal': 'kidney', 'pancreas': 'pancreas', 'spleen': 'spleen',
+            'bladder': 'bladder', 'ureters': 'ureters', 'uterus': 'uterus', 'ovary': 'ovary', 'ovaries': 'ovary',
+            'prostate': 'prostate', 'spine': 'spine', 'spinal': 'spine', 'back': 'spine', 'cervical': 'cervical spine',
+            'thoracic': 'thoracic spine', 'lumbar': 'lumbar spine', 'sacrum': 'sacrum', 'coccyx': 'coccyx',
+            'shoulder': 'shoulder', 'arm': 'arm', 'elbow': 'elbow', 'wrist': 'wrist', 'hand': 'hand',
+            'finger': 'finger', 'thumb': 'thumb', 'hip': 'hip', 'thigh': 'thigh', 'knee': 'knee', 'leg': 'leg',
+            'ankle': 'ankle', 'foot': 'foot', 'toe': 'toe', 'breast': 'breast', 'mammary': 'breast',
+            'thyroid': 'thyroid', 'bone': 'bone', 'joint': 'joint', 'soft tissue': 'soft tissue',
+            'muscle': 'muscle', 'vessel': 'vessel', 'artery': 'artery', 'vein': 'vein'
+        }
+        for clean_name in self.nhs_authority.keys():
+            parts = clean_name.lower().split()
+            if len(parts) > 1:
+                modality_words = {'ct', 'mri', 'mr', 'us', 'xr', 'nm', 'pet', 'dexa', 'mammography', 'fluoroscopy'}
+                anatomy_parts = [p for p in parts if p not in modality_words]
+                if anatomy_parts:
+                    anatomy_phrase = ' '.join(anatomy_parts)
+                    anatomy_vocab[anatomy_phrase] = anatomy_phrase
+                    for word in anatomy_parts:
+                        if len(word) > 2 and word not in modality_words:
+                            anatomy_vocab[word] = word
+        return anatomy_vocab
+
+    def extract(self, text: str) -> List[str]:
+        """Extract anatomy terms from text"""
+        text_lower = text.lower()
+        found_anatomy = set()
+        for term, standard_form in self.anatomy_terms.items():
+            if term in text_lower:
+                found_anatomy.add(standard_form)
+        return sorted(list(found_anatomy))
+
+class LateralityDetector:
+    """Detect laterality (left, right, bilateral) from exam names"""
+
+    def __init__(self):
+        self.patterns = {
+            'bilateral': [r'\b(bilateral|bilat|both|b/l)\b', r'\b(rt?\.?\s*(and|&|\+)\s*lt?\.?)\b'],
+            'left': [r'\b(left|lt?\.?)\b(?!\s*(and|&|\+))'],
+            'right': [r'\b(right|rt?\.?)\b(?!\s*(and|&|\+))']
+        }
+        self.compiled_patterns = {
+            lat: [re.compile(p, re.IGNORECASE) for p in patterns]
+            for lat, patterns in self.patterns.items()
+        }
+
+    def detect(self, text: str) -> Optional[str]:
+        """Detect laterality from text"""
+        text_lower = text.lower()
+        if any(p.search(text_lower) for p in self.compiled_patterns['bilateral']):
+            return 'bilateral'
+        if any(p.search(text_lower) for p in self.compiled_patterns['left']):
+            return 'left'
+        if any(p.search(text_lower) for p in self.compiled_patterns['right']):
+            return 'right'
+        return None
+
+class USAContrastMapper:
+    """Enhanced contrast detection with USA conventions"""
+
+    def __init__(self):
+        self.patterns = {
+            'with and without': [r'\bw\s*and\s*wo\b', r'\bw/wo\b', r'\bwith\s*and\s*without\b', r'\bpre\s*&\s*post\b'],
+            'with': [r'\bw\s+(contrast|iv|gad)\b', r'\bwith\s+contrast\b', r'\benhanced\b', r'\bpost\s*contrast\b', r'\bc\+\b'],
+            'without': [r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon\s*contrast\b', r'\bunenhanced\b', r'\bplain\b']
+        }
+        self.compiled_patterns = {
+            ctype: [re.compile(p, re.IGNORECASE) for p in patterns]
+            for ctype, patterns in self.patterns.items()
+        }
+
+    def detect_contrast(self, text: str) -> Optional[str]:
+        """Detect contrast type with USA conventions"""
+        for contrast_type in ['with and without', 'with', 'without']:
+            if any(p.search(text) for p in self.compiled_patterns[contrast_type]):
+                return contrast_type
+        return None
