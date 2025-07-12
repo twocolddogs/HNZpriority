@@ -179,15 +179,15 @@
                 <h2>Upload Radiology Codes JSON</h2>
                 <p>Drop your codes.json file here or click to browse. You can also <a href="./example-codes.json" download>download a sample file</a>.</p>
                 <input type="file" id="fileInput" accept=".json" />
-                
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-                    <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white;">
-                        🧪 Run Sanity Test
-                    </button>
-                    <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
-                        Load and process the built-in sanity test dataset to verify engine performance
-                    </p>
-                </div>
+            </div>
+
+            <div class="sanity-test-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
+                <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white;">
+                    🧪 Run Sanity Test
+                </button>
+                <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
+                    Load and process the built-in sanity test dataset to verify engine performance
+                </p>
             </div>
 
             <div class="file-info" id="fileInfo"></div>
