@@ -12,14 +12,13 @@ import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- Import Custom Modules ---
-# These are assumed to be in the same directory or accessible via PYTHONPATH
 from parser import RadiologySemanticParser
 from nlp_processor import NLPProcessor
 from nhs_lookup_engine import NHSLookupEngine
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager, FeedbackEnhancedPreprocessor
-from comprehensive_preprocessor import ComprehensivePreprocessor, AbbreviationExpander, AnatomyExtractor, LateralityDetector, USAContrastMapper
-from nhs_lookup_engine import NHSLookupEngine
+# UPDATED: Importing utilities from our new file
+from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, USAContrastMapper
 
 # --- Configure logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -30,149 +29,112 @@ app = Flask(__name__)
 CORS(app)
 
 # --- START: LAZY LOADING IMPLEMENTATION ---
-# 1. Initialize all components as None. They will be loaded on the first request.
 semantic_parser: Optional[RadiologySemanticParser] = None
 db_manager: Optional[DatabaseManager] = None
 cache_manager: Optional[CacheManager] = None
 feedback_manager: Optional[FeedbackTrainingManager] = None
 feedback_enhanced_preprocessor: Optional[FeedbackEnhancedPreprocessor] = None
 nlp_processor: Optional[NLPProcessor] = None
-comprehensive_preprocessor: Optional[ComprehensivePreprocessor] = None
+# REMOVED: comprehensive_preprocessor is no longer needed
 nhs_lookup_engine: Optional[NHSLookupEngine] = None
 abbreviation_expander: Optional[AbbreviationExpander] = None
 
-# 2. Create a lock to ensure initialization only happens once.
 _init_lock = threading.Lock()
 _app_initialized = False
 
 def _initialize_app():
     """
     This function contains the main application initialization logic.
-    It will only be called once, controlled by _ensure_app_is_initialized.
+    It has been refactored to remove the dependency on ComprehensivePreprocessor.
     """
     global semantic_parser, db_manager, cache_manager, feedback_manager, \
-           feedback_enhanced_preprocessor, nlp_processor, comprehensive_preprocessor, nhs_lookup_engine
+           feedback_enhanced_preprocessor, nlp_processor, nhs_lookup_engine, abbreviation_expander
 
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
 
     try:
-        # Initialize database and cache managers first
-        # Assuming your DatabaseManager and FeedbackTrainingManager don't have heavy init
         db_manager = DatabaseManager()
         cache_manager = CacheManager()
         feedback_manager = FeedbackTrainingManager()
         logger.info("Database, Cache, and Feedback managers initialized.")
 
-        # Initialize NLP Processor
-        # You'll need to place your word embedding file (e.g., 'BioWordVec_PubMed_MIMICIII_d200.vec')
-        # in a suitable location, e.g., 'backend/resources/'
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        word_embedding_file = os.path.join(base_dir, 'resources', 'BioWordVec_PubMed_MIMICIII_d200.vec') # Example path
+        word_embedding_file = os.path.join(base_dir, 'resources', 'BioWordVec_PubMed_MIMICIII_d200.vec')
         nlp_processor = NLPProcessor(word_embedding_path=word_embedding_file)
         if not nlp_processor.nlp:
-            logger.error("NLP Processor failed to initialize. Parsing will be limited to rules.")
+            logger.error("NLP Processor failed to initialize.")
         if not nlp_processor.word_vectors:
-            logger.warning("Word embeddings not loaded. Semantic similarity will be disabled.")
+            logger.warning("Word embeddings not loaded.")
 
-        # Initialize the core parser
-        semantic_parser = RadiologySemanticParser(nlp_processor=nlp_processor)
-        
-        # --- CORRECTED FILE PATHS ---
-        # Build absolute paths from the directory where this script (app.py) is located.
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        # This preprocessor is from your original code, initialize it with correct paths
+        # --- REFACTORED INITIALIZATION LOGIC ---
+        # Load NHS and USA data directly, removing the need for ComprehensivePreprocessor
         nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
         usa_json_path = os.path.join(base_dir, 'core', 'USA.json')
         
-        usa_patterns = {}
-        if os.path.exists(usa_json_path):
-            try:
-                with open(usa_json_path, 'r', encoding='utf-8') as f:
-                    usa_data = json.load(f)
-                # Extract patterns from USA data for AbbreviationExpander
-                for item in usa_data:
-                    short_name = item.get('SHORT_NAME', '')
-                    long_name = item.get('LONG_NAME', '')
-                    if short_name and long_name:
-                        short_words = short_name.split()
-                        long_words = long_name.split()
-                        for short_word in short_words:
-                            if len(short_word) <= 4:  # Likely abbreviation
-                                for long_word in long_words:
-                                    if long_word.lower().startswith(short_word.lower()):
-                                        usa_patterns[short_word.lower()] = long_word.lower()
-            except Exception as e:
-                logger.warning(f"Failed to load or parse USA.json: {e}")
-        else:
-            logger.warning(f"USA JSON file not found at {usa_json_path}")
-
-        global abbreviation_expander, anatomy_extractor
-        
-        # Initialize ComprehensivePreprocessor first to get usa_patterns
-        comprehensive_preprocessor = None
+        nhs_authority = {}
         if os.path.exists(nhs_json_path):
-            comprehensive_preprocessor = ComprehensivePreprocessor(nhs_json_path, usa_json_path if os.path.exists(usa_json_path) else None)
-            logger.info("Comprehensive preprocessor initialized.")
+            with open(nhs_json_path, 'r', encoding='utf-8') as f:
+                nhs_data = json.load(f)
+            for item in nhs_data:
+                clean_name = item.get('Clean Name')
+                if clean_name:
+                    nhs_authority[clean_name] = {'snomed_concept_id': item.get('SNOMED CT \nConcept-ID', '')}
+            logger.info(f"Loaded {len(nhs_authority)} NHS authority entries.")
         else:
             logger.error(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
+            # Exit if the core authority file is missing
+            sys.exit(1)
 
-        # Initialize AbbreviationExpander with patterns from comprehensive_preprocessor
-        if comprehensive_preprocessor and hasattr(comprehensive_preprocessor, 'usa_patterns'):
-            abbreviation_expander = AbbreviationExpander(comprehensive_preprocessor.usa_patterns)
-            logger.info("Abbreviation expander initialized.")
+        usa_patterns = {'common_abbreviations': {}}
+        if os.path.exists(usa_json_path):
+            with open(usa_json_path, 'r', encoding='utf-8') as f:
+                usa_data = json.load(f)
+            for item in usa_data:
+                short, long = item.get('SHORT_NAME', ''), item.get('LONG_NAME', '')
+                if short and long:
+                    usa_patterns['common_abbreviations'][short.lower()] = long.lower()
+            logger.info("Loaded USA-specific abbreviation patterns.")
         else:
-            abbreviation_expander = AbbreviationExpander({}) # Fallback to empty patterns
-            logger.warning("Abbreviation expander initialized with empty patterns due to missing ComprehensivePreprocessor or usa_patterns.")
+            logger.warning(f"USA JSON file not found at {usa_json_path}, proceeding without USA patterns.")
 
-        # Initialize AnatomyExtractor using the loaded NHS data and usa_patterns
-        if comprehensive_preprocessor and hasattr(comprehensive_preprocessor, 'nhs_authority') and hasattr(comprehensive_preprocessor, 'usa_patterns'):
-            anatomy_extractor = AnatomyExtractor(comprehensive_preprocessor.nhs_authority, comprehensive_preprocessor.usa_patterns)
-            logger.info("Anatomy extractor initialized.")
-        else:
-            anatomy_extractor = AnatomyExtractor({}) # Fallback to empty authority
-            logger.warning("Anatomy extractor initialized with empty authority due to missing ComprehensivePreprocessor or nhs_authority/usa_patterns.")
-
-        # Initialize LateralityDetector and USAContrastMapper
+        # Initialize utilities with the loaded data
+        abbreviation_expander = AbbreviationExpander(usa_patterns)
+        anatomy_extractor = AnatomyExtractor(nhs_authority, usa_patterns)
         laterality_detector = LateralityDetector()
         contrast_mapper = USAContrastMapper()
-        logger.info("Laterality and Contrast detectors initialized.")
+        logger.info("Parsing utility components initialized.")
 
-        # Initialize the core parser with the anatomy extractor
-        semantic_parser = RadiologySemanticParser(nlp_processor=nlp_processor, anatomy_extractor=anatomy_extractor, laterality_detector=laterality_detector, contrast_mapper=contrast_mapper)
+        # Initialize the core semantic parser with the new utility components
+        semantic_parser = RadiologySemanticParser(
+            nlp_processor=nlp_processor, 
+            anatomy_extractor=anatomy_extractor, 
+            laterality_detector=laterality_detector, 
+            contrast_mapper=contrast_mapper
+        )
+        logger.info("Radiology Semantic Parser initialized.")
 
-        # Load SNOMED data into database (moved after comprehensive_preprocessor init)
-        json_path = os.path.join(base_dir, 'code_set.json')
-        if os.path.exists(json_path):
-            db_manager.load_snomed_from_json(json_path)
-            logger.info("SNOMED data loaded from JSON into database.")
+        # Load SNOMED data into the database
+        snomed_json_path = os.path.join(base_dir, 'code_set.json')
+        if os.path.exists(snomed_json_path):
+            db_manager.load_snomed_from_json(snomed_json_path)
+            logger.info("SNOMED data loaded into database.")
         else:
-            logger.warning(f"SNOMED JSON file not found at {json_path}")
+            logger.warning(f"SNOMED JSON file not found at {snomed_json_path}")
 
-        # Initialize NHS Lookup Engine - the single source of truth
-        if os.path.exists(nhs_json_path):
-            nhs_lookup_engine = NHSLookupEngine(nhs_json_path, nlp_processor)
-            # Validate NHS data consistency
-            consistency_report = nhs_lookup_engine.validate_consistency()
-            logger.info(f"NHS Lookup Engine initialized: {consistency_report}")
-        else:
-            logger.error(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
-            nhs_lookup_engine = None
-
-        # This preprocessor uses the comprehensive one and adds learning
-        if comprehensive_preprocessor:
-             feedback_enhanced_preprocessor = FeedbackEnhancedPreprocessor(
-                comprehensive_preprocessor, feedback_manager
-            )
-             logger.info("Feedback-enhanced preprocessor initialized.")
-        else:
-            feedback_enhanced_preprocessor = None
-            logger.warning("Feedback-enhanced preprocessor could not be initialized because ComprehensivePreprocessor failed.")
-
+        # Initialize NHS Lookup Engine
+        nhs_lookup_engine = NHSLookupEngine(nhs_json_path, nlp_processor)
+        consistency_report = nhs_lookup_engine.validate_consistency()
+        logger.info(f"NHS Lookup Engine initialized: {consistency_report}")
+        
+        # NOTE: feedback_enhanced_preprocessor depended on the old preprocessor.
+        # This functionality will need to be re-evaluated and reimplemented if needed.
+        # For now, it is effectively disabled.
+        feedback_enhanced_preprocessor = None
+        logger.warning("FeedbackEnhancedPreprocessor is currently disabled pending reimplementation.")
 
     except Exception as e:
-        logger.error(f"FATAL: Failed to initialize components: {e}", exc_info=True)
+        logger.critical(f"FATAL: Failed to initialize components: {e}", exc_info=True)
         sys.exit(1)
 
     logger.info(f"--- Full initialization completed in {time.time() - start_time:.2f} seconds. ---")
@@ -186,6 +148,7 @@ def _ensure_app_is_initialized():
         if not _app_initialized:
             _initialize_app()
             _app_initialized = True
+# (The rest of the file from the previous version is unchanged)
 # --- END: LAZY LOADING ---
 
 def get_optimal_worker_count(task_type: str = 'mixed', max_items: int = 100) -> int:
