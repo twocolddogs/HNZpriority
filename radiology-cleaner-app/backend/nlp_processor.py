@@ -13,7 +13,7 @@ class NLPProcessor:
     A modern NLP processor using Sentence-Transformers to generate high-quality
     semantic embeddings for entire phrases, not just individual words.
     """
-    def __init__(self, model_name: str = 'pritamdeka/S-BioBERT-for-Mil-Nli-Sum'):
+    def __init__(self, model_name: str = 'GPL/biobert-nli-sts'):
         """
         Initializes the processor by loading a Sentence-Transformer model.
 
