@@ -130,6 +130,34 @@ class ModalityExtractor:
             return max(modality_scores.items(), key=lambda x: x[1])[0]
         
         return None
+    
+    def map_modality_code(self, modality_code: str) -> Optional[str]:
+        """Map standard modality codes to our modality categories"""
+        if not modality_code:
+            return None
+            
+        modality_code = modality_code.upper().strip()
+        
+        # Direct mappings
+        mapping = {
+            'CT': 'CT',
+            'MR': 'MRI', 
+            'MRI': 'MRI',
+            'XR': 'XR',
+            'US': 'US',
+            'NM': 'NM',
+            'PET': 'PET',
+            'MAMM': 'Mammography',
+            'MAMMOGRAPHY': 'Mammography',
+            'DEXA': 'DEXA',
+            'DXA': 'DEXA',
+            'FL': 'Fluoroscopy',
+            'FLUORO': 'Fluoroscopy',
+            'IR': 'IR',
+            'OTHER': 'Other'
+        }
+        
+        return mapping.get(modality_code)
 
 
 class LateralityDetector:
@@ -137,19 +165,25 @@ class LateralityDetector:
     
     def __init__(self):
         self.patterns = {
-            'Bilateral': [
+            'bilateral': [
                 r'\b(?:bilateral|bilat|both|b/l)\b',
                 r'\b(?:rt?\.?\s*(?:and|&|\+)\s*lt?\.?)\b',
                 r'\b(?:right\s*(?:and|&|\+)\s*left)\b',
                 r'\b(?:left\s*(?:and|&|\+)\s*right)\b',
+                r'\bbilateral\b',
+                r'\bboth\s+(?:sides|arms|legs|hands|feet)\b',
             ],
-            'Left': [
+            'left': [
                 r'\b(?:left|lt?\.?)\b(?!\s*(?:and|&|\+))',
-                r'\b(?:l)\b(?=\s+(?:shoulder|knee|hip|elbow|hand|foot|ankle|wrist))',
+                r'\bleft\s+(?:shoulder|knee|hip|elbow|hand|foot|ankle|wrist|arm|leg|thigh|calf)\b',
+                r'\blt\s+(?:shoulder|knee|hip|elbow|hand|foot|ankle|wrist|arm|leg|thigh|calf)\b',
+                r'\bl\s+(?:shoulder|knee|hip|elbow|hand|foot|ankle|wrist|arm|leg|thigh|calf)\b',
             ],
-            'Right': [
+            'right': [
                 r'\b(?:right|rt?\.?)\b(?!\s*(?:and|&|\+))',
-                r'\b(?:r)\b(?=\s+(?:shoulder|knee|hip|elbow|hand|foot|ankle|wrist))',
+                r'\bright\s+(?:shoulder|knee|hip|elbow|hand|foot|ankle|wrist|arm|leg|thigh|calf)\b',
+                r'\brt\s+(?:shoulder|knee|hip|elbow|hand|foot|ankle|wrist|arm|leg|thigh|calf)\b',
+                r'\br\s+(?:shoulder|knee|hip|elbow|hand|foot|ankle|wrist|arm|leg|thigh|calf)\b',
             ]
         }
         
@@ -163,12 +197,12 @@ class LateralityDetector:
         text_lower = text.lower()
         
         # Check bilateral first (more specific)
-        for pattern in self.compiled_patterns['Bilateral']:
+        for pattern in self.compiled_patterns['bilateral']:
             if pattern.search(text_lower):
-                return 'Bilateral'
+                return 'bilateral'
         
         # Then check left/right
-        for laterality in ['Left', 'Right']:
+        for laterality in ['left', 'right']:
             for pattern in self.compiled_patterns[laterality]:
                 if pattern.search(text_lower):
                     return laterality
@@ -253,24 +287,28 @@ class USAContrastMapper:
                 r'\bwith\s*and\s*without\b',
                 r'\bpre\s*and\s*post\b',
                 r'\bpre\s*&\s*post\b',
+                r'\bpre\s*post\b',
             ],
             'with': [
                 r'\bw\s+(?:contrast|iv|gad)\b',
-                r'\bw\b(?!\s*(?:and|wo|/wo))',  # w but not w and wo
                 r'\bwith\s+contrast\b',
                 r'\benhanced\b',
                 r'\bpost\s*contrast\b',
                 r'\bpost\s*gad\b',
                 r'\bc\+\b',
+                r'\bcontrast\b(?!\s*(?:without|free))',
+                r'\bgadolinium\b',
+                r'\biv\s*contrast\b',
             ],
             'without': [
                 r'\bwo\s+(?:contrast|iv)\b',
-                r'\bwo\b(?!\s*and)',  # wo but not wo and
                 r'\bwithout\s+contrast\b',
                 r'\bnon\s*contrast\b',
                 r'\bunenhanced\b',
                 r'\bplain\b',
                 r'\bc-\b',
+                r'\bnative\b',
+                r'\buncontrasted\b',
             ]
         }
         
@@ -382,35 +420,105 @@ class AnatomyExtractor:
         """Build comprehensive anatomy vocabulary from NHS clean names"""
         anatomy_vocab = {}
         
-        # Extract anatomy from NHS clean names
-        for clean_name in self.nhs_authority.keys():
-            parts = clean_name.split()
-            if len(parts) > 1:
-                # Everything after modality is anatomy
-                anatomy = ' '.join(parts[1:]).lower()
-                anatomy_vocab[anatomy] = anatomy
-                
-                # Add individual words
-                for word in parts[1:]:
-                    if len(word) > 2:  # Skip short words
-                        anatomy_vocab[word.lower()] = word.lower()
-        
-        # Add common variations
+        # Standard anatomy terms with variations
         anatomy_vocab.update({
+            # Head/Brain
             'head': 'head',
-            'brain': 'head',
+            'brain': 'brain', 
             'skull': 'head',
+            'cranium': 'head',
+            'sinus': 'sinuses',
+            'sinuses': 'sinuses',
+            'orbit': 'orbit',
+            'face': 'face',
+            'neck': 'neck',
+            
+            # Chest/Thorax
             'chest': 'chest',
-            'thorax': 'chest',
+            'thorax': 'chest', 
             'lung': 'chest',
+            'lungs': 'chest',
+            'heart': 'heart',
+            'cardiac': 'heart',
+            'mediastinum': 'mediastinum',
+            'pulmonary': 'chest',
+            
+            # Abdomen/Pelvis
             'abdomen': 'abdomen',
+            'abdo': 'abdomen',
             'belly': 'abdomen',
             'tummy': 'abdomen',
             'pelvis': 'pelvis',
-            'hip': 'hip',
+            'pelvic': 'pelvis',
+            'liver': 'liver',
+            'kidney': 'kidney',
+            'kidneys': 'kidney',
+            'renal': 'kidney',
+            'pancreas': 'pancreas',
+            'spleen': 'spleen',
+            'bladder': 'bladder',
+            'ureters': 'ureters',
+            'uterus': 'uterus',
+            'ovary': 'ovary',
+            'ovaries': 'ovary',
+            'prostate': 'prostate',
+            
+            # Spine
             'spine': 'spine',
+            'spinal': 'spine',
             'back': 'spine',
+            'cervical': 'cervical spine',
+            'thoracic': 'thoracic spine', 
+            'lumbar': 'lumbar spine',
+            'sacrum': 'sacrum',
+            'coccyx': 'coccyx',
+            
+            # Extremities
+            'shoulder': 'shoulder',
+            'arm': 'arm',
+            'elbow': 'elbow',
+            'wrist': 'wrist',
+            'hand': 'hand',
+            'finger': 'finger',
+            'thumb': 'thumb',
+            'hip': 'hip',
+            'thigh': 'thigh',
+            'knee': 'knee',
+            'leg': 'leg',
+            'ankle': 'ankle',
+            'foot': 'foot',
+            'toe': 'toe',
+            
+            # Other
+            'breast': 'breast',
+            'mammary': 'breast',
+            'thyroid': 'thyroid',
+            'bone': 'bone',
+            'joint': 'joint',
+            'soft tissue': 'soft tissue',
+            'muscle': 'muscle',
+            'vessel': 'vessel',
+            'artery': 'artery',
+            'vein': 'vein'
         })
+        
+        # Extract anatomy from NHS clean names  
+        for clean_name in self.nhs_authority.keys():
+            parts = clean_name.lower().split()
+            if len(parts) > 1:
+                # Skip modality words when extracting anatomy
+                modality_words = {'ct', 'mri', 'mr', 'us', 'xr', 'nm', 'pet', 'dexa', 'mammography', 'fluoroscopy'}
+                anatomy_parts = [p for p in parts if p not in modality_words]
+                
+                # Add full anatomy phrase
+                if anatomy_parts:
+                    anatomy_phrase = ' '.join(anatomy_parts)
+                    anatomy_vocab[anatomy_phrase] = anatomy_phrase
+                    
+                    # Add individual anatomy words
+                    for word in anatomy_parts:
+                        if len(word) > 2 and word not in modality_words:  # Skip short words and modalities
+                            anatomy_vocab[word] = word
         
         return anatomy_vocab
     
@@ -496,9 +604,10 @@ class ComprehensivePreprocessor:
         expanded = self.abbreviation_expander.expand(original)
         
         # Step 2: Extract all components
-        # Use provided modality first, fall back to extraction
+        # Use provided modality first, then try mapping, then extraction
         detected_modality = self.modality_extractor.extract(expanded)
-        final_modality = provided_modality or detected_modality
+        mapped_modality = self.modality_extractor.map_modality_code(provided_modality) if provided_modality else None
+        final_modality = mapped_modality or provided_modality or detected_modality
         
         components = {
             'original': original,
@@ -506,6 +615,7 @@ class ComprehensivePreprocessor:
             'modality': final_modality,
             'detected_modality': detected_modality,  # Keep for debugging
             'provided_modality': provided_modality,  # Keep for debugging
+            'mapped_modality': mapped_modality,  # Keep for debugging
             'anatomy': self.anatomy_extractor.extract(expanded),
             'laterality': self.laterality_detector.detect(expanded),
             'contrast': self.contrast_mapper.detect_contrast(expanded),
@@ -573,17 +683,21 @@ class ComprehensivePreprocessor:
     
     def _calculate_confidence(self, components: Dict, nhs_candidates: List[Dict]) -> float:
         """Calculate overall confidence score"""
-        confidence = 0.5  # Base confidence
+        confidence = 0.3  # Base confidence
         
-        # Component detection confidence
+        # Component detection confidence (70% of score)
         if components['modality']:
-            confidence += 0.2
+            confidence += 0.3  # Modality is critical
         if components['anatomy']:
-            confidence += 0.2
+            confidence += 0.25  # Anatomy is very important
+        if components['laterality']:
+            confidence += 0.05
         if components['contrast']:
-            confidence += 0.1
+            confidence += 0.05
+        if components['gender_context']:
+            confidence += 0.05
         
-        # NHS match confidence
+        # NHS match confidence (30% of score)
         if nhs_candidates:
             best_similarity = nhs_candidates[0]['similarity']
             confidence += best_similarity * 0.3
