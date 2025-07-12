@@ -13,10 +13,9 @@ echo "--> Installing all application requirements..."
 pip install -r requirements.txt
 
 # --- Step 3: Verify the new Sentence-Transformer NLP Pipeline ---
-# This command will download and cache the model from Hugging Face if it's the first run.
-# On subsequent runs, it will use the cache, making it very fast.
 echo "--> Verifying the Sentence-Transformer model..."
-python -c "from sentence_transformers import SentenceTransformer; print('    Attempting to load NLP model...'); model = SentenceTransformer('pritamdeka/S-BioBERT-for-Mil-Nli-Sum'); print('    ✅ Sentence-Transformer NLP model loaded/cached successfully!')"
+# UPDATED MODEL NAME in the verification command
+python -c "from sentence_transformers import SentenceTransformer; print('    Attempting to load NLP model...'); model = SentenceTransformer('GPL/biobert-nli-sts'); print('    ✅ Sentence-Transformer NLP model loaded/cached successfully!')"
 
 echo ""
 echo "=== Build Completed Successfully on $(date) ==="
