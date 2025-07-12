@@ -1,7 +1,7 @@
 import re
 from typing import Dict, List, Optional, Set
-# UPDATED: Importing from our new utility file
-from comprehensive_preprocessor import AnatomyExtractor, LateralityDetector, USAContrastMapper
+# UPDATED: Importing from our new utility file, NOT the old preprocessor
+from parsing_utils import AnatomyExtractor, LateralityDetector, USAContrastMapper
 
 class RadiologySemanticParser:
     """
@@ -36,8 +36,6 @@ class RadiologySemanticParser:
         """
         lower_name = exam_name.lower()
         
-        # --- REFACTORED: Anatomy Parsing ---
-        # The NLP entity extraction was not being used, so it has been removed.
         found_anatomy_keys = self._parse_anatomy_hybrid(lower_name)
         
         parsed = {
@@ -58,7 +56,6 @@ class RadiologySemanticParser:
     def _parse_anatomy_hybrid(self, lower_name: str) -> Set[str]:
         """
         Uses precise longest-match-first rule-based anatomy extraction.
-        REFACTORED: Removed the unused nlp_terms argument.
         """
         found_keys: Set[str] = set()
         for term_key in self.sorted_anatomy_terms:
