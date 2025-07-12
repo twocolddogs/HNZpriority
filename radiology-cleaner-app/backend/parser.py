@@ -1,6 +1,7 @@
 import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Set
+from comprehensive_preprocessor import AnatomyExtractor, LateralityDetector, USAContrastMapper
 
 class RadiologySemanticParser:
     """
@@ -8,60 +9,14 @@ class RadiologySemanticParser:
     components using a hybrid approach. It combines NLP-extracted entities
     with a robust, regex-based rule system for high accuracy.
     """
-    def __init__(self, nlp_processor=None):
+    def __init__(self, nlp_processor=None, anatomy_extractor=None, laterality_detector=None, contrast_mapper=None):
         self.nlp_processor = nlp_processor
-        
+        self.anatomy_extractor = anatomy_extractor
+        self.laterality_detector = laterality_detector
+        self.contrast_mapper = contrast_mapper
+
         # --- Mappings and Patterns ---
-        self.anatomy_mappings = {
-            'head': {'terms': ['head', 'brain', 'skull', 'cranial', 'cerebral', 'cranium'], 'standardName': 'Head', 'category': 'neurological'},
-            'neck': {'terms': ['neck', 'cervical soft tissue', 'pharynx', 'larynx'], 'standardName': 'Neck', 'category': 'head_neck'},
-            'sinuses': {'terms': ['sinus', 'sinuses', 'paranasal'], 'standardName': 'Sinuses', 'category': 'head_neck'},
-            'temporal_bones': {'terms': ['temporal bone', 'petrous', 'iam', 'internal auditory'], 'standardName': 'Temporal Bones', 'category': 'head_neck'},
-            'orbit': {'terms': ['orbit', 'orbital', 'eye'], 'standardName': 'Orbits', 'category': 'head_neck'},
-            'facial_bones': {'terms': ['facial bone', 'face', 'maxilla', 'mandible', 'tmj', 'opg'], 'standardName': 'Facial Bones', 'category': 'head_neck'},
-            'pituitary': {'terms': ['pituitary', 'sella', 'pituitary fossa'], 'standardName': 'Pituitary', 'category': 'neurological'},
-            'c_spine': {'terms': ['cervical spine', 'c spine', 'cspine', 'c-spine'], 'standardName': 'Cervical Spine', 'category': 'spine'},
-            't_spine': {'terms': ['thoracic spine', 't spine', 'tspine', 'dorsal spine'], 'standardName': 'Thoracic Spine', 'category': 'spine'},
-            'l_spine': {'terms': ['lumbar spine', 'l spine', 'lspine', 'lumbosacral'], 'standardName': 'Lumbar Spine', 'category': 'spine'},
-            'sacrum': {'terms': ['sacrum', 'sacral', 'sacrococcygeal', 'coccyx', 'sacroiliac', 'si joint'], 'standardName': 'Sacrum/Coccyx', 'category': 'spine'},
-            'whole_spine': {'terms': ['whole spine', 'full spine', 'entire spine', 'spine'], 'standardName': 'Whole Spine', 'category': 'spine'},
-            'chest': {'terms': ['chest', 'thorax', 'thoracic', 'lung', 'lungs'], 'standardName': 'Chest', 'category': 'chest'},
-            'ribs': {'terms': ['rib', 'ribs', 'thoracic cage'], 'standardName': 'Ribs', 'category': 'chest'},
-            'sternum': {'terms': ['sternum', 'sternal'], 'standardName': 'Sternum', 'category': 'chest'},
-            'clavicle': {'terms': ['clavicle', 'clavicular', 'acromioclavicular', 'ac joint'], 'standardName': 'Clavicle', 'category': 'chest'},
-            'abdomen': {'terms': ['abdomen', 'abdominal', 'abdo'], 'standardName': 'Abdomen', 'category': 'abdomen'},
-            'pelvis': {'terms': ['pelvis', 'pelvic'], 'standardName': 'Pelvis', 'category': 'pelvis'},
-            'liver': {'terms': ['liver', 'hepatic'], 'standardName': 'Liver', 'category': 'abdomen'},
-            'pancreas': {'terms': ['pancreas', 'pancreatic'], 'standardName': 'Pancreas', 'category': 'abdomen'},
-            'kidneys': {'terms': ['kidney', 'renal', 'nephro', 'kub'], 'standardName': 'Kidneys', 'category': 'abdomen'},
-            'urinary_tract': {'terms': ['bladder', 'ureter', 'urethra', 'urinary', 'urography', 'ctu', 'ivu', 'cystogram'], 'standardName': 'Urinary Tract', 'category': 'genitourinary'},
-            'small_bowel': {'terms': ['bowel', 'intestine', 'small bowel', 'enterography', 'enteroclysis'], 'standardName': 'Small Bowel', 'category': 'abdomen'},
-            'colon': {'terms': ['colon', 'colonography', 'large bowel'], 'standardName': 'Colon', 'category': 'abdomen'},
-            'prostate': {'terms': ['prostate', 'prostatic'], 'standardName': 'Prostate', 'category': 'pelvis'},
-            'female_pelvis': {'terms': ['uterus', 'ovary', 'ovarian', 'endometrial', 'female pelvis', 'gynaecology'], 'standardName': 'Female Pelvis', 'category': 'pelvis'},
-            'obstetric': {'terms': ['obstetric', 'pregnancy', 'pregnant', 'fetal', 'foetal', 'fetus', 'foetus', 'trimester', 'prenatal', 'antenatal', 'gravid'], 'standardName': 'Obstetric', 'category': 'obstetric'},
-            'shoulder': {'terms': ['shoulder'], 'standardName': 'Shoulder', 'category': 'musculoskeletal'},
-            'humerus': {'terms': ['humerus', 'humeral', 'upper arm', 'arm'], 'standardName': 'Humerus', 'category': 'musculoskeletal'},
-            'elbow': {'terms': ['elbow'], 'standardName': 'Elbow', 'category': 'musculoskeletal'},
-            'forearm': {'terms': ['forearm', 'radius', 'ulna', 'radial', 'ulnar'], 'standardName': 'Forearm', 'category': 'musculoskeletal'},
-            'wrist': {'terms': ['wrist', 'carpal', 'scaphoid'], 'standardName': 'Wrist', 'category': 'musculoskeletal'},
-            'hand': {'terms': ['hand', 'metacarpal'], 'standardName': 'Hand', 'category': 'musculoskeletal'},
-            'finger': {'terms': ['finger', 'thumb', 'phalanx', 'phalangeal'], 'standardName': 'Finger', 'category': 'musculoskeletal'},
-            'hip': {'terms': ['hip', 'acetabulum'], 'standardName': 'Hip', 'category': 'musculoskeletal'},
-            'femur': {'terms': ['femur', 'femoral', 'thigh'], 'standardName': 'Femur', 'category': 'musculoskeletal'},
-            'knee': {'terms': ['knee', 'patella', 'patellar'], 'standardName': 'Knee', 'category': 'musculoskeletal'},
-            'tibia_fibula': {'terms': ['tibia', 'fibula', 'tibial', 'fibular', 'tib fib', 'leg', 'lower extremity'], 'standardName': 'Tibia/Fibula', 'category': 'musculoskeletal'},
-            'ankle': {'terms': ['ankle', 'talar', 'talus'], 'standardName': 'Ankle', 'category': 'musculoskeletal'},
-            'foot': {'terms': ['foot', 'feet', 'metatarsal', 'tarsal'], 'standardName': 'Foot', 'category': 'musculoskeletal'},
-            'toe': {'terms': ['toe', 'toes', 'phalanges'], 'standardName': 'Toe', 'category': 'musculoskeletal'},
-            'calcaneus': {'terms': ['calcaneus', 'calcaneum', 'os calcis', 'heel'], 'standardName': 'Calcaneus', 'category': 'musculoskeletal'},
-            'aorta': {'terms': ['aorta', 'aortic'], 'standardName': 'Aorta', 'category': 'vascular'},
-            'carotid': {'terms': ['carotid'], 'standardName': 'Carotid', 'category': 'vascular'},
-            'cerebral_vessels': {'terms': ['circle of willis', 'cow', 'intracranial', 'cerebral vessel'], 'standardName': 'Cerebral Vessels', 'category': 'vascular'},
-            'coronary': {'terms': ['coronary', 'cardiac vessel', 'heart vessel'], 'standardName': 'Coronary', 'category': 'vascular'},
-            'pulmonary_vessels': {'terms': ['pulmonary artery', 'pulmonary angiogram', 'ctpa', 'pe protocol', 'pulmonary embolus'], 'standardName': 'Pulmonary Vessels', 'category': 'vascular'},
-        }
-        
+        # Modality map remains as it's a direct mapping of codes
         self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'MG': 'Mammography', 'Mammo':'Mammography', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'Other': 'Other', 'BR': 'Mammography'}
         
         self.technique_patterns = {
@@ -72,23 +27,13 @@ class RadiologySemanticParser:
             'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', 'aspir', r'injection', r'guided', r'procedure', 'ablation', 'placement', 'loc', 'bx']],
         }
         
-        self.contrast_patterns = {
-            'with and without': [re.compile(p, re.I) for p in [r'w/wo', r'c\+\/?-', r'\+\/?-', r'with and without', r'pre and post', r'pre & post', r'w and wo']],
-            'with': [re.compile(p, re.I) for p in [r'\b(w|c|with)\s*\+', r'\b(w|with)\b(?!o|out)', r'post contrast', r'\bce\b', r'iv contrast', r'(?<!un)enhanced', r'post gad']],
-            'without': [re.compile(p, re.I) for p in [r'\b(w|c|wo)\s*-', r'without contrast', r'no contrast', r'non-?contrast', r'unenhanced', r'\bwo\b']],
-        }
-        
-        self.laterality_patterns = {
-            'Bilateral': re.compile(r'\b(bilateral|bilat|both|b/l)\b', re.I),
-            'Left': re.compile(r'\b(left|lt)\b', re.I),
-            'Right': re.compile(r'\b(right|rt)\b', re.I),
-        }
-        
-        # Build a reverse lookup for fast searching
+        # Build anatomy lookup from AnatomyExtractor
         self.anatomy_lookup = {}
-        for key, config in self.anatomy_mappings.items():
-            for term in config['terms']:
-                self.anatomy_lookup[term.lower()] = {'key': key, **config}
+        self.anatomy_standard_names = {}
+        if self.anatomy_extractor:
+            for term, standard_name in self.anatomy_extractor.anatomy_terms.items():
+                self.anatomy_lookup[term] = standard_name
+                self.anatomy_standard_names[standard_name] = standard_name # Store unique standard names
         
         # Sort terms by length (desc) to match longer phrases first
         self.sorted_anatomy_terms = sorted(self.anatomy_lookup.keys(), key=len, reverse=True)
@@ -173,41 +118,15 @@ class RadiologySemanticParser:
         return modality_code or 'Other'
 
     def _parse_laterality(self, lower_name: str, scispacy_entities: Dict) -> Optional[str]:
-        """Parse laterality conservatively - only when clearly indicated."""
-        # More conservative laterality patterns to avoid false positives
-        conservative_patterns = {
-            'Bilateral': re.compile(r'\b(bilateral|bilat|both|b/l)\b', re.I),
-            'Left': re.compile(r'\b(left|lt)\b(?!\s*(sided|hand|foot))', re.I),  # Avoid "left handed" etc
-            'Right': re.compile(r'\b(right|rt)\b(?!\s*(sided|hand|foot))', re.I),  # Avoid "right handed" etc
-        }
-        
-        # Check for clear laterality indicators in exam name
-        for laterality, pattern in conservative_patterns.items():
-            if pattern.search(lower_name):
-                return laterality
-        
-        # Only use NLP if it's confident and aligns with text patterns
-        nlp_directions = [d.lower() for d in scispacy_entities.get('DIRECTION', [])]
-        if nlp_directions:
-            # Cross-validate NLP with text patterns
-            if 'left' in nlp_directions and re.search(r'\b(left|lt)\b', lower_name, re.I):
-                return 'Left'
-            if 'right' in nlp_directions and re.search(r'\b(right|rt)\b', lower_name, re.I):
-                return 'Right'
-            if 'bilateral' in nlp_directions and re.search(r'\b(bilateral|bilat|both|b/l)\b', lower_name, re.I):
-                return 'Bilateral'
-        
+        """Parse laterality using the dedicated LateralityDetector."""
+        if self.laterality_detector:
+            return self.laterality_detector.detect(lower_name)
         return None
 
     def _parse_contrast(self, lower_name: str) -> Optional[str]:
-        """Parse contrast status, prioritizing more specific terms."""
-        # Check for the most specific case first
-        if any(p.search(lower_name) for p in self.contrast_patterns['with and without']):
-            return 'with and without'
-        if any(p.search(lower_name) for p in self.contrast_patterns['with']):
-            return 'with'
-        if any(p.search(lower_name) for p in self.contrast_patterns['without']):
-            return 'without'
+        """Parse contrast status using the dedicated USAContrastMapper."""
+        if self.contrast_mapper:
+            return self.contrast_mapper.detect_contrast(lower_name)
         return None
 
     def _parse_technique(self, lower_name: str) -> List[str]:

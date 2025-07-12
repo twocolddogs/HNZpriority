@@ -174,6 +174,17 @@ class NHSLookupEngine:
     
     def _calculate_component_match_confidence(self, input_components: Dict, nhs_components: Dict) -> float:
         """Calculate confidence score between input and NHS components."""
+        # --- START: STRICT MODALITY MATCHING ---
+        input_modality = set(input_components.get('modality', []))
+        nhs_modality = set(nhs_components.get('modality', []))
+
+        # If the input specifies a modality, it MUST match at least one modality in the NHS entry.
+        # This prevents matching, e.g., a CT scan to an XR entry.
+        if input_modality and not input_modality.intersection(nhs_modality):
+            logger.debug(f"Modality mismatch: Input modality {input_modality} has no overlap with NHS modality {nhs_modality}. Returning 0.0 confidence.")
+            return 0.0
+        # --- END: STRICT MODALITY MATCHING ---
+
         # --- START: STRICT ANATOMY MATCHING ---
         input_anatomy = set(input_components.get('anatomy', []))
         nhs_anatomy = set(nhs_components.get('anatomy', []))
@@ -210,12 +221,21 @@ class NHSLookupEngine:
                 # Special handling for anatomy to penalize extra terms in NHS entry
                 if comp_type == 'anatomy':
                     nhs_only_terms = nhs_comps - input_comps
+                    input_only_terms = input_comps - nhs_comps
+
+                    # Penalize NHS-only terms (broader NHS entry than input)
                     if nhs_only_terms:
-                        # Reduce similarity based on the proportion of NHS-only terms
                         if len(nhs_comps) > 0:
                             penalty_ratio = len(nhs_only_terms) / len(nhs_comps)
-                            similarity *= (1 - penalty_ratio)
-                            logger.debug(f"Anatomy penalty applied. NHS-only terms: {nhs_only_terms}, new similarity: {similarity:.2f}")
+                            similarity *= (1 - penalty_ratio * 0.5) # Less severe penalty
+                            logger.debug(f"Anatomy penalty (NHS-only): {nhs_only_terms}, new similarity: {similarity:.2f}")
+                    
+                    # Heavily penalize input-only terms (NHS entry missing key input anatomy)
+                    if input_only_terms:
+                        if len(input_comps) > 0:
+                            penalty_ratio = len(input_only_terms) / len(input_comps)
+                            similarity *= (1 - penalty_ratio * 0.8) # More severe penalty
+                            logger.debug(f"Anatomy penalty (Input-only): {input_only_terms}, new similarity: {similarity:.2f}")
                 
                 total_score += similarity * weight
                 total_weight += weight
@@ -241,36 +261,82 @@ class NHSLookupEngine:
         best_match = None
         highest_confidence = 0.0
 
-        input_embedding = None
-        if self.nlp_processor and self.nlp_processor.word_vectors:
-            input_embedding = self.nlp_processor.get_text_embedding(input_exam)
+        # Construct a cleaned input string for fuzzy/semantic matching based on extracted components
+        # This ensures that the text used for matching aligns with the parsed modality and anatomy.
+        cleaned_input_for_matching = ""
+        if extracted_components.get('modality'):
+            cleaned_input_for_matching += " ".join(extracted_components['modality'])
+        if extracted_components.get('anatomy'):
+            cleaned_input_for_matching += " ".join(extracted_components['anatomy'])
+        cleaned_input_for_matching = cleaned_input_for_matching.strip()
+
+        if not cleaned_input_for_matching:
+            cleaned_input_for_matching = input_exam.lower() # Fallback if no components extracted
+
+        # Tier 1: Find high-confidence component matches first
+        high_confidence_component_threshold = 0.8 # Define a threshold for strong component match
+        potential_matches = []
 
         for entry in self.nhs_data:
-            nhs_clean_name = entry.get("Clean Name")
-            if not nhs_clean_name:
-                continue
-
-            # Calculate fuzzy string similarity
-            fuzzy_score = fuzz.ratio(input_exam.lower(), nhs_clean_name.lower()) / 100.0
-
-            # Calculate semantic similarity
-            semantic_score = 0.0
-            if input_embedding and entry.get("_embedding"):
-                semantic_score = self.nlp_processor.calculate_semantic_similarity(
-                    input_embedding, entry["_embedding"]
-                )
-
-            # Calculate component match confidence
             nhs_components = self._extract_components_from_nhs_entry(entry)
             component_confidence = self._calculate_component_match_confidence(extracted_components, nhs_components)
 
-            # Combine scores (weights can be tuned)
-            # Example: 40% fuzzy, 30% semantic, 30% component confidence
-            combined_score = (0.4 * fuzzy_score) + (0.3 * semantic_score) + (0.3 * component_confidence)
+            if component_confidence >= high_confidence_component_threshold:
+                potential_matches.append((entry, component_confidence))
 
-            if combined_score > highest_confidence:
-                highest_confidence = combined_score
-                best_match = entry
+        # If high-confidence component matches are found, refine with fuzzy/semantic
+        if potential_matches:
+            logger.debug(f"Found {len(potential_matches)} high-confidence component matches. Refining...")
+            for entry, component_confidence in potential_matches:
+                nhs_clean_name = entry.get("Clean Name")
+                if not nhs_clean_name:
+                    continue
+
+                fuzzy_score = fuzz.ratio(cleaned_input_for_matching, nhs_clean_name.lower()) / 100.0
+
+                semantic_score = 0.0
+                if self.nlp_processor and self.nlp_processor.word_vectors:
+                    input_embedding = self.nlp_processor.get_text_embedding(cleaned_input_for_matching)
+                    if input_embedding and entry.get("_embedding"):
+                        semantic_score = self.nlp_processor.calculate_semantic_similarity(
+                            input_embedding, entry["_embedding"]
+                        )
+
+                combined_score = (0.15 * fuzzy_score) + (0.15 * semantic_score) + (0.7 * component_confidence)
+
+                if combined_score > highest_confidence:
+                    highest_confidence = combined_score
+                    best_match = entry
+        else:
+            # Tier 2: If no high-confidence component matches, consider all entries with a lower component threshold
+            logger.debug("No high-confidence component matches found. Broadening search...")
+            for entry in self.nhs_data:
+                nhs_clean_name = entry.get("Clean Name")
+                if not nhs_clean_name:
+                    continue
+
+                nhs_components = self._extract_components_from_nhs_entry(entry)
+                component_confidence = self._calculate_component_match_confidence(extracted_components, nhs_components)
+
+                # Only consider if component confidence is above 0 (i.e., not a complete mismatch)
+                if component_confidence == 0.0:
+                    continue
+
+                fuzzy_score = fuzz.ratio(cleaned_input_for_matching, nhs_clean_name.lower()) / 100.0
+
+                semantic_score = 0.0
+                if self.nlp_processor and self.nlp_processor.word_vectors:
+                    input_embedding = self.nlp_processor.get_text_embedding(cleaned_input_for_matching)
+                    if input_embedding and entry.get("_embedding"):
+                        semantic_score = self.nlp_processor.calculate_semantic_similarity(
+                            input_embedding, entry["_embedding"]
+                        )
+
+                combined_score = (0.15 * fuzzy_score) + (0.15 * semantic_score) + (0.7 * component_confidence)
+
+                if combined_score > highest_confidence:
+                    highest_confidence = combined_score
+                    best_match = entry
 
         if best_match and highest_confidence > 0.0: # Only consider if a match was found and confidence is above zero
             result = {

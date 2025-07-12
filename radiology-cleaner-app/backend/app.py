@@ -18,7 +18,7 @@ from nlp_processor import NLPProcessor
 from nhs_lookup_engine import NHSLookupEngine
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager, FeedbackEnhancedPreprocessor
-from comprehensive_preprocessor import ComprehensivePreprocessor
+from comprehensive_preprocessor import ComprehensivePreprocessor, AbbreviationExpander, AnatomyExtractor, LateralityDetector, USAContrastMapper
 from nhs_lookup_engine import NHSLookupEngine
 
 # --- Configure logging ---
@@ -39,6 +39,7 @@ feedback_enhanced_preprocessor: Optional[FeedbackEnhancedPreprocessor] = None
 nlp_processor: Optional[NLPProcessor] = None
 comprehensive_preprocessor: Optional[ComprehensivePreprocessor] = None
 nhs_lookup_engine: Optional[NHSLookupEngine] = None
+abbreviation_expander: Optional[AbbreviationExpander] = None
 
 # Placeholder for StandardizationEngine to make the /validate endpoint runnable
 class StandardizationEnginePlaceholder:
@@ -94,6 +95,32 @@ def _initialize_app():
         nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
         usa_json_path = os.path.join(base_dir, 'core', 'USA.json')
         
+        usa_patterns = {}
+        if os.path.exists(usa_json_path):
+            try:
+                with open(usa_json_path, 'r', encoding='utf-8') as f:
+                    usa_data = json.load(f)
+                # Extract patterns from USA data for AbbreviationExpander
+                for item in usa_data:
+                    short_name = item.get('SHORT_NAME', '')
+                    long_name = item.get('LONG_NAME', '')
+                    if short_name and long_name:
+                        short_words = short_name.split()
+                        long_words = long_name.split()
+                        for short_word in short_words:
+                            if len(short_word) <= 4:  # Likely abbreviation
+                                for long_word in long_words:
+                                    if long_word.lower().startswith(short_word.lower()):
+                                        usa_patterns[short_word.lower()] = long_word.lower()
+            except Exception as e:
+                logger.warning(f"Failed to load or parse USA.json: {e}")
+        else:
+            logger.warning(f"USA JSON file not found at {usa_json_path}")
+
+        global abbreviation_expander, anatomy_extractor
+        abbreviation_expander = AbbreviationExpander(usa_patterns)
+        logger.info("Abbreviation expander initialized.")
+
         if os.path.exists(nhs_json_path):
             # Load SNOMED data from JSON into database first
             json_path = os.path.join(base_dir, 'code_set.json')
@@ -105,9 +132,23 @@ def _initialize_app():
             
             comprehensive_preprocessor = ComprehensivePreprocessor(nhs_json_path, usa_json_path if os.path.exists(usa_json_path) else None)
             logger.info("Comprehensive preprocessor initialized.")
+
+            # Initialize AnatomyExtractor using the loaded NHS data
+            anatomy_extractor = AnatomyExtractor(comprehensive_preprocessor.nhs_authority, comprehensive_preprocessor.usa_patterns)
+            logger.info("Anatomy extractor initialized.")
+
+            # Initialize LateralityDetector and USAContrastMapper
+            laterality_detector = LateralityDetector()
+            contrast_mapper = USAContrastMapper()
+            logger.info("Laterality and Contrast detectors initialized.")
+
+            # Initialize the core parser with the anatomy extractor
+            semantic_parser = RadiologySemanticParser(nlp_processor=nlp_processor, anatomy_extractor=anatomy_extractor, laterality_detector=laterality_detector, contrast_mapper=contrast_mapper)
+
         else:
             logger.error(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
             comprehensive_preprocessor = None # Ensure it's None if data is missing
+            semantic_parser = RadiologySemanticParser(nlp_processor=nlp_processor) # Initialize without anatomy_extractor
 
         # Initialize NHS Lookup Engine - the single source of truth
         if os.path.exists(nhs_json_path):
@@ -187,7 +228,11 @@ def _preprocess_exam_name(exam_name: str) -> str:
     
     # Start with original exam name
     cleaned = exam_name
-    
+
+    # Expand abbreviations first
+    if abbreviation_expander:
+        cleaned = abbreviation_expander.expand(cleaned)
+
     # Strip caret and everything before it (common in coded systems)
     if '^' in cleaned:
         cleaned = cleaned.split('^', 1)[1].strip()
@@ -510,23 +555,25 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> D
             'contrast': [],
             'procedure_type': []
         }
-        
-        # Add components from semantic parser
-        if parsed_result:
-            if parsed_result.get('modality'):
+
+        # Prioritize modality from input parameter if provided
+        if modality_code:
+            extracted_components['modality'].append(modality_code.lower())
+        else:
+            # If no modality_code is provided, use modality extracted by semantic parser
+            if parsed_result and parsed_result.get('modality'):
                 extracted_components['modality'].append(parsed_result['modality'].lower())
+
+        # Add other components from semantic parser
+        if parsed_result:
             if parsed_result.get('anatomy'):
                 extracted_components['anatomy'].extend([a.lower() for a in parsed_result['anatomy']])
             if parsed_result.get('laterality'):
                 extracted_components['laterality'].append(parsed_result['laterality'].lower())
             if parsed_result.get('contrast'):
                 extracted_components['contrast'].append(parsed_result['contrast'].lower())
-        
-        # Add modality from input parameter
-        if modality_code:
-            extracted_components['modality'].append(modality_code.lower())
-        
-        # Remove duplicates
+
+        # Remove duplicates (still good practice for other components)
         for key in extracted_components:
             extracted_components[key] = list(set(extracted_components[key]))
         
