@@ -7,6 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from parser import RadiologySemanticParser
 from database_models import DatabaseManager
 from standardization_engine import StandardizationEngine
+from nlp_processor import NLPProcessor
 
 def test_enhanced_parsing():
     print("Testing Enhanced Radiology Parser...")
@@ -14,11 +15,12 @@ def test_enhanced_parsing():
     
     # Initialize components
     db_manager = DatabaseManager()
+    nlp_processor = NLPProcessor() # Initialize NLPProcessor
     standardization_engine = StandardizationEngine(db_manager=db_manager)
-    parser = RadiologySemanticParser()
+    parser = RadiologySemanticParser(nlp_processor=nlp_processor)
     
     # Load SNOMED data
-    json_path = 'code_set.json'
+    json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'code_set.json')
     db_manager.load_snomed_from_json(json_path)
     
     # Test cases

@@ -5,6 +5,8 @@ import logging
 from typing import Dict, List, Optional, Tuple, Any
 from collections import defaultdict
 import re
+from fuzzywuzzy import fuzz # Import fuzzywuzzy for string matching
+from .nlp_processor import NLPProcessor # Import the NLPProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -14,13 +16,15 @@ class NHSLookupEngine:
     Extracts components from input and matches against NHS entries for standardization.
     """
     
-    def __init__(self, nhs_json_path: str):
+    def __init__(self, nhs_json_path: str, nlp_processor: NLPProcessor):
         self.nhs_data = []
         self.component_lookup = {}
         self.snomed_lookup = {}
         self.nhs_json_path = nhs_json_path
+        self.nlp_processor = nlp_processor # Store NLPProcessor instance
         self._load_nhs_data()
         self._build_lookup_tables()
+        self._precompute_embeddings() # New pre-computation step
     
     def _load_nhs_data(self):
         """Load NHS data from JSON file."""
@@ -54,6 +58,20 @@ class NHSLookupEngine:
         
         logger.info(f"Built lookup tables: {len(self.snomed_lookup)} SNOMED entries, {len(self.component_lookup)} component keys")
     
+    def _precompute_embeddings(self):
+        """Pre-computes and stores embeddings for all NHS clean names."""
+        if not self.nlp_processor or not self.nlp_processor.word_vectors:
+            logger.warning("NLPProcessor or word embeddings not available. Skipping embedding pre-computation.")
+            return
+
+        for entry in self.nhs_data:
+            clean_name = entry.get("Clean Name")
+            if clean_name:
+                entry["_embedding"] = self.nlp_processor.get_text_embedding(clean_name)
+            else:
+                entry["_embedding"] = None
+        logger.info("Pre-computed embeddings for NHS data.")
+
     def _extract_components_from_nhs_entry(self, entry: Dict) -> Dict:
         """Extract components from an NHS entry for lookup purposes."""
         fsn = entry.get("SNOMED CT FSN", "").lower()
@@ -210,7 +228,8 @@ class NHSLookupEngine:
     
     def standardize_exam(self, input_exam: str, extracted_components: Dict) -> Dict:
         """
-        Main method to standardize an exam using NHS data as source of truth.
+        Main method to standardize an exam using NHS data as source of truth,
+        incorporating semantic similarity.
         
         Args:
             input_exam: Original exam name
@@ -219,12 +238,41 @@ class NHSLookupEngine:
         Returns:
             Standardized result with NHS clean name and SNOMED
         """
-        # Try component-based lookup first
-        matches = self.lookup_by_components(extracted_components)
-        
-        if matches:
-            best_match, confidence = matches[0]
-            
+        best_match = None
+        highest_confidence = 0.0
+
+        input_embedding = None
+        if self.nlp_processor and self.nlp_processor.word_vectors:
+            input_embedding = self.nlp_processor.get_text_embedding(input_exam)
+
+        for entry in self.nhs_data:
+            nhs_clean_name = entry.get("Clean Name")
+            if not nhs_clean_name:
+                continue
+
+            # Calculate fuzzy string similarity
+            fuzzy_score = fuzz.ratio(input_exam.lower(), nhs_clean_name.lower()) / 100.0
+
+            # Calculate semantic similarity
+            semantic_score = 0.0
+            if input_embedding and entry.get("_embedding"):
+                semantic_score = self.nlp_processor.calculate_semantic_similarity(
+                    input_embedding, entry["_embedding"]
+                )
+
+            # Calculate component match confidence
+            nhs_components = self._extract_components_from_nhs_entry(entry)
+            component_confidence = self._calculate_component_match_confidence(extracted_components, nhs_components)
+
+            # Combine scores (weights can be tuned)
+            # Example: 40% fuzzy, 30% semantic, 30% component confidence
+            combined_score = (0.4 * fuzzy_score) + (0.3 * semantic_score) + (0.3 * component_confidence)
+
+            if combined_score > highest_confidence:
+                highest_confidence = combined_score
+                best_match = entry
+
+        if best_match and highest_confidence > 0.0: # Only consider if a match was found and confidence is above zero
             result = {
                 'input_exam': input_exam,
                 'clean_name': best_match.get('Clean Name', ''),
@@ -232,16 +280,15 @@ class NHSLookupEngine:
                 'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
                 'laterality_snomed': best_match.get('SNOMED CT Concept-ID of Laterality', ''),
                 'laterality_fsn': best_match.get('SNOMED FSN of Laterality', ''),
-                'confidence': confidence,
-                'source': 'NHS_COMPONENT_MATCH',
+                'confidence': highest_confidence,
+                'source': 'NHS_LOOKUP_SEMANTIC',
                 'extracted_components': extracted_components
             }
-            
-            logger.info(f"NHS match found for '{input_exam}': '{result['clean_name']}' (confidence: {confidence:.2f})")
+            logger.info(f"NHS match found for '{input_exam}': '{result['clean_name']}' (confidence: {highest_confidence:.2f})")
             return result
         
-        # No match found
-        logger.warning(f"No NHS match found for '{input_exam}' with components: {extracted_components}")
+        # No match found or confidence too low
+        logger.warning(f"No strong NHS match found for '{input_exam}' with components: {extracted_components}")
         return {
             'input_exam': input_exam,
             'clean_name': input_exam,  # Fallback to original

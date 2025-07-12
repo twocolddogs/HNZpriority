@@ -7,6 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from parser import RadiologySemanticParser
 from database_models import DatabaseManager
 from standardization_engine import StandardizationEngine
+from nlp_processor import NLPProcessor
 
 def test_chest_abdomen():
     print("Testing Chest + Abdomen Matching...")
@@ -14,8 +15,9 @@ def test_chest_abdomen():
     
     # Initialize components
     db_manager = DatabaseManager()
+    nlp_processor = NLPProcessor() # Initialize NLPProcessor
     standardization_engine = StandardizationEngine(db_manager=db_manager)
-    parser = RadiologySemanticParser(db_manager=db_manager, standardization_engine=standardization_engine)
+    parser = RadiologySemanticParser(nlp_processor=nlp_processor)
     
     # Test the specific case
     exam_name = "CT chest and abdomen"
@@ -47,11 +49,11 @@ def test_chest_abdomen():
         print(f"Generated Clean Name: {match_info.get('generated_clean_name', 'None')}")
         print(f"Matched Clean Name: {match_info.get('matched_clean_name', 'None')}")
     
-    # Test fuzzy matching directly
-    print(f"\nDirect fuzzy matching test for 'CT Chest Abdomen':")
-    fuzzy_matches = db_manager.fuzzy_match_clean_names("CT Chest Abdomen", threshold=0.6)
-    for i, match in enumerate(fuzzy_matches[:5]):
-        print(f"  {i+1}. {match['clean_name']} (score: {match['similarity_score']:.2f})")
+    # Test fuzzy matching directly (commented out for now as db_manager is not directly used by parser)
+    # print(f"\nDirect fuzzy matching test for 'CT Chest Abdomen':")
+    # fuzzy_matches = db_manager.fuzzy_match_clean_names("CT Chest Abdomen", threshold=0.6)
+    # for i, match in enumerate(fuzzy_matches[:5]):
+    #     print(f"  {i+1}. {match['clean_name']} (score: {match['similarity_score']:.2f})")
 
 if __name__ == '__main__':
     test_chest_abdomen()

@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # These are assumed to be in the same directory or accessible via PYTHONPATH
 from parser import RadiologySemanticParser
 from nlp_processor import NLPProcessor
+from nhs_lookup_engine import NHSLookupEngine
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager, FeedbackEnhancedPreprocessor
 from comprehensive_preprocessor import ComprehensivePreprocessor
@@ -72,12 +73,18 @@ def _initialize_app():
         logger.info("Database, Cache, and Feedback managers initialized.")
 
         # Initialize NLP Processor
-        nlp_processor = NLPProcessor()
+        # You'll need to place your word embedding file (e.g., 'BioWordVec_PubMed_MIMICIII_d200.vec')
+        # in a suitable location, e.g., 'backend/resources/'
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        word_embedding_file = os.path.join(base_dir, 'resources', 'BioWordVec_PubMed_MIMICIII_d200.vec') # Example path
+        nlp_processor = NLPProcessor(word_embedding_path=word_embedding_file)
         if not nlp_processor.nlp:
             logger.error("NLP Processor failed to initialize. Parsing will be limited to rules.")
+        if not nlp_processor.word_vectors:
+            logger.warning("Word embeddings not loaded. Semantic similarity will be disabled.")
 
         # Initialize the core parser
-        semantic_parser = RadiologySemanticParser()
+        semantic_parser = RadiologySemanticParser(nlp_processor=nlp_processor)
         
         # --- CORRECTED FILE PATHS ---
         # Build absolute paths from the directory where this script (app.py) is located.
@@ -104,7 +111,7 @@ def _initialize_app():
 
         # Initialize NHS Lookup Engine - the single source of truth
         if os.path.exists(nhs_json_path):
-            nhs_lookup_engine = NHSLookupEngine(nhs_json_path)
+            nhs_lookup_engine = NHSLookupEngine(nhs_json_path, nlp_processor)
             # Validate NHS data consistency
             consistency_report = nhs_lookup_engine.validate_consistency()
             logger.info(f"NHS Lookup Engine initialized: {consistency_report}")
@@ -488,24 +495,14 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> D
         
         logger.info(f"Processing exam: '{cleaned_exam_name}' with modality: '{modality_code}'")
         
-        # Step 2: Extract entities using NLP
-        nlp_entities = {}
-        if nlp_processor and nlp_processor.nlp:
-            try:
-                nlp_entities = nlp_processor.extract_entities(cleaned_exam_name)
-                logger.info(f"NLP entities extracted: {nlp_entities}")
-            except Exception as e:
-                logger.warning(f"NLP entity extraction failed: {e}")
-                nlp_entities = {}
-        
-        # Step 3: Extract components using semantic parser (enhanced with NLP)
+        # Step 2: Extract components using semantic parser (enhanced with NLP)
         if semantic_parser:
-            parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other', nlp_entities)
+            parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
             logger.debug(f"Semantic parser result: {parsed_result}")
         else:
             parsed_result = {}
         
-        # Step 4: Prepare components for NHS lookup
+        # Step 3: Prepare components for NHS lookup
         extracted_components = {
             'modality': [],
             'anatomy': [],
@@ -513,13 +510,6 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> D
             'contrast': [],
             'procedure_type': []
         }
-        
-        # Add components from NLP
-        if nlp_entities:
-            extracted_components['modality'].extend(nlp_entities.get('MODALITY', []))
-            extracted_components['anatomy'].extend(nlp_entities.get('ANATOMY', []))
-            extracted_components['laterality'].extend(nlp_entities.get('LATERALITY', []))
-            extracted_components['contrast'].extend(nlp_entities.get('CONTRAST', []))
         
         # Add components from semantic parser
         if parsed_result:
@@ -592,20 +582,8 @@ def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) ->
         # HYBRID APPROACH: Best of both worlds
         logger.info(f"Processing exam: '{cleaned_exam_name}' with modality: '{modality_code}'")
         
-        # Step 1: Extract NLP entities if available
-        nlp_entities = {}
-        if nlp_processor and nlp_processor.nlp:
-            try:
-                nlp_entities = nlp_processor.extract_entities(cleaned_exam_name)
-                logger.info(f"NLP processing enabled - entities extracted: {nlp_entities}")
-            except Exception as e:
-                logger.warning(f"NLP entity extraction failed: {e}")
-                nlp_entities = {}
-        else:
-            logger.info("NLP processing disabled - using rule-based parsing only")
-        
-        # Step 2: Use semantic parser for superior component extraction (NLP + longest-match-first)
-        parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other', nlp_entities)
+        # Step 1: Use semantic parser for superior component extraction (NLP + longest-match-first)
+        parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
         logger.debug(f"Semantic parser result: {parsed_result}")
         
         # Step 3: Use comprehensive preprocessor for authority-file mapping to get official standards

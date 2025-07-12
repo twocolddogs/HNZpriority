@@ -8,7 +8,8 @@ class RadiologySemanticParser:
     components using a hybrid approach. It combines NLP-extracted entities
     with a robust, regex-based rule system for high accuracy.
     """
-    def __init__(self):
+    def __init__(self, nlp_processor=None):
+        self.nlp_processor = nlp_processor
         
         # --- Mappings and Patterns ---
         self.anatomy_mappings = {
@@ -92,7 +93,7 @@ class RadiologySemanticParser:
         # Sort terms by length (desc) to match longer phrases first
         self.sorted_anatomy_terms = sorted(self.anatomy_lookup.keys(), key=len, reverse=True)
 
-    def parse_exam_name(self, exam_name: str, modality_code: str, scispacy_entities: Optional[Dict] = None) -> Dict:
+    def parse_exam_name(self, exam_name: str, modality_code: str) -> Dict:
         """
         Parses a radiology exam name using a hybrid approach combining NLP entities 
         with rule-based matching for maximum accuracy.
@@ -100,18 +101,18 @@ class RadiologySemanticParser:
         Args:
             exam_name: The raw exam name string.
             modality_code: The modality code (e.g., 'CT', 'MR').
-            scispacy_entities: A dictionary of entities extracted by the NLPProcessor.
 
         Returns:
             A dictionary containing the parsed components.
         """
-        if scispacy_entities is None:
-            scispacy_entities = {}
-            
         lower_name = exam_name.lower()
         
-        # --- Step 1: Hybrid Anatomy Parsing ---
-        nlp_anatomy_terms = [term.lower() for term in scispacy_entities.get('ANATOMY', [])]
+        # --- Step 1: Hybrid Anatomy Parsing --- 
+        nlp_anatomy_terms = []
+        if self.nlp_processor:
+            scispacy_entities = self.nlp_processor.extract_entities(exam_name)
+            nlp_anatomy_terms = [term.lower() for term in scispacy_entities.get('ANATOMY', [])]
+
         found_anatomy_keys = self._parse_anatomy_hybrid(lower_name, nlp_anatomy_terms)
         
         # --- Step 2: Parse Other Components ---
