@@ -13,24 +13,26 @@ class NLPProcessor:
     A modern NLP processor using Sentence-Transformers to generate high-quality
     semantic embeddings for entire phrases, not just individual words.
     """
-    def __init__(self, model_name: str = 'GPL/biobert-nli-sts'):
+    def __init__(self, model_name: str = 'UCSD-VA-health/RadBERT-RoBERTa-4m'): # <-- UPDATED MODEL NAME
         """
-        Initializes the processor by loading a Sentence-Transformer model.
+        Initializes the processor by loading a Sentence-Transformer compatible model.
 
         Args:
-            model_name: The name of a sentence-transformer model from Hugging Face.
-                        'S-BioBERT-for-Mil-Nli-Sum' is chosen for its specialization
-                        in biomedical sentence similarity.
+            model_name: The name of a transformer model from Hugging Face.
+                        'UCSD-VA-health/RadBERT-RoBERTa-4m' is chosen for its
+                        specialization in the radiology domain.
         """
         self.model: Optional[SentenceTransformer] = None
         try:
             # Check for CUDA availability for faster processing
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            logger.info(f"Loading Sentence-Transformer model '{model_name}' onto device: {device}")
+            logger.info(f"Loading transformer model '{model_name}' onto device: {device}")
+            # The SentenceTransformer library can wrap base models like RadBERT
+            # and automatically add a pooling layer to create sentence embeddings.
             self.model = SentenceTransformer(model_name, device=device)
-            logger.info("Sentence-Transformer model loaded successfully.")
+            logger.info("Transformer model loaded successfully via Sentence-Transformer.")
         except Exception as e:
-            logger.error(f"FATAL: Failed to load Sentence-Transformer model '{model_name}'. "
+            logger.error(f"FATAL: Failed to load transformer model '{model_name}'. "
                          f"Semantic similarity will be disabled. Error: {e}", exc_info=True)
 
     def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
