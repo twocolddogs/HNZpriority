@@ -1,7 +1,7 @@
 import re
 from typing import Dict, List, Optional, Set
 # UPDATED: Importing from our new utility file
-from parsing_utils import AnatomyExtractor, LateralityDetector, USAContrastMapper
+from comprehensive_preprocessor import AnatomyExtractor, LateralityDetector, USAContrastMapper
 
 class RadiologySemanticParser:
     """
