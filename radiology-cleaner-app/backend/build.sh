@@ -12,10 +12,12 @@ pip install --upgrade --no-cache-dir pip setuptools wheel
 echo "--> Installing all application requirements..."
 pip install -r requirements.txt
 
-# --- Step 3: Verify the new Sentence-Transformer NLP Pipeline ---
-echo "--> Verifying the Sentence-Transformer model..."
+# --- Step 3: Verify and Cache the Radiology-Specific NLP Model ---
+# This command will download and cache the model from Hugging Face if it's the first run.
+# On subsequent runs, it will use the cache, making it very fast.
+echo "--> Verifying the RadBERT Sentence-Transformer model..."
 # UPDATED MODEL NAME in the verification command
-python -c "from sentence_transformers import SentenceTransformer; print('    Attempting to load NLP model...'); model = SentenceTransformer('GPL/biobert-nli-sts'); print('    ✅ Sentence-Transformer NLP model loaded/cached successfully!')"
+python -c "from sentence_transformers import SentenceTransformer; print('    Attempting to load NLP model...'); model = SentenceTransformer('UCSD-VA-health/RadBERT-RoBERTa-4m'); print('    ✅ RadBERT NLP model loaded/cached successfully!')"
 
 echo ""
 echo "=== Build Completed Successfully on $(date) ==="
