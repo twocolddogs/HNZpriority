@@ -17,6 +17,8 @@ spacy==3.7.5
 # -- Vector Similarity Library --
 nmslib-metabrainz==2.1.3
 gensim==4.3.2
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.21.1
 
 # -- ScispaCy Dependencies --
 conllu==4.5.3
