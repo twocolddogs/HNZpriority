@@ -455,9 +455,9 @@ class ComprehensivePreprocessor:
             }
         
         # Initialize all extractors
-        self.abbreviation_expander = AbbreviationExpander(usa_patterns)
+        self.abbreviation_expander = AbbreviationExpander(self.usa_patterns)
         self.modality_extractor = ModalityExtractor()
-        self.anatomy_extractor = AnatomyExtractor(self.nhs_authority, usa_patterns)
+        self.anatomy_extractor = AnatomyExtractor(self.nhs_authority, self.usa_patterns)
         self.laterality_detector = LateralityDetector()
         self.contrast_mapper = USAContrastMapper()
         self.gender_detector = GenderContextDetector()
