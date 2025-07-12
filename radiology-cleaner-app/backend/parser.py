@@ -1,7 +1,7 @@
 import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Set
-from comprehensive_preprocessor import AnatomyExtractor, LateralityDetector, USAContrastMapper
+from parsing_utils import AnatomyExtractor, LateralityDetector, USAContrastMapper
 
 class RadiologySemanticParser:
     """
