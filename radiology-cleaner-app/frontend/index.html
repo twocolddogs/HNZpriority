@@ -530,7 +530,17 @@
         uploadSection.addEventListener('drop', (e) => e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]), false);
 
         document.getElementById('exportMappingsBtn').addEventListener('click', exportResults);
-        document.getElementById('sanityTestBtn').addEventListener('click', runSanityTest);
+        
+        // Sanity test button with debug verification
+        const sanityButton = document.getElementById('sanityTestBtn');
+        if (sanityButton) {
+            console.log('✓ Sanity test button found, attaching event listener');
+            sanityButton.addEventListener('click', runSanityTest);
+            sanityButton.addEventListener('click', () => console.log('Sanity test button clicked event fired'));
+        } else {
+            console.error('❌ Sanity test button not found!');
+        }
+        
         document.getElementById('closeModalBtn').addEventListener('click', closeModal);
         document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
         
@@ -805,17 +815,42 @@
         }
 
         async function runSanityTest() {
+            console.log('🧪 Sanity test button clicked - starting test...');
+            console.log('Current window location:', window.location.href);
+            console.log('API config:', apiConfig);
+            
             try {
                 // Update button state
                 const button = document.getElementById('sanityTestBtn');
                 const originalText = button.innerHTML;
                 button.disabled = true;
                 button.innerHTML = '⏳ Loading Test Data...';
+                console.log('Button state updated, attempting to fetch test data...');
                 
-                // Fetch the sanity test file
-                const response = await fetch('./sanity_test.json');
-                if (!response.ok) {
-                    throw new Error(`Failed to load sanity test file: ${response.statusText}`);
+                // Fetch the sanity test file - try multiple paths for different deployments
+                let response;
+                const possiblePaths = ['./sanity_test.json', '/sanity_test.json', 'sanity_test.json'];
+                let lastError;
+                
+                for (const path of possiblePaths) {
+                    try {
+                        console.log(`Trying to fetch sanity test file from: ${path}`);
+                        response = await fetch(path);
+                        if (response.ok) {
+                            console.log(`Successfully fetched from: ${path}`);
+                            break;
+                        } else {
+                            console.warn(`Failed to fetch from ${path}: ${response.status} ${response.statusText}`);
+                            lastError = new Error(`Failed to load from ${path}: ${response.statusText}`);
+                        }
+                    } catch (error) {
+                        console.warn(`Error fetching from ${path}:`, error);
+                        lastError = error;
+                    }
+                }
+                
+                if (!response || !response.ok) {
+                    throw lastError || new Error('Failed to load sanity test file from all attempted paths');
                 }
                 
                 const sanityData = await response.json();
@@ -840,8 +875,16 @@
                 allMappings = [];
                 summaryData = null;
                 
+                // Clear any existing results display
+                resultsSection.style.display = 'none';
+                resultsBody.innerHTML = '';
+                
+                console.log(`Starting to process ${sanityData.length} sanity test cases...`);
+                
                 // Process the sanity test data exactly like a regular file
                 await processBatch(sanityData);
+                
+                console.log(`Completed processing. Generated ${allMappings.length} results.`);
                 
                 // Run analysis on the results (uses global allMappings)
                 runAnalysis(allMappings);
