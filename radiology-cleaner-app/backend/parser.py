@@ -86,7 +86,7 @@ class RadiologySemanticParser:
         # This is crucial for compound terms like 'cervical spine' vs 'spine'
         for term_key in self.sorted_anatomy_terms:
             if term_key in lower_name:
-                found_keys.add(self.anatomy_lookup[term_key]['key'])
+                found_keys.add(self.anatomy_lookup[term_key])
                 
         return found_keys
 
