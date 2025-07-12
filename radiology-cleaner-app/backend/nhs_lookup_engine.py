@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from collections import defaultdict
 import re
 from fuzzywuzzy import fuzz # Import fuzzywuzzy for string matching
-from .nlp_processor import NLPProcessor # Import the NLPProcessor
+from nlp_processor import NLPProcessor # Import the NLPProcessor
 
 logger = logging.getLogger(__name__)
 
