@@ -60,17 +60,19 @@ class NHSLookupEngine:
     
     def _precompute_embeddings(self):
         """Pre-computes and stores embeddings for all NHS clean names."""
+        # Commenting out pre-computation to save memory. Embeddings will be computed on demand.
         if not self.nlp_processor or not self.nlp_processor.word_vectors:
             logger.warning("NLPProcessor or word embeddings not available. Skipping embedding pre-computation.")
             return
 
-        for entry in self.nhs_data:
-            clean_name = entry.get("Clean Name")
-            if clean_name:
-                entry["_embedding"] = self.nlp_processor.get_text_embedding(clean_name)
-            else:
-                entry["_embedding"] = None
-        logger.info("Pre-computed embeddings for NHS data.")
+        # for entry in self.nhs_data:
+        #     clean_name = entry.get("Clean Name")
+        #     if clean_name:
+        #         entry["_embedding"] = self.nlp_processor.get_text_embedding(clean_name)
+        #     else:
+        #         entry["_embedding"] = None
+        # logger.info("Pre-computed embeddings for NHS data.")
+        logger.info("Embeddings pre-computation skipped to save memory.")
 
     def _extract_components_from_nhs_entry(self, entry: Dict) -> Dict:
         """Extract components from an NHS entry for lookup purposes."""
@@ -297,9 +299,10 @@ class NHSLookupEngine:
                 semantic_score = 0.0
                 if self.nlp_processor and self.nlp_processor.word_vectors:
                     input_embedding = self.nlp_processor.get_text_embedding(cleaned_input_for_matching)
-                    if input_embedding and entry.get("_embedding"):
+                    nhs_entry_embedding = self.nlp_processor.get_text_embedding(nhs_clean_name)
+                    if input_embedding and nhs_entry_embedding:
                         semantic_score = self.nlp_processor.calculate_semantic_similarity(
-                            input_embedding, entry["_embedding"]
+                            input_embedding, nhs_entry_embedding
                         )
 
                 combined_score = (0.15 * fuzzy_score) + (0.15 * semantic_score) + (0.7 * component_confidence)
@@ -327,9 +330,10 @@ class NHSLookupEngine:
                 semantic_score = 0.0
                 if self.nlp_processor and self.nlp_processor.word_vectors:
                     input_embedding = self.nlp_processor.get_text_embedding(cleaned_input_for_matching)
-                    if input_embedding and entry.get("_embedding"):
+                    nhs_entry_embedding = self.nlp_processor.get_text_embedding(nhs_clean_name)
+                    if input_embedding and nhs_entry_embedding:
                         semantic_score = self.nlp_processor.calculate_semantic_similarity(
-                            input_embedding, entry["_embedding"]
+                            input_embedding, nhs_entry_embedding
                         )
 
                 combined_score = (0.15 * fuzzy_score) + (0.15 * semantic_score) + (0.7 * component_confidence)
