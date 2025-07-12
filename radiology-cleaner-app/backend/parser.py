@@ -54,6 +54,7 @@ class RadiologySemanticParser:
         
         # --- Step 1: Hybrid Anatomy Parsing --- 
         nlp_anatomy_terms = []
+        scispacy_entities = {}
         if self.nlp_processor:
             scispacy_entities = self.nlp_processor.extract_entities(exam_name)
             nlp_anatomy_terms = [term.lower() for term in scispacy_entities.get('ANATOMY', [])]
@@ -63,7 +64,7 @@ class RadiologySemanticParser:
         # --- Step 2: Parse Other Components ---
         parsed = {
             'modality': self._parse_modality(lower_name, modality_code),
-            'anatomy': sorted([self.anatomy_mappings[key]['standardName'] for key in found_anatomy_keys]),
+            'anatomy': sorted(list(found_anatomy_keys)),
             'laterality': self._parse_laterality(lower_name, scispacy_entities),
             'contrast': self._parse_contrast(lower_name),
             'technique': self._parse_technique(lower_name),
