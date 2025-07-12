@@ -29,11 +29,38 @@ pip install --only-binary :all: https://s3-us-west-2.amazonaws.com/ai2-s2-scispa
 # --- Step 4: Download Word Embeddings if Missing ---
 EMBEDDINGS_FILE="./resources/BioWordVec_PubMed_MIMICIII_d200.vec"
 if [ ! -f "$EMBEDDINGS_FILE" ]; then
-    echo "--> Word embeddings file not found, downloading..."
+    echo "--> Word embeddings file not found, attempting download..."
     mkdir -p ./resources
-    # Alternative: Download from a public source if available
-    # wget -O "$EMBEDDINGS_FILE" "https://example.com/path/to/embeddings.vec"
-    echo "    ⚠️  Word embeddings not available - semantic similarity will be disabled"
+    
+    # Try downloading smaller medical embeddings (more suitable for production)
+    echo "--> Downloading medical word embeddings (smaller, faster alternative)..."
+    SMALL_EMBEDDINGS_URL="https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M.vec.zip"
+    
+    if command -v wget >/dev/null 2>&1; then
+        wget -q --show-progress -O "/tmp/embeddings.zip" "$SMALL_EMBEDDINGS_URL" && {
+            cd /tmp && unzip -q embeddings.zip && 
+            head -100000 wiki-news-300d-1M.vec > "$EMBEDDINGS_FILE" &&
+            rm -f embeddings.zip wiki-news-300d-1M.vec
+        } || {
+            echo "    ⚠️  Download failed - semantic similarity will be disabled"
+            rm -f "$EMBEDDINGS_FILE" "/tmp/embeddings.zip" 2>/dev/null
+        }
+    elif command -v curl >/dev/null 2>&1; then
+        curl -L --progress-bar -o "/tmp/embeddings.zip" "$SMALL_EMBEDDINGS_URL" && {
+            cd /tmp && unzip -q embeddings.zip && 
+            head -100000 wiki-news-300d-1M.vec > "$EMBEDDINGS_FILE" &&
+            rm -f embeddings.zip wiki-news-300d-1M.vec
+        } || {
+            echo "    ⚠️  Download failed - semantic similarity will be disabled"
+            rm -f "$EMBEDDINGS_FILE" "/tmp/embeddings.zip" 2>/dev/null
+        }
+    else
+        echo "    ⚠️  No download tool available (wget/curl) - semantic similarity will be disabled"
+    fi
+    
+    if [ -f "$EMBEDDINGS_FILE" ]; then
+        echo "    ✅ Word embeddings downloaded successfully"
+    fi
 else
     echo "    ✅ Word embeddings file found: $EMBEDDINGS_FILE"
 fi

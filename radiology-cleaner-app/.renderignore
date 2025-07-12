@@ -48,7 +48,7 @@ dist/
 build/
 
 # Large data files that are already in production
-# *.vec - COMMENTED OUT: BioWordVec file needed for NLP processing
+*.vec
 *.bin
 wheels/
 
