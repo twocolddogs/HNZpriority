@@ -433,21 +433,26 @@
         function detectApiUrls() {
             const hostname = window.location.hostname;
             const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-            const isProduction = hostname === 'radiology-cleaner.pages.dev' || hostname.includes('hnzradtools');
+            const isProduction = hostname.includes('radiology-cleaner-frontend-prod') || hostname.includes('hnzradtools');
+            const isStaging = hostname.includes('radiology-cleaner-frontend-staging');
             
-            // API base URLs
+            // API base URLs - Use relative /api/ for static sites (proxied by Render)
             const apiConfigs = {
                 local: {
                     base: 'http://localhost:5001',
                     mode: 'LOCAL DEVELOPMENT'
                 },
                 staging: {
-                    base: 'https://radiology-api-staging.onrender.com',
-                    mode: 'STAGING'
+                    base: '/api', // Proxied to backend by Render static site
+                    mode: 'STAGING (Static)'
                 },
                 production: {
-                    base: 'https://radiology-api-prod.onrender.com',
-                    mode: 'PRODUCTION'
+                    base: '/api', // Proxied to backend by Render static site
+                    mode: 'PRODUCTION (Static)'
+                },
+                fallback: {
+                    base: 'https://radiology-api-staging.onrender.com',
+                    mode: 'STAGING (Direct)'
                 }
             };
             
@@ -456,8 +461,10 @@
                 config = apiConfigs.local;
             } else if (isProduction) {
                 config = apiConfigs.production;
-            } else {
+            } else if (isStaging) {
                 config = apiConfigs.staging;
+            } else {
+                config = apiConfigs.fallback;
             }
             
             return {
@@ -829,11 +836,15 @@
                 
                 button.innerHTML = '🔄 Processing Test Cases...';
                 
-                // Process the sanity test data exactly like a regular file
-                const mappings = await processBatch(sanityData);
+                // Reset state like regular file upload
+                allMappings = [];
+                summaryData = null;
                 
-                // Run analysis on the results
-                runAnalysis(mappings);
+                // Process the sanity test data exactly like a regular file
+                await processBatch(sanityData);
+                
+                // Run analysis on the results (uses global allMappings)
+                runAnalysis(allMappings);
                 
                 // Restore button state
                 button.disabled = false;

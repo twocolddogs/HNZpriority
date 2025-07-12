@@ -6,7 +6,7 @@ echo "=== Starting Build Process on $(date) ==="
 
 # --- Step 1: Upgrade Core Packaging Tools ---
 echo "--> Upgrading pip, setuptools, and wheel..."
-pip install --upgrade pip setuptools wheel
+pip install --upgrade --no-cache-dir pip setuptools wheel
 
 # --- Step 2: Install all dependencies from requirements.txt ---
 # This is the command that actually installs your packages.

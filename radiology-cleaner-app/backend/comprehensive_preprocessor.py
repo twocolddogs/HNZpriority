@@ -435,11 +435,11 @@ class ComprehensivePreprocessor:
         with open(nhs_json_path) as f:
             nhs_data = json.load(f)
         
-        usa_patterns = {}
+        self.usa_patterns = {}
         if usa_json_path:
             with open(usa_json_path) as f:
                 usa_data = json.load(f)
-            usa_patterns = self._extract_usa_patterns(usa_data)
+            self.usa_patterns = self._extract_usa_patterns(usa_data)
         
         # Build NHS authority
         self.nhs_authority = {}

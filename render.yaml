@@ -22,6 +22,11 @@ services:
     # Memory optimization for SpaCy
     - key: SPACY_MAX_LENGTH
       value: 1000000
+    # Build optimization
+    - key: PIP_CACHE_DIR
+      value: /opt/render/.cache/pip
+    - key: PIP_NO_CACHE_DIR
+      value: false
   buildCommand: "chmod +x build.sh && ./build.sh"
   # CORRECTED: Increased timeout to 300s to allow for heavy model loading on first request.
   startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 300 --preload --log-level debug app:app"
@@ -50,9 +55,57 @@ services:
       value: 23.2.1
     - key: SPACY_MAX_LENGTH
       value: 1000000
+    # Build optimization  
+    - key: PIP_CACHE_DIR
+      value: /opt/render/.cache/pip
+    - key: PIP_NO_CACHE_DIR
+      value: false
   buildCommand: "chmod +x build.sh && ./build.sh"
   # CORRECTED: Increased timeout to 300s to allow for heavy model loading on first request.
   startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 1 --timeout 300 --preload --log-level info app:app"
   autoDeploy: false
   # CORRECTED: Pointed health check to the correct /health endpoint in your app.py
   healthCheckPath: /health
+
+# - Frontend Static Sites -
+
+- type: static
+  name: radiology-cleaner-frontend-staging
+  repo: https://github.com/twocolddogs/HNZpriority.git
+  branch: develop
+  rootDir: ./radiology-cleaner-app/frontend
+  buildFilter:
+    paths:
+      - "radiology-cleaner-app/frontend/**"
+  buildCommand: echo "Static files - no build needed"
+  staticPublishPath: ./
+  pullRequestPreviewsEnabled: true
+  routes:
+    # Proxy API calls to backend
+    - type: rewrite
+      source: /api/*
+      destination: https://radiology-api-staging.onrender.com/*
+    # Serve frontend for all other routes
+    - type: rewrite
+      source: /*
+      destination: /index.html
+
+- type: static
+  name: radiology-cleaner-frontend-prod
+  repo: https://github.com/twocolddogs/HNZpriority.git
+  branch: main
+  rootDir: ./radiology-cleaner-app/frontend
+  buildFilter:
+    paths:
+      - "radiology-cleaner-app/frontend/**"
+  buildCommand: echo "Static files - no build needed"
+  staticPublishPath: ./
+  routes:
+    # Proxy API calls to backend
+    - type: rewrite
+      source: /api/*
+      destination: https://radiology-api-prod.onrender.com/*
+    # Serve frontend for all other routes
+    - type: rewrite
+      source: /*
+      destination: /index.html

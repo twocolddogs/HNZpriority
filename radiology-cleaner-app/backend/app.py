@@ -118,37 +118,46 @@ def _initialize_app():
             logger.warning(f"USA JSON file not found at {usa_json_path}")
 
         global abbreviation_expander, anatomy_extractor
-        abbreviation_expander = AbbreviationExpander(usa_patterns)
-        logger.info("Abbreviation expander initialized.")
-
+        
+        # Initialize ComprehensivePreprocessor first to get usa_patterns
+        comprehensive_preprocessor = None
         if os.path.exists(nhs_json_path):
-            # Load SNOMED data from JSON into database first
-            json_path = os.path.join(base_dir, 'code_set.json')
-            if os.path.exists(json_path):
-                db_manager.load_snomed_from_json(json_path)
-                logger.info("SNOMED data loaded from JSON into database.")
-            else:
-                logger.warning(f"SNOMED JSON file not found at {json_path}")
-            
             comprehensive_preprocessor = ComprehensivePreprocessor(nhs_json_path, usa_json_path if os.path.exists(usa_json_path) else None)
             logger.info("Comprehensive preprocessor initialized.")
-
-            # Initialize AnatomyExtractor using the loaded NHS data
-            anatomy_extractor = AnatomyExtractor(comprehensive_preprocessor.nhs_authority, comprehensive_preprocessor.usa_patterns)
-            logger.info("Anatomy extractor initialized.")
-
-            # Initialize LateralityDetector and USAContrastMapper
-            laterality_detector = LateralityDetector()
-            contrast_mapper = USAContrastMapper()
-            logger.info("Laterality and Contrast detectors initialized.")
-
-            # Initialize the core parser with the anatomy extractor
-            semantic_parser = RadiologySemanticParser(nlp_processor=nlp_processor, anatomy_extractor=anatomy_extractor, laterality_detector=laterality_detector, contrast_mapper=contrast_mapper)
-
         else:
             logger.error(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
-            comprehensive_preprocessor = None # Ensure it's None if data is missing
-            semantic_parser = RadiologySemanticParser(nlp_processor=nlp_processor) # Initialize without anatomy_extractor
+
+        # Initialize AbbreviationExpander with patterns from comprehensive_preprocessor
+        if comprehensive_preprocessor and hasattr(comprehensive_preprocessor, 'usa_patterns'):
+            abbreviation_expander = AbbreviationExpander(comprehensive_preprocessor.usa_patterns)
+            logger.info("Abbreviation expander initialized.")
+        else:
+            abbreviation_expander = AbbreviationExpander({}) # Fallback to empty patterns
+            logger.warning("Abbreviation expander initialized with empty patterns due to missing ComprehensivePreprocessor or usa_patterns.")
+
+        # Initialize AnatomyExtractor using the loaded NHS data and usa_patterns
+        if comprehensive_preprocessor and hasattr(comprehensive_preprocessor, 'nhs_authority') and hasattr(comprehensive_preprocessor, 'usa_patterns'):
+            anatomy_extractor = AnatomyExtractor(comprehensive_preprocessor.nhs_authority, comprehensive_preprocessor.usa_patterns)
+            logger.info("Anatomy extractor initialized.")
+        else:
+            anatomy_extractor = AnatomyExtractor({}) # Fallback to empty authority
+            logger.warning("Anatomy extractor initialized with empty authority due to missing ComprehensivePreprocessor or nhs_authority/usa_patterns.")
+
+        # Initialize LateralityDetector and USAContrastMapper
+        laterality_detector = LateralityDetector()
+        contrast_mapper = USAContrastMapper()
+        logger.info("Laterality and Contrast detectors initialized.")
+
+        # Initialize the core parser with the anatomy extractor
+        semantic_parser = RadiologySemanticParser(nlp_processor=nlp_processor, anatomy_extractor=anatomy_extractor, laterality_detector=laterality_detector, contrast_mapper=contrast_mapper)
+
+        # Load SNOMED data into database (moved after comprehensive_preprocessor init)
+        json_path = os.path.join(base_dir, 'code_set.json')
+        if os.path.exists(json_path):
+            db_manager.load_snomed_from_json(json_path)
+            logger.info("SNOMED data loaded from JSON into database.")
+        else:
+            logger.warning(f"SNOMED JSON file not found at {json_path}")
 
         # Initialize NHS Lookup Engine - the single source of truth
         if os.path.exists(nhs_json_path):
