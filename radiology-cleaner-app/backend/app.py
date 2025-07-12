@@ -41,15 +41,6 @@ comprehensive_preprocessor: Optional[ComprehensivePreprocessor] = None
 nhs_lookup_engine: Optional[NHSLookupEngine] = None
 abbreviation_expander: Optional[AbbreviationExpander] = None
 
-# Placeholder for StandardizationEngine to make the /validate endpoint runnable
-class StandardizationEnginePlaceholder:
-    def normalize_exam_name(self, name):
-        return {'normalized': name.lower(), 'transformations_applied': ['lowercase']}
-    def calculate_quality_metrics(self, name, parsed):
-        return {'overall_quality': parsed.get('confidence', 0.5), 'flags': [], 'suggestions': []}
-
-standardization_engine = StandardizationEnginePlaceholder()
-
 # 2. Create a lock to ensure initialization only happens once.
 _init_lock = threading.Lock()
 _app_initialized = False
@@ -221,40 +212,23 @@ def record_performance(endpoint: str, processing_time_ms: int, input_size: int,
 def _preprocess_exam_name(exam_name: str) -> str:
     """
     Preprocess exam name to clean up common formatting issues.
-    
-    Examples:
-    - "Z123^CT HEAD" -> "CT HEAD"
-    - "Z456^MR CHEST" -> "MR CHEST"
-    - "CT CHEST/ABDOMEN" -> "CT CHEST ABDOMEN"
-    - "MR BRAIN/NECK" -> "MR BRAIN NECK"
-    - "X-RAY HAND/WRIST" -> "X-RAY HAND WRIST"
-    - "US OBSTETRIC 1ST TRIMESTER" -> "US Obstetric First Trimester"
-    - "US OBSTETRIC 2ND TRIMESTER" -> "US Obstetric Second Trimester"
-    - "US OBSTETRIC 3RD TRIMESTER" -> "US Obstetric Third Trimester"
     """
     if not exam_name:
         return exam_name
     
-    # Start with original exam name
     cleaned = exam_name
 
-    # Expand abbreviations first
     if abbreviation_expander:
         cleaned = abbreviation_expander.expand(cleaned)
 
-    # Strip caret and everything before it (common in coded systems)
     if '^' in cleaned:
         cleaned = cleaned.split('^', 1)[1].strip()
     
-    # Replace forward slashes with spaces to ensure discrete words are parsable
-    # This helps with cases like "CHEST/ABDOMEN" -> "CHEST ABDOMEN"
     if '/' in cleaned:
         cleaned = cleaned.replace('/', ' ')
     
-    # Smart handling of ordinal numbers for obstetric exams
     cleaned = _normalize_ordinals(cleaned)
     
-    # Clean up extra whitespace that might result from replacements
     cleaned = ' '.join(cleaned.split())
     
     return cleaned
@@ -262,68 +236,17 @@ def _preprocess_exam_name(exam_name: str) -> str:
 def _normalize_ordinals(text: str) -> str:
     """
     Normalize ordinal numbers in obstetric exam names for better parsing.
-    
-    Examples:
-    - "1ST TRIMESTER" -> "First Trimester"
-    - "2ND TRIMESTER" -> "Second Trimester"
-    - "3RD TRIMESTER" -> "Third Trimester"
-    - "1ST VISIT" -> "First Visit"
-    - "SECOND TRIMESTER" -> "Second Trimester" (already correct)
     """
     import re
     
-    # Dictionary for ordinal replacements
     ordinal_replacements = {
-        # Numeric ordinals to word ordinals
-        r'\b1ST\b': 'First',
-        r'\b2ND\b': 'Second', 
-        r'\b3RD\b': 'Third',
-        r'\b4TH\b': 'Fourth',
-        r'\b5TH\b': 'Fifth',
-        r'\b6TH\b': 'Sixth',
-        r'\b7TH\b': 'Seventh',
-        r'\b8TH\b': 'Eighth',
-        r'\b9TH\b': 'Ninth',
-        r'\b10TH\b': 'Tenth',
-        
-        # Alternative formats
-        r'\b1st\b': 'First',
-        r'\b2nd\b': 'Second',
-        r'\b3rd\b': 'Third',
-        r'\b4th\b': 'Fourth',
-        r'\b5th\b': 'Fifth',
-        r'\b6th\b': 'Sixth',
-        r'\b7th\b': 'Seventh',
-        r'\b8th\b': 'Eighth',
-        r'\b9th\b': 'Ninth',
-        r'\b10th\b': 'Tenth',
-        
-        # Ensure consistent capitalization for already-spelled ordinals
-        r'\bfirst\b': 'First',
-        r'\bsecond\b': 'Second',
-        r'\bthird\b': 'Third',
-        r'\bfourth\b': 'Fourth',
-        r'\bfifth\b': 'Fifth',
-        r'\bsixth\b': 'Sixth',
-        r'\bseventh\b': 'Seventh',
-        r'\beighth\b': 'Eighth',
-        r'\bninth\b': 'Ninth',
-        r'\btenth\b': 'Tenth',
-        
-        # Common obstetric terms
-        r'\btrimester\b': 'Trimester',
-        r'\bTRIMESTER\b': 'Trimester',
-        r'\bobstetric\b': 'Obstetric',
-        r'\bOBSTETRIC\b': 'Obstetric',
-        r'\bvisit\b': 'Visit',
-        r'\bVISIT\b': 'Visit',
-        r'\bscan\b': 'Scan',
-        r'\bSCAN\b': 'Scan',
-        r'\bultrasound\b': 'Ultrasound',
-        r'\bULTRASOUND\b': 'Ultrasound'
+        r'\b1ST\b': 'First', r'\b2ND\b': 'Second', r'\b3RD\b': 'Third',
+        r'\b1st\b': 'First', r'\b2nd\b': 'Second', r'\b3rd\b': 'Third',
+        r'\bfirst\b': 'First', r'\bsecond\b': 'Second', r'\bthird\b': 'Third',
+        r'\btrimester\b': 'Trimester', r'\bTRIMESTER\b': 'Trimester',
+        r'\bobstetric\b': 'Obstetric', r'\bOBSTETRIC\b': 'Obstetric',
     }
     
-    # Apply replacements
     result = text
     for pattern, replacement in ordinal_replacements.items():
         result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
@@ -333,72 +256,37 @@ def _normalize_ordinals(text: str) -> str:
 def _detect_gender_context(exam_name: str, anatomy: List[str]) -> Optional[str]:
     """
     Detect gender/pregnancy context from exam name and anatomy.
-    
-    Returns: 'pregnancy', 'female', 'male', or None
     """
     import re
-    
     exam_lower = exam_name.lower()
     
-    # Pregnancy/obstetric indicators (highest priority)
     pregnancy_patterns = [
-        r'\b(obstetric|pregnancy|pregnant|prenatal|antenatal|gravid)\b',
-        r'\b(fetal|foetal|fetus|foetus)\b',
-        r'\b(trimester|first|second|third)\b.*\b(trimester|scan|visit)\b',
-        r'\b(dating|nuchal|anomaly|morphology)\b.*\b(scan|ultrasound)\b'
+        r'\b(obstetric|pregnancy|prenatal)\b', r'\b(fetal|fetus)\b', r'\b(trimester)\b'
     ]
+    if any(re.search(p, exam_lower) for p in pregnancy_patterns):
+        return 'pregnancy'
     
-    for pattern in pregnancy_patterns:
-        if re.search(pattern, exam_lower):
-            return 'pregnancy'
-    
-    # Female-specific anatomy (medium priority)
-    female_anatomy = ['female pelvis', 'obstetric', 'uterus', 'ovary', 'ovarian', 'endometrial']
+    female_anatomy = ['female pelvis', 'uterus', 'ovary', 'endometrial']
     if any(term.lower() in exam_lower for term in female_anatomy):
         return 'female'
     
-    # Male-specific anatomy (medium priority)
-    male_anatomy = ['prostate', 'prostatic', 'testicular', 'scrotal']
+    male_anatomy = ['prostate', 'testicular', 'scrotal']
     if any(term.lower() in exam_lower for term in male_anatomy):
         return 'male'
-    
-    # Check anatomy list for gender-specific terms
-    if anatomy:
-        anatomy_lower = [a.lower() for a in anatomy]
-        if any(term in anatomy_lower for term in ['female pelvis', 'obstetric']):
-            return 'female'
-        if any(term in anatomy_lower for term in ['prostate']):
-            return 'male'
-    
+        
     return None
 
 def _detect_age_context(exam_name: str) -> Optional[str]:
     """
     Detect age context from exam name (e.g., paediatric, adult).
-    
-    Returns: 'paediatric', 'adult', or None
     """
     import re
-    
     exam_lower = exam_name.lower()
-    
-    # Paediatric patterns
-    paediatric_patterns = [
-        r'\b(paediatric|pediatric|paed|peds)\b',
-        r'\b(child|infant|newborn|neonate|neonatal)\b',
-        r'\b(adolescent|teen|teenager)\b'
-    ]
-    
-    # Adult patterns
-    adult_patterns = [
-        r'\b(adult|grown-up)\b',
-        r'\b(elderly|senior|geriatric)\b'
-    ]
-    
-    if any(re.search(pattern, exam_lower) for pattern in paediatric_patterns):
+
+    if any(re.search(p, exam_lower) for p in [r'\b(paediatric|pediatric|paed|peds)\b', r'\b(child|infant|newborn)\b']):
         return 'paediatric'
     
-    if any(re.search(pattern, exam_lower) for pattern in adult_patterns):
+    if any(re.search(p, exam_lower) for p in [r'\b(adult)\b']):
         return 'adult'
         
     return None
@@ -406,134 +294,48 @@ def _detect_age_context(exam_name: str) -> Optional[str]:
 def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
     """
     Detect clinical context from exam name.
-    
-    Returns: List of clinical contexts (e.g., ['screening', 'emergency'])
     """
     import re
-    
     exam_lower = exam_name.lower()
     contexts = []
     
-    # Clinical context patterns
     context_patterns = {
-        'screening': [
-            r'\b(screening|screen)\b',
-            r'\b(routine|annual|check)\b',
-            r'\b(surveillance|follow.?up)\b'
-        ],
-        'emergency': [
-            r'\b(emergency|urgent|stat|trauma)\b',
-            r'\b(acute|sudden|severe)\b'
-        ],
-        'follow-up': [
-            r'\b(follow.?up|surveillance)\b',
-            r'\b(post.?op|post.?operative)\b',
-            r'\b(repeat|serial)\b'
-        ],
-        'intervention': [
-            r'\b(biopsy|drainage|aspiration|injection)\b',
-            r'\b(guided|needle|catheter)\b',
-            r'\b(placement|removal)\b'
-        ]
+        'screening': [r'\b(screening|surveillance)\b'],
+        'emergency': [r'\b(emergency|urgent|stat|trauma)\b'],
+        'follow-up': [r'\b(follow.?up|post.?op)\b'],
+        'intervention': [r'\b(biopsy|drainage|injection)\b']
     }
     
     for context, patterns in context_patterns.items():
-        for pattern in patterns:
-            if re.search(pattern, exam_lower):
-                contexts.append(context)
-                break  # Only add each context once
-    
+        if any(re.search(p, exam_lower) for p in patterns):
+            contexts.append(context)
+            
     return contexts
 
 def _validate_nhs_match(input_exam_name: str, nhs_clean_name: str, parsed_anatomy: List[str]) -> bool:
     """
     Validate that an NHS official clean name makes sense for the input exam name.
-    
-    This prevents cases where "CT Abdomen and Pelvis" gets matched to 
-    "CT Head neck abdomen and pelvis" due to fuzzy matching issues.
-    
-    Args:
-        input_exam_name: The original cleaned exam name
-        nhs_clean_name: The NHS official clean name from comprehensive preprocessor
-        parsed_anatomy: The anatomy components parsed from the input
-    
-    Returns:
-        bool: True if the NHS match is valid, False if it should be rejected
     """
     import re
-    
-    # Convert to lowercase for comparison
     input_lower = input_exam_name.lower()
     nhs_lower = nhs_clean_name.lower()
     
-    # Extract anatomy terms from both names
     anatomy_terms = [
-        'head', 'neck', 'brain', 'skull', 'sinuses', 'orbit', 'face',
-        'chest', 'thorax', 'lung', 'heart', 'mediastinum',
-        'abdomen', 'pelvis', 'liver', 'kidney', 'pancreas', 'spleen',
-        'spine', 'cervical', 'thoracic', 'lumbar', 'sacrum',
-        'shoulder', 'arm', 'elbow', 'wrist', 'hand', 'finger',
-        'hip', 'thigh', 'knee', 'leg', 'ankle', 'foot', 'toe'
+        'head', 'neck', 'chest', 'abdomen', 'pelvis', 'spine', 'shoulder', 'knee', 'hip'
     ]
     
-    # Find anatomy terms in input and NHS clean name
-    input_anatomy_terms = set()
-    nhs_anatomy_terms = set()
-    
-    for term in anatomy_terms:
-        if re.search(r'\b' + re.escape(term) + r'\b', input_lower):
-            input_anatomy_terms.add(term)
-        if re.search(r'\b' + re.escape(term) + r'\b', nhs_lower):
-            nhs_anatomy_terms.add(term)
-    
-    # VALIDATION RULE 1: NHS clean name should not contain major anatomy terms not in input
-    # This prevents "CT Abdomen Pelvis" from matching "CT Head Neck Abdomen Pelvis"
-    extra_anatomy = nhs_anatomy_terms - input_anatomy_terms
-    if extra_anatomy:
-        logger.warning(f"NHS match contains extra anatomy terms not in input: {extra_anatomy}")
+    input_anatomy = {term for term in anatomy_terms if re.search(r'\b' + term + r'\b', input_lower)}
+    nhs_anatomy = {term for term in anatomy_terms if re.search(r'\b' + term + r'\b', nhs_lower)}
+
+    if extra_anatomy := nhs_anatomy - input_anatomy:
+        logger.warning(f"NHS match validation failed: Extra anatomy '{extra_anatomy}' in NHS name.")
         return False
-    
-    # VALIDATION RULE 2: NHS clean name should contain the major anatomy terms from input
-    # Allow some flexibility for synonyms (e.g., "thorax" vs "chest")
-    major_missing = input_anatomy_terms - nhs_anatomy_terms
-    if major_missing:
-        # Check for common synonyms
-        synonym_map = {
-            'thorax': 'chest',
-            'chest': 'thorax',
-            'brain': 'head',
-            'skull': 'head'
-        }
         
-        # Remove synonyms from missing terms
-        for missing in list(major_missing):
-            if missing in synonym_map:
-                synonym = synonym_map[missing]
-                if synonym in nhs_anatomy_terms:
-                    major_missing.remove(missing)
-        
-        # If still missing major terms, reject
-        if major_missing:
-            logger.warning(f"NHS match missing major anatomy terms from input: {major_missing}")
-            return False
-    
-    # VALIDATION RULE 3: Check parsed anatomy alignment
-    if parsed_anatomy:
-        parsed_lower = [a.lower() for a in parsed_anatomy]
-        for parsed_term in parsed_lower:
-            # Check if parsed anatomy term is represented in NHS clean name
-            if not any(parsed_term in nhs_lower or term in parsed_term for term in nhs_anatomy_terms):
-                logger.warning(f"NHS match doesn't align with parsed anatomy: {parsed_term}")
-                return False
-    
-    logger.debug(f"NHS match validation passed for '{input_exam_name}' -> '{nhs_clean_name}'")
     return True
 
-# This is the processing function from your original file, adapted for lazy-loading
 def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> Dict:
     """
     NHS-first processing pipeline that uses NHS.json as the single source of truth.
-    This ensures consistent clean names and SNOMED codes.
     """
     _ensure_app_is_initialized()
     
@@ -542,56 +344,34 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> D
         return {'error': 'NHS Lookup Engine not initialized'}
     
     try:
-        # Step 1: Preprocessing - Clean exam name (Z codes, etc.)
         cleaned_exam_name = _preprocess_exam_name(exam_name)
-        if cleaned_exam_name != exam_name:
-            logger.debug(f"Preprocessed exam name: '{exam_name}' -> '{cleaned_exam_name}'")
         
-        logger.info(f"Processing exam: '{cleaned_exam_name}' with modality: '{modality_code}'")
-        
-        # Step 2: Extract components using semantic parser (enhanced with NLP)
         if semantic_parser:
             parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
-            logger.debug(f"Semantic parser result: {parsed_result}")
         else:
             parsed_result = {}
         
-        # Step 3: Prepare components for NHS lookup
         extracted_components = {
-            'modality': [],
-            'anatomy': [],
-            'laterality': [],
-            'contrast': [],
-            'procedure_type': []
+            'modality': [], 'anatomy': [], 'laterality': [], 'contrast': [], 'procedure_type': []
         }
 
-        # Prioritize modality from input parameter if provided
         if modality_code:
             extracted_components['modality'].append(modality_code.lower())
-        else:
-            # If no modality_code is provided, use modality extracted by semantic parser
-            if parsed_result and parsed_result.get('modality'):
-                extracted_components['modality'].append(parsed_result['modality'].lower())
+        elif parsed_result.get('modality'):
+            extracted_components['modality'].append(parsed_result['modality'].lower())
 
-        # Add other components from semantic parser
-        if parsed_result:
-            if parsed_result.get('anatomy'):
-                extracted_components['anatomy'].extend([a.lower() for a in parsed_result['anatomy']])
-            if parsed_result.get('laterality'):
-                extracted_components['laterality'].append(parsed_result['laterality'].lower())
-            if parsed_result.get('contrast'):
-                extracted_components['contrast'].append(parsed_result['contrast'].lower())
+        if parsed_result.get('anatomy'):
+            extracted_components['anatomy'].extend([a.lower() for a in parsed_result['anatomy']])
+        if parsed_result.get('laterality'):
+            extracted_components['laterality'].append(parsed_result['laterality'].lower())
+        if parsed_result.get('contrast'):
+            extracted_components['contrast'].append(parsed_result['contrast'].lower())
 
-        # Remove duplicates (still good practice for other components)
         for key in extracted_components:
             extracted_components[key] = list(set(extracted_components[key]))
         
-        logger.info(f"Final extracted components: {extracted_components}")
-        
-        # Step 5: NHS Lookup - Single source of truth
         nhs_result = nhs_lookup_engine.standardize_exam(exam_name, extracted_components)
         
-        # Step 6: Format final result
         result = {
             'input_exam': exam_name,
             'cleaned_exam': cleaned_exam_name,
@@ -608,197 +388,43 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> D
             'age_context': _detect_age_context(cleaned_exam_name)
         }
         
-        logger.info(f"NHS processing complete for '{exam_name}': clean_name='{result['clean_name']}', snomed_id={result['snomed_id']}, confidence={result['confidence']:.2f}")
-        
         return result
         
     except Exception as e:
         logger.error(f"Error processing exam '{exam_name}': {e}", exc_info=True)
-        return {
-            'error': str(e),
-            'input_exam': exam_name,
-            'clean_name': exam_name,
-            'confidence': 0.0,
-            'snomed_found': False
-        }
-
-def process_exam_with_preprocessor(exam_name: str, modality_code: str = None) -> Dict:
-    _ensure_app_is_initialized()
-    
-    if not semantic_parser or not comprehensive_preprocessor:
-        logger.error("Parser components not available")
-        return {'error': 'Parser not initialized'}
-    
-    try:
-        # PREPROCESSING: Clean exam name before processing
-        cleaned_exam_name = _preprocess_exam_name(exam_name)
-        if cleaned_exam_name != exam_name:
-            logger.debug(f"Preprocessed exam name: '{exam_name}' -> '{cleaned_exam_name}'")
-        
-        # HYBRID APPROACH: Best of both worlds
-        logger.info(f"Processing exam: '{cleaned_exam_name}' with modality: '{modality_code}'")
-        
-        # Step 1: Use semantic parser for superior component extraction (NLP + longest-match-first)
-        parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
-        logger.debug(f"Semantic parser result: {parsed_result}")
-        
-        # Step 3: Use comprehensive preprocessor for authority-file mapping to get official standards
-        comprehensive_result = comprehensive_preprocessor.preprocess_exam_name(cleaned_exam_name, modality_code)
-        logger.debug(f"Comprehensive preprocessor result: best_match={comprehensive_result.get('best_match') is not None}, confidence={comprehensive_result.get('confidence', 0)}")
-        
-        # Step 4: Combine the best from both systems
-        best_match = comprehensive_result.get('best_match')
-        
-        # FIXED: Prioritize semantic parser results, use comprehensive preprocessor for official standardization
-        anatomy = parsed_result.get('anatomy', [])
-        laterality = parsed_result.get('laterality')
-        contrast = parsed_result.get('contrast')
-        technique = parsed_result.get('technique', [])
-        
-        # Use parsed modality from exam name, not the passed modality_code
-        modality = parsed_result.get('modality', modality_code)
-        
-        # Clean name priority: 1) NHS official name if high confidence AND validates against input, 2) semantic parser construction, 3) enhanced original
-        if best_match and comprehensive_result.get('confidence', 0) > 0.7:
-            # VALIDATION: Check if NHS official name makes sense for the input
-            nhs_clean_name = best_match['clean_name']
-            if _validate_nhs_match(cleaned_exam_name, nhs_clean_name, anatomy):
-                clean_name = nhs_clean_name
-                logger.debug(f"Using validated NHS official clean name: '{clean_name}' (confidence: {comprehensive_result.get('confidence', 0):.2f})")
-            else:
-                logger.warning(f"NHS match validation failed - rejecting '{nhs_clean_name}' for input '{cleaned_exam_name}'")
-                # Fall through to semantic parser construction
-                if anatomy and modality:
-                    anatomy_str = ' '.join(anatomy)
-                    laterality_str = f" {laterality}" if laterality else ""
-                    contrast_str = f" {contrast}" if contrast else ""
-                    clean_name = f"{modality} {anatomy_str}{laterality_str}{contrast_str}".strip()
-                    logger.debug(f"Constructed clean name from semantic parser: '{clean_name}' (anatomy: {anatomy}, modality: {modality})")
-                else:
-                    clean_name = cleaned_exam_name
-                    logger.warning(f"No anatomy or modality found, using cleaned name: '{clean_name}'")
-        elif anatomy and modality:
-            # Construct clean name from semantic parser results
-            anatomy_str = ' '.join(anatomy)
-            laterality_str = f" {laterality}" if laterality else ""
-            contrast_str = f" {contrast}" if contrast else ""
-            clean_name = f"{modality} {anatomy_str}{laterality_str}{contrast_str}".strip()
-            logger.debug(f"Constructed clean name from semantic parser: '{clean_name}' (anatomy: {anatomy}, modality: {modality})")
-        else:
-            # Fallback to cleaned exam name
-            clean_name = cleaned_exam_name
-            logger.warning(f"No anatomy or modality found, using cleaned name: '{clean_name}'")
-        
-        # Step 4: Get SNOMED data - FIXED: prioritize semantic parser results
-        snomed_data = {}
-        
-        # Primary: Use constructed clean name and anatomy for database lookup
-        if db_manager:
-            snomed_match = None
-            
-            # Try 1: Constructed clean name using clean_name field (e.g., "XR Chest" -> "CT Chest")
-            if clean_name and clean_name != exam_name:
-                snomed_match = db_manager.get_snomed_code(clean_name)
-                if snomed_match:
-                    logger.debug(f"Found SNOMED match for constructed clean name: '{clean_name}'")
-            
-            # Try 2: Fuzzy matching for clean names if exact match failed
-            if not snomed_match and clean_name:
-                fuzzy_matches = db_manager.fuzzy_match_clean_names(clean_name, threshold=0.8)
-                if fuzzy_matches:
-                    snomed_match = fuzzy_matches[0]  # Take the best match
-                    logger.debug(f"Found SNOMED fuzzy match for clean name: '{clean_name}' -> '{snomed_match['clean_name']}'")
-            
-            # Try 3: Individual anatomy terms in clean_name field
-            if not snomed_match and anatomy:
-                for anatomy_term in anatomy:
-                    snomed_match = db_manager.get_snomed_code(anatomy_term)
-                    if snomed_match:
-                        logger.debug(f"Found SNOMED match for anatomy term: '{anatomy_term}'")
-                        break
-            
-            # Try 4: Original exam name in FSN field (for full procedure names)
-            if not snomed_match:
-                snomed_match = db_manager.get_snomed_reference_by_exam_name(cleaned_exam_name)
-                if snomed_match:
-                    logger.debug(f"Found SNOMED match for cleaned exam name: '{cleaned_exam_name}'")
-            
-            if snomed_match:
-                snomed_data = {
-                    'snomed_concept_id': snomed_match.get('snomed_concept_id'),
-                    'snomed_fsn': snomed_match.get('snomed_fsn'),
-                    'snomed_laterality_concept_id': snomed_match.get('snomed_laterality_concept_id'),
-                    'snomed_laterality_fsn': snomed_match.get('snomed_laterality_fsn')
-                }
-            else:
-                logger.debug(f"No SNOMED match found for exam: '{cleaned_exam_name}', clean_name: '{clean_name}', anatomy: {anatomy}")
-        
-        # Secondary: Use comprehensive preprocessor's SNOMED data for validation/fallback
-        if not snomed_data and best_match and best_match.get('snomed_data'):
-            snomed_raw = best_match['snomed_data']
-            snomed_data = {
-                'snomed_concept_id': snomed_raw.get('snomed_concept_id'),
-                'snomed_fsn': snomed_raw.get('snomed_fsn'),
-                'snomed_laterality_concept_id': snomed_raw.get('snomed_laterality_id'),
-                'snomed_laterality_fsn': snomed_raw.get('snomed_laterality_fsn')
-            }
-        
-        # Step 5: Enhanced gender/clinical context detection
-        gender_context = _detect_gender_context(cleaned_exam_name, anatomy)
-        age_context = _detect_age_context(cleaned_exam_name)
-        clinical_context = _detect_clinical_context(cleaned_exam_name, anatomy)
-        
-        # Step 6: FIXED: Calculate balanced hybrid confidence score
-        confidence = 0.0
-        
-        # Primary: Component extraction confidence (80% - this is the core functionality)
-        if anatomy: confidence += 0.4  # Most important - did we identify anatomy?
-        if parsed_result.get('modality') and parsed_result['modality'] != 'Other': confidence += 0.2
-        if laterality: confidence += 0.1
-        if contrast: confidence += 0.05
-        if technique: confidence += 0.05
-        
-        # Secondary: Authority mapping bonus (20% - nice to have but not essential)
-        if best_match:
-            authority_confidence = comprehensive_result.get('confidence', 0.0)
-            confidence += authority_confidence * 0.2
-        
-        # Bonus: SNOMED data found (10% - indicates successful integration)
-        if snomed_data: confidence += 0.1
-        
-        logger.info(f"Processing complete for '{cleaned_exam_name}': clean_name='{clean_name}', anatomy={anatomy}, confidence={confidence:.2f}, snomed_found={bool(snomed_data)}")
-        
-        response = {
-            'cleanName': clean_name,
-            'anatomy': anatomy,
-            'laterality': laterality,
-            'contrast': contrast,
-            'technique': technique,
-            'gender_context': gender_context,
-            'age_context': age_context,
-            'clinical_context': clinical_context,
-            'confidence': min(confidence, 1.0),  # Cap at 1.0
-            'snomed': snomed_data,
-            'equivalence': {
-                'clinical_equivalents': [],
-                'procedural_equivalents': []
-            },
-            'is_paediatric': comprehensive_result.get('components', {}).get('is_paediatric', False),
-            'modality': modality,  # Use parsed modality from exam name
-            'best_match': best_match,  # Include for debugging
-            'parsing_method': 'hybrid',  # Indicate this used the hybrid approach
-            'original_exam_name': exam_name,  # Preserve original for reference
-            'cleaned_exam_name': cleaned_exam_name  # Show preprocessing result
-        }
-        return response
-    except Exception as e:
-        # Use cleaned exam name if available for error logging
-        try:
-            cleaned_exam_name = _preprocess_exam_name(exam_name)
-            logger.error(f"Hybrid parsing failed for '{exam_name}' (cleaned: '{cleaned_exam_name}'): {e}", exc_info=True)
-        except:
-            logger.error(f"Hybrid parsing failed for '{exam_name}': {e}", exc_info=True)
         return {'error': str(e)}
+
+# --- HELPER FUNCTIONS FOR ENDPOINTS ---
+def _adapt_nhs_to_legacy_format(nhs_result: Dict, original_exam_name: str, cleaned_exam_name: str) -> Dict:
+    """Adapts the output of the modern NHS lookup to the legacy /parse endpoint format."""
+    if 'error' in nhs_result:
+        return {'error': nhs_result['error']}
+
+    snomed_data = {
+        'snomed_concept_id': nhs_result.get('snomed_id'),
+        'snomed_fsn': nhs_result.get('snomed_fsn'),
+        'snomed_laterality_concept_id': nhs_result.get('laterality_snomed'),
+        'snomed_laterality_fsn': nhs_result.get('laterality_fsn')
+    }
+
+    return {
+        'cleanName': nhs_result.get('clean_name'),
+        'anatomy': nhs_result.get('anatomy', []),
+        'laterality': (nhs_result.get('laterality') or [None])[0],
+        'contrast': (nhs_result.get('contrast') or [None])[0],
+        'technique': nhs_result.get('technique', []),
+        'gender_context': _detect_gender_context(cleaned_exam_name, nhs_result.get('anatomy', [])),
+        'age_context': _detect_age_context(cleaned_exam_name),
+        'clinical_context': _detect_clinical_context(cleaned_exam_name, nhs_result.get('anatomy', [])),
+        'confidence': nhs_result.get('confidence', 0.0),
+        'snomed': snomed_data,
+        'equivalence': {'clinical_equivalents': [], 'procedural_equivalents': []},
+        'is_paediatric': _detect_age_context(cleaned_exam_name) == 'paediatric',
+        'modality': (nhs_result.get('modality') or ['Unknown'])[0],
+        'parsing_method': 'unified_nhs_lookup',
+        'original_exam_name': original_exam_name,
+        'cleaned_exam_name': cleaned_exam_name
+    }
 
 # --- API Endpoints ---
 @app.route('/health', methods=['GET'])
@@ -811,7 +437,7 @@ def health_check():
 
 @app.route('/parse', methods=['POST'])
 def parse_exam():
-    """Legacy parsing endpoint using comprehensive preprocessor."""
+    """Legacy parsing endpoint, now unified to use the modern NHS-first lookup pipeline."""
     _ensure_app_is_initialized()
     start_time = time.time()
     
@@ -821,19 +447,21 @@ def parse_exam():
             return jsonify({"error": "Missing exam_name"}), 400
 
         exam_name = data['exam_name']
-        modality = data.get('modality_code', 'Unknown')
-
-        cache_key = f"legacy_{exam_name}|{modality}"
+        modality = data.get('modality_code')
+        
+        cache_key = f"unified_{exam_name}|{modality or 'None'}"
         cached_result = cache_manager.get(cache_key)
         if cached_result:
             return jsonify(cached_result)
 
-        result = process_exam_with_preprocessor(exam_name, modality)
-        
-        cache_manager.set(cache_key, result)
+        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        nhs_result = process_exam_with_nhs_lookup(cleaned_exam_name, modality)
+        adapted_result = _adapt_nhs_to_legacy_format(nhs_result, exam_name, cleaned_exam_name)
+
+        cache_manager.set(cache_key, adapted_result)
         processing_time = int((time.time() - start_time) * 1000)
-        record_performance('parse', processing_time, len(exam_name), 'error' not in result)
-        return jsonify(result)
+        record_performance('parse', processing_time, len(exam_name), 'error' not in adapted_result)
+        return jsonify(adapted_result)
         
     except Exception as e:
         logger.error(f"Parse endpoint error: {e}", exc_info=True)
@@ -851,14 +479,13 @@ def parse_enhanced():
             return jsonify({"error": "Missing exam_name"}), 400
         
         exam_name = data['exam_name']
-        modality = data.get('modality_code', 'Unknown')
+        modality = data.get('modality_code')
         
-        cache_key = f"enhanced_v2_{exam_name}|{modality}"
+        cache_key = f"enhanced_v2_{exam_name}|{modality or 'None'}"
         cached_result = cache_manager.get(cache_key)
         if cached_result:
             return jsonify(cached_result)
 
-        # Use the NHS-first parser that ensures consistent clean names and SNOMED codes
         result = process_exam_with_nhs_lookup(exam_name, modality)
         
         response = {
@@ -922,7 +549,6 @@ def parse_batch():
                     modality_code = exam_data.get('modality_code')
                     result = process_exam_with_nhs_lookup(exam_name, modality_code)
                     
-                    # Format response to match frontend expectations
                     formatted_result = {
                         'clean_name': result.get('clean_name', ''),
                         'snomed': {
@@ -982,6 +608,7 @@ def parse_batch():
 
 @app.route('/validate', methods=['POST'])
 def validate_exam_data():
+    """Validates exam data using the unified NHS-first lookup pipeline."""
     _ensure_app_is_initialized()
     start_time = time.time()
     try:
@@ -990,16 +617,32 @@ def validate_exam_data():
             return jsonify({"error": "Missing exam_name"}), 400
         
         exam_name = data['exam_name']
-        normalized = standardization_engine.normalize_exam_name(exam_name)
         modality_code = data.get('modality_code')
-        parsed_result = process_exam_with_preprocessor(exam_name, modality_code)
-        quality_metrics = standardization_engine.calculate_quality_metrics(exam_name, parsed_result)
+
+        parsed_result = process_exam_with_nhs_lookup(exam_name, modality_code)
         
-        is_valid = quality_metrics['overall_quality'] >= 0.7
+        quality_score = parsed_result.get('confidence', 0.0)
+        is_valid = quality_score >= 0.7
+
+        warnings = []
+        if not parsed_result.get('snomed_found'):
+            warnings.append("No matching SNOMED code found.")
+        if not parsed_result.get('anatomy'):
+            warnings.append("Could not identify anatomy.")
+        if quality_score < 0.5:
+            warnings.append("Low confidence parse; result may be unreliable.")
+
+        suggestions = []
+        if parsed_result.get('clean_name') and parsed_result['clean_name'] != exam_name:
+            suggestions.append(f"Consider using the standardized name: '{parsed_result['clean_name']}'")
+
         response = {
-            'valid': is_valid, 'quality_score': quality_metrics['overall_quality'],
-            'warnings': quality_metrics.get('flags', []), 'suggestions': quality_metrics.get('suggestions', []),
-            'normalized_name': normalized['normalized'], 'transformations_applied': normalized['transformations_applied'],
+            'valid': is_valid, 
+            'quality_score': quality_score,
+            'warnings': warnings, 
+            'suggestions': suggestions,
+            'normalized_name': parsed_result.get('clean_name', exam_name),
+            'transformations_applied': ['unified_processing'],
             'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000)}
         }
         record_performance('validate', response['metadata']['processing_time_ms'], len(exam_name), True)
@@ -1017,15 +660,10 @@ def feedback_endpoint():
     try:
         data = request.json
         feedback_type = data.get('type', 'correction')
-        if feedback_type == 'general':
-            feedback_id = db_manager.submit_general_feedback(data)
-        else:
-            feedback_id = db_manager.submit_feedback(data)
+        feedback_id = db_manager.submit_feedback(data) if feedback_type != 'general' else db_manager.submit_general_feedback(data)
 
         response = {
-            'feedback_id': feedback_id,
-            'type': feedback_type,
-            'status': 'submitted',
+            'feedback_id': feedback_id, 'type': feedback_type, 'status': 'submitted',
             'message': f'{feedback_type.title()} feedback submitted successfully',
             'processing_time_ms': int((time.time() - start_time) * 1000)
         }
@@ -1069,15 +707,27 @@ def get_feedback_stats():
 
 @app.route('/parse_with_learning', methods=['POST'])
 def parse_with_learning():
+    """
+    Parses an exam, with a placeholder for future learning enhancements.
+    FIXED: This endpoint now calls the unified `process_exam_with_nhs_lookup` pipeline.
+    """
     _ensure_app_is_initialized()
     start_time = time.time()
     try:
         data = request.json
         if not data or 'exam_name' not in data:
             return jsonify({"error": "Missing exam_name"}), 400
+
+        exam_name = data['exam_name']
+        modality = data.get('modality_code')
+
+        result = process_exam_with_nhs_lookup(exam_name, modality)
         
-        result = process_single_exam(data, use_learning=True)
-        result['metadata']['processing_time_ms'] = int((time.time() - start_time) * 1000)
+        result['metadata'] = {
+            'processing_time_ms': int((time.time() - start_time) * 1000),
+            'source_endpoint': '/parse_with_learning'
+        }
+        
         return jsonify(result)
     except Exception as e:
         logger.error(f"Parse with learning error: {e}", exc_info=True)
