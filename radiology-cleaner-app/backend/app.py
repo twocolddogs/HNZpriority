@@ -1,4 +1,4 @@
-import time, json, logging, threading, os, sys, multiprocessing
+import time, json, logging, threading, os, sys, multiprocessing, signal, atexit
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from typing import List, Dict, Optional
@@ -28,6 +28,11 @@ nhs_lookup_engine: Optional[NHSLookupEngine] = None
 abbreviation_expander: Optional[AbbreviationExpander] = None
 _init_lock = threading.Lock()
 _app_initialized = False
+
+# Graceful shutdown handling
+_active_workers = set()
+_shutdown_requested = False
+_worker_lock = threading.Lock()
 
 def _initialize_app():
     global semantic_parser, db_manager, cache_manager, feedback_manager, \
@@ -242,6 +247,12 @@ def parse_exam():
     """Legacy parsing endpoint, now unified to use the modern NHS-first lookup pipeline."""
     _ensure_app_is_initialized()
     start_time = time.time()
+    
+    # Register worker for tracking
+    worker_id = f"parse_{int(time.time() * 1000000)}"
+    if not _register_worker(worker_id):
+        return jsonify({"error": "Server shutting down"}), 503
+    
     try:
         data = request.json
         if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
@@ -259,12 +270,20 @@ def parse_exam():
     except Exception as e:
         logger.error(f"Parse endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
+    finally:
+        _unregister_worker(worker_id)
 
 @app.route('/parse_enhanced', methods=['POST'])
 def parse_enhanced():
     """Enhanced parsing endpoint using the new hybrid NLP parser."""
     _ensure_app_is_initialized()
     start_time = time.time()
+    
+    # Register worker for tracking
+    worker_id = f"parse_enhanced_{int(time.time() * 1000000)}"
+    if not _register_worker(worker_id):
+        return jsonify({"error": "Server shutting down"}), 503
+    
     try:
         data = request.json
         if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
@@ -304,6 +323,8 @@ def parse_enhanced():
     except Exception as e:
         logger.error(f"Enhanced parse endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
+    finally:
+        _unregister_worker(worker_id)
 
 @app.route('/parse_batch', methods=['POST'])
 def parse_batch():
@@ -333,14 +354,29 @@ def parse_batch():
             max_workers = min(2, get_optimal_worker_count(max_items=len(uncached_exams)))
             logger.info(f"Processing {len(uncached_exams)} uncached exams with {max_workers} workers")
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                future_to_exam = {executor.submit(process_exam_batch, exam): exam for exam in uncached_exams}
-                for future in as_completed(future_to_exam):
-                    exam_data, result = future_to_exam[future], future.result()
-                    if 'error' in result: errors.append({"error": result['error'], "original_exam": exam_data})
-                    else:
-                        results.append({"input": exam_data, "output": result})
-                        cache_key = f"batch_v3_{exam_data['exam_name']}|{exam_data.get('modality_code', 'Unknown')}"
-                        cache_manager.set(cache_key, result)
+                # Register batch processing as a worker
+                batch_worker_id = f"batch_{int(time.time() * 1000)}"
+                if not _register_worker(batch_worker_id):
+                    logger.warning("Shutdown requested, aborting batch processing")
+                    return jsonify({"error": "Server shutting down"}), 503
+                
+                try:
+                    future_to_exam = {executor.submit(process_exam_batch, exam): exam for exam in uncached_exams}
+                    for future in as_completed(future_to_exam):
+                        # Check for shutdown during processing
+                        if _shutdown_requested:
+                            logger.info("Shutdown requested during batch processing, stopping...")
+                            break
+                            
+                        exam_data, result = future_to_exam[future], future.result()
+                        if 'error' in result: errors.append({"error": result['error'], "original_exam": exam_data})
+                        else:
+                            results.append({"input": exam_data, "output": result})
+                            cache_key = f"batch_v3_{exam_data['exam_name']}|{exam_data.get('modality_code', 'Unknown')}"
+                            cache_manager.set(cache_key, result)
+                finally:
+                    # Always unregister the worker when processing completes
+                    _unregister_worker(batch_worker_id)
         all_results = cached_results + results
         processing_stats = {'total_processed': len(exams), 'successful': len(all_results), 'errors': len(errors), 'cache_hits': cache_hits, 'processing_time_ms': int((time.time() - start_time) * 1000), 'cache_hit_ratio': cache_hits / len(exams) if exams else 0.0}
         response = {'results': all_results, 'errors': errors, 'processing_stats': processing_stats}
@@ -419,7 +455,90 @@ def retrain_patterns():
         logger.error(f"Retraining error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
+def _register_worker(worker_id: str):
+    """Register a worker for tracking during graceful shutdown."""
+    with _worker_lock:
+        if not _shutdown_requested:
+            _active_workers.add(worker_id)
+            logger.debug(f"Registered worker {worker_id}. Active workers: {len(_active_workers)}")
+            return True
+        return False
+
+def _unregister_worker(worker_id: str):
+    """Unregister a worker when processing completes."""
+    with _worker_lock:
+        _active_workers.discard(worker_id)
+        logger.debug(f"Unregistered worker {worker_id}. Active workers: {len(_active_workers)}")
+
+def _cleanup_resources():
+    """Cleanup application resources during shutdown."""
+    global db_manager, cache_manager, feedback_manager, nlp_processor
+    
+    logger.info("Cleaning up application resources...")
+    
+    # Wait for active workers to complete
+    max_wait_time = 30  # seconds
+    wait_interval = 1
+    waited = 0
+    
+    while _active_workers and waited < max_wait_time:
+        logger.info(f"Waiting for {len(_active_workers)} active workers to complete... ({waited}s/{max_wait_time}s)")
+        time.sleep(wait_interval)
+        waited += wait_interval
+    
+    if _active_workers:
+        logger.warning(f"Forcefully terminating {len(_active_workers)} remaining workers after {max_wait_time}s timeout")
+    
+    # Cleanup database connections
+    if db_manager:
+        try:
+            # If db_manager has cleanup methods, call them
+            if hasattr(db_manager, 'close'):
+                db_manager.close()
+            logger.info("Database manager cleaned up")
+        except Exception as e:
+            logger.error(f"Error cleaning up database manager: {e}")
+    
+    # Cleanup cache manager  
+    if cache_manager:
+        try:
+            if hasattr(cache_manager, 'close'):
+                cache_manager.close()
+            logger.info("Cache manager cleaned up")
+        except Exception as e:
+            logger.error(f"Error cleaning up cache manager: {e}")
+    
+    logger.info("Resource cleanup completed")
+
+def _signal_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    global _shutdown_requested
+    
+    signal_names = {signal.SIGTERM: 'SIGTERM', signal.SIGINT: 'SIGINT'}
+    signal_name = signal_names.get(signum, f'Signal {signum}')
+    
+    logger.info(f"Received {signal_name}, initiating graceful shutdown...")
+    
+    with _worker_lock:
+        _shutdown_requested = True
+    
+    _cleanup_resources()
+    
+    logger.info("Graceful shutdown completed")
+    sys.exit(0)
+
+def _setup_signal_handlers():
+    """Setup signal handlers for graceful shutdown."""
+    signal.signal(signal.SIGTERM, _signal_handler)
+    signal.signal(signal.SIGINT, _signal_handler)
+    
+    # Register cleanup function to run on normal exit
+    atexit.register(_cleanup_resources)
+    
+    logger.info("Signal handlers registered for graceful shutdown")
+
 if __name__ == '__main__':
     logger.info("Running in local development mode, initializing app immediately.")
+    _setup_signal_handlers()
     _ensure_app_is_initialized()
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
