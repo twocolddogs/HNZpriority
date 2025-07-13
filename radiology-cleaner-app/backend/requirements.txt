@@ -12,6 +12,7 @@ scipy==1.10.1 # Retained as a common dependency for scientific packages
 
 # -- NLP & Semantic Similarity Libraries (Modern Pipeline) --
 # The new core for generating high-quality semantic embeddings
+torch
 sentence-transformers==3.3.1
 # Used for fast string similarity scoring in the lookup engine
 fuzzywuzzy==0.18.0
