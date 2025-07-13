@@ -69,12 +69,33 @@ class NHSLookupEngine:
         successful_count = sum(1 for e in embeddings if e is not None)
         logger.info(f"Successfully pre-computed {successful_count}/{len(all_clean_names)} embeddings with preprocessing.")
 
+    def _extract_modality_from_nhs_entry(self, entry: Dict) -> set:
+        """Extract modality from NHS entry clean name."""
+        clean_name = entry.get("Clean Name", "").lower()
+        modalities = set()
+        
+        # Map NHS clean name patterns to modalities
+        modality_patterns = {
+            'ct': ['ct ', 'computed tomography', 'dect'],
+            'mr': ['mr ', 'mri', 'magnetic resonance', 'mrcp', 'mra'],
+            'us': ['us ', 'ultrasound', 'echo', 'doppler'],
+            'xr': ['xr ', 'x-ray', 'plain film', 'radiograph'],
+            'nm': ['nm ', 'nuclear medicine', 'scintigraphy', 'spect', 'pet'],
+            'fluoro': ['fluoroscopy', 'screening', 'barium'],
+            'mammo': ['mammography', 'tomosynthesis'],
+            'dexa': ['dexa', 'bone density']
+        }
+        
+        for modality, patterns in modality_patterns.items():
+            if any(pattern in clean_name for pattern in patterns):
+                modalities.add(modality)
+        
+        return modalities
+
     def _extract_components_from_nhs_entry(self, entry: Dict) -> Dict:
         """Extract components from an NHS entry for lookup purposes."""
         clean_name = entry.get("Clean Name", "").lower()
-        components = {'modality': [], 'anatomy': []}
-        if 'ct' in clean_name: components['modality'].append('ct')
-        if 'mr' in clean_name or 'mri' in clean_name: components['modality'].append('mr')
+        components = {'modality': list(self._extract_modality_from_nhs_entry(entry)), 'anatomy': []}
         # ... (add other rules as needed)
         return components
 
@@ -121,11 +142,26 @@ class NHSLookupEngine:
             if not nhs_clean_name or nhs_embedding is None:
                 continue
 
+            # MODALITY VALIDATION: Check if modalities are compatible
+            input_modalities = set(extracted_components.get('modality', []))
+            nhs_modalities = self._extract_modality_from_nhs_entry(entry)
+            
+            # If input has modality info, enforce modality matching
+            if input_modalities and nhs_modalities:
+                modality_match = bool(input_modalities.intersection(nhs_modalities))
+                if not modality_match:
+                    # Skip entries with incompatible modalities
+                    continue
+
             semantic_score = self.nlp_processor.calculate_semantic_similarity(input_embedding, nhs_embedding)
             fuzzy_score = fuzz.ratio(input_exam, nhs_clean_name.lower()) / 100.0
             
-            # Simple combined score
+            # Enhanced combined score with modality bonus
             combined_score = (0.8 * semantic_score) + (0.2 * fuzzy_score)
+            
+            # Give bonus for exact modality match
+            if input_modalities and nhs_modalities and input_modalities.intersection(nhs_modalities):
+                combined_score += 0.1  # Small bonus for modality match
             
             if combined_score > highest_confidence:
                 highest_confidence, best_match = combined_score, entry

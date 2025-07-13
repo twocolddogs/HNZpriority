@@ -107,6 +107,20 @@ def _preprocess_exam_name(exam_name: str) -> str:
     """Preprocess exam name to clean up common formatting issues."""
     if not exam_name: return exam_name
     cleaned = exam_name
+    
+    # Strip "NO REPORT" suffix that appears in some data sources
+    if cleaned.upper().endswith(" - NO REPORT"):
+        cleaned = cleaned[:-len(" - NO REPORT")].strip()
+    elif cleaned.upper().endswith("- NO REPORT"):
+        cleaned = cleaned[:-len("- NO REPORT")].strip()
+    elif cleaned.upper().endswith("NO REPORT"):
+        cleaned = cleaned[:-len("NO REPORT")].strip()
+    
+    # Remove administrative qualifiers that don't affect semantic meaning
+    import re
+    cleaned = re.sub(r'\s*\(non-acute\)\s*', ' ', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\s*\(acute\)\s*', ' ', cleaned, flags=re.IGNORECASE)
+    
     if abbreviation_expander:
         cleaned = abbreviation_expander.expand(cleaned)
     if '^' in cleaned:
