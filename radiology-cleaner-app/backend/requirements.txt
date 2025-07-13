@@ -10,10 +10,12 @@ joblib==1.4.2
 numpy==1.26.4
 scipy==1.10.1 # Retained as a common dependency for scientific packages
 
-# -- NLP & Semantic Similarity Libraries (Modern Pipeline) --
-# The new core for generating high-quality semantic embeddings
+# -- NLP & Semantic Similarity Libraries --
+# API-based approach (primary)
+requests==2.32.3
+# Local transformers for biomedical model
 torch
-sentence-transformers==3.3.1
+transformers==4.44.2
 # Used for fast string similarity scoring in the lookup engine
 fuzzywuzzy==0.18.0
 python-Levenshtein==0.21.1 # Makes fuzzywuzzy faster

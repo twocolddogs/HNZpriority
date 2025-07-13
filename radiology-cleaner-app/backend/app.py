@@ -14,6 +14,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # --- Import Custom Modules ---
 from parser import RadiologySemanticParser
 from nlp_processor import NLPProcessor
+from nlp_processor_api import ApiNLPProcessor
+from nlp_processor_hybrid import HybridNLPProcessor
 from nhs_lookup_engine import NHSLookupEngine
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager
@@ -58,13 +60,31 @@ def _initialize_app():
         feedback_manager = FeedbackTrainingManager()
         logger.info("Database, Cache, and Feedback managers initialized.")
 
-        # --- UPDATED NLP PROCESSOR INITIALIZATION ---
-        # No longer needs a path to a huge file. It will download the
-        # model from Hugging Face on its first run and cache it.
-        nlp_processor = NLPProcessor()
-        if not nlp_processor.model:
-            logger.error("NLP Processor (Sentence-Transformer) failed to initialize. "
-                         "Semantic similarity will be disabled.")
+        # --- HYBRID NLP PROCESSOR INITIALIZATION ---
+        # Use hybrid processor that supports biomedical BERT model
+        processor_type = os.environ.get('NLP_PROCESSOR_TYPE', 'hybrid').lower()
+        
+        if processor_type == 'hybrid':
+            logger.info("Initializing hybrid NLP processor (biomedical BERT)...")
+            nlp_processor = HybridNLPProcessor()
+            if not nlp_processor.is_available():
+                logger.warning("Hybrid processor not available, falling back to sentence-transformer processor...")
+                nlp_processor = NLPProcessor()
+                if not nlp_processor.model:
+                    logger.error("All NLP processors failed to initialize. "
+                                 "Semantic similarity will be disabled.")
+            else:
+                logger.info("Hybrid biomedical NLP processor initialized successfully.")
+        elif processor_type == 'api':
+            logger.info("Using API-based NLP processor...")
+            nlp_processor = ApiNLPProcessor()
+            if not nlp_processor.is_available():
+                logger.error("API processor not available and no fallback configured.")
+        else:
+            logger.info("Using sentence-transformer NLP processor...")
+            nlp_processor = NLPProcessor()
+            if not nlp_processor.model:
+                logger.error("Sentence-transformer NLP processor failed to initialize.")
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
         nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
