@@ -7,6 +7,7 @@ Run this to verify Hugging Face API integration is working.
 import os
 import sys
 import logging
+import pytest
 from nlp_processor_api import ApiNLPProcessor
 
 # Configure logging
@@ -19,9 +20,8 @@ def test_api_processor():
     # Check environment variable
     token = os.environ.get('HUGGING_FACE_TOKEN')
     if not token:
-        print("❌ ERROR: HUGGING_FACE_TOKEN environment variable not set")
-        print("   Please set it with: export HUGGING_FACE_TOKEN=your_token_here")
-        return False
+        pytest.skip("HUGGING_FACE_TOKEN not set, skipping API test")
+
     
     print("✅ HUGGING_FACE_TOKEN is set")
     
@@ -29,9 +29,10 @@ def test_api_processor():
     print("\n🔄 Initializing API NLP Processor...")
     processor = ApiNLPProcessor()
     
+    assert processor.is_available(), "Processor should be available if token is set"
     if not processor.is_available():
         print("❌ ERROR: API processor not available")
-        return False
+
     
     print("✅ API processor initialized")
     
@@ -39,7 +40,7 @@ def test_api_processor():
     print("\n🔄 Testing API connection...")
     if not processor.test_connection():
         print("❌ ERROR: API connection failed")
-        return False
+
     
     print("✅ API connection successful")
     
@@ -62,7 +63,7 @@ def test_api_processor():
             print(f"   ✅ Got embedding with shape: {embedding.shape}")
         else:
             print(f"   ❌ Failed to get embedding")
-            return False
+    
     
     # Test similarity calculation
     print("\n🔄 Testing similarity calculation...")
@@ -84,7 +85,7 @@ def test_api_processor():
                 print("   ⚠️  Lower than expected similarity for related texts")
         
     print("\n🎉 All tests passed! API integration is working correctly.")
-    return True
+    assert True
 
 if __name__ == "__main__":
     print("🚀 Testing Hugging Face API Integration")

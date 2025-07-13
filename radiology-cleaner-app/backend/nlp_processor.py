@@ -17,7 +17,7 @@ class NLPProcessor:
     # **UPDATED MODEL**: Using PubMedBERT embeddings for better medical domain performance.
     # This model is specifically trained for biomedical text understanding.
     def __init__(self, model_name: str = 'NeuML/pubmedbert-base-embeddings'):
-        self.api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}"
+        self.api_url = f"https://api-inference.huggingface.co/models/{model_name}"
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
         self.headers = {"Authorization": f"Bearer {self.api_token}"} if self.api_token else {}
         self.model_name = model_name
