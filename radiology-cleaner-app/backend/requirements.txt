@@ -13,6 +13,8 @@ numpy==1.26.4
 # -- NLP & Semantic Similarity Libraries --
 # Used by the API-based NLPProcessor to make HTTP calls to Hugging Face.
 requests==2.32.3
+# Hugging Face Hub library for easier API interaction
+huggingface_hub==0.20.3
 # Used by the NHSLookupEngine as a secondary scoring mechanism.
 fuzzywuzzy==0.18.0
 # Makes fuzzywuzzy much faster.

@@ -1,10 +1,10 @@
 # nlp_processor.py
 
-import requests
 import os
 import logging
 import numpy as np
 from typing import Optional, List
+from huggingface_hub import InferenceClient
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +17,14 @@ class NLPProcessor:
     # **UPDATED MODEL**: Using PubMedBERT embeddings for better medical domain performance.
     # This model is specifically trained for biomedical text understanding.
     def __init__(self, model_name: str = 'NeuML/pubmedbert-base-embeddings'):
-        self.api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}"
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
-        self.headers = {"Authorization": f"Bearer {self.api_token}"} if self.api_token else {}
         self.model_name = model_name
-
+        
         if not self.api_token:
             logger.error("HUGGING_FACE_TOKEN not set. API-based NLP processing is disabled.")
+            self.client = None
         else:
+            self.client = InferenceClient(token=self.api_token)
             logger.info(f"Initialized API NLP Processor with model: {model_name}")
 
     def _create_sentence_embedding(self, token_embeddings: List[List[float]]) -> Optional[np.ndarray]:
@@ -41,21 +41,17 @@ class NLPProcessor:
         if not self.is_available() or not text or not text.strip():
             return None
         try:
-            response = requests.post(
-                self.api_url,
-                headers=self.headers,
-                json={"inputs": text.strip(), "options": {"wait_for_model": True}},
-                timeout=30
+            result = self.client.feature_extraction(
+                text.strip(),
+                model=self.model_name
             )
-            response.raise_for_status()
             
-            result = response.json()
             if isinstance(result, list) and result and isinstance(result[0], list):
                 return self._create_sentence_embedding(result)
             logger.error(f"Unexpected API response for single text: {result}")
             return None
                 
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             logger.error(f"API request failed for '{text[:50]}...': {e}")
             return None
 
@@ -64,15 +60,11 @@ class NLPProcessor:
         if not self.is_available() or not texts:
             return []
         try:
-            response = requests.post(
-                self.api_url,
-                headers=self.headers,
-                json={"inputs": [text.strip() for text in texts], "options": {"wait_for_model": True}},
-                timeout=120 # Longer timeout for batch
+            results = self.client.feature_extraction(
+                [text.strip() for text in texts],
+                model=self.model_name
             )
-            response.raise_for_status()
-
-            results = response.json()
+            
             if isinstance(results, list):
                 return [self._create_sentence_embedding(token_embeddings) for token_embeddings in results]
             else:
@@ -97,4 +89,4 @@ class NLPProcessor:
 
     def is_available(self) -> bool:
         """Check if the API processor is configured and ready."""
-        return bool(self.api_token)
+        return bool(self.api_token and self.client)

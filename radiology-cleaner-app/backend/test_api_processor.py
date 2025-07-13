@@ -8,7 +8,7 @@ import os
 import sys
 import logging
 import pytest
-from nlp_processor_api import ApiNLPProcessor
+from nlp_processor import NLPProcessor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -27,7 +27,7 @@ def test_api_processor():
     
     # Initialize processor
     print("\n🔄 Initializing API NLP Processor...")
-    processor = ApiNLPProcessor()
+    processor = NLPProcessor()
     
     assert processor.is_available(), "Processor should be available if token is set"
     if not processor.is_available():
@@ -36,13 +36,7 @@ def test_api_processor():
     
     print("✅ API processor initialized")
     
-    # Test connection
-    print("\n🔄 Testing API connection...")
-    if not processor.test_connection():
-        print("❌ ERROR: API connection failed")
-
-    
-    print("✅ API connection successful")
+    print("✅ API processor ready")
     
     # Test with sample radiology texts
     test_texts = [
@@ -91,11 +85,5 @@ if __name__ == "__main__":
     print("🚀 Testing Hugging Face API Integration")
     print("=" * 50)
     
-    success = test_api_processor()
-    
-    if success:
-        print("\n✅ SUCCESS: API integration is ready to use")
-        sys.exit(0)
-    else:
-        print("\n❌ FAILED: Please check the errors above")
-        sys.exit(1)
+    test_api_processor()
+    print("\n✅ SUCCESS: API integration is ready to use")
