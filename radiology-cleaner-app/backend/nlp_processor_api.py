@@ -121,7 +121,7 @@ class ApiNLPProcessor:
 
     def batch_get_embeddings(self, texts: list) -> list:
         """
-        Get embeddings for multiple texts in a single API call.
+        Get embeddings for multiple texts with CPU-friendly chunking.
         
         Args:
             texts: List of text strings to embed
@@ -135,29 +135,45 @@ class ApiNLPProcessor:
             
         if not texts:
             return []
+        
+        # Process in smaller chunks to avoid CPU spikes on large datasets
+        chunk_size = 100  # Reduced from processing all 4986 at once
+        all_embeddings = []
+        
+        import time
+        for i in range(0, len(texts), chunk_size):
+            chunk = texts[i:i + chunk_size]
+            logger.info(f"Processing embedding chunk {i//chunk_size + 1}/{(len(texts)-1)//chunk_size + 1} ({len(chunk)} items)")
             
-        try:
-            response = requests.post(
-                self.api_url, 
-                headers=self.headers, 
-                json={
-                    "inputs": [text.strip() for text in texts], 
-                    "options": {"wait_for_model": True}
-                },
-                timeout=60  # Longer timeout for batch processing
-            )
-            response.raise_for_status()
-            
-            result = response.json()
-            if isinstance(result, list):
-                return [np.array(emb) if emb is not None else None for emb in result]
-            else:
-                logger.error(f"Unexpected batch API response format: {type(result)}")
-                return [None] * len(texts)
+            try:
+                response = requests.post(
+                    self.api_url, 
+                    headers=self.headers, 
+                    json={
+                        "inputs": [text.strip() for text in chunk], 
+                        "options": {"wait_for_model": True}
+                    },
+                    timeout=60  # Longer timeout for batch processing
+                )
+                response.raise_for_status()
                 
-        except Exception as e:
-            logger.error(f"Batch API call failed: {e}")
-            return [None] * len(texts)
+                result = response.json()
+                if isinstance(result, list):
+                    chunk_embeddings = [np.array(emb) if emb is not None else None for emb in result]
+                    all_embeddings.extend(chunk_embeddings)
+                else:
+                    logger.error(f"Unexpected batch API response format: {type(result)}")
+                    all_embeddings.extend([None] * len(chunk))
+                    
+            except Exception as e:
+                logger.error(f"Batch API call failed for chunk {i//chunk_size + 1}: {e}")
+                all_embeddings.extend([None] * len(chunk))
+            
+            # Add delay between chunks to prevent CPU spikes and respect rate limits
+            if i + chunk_size < len(texts):  # Don't delay after the last chunk
+                time.sleep(0.2)  # 200ms delay between chunks
+                
+        return all_embeddings
             
     def is_available(self) -> bool:
         """
