@@ -1,18 +1,23 @@
 # -- Web Server --
+# Core Flask components for running the web application.
 Flask==3.0.3
 Flask-CORS==4.0.1
 gunicorn==22.0.0
+# High-performance worker type for Gunicorn, specified in your start command.
 gevent==24.2.1
 
-# -- Core Data Science & Utility Libraries --
+# -- Core Utility Libraries --
+# Needed for numerical operations on the embedding vectors returned by the API.
 numpy==1.26.4
 
 # -- NLP & Semantic Similarity Libraries --
+# Used by the API-based NLPProcessor to make HTTP calls to Hugging Face.
 requests==2.32.3
-# ADD THIS LINE BACK - It is used by the build script
-sentence-transformers==3.3.1
+# Used by the NHSLookupEngine as a secondary scoring mechanism.
 fuzzywuzzy==0.18.0
+# Makes fuzzywuzzy much faster.
 python-Levenshtein==0.21.1
 
 # -- Other Core Dependencies --
+# A common dependency for date/time handling.
 python-dateutil==2.9.0.post0
