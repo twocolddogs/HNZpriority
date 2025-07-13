@@ -85,17 +85,40 @@ class AnatomyExtractor:
             'thyroid': 'thyroid', 'bone': 'bone', 'joint': 'joint', 'soft tissue': 'soft tissue',
             'muscle': 'muscle', 'vessel': 'vessel', 'artery': 'artery', 'vein': 'vein'
         }
+        # Define comprehensive stop words for anatomy extraction
+        anatomy_stop_words = {
+            # Technical terms
+            'projection', 'projections', 'view', 'views', 'single', 'multiple', 'scan', 'scans', 'imaging', 'image',
+            'mobile', 'portable', 'procedure', 'examination', 'study', 'protocol', 'technique', 'method',
+            # Conjunctions and prepositions  
+            'and', 'or', 'with', 'without', 'plus', 'including', 'via', 'through', 'during', 'for', 'of', 'in', 'on',
+            # Imaging parameters
+            '18f', 'fdg', 'psma', 'gallium', 'technetium', 'iodine', 'gadolinium', 'barium', 'contrast',
+            # Descriptive terms
+            'plain', 'enhanced', 'dynamic', 'static', 'delayed', 'early', 'late', 'pre', 'post', 'follow', 'up',
+            # Size/quantity descriptors
+            'whole', 'body', 'full', 'partial', 'complete', 'limited', 'focused', 'targeted', 'selective',
+            # Common non-anatomy words found in imaging
+            'doppler', 'duplex', 'flow', 'perfusion', 'diffusion', 'spectroscopy', 'angiography', 'venography',
+            'screening', 'surveillance', 'monitoring', 'assessment', 'evaluation', 'diagnosis', 'therapeutic'
+        }
+        
         for clean_name in self.nhs_authority.keys():
             parts = clean_name.lower().split()
             if len(parts) > 1:
                 modality_words = {'ct', 'mri', 'mr', 'us', 'xr', 'nm', 'pet', 'dexa', 'mammography', 'fluoroscopy'}
-                anatomy_parts = [p for p in parts if p not in modality_words]
+                # Filter out modality words AND stop words
+                anatomy_parts = [p for p in parts if p not in modality_words and p not in anatomy_stop_words]
                 if anatomy_parts:
                     anatomy_phrase = ' '.join(anatomy_parts)
-                    anatomy_vocab[anatomy_phrase] = anatomy_phrase
+                    # Only add if it contains known anatomical terms
+                    if any(known_anatomy in anatomy_phrase for known_anatomy in anatomy_vocab.keys()):
+                        anatomy_vocab[anatomy_phrase] = anatomy_phrase
                     for word in anatomy_parts:
-                        if len(word) > 2 and word not in modality_words:
-                            anatomy_vocab[word] = word
+                        if len(word) > 2 and word not in modality_words and word not in anatomy_stop_words:
+                            # Only add individual words if they're in our curated anatomy list
+                            if word in anatomy_vocab:
+                                anatomy_vocab[word] = word
         return anatomy_vocab
 
     def extract(self, text: str) -> List[str]:

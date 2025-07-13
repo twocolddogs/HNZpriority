@@ -92,6 +92,27 @@ class NHSLookupEngine:
         
         return modalities
 
+    def _extract_laterality_from_nhs_entry(self, entry: Dict) -> str:
+        """Extract laterality from NHS entry clean name."""
+        clean_name = entry.get("Clean Name", "").lower()
+        
+        # Check for laterality patterns in NHS clean name
+        import re
+        
+        # Bilateral patterns
+        if re.search(r'\b(bilateral|bilat|both)\b', clean_name):
+            return 'bilateral'
+        
+        # Left patterns  
+        if re.search(r'\b(left|lt)\b', clean_name):
+            return 'left'
+            
+        # Right patterns
+        if re.search(r'\b(right|rt)\b', clean_name):
+            return 'right'
+            
+        return None
+
     def _nhs_entry_has_contrast(self, entry: Dict) -> bool:
         """Check if NHS entry indicates contrast use."""
         clean_name = entry.get("Clean Name", "").lower()
@@ -176,6 +197,20 @@ class NHSLookupEngine:
             # Give bonus for exact modality match
             if input_modalities and nhs_modalities and input_modalities.intersection(nhs_modalities):
                 combined_score += 0.1  # Small bonus for modality match
+            
+            # LATERALITY VALIDATION: Check if laterality is compatible
+            input_laterality = extracted_components.get('laterality', [])
+            nhs_laterality = self._extract_laterality_from_nhs_entry(entry)
+            
+            # If input has laterality, enforce laterality matching
+            if input_laterality:
+                input_lat = input_laterality[0].lower() if input_laterality else None
+                if nhs_laterality and input_lat != nhs_laterality.lower():
+                    # Skip entries with incompatible laterality
+                    continue
+            # If input has NO laterality, penalize NHS entries that have laterality
+            elif nhs_laterality:
+                combined_score -= 0.3  # Strong penalty for laterality mismatch
             
             # CONTRAST MATCHING: Give strong bonus for contrast alignment
             input_contrast = extracted_components.get('contrast', [])
