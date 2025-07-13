@@ -114,7 +114,27 @@ def _preprocess_exam_name(exam_name: str) -> str:
     cleaned = exam_name
     
     # Strip "NO REPORT" suffix that appears in some data sources
-    cleaned = re.sub(r'\s*-\s*NO REPORT\s*$', '', cleaned, flags=re.IGNORECASE)
+    if cleaned.upper().endswith(" - NO REPORT"):
+        cleaned = cleaned[:-len(" - NO REPORT")].strip()
+    elif cleaned.upper().endswith("- NO REPORT"):
+        cleaned = cleaned[:-len("- NO REPORT")].strip()
+    elif cleaned.upper().endswith("NO REPORT"):
+        cleaned = cleaned[:-len("NO REPORT")].strip()
+    
+    # Remove administrative qualifiers that don't affect semantic meaning
+    import re
+    cleaned = re.sub(r'\s*\(non-acute\)\s*', ' ', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\s*\(acute\)\s*', ' ', cleaned, flags=re.IGNORECASE)
+    
+    if abbreviation_expander:
+        cleaned = abbreviation_expander.expand(cleaned)
+    if '^' in cleaned:
+        cleaned = cleaned.split('^', 1)[1].strip()
+    if '/' in cleaned:
+        cleaned = cleaned.replace('/', ' ')
+    cleaned = _normalize_ordinals(cleaned)
+    cleaned = ' '.join(cleaned.split())
+    return cleaned
 
 def _normalize_ordinals(text: str) -> str:
     """Normalize ordinal numbers in obstetric exam names for better parsing."""
