@@ -3,82 +3,83 @@
 import os
 import logging
 import numpy as np
-# Using InferenceApi as it is the correct class for this use case.
-from huggingface_hub import InferenceApi
+import requests
 from typing import Optional, List
+import json
 
 logger = logging.getLogger(__name__)
 
 class NLPProcessor:
     """
-    API-based NLP processor that uses the 'InferenceApi' from huggingface_hub.
-    This version correctly handles raw responses for the feature-extraction task
-    as required by the API, preventing both connection and parsing errors while
-    maintaining a lightweight footprint to avoid out-of-memory issues.
+    API-based NLP processor that uses direct 'requests' calls to the correct Hugging Face
+    Inference API endpoint. This approach is the most robust and reliable, bypassing
+    client library issues while keeping the application lightweight to prevent memory errors.
     """
 
     def __init__(self, model_name: str = 'sentence-transformers/all-MiniLM-L6-v2'):
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
         self.model_name = model_name
-        self.client = None
+        
+        # CORRECTED URL: Using the router endpoint format which is proven to work for this task.
+        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.model_name}/pipeline/feature-extraction"
+        
+        self.headers = {
+            "Authorization": f"Bearer {self.api_token}",
+            "Content-Type": "application/json"
+        }
         
         if not self.api_token:
             logger.error("HUGGING_FACE_TOKEN not set. API-based NLP processing is disabled.")
         else:
-            try:
-                self.client = InferenceApi(
-                    repo_id=self.model_name,
-                    task="feature-extraction",
-                    token=self.api_token
-                )
-                logger.info(f"Initialized InferenceApi NLP Processor for model: {self.model_name}")
-            except Exception as e:
-                logger.error(f"Failed to initialize InferenceApi: {e}")
-                self.client = None
+            logger.info(f"Initialized API NLP Processor for model: {self.model_name} using direct requests.")
 
+    def _make_api_call(self, inputs: list[str]) -> Optional[list]:
+        """Helper function to make a POST request and robustly handle the response."""
+        payload = {"inputs": inputs, "options": {"wait_for_model": True}}
+        try:
+            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=30)
+            response.raise_for_status()
+            # The JSONDecodeError indicates the response body can be empty or non-JSON on error.
+            # We must handle this explicitly.
+            return response.json()
+        except json.JSONDecodeError:
+            logger.error(f"API call to {self.api_url} returned non-JSON response. Status: {response.status_code}, Body: {response.text[:200]}")
+            return None
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"API request failed with status {e.response.status_code} to URL {self.api_url}: {e.response.text}")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed due to a network issue: {e}")
+            return None
 
     def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
-        """Get text embedding for a single string using the InferenceApi client."""
+        """Get text embedding for a single string using a direct API call."""
         if not self.is_available() or not text or not text.strip():
             return None
-        try:
-            # CORRECTED API CALL: The error log instructs us to handle the raw response.
-            # We add `raw_response=True` to get the raw Response object.
-            response = self.client(inputs=text.strip(), raw_response=True)
-            
-            # The embeddings are in the JSON body of the response.
-            result = response.json()
-            
-            if isinstance(result, list) and result and isinstance(result[0], list):
-                return np.array(result[0])
-            logger.error(f"Unexpected API response for single text: {result}")
-            return None
-        except Exception as e:
-            logger.error(f"API request via InferenceApi failed for '{text[:50]}...': {e}")
-            return None
+
+        result = self._make_api_call([text.strip()])
+        
+        if isinstance(result, list) and result and isinstance(result[0], list):
+            return np.array(result[0])
+        
+        logger.error(f"Unexpected API response format for single text: {result}")
+        return None
 
     def batch_get_embeddings(self, texts: List[str]) -> List[Optional[np.ndarray]]:
-        """Get embeddings for multiple texts using a single batch call via InferenceApi."""
+        """Get embeddings for multiple texts in a single batch API call."""
         if not self.is_available() or not texts:
             return []
-        try:
-            # CORRECTED API CALL: We also use `raw_response=True` for batch calls as per the error.
-            response = self.client(inputs=[text.strip() for text in texts], raw_response=True)
-            
-            # Parse the JSON from the response body.
-            results = response.json()
-            
-            if isinstance(results, list) and all(isinstance(item, list) for item in results):
-                return [np.array(emb) for emb in results]
-            
-            logger.error(f"Unexpected batch API response format for {len(texts)} items. Type: {type(results)}")
-            return [None] * len(texts)
-        except Exception as e:
-            logger.error(f"Batch API call via InferenceApi failed: {e}")
-            return [None] * len(texts)
+
+        results = self._make_api_call([text.strip() for text in texts])
+
+        if isinstance(results, list) and all(isinstance(r, list) for r in results):
+            return [np.array(emb) for emb in results]
+             
+        logger.error(f"Unexpected batch API response format for {len(texts)} items. Type: {type(results)}")
+        return [None] * len(texts)
 
     def calculate_semantic_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
-        """Calculate cosine similarity between two embeddings. This is a local, fast operation."""
+        """Calculate cosine similarity between two embeddings."""
         if embedding1 is None or embedding2 is None: return 0.0
         try:
             v1, v2 = np.array(embedding1), np.array(embedding2)
@@ -93,5 +94,5 @@ class NLPProcessor:
             return 0.0
 
     def is_available(self) -> bool:
-        """Check if the API client was initialized successfully."""
-        return self.client is not None
+        """Check if the API processor is configured."""
+        return bool(self.api_token)
