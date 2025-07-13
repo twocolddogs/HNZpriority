@@ -1,7 +1,7 @@
 # nlp_processor.py
 
 import logging
-from typing import Optional, List
+from typing import Optional
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
 import torch
@@ -13,63 +13,41 @@ class NLPProcessor:
     A modern NLP processor using Sentence-Transformers to generate high-quality
     semantic embeddings for entire phrases, not just individual words.
     """
-    def __init__(self, model_name: str = 'UCSD-VA-health/RadBERT-RoBERTa-4m'): # <-- UPDATED MODEL NAME
+    # UPDATED MODEL NAME to the powerful PubMedBERT model
+    def __init__(self, model_name: str = 'microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext'):
         """
         Initializes the processor by loading a Sentence-Transformer compatible model.
 
         Args:
             model_name: The name of a transformer model from Hugging Face.
-                        'UCSD-VA-health/RadBERT-RoBERTa-4m' is chosen for its
-                        specialization in the radiology domain.
+                        'microsoft/BiomedNLP-PubMedBERT-base...' is a powerful model
+                        pre-trained from scratch on biomedical text.
         """
         self.model: Optional[SentenceTransformer] = None
         try:
-            # Check for CUDA availability for faster processing
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            logger.info(f"Loading transformer model '{model_name}' onto device: {device}")
-            # The SentenceTransformer library can wrap base models like RadBERT
-            # and automatically add a pooling layer to create sentence embeddings.
+            # Use CPU for local testing; Render will use whatever is available.
+            device = 'cpu'
+            logger.info(f"Loading Sentence-Transformer model '{model_name}' onto device: {device}")
             self.model = SentenceTransformer(model_name, device=device)
-            logger.info("Transformer model loaded successfully via Sentence-Transformer.")
+            logger.info("Sentence-Transformer model loaded successfully.")
         except Exception as e:
-            logger.error(f"FATAL: Failed to load transformer model '{model_name}'. "
+            logger.error(f"FATAL: Failed to load Sentence-Transformer model '{model_name}'. "
                          f"Semantic similarity will be disabled. Error: {e}", exc_info=True)
 
     def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
-        """
-        Computes the embedding (vector) for a given text string.
-
-        Args:
-            text: The text to embed.
-
-        Returns:
-            A numpy array representing the embedding, or None if the model is not loaded.
-        """
+        """Computes the embedding (vector) for a given text string."""
         if not self.model:
             return None
         try:
-            # The encode method directly returns the embedding for the text.
-            embedding = self.model.encode(text, convert_to_numpy=True)
-            return embedding
+            return self.model.encode(text, convert_to_numpy=True)
         except Exception as e:
             logger.error(f"Failed to encode text: '{text}'. Error: {e}")
             return None
 
     def calculate_semantic_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
-        """
-        Calculates the cosine similarity between two embeddings.
-
-        Args:
-            embedding1: The first embedding vector.
-            embedding2: The second embedding vector.
-
-        Returns:
-            A float between -1 and 1 representing the similarity.
-        """
+        """Calculates the cosine similarity between two embeddings."""
         try:
-            # util.cos_sim returns a tensor, we extract the float value.
-            similarity_score = util.cos_sim(embedding1, embedding2).item()
-            return similarity_score
+            return util.cos_sim(embedding1, embedding2).item()
         except Exception as e:
             logger.error(f"Failed to calculate similarity. Error: {e}")
             return 0.0
