@@ -96,3 +96,21 @@ class NLPProcessor:
     def is_available(self) -> bool:
         """Check if the API processor is configured."""
         return bool(self.api_token)
+    
+    def test_connection(self) -> bool:
+        """Test the API connection with a simple request."""
+        if not self.is_available():
+            return False
+        
+        try:
+            # Test with a simple text
+            test_result = self.get_text_embedding("test")
+            if test_result is not None:
+                logger.info(f"API connection test successful. Embedding shape: {test_result.shape}")
+                return True
+            else:
+                logger.error("API connection test failed - no embedding returned")
+                return False
+        except Exception as e:
+            logger.error(f"API connection test failed with exception: {e}")
+            return False
