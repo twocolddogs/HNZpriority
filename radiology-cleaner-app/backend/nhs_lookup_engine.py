@@ -208,9 +208,19 @@ class NHSLookupEngine:
                 if nhs_laterality and input_lat != nhs_laterality.lower():
                     # Skip entries with incompatible laterality
                     continue
-            # If input has NO laterality, penalize NHS entries that have laterality
+            # If input has NO laterality, apply small penalty for NHS entries with laterality
+            # BUT only if the anatomy doesn't match well
             elif nhs_laterality:
-                combined_score -= 0.3  # Strong penalty for laterality mismatch
+                # Check if the anatomies match well first
+                input_anatomy = set(extracted_components.get('anatomy', []))
+                clean_name_words = set(entry.get("Clean Name", "").lower().split())
+                
+                # If anatomies match well, use minimal penalty to preserve good anatomical matches
+                anatomy_overlap = bool(input_anatomy.intersection(clean_name_words))
+                if anatomy_overlap:
+                    combined_score -= 0.05  # Very small penalty for good anatomical matches with laterality
+                else:
+                    combined_score -= 0.2   # Larger penalty for poor anatomical matches with laterality
             
             # CONTRAST MATCHING: Give strong bonus for contrast alignment
             input_contrast = extracted_components.get('contrast', [])
