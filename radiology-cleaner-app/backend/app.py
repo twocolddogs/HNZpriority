@@ -11,6 +11,7 @@ from nhs_lookup_engine import NHSLookupEngine
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, USAContrastMapper
+from cache_version import get_current_cache_version, format_cache_key
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -242,6 +243,27 @@ def _adapt_nhs_to_legacy_format(nhs_result: Dict, original_exam_name: str, clean
 def health_check():
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat(), 'app_initialized': _app_initialized})
 
+@app.route('/cache-version', methods=['GET'])
+def cache_version_info():
+    """Get detailed cache version information for debugging and monitoring."""
+    try:
+        from cache_version import get_cache_version_info
+        cache_info = get_cache_version_info()
+        
+        # Add current cache stats
+        if cache_manager:
+            cache_stats = {
+                'in_memory_size': cache_manager.size(),
+                'in_memory_usage_percent': cache_manager.usage_percentage(),
+                'max_size': cache_manager._max_size
+            }
+            cache_info['cache_stats'] = cache_stats
+        
+        return jsonify(cache_info)
+    except Exception as e:
+        logger.error(f"Cache version info error: {e}", exc_info=True)
+        return jsonify({"error": "Failed to get cache version info"}), 500
+
 @app.route('/parse', methods=['POST'])
 def parse_exam():
     """Legacy parsing endpoint, now unified to use the modern NHS-first lookup pipeline."""
@@ -258,7 +280,8 @@ def parse_exam():
         if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
         exam_name = data['exam_name']
         modality = data.get('modality_code')
-        cache_key = f"unified_v2_{exam_name}|{modality or 'None'}"
+        cache_version = get_current_cache_version()
+        cache_key = format_cache_key("unified", cache_version, exam_name, modality or 'None')
         if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
         cleaned_exam_name = _preprocess_exam_name(exam_name)
         nhs_result = process_exam_with_nhs_lookup(cleaned_exam_name, modality)
@@ -289,11 +312,10 @@ def parse_enhanced():
         if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
         exam_name, modality = data['exam_name'], data.get('modality_code')
 
-        # --- CACHING DISABLED FOR LOCAL TESTING ---
-        # The following lines are commented out to ensure fresh results on every request.
-        # cache_key = f"enhanced_v3_{exam_name}|{modality or 'None'}"
-        # if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
-        # -----------------------------------------
+        # Dynamic cache versioning - automatically invalidates when processing rules change
+        cache_version = get_current_cache_version()
+        cache_key = format_cache_key("enhanced", cache_version, exam_name, modality or 'None')
+        if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
 
         result = process_exam_with_nhs_lookup(exam_name, modality)
         cleaned_exam_name = _preprocess_exam_name(exam_name)
@@ -314,9 +336,8 @@ def parse_enhanced():
             'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000), 'confidence': result.get('confidence', 0.0), 'source': 'hybrid_parser_v3_sentence_transformer'}
         }
         
-        # --- CACHING DISABLED FOR LOCAL TESTING ---
-        # cache_manager.set(cache_key, response)
-        # -----------------------------------------
+        # Store result in cache with dynamic version
+        cache_manager.set(cache_key, response)
 
         record_performance('parse_enhanced', response['metadata']['processing_time_ms'], len(exam_name), True)
         return jsonify(response)
@@ -336,8 +357,9 @@ def parse_batch():
         if not data or 'exams' not in data: return jsonify({"error": "Missing exams array"}), 400
         exams = data['exams']
         results, errors, cache_hits, uncached_exams, cached_results = [], [], 0, [], []
+        cache_version = get_current_cache_version()
         for exam_data in exams:
-            cache_key = f"batch_v3_{exam_data['exam_name']}|{exam_data.get('modality_code', 'Unknown')}"
+            cache_key = format_cache_key("batch", cache_version, exam_data['exam_name'], exam_data.get('modality_code', 'Unknown'))
             if cached := cache_manager.get(cache_key):
                 cached_results.append({"input": exam_data, "output": cached})
                 cache_hits += 1
@@ -372,7 +394,7 @@ def parse_batch():
                         if 'error' in result: errors.append({"error": result['error'], "original_exam": exam_data})
                         else:
                             results.append({"input": exam_data, "output": result})
-                            cache_key = f"batch_v3_{exam_data['exam_name']}|{exam_data.get('modality_code', 'Unknown')}"
+                            cache_key = format_cache_key("batch", cache_version, exam_data['exam_name'], exam_data.get('modality_code', 'Unknown'))
                             cache_manager.set(cache_key, result)
                 finally:
                     # Always unregister the worker when processing completes
