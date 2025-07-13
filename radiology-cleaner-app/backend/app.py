@@ -314,8 +314,13 @@ def parse_enhanced():
         data = request.json
         if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
         exam_name, modality = data['exam_name'], data.get('modality_code')
-        cache_key = f"enhanced_v3_{exam_name}|{modality or 'None'}"
-        if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
+
+        # --- CACHING DISABLED FOR LOCAL TESTING ---
+        # The following lines are commented out to ensure fresh results on every request.
+        # cache_key = f"enhanced_v3_{exam_name}|{modality or 'None'}"
+        # if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
+        # -----------------------------------------
+
         result = process_exam_with_nhs_lookup(exam_name, modality)
         response = {
             'clean_name': result.get('clean_name', ''),
@@ -323,7 +328,11 @@ def parse_enhanced():
             'components': {'anatomy': result.get('anatomy', []), 'laterality': result.get('laterality', []), 'contrast': result.get('contrast', []), 'technique': result.get('technique', []), 'modality': result.get('modality', []), 'confidence': result.get('confidence', 0.0)},
             'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000), 'confidence': result.get('confidence', 0.0), 'source': 'hybrid_parser_v3_sentence_transformer'}
         }
-        cache_manager.set(cache_key, response)
+        
+        # --- CACHING DISABLED FOR LOCAL TESTING ---
+        # cache_manager.set(cache_key, response)
+        # -----------------------------------------
+
         record_performance('parse_enhanced', response['metadata']['processing_time_ms'], len(exam_name), True)
         return jsonify(response)
     except Exception as e:
