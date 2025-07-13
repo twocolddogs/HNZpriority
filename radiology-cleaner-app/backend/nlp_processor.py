@@ -8,14 +8,12 @@ from typing import Optional, List
 
 logger = logging.getLogger(__name__)
 
-class ApiNLPProcessor:
+class NLPProcessor: # Renamed to NLPProcessor for simplicity
     """
     API-based NLP processor using Hugging Face Inference API to generate embeddings.
     This architecture keeps the application lightweight by offloading the ML model.
     """
-
     # Using a model fine-tuned for similarity often performs better than base models.
-    # 'GPL/biobert-nli-sts' is an excellent choice.
     def __init__(self, model_name: str = 'GPL/biobert-nli-sts'):
         self.api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}"
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
@@ -29,10 +27,10 @@ class ApiNLPProcessor:
 
     def _create_sentence_embedding(self, token_embeddings: List[List[float]]) -> Optional[np.ndarray]:
         """Helper to create a single sentence embedding from token embeddings via mean pooling."""
-        if not token_embeddings:
+        if not token_embeddings or not isinstance(token_embeddings[0], list):
+            logger.warning(f"Cannot create sentence embedding from invalid input of type {type(token_embeddings)}")
             return None
         
-        # Mean pooling: Average the embeddings of all tokens in the sentence.
         embeddings_array = np.array(token_embeddings)
         return np.mean(embeddings_array, axis=0)
 
@@ -40,7 +38,6 @@ class ApiNLPProcessor:
         """Get text embedding for a single string using the Hugging Face API."""
         if not self.is_available() or not text or not text.strip():
             return None
-
         try:
             response = requests.post(
                 self.api_url,
@@ -50,44 +47,15 @@ class ApiNLPProcessor:
             )
             response.raise_for_status()
             
-            # API returns a list containing one set of token embeddings: [[...]]
-            token_embeddings = response.json()
-            if isinstance(token_embeddings, list) and len(token_embeddings) > 0:
-                return self._create_sentence_embedding(token_embeddings[0])
-            else:
-                logger.error(f"Unexpected API response format for single text: {type(token_embeddings)}")
-                return None
+            token_embeddings_list = response.json()
+            if isinstance(token_embeddings_list, list) and len(token_embeddings_list) > 0:
+                return self._create_sentence_embedding(token_embeddings_list[0])
+            logger.error(f"Unexpected API response for single text: {token_embeddings_list}")
+            return None
                 
         except requests.exceptions.RequestException as e:
             logger.error(f"API request failed for '{text[:50]}...': {e}")
             return None
-
-    def batch_get_embeddings(self, texts: List[str]) -> List[Optional[np.ndarray]]:
-        """Get embeddings for multiple texts in a single batch API call."""
-        if not self.is_available() or not texts:
-            return []
-
-        try:
-            response = requests.post(
-                self.api_url,
-                headers=self.headers,
-                json={"inputs": [text.strip() for text in texts], "options": {"wait_for_model": True}},
-                timeout=60
-            )
-            response.raise_for_status()
-
-            results = response.json()
-            # **FIXED LOGIC**: The API returns a list of token-embedding-lists.
-            # We must iterate through it and apply mean pooling to each item.
-            if isinstance(results, list):
-                return [self._create_sentence_embedding(token_embeddings) for token_embeddings in results]
-            else:
-                logger.error(f"Unexpected batch API response format: {type(results)}")
-                return [None] * len(texts)
-
-        except Exception as e:
-            logger.error(f"Batch API call failed: {e}")
-            return [None] * len(texts)
 
     def calculate_semantic_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
         """Calculate cosine similarity between two embeddings."""
