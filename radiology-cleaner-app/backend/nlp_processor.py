@@ -17,7 +17,7 @@ class NLPProcessor:
     # **UPDATED MODEL**: Using PubMedBERT embeddings for better medical domain performance.
     # This model is specifically trained for biomedical text understanding.
     def __init__(self, model_name: str = 'NeuML/pubmedbert-base-embeddings'):
-        self.api_url = f"https://api-inference.huggingface.co/models/{model_name}"
+        self.api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}"
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
         self.headers = {"Authorization": f"Bearer {self.api_token}"} if self.api_token else {}
         self.model_name = model_name
@@ -49,10 +49,9 @@ class NLPProcessor:
             )
             response.raise_for_status()
             
-            # This pipeline returns a single vector for the whole sentence directly
             result = response.json()
-            if isinstance(result, list) and len(result) > 0:
-                return np.array(result)
+            if isinstance(result, list) and result and isinstance(result[0], list):
+                return self._create_sentence_embedding(result)
             logger.error(f"Unexpected API response for single text: {result}")
             return None
                 
@@ -75,8 +74,7 @@ class NLPProcessor:
 
             results = response.json()
             if isinstance(results, list):
-                # This pipeline returns a list of vectors directly
-                return [np.array(embedding) for embedding in results]
+                return [self._create_sentence_embedding(token_embeddings) for token_embeddings in results]
             else:
                 logger.error(f"Unexpected batch API response format: {type(results)}")
                 return [None] * len(texts)
