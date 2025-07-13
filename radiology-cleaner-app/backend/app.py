@@ -184,7 +184,7 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> D
         if parsed_result.get('laterality'): extracted_components['laterality'].append(parsed_result['laterality'].lower())
         if parsed_result.get('contrast'): extracted_components['contrast'].append(parsed_result['contrast'].lower())
         for key in extracted_components: extracted_components[key] = list(set(extracted_components[key]))
-        nhs_result = nhs_lookup_engine.standardize_exam(exam_name, extracted_components)
+        nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, extracted_components)
         return {
             'input_exam': exam_name, 'cleaned_exam': cleaned_exam_name, 'clean_name': nhs_result['clean_name'],
             'anatomy': extracted_components['anatomy'], 'laterality': extracted_components['laterality'],

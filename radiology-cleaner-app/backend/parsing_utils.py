@@ -26,6 +26,13 @@ class AbbreviationExpander:
             'angio': 'angiography', 'venous': 'venography', 'arterial': 'arteriography',
             'fx': 'fracture', 'eval': 'evaluation', 'f/u': 'follow up',
             'post-op': 'post operative', 'pre-op': 'pre operative',
+            # Important radiology abbreviations
+            'mrcp': 'magnetic resonance cholangiopancreatography',
+            'ercp': 'endoscopic retrograde cholangiopancreatography', 
+            'ptc': 'percutaneous transhepatic cholangiography',
+            'ivp': 'intravenous pyelography', 'ivu': 'intravenous urography',
+            'vcug': 'voiding cystourethrography', 'mcug': 'micturating cystourethrography',
+            'hssg': 'hysterosalpingography', 'hsg': 'hysterosalpingography',
         }
         self.all_abbreviations = {**self.medical_abbreviations, **self.usa_abbreviations}
 

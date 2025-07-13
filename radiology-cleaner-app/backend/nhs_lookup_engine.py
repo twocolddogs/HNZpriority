@@ -41,7 +41,7 @@ class NHSLookupEngine:
     def _precompute_embeddings(self):
         """
         Pre-computes embeddings for all NHS clean names using a single BATCH API call.
-        This is efficient and runs at startup.
+        Now includes preprocessing of NHS clean names to expand abbreviations.
         """
         # CORRECTED CHECK: Use the is_available() method instead of checking for .model
         if not self.nlp_processor or not self.nlp_processor.is_available():
@@ -51,17 +51,23 @@ class NHSLookupEngine:
         logger.info("Pre-computing embeddings for all NHS clean names via batch API call...")
         all_clean_names = [e.get("Clean Name") for e in self.nhs_data if e.get("Clean Name")]
         
-        # Use the batch method for efficiency
-        embeddings = self.nlp_processor.batch_get_embeddings(all_clean_names)
+        # ENHANCEMENT: Preprocess NHS clean names to expand abbreviations  
+        from parsing_utils import AbbreviationExpander
+        abbreviation_expander = AbbreviationExpander()  # Use default medical abbreviations
+        preprocessed_clean_names = [abbreviation_expander.expand(name) for name in all_clean_names]
+        
+        # Use the batch method for efficiency with preprocessed names
+        embeddings = self.nlp_processor.batch_get_embeddings(preprocessed_clean_names)
         
         name_to_embedding = dict(zip(all_clean_names, embeddings))
         
         for entry in self.nhs_data:
             if clean_name := entry.get("Clean Name"):
                 entry["_embedding"] = name_to_embedding.get(clean_name)
+                entry["_preprocessed_name"] = abbreviation_expander.expand(clean_name)  # Store for debugging
         
         successful_count = sum(1 for e in embeddings if e is not None)
-        logger.info(f"Successfully pre-computed {successful_count}/{len(all_clean_names)} embeddings.")
+        logger.info(f"Successfully pre-computed {successful_count}/{len(all_clean_names)} embeddings with preprocessing.")
 
     def _extract_components_from_nhs_entry(self, entry: Dict) -> Dict:
         """Extract components from an NHS entry for lookup purposes."""
