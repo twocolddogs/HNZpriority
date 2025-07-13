@@ -14,9 +14,9 @@ class NLPProcessor:
     This architecture keeps the application lightweight by offloading the ML model.
     """
 
-    # **UPDATED MODEL**: Switched to a powerful biomedical model that is 
-    # available on the Inference API and fine-tuned for semantic similarity.
-    def __init__(self, model_name: str = 'GPL/biobert-nli-sts'):
+    # **FINAL MODEL**: Using a flagship sentence-transformer model that is
+    # guaranteed to be available on the Inference API and provides excellent performance.
+    def __init__(self, model_name: str = 'sentence-transformers/all-mpnet-base-v2'):
         self.api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}"
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
         self.headers = {"Authorization": f"Bearer {self.api_token}"} if self.api_token else {}
@@ -49,10 +49,11 @@ class NLPProcessor:
             )
             response.raise_for_status()
             
-            token_embeddings_list = response.json()
-            if isinstance(token_embeddings_list, list) and len(token_embeddings_list) > 0:
-                return self._create_sentence_embedding(token_embeddings_list[0])
-            logger.error(f"Unexpected API response for single text: {token_embeddings_list}")
+            # This pipeline returns a single vector for the whole sentence directly
+            result = response.json()
+            if isinstance(result, list) and len(result) > 0:
+                return np.array(result)
+            logger.error(f"Unexpected API response for single text: {result}")
             return None
                 
         except requests.exceptions.RequestException as e:
@@ -68,13 +69,14 @@ class NLPProcessor:
                 self.api_url,
                 headers=self.headers,
                 json={"inputs": [text.strip() for text in texts], "options": {"wait_for_model": True}},
-                timeout=60
+                timeout=120 # Longer timeout for batch
             )
             response.raise_for_status()
 
             results = response.json()
             if isinstance(results, list):
-                return [self._create_sentence_embedding(token_embeddings) for token_embeddings in results]
+                # This pipeline returns a list of vectors directly
+                return [np.array(embedding) for embedding in results]
             else:
                 logger.error(f"Unexpected batch API response format: {type(results)}")
                 return [None] * len(texts)
