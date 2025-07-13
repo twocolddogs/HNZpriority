@@ -181,7 +181,7 @@
                 <input type="file" id="fileInput" accept=".json" />
             </div>
 
-            <div class="sanity-test-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
+            <div id="sanityTestSection" class="sanity-test-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
                 <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white;">
                     🧪 Run Sanity Test
                 </button>
@@ -204,6 +204,7 @@
                     <div class="stat-card"><div class="stat-value" id="genderContext">0</div><div class="stat-label">Gender Context</div></div>
                 </div>
                 <div class="action-buttons">
+                    <button class="button primary" id="newUploadBtn">📤 New Upload</button>
                     <button class="button success" id="exportMappingsBtn">💾 Export Mappings</button>
                 </div>
                 
@@ -511,6 +512,7 @@
 
         // --- DOM ELEMENTS ---
         const uploadSection = document.getElementById('uploadSection');
+        const sanityTestSection = document.getElementById('sanityTestSection');
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
         const progressBar = document.getElementById('progressBar');
@@ -529,6 +531,7 @@
         ['dragleave', 'drop'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('dragover'), false));
         uploadSection.addEventListener('drop', (e) => e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]), false);
 
+        document.getElementById('newUploadBtn').addEventListener('click', startNewUpload);
         document.getElementById('exportMappingsBtn').addEventListener('click', exportResults);
         
         // Sanity test button with debug verification
@@ -650,6 +653,39 @@
             document.getElementById('helpModal').style.display = 'none';
         }
 
+        // --- UPLOAD INTERFACE CONTROL ---
+        function hideUploadInterface() {
+            uploadSection.style.display = 'none';
+            sanityTestSection.style.display = 'none';
+        }
+        
+        function showUploadInterface() {
+            uploadSection.style.display = 'block';
+            sanityTestSection.style.display = 'block';
+        }
+        
+        function startNewUpload() {
+            // Reset UI to initial state
+            showUploadInterface();
+            resultsSection.style.display = 'none';
+            fileInfo.style.display = 'none';
+            progressBar.style.display = 'none';
+            
+            // Reset file input
+            fileInput.value = '';
+            
+            // Clear global state
+            allMappings = [];
+            summaryData = null;
+            
+            // Clear any status messages
+            const existingStatus = document.getElementById('statusMessage');
+            if (existingStatus) existingStatus.style.display = 'none';
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         // --- STATUS MESSAGING ---
         function updateStatusMessage(message) {
             const statusDiv = document.getElementById('statusMessage');
@@ -682,6 +718,9 @@
                 return;
             }
 
+            // Hide upload interface during processing
+            hideUploadInterface();
+            
             fileInfo.innerHTML = `<strong>File loaded:</strong> ${file.name} (${formatFileSize(file.size)})`;
             fileInfo.style.display = 'block';
             progressBar.style.display = 'block';
@@ -701,6 +740,8 @@
                     if (!Array.isArray(codes) || codes.length === 0) {
                         alert('JSON file is empty or not in the correct array format.');
                         progressBar.style.display = 'none';
+                        // Show upload interface again on error
+                        showUploadInterface();
                         return;
                     }
 
@@ -720,6 +761,8 @@
                 } catch (error) {
                     alert('Error processing file: ' + error.message);
                     progressBar.style.display = 'none';
+                    // Show upload interface again on error
+                    showUploadInterface();
                 }
             };
             
@@ -907,6 +950,9 @@
                 const sanityData = await response.json();
                 console.log(`Loaded sanity test file with ${sanityData.length} test cases`);
                 
+                // Hide upload interface during processing (same as file upload)
+                hideUploadInterface();
+                
                 // MATCH FILE UPLOAD BEHAVIOR - Set up UI exactly like processFile()
                 fileInfo.innerHTML = `
                     <div class="file-details">
@@ -939,6 +985,8 @@
                 
                 // Validate data structure (same validation as file upload)
                 if (!Array.isArray(sanityData) || sanityData.length === 0) {
+                    // Show upload interface again on error
+                    showUploadInterface();
                     throw new Error('Sanity test data is empty or not in the correct array format.');
                 }
                 
@@ -975,6 +1023,9 @@
                 
                 // Hide progress bar on error (like file upload)
                 progressBar.style.display = 'none';
+                
+                // Show upload interface again on error
+                showUploadInterface();
                 
                 // Restore button state
                 const button = document.getElementById('sanityTestBtn');
