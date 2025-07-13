@@ -650,6 +650,31 @@
             document.getElementById('helpModal').style.display = 'none';
         }
 
+        // --- STATUS MESSAGING ---
+        function updateStatusMessage(message) {
+            const statusDiv = document.getElementById('statusMessage');
+            if (!statusDiv) {
+                // Create status message div if it doesn't exist
+                const newStatusDiv = document.createElement('div');
+                newStatusDiv.id = 'statusMessage';
+                newStatusDiv.style.cssText = `
+                    margin: 10px 0;
+                    padding: 12px 16px;
+                    background: var(--color-info-light, #e3f2fd);
+                    border: 1px solid var(--color-info, #2196f3);
+                    border-radius: 6px;
+                    font-size: 14px;
+                    color: var(--color-gray-700, #555);
+                    font-weight: 500;
+                `;
+                // Insert after progress bar
+                const progressBar = document.getElementById('progressBar');
+                progressBar.parentNode.insertBefore(newStatusDiv, progressBar.nextSibling);
+            }
+            document.getElementById('statusMessage').innerHTML = message;
+            document.getElementById('statusMessage').style.display = 'block';
+        }
+
         // --- CORE LOGIC ---
         async function processFile(file) {
             if (!file.name.endsWith('.json')) {
@@ -664,6 +689,10 @@
             resultsSection.style.display = 'none';
             allMappings = [];
             summaryData = null;
+            
+            // Clear any existing status message
+            const existingStatus = document.getElementById('statusMessage');
+            if (existingStatus) existingStatus.style.display = 'none';
 
             const reader = new FileReader();
             reader.onload = async function(e) {
@@ -676,6 +705,7 @@
                     }
 
                     console.log(`Processing ${codes.length} exam records...`);
+                    updateStatusMessage(`📁 Loaded ${codes.length} exam records from ${file.name}. Starting processing...`);
                     
                     // Use batch processing for larger files (>50 records) or for efficiency
                     if (codes.length > 50) {
@@ -695,8 +725,16 @@
             
             // Process files individually (for small files)
             async function processIndividually(codes) {
+                updateStatusMessage(`🔄 Processing ${codes.length} exam records individually (one by one)...`);
+                
                 for (let i = 0; i < codes.length; i++) {
                     const code = codes[i];
+                    
+                    // Update progress message every 10 items or so
+                    if (i % 10 === 0 || i === codes.length - 1) {
+                        updateStatusMessage(`🔄 Processing exam ${i + 1} of ${codes.length}: "${code.EXAM_NAME}"...`);
+                    }
+                    
                     try {
                         const response = await fetch(API_URL, {
                             method: 'POST',
@@ -730,11 +768,17 @@
                     }
                     progressFill.style.width = `${((i + 1) / codes.length) * 100}%`;
                 }
+                
+                // Individual processing complete
+                updateStatusMessage(`✅ Individual processing complete! ${allMappings.length} exam records processed.`);
             }
             
             // Process files in batches (for large files)
             async function processBatch(codes) {
                 console.log(`Using batch processing for ${codes.length} records...`);
+                
+                // Update status message
+                updateStatusMessage(`🔄 Preparing ${codes.length} exam records for processing...`);
                 
                 try {
                     // Transform codes to the expected format for batch API
@@ -747,6 +791,7 @@
                     
                     // Set progress to 25% while sending batch request
                     progressFill.style.width = '25%';
+                    updateStatusMessage(`📤 Sending ${codes.length} exam records to AI processing engine...`);
                     
                     const response = await fetch(BATCH_API_URL, {
                         method: 'POST',
@@ -761,6 +806,7 @@
                     
                     // Set progress to 75% while processing response
                     progressFill.style.width = '75%';
+                    updateStatusMessage(`🧠 AI engine processing exam names using biomedical BERT model...`);
                     
                     const batchResult = await response.json();
                     
@@ -795,14 +841,19 @@
                         });
                     }
                     
-                    // Log batch processing stats
+                    // Log batch processing stats and update user
                     if (batchResult.processing_stats) {
                         const stats = batchResult.processing_stats;
-                        console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${(stats.cache_hit_ratio * 100).toFixed(1)}% hit rate), ${stats.processing_time_ms}ms total`);
+                        const hitRate = (stats.cache_hit_ratio * 100).toFixed(1);
+                        updateStatusMessage(`✅ Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${stats.processing_time_ms}ms total`);
+                        console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${stats.processing_time_ms}ms total`);
+                    } else {
+                        updateStatusMessage(`✅ Processing complete! ${allMappings.length} exam records processed successfully.`);
                     }
                     
                 } catch (error) {
                     console.error('Batch processing failed:', error);
+                    updateStatusMessage(`⚠️ Batch processing failed, falling back to individual processing...`);
                     // Fall back to individual processing if batch fails
                     console.log('Falling back to individual processing...');
                     await processIndividually(codes);
@@ -880,6 +931,7 @@
                 resultsBody.innerHTML = '';
                 
                 console.log(`Starting to process ${sanityData.length} sanity test cases...`);
+                updateStatusMessage(`🧪 Starting sanity test with ${sanityData.length} test cases...`);
                 
                 // Process the sanity test data exactly like a regular file
                 await processBatch(sanityData);
