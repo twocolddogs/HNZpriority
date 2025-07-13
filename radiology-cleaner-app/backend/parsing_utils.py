@@ -18,10 +18,16 @@ class AbbreviationExpander:
             'cxr': 'chest xray', 'axr': 'abdominal xray', 'kub': 'kidneys ureters bladder',
             # Contrast
             'w': 'with', 'wo': 'without', 'gad': 'gadolinium', 'iv': 'intravenous',
-            # Gender/Age
-            'm': 'male', 'f': 'female', 'paed': 'paediatric', 'ped': 'pediatric',
-            # Laterality
-            'rt': 'right', 'lt': 'left', 'bil': 'bilateral', 'bilat': 'bilateral', 'r': 'right', 'l': 'left',
+            # Gender/Age - comprehensive pediatric terms
+            'm': 'male', 'f': 'female', 
+            'paed': 'paediatric', 'ped': 'pediatric', 'peds': 'pediatric',
+            'infant': 'infant', 'neonatal': 'neonatal', 'neonate': 'neonate',
+            'baby': 'infant', 'child': 'pediatric', 'children': 'pediatric',
+            'newborn': 'newborn', 'preterm': 'preterm',
+            # Laterality - comprehensive
+            'rt': 'right', 'lt': 'left', 'bil': 'bilateral', 'bilat': 'bilateral', 
+            'r': 'right', 'l': 'left', 'both': 'bilateral',
+            'lhs': 'left', 'rhs': 'right', 'b/l': 'bilateral',
             # Common terms
             'angio': 'angiography', 'venous': 'venography', 'arterial': 'arteriography',
             'fx': 'fracture', 'eval': 'evaluation', 'f/u': 'follow up',
@@ -33,6 +39,11 @@ class AbbreviationExpander:
             'ivp': 'intravenous pyelography', 'ivu': 'intravenous urography',
             'vcug': 'voiding cystourethrography', 'mcug': 'micturating cystourethrography',
             'hssg': 'hysterosalpingography', 'hsg': 'hysterosalpingography',
+            # Pediatric specific
+            'cdh': 'congenital dislocation of hip', 'ddh': 'developmental dysplasia of hip',
+            'nec': 'necrotizing enterocolitis', 'rop': 'retinopathy of prematurity',
+            'pda': 'patent ductus arteriosus', 'vsd': 'ventricular septal defect',
+            'asd': 'atrial septal defect', 'tof': 'tetralogy of fallot',
         }
         self.all_abbreviations = {**self.medical_abbreviations, **self.usa_abbreviations}
 
@@ -41,8 +52,11 @@ class AbbreviationExpander:
         words = text.split()
         expanded = []
         for word in words:
-            clean_word = word.lower().rstrip('.,()[]')
-            expanded.append(self.all_abbreviations.get(clean_word, word))
+            # Remove common punctuation and brackets for matching
+            clean_word = word.lower().rstrip('.,()[]/-').strip()
+            # Try exact match first, then fallback to original word
+            expanded_word = self.all_abbreviations.get(clean_word, word)
+            expanded.append(expanded_word)
         return ' '.join(expanded)
 
 class AnatomyExtractor:
