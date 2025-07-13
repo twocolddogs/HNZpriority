@@ -907,7 +907,7 @@
                 const sanityData = await response.json();
                 console.log(`Loaded sanity test file with ${sanityData.length} test cases`);
                 
-                // Update UI to show we're starting
+                // MATCH FILE UPLOAD BEHAVIOR - Set up UI exactly like processFile()
                 fileInfo.innerHTML = `
                     <div class="file-details">
                         <h3>🧪 Sanity Test Dataset</h3>
@@ -915,30 +915,45 @@
                         <p><strong>Purpose:</strong> Engine performance verification</p>
                     </div>
                 `;
+                fileInfo.style.display = 'block';
                 
-                // Show progress bar
+                // Reset progress bar and show it
                 progressBar.style.display = 'block';
                 progressFill.style.width = '0%';
                 
-                button.innerHTML = '🔄 Processing Test Cases...';
+                // Hide results section initially (like file upload)
+                resultsSection.style.display = 'none';
                 
-                // Reset state like regular file upload
+                // Reset global state (like file upload)
                 allMappings = [];
                 summaryData = null;
                 
-                // Clear any existing results display
-                resultsSection.style.display = 'none';
-                resultsBody.innerHTML = '';
+                // Clear any existing status message (like file upload)
+                const existingStatus = document.getElementById('statusMessage');
+                if (existingStatus) existingStatus.style.display = 'none';
+                
+                button.innerHTML = '🔄 Processing Test Cases...';
                 
                 console.log(`Starting to process ${sanityData.length} sanity test cases...`);
                 updateStatusMessage(`🧪 Starting sanity test with ${sanityData.length} test cases...`);
                 
-                // Process the sanity test data exactly like a regular file
-                await processBatch(sanityData);
+                // Validate data structure (same validation as file upload)
+                if (!Array.isArray(sanityData) || sanityData.length === 0) {
+                    throw new Error('Sanity test data is empty or not in the correct array format.');
+                }
+                
+                // Process the sanity test data using the SAME logic as file upload
+                // Use batch processing for consistency (same as processFile does)
+                if (sanityData.length > 50) {
+                    await processBatch(sanityData);
+                } else {
+                    // Use batch processing even for smaller files for consistency
+                    await processBatch(sanityData);
+                }
                 
                 console.log(`Completed processing. Generated ${allMappings.length} results.`);
                 
-                // Run analysis on the results (uses global allMappings)
+                // Run analysis on the results (uses global allMappings) - SAME AS FILE UPLOAD
                 runAnalysis(allMappings);
                 
                 // Restore button state
@@ -957,6 +972,9 @@
                         <p><strong>Error:</strong> ${error.message}</p>
                     </div>
                 `;
+                
+                // Hide progress bar on error (like file upload)
+                progressBar.style.display = 'none';
                 
                 // Restore button state
                 const button = document.getElementById('sanityTestBtn');
