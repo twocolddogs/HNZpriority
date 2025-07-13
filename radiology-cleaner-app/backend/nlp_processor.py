@@ -3,7 +3,7 @@
 import os
 import logging
 import numpy as np
-# CORRECTED IMPORT: Using InferenceApi as it is the correct class for this use case.
+# Using InferenceApi as it is the correct class for this use case.
 from huggingface_hub import InferenceApi
 from typing import Optional, List
 
@@ -11,9 +11,10 @@ logger = logging.getLogger(__name__)
 
 class NLPProcessor:
     """
-    API-based NLP processor that uses the correct 'InferenceApi' from huggingface_hub.
-    This architecture is lightweight, correctly calls the Hugging Face API, and is
-    designed to prevent out-of-memory errors on deployment platforms like Render.
+    API-based NLP processor that uses the 'InferenceApi' from huggingface_hub.
+    This version correctly handles raw responses for the feature-extraction task
+    as required by the API, preventing both connection and parsing errors while
+    maintaining a lightweight footprint to avoid out-of-memory issues.
     """
 
     def __init__(self, model_name: str = 'sentence-transformers/all-MiniLM-L6-v2'):
@@ -24,8 +25,6 @@ class NLPProcessor:
         if not self.api_token:
             logger.error("HUGGING_FACE_TOKEN not set. API-based NLP processing is disabled.")
         else:
-            # CORRECT INITIALIZATION: Using InferenceApi with the specified repo_id and task.
-            # This is the correct way to instantiate the client for our purpose.
             try:
                 self.client = InferenceApi(
                     repo_id=self.model_name,
@@ -43,10 +42,13 @@ class NLPProcessor:
         if not self.is_available() or not text or not text.strip():
             return None
         try:
-            # The client object is directly callable.
-            result = self.client(inputs=text.strip())
+            # CORRECTED API CALL: The error log instructs us to handle the raw response.
+            # We add `raw_response=True` to get the raw Response object.
+            response = self.client(inputs=text.strip(), raw_response=True)
             
-            # The API returns a list containing one embedding for a single string input.
+            # The embeddings are in the JSON body of the response.
+            result = response.json()
+            
             if isinstance(result, list) and result and isinstance(result[0], list):
                 return np.array(result[0])
             logger.error(f"Unexpected API response for single text: {result}")
@@ -60,8 +62,11 @@ class NLPProcessor:
         if not self.is_available() or not texts:
             return []
         try:
-            # The client handles batching when given a list of inputs.
-            results = self.client(inputs=[text.strip() for text in texts])
+            # CORRECTED API CALL: We also use `raw_response=True` for batch calls as per the error.
+            response = self.client(inputs=[text.strip() for text in texts], raw_response=True)
+            
+            # Parse the JSON from the response body.
+            results = response.json()
             
             if isinstance(results, list) and all(isinstance(item, list) for item in results):
                 return [np.array(emb) for emb in results]
