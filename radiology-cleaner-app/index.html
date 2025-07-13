@@ -711,6 +711,147 @@
             document.getElementById('statusMessage').style.display = 'block';
         }
 
+        // --- CORE PROCESSING FUNCTIONS ---
+        // Process files individually (for small files)
+        async function processIndividually(codes) {
+            updateStatusMessage(`🔄 Processing ${codes.length} exam records individually (one by one)...`);
+            
+            for (let i = 0; i < codes.length; i++) {
+                const code = codes[i];
+                
+                // Update progress message every 10 items or so
+                if (i % 10 === 0 || i === codes.length - 1) {
+                    updateStatusMessage(`🔄 Processing exam ${i + 1} of ${codes.length}: "${code.EXAM_NAME}"...`);
+                }
+                
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ exam_name: code.EXAM_NAME, modality_code: code.MODALITY_CODE })
+                    });
+                    if (!response.ok) throw new Error(`API returned status ${response.status}`);
+                    
+                    const parsed = await response.json();
+                    allMappings.push({
+                        data_source: code.DATA_SOURCE,
+                        modality_code: code.MODALITY_CODE,
+                        exam_code: code.EXAM_CODE,
+                        exam_name: code.EXAM_NAME,
+                        clean_name: parsed.clean_name,
+                        snomed: parsed.snomed || {},
+                        components: { 
+                            anatomy: parsed.components.anatomy, 
+                            laterality: parsed.components.laterality, 
+                            contrast: parsed.components.contrast, 
+                            technique: parsed.components.technique,
+                            gender_context: parsed.components.gender_context,
+                            clinical_context: parsed.components.clinical_context,
+                            confidence: parsed.components.confidence,
+                            clinical_equivalents: parsed.clinical_equivalents
+                        }
+                    });
+                } catch (error) {
+                    console.error(`Failed to parse code: ${code.EXAM_NAME}`, error);
+                    allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
+                }
+                progressFill.style.width = `${((i + 1) / codes.length) * 100}%`;
+            }
+            
+            // Individual processing complete
+            updateStatusMessage(`✅ Individual processing complete! ${allMappings.length} exam records processed.`);
+        }
+        
+        // Process files in batches (for large files)
+        async function processBatch(codes) {
+            console.log(`Using batch processing for ${codes.length} records...`);
+            
+            // Update status message
+            updateStatusMessage(`🔄 Preparing ${codes.length} exam records for processing...`);
+            
+            try {
+                // Transform codes to the expected format for batch API
+                const exams = codes.map(code => ({
+                    exam_name: code.EXAM_NAME,
+                    modality_code: code.MODALITY_CODE,
+                    data_source: code.DATA_SOURCE,
+                    exam_code: code.EXAM_CODE
+                }));
+                
+                // Set progress to 25% while sending batch request
+                progressFill.style.width = '25%';
+                updateStatusMessage(`📤 Sending ${codes.length} exam records to AI processing engine...`);
+                
+                const response = await fetch(BATCH_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        exams: exams,
+                        chunk_size: 1000 // Process in chunks of 1000
+                    })
+                });
+                
+                if (!response.ok) throw new Error(`Batch API returned status ${response.status}`);
+                
+                // Set progress to 75% while processing response
+                progressFill.style.width = '75%';
+                updateStatusMessage(`🧠 AI engine processing exam names using biomedical BERT model...`);
+                
+                const batchResult = await response.json();
+                
+                // Process batch results - updated format from HEAD
+                if (batchResult.results) {
+                    allMappings = batchResult.results.map(item => ({
+                        data_source: item.input.data_source,
+                        modality_code: item.input.modality_code,
+                        exam_code: item.input.exam_code,
+                        exam_name: item.input.exam_name,
+                        clean_name: item.output.clean_name,
+                        snomed: item.output.snomed || {},
+                        components: { 
+                            ...item.output.components,
+                            clinical_equivalents: item.output.clinical_equivalents || []
+                        }
+                    }));
+                }
+                
+                // Handle any errors from batch processing - updated format from HEAD
+                if (batchResult.errors && batchResult.errors.length > 0) {
+                    console.error('Errors returned from batch processing:', batchResult.errors);
+                    batchResult.errors.forEach(err => {
+                        allMappings.push({
+                            data_source: err.original_exam.data_source,
+                            modality_code: err.original_exam.modality_code,
+                            exam_code: err.original_exam.exam_code,
+                            exam_name: err.original_exam.exam_name,
+                            clean_name: `ERROR: ${err.error}`,
+                            components: {}
+                        });
+                    });
+                }
+                
+                // Log batch processing stats and update user
+                if (batchResult.processing_stats) {
+                    const stats = batchResult.processing_stats;
+                    const hitRate = (stats.cache_hit_ratio * 100).toFixed(1);
+                    updateStatusMessage(`✅ Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${stats.processing_time_ms}ms total`);
+                    console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${stats.processing_time_ms}ms total`);
+                } else {
+                    updateStatusMessage(`✅ Processing complete! ${allMappings.length} exam records processed successfully.`);
+                }
+                
+            } catch (error) {
+                console.error('Batch processing failed:', error);
+                updateStatusMessage(`⚠️ Batch processing failed, falling back to individual processing...`);
+                // Fall back to individual processing if batch fails
+                console.log('Falling back to individual processing...');
+                await processIndividually(codes);
+            }
+            
+            // Set progress to 100%
+            progressFill.style.width = '100%';
+        }
+
         // --- CORE LOGIC ---
         async function processFile(file) {
             if (!file.name.endsWith('.json')) {
@@ -766,145 +907,6 @@
                 }
             };
             
-            // Process files individually (for small files)
-            async function processIndividually(codes) {
-                updateStatusMessage(`🔄 Processing ${codes.length} exam records individually (one by one)...`);
-                
-                for (let i = 0; i < codes.length; i++) {
-                    const code = codes[i];
-                    
-                    // Update progress message every 10 items or so
-                    if (i % 10 === 0 || i === codes.length - 1) {
-                        updateStatusMessage(`🔄 Processing exam ${i + 1} of ${codes.length}: "${code.EXAM_NAME}"...`);
-                    }
-                    
-                    try {
-                        const response = await fetch(API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ exam_name: code.EXAM_NAME, modality_code: code.MODALITY_CODE })
-                        });
-                        if (!response.ok) throw new Error(`API returned status ${response.status}`);
-                        
-                        const parsed = await response.json();
-                        allMappings.push({
-                            data_source: code.DATA_SOURCE,
-                            modality_code: code.MODALITY_CODE,
-                            exam_code: code.EXAM_CODE,
-                            exam_name: code.EXAM_NAME,
-                            clean_name: parsed.clean_name,
-                            snomed: parsed.snomed || {},
-                            components: { 
-                                anatomy: parsed.components.anatomy, 
-                                laterality: parsed.components.laterality, 
-                                contrast: parsed.components.contrast, 
-                                technique: parsed.components.technique,
-                                gender_context: parsed.components.gender_context,
-                                clinical_context: parsed.components.clinical_context,
-                                confidence: parsed.components.confidence,
-                                clinical_equivalents: parsed.clinical_equivalents
-                            }
-                        });
-                    } catch (error) {
-                        console.error(`Failed to parse code: ${code.EXAM_NAME}`, error);
-                        allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
-                    }
-                    progressFill.style.width = `${((i + 1) / codes.length) * 100}%`;
-                }
-                
-                // Individual processing complete
-                updateStatusMessage(`✅ Individual processing complete! ${allMappings.length} exam records processed.`);
-            }
-            
-            // Process files in batches (for large files)
-            async function processBatch(codes) {
-                console.log(`Using batch processing for ${codes.length} records...`);
-                
-                // Update status message
-                updateStatusMessage(`🔄 Preparing ${codes.length} exam records for processing...`);
-                
-                try {
-                    // Transform codes to the expected format for batch API
-                    const exams = codes.map(code => ({
-                        exam_name: code.EXAM_NAME,
-                        modality_code: code.MODALITY_CODE,
-                        data_source: code.DATA_SOURCE,
-                        exam_code: code.EXAM_CODE
-                    }));
-                    
-                    // Set progress to 25% while sending batch request
-                    progressFill.style.width = '25%';
-                    updateStatusMessage(`📤 Sending ${codes.length} exam records to AI processing engine...`);
-                    
-                    const response = await fetch(BATCH_API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            exams: exams,
-                            chunk_size: 1000 // Process in chunks of 1000
-                        })
-                    });
-                    
-                    if (!response.ok) throw new Error(`Batch API returned status ${response.status}`);
-                    
-                    // Set progress to 75% while processing response
-                    progressFill.style.width = '75%';
-                    updateStatusMessage(`🧠 AI engine processing exam names using biomedical BERT model...`);
-                    
-                    const batchResult = await response.json();
-                    
-                    // Process batch results - updated format from HEAD
-                    if (batchResult.results) {
-                        allMappings = batchResult.results.map(item => ({
-                            data_source: item.input.data_source,
-                            modality_code: item.input.modality_code,
-                            exam_code: item.input.exam_code,
-                            exam_name: item.input.exam_name,
-                            clean_name: item.output.clean_name,
-                            snomed: item.output.snomed || {},
-                            components: { 
-                                ...item.output.components,
-                                clinical_equivalents: item.output.clinical_equivalents || []
-                            }
-                        }));
-                    }
-                    
-                    // Handle any errors from batch processing - updated format from HEAD
-                    if (batchResult.errors && batchResult.errors.length > 0) {
-                        console.error('Errors returned from batch processing:', batchResult.errors);
-                        batchResult.errors.forEach(err => {
-                            allMappings.push({
-                                data_source: err.original_exam.data_source,
-                                modality_code: err.original_exam.modality_code,
-                                exam_code: err.original_exam.exam_code,
-                                exam_name: err.original_exam.exam_name,
-                                clean_name: `ERROR: ${err.error}`,
-                                components: {}
-                            });
-                        });
-                    }
-                    
-                    // Log batch processing stats and update user
-                    if (batchResult.processing_stats) {
-                        const stats = batchResult.processing_stats;
-                        const hitRate = (stats.cache_hit_ratio * 100).toFixed(1);
-                        updateStatusMessage(`✅ Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${stats.processing_time_ms}ms total`);
-                        console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${stats.processing_time_ms}ms total`);
-                    } else {
-                        updateStatusMessage(`✅ Processing complete! ${allMappings.length} exam records processed successfully.`);
-                    }
-                    
-                } catch (error) {
-                    console.error('Batch processing failed:', error);
-                    updateStatusMessage(`⚠️ Batch processing failed, falling back to individual processing...`);
-                    // Fall back to individual processing if batch fails
-                    console.log('Falling back to individual processing...');
-                    await processIndividually(codes);
-                }
-                
-                // Set progress to 100%
-                progressFill.style.width = '100%';
-            }
             reader.readAsText(file);
         }
 
