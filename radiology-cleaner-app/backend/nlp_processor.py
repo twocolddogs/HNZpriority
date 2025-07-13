@@ -1,53 +1,106 @@
 # nlp_processor.py
 
+import requests
+import os
 import logging
-from typing import Optional
-from sentence_transformers import SentenceTransformer, util
 import numpy as np
-import torch
+from typing import Optional, List
 
 logger = logging.getLogger(__name__)
 
-class NLPProcessor:
+class ApiNLPProcessor:
     """
-    A modern NLP processor using Sentence-Transformers to generate high-quality
-    semantic embeddings for entire phrases, not just individual words.
+    API-based NLP processor using Hugging Face Inference API to generate embeddings.
+    This architecture keeps the application lightweight by offloading the ML model.
     """
-    # UPDATED MODEL NAME to the powerful PubMedBERT model
-    def __init__(self, model_name: str = 'microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext'):
-        """
-        Initializes the processor by loading a Sentence-Transformer compatible model.
 
-        Args:
-            model_name: The name of a transformer model from Hugging Face.
-                        'microsoft/BiomedNLP-PubMedBERT-base...' is a powerful model
-                        pre-trained from scratch on biomedical text.
-        """
-        self.model: Optional[SentenceTransformer] = None
-        try:
-            # Use CPU for local testing; Render will use whatever is available.
-            device = 'cpu'
-            logger.info(f"Loading Sentence-Transformer model '{model_name}' onto device: {device}")
-            self.model = SentenceTransformer(model_name, device=device)
-            logger.info("Sentence-Transformer model loaded successfully.")
-        except Exception as e:
-            logger.error(f"FATAL: Failed to load Sentence-Transformer model '{model_name}'. "
-                         f"Semantic similarity will be disabled. Error: {e}", exc_info=True)
+    # Using a model fine-tuned for similarity often performs better than base models.
+    # 'GPL/biobert-nli-sts' is an excellent choice.
+    def __init__(self, model_name: str = 'GPL/biobert-nli-sts'):
+        self.api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}"
+        self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
+        self.headers = {"Authorization": f"Bearer {self.api_token}"} if self.api_token else {}
+        self.model_name = model_name
+
+        if not self.api_token:
+            logger.error("HUGGING_FACE_TOKEN not set. API-based NLP processing is disabled.")
+        else:
+            logger.info(f"Initialized API NLP Processor with model: {model_name}")
+
+    def _create_sentence_embedding(self, token_embeddings: List[List[float]]) -> Optional[np.ndarray]:
+        """Helper to create a single sentence embedding from token embeddings via mean pooling."""
+        if not token_embeddings:
+            return None
+        
+        # Mean pooling: Average the embeddings of all tokens in the sentence.
+        embeddings_array = np.array(token_embeddings)
+        return np.mean(embeddings_array, axis=0)
 
     def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
-        """Computes the embedding (vector) for a given text string."""
-        if not self.model:
-            return None
-        try:
-            return self.model.encode(text, convert_to_numpy=True)
-        except Exception as e:
-            logger.error(f"Failed to encode text: '{text}'. Error: {e}")
+        """Get text embedding for a single string using the Hugging Face API."""
+        if not self.is_available() or not text or not text.strip():
             return None
 
-    def calculate_semantic_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
-        """Calculates the cosine similarity between two embeddings."""
         try:
-            return util.cos_sim(embedding1, embedding2).item()
+            response = requests.post(
+                self.api_url,
+                headers=self.headers,
+                json={"inputs": text.strip(), "options": {"wait_for_model": True}},
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            # API returns a list containing one set of token embeddings: [[...]]
+            token_embeddings = response.json()
+            if isinstance(token_embeddings, list) and len(token_embeddings) > 0:
+                return self._create_sentence_embedding(token_embeddings[0])
+            else:
+                logger.error(f"Unexpected API response format for single text: {type(token_embeddings)}")
+                return None
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed for '{text[:50]}...': {e}")
+            return None
+
+    def batch_get_embeddings(self, texts: List[str]) -> List[Optional[np.ndarray]]:
+        """Get embeddings for multiple texts in a single batch API call."""
+        if not self.is_available() or not texts:
+            return []
+
+        try:
+            response = requests.post(
+                self.api_url,
+                headers=self.headers,
+                json={"inputs": [text.strip() for text in texts], "options": {"wait_for_model": True}},
+                timeout=60
+            )
+            response.raise_for_status()
+
+            results = response.json()
+            # **FIXED LOGIC**: The API returns a list of token-embedding-lists.
+            # We must iterate through it and apply mean pooling to each item.
+            if isinstance(results, list):
+                return [self._create_sentence_embedding(token_embeddings) for token_embeddings in results]
+            else:
+                logger.error(f"Unexpected batch API response format: {type(results)}")
+                return [None] * len(texts)
+
         except Exception as e:
-            logger.error(f"Failed to calculate similarity. Error: {e}")
+            logger.error(f"Batch API call failed: {e}")
+            return [None] * len(texts)
+
+    def calculate_semantic_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
+        """Calculate cosine similarity between two embeddings."""
+        if embedding1 is None or embedding2 is None: return 0.0
+        try:
+            v1, v2 = np.array(embedding1), np.array(embedding2)
+            norm1, norm2 = np.linalg.norm(v1), np.linalg.norm(v2)
+            if norm1 == 0 or norm2 == 0: return 0.0
+            return float(np.dot(v1, v2) / (norm1 * norm2))
+        except Exception as e:
+            logger.error(f"Failed to calculate similarity: {e}")
             return 0.0
+
+    def is_available(self) -> bool:
+        """Check if the API processor is configured and ready."""
+        return bool(self.api_token)
