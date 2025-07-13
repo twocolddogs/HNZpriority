@@ -14,9 +14,9 @@ class NLPProcessor:
     This architecture keeps the application lightweight by offloading the ML model.
     """
 
-    # **FINAL MODEL**: Using a flagship sentence-transformer model that is
-    # guaranteed to be available on the Inference API and provides excellent performance.
-    def __init__(self, model_name: str = 'sentence-transformers/all-mpnet-base-v2'):
+    # **UPDATED MODEL**: Using PubMedBERT embeddings for better medical domain performance.
+    # This model is specifically trained for biomedical text understanding.
+    def __init__(self, model_name: str = 'NeuML/pubmedbert-base-embeddings'):
         self.api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}"
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
         self.headers = {"Authorization": f"Bearer {self.api_token}"} if self.api_token else {}
