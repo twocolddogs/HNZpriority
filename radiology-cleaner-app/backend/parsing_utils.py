@@ -13,32 +13,39 @@ class AbbreviationExpander:
             'abd': 'abdomen', 'abdo': 'abdomen', 'pelv': 'pelvis', 'ext': 'extremity',
             'ue': 'upper extremity', 'le': 'lower extremity', 'lle': 'left lower extremity',
             'rle': 'right lower extremity', 'rue': 'right upper extremity', 'lue': 'left upper extremity',
+            'csp': 'cervical spine', 'tsp': 'thoracic spine', 'lsp': 'lumbar spine',
+            'c-spine': 'cervical spine', 't-spine': 'thoracic spine', 'l-spine': 'lumbar spine',
+            'iam': 'internal auditory meatus', 'tmj': 'temporomandibular joint',
             # Modality
             'cta': 'ct angiography', 'mra': 'mr angiography', 'ctpa': 'ct pulmonary angiography',
             'cxr': 'chest xray', 'axr': 'abdominal xray', 'kub': 'kidneys ureters bladder',
+            'mammo': 'mammogram',
             # Contrast
             'w': 'with', 'wo': 'without', 'gad': 'gadolinium', 'iv': 'intravenous',
+            'c+': 'with contrast', 'c-': 'without contrast',
             # Gender/Age - comprehensive pediatric terms
-            'm': 'male', 'f': 'female', 
+            'm': 'male', 'f': 'female',
             'paed': 'paediatric', 'ped': 'pediatric', 'peds': 'pediatric',
             'infant': 'infant', 'neonatal': 'neonatal', 'neonate': 'neonate',
             'baby': 'infant', 'child': 'pediatric', 'children': 'pediatric',
             'newborn': 'newborn', 'preterm': 'preterm',
             # Laterality - comprehensive
-            'rt': 'right', 'lt': 'left', 'bil': 'bilateral', 'bilat': 'bilateral', 
+            'rt': 'right', 'lt': 'left', 'bil': 'bilateral', 'bilat': 'bilateral',
             'r': 'right', 'l': 'left', 'both': 'bilateral',
             'lhs': 'left', 'rhs': 'right', 'b/l': 'bilateral',
             # Common terms
             'angio': 'angiography', 'venous': 'venography', 'arterial': 'arteriography',
             'fx': 'fracture', 'eval': 'evaluation', 'f/u': 'follow up',
             'post-op': 'post operative', 'pre-op': 'pre operative',
+            'bx': 'biopsy', 'st': 'soft tissue',
             # Important radiology abbreviations
             'mrcp': 'magnetic resonance cholangiopancreatography',
-            'ercp': 'endoscopic retrograde cholangiopancreatography', 
+            'ercp': 'endoscopic retrograde cholangiopancreatography',
             'ptc': 'percutaneous transhepatic cholangiography',
             'ivp': 'intravenous pyelography', 'ivu': 'intravenous urography',
             'vcug': 'voiding cystourethrography', 'mcug': 'micturating cystourethrography',
             'hssg': 'hysterosalpingography', 'hsg': 'hysterosalpingography',
+            'pet-ct': 'positron emission tomography ct',
             # Pediatric specific
             'cdh': 'congenital dislocation of hip', 'ddh': 'developmental dysplasia of hip',
             'nec': 'necrotizing enterocolitis', 'rop': 'retinopathy of prematurity',
@@ -83,23 +90,30 @@ class AnatomyExtractor:
             'finger': 'finger', 'thumb': 'thumb', 'hip': 'hip', 'thigh': 'thigh', 'knee': 'knee', 'leg': 'leg',
             'ankle': 'ankle', 'foot': 'foot', 'toe': 'toe', 'breast': 'breast', 'mammary': 'breast',
             'thyroid': 'thyroid', 'bone': 'bone', 'joint': 'joint', 'soft tissue': 'soft tissue',
-            'muscle': 'muscle', 'vessel': 'vessel', 'artery': 'artery', 'vein': 'vein'
+            'muscle': 'muscle', 'vessel': 'vessel', 'artery': 'artery', 'vein': 'vein',
+            'adrenal': 'adrenal', 'biliary': 'biliary', 'gallbladder': 'gallbladder', 'lymph': 'lymph node',
+            'parotid': 'parotid', 'submandibular': 'submandibular', 'salivary': 'salivary gland'
         }
         # Define comprehensive stop words for anatomy extraction
         anatomy_stop_words = {
             # Technical terms
             'projection', 'projections', 'view', 'views', 'single', 'multiple', 'scan', 'scans', 'imaging', 'image',
             'mobile', 'portable', 'procedure', 'examination', 'study', 'protocol', 'technique', 'method',
+            'series', 'guidance', 'guided', 'localization', 'mapping',
             # Conjunctions and prepositions  
             'and', 'or', 'with', 'without', 'plus', 'including', 'via', 'through', 'during', 'for', 'of', 'in', 'on',
             # Imaging parameters
-            '18f', 'fdg', 'psma', 'gallium', 'technetium', 'iodine', 'gadolinium', 'barium', 'contrast',
+            '18f', 'fdg', 'psma', 'gallium', 'technetium', 'iodine', 'barium', 'contrast',
+            'non-contrast', 'pre-contrast', 'post-contrast', 'unenhanced',
             # Descriptive terms
             'plain', 'enhanced', 'dynamic', 'static', 'delayed', 'early', 'late', 'pre', 'post', 'follow', 'up',
+            'routine', 'standard', 'complete', 'limited', 'focused', 'targeted', 'selective',
+            'non-invasive', 'invasive', 'diagnostic', 'therapeutic', 'interventional',
             # Size/quantity descriptors
             'whole', 'body', 'full', 'partial', 'complete', 'limited', 'focused', 'targeted', 'selective',
             # Common non-anatomy words found in imaging
             'doppler', 'duplex', 'flow', 'perfusion', 'diffusion', 'spectroscopy', 'angiography', 'venography',
+            'arteriography', 'lymphangiography', 'cholangiography', 'pyelography', 'urography',
             'screening', 'surveillance', 'monitoring', 'assessment', 'evaluation', 'diagnosis', 'therapeutic'
         }
         
@@ -135,9 +149,9 @@ class LateralityDetector:
 
     def __init__(self):
         self.patterns = {
-            'bilateral': [r'\b(bilateral|bilat|both|b/l)\b', r'\b(rt?\.?\s*(and|&|\+)\s*lt?\.?)\b'],
-            'left': [r'\b(left|lt?\.?)\b(?!\s*(and|&|\+))'],
-            'right': [r'\b(right|rt?\.?)\b(?!\s*(and|&|\+))']
+            'bilateral': [r'\b(bilateral|bilat|both|b/l)\b', r'\b(rt?\.?\s*(and|&|\+)\s*lt?\.?)\b', r'\b(left\s+and\s+right)\b'],
+            'left': [r'\b(left|lt?\.?|lft)\b(?!\s*(and|&|\+))'],
+            'right': [r'\b(right|rt?\.?|rgt)\b(?!\s*(and|&|\+))']
         }
         self.compiled_patterns = {
             lat: [re.compile(p, re.IGNORECASE) for p in patterns]
@@ -160,9 +174,25 @@ class USAContrastMapper:
 
     def __init__(self):
         self.patterns = {
-            'with and without': [r'\bw\s*and\s*wo\b', r'\bw/wo\b', r'\bwith\s*and\s*without\b', r'\bpre\s*&\s*post\b'],
-            'with': [r'\bw\s+(contrast|iv|gad)\b', r'\bwith\s+contrast\b', r'\benhanced\b', r'\bpost\s*contrast\b', r'\bc\+\b', r'\bC\+\b', r'\s+C\+$'],
-            'without': [r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon\s*contrast\b', r'\bunenhanced\b', r'\bplain\b', r'\bc-\b', r'\bC-\b', r'\s+C-$']
+            'with and without': [r'\bw\s*and\s*wo\b', r'\bw/wo\b', r'\bwith\s*and\s*without\b', r'\bpre\s*&\s*post\b', r'\b(pre and post contrast)\b'],
+            'with': [r'\bw\s+(contrast|iv|gad)\b', r'\bwith\s+contrast\b', r'\benhanced\b', r'\bpost\s*contrast\b', r'\bc\+\b', r'\bC\+\b', r'\s+C\+
+
+    def detect_contrast(self, text: str) -> Optional[str]:
+        """Detect contrast type with USA conventions"""
+        for contrast_type in ['with and without', 'with', 'without']:
+            if any(p.search(text) for p in self.compiled_patterns[contrast_type]):
+                return contrast_type
+        return None
+, r'\biv contrast\b'],
+            'without': [r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon\s*contrast\b', r'\bunenhanced\b', r'\bplain\b', r'\bc-\b', r'\bC-\b', r'\s+C-
+
+    def detect_contrast(self, text: str) -> Optional[str]:
+        """Detect contrast type with USA conventions"""
+        for contrast_type in ['with and without', 'with', 'without']:
+            if any(p.search(text) for p in self.compiled_patterns[contrast_type]):
+                return contrast_type
+        return None
+, r'\bnon-enhanced\b']
         }
         self.compiled_patterns = {
             ctype: [re.compile(p, re.IGNORECASE) for p in patterns]

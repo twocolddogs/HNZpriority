@@ -114,18 +114,830 @@ def _preprocess_exam_name(exam_name: str) -> str:
     cleaned = exam_name
     
     # Strip "NO REPORT" suffix that appears in some data sources
-    if cleaned.upper().endswith(" - NO REPORT"):
-        cleaned = cleaned[:-len(" - NO REPORT")].strip()
-    elif cleaned.upper().endswith("- NO REPORT"):
-        cleaned = cleaned[:-len("- NO REPORT")].strip()
-    elif cleaned.upper().endswith("NO REPORT"):
-        cleaned = cleaned[:-len("NO REPORT")].strip()
-    
-    # Remove administrative qualifiers that don't affect semantic meaning
+    cleaned = re.sub(r'\s*-\s*NO REPORT\s*
+
+def _normalize_ordinals(text: str) -> str:
+    """Normalize ordinal numbers in obstetric exam names for better parsing."""
     import re
-    cleaned = re.sub(r'\s*\(non-acute\)\s*', ' ', cleaned, flags=re.IGNORECASE)
-    cleaned = re.sub(r'\s*\(acute\)\s*', ' ', cleaned, flags=re.IGNORECASE)
+    ordinal_replacements = {
+        r'\b1ST\b': 'First', r'\b2ND\b': 'Second', r'\b3RD\b': 'Third',
+        r'\b1st\b': 'First', r'\b2nd\b': 'Second', r'\b3rd\b': 'Third',
+        r'\bfirst\b': 'First', r'\bsecond\b': 'Second', r'\bthird\b': 'Third',
+        r'\btrimester\b': 'Trimester', r'\bTRIMESTER\b': 'Trimester',
+        r'\bobstetric\b': 'Obstetric', r'\bOBSTETRIC\b': 'Obstetric',
+    }
+    result = text
+    for pattern, replacement in ordinal_replacements.items():
+        result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+    return result
+
+def _detect_gender_context(exam_name: str, anatomy: List[str]) -> Optional[str]:
+    """Detect gender/pregnancy context from exam name and anatomy."""
+    import re
+    exam_lower = exam_name.lower()
+    pregnancy_patterns = [r'\b(obstetric|pregnancy|prenatal)\b', r'\b(fetal|fetus)\b', r'\b(trimester)\b']
+    if any(re.search(p, exam_lower) for p in pregnancy_patterns): return 'pregnancy'
+    female_anatomy = ['female pelvis', 'uterus', 'ovary', 'endometrial']
+    if any(term.lower() in exam_lower for term in female_anatomy): return 'female'
+    male_anatomy = ['prostate', 'testicular', 'scrotal']
+    if any(term.lower() in exam_lower for term in male_anatomy): return 'male'
+    return None
+
+def _detect_age_context(exam_name: str) -> Optional[str]:
+    """Detect age context from exam name (e.g., paediatric, adult)."""
+    import re
+    exam_lower = exam_name.lower()
+    if any(re.search(p, exam_lower) for p in [r'\b(paediatric|pediatric|paed|peds)\b', r'\b(child|infant|newborn)\b']): return 'paediatric'
+    if any(re.search(p, exam_lower) for p in [r'\b(adult)\b']): return 'adult'
+    return None
+
+def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
+    """Detect clinical context from exam name."""
+    import re
+    exam_lower = exam_name.lower()
+    contexts = []
+    context_patterns = {
+        'screening': [r'\b(screening|surveillance)\b'],
+        'emergency': [r'\b(emergency|urgent|stat|trauma)\b'],
+        'follow-up': [r'\b(follow.?up|post.?op)\b'],
+        'intervention': [r'\b(biopsy|drainage|injection)\b']
+    }
+    for context, patterns in context_patterns.items():
+        if any(re.search(p, exam_lower) for p in patterns):
+            contexts.append(context)
+    return contexts
+
+def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> Dict:
+    """NHS-first processing pipeline that uses NHS.json as the single source of truth."""
+    _ensure_app_is_initialized()
+    if not nhs_lookup_engine:
+        logger.error("NHS Lookup Engine not available")
+        return {'error': 'NHS Lookup Engine not initialized'}
+    try:
+        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other') if semantic_parser else {}
+        extracted_components = {'modality': [], 'anatomy': [], 'laterality': [], 'contrast': [], 'procedure_type': []}
+        if modality_code: extracted_components['modality'].append(modality_code.lower())
+        elif parsed_result.get('modality'): extracted_components['modality'].append(parsed_result['modality'].lower())
+        if parsed_result.get('anatomy'): extracted_components['anatomy'].extend([a.lower() for a in parsed_result['anatomy']])
+        if parsed_result.get('laterality'): extracted_components['laterality'].append(parsed_result['laterality'].lower())
+        if parsed_result.get('contrast'): extracted_components['contrast'].append(parsed_result['contrast'].lower())
+        for key in extracted_components: extracted_components[key] = list(set(extracted_components[key]))
+        nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, extracted_components)
+        return {
+            'input_exam': exam_name, 'cleaned_exam': cleaned_exam_name, 'clean_name': nhs_result['clean_name'],
+            'anatomy': extracted_components['anatomy'], 'laterality': extracted_components['laterality'],
+            'modality': extracted_components['modality'], 'contrast': extracted_components['contrast'],
+            'snomed_id': nhs_result['snomed_id'], 'snomed_fsn': nhs_result['snomed_fsn'],
+            'confidence': nhs_result['confidence'], 'source': nhs_result['source'],
+            'snomed_found': bool(nhs_result['snomed_id']), 'age_context': _detect_age_context(cleaned_exam_name)
+        }
+    except Exception as e:
+        logger.error(f"Error processing exam '{exam_name}': {e}", exc_info=True)
+        return {'error': str(e)}
+
+def _adapt_nhs_to_legacy_format(nhs_result: Dict, original_exam_name: str, cleaned_exam_name: str) -> Dict:
+    """Adapts the output of the modern NHS lookup to the legacy /parse endpoint format."""
+    if 'error' in nhs_result: return {'error': nhs_result['error']}
+    snomed_data = {
+        'snomed_concept_id': nhs_result.get('snomed_id'), 'snomed_fsn': nhs_result.get('snomed_fsn'),
+        'snomed_laterality_concept_id': nhs_result.get('laterality_snomed'), 'snomed_laterality_fsn': nhs_result.get('laterality_fsn')
+    }
+    return {
+        'cleanName': nhs_result.get('clean_name'), 'anatomy': nhs_result.get('anatomy', []),
+        'laterality': (nhs_result.get('laterality') or [None])[0], 'contrast': (nhs_result.get('contrast') or [None])[0],
+        'technique': nhs_result.get('technique', []),
+        'gender_context': _detect_gender_context(cleaned_exam_name, nhs_result.get('anatomy', [])),
+        'age_context': _detect_age_context(cleaned_exam_name),
+        'clinical_context': _detect_clinical_context(cleaned_exam_name, nhs_result.get('anatomy', [])),
+        'confidence': nhs_result.get('confidence', 0.0), 'snomed': snomed_data,
+        'equivalence': {'clinical_equivalents': [], 'procedural_equivalents': []},
+        'is_paediatric': _detect_age_context(cleaned_exam_name) == 'paediatric',
+        'modality': (nhs_result.get('modality') or ['Unknown'])[0], 'parsing_method': 'unified_nhs_lookup',
+        'original_exam_name': original_exam_name, 'cleaned_exam_name': cleaned_exam_name
+    }
+
+# --- API Endpoints ---
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat(), 'app_initialized': _app_initialized})
+
+@app.route('/parse', methods=['POST'])
+def parse_exam():
+    """Legacy parsing endpoint, now unified to use the modern NHS-first lookup pipeline."""
+    _ensure_app_is_initialized()
+    start_time = time.time()
     
+    # Register worker for tracking
+    worker_id = f"parse_{int(time.time() * 1000000)}"
+    if not _register_worker(worker_id):
+        return jsonify({"error": "Server shutting down"}), 503
+    
+    try:
+        data = request.json
+        if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
+        exam_name = data['exam_name']
+        modality = data.get('modality_code')
+        cache_key = f"unified_v2_{exam_name}|{modality or 'None'}"
+        if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
+        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        nhs_result = process_exam_with_nhs_lookup(cleaned_exam_name, modality)
+        adapted_result = _adapt_nhs_to_legacy_format(nhs_result, exam_name, cleaned_exam_name)
+        cache_manager.set(cache_key, adapted_result)
+        processing_time = int((time.time() - start_time) * 1000)
+        record_performance('parse', processing_time, len(exam_name), 'error' not in adapted_result)
+        return jsonify(adapted_result)
+    except Exception as e:
+        logger.error(f"Parse endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+    finally:
+        _unregister_worker(worker_id)
+
+@app.route('/parse_enhanced', methods=['POST'])
+def parse_enhanced():
+    """Enhanced parsing endpoint using the new hybrid NLP parser."""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    
+    # Register worker for tracking
+    worker_id = f"parse_enhanced_{int(time.time() * 1000000)}"
+    if not _register_worker(worker_id):
+        return jsonify({"error": "Server shutting down"}), 503
+    
+    try:
+        data = request.json
+        if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
+        exam_name, modality = data['exam_name'], data.get('modality_code')
+
+        # --- CACHING DISABLED FOR LOCAL TESTING ---
+        # The following lines are commented out to ensure fresh results on every request.
+        # cache_key = f"enhanced_v3_{exam_name}|{modality or 'None'}"
+        # if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
+        # -----------------------------------------
+
+        result = process_exam_with_nhs_lookup(exam_name, modality)
+        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        response = {
+            'clean_name': result.get('clean_name', ''),
+            'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)},
+            'components': {
+                'anatomy': result.get('anatomy', []), 
+                'laterality': result.get('laterality', []), 
+                'contrast': result.get('contrast', []), 
+                'technique': result.get('technique', []), 
+                'modality': result.get('modality', []), 
+                'confidence': result.get('confidence', 0.0),
+                'gender_context': _detect_gender_context(cleaned_exam_name, result.get('anatomy', [])),
+                'clinical_context': _detect_clinical_context(cleaned_exam_name, result.get('anatomy', [])),
+                'clinical_equivalents': []  # Placeholder for future enhancement
+            },
+            'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000), 'confidence': result.get('confidence', 0.0), 'source': 'hybrid_parser_v3_sentence_transformer'}
+        }
+        
+        # --- CACHING DISABLED FOR LOCAL TESTING ---
+        # cache_manager.set(cache_key, response)
+        # -----------------------------------------
+
+        record_performance('parse_enhanced', response['metadata']['processing_time_ms'], len(exam_name), True)
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Enhanced parse endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+    finally:
+        _unregister_worker(worker_id)
+
+@app.route('/parse_batch', methods=['POST'])
+def parse_batch():
+    """Optimized batch processing using the new hybrid parser."""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    try:
+        data = request.json
+        if not data or 'exams' not in data: return jsonify({"error": "Missing exams array"}), 400
+        exams = data['exams']
+        results, errors, cache_hits, uncached_exams, cached_results = [], [], 0, [], []
+        for exam_data in exams:
+            cache_key = f"batch_v3_{exam_data['exam_name']}|{exam_data.get('modality_code', 'Unknown')}"
+            if cached := cache_manager.get(cache_key):
+                cached_results.append({"input": exam_data, "output": cached})
+                cache_hits += 1
+            else:
+                uncached_exams.append(exam_data)
+        if uncached_exams:
+            def process_exam_batch(exam_data):
+                try:
+                    result = process_exam_with_nhs_lookup(exam_data.get('exam_name', ''), exam_data.get('modality_code'))
+                    return {'clean_name': result.get('clean_name', ''), 'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)}, 'components': {'anatomy': result.get('anatomy', []), 'laterality': result.get('laterality', []), 'contrast': result.get('contrast', []), 'technique': result.get('technique', []), 'confidence': result.get('confidence', 0.0), 'modality': result.get('modality', [])}, 'original_exam': exam_data}
+                except Exception as e:
+                    return {"error": str(e), "original_exam": exam_data}
+            # Reduce concurrency to avoid worker timeouts and memory issues
+            max_workers = min(2, get_optimal_worker_count(max_items=len(uncached_exams)))
+            logger.info(f"Processing {len(uncached_exams)} uncached exams with {max_workers} workers")
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Register batch processing as a worker
+                batch_worker_id = f"batch_{int(time.time() * 1000)}"
+                if not _register_worker(batch_worker_id):
+                    logger.warning("Shutdown requested, aborting batch processing")
+                    return jsonify({"error": "Server shutting down"}), 503
+                
+                try:
+                    future_to_exam = {executor.submit(process_exam_batch, exam): exam for exam in uncached_exams}
+                    for future in as_completed(future_to_exam):
+                        # Check for shutdown during processing
+                        if _shutdown_requested:
+                            logger.info("Shutdown requested during batch processing, stopping...")
+                            break
+                            
+                        exam_data, result = future_to_exam[future], future.result()
+                        if 'error' in result: errors.append({"error": result['error'], "original_exam": exam_data})
+                        else:
+                            results.append({"input": exam_data, "output": result})
+                            cache_key = f"batch_v3_{exam_data['exam_name']}|{exam_data.get('modality_code', 'Unknown')}"
+                            cache_manager.set(cache_key, result)
+                finally:
+                    # Always unregister the worker when processing completes
+                    _unregister_worker(batch_worker_id)
+        all_results = cached_results + results
+        processing_stats = {'total_processed': len(exams), 'successful': len(all_results), 'errors': len(errors), 'cache_hits': cache_hits, 'processing_time_ms': int((time.time() - start_time) * 1000), 'cache_hit_ratio': cache_hits / len(exams) if exams else 0.0}
+        response = {'results': all_results, 'errors': errors, 'processing_stats': processing_stats}
+        record_performance('parse_batch', processing_stats['processing_time_ms'], len(exams), len(errors) == 0)
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Batch parse endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/validate', methods=['POST'])
+def validate_exam_data():
+    """Validates exam data using the unified NHS-first lookup pipeline."""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    try:
+        data = request.json
+        if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
+        exam_name, modality_code = data['exam_name'], data.get('modality_code')
+        parsed_result = process_exam_with_nhs_lookup(exam_name, modality_code)
+        quality_score = parsed_result.get('confidence', 0.0)
+        warnings = []
+        if not parsed_result.get('snomed_found'): warnings.append("No matching SNOMED code found.")
+        if not parsed_result.get('anatomy'): warnings.append("Could not identify anatomy.")
+        if quality_score < 0.5: warnings.append("Low confidence parse; result may be unreliable.")
+        suggestions = []
+        if parsed_result.get('clean_name') and parsed_result['clean_name'] != exam_name:
+            suggestions.append(f"Consider using the standardized name: '{parsed_result['clean_name']}'")
+        response = {'valid': quality_score >= 0.7, 'quality_score': quality_score, 'warnings': warnings, 'suggestions': suggestions, 'normalized_name': parsed_result.get('clean_name', exam_name), 'transformations_applied': ['unified_processing_v3'], 'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000)}}
+        record_performance('validate', response['metadata']['processing_time_ms'], len(exam_name), True)
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Validation endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/feedback', methods=['POST'])
+def feedback_endpoint():
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    try:
+        data = request.json
+        feedback_type = data.get('type', 'correction')
+        feedback_id = db_manager.submit_feedback(data) if feedback_type != 'general' else db_manager.submit_general_feedback(data)
+        response = {'feedback_id': feedback_id, 'type': feedback_type, 'status': 'submitted', 'message': f'{feedback_type.title()} feedback submitted successfully', 'processing_time_ms': int((time.time() - start_time) * 1000)}
+        record_performance('feedback', response['processing_time_ms'], 1, True)
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Feedback endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/parse_with_learning', methods=['POST'])
+def parse_with_learning():
+    """Parses an exam, with a placeholder for future learning enhancements."""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    try:
+        data = request.json
+        if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
+        exam_name, modality = data['exam_name'], data.get('modality_code')
+        result = process_exam_with_nhs_lookup(exam_name, modality)
+        result['metadata'] = {'processing_time_ms': int((time.time() - start_time) * 1000), 'source_endpoint': '/parse_with_learning'}
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Parse with learning error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/admin/retrain', methods=['POST'])
+def retrain_patterns():
+    _ensure_app_is_initialized()
+    try:
+        auth_header = request.headers.get('Authorization')
+        admin_token = os.environ.get('ADMIN_TOKEN')
+        if not admin_token or auth_header != f"Bearer {admin_token}": return jsonify({"error": "Unauthorized"}), 401
+        feedback_manager.retrain_patterns()
+        return jsonify({'status': 'completed', 'message': 'Pattern retraining initiated successfully.'})
+    except Exception as e:
+        logger.error(f"Retraining error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+def _register_worker(worker_id: str):
+    """Register a worker for tracking during graceful shutdown."""
+    with _worker_lock:
+        if not _shutdown_requested:
+            _active_workers.add(worker_id)
+            logger.debug(f"Registered worker {worker_id}. Active workers: {len(_active_workers)}")
+            return True
+        return False
+
+def _unregister_worker(worker_id: str):
+    """Unregister a worker when processing completes."""
+    with _worker_lock:
+        _active_workers.discard(worker_id)
+        logger.debug(f"Unregistered worker {worker_id}. Active workers: {len(_active_workers)}")
+
+def _cleanup_resources():
+    """Cleanup application resources during shutdown."""
+    global db_manager, cache_manager, feedback_manager, nlp_processor
+    
+    logger.info("Cleaning up application resources...")
+    
+    # Wait for active workers to complete
+    max_wait_time = 30  # seconds
+    wait_interval = 1
+    waited = 0
+    
+    while _active_workers and waited < max_wait_time:
+        logger.info(f"Waiting for {len(_active_workers)} active workers to complete... ({waited}s/{max_wait_time}s)")
+        time.sleep(wait_interval)
+        waited += wait_interval
+    
+    if _active_workers:
+        logger.warning(f"Forcefully terminating {len(_active_workers)} remaining workers after {max_wait_time}s timeout")
+    
+    # Cleanup database connections
+    if db_manager:
+        try:
+            # If db_manager has cleanup methods, call them
+            if hasattr(db_manager, 'close'):
+                db_manager.close()
+            logger.info("Database manager cleaned up")
+        except Exception as e:
+            logger.error(f"Error cleaning up database manager: {e}")
+    
+    # Cleanup cache manager  
+    if cache_manager:
+        try:
+            if hasattr(cache_manager, 'close'):
+                cache_manager.close()
+            logger.info("Cache manager cleaned up")
+        except Exception as e:
+            logger.error(f"Error cleaning up cache manager: {e}")
+    
+    logger.info("Resource cleanup completed")
+
+def _signal_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    global _shutdown_requested
+    
+    signal_names = {signal.SIGTERM: 'SIGTERM', signal.SIGINT: 'SIGINT'}
+    signal_name = signal_names.get(signum, f'Signal {signum}')
+    
+    logger.info(f"Received {signal_name}, initiating graceful shutdown...")
+    
+    with _worker_lock:
+        _shutdown_requested = True
+    
+    _cleanup_resources()
+    
+    logger.info("Graceful shutdown completed")
+    sys.exit(0)
+
+def _setup_signal_handlers():
+    """Setup signal handlers for graceful shutdown."""
+    signal.signal(signal.SIGTERM, _signal_handler)
+    signal.signal(signal.SIGINT, _signal_handler)
+    
+    # Register cleanup function to run on normal exit
+    atexit.register(_cleanup_resources)
+    
+    logger.info("Signal handlers registered for graceful shutdown")
+
+if __name__ == '__main__':
+    logger.info("Running in local development mode, initializing app immediately.")
+    _setup_signal_handlers()
+    _ensure_app_is_initialized()
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000))), '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\s*NO REPORT\s*
+
+def _normalize_ordinals(text: str) -> str:
+    """Normalize ordinal numbers in obstetric exam names for better parsing."""
+    import re
+    ordinal_replacements = {
+        r'\b1ST\b': 'First', r'\b2ND\b': 'Second', r'\b3RD\b': 'Third',
+        r'\b1st\b': 'First', r'\b2nd\b': 'Second', r'\b3rd\b': 'Third',
+        r'\bfirst\b': 'First', r'\bsecond\b': 'Second', r'\bthird\b': 'Third',
+        r'\btrimester\b': 'Trimester', r'\bTRIMESTER\b': 'Trimester',
+        r'\bobstetric\b': 'Obstetric', r'\bOBSTETRIC\b': 'Obstetric',
+    }
+    result = text
+    for pattern, replacement in ordinal_replacements.items():
+        result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+    return result
+
+def _detect_gender_context(exam_name: str, anatomy: List[str]) -> Optional[str]:
+    """Detect gender/pregnancy context from exam name and anatomy."""
+    import re
+    exam_lower = exam_name.lower()
+    pregnancy_patterns = [r'\b(obstetric|pregnancy|prenatal)\b', r'\b(fetal|fetus)\b', r'\b(trimester)\b']
+    if any(re.search(p, exam_lower) for p in pregnancy_patterns): return 'pregnancy'
+    female_anatomy = ['female pelvis', 'uterus', 'ovary', 'endometrial']
+    if any(term.lower() in exam_lower for term in female_anatomy): return 'female'
+    male_anatomy = ['prostate', 'testicular', 'scrotal']
+    if any(term.lower() in exam_lower for term in male_anatomy): return 'male'
+    return None
+
+def _detect_age_context(exam_name: str) -> Optional[str]:
+    """Detect age context from exam name (e.g., paediatric, adult)."""
+    import re
+    exam_lower = exam_name.lower()
+    if any(re.search(p, exam_lower) for p in [r'\b(paediatric|pediatric|paed|peds)\b', r'\b(child|infant|newborn)\b']): return 'paediatric'
+    if any(re.search(p, exam_lower) for p in [r'\b(adult)\b']): return 'adult'
+    return None
+
+def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
+    """Detect clinical context from exam name."""
+    import re
+    exam_lower = exam_name.lower()
+    contexts = []
+    context_patterns = {
+        'screening': [r'\b(screening|surveillance)\b'],
+        'emergency': [r'\b(emergency|urgent|stat|trauma)\b'],
+        'follow-up': [r'\b(follow.?up|post.?op)\b'],
+        'intervention': [r'\b(biopsy|drainage|injection)\b']
+    }
+    for context, patterns in context_patterns.items():
+        if any(re.search(p, exam_lower) for p in patterns):
+            contexts.append(context)
+    return contexts
+
+def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> Dict:
+    """NHS-first processing pipeline that uses NHS.json as the single source of truth."""
+    _ensure_app_is_initialized()
+    if not nhs_lookup_engine:
+        logger.error("NHS Lookup Engine not available")
+        return {'error': 'NHS Lookup Engine not initialized'}
+    try:
+        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other') if semantic_parser else {}
+        extracted_components = {'modality': [], 'anatomy': [], 'laterality': [], 'contrast': [], 'procedure_type': []}
+        if modality_code: extracted_components['modality'].append(modality_code.lower())
+        elif parsed_result.get('modality'): extracted_components['modality'].append(parsed_result['modality'].lower())
+        if parsed_result.get('anatomy'): extracted_components['anatomy'].extend([a.lower() for a in parsed_result['anatomy']])
+        if parsed_result.get('laterality'): extracted_components['laterality'].append(parsed_result['laterality'].lower())
+        if parsed_result.get('contrast'): extracted_components['contrast'].append(parsed_result['contrast'].lower())
+        for key in extracted_components: extracted_components[key] = list(set(extracted_components[key]))
+        nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, extracted_components)
+        return {
+            'input_exam': exam_name, 'cleaned_exam': cleaned_exam_name, 'clean_name': nhs_result['clean_name'],
+            'anatomy': extracted_components['anatomy'], 'laterality': extracted_components['laterality'],
+            'modality': extracted_components['modality'], 'contrast': extracted_components['contrast'],
+            'snomed_id': nhs_result['snomed_id'], 'snomed_fsn': nhs_result['snomed_fsn'],
+            'confidence': nhs_result['confidence'], 'source': nhs_result['source'],
+            'snomed_found': bool(nhs_result['snomed_id']), 'age_context': _detect_age_context(cleaned_exam_name)
+        }
+    except Exception as e:
+        logger.error(f"Error processing exam '{exam_name}': {e}", exc_info=True)
+        return {'error': str(e)}
+
+def _adapt_nhs_to_legacy_format(nhs_result: Dict, original_exam_name: str, cleaned_exam_name: str) -> Dict:
+    """Adapts the output of the modern NHS lookup to the legacy /parse endpoint format."""
+    if 'error' in nhs_result: return {'error': nhs_result['error']}
+    snomed_data = {
+        'snomed_concept_id': nhs_result.get('snomed_id'), 'snomed_fsn': nhs_result.get('snomed_fsn'),
+        'snomed_laterality_concept_id': nhs_result.get('laterality_snomed'), 'snomed_laterality_fsn': nhs_result.get('laterality_fsn')
+    }
+    return {
+        'cleanName': nhs_result.get('clean_name'), 'anatomy': nhs_result.get('anatomy', []),
+        'laterality': (nhs_result.get('laterality') or [None])[0], 'contrast': (nhs_result.get('contrast') or [None])[0],
+        'technique': nhs_result.get('technique', []),
+        'gender_context': _detect_gender_context(cleaned_exam_name, nhs_result.get('anatomy', [])),
+        'age_context': _detect_age_context(cleaned_exam_name),
+        'clinical_context': _detect_clinical_context(cleaned_exam_name, nhs_result.get('anatomy', [])),
+        'confidence': nhs_result.get('confidence', 0.0), 'snomed': snomed_data,
+        'equivalence': {'clinical_equivalents': [], 'procedural_equivalents': []},
+        'is_paediatric': _detect_age_context(cleaned_exam_name) == 'paediatric',
+        'modality': (nhs_result.get('modality') or ['Unknown'])[0], 'parsing_method': 'unified_nhs_lookup',
+        'original_exam_name': original_exam_name, 'cleaned_exam_name': cleaned_exam_name
+    }
+
+# --- API Endpoints ---
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat(), 'app_initialized': _app_initialized})
+
+@app.route('/parse', methods=['POST'])
+def parse_exam():
+    """Legacy parsing endpoint, now unified to use the modern NHS-first lookup pipeline."""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    
+    # Register worker for tracking
+    worker_id = f"parse_{int(time.time() * 1000000)}"
+    if not _register_worker(worker_id):
+        return jsonify({"error": "Server shutting down"}), 503
+    
+    try:
+        data = request.json
+        if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
+        exam_name = data['exam_name']
+        modality = data.get('modality_code')
+        cache_key = f"unified_v2_{exam_name}|{modality or 'None'}"
+        if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
+        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        nhs_result = process_exam_with_nhs_lookup(cleaned_exam_name, modality)
+        adapted_result = _adapt_nhs_to_legacy_format(nhs_result, exam_name, cleaned_exam_name)
+        cache_manager.set(cache_key, adapted_result)
+        processing_time = int((time.time() - start_time) * 1000)
+        record_performance('parse', processing_time, len(exam_name), 'error' not in adapted_result)
+        return jsonify(adapted_result)
+    except Exception as e:
+        logger.error(f"Parse endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+    finally:
+        _unregister_worker(worker_id)
+
+@app.route('/parse_enhanced', methods=['POST'])
+def parse_enhanced():
+    """Enhanced parsing endpoint using the new hybrid NLP parser."""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    
+    # Register worker for tracking
+    worker_id = f"parse_enhanced_{int(time.time() * 1000000)}"
+    if not _register_worker(worker_id):
+        return jsonify({"error": "Server shutting down"}), 503
+    
+    try:
+        data = request.json
+        if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
+        exam_name, modality = data['exam_name'], data.get('modality_code')
+
+        # --- CACHING DISABLED FOR LOCAL TESTING ---
+        # The following lines are commented out to ensure fresh results on every request.
+        # cache_key = f"enhanced_v3_{exam_name}|{modality or 'None'}"
+        # if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
+        # -----------------------------------------
+
+        result = process_exam_with_nhs_lookup(exam_name, modality)
+        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        response = {
+            'clean_name': result.get('clean_name', ''),
+            'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)},
+            'components': {
+                'anatomy': result.get('anatomy', []), 
+                'laterality': result.get('laterality', []), 
+                'contrast': result.get('contrast', []), 
+                'technique': result.get('technique', []), 
+                'modality': result.get('modality', []), 
+                'confidence': result.get('confidence', 0.0),
+                'gender_context': _detect_gender_context(cleaned_exam_name, result.get('anatomy', [])),
+                'clinical_context': _detect_clinical_context(cleaned_exam_name, result.get('anatomy', [])),
+                'clinical_equivalents': []  # Placeholder for future enhancement
+            },
+            'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000), 'confidence': result.get('confidence', 0.0), 'source': 'hybrid_parser_v3_sentence_transformer'}
+        }
+        
+        # --- CACHING DISABLED FOR LOCAL TESTING ---
+        # cache_manager.set(cache_key, response)
+        # -----------------------------------------
+
+        record_performance('parse_enhanced', response['metadata']['processing_time_ms'], len(exam_name), True)
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Enhanced parse endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+    finally:
+        _unregister_worker(worker_id)
+
+@app.route('/parse_batch', methods=['POST'])
+def parse_batch():
+    """Optimized batch processing using the new hybrid parser."""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    try:
+        data = request.json
+        if not data or 'exams' not in data: return jsonify({"error": "Missing exams array"}), 400
+        exams = data['exams']
+        results, errors, cache_hits, uncached_exams, cached_results = [], [], 0, [], []
+        for exam_data in exams:
+            cache_key = f"batch_v3_{exam_data['exam_name']}|{exam_data.get('modality_code', 'Unknown')}"
+            if cached := cache_manager.get(cache_key):
+                cached_results.append({"input": exam_data, "output": cached})
+                cache_hits += 1
+            else:
+                uncached_exams.append(exam_data)
+        if uncached_exams:
+            def process_exam_batch(exam_data):
+                try:
+                    result = process_exam_with_nhs_lookup(exam_data.get('exam_name', ''), exam_data.get('modality_code'))
+                    return {'clean_name': result.get('clean_name', ''), 'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)}, 'components': {'anatomy': result.get('anatomy', []), 'laterality': result.get('laterality', []), 'contrast': result.get('contrast', []), 'technique': result.get('technique', []), 'confidence': result.get('confidence', 0.0), 'modality': result.get('modality', [])}, 'original_exam': exam_data}
+                except Exception as e:
+                    return {"error": str(e), "original_exam": exam_data}
+            # Reduce concurrency to avoid worker timeouts and memory issues
+            max_workers = min(2, get_optimal_worker_count(max_items=len(uncached_exams)))
+            logger.info(f"Processing {len(uncached_exams)} uncached exams with {max_workers} workers")
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Register batch processing as a worker
+                batch_worker_id = f"batch_{int(time.time() * 1000)}"
+                if not _register_worker(batch_worker_id):
+                    logger.warning("Shutdown requested, aborting batch processing")
+                    return jsonify({"error": "Server shutting down"}), 503
+                
+                try:
+                    future_to_exam = {executor.submit(process_exam_batch, exam): exam for exam in uncached_exams}
+                    for future in as_completed(future_to_exam):
+                        # Check for shutdown during processing
+                        if _shutdown_requested:
+                            logger.info("Shutdown requested during batch processing, stopping...")
+                            break
+                            
+                        exam_data, result = future_to_exam[future], future.result()
+                        if 'error' in result: errors.append({"error": result['error'], "original_exam": exam_data})
+                        else:
+                            results.append({"input": exam_data, "output": result})
+                            cache_key = f"batch_v3_{exam_data['exam_name']}|{exam_data.get('modality_code', 'Unknown')}"
+                            cache_manager.set(cache_key, result)
+                finally:
+                    # Always unregister the worker when processing completes
+                    _unregister_worker(batch_worker_id)
+        all_results = cached_results + results
+        processing_stats = {'total_processed': len(exams), 'successful': len(all_results), 'errors': len(errors), 'cache_hits': cache_hits, 'processing_time_ms': int((time.time() - start_time) * 1000), 'cache_hit_ratio': cache_hits / len(exams) if exams else 0.0}
+        response = {'results': all_results, 'errors': errors, 'processing_stats': processing_stats}
+        record_performance('parse_batch', processing_stats['processing_time_ms'], len(exams), len(errors) == 0)
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Batch parse endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/validate', methods=['POST'])
+def validate_exam_data():
+    """Validates exam data using the unified NHS-first lookup pipeline."""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    try:
+        data = request.json
+        if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
+        exam_name, modality_code = data['exam_name'], data.get('modality_code')
+        parsed_result = process_exam_with_nhs_lookup(exam_name, modality_code)
+        quality_score = parsed_result.get('confidence', 0.0)
+        warnings = []
+        if not parsed_result.get('snomed_found'): warnings.append("No matching SNOMED code found.")
+        if not parsed_result.get('anatomy'): warnings.append("Could not identify anatomy.")
+        if quality_score < 0.5: warnings.append("Low confidence parse; result may be unreliable.")
+        suggestions = []
+        if parsed_result.get('clean_name') and parsed_result['clean_name'] != exam_name:
+            suggestions.append(f"Consider using the standardized name: '{parsed_result['clean_name']}'")
+        response = {'valid': quality_score >= 0.7, 'quality_score': quality_score, 'warnings': warnings, 'suggestions': suggestions, 'normalized_name': parsed_result.get('clean_name', exam_name), 'transformations_applied': ['unified_processing_v3'], 'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000)}}
+        record_performance('validate', response['metadata']['processing_time_ms'], len(exam_name), True)
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Validation endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/feedback', methods=['POST'])
+def feedback_endpoint():
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    try:
+        data = request.json
+        feedback_type = data.get('type', 'correction')
+        feedback_id = db_manager.submit_feedback(data) if feedback_type != 'general' else db_manager.submit_general_feedback(data)
+        response = {'feedback_id': feedback_id, 'type': feedback_type, 'status': 'submitted', 'message': f'{feedback_type.title()} feedback submitted successfully', 'processing_time_ms': int((time.time() - start_time) * 1000)}
+        record_performance('feedback', response['processing_time_ms'], 1, True)
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Feedback endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/parse_with_learning', methods=['POST'])
+def parse_with_learning():
+    """Parses an exam, with a placeholder for future learning enhancements."""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    try:
+        data = request.json
+        if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
+        exam_name, modality = data['exam_name'], data.get('modality_code')
+        result = process_exam_with_nhs_lookup(exam_name, modality)
+        result['metadata'] = {'processing_time_ms': int((time.time() - start_time) * 1000), 'source_endpoint': '/parse_with_learning'}
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Parse with learning error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route('/admin/retrain', methods=['POST'])
+def retrain_patterns():
+    _ensure_app_is_initialized()
+    try:
+        auth_header = request.headers.get('Authorization')
+        admin_token = os.environ.get('ADMIN_TOKEN')
+        if not admin_token or auth_header != f"Bearer {admin_token}": return jsonify({"error": "Unauthorized"}), 401
+        feedback_manager.retrain_patterns()
+        return jsonify({'status': 'completed', 'message': 'Pattern retraining initiated successfully.'})
+    except Exception as e:
+        logger.error(f"Retraining error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+def _register_worker(worker_id: str):
+    """Register a worker for tracking during graceful shutdown."""
+    with _worker_lock:
+        if not _shutdown_requested:
+            _active_workers.add(worker_id)
+            logger.debug(f"Registered worker {worker_id}. Active workers: {len(_active_workers)}")
+            return True
+        return False
+
+def _unregister_worker(worker_id: str):
+    """Unregister a worker when processing completes."""
+    with _worker_lock:
+        _active_workers.discard(worker_id)
+        logger.debug(f"Unregistered worker {worker_id}. Active workers: {len(_active_workers)}")
+
+def _cleanup_resources():
+    """Cleanup application resources during shutdown."""
+    global db_manager, cache_manager, feedback_manager, nlp_processor
+    
+    logger.info("Cleaning up application resources...")
+    
+    # Wait for active workers to complete
+    max_wait_time = 30  # seconds
+    wait_interval = 1
+    waited = 0
+    
+    while _active_workers and waited < max_wait_time:
+        logger.info(f"Waiting for {len(_active_workers)} active workers to complete... ({waited}s/{max_wait_time}s)")
+        time.sleep(wait_interval)
+        waited += wait_interval
+    
+    if _active_workers:
+        logger.warning(f"Forcefully terminating {len(_active_workers)} remaining workers after {max_wait_time}s timeout")
+    
+    # Cleanup database connections
+    if db_manager:
+        try:
+            # If db_manager has cleanup methods, call them
+            if hasattr(db_manager, 'close'):
+                db_manager.close()
+            logger.info("Database manager cleaned up")
+        except Exception as e:
+            logger.error(f"Error cleaning up database manager: {e}")
+    
+    # Cleanup cache manager  
+    if cache_manager:
+        try:
+            if hasattr(cache_manager, 'close'):
+                cache_manager.close()
+            logger.info("Cache manager cleaned up")
+        except Exception as e:
+            logger.error(f"Error cleaning up cache manager: {e}")
+    
+    logger.info("Resource cleanup completed")
+
+def _signal_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    global _shutdown_requested
+    
+    signal_names = {signal.SIGTERM: 'SIGTERM', signal.SIGINT: 'SIGINT'}
+    signal_name = signal_names.get(signum, f'Signal {signum}')
+    
+    logger.info(f"Received {signal_name}, initiating graceful shutdown...")
+    
+    with _worker_lock:
+        _shutdown_requested = True
+    
+    _cleanup_resources()
+    
+    logger.info("Graceful shutdown completed")
+    sys.exit(0)
+
+def _setup_signal_handlers():
+    """Setup signal handlers for graceful shutdown."""
+    signal.signal(signal.SIGTERM, _signal_handler)
+    signal.signal(signal.SIGINT, _signal_handler)
+    
+    # Register cleanup function to run on normal exit
+    atexit.register(_cleanup_resources)
+    
+    logger.info("Signal handlers registered for graceful shutdown")
+
+if __name__ == '__main__':
+    logger.info("Running in local development mode, initializing app immediately.")
+    _setup_signal_handlers()
+    _ensure_app_is_initialized()
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000))), '', cleaned, flags=re.IGNORECASE)
+
+    # Remove administrative qualifiers that don't affect semantic meaning
+    cleaned = re.sub(r'\s*\((non-acute|acute|trauma|screening)\)\s*', ' ', cleaned, flags=re.IGNORECASE)
+    
+    # Standardize common terms before abbreviation expansion
+    cleaned = re.sub(r'\b(x-ray|xray)\b', 'XR', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\b(ultrasound)\b', 'US', cleaned, flags=re.IGNORECASE)
+
     if abbreviation_expander:
         cleaned = abbreviation_expander.expand(cleaned)
     if '^' in cleaned:
