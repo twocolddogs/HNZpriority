@@ -138,8 +138,8 @@ class USAContrastMapper:
     def __init__(self):
         self.patterns = {
             'with and without': [r'\bw\s*and\s*wo\b', r'\bw/wo\b', r'\bwith\s*and\s*without\b', r'\bpre\s*&\s*post\b'],
-            'with': [r'\bw\s+(contrast|iv|gad)\b', r'\bwith\s+contrast\b', r'\benhanced\b', r'\bpost\s*contrast\b', r'\bc\+\b'],
-            'without': [r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon\s*contrast\b', r'\bunenhanced\b', r'\bplain\b']
+            'with': [r'\bw\s+(contrast|iv|gad)\b', r'\bwith\s+contrast\b', r'\benhanced\b', r'\bpost\s*contrast\b', r'\bc\+\b', r'\bC\+\b', r'\s+C\+$'],
+            'without': [r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon\s*contrast\b', r'\bunenhanced\b', r'\bplain\b', r'\bc-\b', r'\bC-\b', r'\s+C-$']
         }
         self.compiled_patterns = {
             ctype: [re.compile(p, re.IGNORECASE) for p in patterns]

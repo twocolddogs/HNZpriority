@@ -92,6 +92,20 @@ class NHSLookupEngine:
         
         return modalities
 
+    def _nhs_entry_has_contrast(self, entry: Dict) -> bool:
+        """Check if NHS entry indicates contrast use."""
+        clean_name = entry.get("Clean Name", "").lower()
+        snomed_fsn = entry.get("SNOMED CT FSN", "").lower()
+        
+        # Check for explicit contrast indicators
+        contrast_indicators = [
+            'with contrast', 'contrast', 'enhanced', 'gadolinium', 'intravenous',
+            'iv contrast', 'oral contrast', 'contrast medium', 'contrast agent'
+        ]
+        
+        full_text = f"{clean_name} {snomed_fsn}"
+        return any(indicator in full_text for indicator in contrast_indicators)
+
     def _extract_components_from_nhs_entry(self, entry: Dict) -> Dict:
         """Extract components from an NHS entry for lookup purposes."""
         clean_name = entry.get("Clean Name", "").lower()
@@ -162,6 +176,19 @@ class NHSLookupEngine:
             # Give bonus for exact modality match
             if input_modalities and nhs_modalities and input_modalities.intersection(nhs_modalities):
                 combined_score += 0.1  # Small bonus for modality match
+            
+            # CONTRAST MATCHING: Give strong bonus for contrast alignment
+            input_contrast = extracted_components.get('contrast', [])
+            nhs_has_contrast = self._nhs_entry_has_contrast(entry)
+            
+            if input_contrast:
+                contrast_type = input_contrast[0] if input_contrast else None
+                if contrast_type == 'with' and nhs_has_contrast:
+                    combined_score += 0.15  # Strong bonus for with contrast match
+                elif contrast_type == 'without' and not nhs_has_contrast:
+                    combined_score += 0.15  # Strong bonus for without contrast match
+                elif contrast_type in ['with', 'without'] and ((contrast_type == 'with') != nhs_has_contrast):
+                    combined_score -= 0.2  # Penalty for contrast mismatch
             
             if combined_score > highest_confidence:
                 highest_confidence, best_match = combined_score, entry
