@@ -3,71 +3,74 @@
 import os
 import logging
 import numpy as np
-import requests
+# CORRECTED IMPORT: Using InferenceApi as it is the correct class for this use case.
+from huggingface_hub import InferenceApi
 from typing import Optional, List
 
 logger = logging.getLogger(__name__)
 
 class NLPProcessor:
     """
-    API-based NLP processor that uses direct 'requests' calls to the correct Hugging Face
-    Inference API endpoint. This architecture is lightweight and prevents out-of-memory errors.
+    API-based NLP processor that uses the correct 'InferenceApi' from huggingface_hub.
+    This architecture is lightweight, correctly calls the Hugging Face API, and is
+    designed to prevent out-of-memory errors on deployment platforms like Render.
     """
 
     def __init__(self, model_name: str = 'sentence-transformers/all-MiniLM-L6-v2'):
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
         self.model_name = model_name
-        
-        # CORRECTED URL: Based on the provided working example, this is the correct
-        # modern endpoint for this specific task.
-        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.model_name}/pipeline/feature-extraction"
-        
-        self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        self.client = None
         
         if not self.api_token:
             logger.error("HUGGING_FACE_TOKEN not set. API-based NLP processing is disabled.")
         else:
-            logger.info(f"Initialized API NLP Processor for model: {self.model_name} using correct API endpoint.")
+            # CORRECT INITIALIZATION: Using InferenceApi with the specified repo_id and task.
+            # This is the correct way to instantiate the client for our purpose.
+            try:
+                self.client = InferenceApi(
+                    repo_id=self.model_name,
+                    task="feature-extraction",
+                    token=self.api_token
+                )
+                logger.info(f"Initialized InferenceApi NLP Processor for model: {self.model_name}")
+            except Exception as e:
+                logger.error(f"Failed to initialize InferenceApi: {e}")
+                self.client = None
 
-    def _make_api_call(self, inputs: list[str]) -> Optional[list]:
-        """Helper function to make a POST request to the feature-extraction endpoint."""
-        payload = {"inputs": inputs, "options": {"wait_for_model": True}}
-        try:
-            response = requests.post(self.api_url, headers=self.headers, json=payload)
-            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
-            return response.json()
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"API request failed with status {e.response.status_code} to URL {self.api_url}: {e.response.text}")
-            return None
-        except requests.exceptions.RequestException as e:
-            logger.error(f"API request failed due to a network issue: {e}")
-            return None
 
     def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
-        """Get text embedding for a single string using a direct API call."""
+        """Get text embedding for a single string using the InferenceApi client."""
         if not self.is_available() or not text or not text.strip():
             return None
-
-        result = self._make_api_call([text.strip()])
-        
-        if isinstance(result, list) and result and isinstance(result[0], list):
-            return np.array(result[0])
-        
-        logger.error(f"Unexpected API response for single text: {result}")
-        return None
+        try:
+            # The client object is directly callable.
+            result = self.client(inputs=text.strip())
+            
+            # The API returns a list containing one embedding for a single string input.
+            if isinstance(result, list) and result and isinstance(result[0], list):
+                return np.array(result[0])
+            logger.error(f"Unexpected API response for single text: {result}")
+            return None
+        except Exception as e:
+            logger.error(f"API request via InferenceApi failed for '{text[:50]}...': {e}")
+            return None
 
     def batch_get_embeddings(self, texts: List[str]) -> List[Optional[np.ndarray]]:
-        """Get embeddings for multiple texts in a single batch API call."""
+        """Get embeddings for multiple texts using a single batch call via InferenceApi."""
         if not self.is_available() or not texts:
             return []
-
-        results = self._make_api_call([text.strip() for text in texts])
-
-        if isinstance(results, list) and all(isinstance(r, list) for r in results):
-            return [np.array(emb) for emb in results]
-             
-        logger.error(f"Unexpected batch API response format for {len(texts)} items. Type: {type(results)}")
-        return [None] * len(texts)
+        try:
+            # The client handles batching when given a list of inputs.
+            results = self.client(inputs=[text.strip() for text in texts])
+            
+            if isinstance(results, list) and all(isinstance(item, list) for item in results):
+                return [np.array(emb) for emb in results]
+            
+            logger.error(f"Unexpected batch API response format for {len(texts)} items. Type: {type(results)}")
+            return [None] * len(texts)
+        except Exception as e:
+            logger.error(f"Batch API call via InferenceApi failed: {e}")
+            return [None] * len(texts)
 
     def calculate_semantic_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
         """Calculate cosine similarity between two embeddings. This is a local, fast operation."""
@@ -85,5 +88,5 @@ class NLPProcessor:
             return 0.0
 
     def is_available(self) -> bool:
-        """Check if the API processor is configured."""
-        return bool(self.api_token)
+        """Check if the API client was initialized successfully."""
+        return self.client is not None
