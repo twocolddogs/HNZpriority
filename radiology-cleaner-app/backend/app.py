@@ -1,3 +1,5 @@
+# app.py
+
 import time
 import json
 from flask import Flask, request, jsonify
@@ -13,13 +15,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- Import Custom Modules ---
 from parser import RadiologySemanticParser
+# UPDATED: We now only have one definitive NLP processor
 from nlp_processor import NLPProcessor
-from nlp_processor_api import ApiNLPProcessor
-from nlp_processor_hybrid import HybridNLPProcessor
 from nhs_lookup_engine import NHSLookupEngine
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager
-# UPDATED: Importing utilities from our new file
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, USAContrastMapper
 
 # --- Configure logging ---
@@ -31,11 +31,11 @@ app = Flask(__name__)
 CORS(app)
 
 # --- START: LAZY LOADING IMPLEMENTATION ---
+# Simplified globals
 semantic_parser: Optional[RadiologySemanticParser] = None
 db_manager: Optional[DatabaseManager] = None
 cache_manager: Optional[CacheManager] = None
 feedback_manager: Optional[FeedbackTrainingManager] = None
-feedback_enhanced_preprocessor: Optional[any] = None # Placeholder, will be reimplemented
 nlp_processor: Optional[NLPProcessor] = None
 nhs_lookup_engine: Optional[NHSLookupEngine] = None
 abbreviation_expander: Optional[AbbreviationExpander] = None
@@ -45,11 +45,10 @@ _app_initialized = False
 
 def _initialize_app():
     """
-    This function contains the main application initialization logic.
-    It has been refactored to use the new Sentence-Transformer NLPProcessor.
+    Dramatically simplified initialization logic that uses the API-based NLP Processor.
     """
     global semantic_parser, db_manager, cache_manager, feedback_manager, \
-           feedback_enhanced_preprocessor, nlp_processor, nhs_lookup_engine, abbreviation_expander
+           nlp_processor, nhs_lookup_engine, abbreviation_expander
 
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
@@ -60,61 +59,36 @@ def _initialize_app():
         feedback_manager = FeedbackTrainingManager()
         logger.info("Database, Cache, and Feedback managers initialized.")
 
-        # --- HYBRID NLP PROCESSOR INITIALIZATION ---
-        # Use hybrid processor that supports biomedical BERT model
-        processor_type = os.environ.get('NLP_PROCESSOR_TYPE', 'hybrid').lower()
+        # --- SIMPLIFIED NLP PROCESSOR INITIALIZATION ---
+        # No more complex logic. We only have one type of processor.
+        nlp_processor = NLPProcessor()
+        if not nlp_processor.is_available():
+            logger.error("API-based NLP processor is not available (HUGGING_FACE_TOKEN may be missing). "
+                         "Semantic similarity will be disabled.")
         
-        if processor_type == 'hybrid':
-            logger.info("Initializing hybrid NLP processor (biomedical BERT)...")
-            nlp_processor = HybridNLPProcessor()
-            if not nlp_processor.is_available():
-                logger.warning("Hybrid processor not available, falling back to sentence-transformer processor...")
-                nlp_processor = NLPProcessor()
-                if not nlp_processor.model:
-                    logger.error("All NLP processors failed to initialize. "
-                                 "Semantic similarity will be disabled.")
-            else:
-                logger.info("Hybrid biomedical NLP processor initialized successfully.")
-        elif processor_type == 'api':
-            logger.info("Using API-based NLP processor...")
-            nlp_processor = ApiNLPProcessor()
-            if not nlp_processor.is_available():
-                logger.error("API processor not available and no fallback configured.")
-        else:
-            logger.info("Using sentence-transformer NLP processor...")
-            nlp_processor = NLPProcessor()
-            if not nlp_processor.model:
-                logger.error("Sentence-transformer NLP processor failed to initialize.")
-
         base_dir = os.path.dirname(os.path.abspath(__file__))
         nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
         usa_json_path = os.path.join(base_dir, 'core', 'USA.json')
 
         nhs_authority = {}
         if os.path.exists(nhs_json_path):
-            with open(nhs_json_path, 'r', encoding='utf-8') as f:
-                nhs_data = json.load(f)
+            with open(nhs_json_path, 'r', encoding='utf-8') as f: nhs_data = json.load(f)
             for item in nhs_data:
-                clean_name = item.get('Clean Name')
-                if clean_name:
+                if clean_name := item.get('Clean Name'):
                     nhs_authority[clean_name] = {'snomed_concept_id': item.get('SNOMED CT \nConcept-ID', '')}
             logger.info(f"Loaded {len(nhs_authority)} NHS authority entries.")
         else:
-            logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
-            sys.exit(1)
+            logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}"); sys.exit(1)
 
         usa_patterns = {'common_abbreviations': {}}
         if os.path.exists(usa_json_path):
-            with open(usa_json_path, 'r', encoding='utf-8') as f:
-                usa_data = json.load(f)
+            with open(usa_json_path, 'r', encoding='utf-8') as f: usa_data = json.load(f)
             for item in usa_data:
-                short, long = item.get('SHORT_NAME', ''), item.get('LONG_NAME', '')
-                if short and long:
-                    usa_patterns['common_abbreviations'][short.lower()] = long.lower()
+                if short := item.get('SHORT_NAME', ''):
+                    if long := item.get('LONG_NAME', ''):
+                        usa_patterns['common_abbreviations'][short.lower()] = long.lower()
             logger.info("Loaded USA-specific abbreviation patterns.")
-        else:
-            logger.warning(f"USA JSON file not found at {usa_json_path}, proceeding without USA patterns.")
-
+        
         abbreviation_expander = AbbreviationExpander(usa_patterns)
         anatomy_extractor = AnatomyExtractor(nhs_authority, usa_patterns)
         laterality_detector = LateralityDetector()
@@ -129,19 +103,14 @@ def _initialize_app():
         )
         logger.info("Radiology Semantic Parser initialized.")
 
-        snomed_json_path = os.path.join(base_dir, 'code_set.json')
-        if os.path.exists(snomed_json_path):
-            db_manager.load_snomed_from_json(snomed_json_path)
-            logger.info("SNOMED data loaded into database.")
-        else:
-            logger.warning(f"SNOMED JSON file not found at {snomed_json_path}")
+        if snomed_json_path := os.path.join(base_dir, 'code_set.json'):
+            if os.path.exists(snomed_json_path):
+                db_manager.load_snomed_from_json(snomed_json_path)
+                logger.info("SNOMED data loaded into database.")
 
         nhs_lookup_engine = NHSLookupEngine(nhs_json_path, nlp_processor)
         consistency_report = nhs_lookup_engine.validate_consistency()
         logger.info(f"NHS Lookup Engine initialized: {consistency_report}")
-
-        feedback_enhanced_preprocessor = None
-        logger.warning("FeedbackEnhancedPreprocessor is currently disabled pending reimplementation.")
 
     except Exception as e:
         logger.critical(f"FATAL: Failed to initialize components: {e}", exc_info=True)
