@@ -3,70 +3,71 @@
 import os
 import logging
 import numpy as np
+import requests
 from typing import Optional, List
-from huggingface_hub import InferenceClient
 
 logger = logging.getLogger(__name__)
 
 class NLPProcessor:
     """
-    API-based NLP processor using Hugging Face Inference API to generate embeddings.
-    This architecture is designed to be lightweight, offloading the memory-intensive
-    ML model to prevent out-of-memory errors in constrained environments like Render.
+    API-based NLP processor that uses direct 'requests' calls to the correct Hugging Face
+    Inference API endpoint. This architecture is lightweight and prevents out-of-memory errors.
     """
 
-    # Using a standard, highly-available Sentence-Transformer model to ensure reliability.
     def __init__(self, model_name: str = 'sentence-transformers/all-MiniLM-L6-v2'):
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
         self.model_name = model_name
         
+        # CORRECTED URL: Based on the provided working example, this is the correct
+        # modern endpoint for this specific task.
+        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.model_name}/pipeline/feature-extraction"
+        
+        self.headers = {"Authorization": f"Bearer {self.api_token}"}
+        
         if not self.api_token:
             logger.error("HUGGING_FACE_TOKEN not set. API-based NLP processing is disabled.")
-            self.client = None
         else:
-            # CORRECTED INITIALIZATION:
-            # By passing the model ID to the constructor, we ensure the client targets the
-            # modern and correct API endpoint (e.g., /models/model-name) instead of the
-            # legacy /pipeline/task/model-name endpoint that was causing the 404 errors.
-            self.client = InferenceClient(model=self.model_name, token=self.api_token)
-            logger.info(f"Initialized API NLP Processor with model: {model_name}")
+            logger.info(f"Initialized API NLP Processor for model: {self.model_name} using correct API endpoint.")
+
+    def _make_api_call(self, inputs: list[str]) -> Optional[list]:
+        """Helper function to make a POST request to the feature-extraction endpoint."""
+        payload = {"inputs": inputs, "options": {"wait_for_model": True}}
+        try:
+            response = requests.post(self.api_url, headers=self.headers, json=payload)
+            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"API request failed with status {e.response.status_code} to URL {self.api_url}: {e.response.text}")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed due to a network issue: {e}")
+            return None
 
     def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
-        """Get text embedding for a single string using the Hugging Face API."""
+        """Get text embedding for a single string using a direct API call."""
         if not self.is_available() or not text or not text.strip():
             return None
-        try:
-            # The 'model' parameter is no longer needed here as the client is now
-            # pre-configured for a specific model. This call is lightweight.
-            result = self.client.feature_extraction(text.strip())
-            
-            if isinstance(result, (np.ndarray, list)):
-                return np.array(result)
 
-            logger.error(f"Unexpected API response for single text: {type(result)}")
-            return None
-                
-        except Exception as e:
-            logger.error(f"API request failed for '{text[:50]}...': {e}")
-            return None
+        result = self._make_api_call([text.strip()])
+        
+        if isinstance(result, list) and result and isinstance(result[0], list):
+            return np.array(result[0])
+        
+        logger.error(f"Unexpected API response for single text: {result}")
+        return None
 
     def batch_get_embeddings(self, texts: List[str]) -> List[Optional[np.ndarray]]:
         """Get embeddings for multiple texts in a single batch API call."""
         if not self.is_available() or not texts:
             return []
-        try:
-            # The 'model' parameter is also removed from this call.
-            results = self.client.feature_extraction([text.strip() for text in texts])
-            
-            if isinstance(results, list):
-                return [np.array(emb) if emb is not None else None for emb in results]
-            else:
-                logger.error(f"Unexpected batch API response format: {type(results)}")
-                return [None] * len(texts)
 
-        except Exception as e:
-            logger.error(f"Batch API call failed: {e}")
-            return [None] * len(texts)
+        results = self._make_api_call([text.strip() for text in texts])
+
+        if isinstance(results, list) and all(isinstance(r, list) for r in results):
+            return [np.array(emb) for emb in results]
+             
+        logger.error(f"Unexpected batch API response format for {len(texts)} items. Type: {type(results)}")
+        return [None] * len(texts)
 
     def calculate_semantic_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
         """Calculate cosine similarity between two embeddings. This is a local, fast operation."""
@@ -84,5 +85,5 @@ class NLPProcessor:
             return 0.0
 
     def is_available(self) -> bool:
-        """Check if the API processor is configured and ready."""
-        return bool(self.api_token and self.client)
+        """Check if the API processor is configured."""
+        return bool(self.api_token)
