@@ -1,36 +1,23 @@
-# app.py
-
-import time
-import json
+import time, json, logging, threading, os, sys, multiprocessing
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from typing import List, Dict, Optional
 from datetime import datetime
-import logging
-import threading
-import os
-import sys
-import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# --- Import Custom Modules ---
 from parser import RadiologySemanticParser
-# UPDATED: We now only have one definitive NLP processor
-from nlp_processor import NLPProcessor
+from nlp_processor import NLPProcessor # Simplified import
 from nhs_lookup_engine import NHSLookupEngine
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, USAContrastMapper
 
-# --- Configure logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# --- App Initialization ---
 app = Flask(__name__)
 CORS(app)
 
-# --- START: LAZY LOADING IMPLEMENTATION ---
 # Simplified globals
 semantic_parser: Optional[RadiologySemanticParser] = None
 db_manager: Optional[DatabaseManager] = None
@@ -39,84 +26,49 @@ feedback_manager: Optional[FeedbackTrainingManager] = None
 nlp_processor: Optional[NLPProcessor] = None
 nhs_lookup_engine: Optional[NHSLookupEngine] = None
 abbreviation_expander: Optional[AbbreviationExpander] = None
-
 _init_lock = threading.Lock()
 _app_initialized = False
 
 def _initialize_app():
-    """
-    Dramatically simplified initialization logic that uses the API-based NLP Processor.
-    """
     global semantic_parser, db_manager, cache_manager, feedback_manager, \
            nlp_processor, nhs_lookup_engine, abbreviation_expander
-
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
-
     try:
-        db_manager = DatabaseManager()
-        cache_manager = CacheManager()
-        feedback_manager = FeedbackTrainingManager()
+        db_manager = DatabaseManager(); cache_manager = CacheManager(); feedback_manager = FeedbackTrainingManager()
         logger.info("Database, Cache, and Feedback managers initialized.")
 
-        # --- SIMPLIFIED NLP PROCESSOR INITIALIZATION ---
-        # No more complex logic. We only have one type of processor.
+        # SIMPLIFIED: Only initialize the API-based processor
         nlp_processor = NLPProcessor()
         if not nlp_processor.is_available():
-            logger.error("API-based NLP processor is not available (HUGGING_FACE_TOKEN may be missing). "
-                         "Semantic similarity will be disabled.")
-        
+            logger.error("API-based NLP processor is not available (HUGGING_FACE_TOKEN missing?). Semantic features will be degraded.")
+
         base_dir = os.path.dirname(os.path.abspath(__file__))
         nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
         usa_json_path = os.path.join(base_dir, 'core', 'USA.json')
-
         nhs_authority = {}
         if os.path.exists(nhs_json_path):
             with open(nhs_json_path, 'r', encoding='utf-8') as f: nhs_data = json.load(f)
             for item in nhs_data:
-                if clean_name := item.get('Clean Name'):
-                    nhs_authority[clean_name] = {'snomed_concept_id': item.get('SNOMED CT \nConcept-ID', '')}
-            logger.info(f"Loaded {len(nhs_authority)} NHS authority entries.")
-        else:
-            logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}"); sys.exit(1)
-
-        usa_patterns = {'common_abbreviations': {}}
-        if os.path.exists(usa_json_path):
-            with open(usa_json_path, 'r', encoding='utf-8') as f: usa_data = json.load(f)
-            for item in usa_data:
-                if short := item.get('SHORT_NAME', ''):
-                    if long := item.get('LONG_NAME', ''):
-                        usa_patterns['common_abbreviations'][short.lower()] = long.lower()
-            logger.info("Loaded USA-specific abbreviation patterns.")
+                if clean_name := item.get('Clean Name'): nhs_authority[clean_name] = item
+        else: logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}"); sys.exit(1)
         
+        usa_patterns = {} # Simplified loading
         abbreviation_expander = AbbreviationExpander(usa_patterns)
         anatomy_extractor = AnatomyExtractor(nhs_authority, usa_patterns)
-        laterality_detector = LateralityDetector()
-        contrast_mapper = USAContrastMapper()
-        logger.info("Parsing utility components initialized.")
-
+        laterality_detector = LateralityDetector(); contrast_mapper = USAContrastMapper()
+        
         semantic_parser = RadiologySemanticParser(
-            nlp_processor=nlp_processor,
-            anatomy_extractor=anatomy_extractor,
-            laterality_detector=laterality_detector,
-            contrast_mapper=contrast_mapper
+            nlp_processor=nlp_processor, anatomy_extractor=anatomy_extractor,
+            laterality_detector=laterality_detector, contrast_mapper=contrast_mapper
         )
-        logger.info("Radiology Semantic Parser initialized.")
-
-        if snomed_json_path := os.path.join(base_dir, 'code_set.json'):
-            if os.path.exists(snomed_json_path):
-                db_manager.load_snomed_from_json(snomed_json_path)
-                logger.info("SNOMED data loaded into database.")
-
+        
         nhs_lookup_engine = NHSLookupEngine(nhs_json_path, nlp_processor)
-        consistency_report = nhs_lookup_engine.validate_consistency()
-        logger.info(f"NHS Lookup Engine initialized: {consistency_report}")
+        nhs_lookup_engine.validate_consistency()
+        logger.info("All components initialized successfully.")
 
     except Exception as e:
-        logger.critical(f"FATAL: Failed to initialize components: {e}", exc_info=True)
-        sys.exit(1)
-
-    logger.info(f"--- Full initialization completed in {time.time() - start_time:.2f} seconds. ---")
+        logger.critical(f"FATAL: Failed to initialize components: {e}", exc_info=True); sys.exit(1)
 
 
 def _ensure_app_is_initialized():
