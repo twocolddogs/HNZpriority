@@ -2,25 +2,17 @@
 Flask==3.0.3
 Flask-CORS==4.0.1
 gunicorn==22.0.0
+gevent==24.2.1
 
-# -- Core Data Science & Utility Libraries --
-scikit-learn==1.5.0
-pandas==2.2.2
-joblib==1.4.2
+# -- Core Utility Libraries --
 numpy==1.26.4
-scipy==1.10.1 # Retained as a common dependency for scientific packages
 
 # -- NLP & Semantic Similarity Libraries --
-# API-based approach (primary)
+# Only need requests for the API call
 requests==2.32.3
-# Local transformers for biomedical model
-torch
-transformers==4.44.2
 # Used for fast string similarity scoring in the lookup engine
 fuzzywuzzy==0.18.0
-python-Levenshtein==0.21.1 # Makes fuzzywuzzy faster
+python-Levenshtein==0.21.1
 
 # -- Other Core Dependencies --
-typing-extensions==4.12.2
 python-dateutil==2.9.0.post0
-psutil==5.9.8
