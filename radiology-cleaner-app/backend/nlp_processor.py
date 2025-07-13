@@ -37,6 +37,10 @@ class NLPProcessor:
         """Helper function to make a POST request and robustly handle the response."""
         payload = {"inputs": inputs, "options": {"wait_for_model": True}}
         try:
+            # Small delay to respect API rate limits in concurrent scenarios
+            import time
+            time.sleep(0.1)  # 100ms delay
+            
             response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=30)
             response.raise_for_status()
             # The JSONDecodeError indicates the response body can be empty or non-JSON on error.
@@ -70,12 +74,14 @@ class NLPProcessor:
         if not self.is_available() or not texts:
             return []
 
-        results = self._make_api_call([text.strip() for text in texts])
+        # For batch processing, pass the list directly (not wrapped in another list)
+        stripped_texts = [text.strip() for text in texts]
+        results = self._make_api_call(stripped_texts)
 
         if isinstance(results, list) and all(isinstance(r, list) for r in results):
             return [np.array(emb) for emb in results]
              
-        logger.error(f"Unexpected batch API response format for {len(texts)} items. Type: {type(results)}")
+        logger.error(f"Unexpected batch API response format for {len(texts)} items. Type: {type(results)}, Results: {results}")
         return [None] * len(texts)
 
     def calculate_semantic_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:

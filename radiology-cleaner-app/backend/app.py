@@ -318,7 +318,10 @@ def parse_batch():
                     return {'clean_name': result.get('clean_name', ''), 'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)}, 'components': {'anatomy': result.get('anatomy', []), 'laterality': result.get('laterality', []), 'contrast': result.get('contrast', []), 'technique': result.get('technique', []), 'confidence': result.get('confidence', 0.0), 'modality': result.get('modality', [])}, 'original_exam': exam_data}
                 except Exception as e:
                     return {"error": str(e), "original_exam": exam_data}
-            with ThreadPoolExecutor(max_workers=get_optimal_worker_count(max_items=len(uncached_exams))) as executor:
+            # Reduce concurrency to avoid API rate limits
+            max_workers = min(5, get_optimal_worker_count(max_items=len(uncached_exams)))
+            logger.info(f"Processing {len(uncached_exams)} uncached exams with {max_workers} workers")
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_exam = {executor.submit(process_exam_batch, exam): exam for exam in uncached_exams}
                 for future in as_completed(future_to_exam):
                     exam_data, result = future_to_exam[future], future.result()
