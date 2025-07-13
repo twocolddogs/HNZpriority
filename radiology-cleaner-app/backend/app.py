@@ -277,10 +277,21 @@ def parse_enhanced():
         # -----------------------------------------
 
         result = process_exam_with_nhs_lookup(exam_name, modality)
+        cleaned_exam_name = _preprocess_exam_name(exam_name)
         response = {
             'clean_name': result.get('clean_name', ''),
             'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)},
-            'components': {'anatomy': result.get('anatomy', []), 'laterality': result.get('laterality', []), 'contrast': result.get('contrast', []), 'technique': result.get('technique', []), 'modality': result.get('modality', []), 'confidence': result.get('confidence', 0.0)},
+            'components': {
+                'anatomy': result.get('anatomy', []), 
+                'laterality': result.get('laterality', []), 
+                'contrast': result.get('contrast', []), 
+                'technique': result.get('technique', []), 
+                'modality': result.get('modality', []), 
+                'confidence': result.get('confidence', 0.0),
+                'gender_context': _detect_gender_context(cleaned_exam_name, result.get('anatomy', [])),
+                'clinical_context': _detect_clinical_context(cleaned_exam_name, result.get('anatomy', [])),
+                'clinical_equivalents': []  # Placeholder for future enhancement
+            },
             'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000), 'confidence': result.get('confidence', 0.0), 'source': 'hybrid_parser_v3_sentence_transformer'}
         }
         
