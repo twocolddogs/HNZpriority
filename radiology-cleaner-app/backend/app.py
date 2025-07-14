@@ -174,6 +174,11 @@ def record_performance(endpoint: str, processing_time_ms: int, input_size: int,
 def _preprocess_exam_name(exam_name: str) -> str:
     """Preprocess exam name to clean up common formatting issues."""
     if not exam_name: return exam_name
+    
+    # Debug logging for preprocessing
+    if 'female' in exam_name.lower() or 'male' in exam_name.lower():
+        logger.info(f"DEBUG: Preprocessing input: '{exam_name}'")
+    
     cleaned = exam_name
     
     # Strip "NO REPORT" suffix that appears in some data sources
@@ -190,13 +195,21 @@ def _preprocess_exam_name(exam_name: str) -> str:
     cleaned = re.sub(r'\s*\(acute\)\s*', ' ', cleaned, flags=re.IGNORECASE)
     
     if abbreviation_expander:
+        pre_expansion = cleaned
         cleaned = abbreviation_expander.expand(cleaned)
+        if ('female' in exam_name.lower() or 'male' in exam_name.lower()) and pre_expansion != cleaned:
+            logger.info(f"DEBUG: Abbreviation expansion: '{pre_expansion}' -> '{cleaned}'")
     if '^' in cleaned:
         cleaned = cleaned.split('^', 1)[1].strip()
     if '/' in cleaned:
         cleaned = cleaned.replace('/', ' ')
     cleaned = _normalize_ordinals(cleaned)
     cleaned = ' '.join(cleaned.split())
+    
+    # Debug logging for preprocessing output
+    if 'female' in exam_name.lower() or 'male' in exam_name.lower():
+        logger.info(f"DEBUG: Preprocessing output: '{cleaned}'")
+    
     return cleaned
 
 def _normalize_ordinals(text: str) -> str:
