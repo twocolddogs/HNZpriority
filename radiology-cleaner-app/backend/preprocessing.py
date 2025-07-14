@@ -64,9 +64,7 @@ class ExamPreprocessor:
         pre_expansion = text
         expanded = self._expand_abbreviations_nhs_aware(text)
         
-        # Log gender-related expansions for debugging gender detection issues
-        if ('female' in original_exam.lower() or 'male' in original_exam.lower()) and pre_expansion != expanded:
-            logger.info(f"DEBUG: Abbreviation expansion: '{pre_expansion}' -> '{expanded}'")
+      
         
         return expanded
     
@@ -151,9 +149,6 @@ class ExamPreprocessor:
         if not exam_name:
             return exam_name
         
-        # Enable debug logging for gender-related exam names to track processing
-        if 'female' in exam_name.lower() or 'male' in exam_name.lower():
-            logger.info(f"DEBUG: Preprocessing input: '{exam_name}'")
         
         cleaned = exam_name
         
@@ -165,9 +160,7 @@ class ExamPreprocessor:
         cleaned = self._normalize_ordinals(cleaned)             # Standardize ordinal numbers
         cleaned = self._normalize_whitespace(cleaned)           # Final whitespace cleanup
         
-        # Log final result for gender-related exams to verify processing
-        if 'female' in exam_name.lower() or 'male' in exam_name.lower():
-            logger.info(f"DEBUG: Preprocessing output: '{cleaned}'")
+
         
         return cleaned
     
