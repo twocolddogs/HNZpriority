@@ -243,7 +243,15 @@ class NHSLookupEngine:
         
         if not nlp_proc or not nlp_proc.is_available():
             logger.warning("Semantic search disabled; NLP processor not available.")
-            return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_SEMANTIC_SEARCH'}
+            return {
+                'clean_name': input_exam, 
+                'snomed_id': '', 
+                'snomed_fsn': '', 
+                'snomed_laterality_concept_id': '', 
+                'snomed_laterality_fsn': '', 
+                'confidence': 0.0, 
+                'source': 'NO_SEMANTIC_SEARCH'
+            }
 
         # Generate embedding for input exam using selected NLP processor
         # IMPORTANT: The input_exam parameter is already the cleaned/preprocessed exam name
@@ -251,7 +259,15 @@ class NHSLookupEngine:
         input_embedding = nlp_proc.get_text_embedding(input_exam)
         if input_embedding is None:
             logger.warning(f"Could not generate input embedding for cleaned exam '{input_exam}'.")
-            return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_INPUT_EMBEDDING'}
+            return {
+                'clean_name': input_exam, 
+                'snomed_id': '', 
+                'snomed_fsn': '', 
+                'snomed_laterality_concept_id': '', 
+                'snomed_laterality_fsn': '', 
+                'confidence': 0.0, 
+                'source': 'NO_INPUT_EMBEDDING'
+            }
         
         # If using custom NLP processor, ensure NHS embeddings match the same model
         if custom_nlp_processor and custom_nlp_processor != self.nlp_processor:
@@ -384,6 +400,9 @@ class NHSLookupEngine:
                 'clean_name': canonical_clean_name,
                 'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
                 'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
+                # Include laterality SNOMED data from NHS reference
+                'snomed_laterality_concept_id': best_match.get('SNOMED CT Concept-ID of Laterality', ''),
+                'snomed_laterality_fsn': best_match.get('SNOMED FSN of Laterality', ''),
                 # Return the components from the INPUT exam name to show what was detected
                 'anatomy': anatomy,
                 'laterality': laterality,
@@ -396,7 +415,15 @@ class NHSLookupEngine:
         
         # No match found
         logger.warning(f"No match found for input: '{input_exam}' after checking {len(self.nhs_data)} NHS entries")
-        return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
+        return {
+            'clean_name': input_exam, 
+            'snomed_id': '', 
+            'snomed_fsn': '', 
+            'snomed_laterality_concept_id': '', 
+            'snomed_laterality_fsn': '', 
+            'confidence': 0.0, 
+            'source': 'NO_MATCH'
+        }
 
     def validate_consistency(self) -> Dict:
         """

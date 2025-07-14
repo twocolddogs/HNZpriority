@@ -403,7 +403,13 @@ def _handle_single_exam(data: dict, start_time: float):
 
         response = {
             'clean_name': result.get('clean_name', ''),
-            'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)},
+            'snomed': {
+                'id': result.get('snomed_id', ''), 
+                'fsn': result.get('snomed_fsn', ''), 
+                'found': result.get('snomed_found', False),
+                'laterality_concept_id': result.get('snomed_laterality_concept_id', ''),
+                'laterality_fsn': result.get('snomed_laterality_fsn', '')
+            },
             'components': {
                 'anatomy': anatomy, 
                 'laterality': laterality, 
@@ -461,7 +467,13 @@ def _handle_batch_exams(data: dict, start_time: float):
                 
                 return {
                     'clean_name': result.get('clean_name', ''), 
-                    'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)}, 
+                    'snomed': {
+                        'id': result.get('snomed_id', ''), 
+                        'fsn': result.get('snomed_fsn', ''), 
+                        'found': result.get('snomed_found', False),
+                        'laterality_concept_id': result.get('snomed_laterality_concept_id', ''),
+                        'laterality_fsn': result.get('snomed_laterality_fsn', '')
+                    }, 
                     'components': {
                         'anatomy': anatomy, 
                         'laterality': laterality, 
