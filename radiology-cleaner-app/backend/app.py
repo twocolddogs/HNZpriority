@@ -25,10 +25,41 @@ db_manager: Optional[DatabaseManager] = None
 cache_manager: Optional[CacheManager] = None
 feedback_manager: Optional[FeedbackTrainingManager] = None
 nlp_processor: Optional[NLPProcessor] = None
+model_processors: Dict[str, NLPProcessor] = {}
 nhs_lookup_engine: Optional[NHSLookupEngine] = None
 abbreviation_expander: Optional[AbbreviationExpander] = None
 _init_lock = threading.Lock()
 _app_initialized = False
+
+def _initialize_model_processors() -> Dict[str, NLPProcessor]:
+    """Initialize available NLP processors for different models"""
+    MODEL_MAPPING = {
+        'default': 'sentence-transformers/all-MiniLM-L6-v2',
+        'pubmed': 'NeuML/pubmedbert-base-embeddings'
+    }
+    
+    processors = {}
+    for model_key, model_name in MODEL_MAPPING.items():
+        try:
+            processor = NLPProcessor(model_name=model_name)
+            if processor.is_available():
+                processors[model_key] = processor
+                logger.info(f"Initialized model processor for '{model_key}' -> '{model_name}'")
+            else:
+                logger.warning(f"Model processor for '{model_key}' -> '{model_name}' is not available")
+        except Exception as e:
+            logger.error(f"Failed to initialize model processor for '{model_key}': {e}")
+    
+    return processors
+
+def _get_nlp_processor(model: str = 'default') -> Optional[NLPProcessor]:
+    """Get the appropriate NLP processor for the specified model"""
+    global model_processors
+    processor = model_processors.get(model)
+    if not processor:
+        logger.warning(f"Model '{model}' not available, falling back to default")
+        processor = model_processors.get('default')
+    return processor
 
 # Graceful shutdown handling
 _active_workers = set()
@@ -37,15 +68,17 @@ _worker_lock = threading.Lock()
 
 def _initialize_app():
     global semantic_parser, db_manager, cache_manager, feedback_manager, \
-           nlp_processor, nhs_lookup_engine, abbreviation_expander
+           nlp_processor, model_processors, nhs_lookup_engine, abbreviation_expander
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
     try:
         db_manager = DatabaseManager(); cache_manager = CacheManager(); feedback_manager = FeedbackTrainingManager()
         logger.info("Database, Cache, and Feedback managers initialized.")
 
-        nlp_processor = NLPProcessor()
-        if not nlp_processor.is_available():
+        # Initialize model mapping and processors
+        model_processors = _initialize_model_processors()
+        nlp_processor = model_processors.get('default')  # Default processor for compatibility
+        if not nlp_processor or not nlp_processor.is_available():
             logger.error("API-based NLP processor is not available (HUGGING_FACE_TOKEN missing?). Semantic features will be degraded.")
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -170,16 +203,46 @@ def _detect_gender_context(exam_name: str, anatomy: List[str]) -> Optional[str]:
     """Detect gender/pregnancy context from exam name and anatomy."""
     import re
     exam_lower = exam_name.lower()
+    
+    # Debug logging for gender detection
+    if 'female' in exam_lower or 'male' in exam_lower:
+        logger.info(f"DEBUG: Gender detection for '{exam_name}' -> '{exam_lower}'")
+    
     pregnancy_patterns = [r'\b(obstetric|pregnancy|prenatal)\b', r'\b(fetal|fetus)\b', r'\b(trimester)\b']
-    if any(re.search(p, exam_lower) for p in pregnancy_patterns): return 'pregnancy'
+    if any(re.search(p, exam_lower) for p in pregnancy_patterns): 
+        logger.info(f"DEBUG: Detected pregnancy context for '{exam_name}'")
+        return 'pregnancy'
+    
     female_anatomy = ['female pelvis', 'uterus', 'ovary', 'endometrial']
     female_patterns = [r'\b(female)\b', r'\b(woman|women)\b', r'\b(gynecological|gynaecological)\b']
-    if any(term.lower() in exam_lower for term in female_anatomy): return 'female'
-    if any(re.search(p, exam_lower) for p in female_patterns): return 'female'
+    
+    # Check female anatomy terms
+    for term in female_anatomy:
+        if term.lower() in exam_lower:
+            logger.info(f"DEBUG: Detected female anatomy '{term}' in '{exam_name}'")
+            return 'female'
+    
+    # Check female patterns
+    for pattern in female_patterns:
+        if re.search(pattern, exam_lower):
+            logger.info(f"DEBUG: Detected female pattern '{pattern}' in '{exam_name}'")
+            return 'female'
+    
     male_anatomy = ['prostate', 'testicular', 'scrotal']
     male_patterns = [r'\b(male)\b', r'\b(men)\b']
-    if any(term.lower() in exam_lower for term in male_anatomy): return 'male'
-    if any(re.search(p, exam_lower) for p in male_patterns): return 'male'
+    
+    # Check male anatomy terms
+    for term in male_anatomy:
+        if term.lower() in exam_lower:
+            logger.info(f"DEBUG: Detected male anatomy '{term}' in '{exam_name}'")
+            return 'male'
+    
+    # Check male patterns
+    for pattern in male_patterns:
+        if re.search(pattern, exam_lower):
+            logger.info(f"DEBUG: Detected male pattern '{pattern}' in '{exam_name}'")
+            return 'male'
+    
     return None
 
 def _detect_age_context(exam_name: str) -> Optional[str]:
@@ -212,7 +275,7 @@ def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
             contexts.append(context)
     return contexts
 
-def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> Dict:
+def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None, nlp_proc: NLPProcessor = None) -> Dict:
     """NHS-first processing pipeline that uses NHS.json as the single source of truth."""
     _ensure_app_is_initialized()
     if not nhs_lookup_engine or not semantic_parser:
@@ -223,7 +286,19 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> D
         cleaned_exam_name = _preprocess_exam_name(exam_name)
         
         # 2. Parse the cleaned input string to get its components
-        parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
+        # Use provided NLP processor or fall back to global default
+        active_nlp = nlp_proc or nlp_processor
+        if nlp_proc and nlp_proc != nlp_processor:
+            # Create temporary parser with custom NLP processor
+            temp_parser = RadiologySemanticParser(
+                nlp_processor=nlp_proc,
+                anatomy_extractor=semantic_parser.anatomy_extractor,
+                laterality_detector=semantic_parser.laterality_detector,
+                contrast_mapper=semantic_parser.contrast_mapper
+            )
+            parsed_result = temp_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
+        else:
+            parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
         
         # 3. Use the cleaned name and its parsed components to find the best match in the NHS dataset
         nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_result)
@@ -364,15 +439,15 @@ def parse_enhanced():
         if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
         exam_name, modality, model = data['exam_name'], data.get('modality_code'), data.get('model', 'default')
         
-        # Log model selection (for future implementation)
-        if model != 'default':
-            logger.info(f"Model '{model}' requested for exam: {exam_name}")
+        # Get the appropriate NLP processor for the selected model
+        selected_nlp_processor = _get_nlp_processor(model)
+        logger.info(f"Using model '{model}' for exam: {exam_name}")
 
         cache_version = get_current_cache_version()
         cache_key = format_cache_key("enhanced", cache_version, f"{exam_name}_{model}", modality or 'None')
         if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
 
-        result = process_exam_with_nhs_lookup(exam_name, modality)
+        result = process_exam_with_nhs_lookup(exam_name, modality, selected_nlp_processor)
         cleaned_exam_name = _preprocess_exam_name(exam_name)
         
         anatomy = [a for a in result.get('anatomy', []) if a]
@@ -419,9 +494,9 @@ def parse_batch():
         exams = data['exams']
         model = data.get('model', 'default')
         
-        # Log model selection (for future implementation)
-        if model != 'default':
-            logger.info(f"Model '{model}' requested for batch processing of {len(exams)} exams")
+        # Get the appropriate NLP processor for the selected model
+        selected_nlp_processor = _get_nlp_processor(model)
+        logger.info(f"Using model '{model}' for batch processing of {len(exams)} exams")
             
         results, errors, cache_hits, uncached_exams, cached_results = [], [], 0, [], []
         cache_version = get_current_cache_version()
@@ -435,7 +510,7 @@ def parse_batch():
         if uncached_exams:
             def process_exam_batch(exam_data):
                 try:
-                    result = process_exam_with_nhs_lookup(exam_data.get('exam_name', ''), exam_data.get('modality_code'))
+                    result = process_exam_with_nhs_lookup(exam_data.get('exam_name', ''), exam_data.get('modality_code'), selected_nlp_processor)
                     # Adapt the output for batch response format
                     anatomy = [a for a in result.get('anatomy', []) if a]
                     laterality = [l for l in result.get('laterality', []) if l]
