@@ -126,8 +126,8 @@ class NHSLookupEngine:
             clean_name = entry.get("Clean Name")
             if clean_name:
                 try:
-                    # CRITICAL: Apply preprocessing to NHS Clean Names to match user input pipeline
-                    # Use the same preprocessing pipeline but WITHOUT NHS-aware protection
+                    # CRITICAL: Apply standard preprocessing for consistent expansion
+                    # Use the same preprocessing pipeline as user inputs (no NHS-aware protection)
                     from parsing_utils import AbbreviationExpander
                     from preprocessing import ExamPreprocessor
                     
@@ -198,9 +198,9 @@ class NHSLookupEngine:
         # Check if embeddings are already cached for this model
         # NOTE: We intentionally bypass cache after preprocessing pipeline changes
         # to ensure NHS embeddings are regenerated with consistent preprocessing
-        cache_key = f"{model_name}_v2"  # v2 indicates new preprocessing pipeline
+        cache_key = f"{model_name}_v3"  # v3 indicates consistent expansion for both NHS and user inputs
         if cache_key in self._embeddings_cache:
-            logger.info(f"Using cached embeddings for model: {model_name} (v2)")
+            logger.info(f"Using cached embeddings for model: {model_name} (v3)")
             # Restore cached embeddings to NHS entries
             cached_embeddings = self._embeddings_cache[cache_key]
             for entry in self.nhs_data:
@@ -213,12 +213,12 @@ class NHSLookupEngine:
         # Extract all clean names for batch processing
         all_clean_names = [e.get("Clean Name") for e in self.nhs_data if e.get("Clean Name")]
         
-        # CRITICAL: Apply preprocessing to NHS Clean Names WITHOUT NHS-aware protection
-        # This ensures abbreviations in NHS.json get expanded consistently with user inputs
+        # CRITICAL: Apply standard preprocessing WITHOUT NHS-aware protection
+        # This ensures all abbreviations get expanded consistently for semantic matching
         from parsing_utils import AbbreviationExpander
         from preprocessing import ExamPreprocessor
         
-        # Create preprocessor WITHOUT NHS-aware protection for NHS Clean Names
+        # Create preprocessor WITHOUT NHS-aware protection for consistent expansion
         abbrev_expander = AbbreviationExpander()
         nhs_preprocessor = ExamPreprocessor(abbrev_expander, nhs_clean_names=None)
         

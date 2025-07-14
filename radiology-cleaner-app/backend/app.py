@@ -148,11 +148,9 @@ def _initialize_app():
         laterality_detector = LateralityDetector()
         contrast_mapper = ContrastMapper()
         
-        # Extract NHS clean names for NHS-aware preprocessing
-        nhs_clean_names = set(item.get('Clean Name', '').lower() for item in nhs_data if item.get('Clean Name'))
-        logger.info(f"Extracted {len(nhs_clean_names)} NHS clean names for preprocessing")
-        
-        initialize_preprocessor(abbreviation_expander, nhs_clean_names)
+        # Initialize preprocessor WITHOUT NHS-aware protection for consistent expansion
+        # This ensures both NHS and user inputs get expanded consistently for semantic matching
+        initialize_preprocessor(abbreviation_expander, nhs_clean_names=None)
         logger.info("Utility components initialized (Abbreviation, Anatomy, Laterality, Contrast, Preprocessor)")
         
         # STEP 5: Initialize semantic parser with all utilities
