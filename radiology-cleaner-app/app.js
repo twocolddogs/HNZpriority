@@ -876,7 +876,7 @@ window.addEventListener('DOMContentLoaded', function() {
         
         if (modelType === 'default') {
             document.getElementById('defaultModelBtn').classList.add('active');
-            document.getElementById('modelDescription').textContent = 'Using default clinical model optimized for healthcare terminology';
+            document.getElementById('modelDescription').textContent = 'Using PubMed model optimized for medical terminology (default)';
         } else if (modelType === 'pubmed') {
             document.getElementById('pubmedModelBtn').classList.add('active');
             document.getElementById('modelDescription').textContent = 'Using NeuML/pubmedbert-base-embeddings model optimized for biomedical research texts';
@@ -885,7 +885,7 @@ window.addEventListener('DOMContentLoaded', function() {
         console.log(`Switched to ${modelType} model`);
         
         // Show notification
-        updateStatusMessage(`🔄 Switched to ${modelType === 'default' ? 'Clinical' : 'PubMedBERT'} model`);
+        updateStatusMessage(`🔄 Switched to ${modelType === 'default' ? 'PubMed (Default)' : 'PubMedBERT'} model`);
         setTimeout(() => {
             const statusDiv = document.getElementById('statusMessage');
             if (statusDiv) statusDiv.style.display = 'none';
