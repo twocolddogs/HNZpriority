@@ -4,7 +4,7 @@ window.addEventListener('DOMContentLoaded', function() {
     function detectApiUrls() {
         const hostname = window.location.hostname;
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-        const isProduction = hostname.includes('radiology-cleaner-frontend-prod') || hostname.includes('hnzradtools');
+        const isProduction = hostname.includes('radiology-cleaner-frontend-prod') || hostname.includes('hnzradtools') || hostname.includes('pages.dev');
         const isStaging = hostname.includes('radiology-cleaner-frontend-staging');
         
         // API base URLs - Use relative /api/ for static sites (proxied by Render)
@@ -18,8 +18,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 mode: 'STAGING (Static)'
             },
             production: {
-                base: '/api', // Proxied to backend by Render static site
-                mode: 'PRODUCTION (Static)'
+                base: 'https://radiology-api-staging.onrender.com', // Direct API for Cloudflare
+                mode: 'PRODUCTION (Direct)'
             },
             fallback: {
                 base: 'https://radiology-api-staging.onrender.com',
