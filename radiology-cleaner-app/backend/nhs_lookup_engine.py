@@ -23,6 +23,7 @@ from fuzzywuzzy import fuzz
 from typing import TYPE_CHECKING 
 
 from nlp_processor import NLPProcessor
+from context_detection import detect_interventional_procedure_terms
 
 # This allows us to use 'RadiologySemanticParser' as a type hint
 if TYPE_CHECKING:
@@ -249,6 +250,9 @@ class NHSLookupEngine:
                 'snomed_fsn': '', 
                 'snomed_laterality_concept_id': '', 
                 'snomed_laterality_fsn': '', 
+                'is_diagnostic': False,
+                'is_interventional': False,
+                'detected_interventional_terms': [],
                 'confidence': 0.0, 
                 'source': 'NO_SEMANTIC_SEARCH'
             }
@@ -265,6 +269,9 @@ class NHSLookupEngine:
                 'snomed_fsn': '', 
                 'snomed_laterality_concept_id': '', 
                 'snomed_laterality_fsn': '', 
+                'is_diagnostic': False,
+                'is_interventional': False,
+                'detected_interventional_terms': [],
                 'confidence': 0.0, 
                 'source': 'NO_INPUT_EMBEDDING'
             }
@@ -273,6 +280,13 @@ class NHSLookupEngine:
         if custom_nlp_processor and custom_nlp_processor != self.nlp_processor:
             logger.info(f"Custom NLP processor detected, ensuring NHS embeddings consistency")
             self._precompute_embeddings(custom_nlp_processor)
+
+        # INTERVENTIONAL PROCEDURE DETECTION: Detect interventional terms for weighting
+        interventional_terms = detect_interventional_procedure_terms(input_exam)
+        is_interventional_input = len(interventional_terms) > 0
+        
+        if is_interventional_input:
+            logger.info(f"Detected interventional procedure terms in input: {interventional_terms}")
 
         # MAIN MATCHING LOOP: Compare input against all NHS entries
         for entry in self.nhs_data:
@@ -355,6 +369,23 @@ class NHSLookupEngine:
                 else:
                     combined_score -= 0.1   # Reduced penalty for mismatch
             
+            # INTERVENTIONAL PROCEDURE WEIGHTING: Boost score for matching procedure type
+            nhs_is_interventional = entry.get('Interventional Procedure', 'N').upper() == 'Y'
+            nhs_is_diagnostic = entry.get('Diagnostic procedure', 'N').upper() == 'Y'
+            
+            if is_interventional_input and nhs_is_interventional:
+                # Strong bonus for interventional input matching interventional NHS entry
+                combined_score += 0.25
+                logger.debug(f"Interventional procedure match bonus applied for: {nhs_clean_name}")
+            elif is_interventional_input and nhs_is_diagnostic and not nhs_is_interventional:
+                # Penalty for interventional input matching diagnostic-only NHS entry
+                combined_score -= 0.15
+                logger.debug(f"Interventional/diagnostic mismatch penalty applied for: {nhs_clean_name}")
+            elif not is_interventional_input and nhs_is_diagnostic:
+                # Small bonus for diagnostic input matching diagnostic NHS entry
+                combined_score += 0.1
+                logger.debug(f"Diagnostic procedure match bonus applied for: {nhs_clean_name}")
+            
             # Track best match
             if combined_score > highest_confidence:
                 highest_confidence, best_match = combined_score, entry
@@ -403,6 +434,10 @@ class NHSLookupEngine:
                 # Include laterality SNOMED data from NHS reference
                 'snomed_laterality_concept_id': best_match.get('SNOMED CT Concept-ID of Laterality', ''),
                 'snomed_laterality_fsn': best_match.get('SNOMED FSN of Laterality', ''),
+                # Include procedure type information from NHS reference
+                'is_diagnostic': best_match.get('Diagnostic procedure', 'N').upper() == 'Y',
+                'is_interventional': best_match.get('Interventional Procedure', 'N').upper() == 'Y',
+                'detected_interventional_terms': interventional_terms,
                 # Return the components from the INPUT exam name to show what was detected
                 'anatomy': anatomy,
                 'laterality': laterality,
@@ -410,7 +445,7 @@ class NHSLookupEngine:
                 'modality': modality,
                 'technique': technique,
                 'confidence': min(highest_confidence, 1.0),
-                'source': f'UNIFIED_PARSER_MATCH_V5_{model_name.upper()}'
+                'source': f'UNIFIED_PARSER_MATCH_V6_{model_name.upper()}'
             }
         
         # No match found
@@ -421,6 +456,9 @@ class NHSLookupEngine:
             'snomed_fsn': '', 
             'snomed_laterality_concept_id': '', 
             'snomed_laterality_fsn': '', 
+            'is_diagnostic': False,
+            'is_interventional': False,
+            'detected_interventional_terms': interventional_terms,
             'confidence': 0.0, 
             'source': 'NO_MATCH'
         }

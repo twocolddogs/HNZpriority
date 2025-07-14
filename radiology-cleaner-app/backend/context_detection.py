@@ -181,6 +181,73 @@ class ContextDetector:
         
         return contexts
     
+    def detect_interventional_procedure_terms(self, exam_name: str) -> List[str]:
+        """
+        Detect interventional procedure terms from exam name.
+        
+        Identifies terms that indicate interventional (therapeutic) procedures
+        rather than diagnostic procedures, enabling proper weighting in NHS lookup.
+        
+        Args:
+            exam_name: The exam name to analyze
+            
+        Returns:
+            List of detected interventional procedure terms
+        """
+        import re
+        
+        exam_lower = exam_name.lower()
+        interventional_terms = []
+        
+        # Interventional procedure patterns
+        interventional_patterns = {
+            'biopsy': [r'\b(biopsy|biopsies)\b'],
+            'drainage': [r'\b(drainage|drain)\b'],
+            'injection': [r'\b(injection|inject)\b'],
+            'aspiration': [r'\b(aspiration|aspirate)\b'],
+            'ablation': [r'\b(ablation|ablate)\b'],
+            'embolization': [r'\b(embolization|embolisation|embolize)\b'],
+            'stent': [r'\b(stent|stenting)\b'],
+            'angioplasty': [r'\b(angioplasty)\b'],
+            'therapeutic': [r'\b(therapeutic|therapy)\b'],
+            'guided': [r'\b(guided|guide)\b'],
+            'percutaneous': [r'\b(percutaneous)\b'],
+            'endovascular': [r'\b(endovascular)\b'],
+            'catheter': [r'\b(catheter|catheterization)\b'],
+            'procedure': [r'\b(procedure)\b'],
+            'intervention': [r'\b(intervention|interventional)\b'],
+            'treatment': [r'\b(treatment|treat)\b'],
+            'repair': [r'\b(repair)\b'],
+            'reconstruction': [r'\b(reconstruction|reconstruct)\b'],
+            'removal': [r'\b(removal|remove)\b'],
+            'placement': [r'\b(placement|place)\b'],
+            'insertion': [r'\b(insertion|insert)\b'],
+            'retrieval': [r'\b(retrieval|retrieve)\b'],
+            'thrombectomy': [r'\b(thrombectomy)\b'],
+            'thrombolysis': [r'\b(thrombolysis)\b'],
+            'sclerotherapy': [r'\b(sclerotherapy)\b'],
+            'vertebroplasty': [r'\b(vertebroplasty)\b'],
+            'kyphoplasty': [r'\b(kyphoplasty)\b'],
+            'radiofrequency': [r'\b(radiofrequency|rf)\b'],
+            'cryotherapy': [r'\b(cryotherapy|cryo)\b'],
+            'balloon': [r'\b(balloon)\b'],
+            'coil': [r'\b(coil|coiling)\b'],
+            'filter': [r'\b(filter)\b'],
+            'nephrostomy': [r'\b(nephrostomy)\b'],
+            'gastrostomy': [r'\b(gastrostomy)\b'],
+            'cholecystostomy': [r'\b(cholecystostomy)\b'],
+            'biliary': [r'\b(biliary drainage|biliary stent)\b'],
+            'vascular': [r'\b(vascular access|vascular intervention)\b']
+        }
+        
+        for term, patterns in interventional_patterns.items():
+            for pattern in patterns:
+                if re.search(pattern, exam_lower):
+                    interventional_terms.append(term)
+                    break  # Only add each term once
+        
+        return interventional_terms
+    
     def detect_all_contexts(self, exam_name: str, anatomy: List[str] = None) -> dict:
         """
         Detect all types of context in a single call.
@@ -219,6 +286,18 @@ def detect_age_context(exam_name: str) -> Optional[str]:
 def detect_clinical_context(exam_name: str, anatomy: List[str] = None) -> List[str]:
     """Convenience function for clinical context detection."""
     return _detector.detect_clinical_context(exam_name, anatomy)
+
+def detect_interventional_procedure_terms(exam_name: str) -> List[str]:
+    """
+    Convenience function for detecting interventional procedure terms.
+    
+    Args:
+        exam_name: The exam name to analyze
+        
+    Returns:
+        List of detected interventional procedure terms
+    """
+    return _detector.detect_interventional_procedure_terms(exam_name)
 
 def detect_all_contexts(exam_name: str, anatomy: List[str] = None) -> dict:
     """Convenience function for detecting all contexts."""

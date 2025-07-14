@@ -410,6 +410,11 @@ def _handle_single_exam(data: dict, start_time: float):
                 'laterality_concept_id': result.get('snomed_laterality_concept_id', ''),
                 'laterality_fsn': result.get('snomed_laterality_fsn', '')
             },
+            'procedure_type': {
+                'is_diagnostic': result.get('is_diagnostic', False),
+                'is_interventional': result.get('is_interventional', False),
+                'detected_interventional_terms': result.get('detected_interventional_terms', [])
+            },
             'components': {
                 'anatomy': anatomy, 
                 'laterality': laterality, 
@@ -473,7 +478,12 @@ def _handle_batch_exams(data: dict, start_time: float):
                         'found': result.get('snomed_found', False),
                         'laterality_concept_id': result.get('snomed_laterality_concept_id', ''),
                         'laterality_fsn': result.get('snomed_laterality_fsn', '')
-                    }, 
+                    },
+                    'procedure_type': {
+                        'is_diagnostic': result.get('is_diagnostic', False),
+                        'is_interventional': result.get('is_interventional', False),
+                        'detected_interventional_terms': result.get('detected_interventional_terms', [])
+                    },
                     'components': {
                         'anatomy': anatomy, 
                         'laterality': laterality, 
