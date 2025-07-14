@@ -290,7 +290,7 @@ def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
             contexts.append(context)
     return contexts
 
-def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> Dict:
+def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None, nlp_proc: NLPProcessor = None) -> Dict:
     """NHS-first processing pipeline that uses NHS.json as the single source of truth."""
     _ensure_app_is_initialized()
     if not nhs_lookup_engine or not semantic_parser:
@@ -301,7 +301,18 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> D
         cleaned_exam_name = _preprocess_exam_name(exam_name)
         
         # 2. Parse the cleaned input string to get its components for matching
-        parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
+        # Use provided NLP processor or fall back to global default
+        if nlp_proc and nlp_proc != nlp_processor:
+            # Create temporary parser with custom NLP processor
+            temp_parser = RadiologySemanticParser(
+                nlp_processor=nlp_proc,
+                anatomy_extractor=semantic_parser.anatomy_extractor,
+                laterality_detector=semantic_parser.laterality_detector,
+                contrast_mapper=semantic_parser.contrast_mapper
+            )
+            parsed_input_components = temp_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
+        else:
+            parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
         
         # 3. Use the cleaned name and its parsed components to find the best match
         nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components)
@@ -412,7 +423,7 @@ def parse_exam():
         if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
         
         # The core processing logic is now centralized
-        nhs_result = process_exam_with_nhs_lookup(exam_name, modality)
+        nhs_result = process_exam_with_nhs_lookup(exam_name, modality, None)
         cleaned_exam_name = _preprocess_exam_name(exam_name) # Needed for adapter
         adapted_result = _adapt_nhs_to_legacy_format(nhs_result, exam_name, cleaned_exam_name)
         
@@ -585,7 +596,7 @@ def validate_exam_data():
         data = request.json
         if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
         exam_name, modality_code = data['exam_name'], data.get('modality_code')
-        parsed_result = process_exam_with_nhs_lookup(exam_name, modality_code)
+        parsed_result = process_exam_with_nhs_lookup(exam_name, modality_code, None)
         quality_score = parsed_result.get('confidence', 0.0)
         warnings = []
         if not parsed_result.get('snomed_found'): warnings.append("No matching SNOMED code found.")
@@ -625,7 +636,7 @@ def parse_with_learning():
         data = request.json
         if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
         exam_name, modality = data['exam_name'], data.get('modality_code')
-        result = process_exam_with_nhs_lookup(exam_name, modality)
+        result = process_exam_with_nhs_lookup(exam_name, modality, None)
         result['metadata'] = {'processing_time_ms': int((time.time() - start_time) * 1000), 'source_endpoint': '/parse_with_learning'}
         return jsonify(result)
     except Exception as e:
