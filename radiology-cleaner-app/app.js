@@ -129,6 +129,10 @@ window.addEventListener('DOMContentLoaded', function() {
     document.getElementById('pubmedModelBtn').addEventListener('click', () => switchModel('pubmed'));
     
     // Help button event listener
+    document.getElementById('hamburgerToggle').addEventListener('click', () => {
+        document.getElementById('hamburgerDropdown').classList.toggle('hidden');
+    });
+
     document.getElementById('helpButton').addEventListener('click', showHelpModal);
     document.getElementById('closeHelpModal').addEventListener('click', closeHelpModal);
     document.getElementById('closeHelpBtn').addEventListener('click', closeHelpModal);
