@@ -126,9 +126,22 @@ class NHSLookupEngine:
             clean_name = entry.get("Clean Name")
             if clean_name:
                 try:
+                    # CRITICAL: Apply preprocessing to NHS Clean Names to match user input pipeline
+                    # Use the same preprocessing pipeline but WITHOUT NHS-aware protection
+                    from parsing_utils import AbbreviationExpander
+                    from preprocessing import ExamPreprocessor
+                    
+                    # Create preprocessor without NHS protection for consistent expansion
+                    abbrev_expander = AbbreviationExpander()
+                    nhs_preprocessor = ExamPreprocessor(abbrev_expander, nhs_clean_names=None)
+                    
+                    preprocessed_clean_name = nhs_preprocessor.preprocess(clean_name)
+                    if preprocessed_clean_name != clean_name:
+                        logger.debug(f"NHS parsing preprocessing: '{clean_name}' -> '{preprocessed_clean_name}'")
+                    
                     # Use the exact same pipeline that processes user input.
                     # Provide a placeholder modality as it's often parsed from the name itself.
-                    parsed_components = self.semantic_parser.parse_exam_name(clean_name, 'Other')
+                    parsed_components = self.semantic_parser.parse_exam_name(preprocessed_clean_name, 'Other')
                     
                     # Validate that we got meaningful results
                     if not parsed_components or not isinstance(parsed_components, dict):
@@ -183,10 +196,13 @@ class NHSLookupEngine:
         model_name = getattr(nlp_proc, 'model_name', 'unknown')
         
         # Check if embeddings are already cached for this model
-        if model_name in self._embeddings_cache:
-            logger.info(f"Using cached embeddings for model: {model_name}")
+        # NOTE: We intentionally bypass cache after preprocessing pipeline changes
+        # to ensure NHS embeddings are regenerated with consistent preprocessing
+        cache_key = f"{model_name}_v2"  # v2 indicates new preprocessing pipeline
+        if cache_key in self._embeddings_cache:
+            logger.info(f"Using cached embeddings for model: {model_name} (v2)")
             # Restore cached embeddings to NHS entries
-            cached_embeddings = self._embeddings_cache[model_name]
+            cached_embeddings = self._embeddings_cache[cache_key]
             for entry in self.nhs_data:
                 if clean_name := entry.get("Clean Name"):
                     entry["_embedding"] = cached_embeddings.get(clean_name)
@@ -197,14 +213,34 @@ class NHSLookupEngine:
         # Extract all clean names for batch processing
         all_clean_names = [e.get("Clean Name") for e in self.nhs_data if e.get("Clean Name")]
         
+        # CRITICAL: Apply preprocessing to NHS Clean Names WITHOUT NHS-aware protection
+        # This ensures abbreviations in NHS.json get expanded consistently with user inputs
+        from parsing_utils import AbbreviationExpander
+        from preprocessing import ExamPreprocessor
+        
+        # Create preprocessor WITHOUT NHS-aware protection for NHS Clean Names
+        abbrev_expander = AbbreviationExpander()
+        nhs_preprocessor = ExamPreprocessor(abbrev_expander, nhs_clean_names=None)
+        
+        preprocessed_clean_names = []
+        for clean_name in all_clean_names:
+            try:
+                preprocessed_name = nhs_preprocessor.preprocess(clean_name)
+                preprocessed_clean_names.append(preprocessed_name)
+                if preprocessed_name != clean_name:
+                    logger.info(f"NHS preprocessing: '{clean_name}' -> '{preprocessed_name}'")
+            except Exception as e:
+                logger.warning(f"Failed to preprocess NHS Clean Name '{clean_name}': {e}")
+                preprocessed_clean_names.append(clean_name)  # fallback to original
+        
         # Generate embeddings using batch processing for efficiency
-        embeddings = nlp_proc.batch_get_embeddings(all_clean_names)
+        embeddings = nlp_proc.batch_get_embeddings(preprocessed_clean_names)
         
         # Create mapping from clean names to embeddings
         name_to_embedding = dict(zip(all_clean_names, embeddings))
         
-        # Cache embeddings for future use
-        self._embeddings_cache[model_name] = name_to_embedding
+        # Cache embeddings for future use with new cache key
+        self._embeddings_cache[cache_key] = name_to_embedding
         
         # Apply embeddings to NHS entries for current use
         for entry in self.nhs_data:
