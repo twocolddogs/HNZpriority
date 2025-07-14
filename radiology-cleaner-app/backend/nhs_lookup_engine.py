@@ -59,21 +59,45 @@ class NHSLookupEngine:
         rules applied to user input, and moves all parsing to startup time.
         """
         if not self.semantic_parser:
-            logger.error("Semantic Parser not provided to NHSLookupEngine. Cannot pre-parse NHS data.")
-            return
+            logger.error("CRITICAL: Semantic Parser not provided to NHSLookupEngine. Cannot pre-parse NHS data.")
+            raise RuntimeError("Semantic Parser required for NHS data preprocessing")
 
         logger.info("Pre-parsing all NHS entries using the unified RadiologySemanticParser...")
         count = 0
+        failed_count = 0
+        
         for entry in self.nhs_data:
             clean_name = entry.get("Clean Name")
             if clean_name:
-                # Use the exact same pipeline that processes user input.
-                # Provide a placeholder modality as it's often parsed from the name itself.
-                parsed_components = self.semantic_parser.parse_exam_name(clean_name, 'Other')
-                # Cache the structured result directly on the entry.
-                entry['_parsed_components'] = parsed_components
-                count += 1
-        logger.info(f"Finished pre-parsing {count} NHS entries.")
+                try:
+                    # Use the exact same pipeline that processes user input.
+                    # Provide a placeholder modality as it's often parsed from the name itself.
+                    parsed_components = self.semantic_parser.parse_exam_name(clean_name, 'Other')
+                    
+                    # Validate that we got meaningful results
+                    if not parsed_components or not isinstance(parsed_components, dict):
+                        logger.warning(f"Parser returned invalid result for NHS entry: '{clean_name}'")
+                        failed_count += 1
+                        continue
+                        
+                    # Cache the structured result directly on the entry.
+                    entry['_parsed_components'] = parsed_components
+                    count += 1
+                    
+                    # Log first few successful parses for verification
+                    if count <= 3:
+                        logger.info(f"Sample parse result for '{clean_name}': {parsed_components}")
+                        
+                except Exception as e:
+                    logger.error(f"Failed to parse NHS entry '{clean_name}': {e}")
+                    failed_count += 1
+                    
+        logger.info(f"Finished pre-parsing: {count} successful, {failed_count} failed out of {len(self.nhs_data)} NHS entries.")
+        
+        if count == 0:
+            raise RuntimeError("CRITICAL: No NHS entries were successfully pre-parsed. System will not function.")
+        elif failed_count > count * 0.5:  # More than 50% failures
+            logger.warning(f"High failure rate in NHS preprocessing: {failed_count}/{count + failed_count} failed")
 
     def _precompute_embeddings(self):
         """Pre-computes embeddings for all NHS clean names using the NLP processor."""
@@ -119,32 +143,74 @@ class NHSLookupEngine:
                 continue
 
             # --- Component Matching (Now Apples-to-Apples) ---
-            input_modality = (extracted_input_components.get('modality') or [None])[0]
+            # Fix: Handle both string and list formats for modality/laterality
+            input_modality = extracted_input_components.get('modality')
+            if isinstance(input_modality, list):
+                input_modality = input_modality[0] if input_modality else None
+            
             nhs_modality = nhs_components.get('modality')
-            if input_modality and nhs_modality and input_modality.lower() != nhs_modality.lower():
-                continue # Strict modality mismatch
+            
+            # Log component comparison for debugging
+            logger.debug(f"Comparing input_modality='{input_modality}' vs nhs_modality='{nhs_modality}'")
+            
+            # Relaxed modality matching - only skip if clearly incompatible
+            if input_modality and nhs_modality:
+                input_mod_lower = input_modality.lower() if input_modality else ''
+                nhs_mod_lower = nhs_modality.lower() if nhs_modality else ''
+                if input_mod_lower and nhs_mod_lower and input_mod_lower != nhs_mod_lower:
+                    # Allow some common modality aliases
+                    modality_aliases = {
+                        'ct': ['computed tomography', 'dect'],
+                        'mr': ['mri', 'magnetic resonance'],
+                        'us': ['ultrasound', 'echo'],
+                        'xr': ['x-ray', 'radiograph']
+                    }
+                    
+                    compatible = False
+                    for canonical, aliases in modality_aliases.items():
+                        if (input_mod_lower == canonical and nhs_mod_lower in aliases) or \
+                           (nhs_mod_lower == canonical and input_mod_lower in aliases):
+                            compatible = True
+                            break
+                    
+                    if not compatible:
+                        logger.debug(f"Skipping due to modality mismatch: {input_mod_lower} vs {nhs_mod_lower}")
+                        continue
 
-            input_lat = (extracted_input_components.get('laterality') or [None])[0]
+            input_lat = extracted_input_components.get('laterality')
+            if isinstance(input_lat, list):
+                input_lat = input_lat[0] if input_lat else None
+                
             nhs_lat = nhs_components.get('laterality')
-            if input_lat and nhs_lat and input_lat.lower() != nhs_lat.lower():
-                continue # Strict laterality mismatch
+            
+            # Relaxed laterality matching - only enforce if both are specified
+            if input_lat and nhs_lat:
+                if input_lat.lower() != nhs_lat.lower():
+                    logger.debug(f"Skipping due to laterality mismatch: {input_lat} vs {nhs_lat}")
+                    continue
 
             # --- Scoring ---
             semantic_score = self.nlp_processor.calculate_semantic_similarity(input_embedding, nhs_embedding)
-            fuzzy_score = fuzz.ratio(input_exam.lower(), nhs_components.get('cleanName', '').lower()) / 100.0
+            # Fix: Use 'cleanName' (camelCase) as returned by semantic parser
+            nhs_clean_name = nhs_components.get('cleanName', entry.get('Clean Name', ''))
+            fuzzy_score = fuzz.ratio(input_exam.lower(), nhs_clean_name.lower()) / 100.0
             combined_score = (0.7 * semantic_score) + (0.3 * fuzzy_score)
 
             # Bonus/Penalty for component alignment
             if input_modality and input_modality.lower() == nhs_modality.lower():
                 combined_score += 0.1
 
-            input_contrast = (extracted_input_components.get('contrast') or [None])[0]
+            input_contrast = extracted_input_components.get('contrast')
+            if isinstance(input_contrast, list):
+                input_contrast = input_contrast[0] if input_contrast else None
+                
             nhs_contrast = nhs_components.get('contrast')
+            
             if input_contrast and nhs_contrast:
-                if input_contrast == nhs_contrast:
+                if input_contrast.lower() == nhs_contrast.lower():
                     combined_score += 0.15  # Strong bonus for alignment
                 else:
-                    combined_score -= 0.2   # Penalty for mismatch
+                    combined_score -= 0.1   # Reduced penalty for mismatch
             
             if combined_score > highest_confidence:
                 highest_confidence, best_match = combined_score, entry
@@ -152,20 +218,51 @@ class NHSLookupEngine:
         if best_match:
             # The final result uses the pre-parsed data from the best match
             final_components = best_match.get('_parsed_components', {})
+            
+            # Ensure components are in list format for consistency
+            anatomy = final_components.get('anatomy', [])
+            if not isinstance(anatomy, list):
+                anatomy = [anatomy] if anatomy else []
+                
+            laterality = final_components.get('laterality')
+            if laterality and not isinstance(laterality, list):
+                laterality = [laterality]
+            elif not laterality:
+                laterality = []
+                
+            contrast = final_components.get('contrast')
+            if contrast and not isinstance(contrast, list):
+                contrast = [contrast]
+            elif not contrast:
+                contrast = []
+                
+            modality = final_components.get('modality')
+            if modality and not isinstance(modality, list):
+                modality = [modality]
+            elif not modality:
+                modality = []
+                
+            technique = final_components.get('technique', [])
+            if not isinstance(technique, list):
+                technique = [technique] if technique else []
+            
+            logger.info(f"Best match found: '{final_components.get('cleanName', best_match.get('Clean Name'))}' with confidence {highest_confidence:.3f}")
+            
             return {
                 'clean_name': final_components.get('cleanName', best_match.get('Clean Name')),
                 'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
                 'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
                 # Return the components from the matched NHS entry for consistency
-                'anatomy': final_components.get('anatomy', []),
-                'laterality': [final_components.get('laterality')] if final_components.get('laterality') else [],
-                'contrast': [final_components.get('contrast')] if final_components.get('contrast') else [],
-                'modality': [final_components.get('modality')] if final_components.get('modality') else [],
-                'technique': final_components.get('technique', []),
+                'anatomy': anatomy,
+                'laterality': laterality,
+                'contrast': contrast,
+                'modality': modality,
+                'technique': technique,
                 'confidence': min(highest_confidence, 1.0),
                 'source': 'UNIFIED_PARSER_MATCH_V4'
             }
         
+        logger.warning(f"No match found for input: '{input_exam}' after checking {len(self.nhs_data)} NHS entries")
         return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
 
     def validate_consistency(self) -> Dict:
