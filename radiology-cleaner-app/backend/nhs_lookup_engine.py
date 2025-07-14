@@ -71,10 +71,13 @@ class NHSLookupEngine:
         # Step 2: Build lookup tables for fast SNOMED access
         self._build_lookup_tables()
         
-        # Step 3: Pre-parse all NHS entries using unified semantic parser
+        # Step 3: Pre-process all NHS Clean Names consistently
+        self._preprocess_nhs_clean_names()
+        
+        # Step 4: Pre-parse all NHS entries using unified semantic parser
         self._pre_parse_nhs_data_with_semantic_parser()
         
-        # Step 4: Pre-compute embeddings for default NHS entries
+        # Step 5: Pre-compute embeddings for default NHS entries
         self._precompute_embeddings()
         
         logger.info("NHSLookupEngine initialized with fully pre-parsed and embedded NHS data.")
@@ -108,6 +111,40 @@ class NHSLookupEngine:
         
         logger.info(f"Built SNOMED lookup table with {len(self.snomed_lookup)} entries")
 
+    def _preprocess_nhs_clean_names(self):
+        """
+        Pre-process all NHS Clean Names consistently before parsing and embedding.
+        
+        This ensures that the same preprocessing is applied to NHS data during both
+        parsing and embedding generation, maintaining consistency across the pipeline.
+        """
+        logger.info("Pre-processing all NHS Clean Names for consistent pipeline...")
+        
+        # Create preprocessor without NHS protection for consistent expansion
+        from parsing_utils import AbbreviationExpander
+        from preprocessing import ExamPreprocessor
+        
+        abbrev_expander = AbbreviationExpander()
+        nhs_preprocessor = ExamPreprocessor(abbrev_expander, nhs_clean_names=None)
+        
+        preprocessing_count = 0
+        for entry in self.nhs_data:
+            clean_name = entry.get("Clean Name")
+            if clean_name:
+                try:
+                    preprocessed_name = nhs_preprocessor.preprocess(clean_name)
+                    entry["_preprocessed_clean_name"] = preprocessed_name
+                    
+                    if preprocessed_name != clean_name:
+                        logger.debug(f"NHS preprocessing: '{clean_name}' -> '{preprocessed_name}'")
+                        preprocessing_count += 1
+                        
+                except Exception as e:
+                    logger.warning(f"Failed to preprocess NHS Clean Name '{clean_name}': {e}")
+                    entry["_preprocessed_clean_name"] = clean_name  # fallback to original
+        
+        logger.info(f"Pre-processed {preprocessing_count} NHS Clean Names that required expansion")
+
     def _pre_parse_nhs_data_with_semantic_parser(self):
         """
         Pre-parses all NHS entries using the main RadiologySemanticParser.
@@ -124,22 +161,11 @@ class NHSLookupEngine:
         
         for entry in self.nhs_data:
             clean_name = entry.get("Clean Name")
-            if clean_name:
+            preprocessed_clean_name = entry.get("_preprocessed_clean_name")
+            
+            if clean_name and preprocessed_clean_name:
                 try:
-                    # CRITICAL: Apply standard preprocessing for consistent expansion
-                    # Use the same preprocessing pipeline as user inputs (no NHS-aware protection)
-                    from parsing_utils import AbbreviationExpander
-                    from preprocessing import ExamPreprocessor
-                    
-                    # Create preprocessor without NHS protection for consistent expansion
-                    abbrev_expander = AbbreviationExpander()
-                    nhs_preprocessor = ExamPreprocessor(abbrev_expander, nhs_clean_names=None)
-                    
-                    preprocessed_clean_name = nhs_preprocessor.preprocess(clean_name)
-                    if preprocessed_clean_name != clean_name:
-                        logger.debug(f"NHS parsing preprocessing: '{clean_name}' -> '{preprocessed_clean_name}'")
-                    
-                    # Use the exact same pipeline that processes user input.
+                    # Use the pre-processed clean name for consistent parsing
                     # Provide a placeholder modality as it's often parsed from the name itself.
                     parsed_components = self.semantic_parser.parse_exam_name(preprocessed_clean_name, 'Other')
                     
@@ -198,9 +224,9 @@ class NHSLookupEngine:
         # Check if embeddings are already cached for this model
         # NOTE: We intentionally bypass cache after preprocessing pipeline changes
         # to ensure NHS embeddings are regenerated with consistent preprocessing
-        cache_key = f"{model_name}_v3"  # v3 indicates consistent expansion for both NHS and user inputs
+        cache_key = f"{model_name}_v4"  # v4 indicates proper preprocessing order: preprocess -> parse -> embed
         if cache_key in self._embeddings_cache:
-            logger.info(f"Using cached embeddings for model: {model_name} (v3)")
+            logger.info(f"Using cached embeddings for model: {model_name} (v4)")
             # Restore cached embeddings to NHS entries
             cached_embeddings = self._embeddings_cache[cache_key]
             for entry in self.nhs_data:
@@ -210,28 +236,19 @@ class NHSLookupEngine:
         
         logger.info(f"Pre-computing embeddings for all NHS clean names using model: {model_name}")
         
-        # Extract all clean names for batch processing
-        all_clean_names = [e.get("Clean Name") for e in self.nhs_data if e.get("Clean Name")]
-        
-        # CRITICAL: Apply standard preprocessing WITHOUT NHS-aware protection
-        # This ensures all abbreviations get expanded consistently for semantic matching
-        from parsing_utils import AbbreviationExpander
-        from preprocessing import ExamPreprocessor
-        
-        # Create preprocessor WITHOUT NHS-aware protection for consistent expansion
-        abbrev_expander = AbbreviationExpander()
-        nhs_preprocessor = ExamPreprocessor(abbrev_expander, nhs_clean_names=None)
-        
+        # Extract pre-processed clean names for batch processing
+        all_clean_names = []
         preprocessed_clean_names = []
-        for clean_name in all_clean_names:
-            try:
-                preprocessed_name = nhs_preprocessor.preprocess(clean_name)
+        
+        for entry in self.nhs_data:
+            clean_name = entry.get("Clean Name")
+            preprocessed_name = entry.get("_preprocessed_clean_name")
+            
+            if clean_name and preprocessed_name:
+                all_clean_names.append(clean_name)
                 preprocessed_clean_names.append(preprocessed_name)
-                if preprocessed_name != clean_name:
-                    logger.info(f"NHS preprocessing: '{clean_name}' -> '{preprocessed_name}'")
-            except Exception as e:
-                logger.warning(f"Failed to preprocess NHS Clean Name '{clean_name}': {e}")
-                preprocessed_clean_names.append(clean_name)  # fallback to original
+        
+        logger.info(f"Using {len(preprocessed_clean_names)} pre-processed NHS Clean Names for embedding generation")
         
         # Generate embeddings using batch processing for efficiency
         embeddings = nlp_proc.batch_get_embeddings(preprocessed_clean_names)
