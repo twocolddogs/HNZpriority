@@ -219,30 +219,31 @@ class NHSLookupEngine:
             # The final result uses the pre-parsed data from the best match
             final_components = best_match.get('_parsed_components', {})
             
+            # Use INPUT components to represent what was found in the user's exam name
             # Ensure components are in list format for consistency
-            anatomy = final_components.get('anatomy', [])
+            anatomy = extracted_input_components.get('anatomy', [])
             if not isinstance(anatomy, list):
                 anatomy = [anatomy] if anatomy else []
                 
-            laterality = final_components.get('laterality')
+            laterality = extracted_input_components.get('laterality')
             if laterality and not isinstance(laterality, list):
                 laterality = [laterality]
             elif not laterality:
                 laterality = []
                 
-            contrast = final_components.get('contrast')
+            contrast = extracted_input_components.get('contrast')
             if contrast and not isinstance(contrast, list):
                 contrast = [contrast]
             elif not contrast:
                 contrast = []
                 
-            modality = final_components.get('modality')
+            modality = extracted_input_components.get('modality')
             if modality and not isinstance(modality, list):
                 modality = [modality]
             elif not modality:
                 modality = []
                 
-            technique = final_components.get('technique', [])
+            technique = extracted_input_components.get('technique', [])
             if not isinstance(technique, list):
                 technique = [technique] if technique else []
             
@@ -255,7 +256,7 @@ class NHSLookupEngine:
                 'clean_name': canonical_clean_name,
                 'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
                 'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
-                # Return the components from the matched NHS entry for consistency
+                # Return the components from the INPUT exam name to show what was detected
                 'anatomy': anatomy,
                 'laterality': laterality,
                 'contrast': contrast,
