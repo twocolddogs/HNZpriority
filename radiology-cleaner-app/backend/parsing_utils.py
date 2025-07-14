@@ -174,9 +174,9 @@ class USAContrastMapper:
 
     def __init__(self):
         self.patterns = {
-            'with and without': [r'\bw\s*and\s*wo\b', r'\bw/wo\b', r'\bwith\s*and\s*without\b', r'\bpre\s*&\s*post\b', r'\b(pre and post contrast)\b'],
+            'with and without': [r'\bw\s*and\s*wo\b', r'\bw/wo\b', r'\bwith\s*and\s*without\b', r'\bpre\s*&\s*post\b', r'\bpre/post\b', r'\b(pre and post contrast)\b'],
             'with': [r'\bw\s+(contrast|iv|gad)\b', r'\bwith\s+contrast\b', r'\benhanced\b', r'\bpost\s*contrast\b', r'\bc\+\b', r'\bC\+\b', r'\s+C\+$', r'\biv contrast\b'],
-            'without': [r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon\s*contrast\b', r'\bunenhanced\b', r'\bplain\b', r'\bc-\b', r'\bC-\b', r'\s+C-$', r'\bnon-enhanced\b']
+            'without': [r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon\s*contrast\b', r'\bnon-enhanced\b', r'\bunenhanced\b', r'\bno\s+contrast\b', r'\bcontrast\s+not\s+given\b', r'\bpre-contrast\b', r'\bc-\b', r'\bC-\b', r'\s+C-$', r'\bplain\b']
         }
         self.compiled_patterns = {
             ctype: [re.compile(p, re.IGNORECASE) for p in patterns]
@@ -185,7 +185,8 @@ class USAContrastMapper:
 
     def detect_contrast(self, text: str) -> Optional[str]:
         """Detect contrast type with USA conventions"""
-        for contrast_type in ['with and without', 'with', 'without']:
+        # Check 'without' before 'with' to handle cases like 'non-enhanced' correctly
+        for contrast_type in ['with and without', 'without', 'with']:
             if any(p.search(text) for p in self.compiled_patterns[contrast_type]):
                 return contrast_type
         return None
