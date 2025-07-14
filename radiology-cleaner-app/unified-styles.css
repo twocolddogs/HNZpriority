@@ -194,32 +194,28 @@
 .hamburger-button {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: space-around;
   width: 24px;
-  height: 18px;
+  height: 24px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: var(--radius-base);
-  padding: var(--space-2);
+  border: none;
   cursor: pointer;
-  transition: var(--transition-base);
+  padding: 0;
+  z-index: 10;
 }
 
-.hamburger-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-.hamburger-button:focus-visible {
-  outline: 2px solid var(--color-white);
-  outline-offset: 2px;
+.hamburger-button:focus {
+  outline: none;
 }
 
 .hamburger-line {
-  width: 100%;
+  width: 24px;
   height: 2px;
-  background: var(--color-white);
-  transition: var(--transition-base);
+  background: white;
+  border-radius: 10px;
+  transition: all 0.3s linear;
+  position: relative;
+  transform-origin: 1px;
 }
 
 .hamburger-dropdown {
@@ -252,7 +248,7 @@
   padding: var(--space-3) var(--space-4);
   font-family: var(--font-family-body);
   font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
+  color: var(--color-gray-700) !important;
   background: transparent;
   border: none;
   text-align: left;
@@ -263,7 +259,7 @@
 
 .dropdown-item:hover {
   background-color: var(--color-gray-50);
-  color: var(--color-gray-900);
+  color: var(--color-gray-900) !important;
 }
 
 .dropdown-item:focus-visible {
