@@ -60,6 +60,9 @@ class NHSLookupEngine:
         self.nlp_processor = nlp_processor  # Default NLP processor
         self.semantic_parser = semantic_parser  # Unified semantic parser
         
+        # EMBEDDINGS CACHE: Store embeddings per model to avoid recomputation
+        self._embeddings_cache = {}  # model_name -> embeddings mapping
+        
         # INITIALIZATION PIPELINE
         # Step 1: Load NHS reference data
         self._load_nhs_data()
@@ -70,7 +73,7 @@ class NHSLookupEngine:
         # Step 3: Pre-parse all NHS entries using unified semantic parser
         self._pre_parse_nhs_data_with_semantic_parser()
         
-        # Step 4: Pre-compute embeddings for all NHS entries
+        # Step 4: Pre-compute embeddings for default NHS entries
         self._precompute_embeddings()
         
         logger.info("NHSLookupEngine initialized with fully pre-parsed and embedded NHS data.")
@@ -156,8 +159,7 @@ class NHSLookupEngine:
         Pre-compute embeddings for all NHS clean names using the specified NLP processor.
         
         This method generates vector embeddings for all NHS reference entries, enabling
-        semantic similarity calculations during matching. Uses the default NLP processor
-        unless a custom one is provided (e.g., PubMed model).
+        semantic similarity calculations during matching. Uses caching to avoid recomputation.
         
         Args:
             custom_nlp_processor: Optional custom NLP processor to use for embeddings
@@ -165,9 +167,9 @@ class NHSLookupEngine:
         
         EMBEDDING PROCESS:
         1. Select appropriate NLP processor (custom or default)
-        2. Extract all NHS clean names for batch processing
-        3. Generate embeddings using batch API calls for efficiency
-        4. Cache embeddings directly on NHS entries for fast access
+        2. Check if embeddings are already cached for this model
+        3. If cached, restore from cache; otherwise generate new embeddings
+        4. Cache embeddings for future use
         5. Log success/failure statistics
         """
         # Select NLP processor - use custom if provided, otherwise use default
@@ -178,6 +180,17 @@ class NHSLookupEngine:
             return
 
         model_name = getattr(nlp_proc, 'model_name', 'unknown')
+        
+        # Check if embeddings are already cached for this model
+        if model_name in self._embeddings_cache:
+            logger.info(f"Using cached embeddings for model: {model_name}")
+            # Restore cached embeddings to NHS entries
+            cached_embeddings = self._embeddings_cache[model_name]
+            for entry in self.nhs_data:
+                if clean_name := entry.get("Clean Name"):
+                    entry["_embedding"] = cached_embeddings.get(clean_name)
+            return
+        
         logger.info(f"Pre-computing embeddings for all NHS clean names using model: {model_name}")
         
         # Extract all clean names for batch processing
@@ -189,7 +202,10 @@ class NHSLookupEngine:
         # Create mapping from clean names to embeddings
         name_to_embedding = dict(zip(all_clean_names, embeddings))
         
-        # Cache embeddings directly on NHS entries for fast access during matching
+        # Cache embeddings for future use
+        self._embeddings_cache[model_name] = name_to_embedding
+        
+        # Apply embeddings to NHS entries for current use
         for entry in self.nhs_data:
             if clean_name := entry.get("Clean Name"):
                 entry["_embedding"] = name_to_embedding.get(clean_name)
@@ -237,9 +253,9 @@ class NHSLookupEngine:
             logger.warning(f"Could not generate input embedding for cleaned exam '{input_exam}'.")
             return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_INPUT_EMBEDDING'}
         
-        # If using custom NLP processor, need to recompute NHS embeddings with same model
+        # If using custom NLP processor, ensure NHS embeddings match the same model
         if custom_nlp_processor and custom_nlp_processor != self.nlp_processor:
-            logger.info(f"Custom NLP processor detected, recomputing NHS embeddings for consistency")
+            logger.info(f"Custom NLP processor detected, ensuring NHS embeddings consistency")
             self._precompute_embeddings(custom_nlp_processor)
 
         # MAIN MATCHING LOOP: Compare input against all NHS entries
