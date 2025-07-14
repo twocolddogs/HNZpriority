@@ -91,7 +91,22 @@ def _initialize_app():
                 if clean_name := item.get('Clean Name'): nhs_authority[clean_name] = item
         else: logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}"); sys.exit(1)
         
-        usa_patterns = {} # Simplified loading for this example
+         ### START: CORRECTED USA.json LOADING ###
+        usa_patterns = {'common_abbreviations': {}}
+        if os.path.exists(usa_json_path):
+            with open(usa_json_path, 'r', encoding='utf-8') as f:
+                usa_data = json.load(f)
+            # Process the list of objects into a dictionary of abbreviations
+            for item in usa_data:
+                short_name = item.get("SHORT_NAME", "").strip().lower()
+                long_name = item.get("LONG_NAME", "").strip()
+                if short_name and long_name:
+                    # This creates the key-value pair the expander expects
+                    usa_patterns['common_abbreviations'][short_name] = long_name
+            logger.info(f"Loaded {len(usa_patterns['common_abbreviations'])} abbreviations from USA.json")
+        else:
+            logger.warning(f"USA JSON file not found at {usa_json_path}, running with default abbreviations only.")
+        ### END: CORRECTED USA.json LOADING ###
 
         ### REFACTOR: INITIALIZATION ORDER IS NOW CRITICAL ###
         
@@ -275,7 +290,7 @@ def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
             contexts.append(context)
     return contexts
 
-def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None, nlp_proc: NLPProcessor = None) -> Dict:
+def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> Dict:
     """NHS-first processing pipeline that uses NHS.json as the single source of truth."""
     _ensure_app_is_initialized()
     if not nhs_lookup_engine or not semantic_parser:
@@ -285,25 +300,13 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None, nlp_
         # 1. Preprocess the raw input string
         cleaned_exam_name = _preprocess_exam_name(exam_name)
         
-        # 2. Parse the cleaned input string to get its components
-        # Use provided NLP processor or fall back to global default
-        active_nlp = nlp_proc or nlp_processor
-        if nlp_proc and nlp_proc != nlp_processor:
-            # Create temporary parser with custom NLP processor
-            temp_parser = RadiologySemanticParser(
-                nlp_processor=nlp_proc,
-                anatomy_extractor=semantic_parser.anatomy_extractor,
-                laterality_detector=semantic_parser.laterality_detector,
-                contrast_mapper=semantic_parser.contrast_mapper
-            )
-            parsed_result = temp_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
-        else:
-            parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
+        # 2. Parse the cleaned input string to get its components for matching
+        parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
         
-        # 3. Use the cleaned name and its parsed components to find the best match in the NHS dataset
-        nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_result)
+        # 3. Use the cleaned name and its parsed components to find the best match
+        nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components)
         
-        # 4. Format the final output
+        # 4. Format the final output, using components from the STANDARDIZED result
         return {
             'input_exam': exam_name,
             'cleaned_exam': cleaned_exam_name,
