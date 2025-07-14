@@ -315,7 +315,8 @@ class NHSLookupEngine:
                         'ct': ['computed tomography', 'dect'],
                         'mr': ['mri', 'magnetic resonance'],
                         'us': ['ultrasound', 'echo'],
-                        'xr': ['x-ray', 'radiograph']
+                        'xr': ['x-ray', 'radiograph'],
+                        'mammography': ['mg', 'mammo', 'mamm', 'mammogram']
                     }
                     
                     compatible = False

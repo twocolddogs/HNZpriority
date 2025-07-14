@@ -142,7 +142,7 @@ class AnatomyExtractor:
         for clean_name in self.nhs_authority.keys():
             parts = clean_name.lower().split()
             if len(parts) > 1:
-                modality_words = {'ct', 'mri', 'mr', 'us', 'xr', 'nm', 'pet', 'dexa', 'mammography', 'fluoroscopy'}
+                modality_words = {'ct', 'mri', 'mr', 'us', 'xr', 'nm', 'pet', 'dexa', 'mammography', 'mammo', 'mamm', 'mg', 'fluoroscopy'}
                 # Filter out modality words AND stop words
                 anatomy_parts = [p for p in parts if p not in modality_words and p not in anatomy_stop_words]
                 if anatomy_parts:

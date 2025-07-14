@@ -15,7 +15,7 @@ class RadiologySemanticParser:
         self.laterality_detector = laterality_detector
         self.contrast_mapper = contrast_mapper
 
-        self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'MG': 'Mammography', 'Mammo':'Mammography', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'Other': 'Other', 'BR': 'Mammography'}
+        self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'MG': 'Mammography', 'Mammo':'Mammography', 'Mamm': 'Mammography', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'Other': 'Other', 'BR': 'Mammography'}
 
         self.technique_patterns = {
             'Angiography': [re.compile(p, re.I) for p in [r'angiogram', r'angiography', r'\bcta\b', r'\bmra\b', r'venogram', r'angio']],
@@ -72,7 +72,7 @@ class RadiologySemanticParser:
             'US': re.compile(r'\b(us|ultrasound|sonogram)\b', re.I),
             'NM': re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy)\b', re.I),
             'PET': re.compile(r'\b(pet|positron emission)\b', re.I),
-            'Mammography': re.compile(r'\b(mg|mammo|mammography)\b', re.I),
+            'Mammography': re.compile(r'\b(mg|mammo|mamm|mammography)\b', re.I),
             'Fluoroscopy': re.compile(r'\b(fl|fluoroscopy|screening)\b', re.I),
         }
         for modality, pattern in modality_patterns.items():
