@@ -205,8 +205,7 @@ def _detect_gender_context(exam_name: str, anatomy: List[str]) -> Optional[str]:
     exam_lower = exam_name.lower()
     
     # Debug logging for gender detection
-    if 'female' in exam_lower or 'male' in exam_lower:
-        logger.info(f"DEBUG: Gender detection for '{exam_name}' -> '{exam_lower}'")
+    logger.info(f"DEBUG: Gender detection for '{exam_name}' -> '{exam_lower}'")
     
     pregnancy_patterns = [r'\b(obstetric|pregnancy|prenatal)\b', r'\b(fetal|fetus)\b', r'\b(trimester)\b']
     if any(re.search(p, exam_lower) for p in pregnancy_patterns): 
@@ -243,6 +242,7 @@ def _detect_gender_context(exam_name: str, anatomy: List[str]) -> Optional[str]:
             logger.info(f"DEBUG: Detected male pattern '{pattern}' in '{exam_name}'")
             return 'male'
     
+    logger.info(f"DEBUG: No gender context detected for '{exam_name}'")
     return None
 
 def _detect_age_context(exam_name: str) -> Optional[str]:
@@ -454,6 +454,10 @@ def parse_enhanced():
         laterality = [l for l in result.get('laterality', []) if l]
         contrast = [c for c in result.get('contrast', []) if c]
         modality_list = [m for m in result.get('modality', []) if m]
+        
+        # Debug: Test gender detection
+        gender_result = _detect_gender_context(cleaned_exam_name, anatomy)
+        logger.info(f"DEBUG: Gender detection result for '{cleaned_exam_name}': {gender_result}")
 
         response = {
             'clean_name': result.get('clean_name', ''),
