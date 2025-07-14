@@ -17,9 +17,10 @@ class ExamPreprocessor:
     the accuracy of downstream semantic parsing and NHS lookup operations.
     """
     
-    def __init__(self, abbreviation_expander=None):
+    def __init__(self, abbreviation_expander=None, nhs_clean_names=None):
         """Initialize with optional abbreviation expander for text expansion."""
         self.abbreviation_expander = abbreviation_expander
+        self.nhs_clean_names = nhs_clean_names or set()
         self._init_patterns()
     
     def _init_patterns(self):
@@ -61,13 +62,54 @@ class ExamPreprocessor:
             return text  # Skip if no expander configured
         
         pre_expansion = text
-        expanded = self.abbreviation_expander.expand(text)
+        expanded = self._expand_abbreviations_nhs_aware(text)
         
         # Log gender-related expansions for debugging gender detection issues
         if ('female' in original_exam.lower() or 'male' in original_exam.lower()) and pre_expansion != expanded:
             logger.info(f"DEBUG: Abbreviation expansion: '{pre_expansion}' -> '{expanded}'")
         
         return expanded
+    
+    def _expand_abbreviations_nhs_aware(self, text: str) -> str:
+        """
+        Expand abbreviations while preserving NHS-standard abbreviations.
+        
+        If an abbreviation exists as an NHS Clean Name, don't expand it to avoid
+        matching issues where NHS uses the abbreviated form as standard.
+        """
+        if not self.abbreviation_expander:
+            return text
+        
+        # Check if the whole text (case-insensitive) is an NHS Clean Name
+        if text.lower().strip() in self.nhs_clean_names:
+            logger.info(f"NHS-aware preprocessing: Preserving NHS standard abbreviation '{text}'")
+            return text
+        
+        # Check individual words for NHS abbreviations
+        words = text.split()
+        protected_words = set()
+        
+        for word in words:
+            # Remove punctuation for checking
+            clean_word = word.strip('.,!?;:').lower()
+            if clean_word in self.nhs_clean_names:
+                protected_words.add(clean_word)
+                logger.info(f"NHS-aware preprocessing: Protecting NHS abbreviation '{clean_word}' in '{text}'")
+        
+        # If we have protected words, do selective expansion
+        if protected_words:
+            return self._selective_abbreviation_expansion(text, protected_words)
+        
+        # No NHS abbreviations found, do normal expansion
+        return self.abbreviation_expander.expand(text)
+    
+    def _selective_abbreviation_expansion(self, text: str, protected_words: set) -> str:
+        """
+        Expand abbreviations while protecting specific words from expansion.
+        """
+        # For now, if any protected words are found, skip expansion entirely
+        # This is a conservative approach that can be refined later
+        return text
     
     def _normalize_ordinals(self, text: str) -> str:
         """Convert ordinal numbers to standardized forms (1st -> First)."""
@@ -149,14 +191,14 @@ class ExamPreprocessor:
 # Module-level preprocessor instance for easy access across the application
 _preprocessor: Optional[ExamPreprocessor] = None
 
-def initialize_preprocessor(abbreviation_expander=None):
+def initialize_preprocessor(abbreviation_expander=None, nhs_clean_names=None):
     """
     Set up the global preprocessor instance with the given abbreviation expander.
     
     This must be called during application initialization before using preprocess_exam_name().
     """
     global _preprocessor
-    _preprocessor = ExamPreprocessor(abbreviation_expander)
+    _preprocessor = ExamPreprocessor(abbreviation_expander, nhs_clean_names)
 
 def preprocess_exam_name(exam_name: str) -> str:
     """

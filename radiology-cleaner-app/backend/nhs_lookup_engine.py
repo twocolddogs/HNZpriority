@@ -214,6 +214,166 @@ class NHSLookupEngine:
         successful_count = sum(1 for e in embeddings if e is not None)
         logger.info(f"Successfully pre-computed {successful_count}/{len(all_clean_names)} embeddings using {model_name}.")
 
+    def _match_against_snomed_fsn(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
+        """
+        Try to match input against SNOMED FSN (Fully Specified Name) instead of Clean Name.
+        
+        This is useful for cases where the input is an expanded form but NHS uses
+        abbreviations as Clean Names (e.g., "magnetic resonance cholangiopancreatography" vs "MRCP").
+        """
+        best_match, highest_confidence = None, 0.0
+        
+        # Select NLP processor
+        nlp_proc = custom_nlp_processor if custom_nlp_processor else self.nlp_processor
+        
+        if not nlp_proc or not nlp_proc.is_available():
+            return {}
+        
+        # Generate input embedding
+        input_embedding = nlp_proc.get_text_embedding(input_exam)
+        if input_embedding is None:
+            return {}
+        
+        # Ensure NHS embeddings match the same model
+        if custom_nlp_processor and custom_nlp_processor != self.nlp_processor:
+            self._precompute_embeddings(custom_nlp_processor)
+        
+        # INTERVENTIONAL PROCEDURE DETECTION
+        interventional_terms = detect_interventional_procedure_terms(input_exam)
+        is_interventional_input = len(interventional_terms) > 0
+        
+        # Match against SNOMED FSN instead of Clean Name
+        for entry in self.nhs_data:
+            nhs_embedding = entry.get("_embedding")
+            nhs_components = entry.get("_parsed_components")
+            
+            if not nhs_components or nhs_embedding is None:
+                continue
+            
+            # Use SNOMED FSN for matching if available
+            snomed_fsn = entry.get('SNOMED CT FSN', '')
+            if not snomed_fsn:
+                continue
+            
+            # Component matching (same as regular matching)
+            input_modality = extracted_input_components.get('modality')
+            if isinstance(input_modality, list):
+                input_modality = input_modality[0] if input_modality else None
+            
+            nhs_modality = nhs_components.get('modality')
+            
+            # Skip if modalities are clearly incompatible
+            if input_modality and nhs_modality:
+                input_mod_lower = input_modality.lower() if input_modality else ''
+                nhs_mod_lower = nhs_modality.lower() if nhs_modality else ''
+                if input_mod_lower and nhs_mod_lower and input_mod_lower != nhs_mod_lower:
+                    modality_aliases = {
+                        'ct': ['computed tomography', 'dect'],
+                        'mr': ['mri', 'magnetic resonance'],
+                        'us': ['ultrasound', 'echo'],
+                        'xr': ['x-ray', 'radiograph'],
+                        'mammography': ['mg', 'mammo', 'mamm', 'mammogram']
+                    }
+                    
+                    compatible = False
+                    for canonical, aliases in modality_aliases.items():
+                        if (input_mod_lower == canonical and nhs_mod_lower in aliases) or \
+                           (nhs_mod_lower == canonical and input_mod_lower in aliases):
+                            compatible = True
+                            break
+                    
+                    if not compatible:
+                        continue
+            
+            # Semantic similarity against SNOMED FSN
+            semantic_score = nlp_proc.calculate_semantic_similarity(input_embedding, nhs_embedding)
+            
+            # Fuzzy matching against SNOMED FSN (remove "(procedure)" suffix for better matching)
+            clean_fsn = snomed_fsn.replace('(procedure)', '').strip()
+            fuzzy_score = fuzz.ratio(input_exam.lower(), clean_fsn.lower()) / 100.0
+            
+            # Combined score with higher weight on semantic similarity for FSN matching
+            combined_score = (0.8 * semantic_score) + (0.2 * fuzzy_score)
+            
+            # Interventional procedure weighting
+            nhs_is_interventional = entry.get('Interventional Procedure', 'N').upper() == 'Y'
+            nhs_is_diagnostic = entry.get('Diagnostic procedure', 'N').upper() == 'Y'
+            
+            if is_interventional_input and nhs_is_interventional:
+                combined_score += 0.25
+            elif is_interventional_input and nhs_is_diagnostic and not nhs_is_interventional:
+                combined_score -= 0.15
+            elif not is_interventional_input and nhs_is_diagnostic:
+                combined_score += 0.1
+            
+            # Track best match
+            if combined_score > highest_confidence:
+                highest_confidence, best_match = combined_score, entry
+        
+        if best_match:
+            logger.info(f"FSN match found: '{best_match.get('Clean Name')}' via SNOMED FSN with confidence {highest_confidence:.3f}")
+            return self._format_match_result(best_match, extracted_input_components, highest_confidence, interventional_terms, nlp_proc, source_suffix="FSN")
+        
+        return {}
+
+    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, interventional_terms: List[str], nlp_proc: NLPProcessor, source_suffix: str = "") -> Dict:
+        """Format the match result consistently for both Clean Name and FSN matching."""
+        final_components = best_match.get('_parsed_components', {})
+        
+        # Normalize input components to list format
+        anatomy = extracted_input_components.get('anatomy', [])
+        if not isinstance(anatomy, list):
+            anatomy = [anatomy] if anatomy else []
+            
+        laterality = extracted_input_components.get('laterality')
+        if laterality and not isinstance(laterality, list):
+            laterality = [laterality]
+        elif not laterality:
+            laterality = []
+            
+        contrast = extracted_input_components.get('contrast')
+        if contrast and not isinstance(contrast, list):
+            contrast = [contrast]
+        elif not contrast:
+            contrast = []
+            
+        modality = extracted_input_components.get('modality')
+        if modality and not isinstance(modality, list):
+            modality = [modality]
+        elif not modality:
+            modality = []
+            
+        technique = extracted_input_components.get('technique', [])
+        if not isinstance(technique, list):
+            technique = [technique] if technique else []
+        
+        # Use the canonical NHS "Clean Name" as the standardized result
+        canonical_clean_name = best_match.get('Clean Name', final_components.get('cleanName', ''))
+        
+        model_name = getattr(nlp_proc, 'model_name', 'default')
+        
+        source_name = f'UNIFIED_PARSER_MATCH_V6_{model_name.upper()}'
+        if source_suffix:
+            source_name += f'_{source_suffix}'
+        
+        return {
+            'clean_name': canonical_clean_name,
+            'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
+            'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
+            'snomed_laterality_concept_id': best_match.get('SNOMED CT Concept-ID of Laterality', ''),
+            'snomed_laterality_fsn': best_match.get('SNOMED FSN of Laterality', ''),
+            'is_diagnostic': best_match.get('Diagnostic procedure', 'N').upper() == 'Y',
+            'is_interventional': best_match.get('Interventional Procedure', 'N').upper() == 'Y',
+            'detected_interventional_terms': interventional_terms,
+            'anatomy': anatomy,
+            'laterality': laterality,
+            'contrast': contrast,
+            'modality': modality,
+            'technique': technique,
+            'confidence': min(confidence, 1.0),
+            'source': source_name
+        }
+
     def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
         """
         Main method to standardize an exam using NHS reference data.
@@ -391,63 +551,42 @@ class NHSLookupEngine:
             if combined_score > highest_confidence:
                 highest_confidence, best_match = combined_score, entry
 
-        # RESULT FORMATTING: Process best match if found
-        if best_match:
-            final_components = best_match.get('_parsed_components', {})
-            
-            # Normalize input components to list format for consistency
-            anatomy = extracted_input_components.get('anatomy', [])
-            if not isinstance(anatomy, list):
-                anatomy = [anatomy] if anatomy else []
-                
-            laterality = extracted_input_components.get('laterality')
-            if laterality and not isinstance(laterality, list):
-                laterality = [laterality]
-            elif not laterality:
-                laterality = []
-                
-            contrast = extracted_input_components.get('contrast')
-            if contrast and not isinstance(contrast, list):
-                contrast = [contrast]
-            elif not contrast:
-                contrast = []
-                
-            modality = extracted_input_components.get('modality')
-            if modality and not isinstance(modality, list):
-                modality = [modality]
-            elif not modality:
-                modality = []
-                
-            technique = extracted_input_components.get('technique', [])
-            if not isinstance(technique, list):
-                technique = [technique] if technique else []
-            
-            # Use the canonical NHS "Clean Name" as the standardized result
-            canonical_clean_name = best_match.get('Clean Name', final_components.get('cleanName', ''))
-            
+        # DUAL LOOKUP STRATEGY: Try Clean Name first, then SNOMED FSN
+        # Step 1: Try direct Clean Name matching (current logic)
+        if best_match and highest_confidence > 0.8:
+            # High confidence Clean Name match - use it directly
             model_name = getattr(nlp_proc, 'model_name', 'default')
-            logger.info(f"Best match found: '{canonical_clean_name}' with confidence {highest_confidence:.3f} using model {model_name}")
-            
-            return {
-                'clean_name': canonical_clean_name,
-                'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
-                'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
-                # Include laterality SNOMED data from NHS reference
-                'snomed_laterality_concept_id': best_match.get('SNOMED CT Concept-ID of Laterality', ''),
-                'snomed_laterality_fsn': best_match.get('SNOMED FSN of Laterality', ''),
-                # Include procedure type information from NHS reference
-                'is_diagnostic': best_match.get('Diagnostic procedure', 'N').upper() == 'Y',
-                'is_interventional': best_match.get('Interventional Procedure', 'N').upper() == 'Y',
-                'detected_interventional_terms': interventional_terms,
-                # Return the components from the INPUT exam name to show what was detected
-                'anatomy': anatomy,
-                'laterality': laterality,
-                'contrast': contrast,
-                'modality': modality,
-                'technique': technique,
-                'confidence': min(highest_confidence, 1.0),
-                'source': f'UNIFIED_PARSER_MATCH_V6_{model_name.upper()}'
-            }
+            logger.info(f"High confidence Clean Name match: '{best_match.get('Clean Name')}' with confidence {highest_confidence:.3f}")
+            return self._format_match_result(best_match, extracted_input_components, highest_confidence, interventional_terms, nlp_proc, source_suffix="CLEAN")
+        
+        # Step 2: Try SNOMED FSN matching for potentially expanded forms
+        logger.info(f"Attempting SNOMED FSN matching for input: '{input_exam}'")
+        fsn_match = self._match_against_snomed_fsn(input_exam, extracted_input_components, custom_nlp_processor)
+        
+        # Step 3: Choose the best match between Clean Name and FSN
+        if fsn_match and fsn_match.get('confidence', 0) > 0.7:
+            # Good FSN match found
+            if best_match:
+                # Compare Clean Name vs FSN match confidence
+                clean_name_confidence = highest_confidence
+                fsn_confidence = fsn_match.get('confidence', 0)
+                
+                if fsn_confidence > clean_name_confidence:
+                    logger.info(f"FSN match ({fsn_confidence:.3f}) beats Clean Name match ({clean_name_confidence:.3f})")
+                    return fsn_match
+                else:
+                    logger.info(f"Clean Name match ({clean_name_confidence:.3f}) beats FSN match ({fsn_confidence:.3f})")
+                    return self._format_match_result(best_match, extracted_input_components, highest_confidence, interventional_terms, nlp_proc, source_suffix="CLEAN")
+            else:
+                # No Clean Name match, but FSN match exists
+                logger.info(f"No Clean Name match, using FSN match with confidence {fsn_match.get('confidence', 0):.3f}")
+                return fsn_match
+        
+        # Step 4: Fall back to Clean Name match even if confidence is lower
+        if best_match:
+            model_name = getattr(nlp_proc, 'model_name', 'default')
+            logger.info(f"Using Clean Name match as fallback: '{best_match.get('Clean Name')}' with confidence {highest_confidence:.3f}")
+            return self._format_match_result(best_match, extracted_input_components, highest_confidence, interventional_terms, nlp_proc, source_suffix="CLEAN")
         
         # No match found
         logger.warning(f"No match found for input: '{input_exam}' after checking {len(self.nhs_data)} NHS entries")
