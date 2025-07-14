@@ -362,10 +362,14 @@ def parse_enhanced():
     try:
         data = request.json
         if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
-        exam_name, modality = data['exam_name'], data.get('modality_code')
+        exam_name, modality, model = data['exam_name'], data.get('modality_code'), data.get('model', 'default')
+        
+        # Log model selection (for future implementation)
+        if model != 'default':
+            logger.info(f"Model '{model}' requested for exam: {exam_name}")
 
         cache_version = get_current_cache_version()
-        cache_key = format_cache_key("enhanced", cache_version, exam_name, modality or 'None')
+        cache_key = format_cache_key("enhanced", cache_version, f"{exam_name}_{model}", modality or 'None')
         if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
 
         result = process_exam_with_nhs_lookup(exam_name, modality)
@@ -413,10 +417,16 @@ def parse_batch():
         data = request.json
         if not data or 'exams' not in data: return jsonify({"error": "Missing exams array"}), 400
         exams = data['exams']
+        model = data.get('model', 'default')
+        
+        # Log model selection (for future implementation)
+        if model != 'default':
+            logger.info(f"Model '{model}' requested for batch processing of {len(exams)} exams")
+            
         results, errors, cache_hits, uncached_exams, cached_results = [], [], 0, [], []
         cache_version = get_current_cache_version()
         for exam_data in exams:
-            cache_key = format_cache_key("batch", cache_version, exam_data['exam_name'], exam_data.get('modality_code', 'Unknown'))
+            cache_key = format_cache_key("batch", cache_version, f"{exam_data['exam_name']}_{model}", exam_data.get('modality_code', 'Unknown'))
             if cached := cache_manager.get(cache_key):
                 cached_results.append({"input": exam_data, "output": cached})
                 cache_hits += 1

@@ -53,6 +53,9 @@ window.addEventListener('DOMContentLoaded', function() {
     console.log(`Frontend running in ${apiConfig.mode} mode`);
     console.log(`API endpoints: ${apiConfig.baseUrl}`);
     
+    // Global model selection state
+    let currentModel = 'default';
+    
     // Test API connectivity on page load
     async function testApiConnectivity() {
         try {
@@ -121,7 +124,10 @@ window.addEventListener('DOMContentLoaded', function() {
     document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
     document.getElementById('consolidatedSort').addEventListener('change', sortConsolidatedResults);
     
-
+    // Model toggle event listeners
+    document.getElementById('defaultModelBtn').addEventListener('click', () => switchModel('default'));
+    document.getElementById('pubmedModelBtn').addEventListener('click', () => switchModel('pubmed'));
+    
     // Help button event listener
     document.getElementById('helpButton').addEventListener('click', showHelpModal);
     document.getElementById('closeHelpModal').addEventListener('click', closeHelpModal);
@@ -297,7 +303,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ exam_name: code.EXAM_NAME, modality_code: code.MODALITY_CODE })
+                    body: JSON.stringify({ exam_name: code.EXAM_NAME, modality_code: code.MODALITY_CODE, model: currentModel })
                 });
                 if (!response.ok) throw new Error(`API returned status ${response.status}`);
                 
@@ -357,7 +363,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     exams: exams,
-                    chunk_size: 1000 // Process in chunks of 1000
+                    chunk_size: 1000, // Process in chunks of 1000
+                    model: currentModel
                 })
             });
             
@@ -857,6 +864,32 @@ window.addEventListener('DOMContentLoaded', function() {
         consolidatedData = Object.values(consolidatedGroups);
         filteredConsolidatedData = [...consolidatedData];
         sortConsolidatedResults();
+    }
+    
+    // --- MODEL TOGGLE FUNCTIONS ---
+    function switchModel(modelType) {
+        // Update global state
+        currentModel = modelType;
+        
+        // Update UI - toggle active states
+        document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
+        
+        if (modelType === 'default') {
+            document.getElementById('defaultModelBtn').classList.add('active');
+            document.getElementById('modelDescription').textContent = 'Using default clinical model optimized for healthcare terminology';
+        } else if (modelType === 'pubmed') {
+            document.getElementById('pubmedModelBtn').classList.add('active');
+            document.getElementById('modelDescription').textContent = 'Using NeuML/pubmedbert-base-embeddings model optimized for biomedical research texts';
+        }
+        
+        console.log(`Switched to ${modelType} model`);
+        
+        // Show notification
+        updateStatusMessage(`🔄 Switched to ${modelType === 'default' ? 'Clinical' : 'PubMedBERT'} model`);
+        setTimeout(() => {
+            const statusDiv = document.getElementById('statusMessage');
+            if (statusDiv) statusDiv.style.display = 'none';
+        }, 3000);
     }
     
     function showFullView() {
