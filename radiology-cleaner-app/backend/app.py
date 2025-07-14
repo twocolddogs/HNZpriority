@@ -280,47 +280,10 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None, nlp_
         return {'error': str(e)}
 
 # =============================================================================
-# LEGACY FORMAT ADAPTER
+# LEGACY FORMAT ADAPTER (REMOVED)
 # =============================================================================
-# Converts modern NHS lookup results to legacy endpoint format for backward compatibility
-
-def _adapt_nhs_to_legacy_format(nhs_result: Dict, original_exam_name: str, cleaned_exam_name: str) -> Dict:
-    """Adapts the output of the modern NHS lookup to the legacy /parse endpoint format."""
-    if 'error' in nhs_result: return {'error': nhs_result['error']}
-    
-    # The new nhs_result already contains the structured components from the best match
-    anatomy = [a for a in nhs_result.get('anatomy', []) if a]
-    laterality = (nhs_result.get('laterality') or [None])[0]
-    contrast = (nhs_result.get('contrast') or [None])[0]
-    modality = (nhs_result.get('modality') or ['Unknown'])[0]
-    technique = nhs_result.get('technique', [])
-
-    snomed_data = {
-        'snomed_concept_id': nhs_result.get('snomed_id'),
-        'snomed_fsn': nhs_result.get('snomed_fsn'),
-        # These fields may not be available in the new model, add placeholder
-        'snomed_laterality_concept_id': None,
-        'snomed_laterality_fsn': None
-    }
-    
-    return {
-        'cleanName': nhs_result.get('clean_name'),
-        'anatomy': anatomy,
-        'laterality': laterality,
-        'contrast': contrast,
-        'technique': technique,
-        'gender_context': detect_gender_context(cleaned_exam_name, anatomy),
-        'age_context': detect_age_context(cleaned_exam_name),
-        'clinical_context': detect_clinical_context(cleaned_exam_name, anatomy),
-        'confidence': nhs_result.get('confidence', 0.0),
-        'snomed': snomed_data,
-        'equivalence': {'clinical_equivalents': [], 'procedural_equivalents': []},
-        'is_paediatric': detect_age_context(cleaned_exam_name) == 'paediatric',
-        'modality': modality,
-        'parsing_method': 'unified_nhs_lookup_v4', # Updated version
-        'original_exam_name': original_exam_name,
-        'cleaned_exam_name': cleaned_exam_name
-    }
+# Legacy format adapter has been removed as part of API simplification.
+# All endpoints now use the unified /parse_enhanced format.
 
 # =============================================================================
 # API ENDPOINTS
@@ -354,92 +317,88 @@ def cache_version_info():
         return jsonify({"error": "Failed to get cache version info"}), 500
 
 @app.route('/parse', methods=['POST'])
-def parse_exam():
+def parse_exam_legacy():
     """
-    Legacy parsing endpoint, now unified to use the modern NHS-first lookup pipeline.
+    DEPRECATED: Use /parse_enhanced instead.
     
-    ENDPOINT PIPELINE:
-    1. Validate input and check cache
-    2. Process exam using unified NHS lookup pipeline
-    3. Adapt results to legacy format for backward compatibility
-    4. Cache results and record performance metrics
+    Legacy parsing endpoint for backward compatibility.
+    Redirects to unified /parse_enhanced endpoint.
     """
-    _ensure_app_is_initialized()
-    start_time = time.time()
-    
-    # Register worker for tracking
-    worker_id = f"parse_{int(time.time() * 1000000)}"
-    if not _register_worker(worker_id):
-        return jsonify({"error": "Server shutting down"}), 503
-    
-    try:
-        data = request.json
-        if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
-        exam_name = data['exam_name']
-        modality = data.get('modality_code')
-        cache_version = get_current_cache_version()
-        cache_key = format_cache_key("unified", cache_version, exam_name, modality or 'None')
-        if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
-        
-        # The core processing logic is now centralized
-        nhs_result = process_exam_with_nhs_lookup(exam_name, modality, None)
-        cleaned_exam_name = preprocess_exam_name(exam_name) # Needed for adapter
-        adapted_result = _adapt_nhs_to_legacy_format(nhs_result, exam_name, cleaned_exam_name)
-        
-        cache_manager.set(cache_key, adapted_result)
-        processing_time = int((time.time() - start_time) * 1000)
-        record_performance('parse', processing_time, len(exam_name), 'error' not in adapted_result)
-        return jsonify(adapted_result)
-    except Exception as e:
-        logger.error(f"Parse endpoint error: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
-    finally:
-        _unregister_worker(worker_id)
+    return jsonify({
+        "error": "Deprecated endpoint", 
+        "message": "Use /parse_enhanced instead. See API documentation for details.",
+        "deprecated": True
+    }), 410
 
 @app.route('/parse_enhanced', methods=['POST'])
 def parse_enhanced():
     """
-    Enhanced parsing endpoint using the new hybrid NLP parser.
+    Unified parsing endpoint that handles both single exams and batches intelligently.
+    
+    INPUT FORMATS:
+    - Single exam: {"exam_name": "CT Chest", "modality_code": "CT", "model": "pubmed"}
+    - Batch exams: {"exams": [{"exam_name": "CT Chest", "modality_code": "CT"}, ...], "model": "pubmed"}
     
     ENDPOINT PIPELINE:
-    1. Validate input and select NLP model
-    2. Check cache for existing results
-    3. Process exam using selected NLP processor
-    4. Format enhanced response with detailed components
-    5. Cache results and record performance metrics
+    1. Detect input format (single vs batch)
+    2. Validate input and select NLP model
+    3. Check cache for existing results
+    4. Process using optimal strategy (single or batch processing)
+    5. Format unified response with detailed components
+    6. Cache results and record performance metrics
     """
     _ensure_app_is_initialized()
     start_time = time.time()
     
-    # Register worker for tracking
-    worker_id = f"parse_enhanced_{int(time.time() * 1000000)}"
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"error": "Missing request data"}), 400
+        
+        # DETECT INPUT FORMAT: Single exam or batch
+        if 'exam_name' in data:
+            # Single exam format
+            return _handle_single_exam(data, start_time)
+        elif 'exams' in data:
+            # Batch format
+            return _handle_batch_exams(data, start_time)
+        else:
+            return jsonify({"error": "Invalid input format. Expected 'exam_name' or 'exams' field"}), 400
+            
+    except Exception as e:
+        logger.error(f"Parse endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
+def _handle_single_exam(data: dict, start_time: float):
+    """Handle single exam processing with caching and performance tracking."""
+    worker_id = f"single_{int(time.time() * 1000000)}"
     if not _register_worker(worker_id):
         return jsonify({"error": "Server shutting down"}), 503
     
     try:
-        data = request.json
-        if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
-        exam_name, modality, model = data['exam_name'], data.get('modality_code'), data.get('model', 'default')
+        exam_name = data['exam_name']
+        modality = data.get('modality_code')
+        model = data.get('model', 'default')
         
         # Get the appropriate NLP processor for the selected model
         selected_nlp_processor = _get_nlp_processor(model)
-        logger.info(f"Using model '{model}' for exam: {exam_name}")
+        logger.info(f"Using model '{model}' for single exam: {exam_name}")
 
+        # Check cache first
         cache_version = get_current_cache_version()
         cache_key = format_cache_key("enhanced", cache_version, f"{exam_name}_{model}", modality or 'None')
-        if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
+        if cached_result := cache_manager.get(cache_key):
+            return jsonify(cached_result)
 
+        # Process the exam
         result = process_exam_with_nhs_lookup(exam_name, modality, selected_nlp_processor)
         cleaned_exam_name = preprocess_exam_name(exam_name)
         
+        # Format response
         anatomy = [a for a in result.get('anatomy', []) if a]
         laterality = [l for l in result.get('laterality', []) if l]
         contrast = [c for c in result.get('contrast', []) if c]
         modality_list = [m for m in result.get('modality', []) if m]
-        
-        # Debug: Test gender detection
-        gender_result = detect_gender_context(cleaned_exam_name, anatomy)
-        logger.info(f"DEBUG: Gender detection result for '{cleaned_exam_name}': {gender_result}")
 
         response = {
             'clean_name': result.get('clean_name', ''),
@@ -459,110 +418,139 @@ def parse_enhanced():
             'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000), 'confidence': result.get('confidence', 0.0), 'source': result.get('source')}
         }
         
+        # Cache and record performance
         cache_manager.set(cache_key, response)
-
-        record_performance('parse_enhanced', response['metadata']['processing_time_ms'], len(exam_name), True)
+        record_performance('parse_enhanced_single', response['metadata']['processing_time_ms'], len(exam_name), True)
         return jsonify(response)
-    except Exception as e:
-        logger.error(f"Enhanced parse endpoint error: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
+        
     finally:
         _unregister_worker(worker_id)
+
+def _handle_batch_exams(data: dict, start_time: float):
+    """Handle batch exam processing with threading and cache optimization."""
+    exams = data['exams']
+    model = data.get('model', 'default')
+    
+    # Get the appropriate NLP processor for the selected model
+    selected_nlp_processor = _get_nlp_processor(model)
+    logger.info(f"Using model '{model}' for batch processing of {len(exams)} exams")
+    
+    # Process cache hits and misses
+    results, errors, cache_hits, uncached_exams, cached_results = [], [], 0, [], []
+    cache_version = get_current_cache_version()
+    
+    for exam_data in exams:
+        cache_key = format_cache_key("batch", cache_version, f"{exam_data['exam_name']}_{model}", exam_data.get('modality_code', 'Unknown'))
+        if cached := cache_manager.get(cache_key):
+            cached_results.append({"input": exam_data, "output": cached})
+            cache_hits += 1
+        else:
+            uncached_exams.append(exam_data)
+    
+    # Process uncached exams with threading
+    if uncached_exams:
+        def process_exam_batch(exam_data):
+            try:
+                result = process_exam_with_nhs_lookup(exam_data.get('exam_name', ''), exam_data.get('modality_code'), selected_nlp_processor)
+                # Format for batch response
+                anatomy = [a for a in result.get('anatomy', []) if a]
+                laterality = [l for l in result.get('laterality', []) if l]
+                contrast = [c for c in result.get('contrast', []) if c]
+                modality_list = [m for m in result.get('modality', []) if m]
+                
+                return {
+                    'clean_name': result.get('clean_name', ''), 
+                    'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)}, 
+                    'components': {
+                        'anatomy': anatomy, 
+                        'laterality': laterality, 
+                        'contrast': contrast, 
+                        'technique': result.get('technique', []), 
+                        'confidence': result.get('confidence', 0.0), 
+                        'modality': modality_list,
+                        'gender_context': result.get('gender_context'),
+                        'age_context': result.get('age_context'),
+                        'clinical_context': result.get('clinical_context', [])
+                    }, 
+                    'original_exam': exam_data
+                }
+            except Exception as e:
+                return {"error": str(e), "original_exam": exam_data}
+        
+        # Use threading for batch processing
+        max_workers = get_optimal_worker_count(max_items=len(uncached_exams))
+        logger.info(f"Processing {len(uncached_exams)} uncached exams with {max_workers} workers")
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            batch_worker_id = f"batch_{int(time.time() * 1000)}"
+            if not _register_worker(batch_worker_id):
+                logger.warning("Shutdown requested, aborting batch processing")
+                return jsonify({"error": "Server shutting down"}), 503
+            
+            try:
+                future_to_exam = {executor.submit(process_exam_batch, exam): exam for exam in uncached_exams}
+                for future in as_completed(future_to_exam):
+                    if _shutdown_requested:
+                        logger.info("Shutdown requested during batch processing, stopping...")
+                        break
+                        
+                    exam_data, result = future_to_exam[future], future.result()
+                    if 'error' in result:
+                        errors.append({"error": result['error'], "original_exam": exam_data})
+                    else:
+                        results.append({"input": exam_data, "output": result})
+                        cache_key = format_cache_key("batch", cache_version, f"{exam_data['exam_name']}_{model}", exam_data.get('modality_code', 'Unknown'))
+                        cache_manager.set(cache_key, result)
+            finally:
+                _unregister_worker(batch_worker_id)
+    
+    # Combine results and generate response
+    all_results = cached_results + results
+    processing_stats = {
+        'total_processed': len(exams), 
+        'successful': len(all_results), 
+        'errors': len(errors), 
+        'cache_hits': cache_hits, 
+        'processing_time_ms': int((time.time() - start_time) * 1000), 
+        'cache_hit_ratio': cache_hits / len(exams) if exams else 0.0
+    }
+    
+    response = {'results': all_results, 'errors': errors, 'processing_stats': processing_stats}
+    record_performance('parse_enhanced_batch', processing_stats['processing_time_ms'], len(exams), len(errors) == 0)
+    return jsonify(response)
+
+# =============================================================================
+# LEGACY ENDPOINTS (DEPRECATED)
+# =============================================================================
+# These endpoints are deprecated. Use /parse_enhanced for all parsing needs.
+
+@app.route('/parse', methods=['POST'])
+def parse_exam():
+    """
+    DEPRECATED: Use /parse_enhanced instead.
+    
+    Legacy parsing endpoint for backward compatibility.
+    Redirects to unified /parse_enhanced endpoint.
+    """
+    return jsonify({
+        "error": "Deprecated endpoint", 
+        "message": "Use /parse_enhanced instead. See API documentation for details.",
+        "deprecated": True
+    }), 410
 
 @app.route('/parse_batch', methods=['POST'])
 def parse_batch():
     """
-    Optimized batch processing using the new hybrid parser.
+    DEPRECATED: Use /parse_enhanced instead.
     
-    ENDPOINT PIPELINE:
-    1. Validate input and select NLP model
-    2. Check cache for existing results (cache optimization)
-    3. Process uncached exams using thread pool
-    4. Aggregate results and calculate statistics
-    5. Record performance metrics
+    Legacy batch processing endpoint for backward compatibility.
+    Redirects to unified /parse_enhanced endpoint.
     """
-    _ensure_app_is_initialized()
-    start_time = time.time()
-    try:
-        data = request.json
-        if not data or 'exams' not in data: return jsonify({"error": "Missing exams array"}), 400
-        exams = data['exams']
-        model = data.get('model', 'default')
-        
-        # Get the appropriate NLP processor for the selected model
-        selected_nlp_processor = _get_nlp_processor(model)
-        logger.info(f"Using model '{model}' for batch processing of {len(exams)} exams")
-            
-        results, errors, cache_hits, uncached_exams, cached_results = [], [], 0, [], []
-        cache_version = get_current_cache_version()
-        for exam_data in exams:
-            cache_key = format_cache_key("batch", cache_version, f"{exam_data['exam_name']}_{model}", exam_data.get('modality_code', 'Unknown'))
-            if cached := cache_manager.get(cache_key):
-                cached_results.append({"input": exam_data, "output": cached})
-                cache_hits += 1
-            else:
-                uncached_exams.append(exam_data)
-        if uncached_exams:
-            def process_exam_batch(exam_data):
-                try:
-                    result = process_exam_with_nhs_lookup(exam_data.get('exam_name', ''), exam_data.get('modality_code'), selected_nlp_processor)
-                    # Adapt the output for batch response format
-                    anatomy = [a for a in result.get('anatomy', []) if a]
-                    laterality = [l for l in result.get('laterality', []) if l]
-                    contrast = [c for c in result.get('contrast', []) if c]
-                    modality_list = [m for m in result.get('modality', []) if m]
-                    
-                    return {
-                        'clean_name': result.get('clean_name', ''), 
-                        'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)}, 
-                        'components': {
-                            'anatomy': anatomy, 
-                            'laterality': laterality, 
-                            'contrast': contrast, 
-                            'technique': result.get('technique', []), 
-                            'confidence': result.get('confidence', 0.0), 
-                            'modality': modality_list,
-                            'gender_context': result.get('gender_context'),
-                            'age_context': result.get('age_context'),
-                            'clinical_context': result.get('clinical_context', [])
-                        }, 
-                        'original_exam': exam_data
-                    }
-                except Exception as e:
-                    return {"error": str(e), "original_exam": exam_data}
-            
-            max_workers = get_optimal_worker_count(max_items=len(uncached_exams))
-            logger.info(f"Processing {len(uncached_exams)} uncached exams with {max_workers} workers")
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                batch_worker_id = f"batch_{int(time.time() * 1000)}"
-                if not _register_worker(batch_worker_id):
-                    logger.warning("Shutdown requested, aborting batch processing")
-                    return jsonify({"error": "Server shutting down"}), 503
-                
-                try:
-                    future_to_exam = {executor.submit(process_exam_batch, exam): exam for exam in uncached_exams}
-                    for future in as_completed(future_to_exam):
-                        if _shutdown_requested:
-                            logger.info("Shutdown requested during batch processing, stopping...")
-                            break
-                            
-                        exam_data, result = future_to_exam[future], future.result()
-                        if 'error' in result: errors.append({"error": result['error'], "original_exam": exam_data})
-                        else:
-                            results.append({"input": exam_data, "output": result})
-                            cache_key = format_cache_key("batch", cache_version, exam_data['exam_name'], exam_data.get('modality_code', 'Unknown'))
-                            cache_manager.set(cache_key, result)
-                finally:
-                    _unregister_worker(batch_worker_id)
-        
-        all_results = cached_results + results
-        processing_stats = {'total_processed': len(exams), 'successful': len(all_results), 'errors': len(errors), 'cache_hits': cache_hits, 'processing_time_ms': int((time.time() - start_time) * 1000), 'cache_hit_ratio': cache_hits / len(exams) if exams else 0.0}
-        response = {'results': all_results, 'errors': errors, 'processing_stats': processing_stats}
-        record_performance('parse_batch', processing_stats['processing_time_ms'], len(exams), len(errors) == 0)
-        return jsonify(response)
-    except Exception as e:
-        logger.error(f"Batch parse endpoint error: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
+    return jsonify({
+        "error": "Deprecated endpoint", 
+        "message": "Use /parse_enhanced with 'exams' array instead. See API documentation for details.",
+        "deprecated": True
+    }), 410
 
 @app.route('/validate', methods=['POST'])
 def validate_exam_data():
