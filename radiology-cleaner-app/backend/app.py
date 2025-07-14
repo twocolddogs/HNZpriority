@@ -44,7 +44,6 @@ def _initialize_app():
         db_manager = DatabaseManager(); cache_manager = CacheManager(); feedback_manager = FeedbackTrainingManager()
         logger.info("Database, Cache, and Feedback managers initialized.")
 
-        # SIMPLIFIED: Only initialize the API-based processor
         nlp_processor = NLPProcessor()
         if not nlp_processor.is_available():
             logger.error("API-based NLP processor is not available (HUGGING_FACE_TOKEN missing?). Semantic features will be degraded.")
@@ -59,23 +58,38 @@ def _initialize_app():
                 if clean_name := item.get('Clean Name'): nhs_authority[clean_name] = item
         else: logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}"); sys.exit(1)
         
-        usa_patterns = {} # Simplified loading
+        usa_patterns = {} # Simplified loading for this example
+
+        ### REFACTOR: INITIALIZATION ORDER IS NOW CRITICAL ###
+        
+        # 1. First, create all the component utilities for the parser.
         abbreviation_expander = AbbreviationExpander(usa_patterns)
         anatomy_extractor = AnatomyExtractor(nhs_authority, usa_patterns)
-        laterality_detector = LateralityDetector(); contrast_mapper = USAContrastMapper()
+        laterality_detector = LateralityDetector()
+        contrast_mapper = USAContrastMapper()
         
+        # 2. Then, create the Semantic Parser which depends on them.
         semantic_parser = RadiologySemanticParser(
-            nlp_processor=nlp_processor, anatomy_extractor=anatomy_extractor,
-            laterality_detector=laterality_detector, contrast_mapper=contrast_mapper
+            nlp_processor=nlp_processor, 
+            anatomy_extractor=anatomy_extractor,
+            laterality_detector=laterality_detector, 
+            contrast_mapper=contrast_mapper
+        )
+        logger.info("RadiologySemanticParser initialized.")
+        
+        # 3. Finally, create the Lookup Engine and INJECT the parser into it for unified logic.
+        nhs_lookup_engine = NHSLookupEngine(
+            nhs_json_path=nhs_json_path, 
+            nlp_processor=nlp_processor,
+            semantic_parser=semantic_parser  # <-- The crucial injection
         )
         
-        nhs_lookup_engine = NHSLookupEngine(nhs_json_path, nlp_processor)
         nhs_lookup_engine.validate_consistency()
-        logger.info("All components initialized successfully.")
+        logger.info("All components initialized successfully with unified parsing logic.")
+        logger.info(f"Initialization complete in {time.time() - start_time:.2f} seconds.")
 
     except Exception as e:
         logger.critical(f"FATAL: Failed to initialize components: {e}", exc_info=True); sys.exit(1)
-
 
 def _ensure_app_is_initialized():
     """A thread-safe gatekeeper to ensure initialization runs only once."""
@@ -201,27 +215,35 @@ def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
 def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> Dict:
     """NHS-first processing pipeline that uses NHS.json as the single source of truth."""
     _ensure_app_is_initialized()
-    if not nhs_lookup_engine:
-        logger.error("NHS Lookup Engine not available")
-        return {'error': 'NHS Lookup Engine not initialized'}
+    if not nhs_lookup_engine or not semantic_parser:
+        logger.error("Core components (NHS Engine or Parser) not available")
+        return {'error': 'Core components not initialized'}
     try:
+        # 1. Preprocess the raw input string
         cleaned_exam_name = _preprocess_exam_name(exam_name)
-        parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other') if semantic_parser else {}
-        extracted_components = {'modality': [], 'anatomy': [], 'laterality': [], 'contrast': [], 'procedure_type': []}
-        if modality_code: extracted_components['modality'].append(modality_code.lower())
-        elif parsed_result.get('modality'): extracted_components['modality'].append(parsed_result['modality'].lower())
-        if parsed_result.get('anatomy'): extracted_components['anatomy'].extend([a.lower() for a in parsed_result['anatomy']])
-        if parsed_result.get('laterality'): extracted_components['laterality'].append(parsed_result['laterality'].lower())
-        if parsed_result.get('contrast'): extracted_components['contrast'].append(parsed_result['contrast'].lower())
-        for key in extracted_components: extracted_components[key] = list(set(extracted_components[key]))
-        nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, extracted_components)
+        
+        # 2. Parse the cleaned input string to get its components
+        parsed_result = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
+        
+        # 3. Use the cleaned name and its parsed components to find the best match in the NHS dataset
+        nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_result)
+        
+        # 4. Format the final output
         return {
-            'input_exam': exam_name, 'cleaned_exam': cleaned_exam_name, 'clean_name': nhs_result['clean_name'],
-            'anatomy': extracted_components['anatomy'], 'laterality': extracted_components['laterality'],
-            'modality': extracted_components['modality'], 'contrast': extracted_components['contrast'],
-            'snomed_id': nhs_result['snomed_id'], 'snomed_fsn': nhs_result['snomed_fsn'],
-            'confidence': nhs_result['confidence'], 'source': nhs_result['source'],
-            'snomed_found': bool(nhs_result['snomed_id']), 'age_context': _detect_age_context(cleaned_exam_name)
+            'input_exam': exam_name,
+            'cleaned_exam': cleaned_exam_name,
+            'clean_name': nhs_result.get('clean_name'),
+            'anatomy': nhs_result.get('anatomy', []),
+            'laterality': nhs_result.get('laterality', []),
+            'modality': nhs_result.get('modality', []),
+            'contrast': nhs_result.get('contrast', []),
+            'technique': nhs_result.get('technique', []),
+            'snomed_id': nhs_result.get('snomed_id'),
+            'snomed_fsn': nhs_result.get('snomed_fsn'),
+            'confidence': nhs_result.get('confidence'),
+            'source': nhs_result.get('source'),
+            'snomed_found': bool(nhs_result.get('snomed_id')),
+            'age_context': _detect_age_context(cleaned_exam_name)
         }
     except Exception as e:
         logger.error(f"Error processing exam '{exam_name}': {e}", exc_info=True)
@@ -230,25 +252,42 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None) -> D
 def _adapt_nhs_to_legacy_format(nhs_result: Dict, original_exam_name: str, cleaned_exam_name: str) -> Dict:
     """Adapts the output of the modern NHS lookup to the legacy /parse endpoint format."""
     if 'error' in nhs_result: return {'error': nhs_result['error']}
+    
+    # The new nhs_result already contains the structured components from the best match
+    anatomy = [a for a in nhs_result.get('anatomy', []) if a]
+    laterality = (nhs_result.get('laterality') or [None])[0]
+    contrast = (nhs_result.get('contrast') or [None])[0]
+    modality = (nhs_result.get('modality') or ['Unknown'])[0]
+    technique = nhs_result.get('technique', [])
+
     snomed_data = {
-        'snomed_concept_id': nhs_result.get('snomed_id'), 'snomed_fsn': nhs_result.get('snomed_fsn'),
-        'snomed_laterality_concept_id': nhs_result.get('laterality_snomed'), 'snomed_laterality_fsn': nhs_result.get('laterality_fsn')
+        'snomed_concept_id': nhs_result.get('snomed_id'),
+        'snomed_fsn': nhs_result.get('snomed_fsn'),
+        # These fields may not be available in the new model, add placeholder
+        'snomed_laterality_concept_id': None,
+        'snomed_laterality_fsn': None
     }
+    
     return {
-        'cleanName': nhs_result.get('clean_name'), 'anatomy': nhs_result.get('anatomy', []),
-        'laterality': (nhs_result.get('laterality') or [None])[0], 'contrast': (nhs_result.get('contrast') or [None])[0],
-        'technique': nhs_result.get('technique', []),
-        'gender_context': _detect_gender_context(cleaned_exam_name, nhs_result.get('anatomy', [])),
+        'cleanName': nhs_result.get('clean_name'),
+        'anatomy': anatomy,
+        'laterality': laterality,
+        'contrast': contrast,
+        'technique': technique,
+        'gender_context': _detect_gender_context(cleaned_exam_name, anatomy),
         'age_context': _detect_age_context(cleaned_exam_name),
-        'clinical_context': _detect_clinical_context(cleaned_exam_name, nhs_result.get('anatomy', [])),
-        'confidence': nhs_result.get('confidence', 0.0), 'snomed': snomed_data,
+        'clinical_context': _detect_clinical_context(cleaned_exam_name, anatomy),
+        'confidence': nhs_result.get('confidence', 0.0),
+        'snomed': snomed_data,
         'equivalence': {'clinical_equivalents': [], 'procedural_equivalents': []},
         'is_paediatric': _detect_age_context(cleaned_exam_name) == 'paediatric',
-        'modality': (nhs_result.get('modality') or ['Unknown'])[0], 'parsing_method': 'unified_nhs_lookup',
-        'original_exam_name': original_exam_name, 'cleaned_exam_name': cleaned_exam_name
+        'modality': modality,
+        'parsing_method': 'unified_nhs_lookup_v4', # Updated version
+        'original_exam_name': original_exam_name,
+        'cleaned_exam_name': cleaned_exam_name
     }
 
-# --- API Endpoints ---
+# --- API Endpoints (No changes needed from here down) ---
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat(), 'app_initialized': _app_initialized})
@@ -293,9 +332,12 @@ def parse_exam():
         cache_version = get_current_cache_version()
         cache_key = format_cache_key("unified", cache_version, exam_name, modality or 'None')
         if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
-        cleaned_exam_name = _preprocess_exam_name(exam_name)
-        nhs_result = process_exam_with_nhs_lookup(cleaned_exam_name, modality)
+        
+        # The core processing logic is now centralized
+        nhs_result = process_exam_with_nhs_lookup(exam_name, modality)
+        cleaned_exam_name = _preprocess_exam_name(exam_name) # Needed for adapter
         adapted_result = _adapt_nhs_to_legacy_format(nhs_result, exam_name, cleaned_exam_name)
+        
         cache_manager.set(cache_key, adapted_result)
         processing_time = int((time.time() - start_time) * 1000)
         record_performance('parse', processing_time, len(exam_name), 'error' not in adapted_result)
@@ -322,31 +364,35 @@ def parse_enhanced():
         if not data or 'exam_name' not in data: return jsonify({"error": "Missing exam_name"}), 400
         exam_name, modality = data['exam_name'], data.get('modality_code')
 
-        # Dynamic cache versioning - automatically invalidates when processing rules change
         cache_version = get_current_cache_version()
         cache_key = format_cache_key("enhanced", cache_version, exam_name, modality or 'None')
         if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
 
         result = process_exam_with_nhs_lookup(exam_name, modality)
         cleaned_exam_name = _preprocess_exam_name(exam_name)
+        
+        anatomy = [a for a in result.get('anatomy', []) if a]
+        laterality = [l for l in result.get('laterality', []) if l]
+        contrast = [c for c in result.get('contrast', []) if c]
+        modality_list = [m for m in result.get('modality', []) if m]
+
         response = {
             'clean_name': result.get('clean_name', ''),
             'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)},
             'components': {
-                'anatomy': result.get('anatomy', []), 
-                'laterality': result.get('laterality', []), 
-                'contrast': result.get('contrast', []), 
+                'anatomy': anatomy, 
+                'laterality': laterality, 
+                'contrast': contrast, 
                 'technique': result.get('technique', []), 
-                'modality': result.get('modality', []), 
+                'modality': modality_list, 
                 'confidence': result.get('confidence', 0.0),
-                'gender_context': _detect_gender_context(cleaned_exam_name, result.get('anatomy', [])),
-                'clinical_context': _detect_clinical_context(cleaned_exam_name, result.get('anatomy', [])),
-                'clinical_equivalents': []  # Placeholder for future enhancement
+                'gender_context': _detect_gender_context(cleaned_exam_name, anatomy),
+                'clinical_context': _detect_clinical_context(cleaned_exam_name, anatomy),
+                'clinical_equivalents': []
             },
-            'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000), 'confidence': result.get('confidence', 0.0), 'source': 'hybrid_parser_v3_sentence_transformer'}
+            'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000), 'confidence': result.get('confidence', 0.0), 'source': result.get('source')}
         }
         
-        # Store result in cache with dynamic version
         cache_manager.set(cache_key, response)
 
         record_performance('parse_enhanced', response['metadata']['processing_time_ms'], len(exam_name), True)
@@ -379,14 +425,31 @@ def parse_batch():
             def process_exam_batch(exam_data):
                 try:
                     result = process_exam_with_nhs_lookup(exam_data.get('exam_name', ''), exam_data.get('modality_code'))
-                    return {'clean_name': result.get('clean_name', ''), 'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)}, 'components': {'anatomy': result.get('anatomy', []), 'laterality': result.get('laterality', []), 'contrast': result.get('contrast', []), 'technique': result.get('technique', []), 'confidence': result.get('confidence', 0.0), 'modality': result.get('modality', [])}, 'original_exam': exam_data}
+                    # Adapt the output for batch response format
+                    anatomy = [a for a in result.get('anatomy', []) if a]
+                    laterality = [l for l in result.get('laterality', []) if l]
+                    contrast = [c for c in result.get('contrast', []) if c]
+                    modality_list = [m for m in result.get('modality', []) if m]
+                    
+                    return {
+                        'clean_name': result.get('clean_name', ''), 
+                        'snomed': {'id': result.get('snomed_id', ''), 'fsn': result.get('snomed_fsn', ''), 'found': result.get('snomed_found', False)}, 
+                        'components': {
+                            'anatomy': anatomy, 
+                            'laterality': laterality, 
+                            'contrast': contrast, 
+                            'technique': result.get('technique', []), 
+                            'confidence': result.get('confidence', 0.0), 
+                            'modality': modality_list
+                        }, 
+                        'original_exam': exam_data
+                    }
                 except Exception as e:
                     return {"error": str(e), "original_exam": exam_data}
-            # Reduce concurrency to avoid worker timeouts and memory issues
-            max_workers = min(2, get_optimal_worker_count(max_items=len(uncached_exams)))
+            
+            max_workers = get_optimal_worker_count(max_items=len(uncached_exams))
             logger.info(f"Processing {len(uncached_exams)} uncached exams with {max_workers} workers")
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # Register batch processing as a worker
                 batch_worker_id = f"batch_{int(time.time() * 1000)}"
                 if not _register_worker(batch_worker_id):
                     logger.warning("Shutdown requested, aborting batch processing")
@@ -395,7 +458,6 @@ def parse_batch():
                 try:
                     future_to_exam = {executor.submit(process_exam_batch, exam): exam for exam in uncached_exams}
                     for future in as_completed(future_to_exam):
-                        # Check for shutdown during processing
                         if _shutdown_requested:
                             logger.info("Shutdown requested during batch processing, stopping...")
                             break
@@ -407,8 +469,8 @@ def parse_batch():
                             cache_key = format_cache_key("batch", cache_version, exam_data['exam_name'], exam_data.get('modality_code', 'Unknown'))
                             cache_manager.set(cache_key, result)
                 finally:
-                    # Always unregister the worker when processing completes
                     _unregister_worker(batch_worker_id)
+        
         all_results = cached_results + results
         processing_stats = {'total_processed': len(exams), 'successful': len(all_results), 'errors': len(errors), 'cache_hits': cache_hits, 'processing_time_ms': int((time.time() - start_time) * 1000), 'cache_hit_ratio': cache_hits / len(exams) if exams else 0.0}
         response = {'results': all_results, 'errors': errors, 'processing_stats': processing_stats}
@@ -436,7 +498,7 @@ def validate_exam_data():
         suggestions = []
         if parsed_result.get('clean_name') and parsed_result['clean_name'] != exam_name:
             suggestions.append(f"Consider using the standardized name: '{parsed_result['clean_name']}'")
-        response = {'valid': quality_score >= 0.7, 'quality_score': quality_score, 'warnings': warnings, 'suggestions': suggestions, 'normalized_name': parsed_result.get('clean_name', exam_name), 'transformations_applied': ['unified_processing_v3'], 'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000)}}
+        response = {'valid': quality_score >= 0.7, 'quality_score': quality_score, 'warnings': warnings, 'suggestions': suggestions, 'normalized_name': parsed_result.get('clean_name', exam_name), 'transformations_applied': ['unified_processing_v4'], 'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000)}}
         record_performance('validate', response['metadata']['processing_time_ms'], len(exam_name), True)
         return jsonify(response)
     except Exception as e:
@@ -508,7 +570,6 @@ def _cleanup_resources():
     
     logger.info("Cleaning up application resources...")
     
-    # Wait for active workers to complete
     max_wait_time = 30  # seconds
     wait_interval = 1
     waited = 0
@@ -521,21 +582,16 @@ def _cleanup_resources():
     if _active_workers:
         logger.warning(f"Forcefully terminating {len(_active_workers)} remaining workers after {max_wait_time}s timeout")
     
-    # Cleanup database connections
-    if db_manager:
+    if db_manager and hasattr(db_manager, 'close'):
         try:
-            # If db_manager has cleanup methods, call them
-            if hasattr(db_manager, 'close'):
-                db_manager.close()
+            db_manager.close()
             logger.info("Database manager cleaned up")
         except Exception as e:
             logger.error(f"Error cleaning up database manager: {e}")
     
-    # Cleanup cache manager  
-    if cache_manager:
+    if cache_manager and hasattr(cache_manager, 'close'):
         try:
-            if hasattr(cache_manager, 'close'):
-                cache_manager.close()
+            cache_manager.close()
             logger.info("Cache manager cleaned up")
         except Exception as e:
             logger.error(f"Error cleaning up cache manager: {e}")
@@ -563,10 +619,7 @@ def _setup_signal_handlers():
     """Setup signal handlers for graceful shutdown."""
     signal.signal(signal.SIGTERM, _signal_handler)
     signal.signal(signal.SIGINT, _signal_handler)
-    
-    # Register cleanup function to run on normal exit
     atexit.register(_cleanup_resources)
-    
     logger.info("Signal handlers registered for graceful shutdown")
 
 
