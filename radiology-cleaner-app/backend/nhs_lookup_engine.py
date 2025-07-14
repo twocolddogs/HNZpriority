@@ -246,10 +246,13 @@ class NHSLookupEngine:
             if not isinstance(technique, list):
                 technique = [technique] if technique else []
             
-            logger.info(f"Best match found: '{final_components.get('cleanName', best_match.get('Clean Name'))}' with confidence {highest_confidence:.3f}")
+            # Use the canonical NHS "Clean Name" as the primary source
+            canonical_clean_name = best_match.get('Clean Name', final_components.get('cleanName', ''))
+            
+            logger.info(f"Best match found: '{canonical_clean_name}' with confidence {highest_confidence:.3f}")
             
             return {
-                'clean_name': final_components.get('cleanName', best_match.get('Clean Name')),
+                'clean_name': canonical_clean_name,
                 'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
                 'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
                 # Return the components from the matched NHS entry for consistency
