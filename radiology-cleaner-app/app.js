@@ -315,6 +315,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         contrast: parsed.components.contrast, 
                         technique: parsed.components.technique,
                         gender_context: parsed.components.gender_context,
+                        age_context: parsed.components.age_context,
                         clinical_context: parsed.components.clinical_context,
                         confidence: parsed.components.confidence,
                         clinical_equivalents: parsed.clinical_equivalents
@@ -665,8 +666,10 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Add context cell
             const contextCell = row.insertCell();
-            const { gender_context, clinical_context, clinical_equivalents } = item.components;
+            const { gender_context, age_context, clinical_context, clinical_equivalents } = item.components;
+            
             if(gender_context && gender_context.trim()) contextCell.innerHTML += `<span class="tag gender">${gender_context}</span>`;
+            if(age_context && age_context.trim()) contextCell.innerHTML += `<span class="tag age">${age_context}</span>`;
             if(clinical_context && clinical_context.length > 0) clinical_context.forEach(c => { if (c && c.trim()) contextCell.innerHTML += `<span class="tag clinical">${c}</span>`});
             if(clinical_equivalents && clinical_equivalents.length > 0) {
                 clinical_equivalents.slice(0, 2).forEach(e => { if (e && e.trim()) contextCell.innerHTML += `<span class="tag equivalent">${e}</span>`});

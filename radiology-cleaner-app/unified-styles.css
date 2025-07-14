@@ -886,6 +886,11 @@ a:focus-visible {
   color: #0277bd;
 }
 
+.tag.age {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
 .tag.clinical {
   background: #fff8e1;
   color: #ff8f00;

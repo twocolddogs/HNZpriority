@@ -387,6 +387,7 @@ def parse_enhanced():
                 'modality': modality_list, 
                 'confidence': result.get('confidence', 0.0),
                 'gender_context': _detect_gender_context(cleaned_exam_name, anatomy),
+                'age_context': _detect_age_context(cleaned_exam_name),
                 'clinical_context': _detect_clinical_context(cleaned_exam_name, anatomy),
                 'clinical_equivalents': []
             },
@@ -440,7 +441,10 @@ def parse_batch():
                             'contrast': contrast, 
                             'technique': result.get('technique', []), 
                             'confidence': result.get('confidence', 0.0), 
-                            'modality': modality_list
+                            'modality': modality_list,
+                            'gender_context': result.get('gender_context'),
+                            'age_context': result.get('age_context'),
+                            'clinical_context': result.get('clinical_context', [])
                         }, 
                         'original_exam': exam_data
                     }
