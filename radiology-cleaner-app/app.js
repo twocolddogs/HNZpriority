@@ -879,13 +879,13 @@ window.addEventListener('DOMContentLoaded', function() {
             document.getElementById('modelDescription').textContent = 'Using PubMed model optimized for medical terminology (default)';
         } else if (modelType === 'pubmed') {
             document.getElementById('pubmedModelBtn').classList.add('active');
-            document.getElementById('modelDescription').textContent = 'Using NeuML/pubmedbert-base-embeddings model optimized for biomedical research texts';
+            document.getElementById('modelDescription').textContent = 'Using general-purpose model (all-MiniLM-L6-v2) for broader language understanding';
         }
         
         console.log(`Switched to ${modelType} model`);
         
         // Show notification
-        updateStatusMessage(`🔄 Switched to ${modelType === 'default' ? 'PubMed (Default)' : 'PubMedBERT'} model`);
+        updateStatusMessage(`🔄 Switched to ${modelType === 'default' ? 'PubMed (Default)' : 'General (Alternative)'} model`);
         setTimeout(() => {
             const statusDiv = document.getElementById('statusMessage');
             if (statusDiv) statusDiv.style.display = 'none';
