@@ -13,15 +13,16 @@ The Radiology Code Semantic Cleaner is an intelligent system that standardizes d
 │                    Frontend Interface                           │
 │  - File Upload (JSON)                                          │
 │  - Results Display (Clean Names + SNOMED Codes)                │
-│  - Feedback System (Hidden)                                    │
+│  - Batch/Individual Processing                                  │
+│  - Export Functionality                                        │
 └─────────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Flask API Layer                             │
 │  - /parse_enhanced (Enhanced endpoint with SNOMED)             │
-│  - /parse (Legacy endpoint)                                    │
-│  - /feedback (User corrections)                                │
+│  - /parse_batch (Batch processing endpoint)                    │
+│  - /health (Health check endpoint)                             │
 └─────────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
@@ -47,7 +48,7 @@ The Radiology Code Semantic Cleaner is an intelligent system that standardizes d
 │  - SNOMED Reference (4,986 entries)                           │
 │  - Abbreviations Dictionary                                    │
 │  - Performance Metrics                                        │
-│  - User Feedback                                              │
+│  - Batch Processing Results                                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -56,7 +57,11 @@ The Radiology Code Semantic Cleaner is an intelligent system that standardizes d
 ### 1. Input Processing
 - **Input Format**: JSON array of radiology codes
 - **Required Fields**: `EXAM_NAME`, `MODALITY_CODE`, `DATA_SOURCE`, `EXAM_CODE`
+- **Processing Modes**: 
+  - Individual processing (< 50 records): Real-time processing with immediate feedback
+  - Batch processing (≥ 50 records): Optimized bulk processing
 - **Standardization**: Abbreviation expansion using clinical dictionary
+- **Context Detection**: Enhanced gender and age context extraction
 
 ### 2. Multi-Stage Parsing
 
@@ -68,7 +73,49 @@ if exact_match:
     return high_confidence_result_with_snomed()
 ```
 
-#### Stage 2: Hybrid Component Extraction
+#### Stage 2: Enhanced Context Detection
+Before component extraction, the system performs enhanced context detection:
+
+```python
+# Enhanced gender context detection with regex patterns
+def _detect_gender_context(self, exam_name: str) -> Optional[str]:
+    exam_lower = exam_name.lower()
+    
+    # Enhanced female detection patterns
+    female_patterns = [r'\b(female)\b', r'\b(woman|women)\b', r'\b(gynecological|gynaecological)\b']
+    male_patterns = [r'\b(male)\b', r'\b(men)\b']
+    
+    # Check for female patterns
+    for pattern in female_patterns:
+        if re.search(pattern, exam_lower):
+            return 'female'
+    
+    # Check for male patterns
+    for pattern in male_patterns:
+        if re.search(pattern, exam_lower):
+            return 'male'
+    
+    return None
+
+# Enhanced pediatric context detection
+def _detect_age_context(self, exam_name: str) -> Optional[str]:
+    exam_lower = exam_name.lower()
+    
+    pediatric_patterns = [
+        r'\b(paediatric|pediatric|paed|peds)\b',
+        r'\b(child|children|infant|infants|baby|babies)\b',
+        r'\b(newborn|neonate|neonatal)\b',
+        r'\b(toddler|adolescent|juvenile)\b'
+    ]
+    
+    for pattern in pediatric_patterns:
+        if re.search(pattern, exam_lower):
+            return 'pediatric'
+    
+    return None
+```
+
+#### Stage 3: Hybrid Component Extraction
 The system uses three complementary approaches:
 
 **A. NLP-Based Extraction (ScispaCy)**
@@ -102,14 +149,42 @@ The system uses three complementary approaches:
   - Gender: `male|female|pregnancy|prostate`
   - Clinical context: `emergency|screening|follow-up`
 
-#### Stage 3: Component Merging
+#### Stage 4: Component Merging
 ```python
 # Merge results from all three approaches
 combined_anatomy = nlp_anatomy ∪ ml_anatomy ∪ rule_anatomy
 final_result = merge_with_priority(rule_result, ml_predictions, nlp_result)
 ```
 
-### 3. Clean Name Generation
+### 3. Batch Processing Engine
+
+For large datasets (≥50 records), the system uses optimized batch processing:
+
+```python
+def process_batch(self, exams: List[Dict]) -> Dict:
+    """Process multiple exams in optimized batches"""
+    results = []
+    total_exams = len(exams)
+    
+    # Process in chunks for memory efficiency
+    chunk_size = 1000
+    for i in range(0, total_exams, chunk_size):
+        chunk = exams[i:i + chunk_size]
+        chunk_results = self._process_chunk(chunk)
+        results.extend(chunk_results)
+        
+        # Progress tracking
+        progress = min(100, ((i + len(chunk)) / total_exams) * 100)
+        self._update_progress(progress)
+    
+    return {
+        'results': results,
+        'summary': self._generate_summary(results),
+        'processing_stats': self._calculate_stats(results)
+    }
+```
+
+### 4. Clean Name Generation
 
 #### Anatomical Ordering (Cranial-to-Caudal)
 ```python
@@ -135,7 +210,7 @@ cranial_to_caudal_order = [
 - `MRI Head with contrast` → `MRI Head with contrast`
 - `XR Shoulder Left` → `XR Shoulder Left`
 
-### 4. Fuzzy Matching Engine
+### 5. Fuzzy Matching Engine
 
 #### Multi-Metric Similarity Scoring
 The system calculates similarity using three metrics:
@@ -170,7 +245,7 @@ if is_ct_or_mri and 'abdomen' in target_words:
 - Original SNOMED FSN preserved (e.g., "Computed tomography of chest and abdomen")
 - Clean name updated (e.g., "CT Chest and abdomen")
 
-### 5. SNOMED Code Assignment
+### 6. SNOMED Code Assignment
 
 #### Direct Assignment
 ```python
@@ -191,7 +266,7 @@ if fuzzy_matches and best_match.similarity_score >= 0.6:
     return snomed_data_from_best_match
 ```
 
-### 6. Confidence Scoring
+### 7. Confidence Scoring
 
 #### Factors Affecting Confidence
 - **Exact SNOMED match**: 1.0 (100%)
@@ -326,24 +401,24 @@ CREATE TABLE performance_metrics (
 );
 ```
 
-### User Feedback
+### Batch Processing Results
 ```sql
-CREATE TABLE feedback (
+CREATE TABLE batch_results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id TEXT,                                -- User identifier
-    original_exam_name TEXT,                     -- Original input
-    original_mapping TEXT,                       -- System's mapping (JSON)
-    corrected_mapping TEXT,                      -- User's correction (JSON)
-    confidence_level TEXT,                       -- User's confidence
-    notes TEXT,                                  -- Additional notes
+    batch_id TEXT,                               -- Unique batch identifier
+    total_records INTEGER,                       -- Total records in batch
+    processed_records INTEGER,                   -- Successfully processed
+    failed_records INTEGER,                      -- Failed records
+    processing_time_ms INTEGER,                  -- Total processing time
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status TEXT DEFAULT 'pending'                -- Review status
+    completed_at TIMESTAMP,                      -- Completion timestamp
+    status TEXT DEFAULT 'processing'             -- Batch status
 );
 ```
 
 ## API Endpoints
 
-### Primary Endpoint
+### Individual Processing Endpoint
 ```http
 POST /parse_enhanced
 Content-Type: application/json
@@ -351,6 +426,42 @@ Content-Type: application/json
 {
     "exam_name": "CT chest and abdomen",
     "modality_code": "CT"
+}
+```
+
+### Batch Processing Endpoint
+```http
+POST /parse_batch
+Content-Type: application/json
+
+{
+    "exams": [
+        {
+            "exam_name": "CT chest and abdomen",
+            "modality_code": "CT",
+            "data_source": "HNZ",
+            "exam_code": "CT001"
+        },
+        {
+            "exam_name": "MRI brain",
+            "modality_code": "MR",
+            "data_source": "HNZ",
+            "exam_code": "MR001"
+        }
+    ],
+    "chunk_size": 1000
+}
+```
+
+### Health Check Endpoint
+```http
+GET /health
+
+Response:
+{
+    "status": "healthy",
+    "version": "2.1.0",
+    "timestamp": "2024-01-15T10:30:00Z"
 }
 ```
 
@@ -520,29 +631,37 @@ class KnowledgeBaseExpander:
 
 ### 5. User Experience Enhancements
 
-#### Interactive Feedback Loop
-```python
-class FeedbackLearningSystem:
-    def __init__(self):
-        self.feedback_db = FeedbackDatabase()
-        self.model_updater = ModelUpdater()
-    
-    def process_user_feedback(self, feedback):
-        # Analyze user corrections
-        correction_patterns = self.analyze_corrections(feedback)
+#### Batch Processing Interface
+```javascript
+// Frontend batch processing with progress tracking
+class BatchProcessor {
+    async processBatch(exams) {
+        const batchSize = exams.length;
         
-        # Update rules and models
-        self.update_rules(correction_patterns)
-        self.retrain_models(correction_patterns)
+        // Show processing UI
+        this.showProcessingInterface();
         
-        # Validate improvements
-        return self.validate_improvements()
+        // Send to batch API
+        const response = await fetch(BATCH_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ exams, chunk_size: 1000 })
+        });
+        
+        const results = await response.json();
+        
+        // Display results with summary statistics
+        this.displayResults(results);
+        this.showSummaryStats(results.summary);
+    }
+}
 ```
 
-#### Real-time Suggestions
-- **Auto-complete**: Suggest exam names as user types
-- **Confidence Indicators**: Show matching confidence in real-time
-- **Alternative Suggestions**: Provide multiple matching options
+#### Enhanced User Interface
+- **Help System**: Comprehensive usage guide with practical examples
+- **Export Functionality**: Download processed results in JSON format
+- **Progress Tracking**: Real-time progress for batch operations
+- **Responsive Design**: Mobile-friendly interface with proper accessibility
 
 ### 6. Quality Assurance
 
@@ -682,7 +801,13 @@ monitor:
 
 The Radiology Code Semantic Cleaner represents a sophisticated approach to medical terminology standardization, combining multiple AI techniques to achieve high accuracy and clinical relevance. The system's hybrid architecture allows it to handle the complexity and variability of radiology exam naming while maintaining performance and scalability.
 
-The extensive improvement roadmap provides clear paths for enhancing the system's capabilities, from advanced NLP models to comprehensive integration with healthcare systems. The combination of automated processing, user feedback, and continuous learning creates a robust foundation for long-term success in healthcare terminology standardization.
+Key improvements in the current version include:
+- **Enhanced Context Detection**: Improved gender and age context recognition using comprehensive regex patterns
+- **Batch Processing**: Optimized bulk processing for large datasets with progress tracking
+- **Streamlined Architecture**: Removal of feedback system components for simplified deployment
+- **Modern Frontend**: External JavaScript organization and improved user experience
+
+The extensive improvement roadmap provides clear paths for enhancing the system's capabilities, from advanced NLP models to comprehensive integration with healthcare systems. The combination of automated processing, optimized batch handling, and continuous learning creates a robust foundation for long-term success in healthcare terminology standardization.
 
 ## Technical Stack
 
@@ -695,10 +820,10 @@ The extensive improvement roadmap provides clear paths for enhancing the system'
 - **NumPy/Pandas**: Data manipulation
 
 ### Frontend
-- **React** (CDN): User interface
-- **Vanilla JavaScript**: Frontend logic
-- **CSS3**: Styling
-- **Cloudflare Pages**: Deployment
+- **Vanilla JavaScript**: Frontend logic (external app.js file)
+- **CSS3**: Unified design system with CSS custom properties
+- **HTML5**: Semantic markup with accessibility features
+- **Cloudflare Pages**: Static site deployment with API proxying
 
 ### Infrastructure
 - **Docker**: Containerization
@@ -709,4 +834,4 @@ The extensive improvement roadmap provides clear paths for enhancing the system'
 
 ---
 
-*This document represents the current state of the Radiology Code Semantic Cleaner as of the enhanced implementation. For the most up-to-date information, refer to the codebase and commit history.*
+*This document represents the current state of the Radiology Code Semantic Cleaner as of January 2024, including enhanced context detection, batch processing capabilities, and streamlined architecture. For the most up-to-date information, refer to the codebase and commit history.*

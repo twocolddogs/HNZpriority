@@ -215,11 +215,11 @@ window.addEventListener('DOMContentLoaded', function() {
         `;
         
         // Show modal
-        document.getElementById('helpModal').style.display = 'block';
+        document.getElementById('helpModal').classList.remove('hidden');
     }
     
     function closeHelpModal() {
-        document.getElementById('helpModal').style.display = 'none';
+        document.getElementById('helpModal').classList.add('hidden');
     }
 
     // --- UPLOAD INTERFACE CONTROL ---
