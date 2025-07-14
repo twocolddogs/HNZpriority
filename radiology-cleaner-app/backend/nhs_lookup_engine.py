@@ -3,25 +3,38 @@ import logging
 from typing import Dict, List, Optional
 from collections import defaultdict
 from fuzzywuzzy import fuzz
-# This will now be your API-based processor class
+# Use TYPE_CHECKING to avoid a circular import issue with parser.py
+from typing import TYPE_CHECKING 
+
 from nlp_processor import NLPProcessor
+
+# This allows us to use 'RadiologySemanticParser' as a type hint
+if TYPE_CHECKING:
+    from parser import RadiologySemanticParser
 
 logger = logging.getLogger(__name__)
 
 class NHSLookupEngine:
     """
-    NHS lookup engine, updated to work with the lightweight, API-based NLP Processor.
+    NHS lookup engine, refactored to use a unified semantic parser for both
+    input and its internal NHS data, ensuring consistency and performance.
     """
-    def __init__(self, nhs_json_path: str, nlp_processor: NLPProcessor):
+    def __init__(self, nhs_json_path: str, nlp_processor: NLPProcessor, semantic_parser: 'RadiologySemanticParser'):
         self.nhs_data = []
         self.snomed_lookup = {}
         self.nhs_json_path = nhs_json_path
         self.nlp_processor = nlp_processor
+        # REFACTOR: The engine now holds an instance of the main parser.
+        self.semantic_parser = semantic_parser 
+        
         self._load_nhs_data()
         self._build_lookup_tables()
-        # This will now pre-compute embeddings via a batch API call.
+        
+        # REFACTOR: The core improvement. All NHS data is pre-parsed ONCE at startup.
+        self._pre_parse_nhs_data_with_semantic_parser()
+        
         self._precompute_embeddings()
-        logger.info("NHSLookupEngine initialized successfully with API-based embeddings.")
+        logger.info("NHSLookupEngine initialized with fully pre-parsed and embedded NHS data.")
 
     def _load_nhs_data(self):
         """Load NHS data from JSON file."""
@@ -31,6 +44,7 @@ class NHSLookupEngine:
             logger.info(f"Loaded {len(self.nhs_data)} NHS entries.")
         except Exception as e:
             logger.error(f"Failed to load NHS data: {e}", exc_info=True)
+            raise
 
     def _build_lookup_tables(self):
         """Build optimized SNOMED lookup table."""
@@ -38,107 +52,121 @@ class NHSLookupEngine:
             if snomed_id := entry.get("SNOMED CT \nConcept-ID"):
                 self.snomed_lookup[str(snomed_id)] = entry
 
-    def _precompute_embeddings(self):
+    def _pre_parse_nhs_data_with_semantic_parser(self):
         """
-        Pre-computes embeddings for all NHS clean names using a single BATCH API call.
-        Now includes preprocessing of NHS clean names to expand abbreviations.
+        Pre-parses all NHS entries using the main RadiologySemanticParser.
+        This ensures the rules applied to the reference data are identical to the
+        rules applied to user input, and moves all parsing to startup time.
         """
-        # CORRECTED CHECK: Use the is_available() method instead of checking for .model
-        if not self.nlp_processor or not self.nlp_processor.is_available():
-            logger.warning("NLP Processor is not available. Skipping embedding pre-computation.")
+        if not self.semantic_parser:
+            logger.error("Semantic Parser not provided to NHSLookupEngine. Cannot pre-parse NHS data.")
             return
 
-        logger.info("Pre-computing embeddings for all NHS clean names via batch API call...")
+        logger.info("Pre-parsing all NHS entries using the unified RadiologySemanticParser...")
+        count = 0
+        for entry in self.nhs_data:
+            clean_name = entry.get("Clean Name")
+            if clean_name:
+                # Use the exact same pipeline that processes user input.
+                # Provide a placeholder modality as it's often parsed from the name itself.
+                parsed_components = self.semantic_parser.parse_exam_name(clean_name, 'Other')
+                # Cache the structured result directly on the entry.
+                entry['_parsed_components'] = parsed_components
+                count += 1
+        logger.info(f"Finished pre-parsing {count} NHS entries.")
+
+    def _precompute_embeddings(self):
+        """Pre-computes embeddings for all NHS clean names using the NLP processor."""
+        if not self.nlp_processor or not self.nlp_processor.is_available():
+            logger.warning("NLP Processor not available. Skipping embedding pre-computation.")
+            return
+
+        logger.info("Pre-computing embeddings for all NHS clean names...")
         all_clean_names = [e.get("Clean Name") for e in self.nhs_data if e.get("Clean Name")]
-        
-        # ENHANCEMENT: Preprocess NHS clean names to expand abbreviations  
-        from parsing_utils import AbbreviationExpander
-        abbreviation_expander = AbbreviationExpander()  # Use default medical abbreviations
-        preprocessed_clean_names = [abbreviation_expander.expand(name) for name in all_clean_names]
-        
-        # Use the batch method for efficiency with preprocessed names
-        embeddings = self.nlp_processor.batch_get_embeddings(preprocessed_clean_names)
+        embeddings = self.nlp_processor.batch_get_embeddings(all_clean_names)
         
         name_to_embedding = dict(zip(all_clean_names, embeddings))
         
         for entry in self.nhs_data:
             if clean_name := entry.get("Clean Name"):
                 entry["_embedding"] = name_to_embedding.get(clean_name)
-                entry["_preprocessed_name"] = abbreviation_expander.expand(clean_name)  # Store for debugging
         
         successful_count = sum(1 for e in embeddings if e is not None)
-        logger.info(f"Successfully pre-computed {successful_count}/{len(all_clean_names)} embeddings with preprocessing.")
+        logger.info(f"Successfully pre-computed {successful_count}/{len(all_clean_names)} embeddings.")
 
-    def _extract_modality_from_nhs_entry(self, entry: Dict) -> set:
-        """Extract modality from NHS entry clean name."""
-        clean_name = entry.get("Clean Name", "").lower()
-        modalities = set()
+    def standardize_exam(self, input_exam: str, extracted_input_components: Dict) -> Dict:
+        """
+        Main method to standardize an exam. Compares pre-parsed input components
+        against pre-parsed NHS components for maximum consistency and speed.
+        """
+        best_match, highest_confidence = None, 0.0
         
-        # Map NHS clean name patterns to modalities
-        modality_patterns = {
-            'ct': ['ct ', 'computed tomography', 'dect'],
-            'mr': ['mr ', 'mri', 'magnetic resonance', 'mrcp', 'mra'],
-            'us': ['us ', 'ultrasound', 'echo', 'doppler'],
-            'xr': ['xr ', 'x-ray', 'plain film', 'radiograph'],
-            'nm': ['nm ', 'nuclear medicine', 'scintigraphy', 'spect', 'pet'],
-            'fluoro': ['fluoroscopy', 'screening', 'barium'],
-            'mammo': ['mammography', 'tomosynthesis'],
-            'dexa': ['dexa', 'bone density']
-        }
-        
-        for modality, patterns in modality_patterns.items():
-            if any(pattern in clean_name for pattern in patterns):
-                modalities.add(modality)
-        
-        return modalities
+        if not self.nlp_processor or not self.nlp_processor.is_available():
+            logger.warning("Semantic search disabled; NLP processor not available.")
+            return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_SEMANTIC_SEARCH'}
 
-    def _extract_laterality_from_nhs_entry(self, entry: Dict) -> str:
-        """Extract laterality from NHS entry clean name."""
-        clean_name = entry.get("Clean Name", "").lower()
-        
-        # Check for laterality patterns in NHS clean name
-        import re
-        
-        # Bilateral patterns
-        if re.search(r'\b(bilateral|bilat|both)\b', clean_name):
-            return 'bilateral'
-        
-        # Left patterns  
-        if re.search(r'\b(left|lt)\b', clean_name):
-            return 'left'
+        input_embedding = self.nlp_processor.get_text_embedding(input_exam)
+        if input_embedding is None:
+            logger.warning(f"Could not generate input embedding for '{input_exam}'.")
+            return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_INPUT_EMBEDDING'}
+
+        for entry in self.nhs_data:
+            nhs_embedding = entry.get("_embedding")
+            # REFACTOR: Retrieve the fully pre-parsed NHS components.
+            nhs_components = entry.get("_parsed_components")
+
+            if not nhs_components or nhs_embedding is None:
+                continue
+
+            # --- Component Matching (Now Apples-to-Apples) ---
+            input_modality = (extracted_input_components.get('modality') or [None])[0]
+            nhs_modality = nhs_components.get('modality')
+            if input_modality and nhs_modality and input_modality.lower() != nhs_modality.lower():
+                continue # Strict modality mismatch
+
+            input_lat = (extracted_input_components.get('laterality') or [None])[0]
+            nhs_lat = nhs_components.get('laterality')
+            if input_lat and nhs_lat and input_lat.lower() != nhs_lat.lower():
+                continue # Strict laterality mismatch
+
+            # --- Scoring ---
+            semantic_score = self.nlp_processor.calculate_semantic_similarity(input_embedding, nhs_embedding)
+            fuzzy_score = fuzz.ratio(input_exam.lower(), nhs_components.get('cleanName', '').lower()) / 100.0
+            combined_score = (0.7 * semantic_score) + (0.3 * fuzzy_score)
+
+            # Bonus/Penalty for component alignment
+            if input_modality and input_modality.lower() == nhs_modality.lower():
+                combined_score += 0.1
+
+            input_contrast = (extracted_input_components.get('contrast') or [None])[0]
+            nhs_contrast = nhs_components.get('contrast')
+            if input_contrast and nhs_contrast:
+                if input_contrast == nhs_contrast:
+                    combined_score += 0.15  # Strong bonus for alignment
+                else:
+                    combined_score -= 0.2   # Penalty for mismatch
             
-        # Right patterns
-        if re.search(r'\b(right|rt)\b', clean_name):
-            return 'right'
-            
-        return None
+            if combined_score > highest_confidence:
+                highest_confidence, best_match = combined_score, entry
 
-    def _nhs_entry_has_contrast(self, entry: Dict) -> bool:
-        """Check if NHS entry indicates contrast use."""
-        clean_name = entry.get("Clean Name", "").lower()
-        snomed_fsn = entry.get("SNOMED CT FSN", "").lower()
+        if best_match:
+            # The final result uses the pre-parsed data from the best match
+            final_components = best_match.get('_parsed_components', {})
+            return {
+                'clean_name': final_components.get('cleanName', best_match.get('Clean Name')),
+                'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
+                'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
+                # Return the components from the matched NHS entry for consistency
+                'anatomy': final_components.get('anatomy', []),
+                'laterality': [final_components.get('laterality')] if final_components.get('laterality') else [],
+                'contrast': [final_components.get('contrast')] if final_components.get('contrast') else [],
+                'modality': [final_components.get('modality')] if final_components.get('modality') else [],
+                'technique': final_components.get('technique', []),
+                'confidence': min(highest_confidence, 1.0),
+                'source': 'UNIFIED_PARSER_MATCH_V4'
+            }
         
-        # Check for explicit contrast indicators
-        contrast_indicators = [
-            'with contrast', 'contrast', 'enhanced', 'gadolinium', 'intravenous',
-            'iv contrast', 'oral contrast', 'contrast medium', 'contrast agent'
-        ]
-        
-        full_text = f"{clean_name} {snomed_fsn}"
-        return any(indicator in full_text for indicator in contrast_indicators)
-
-    def _extract_components_from_nhs_entry(self, entry: Dict) -> Dict:
-        """Extract components from an NHS entry for lookup purposes."""
-        clean_name = entry.get("Clean Name", "").lower()
-        components = {'modality': list(self._extract_modality_from_nhs_entry(entry)), 'anatomy': []}
-        # ... (add other rules as needed)
-        return components
-
-    def _calculate_component_match_confidence(self, input_components: Dict, nhs_components: Dict) -> float:
-        input_modality = set(input_components.get('modality', []))
-        nhs_modality = set(nhs_components.get('modality', []))
-        if input_modality and not input_modality.intersection(nhs_modality): return 0.0
-        return 0.7 # Simplified for brevity
+        return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
 
     def validate_consistency(self) -> Dict:
         """Validate that each SNOMED ID has only one clean name."""
@@ -154,97 +182,3 @@ class NHSLookupEngine:
         else:
             logger.info("NHS data is consistent.")
         return {'inconsistencies_found': len(inconsistencies)}
-
-    def standardize_exam(self, input_exam: str, extracted_components: Dict) -> Dict:
-        """Main method to standardize an exam using pre-computed API embeddings."""
-        best_match, highest_confidence = None, 0.0
-        
-        # CORRECTED CHECK: Use is_available()
-        if not self.nlp_processor or not self.nlp_processor.is_available():
-            logger.warning("Semantic search disabled; NLP processor not available.")
-            return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_SEMANTIC_SEARCH'}
-
-        input_embedding = self.nlp_processor.get_text_embedding(input_exam)
-        if input_embedding is None:
-            logger.warning(f"Could not generate input embedding for '{input_exam}'.")
-            return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_INPUT_EMBEDDING'}
-
-        for entry in self.nhs_data:
-            nhs_clean_name = entry.get("Clean Name")
-            # SIMPLIFIED: We assume embeddings were pre-computed.
-            nhs_embedding = entry.get("_embedding")
-
-            if not nhs_clean_name or nhs_embedding is None:
-                continue
-
-            # MODALITY VALIDATION: Check if modalities are compatible
-            input_modalities = set(extracted_components.get('modality', []))
-            nhs_modalities = self._extract_modality_from_nhs_entry(entry)
-            
-            # If input has modality info, enforce modality matching
-            if input_modalities and nhs_modalities:
-                modality_match = bool(input_modalities.intersection(nhs_modalities))
-                if not modality_match:
-                    # Skip entries with incompatible modalities
-                    continue
-
-            semantic_score = self.nlp_processor.calculate_semantic_similarity(input_embedding, nhs_embedding)
-            fuzzy_score = fuzz.ratio(input_exam, nhs_clean_name.lower()) / 100.0
-            
-            # Enhanced combined score with modality bonus
-            combined_score = (0.8 * semantic_score) + (0.2 * fuzzy_score)
-            
-            # Give bonus for exact modality match
-            if input_modalities and nhs_modalities and input_modalities.intersection(nhs_modalities):
-                combined_score += 0.1  # Small bonus for modality match
-            
-            # LATERALITY VALIDATION: Check if laterality is compatible
-            input_laterality = extracted_components.get('laterality', [])
-            nhs_laterality = self._extract_laterality_from_nhs_entry(entry)
-            
-            # If input has laterality, enforce laterality matching
-            if input_laterality:
-                input_lat = input_laterality[0].lower() if input_laterality else None
-                if nhs_laterality and input_lat != nhs_laterality.lower():
-                    # Skip entries with incompatible laterality
-                    continue
-            # If input has NO laterality, apply small penalty for NHS entries with laterality
-            # BUT only if the anatomy doesn't match well
-            elif nhs_laterality:
-                # Check if the anatomies match well first
-                input_anatomy = set(extracted_components.get('anatomy', []))
-                clean_name_words = set(entry.get("Clean Name", "").lower().split())
-                
-                # If anatomies match well, use minimal penalty to preserve good anatomical matches
-                anatomy_overlap = bool(input_anatomy.intersection(clean_name_words))
-                if anatomy_overlap:
-                    combined_score -= 0.05  # Very small penalty for good anatomical matches with laterality
-                else:
-                    combined_score -= 0.2   # Larger penalty for poor anatomical matches with laterality
-            
-            # CONTRAST MATCHING: Give strong bonus for contrast alignment
-            input_contrast = extracted_components.get('contrast', [])
-            nhs_has_contrast = self._nhs_entry_has_contrast(entry)
-            
-            if input_contrast:
-                contrast_type = input_contrast[0] if input_contrast else None
-                if contrast_type == 'with' and nhs_has_contrast:
-                    combined_score += 0.15  # Strong bonus for with contrast match
-                elif contrast_type == 'without' and not nhs_has_contrast:
-                    combined_score += 0.15  # Strong bonus for without contrast match
-                elif contrast_type in ['with', 'without'] and ((contrast_type == 'with') != nhs_has_contrast):
-                    combined_score -= 0.2  # Penalty for contrast mismatch
-            
-            if combined_score > highest_confidence:
-                highest_confidence, best_match = combined_score, entry
-
-        if best_match:
-            return {
-                'clean_name': best_match.get('Clean Name', ''),
-                'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
-                'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
-                'confidence': min(highest_confidence, 1.0),
-                'source': 'API_EMBEDDING_MATCH_V2'
-            }
-        
-        return {'clean_name': input_exam, 'snomed_id': '', 'snomed_fsn': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
