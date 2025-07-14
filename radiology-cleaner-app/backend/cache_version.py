@@ -33,7 +33,6 @@ CRITICAL_FILES = [
     'base_code_set.csv',
     'code_set.json',
     'core/NHS.json',
-    'core/USA.json',
     
     # Vector embeddings (if exists)
     'resources/BioWordVec_PubMed_MIMICIII_d200.vec'

@@ -1,3 +1,17 @@
+# =============================================================================
+# RADIOLOGY EXAM STANDARDIZATION API
+# =============================================================================
+# This Flask application provides a unified processing pipeline for standardizing
+# radiology exam names against NHS reference data using NLP and semantic matching.
+#
+# PROCESSING PIPELINE OVERVIEW:
+# 1. Input Preprocessing: Clean and normalize exam names
+# 2. Semantic Parsing: Extract anatomical components using NLP
+# 3. NHS Lookup: Match against NHS reference data with SNOMED codes
+# 4. Context Detection: Identify gender, age, and clinical contexts
+# 5. Output Formatting: Return standardized results with confidence scores
+# =============================================================================
+
 import time, json, logging, threading, os, sys, multiprocessing, signal, atexit
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -5,21 +19,29 @@ from typing import List, Dict, Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# Core processing components
 from parser import RadiologySemanticParser
-from nlp_processor import NLPProcessor # Simplified import
+from nlp_processor import NLPProcessor
 from nhs_lookup_engine import NHSLookupEngine
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager
-from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, USAContrastMapper
+from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
+from context_detection import detect_gender_context, detect_age_context, detect_clinical_context
+from preprocessing import initialize_preprocessor, preprocess_exam_name
 from cache_version import get_current_cache_version, format_cache_key
 
+# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Initialize Flask application
 app = Flask(__name__)
 CORS(app)
 
-# Simplified globals
+# =============================================================================
+# GLOBAL COMPONENT INSTANCES
+# =============================================================================
+# These components form the core processing pipeline
 semantic_parser: Optional[RadiologySemanticParser] = None
 db_manager: Optional[DatabaseManager] = None
 cache_manager: Optional[CacheManager] = None
@@ -30,6 +52,11 @@ nhs_lookup_engine: Optional[NHSLookupEngine] = None
 abbreviation_expander: Optional[AbbreviationExpander] = None
 _init_lock = threading.Lock()
 _app_initialized = False
+
+# =============================================================================
+# COMPONENT INITIALIZATION SYSTEM
+# =============================================================================
+# Manages the initialization of all processing components in the correct order
 
 def _initialize_model_processors() -> Dict[str, NLPProcessor]:
     """Initialize available NLP processors for different models"""
@@ -61,62 +88,68 @@ def _get_nlp_processor(model: str = 'default') -> Optional[NLPProcessor]:
         processor = model_processors.get('default')
     return processor
 
-# Graceful shutdown handling
+# =============================================================================
+# GRACEFUL SHUTDOWN HANDLING
+# =============================================================================
 _active_workers = set()
 _shutdown_requested = False
 _worker_lock = threading.Lock()
 
 def _initialize_app():
+    """
+    Initialize all application components in the correct dependency order.
+    
+    INITIALIZATION PIPELINE:
+    1. Core managers (Database, Cache, Feedback)
+    2. NLP processors for semantic analysis
+    3. Reference data loading (NHS.json)
+    4. Utility components (Abbreviation, Anatomy, Laterality, Contrast, Preprocessor)
+    5. Semantic parser (combines NLP + utilities)
+    6. NHS lookup engine (uses parser for unified logic)
+    """
     global semantic_parser, db_manager, cache_manager, feedback_manager, \
            nlp_processor, model_processors, nhs_lookup_engine, abbreviation_expander
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
     try:
-        db_manager = DatabaseManager(); cache_manager = CacheManager(); feedback_manager = FeedbackTrainingManager()
+        # STEP 1: Initialize core managers
+        db_manager = DatabaseManager()
+        cache_manager = CacheManager()
+        feedback_manager = FeedbackTrainingManager()
         logger.info("Database, Cache, and Feedback managers initialized.")
 
-        # Initialize model mapping and processors
+        # STEP 2: Initialize NLP processors for semantic analysis
         model_processors = _initialize_model_processors()
         nlp_processor = model_processors.get('default')  # Default processor for compatibility
         if not nlp_processor or not nlp_processor.is_available():
             logger.error("API-based NLP processor is not available (HUGGING_FACE_TOKEN missing?). Semantic features will be degraded.")
 
+        # STEP 3: Load reference data files
         base_dir = os.path.dirname(os.path.abspath(__file__))
         nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
-        usa_json_path = os.path.join(base_dir, 'core', 'USA.json')
+        
+        # Load NHS reference data (required)
         nhs_authority = {}
         if os.path.exists(nhs_json_path):
-            with open(nhs_json_path, 'r', encoding='utf-8') as f: nhs_data = json.load(f)
+            with open(nhs_json_path, 'r', encoding='utf-8') as f: 
+                nhs_data = json.load(f)
             for item in nhs_data:
-                if clean_name := item.get('Clean Name'): nhs_authority[clean_name] = item
-        else: logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}"); sys.exit(1)
-        
-         ### START: CORRECTED USA.json LOADING ###
-        usa_patterns = {'common_abbreviations': {}}
-        if os.path.exists(usa_json_path):
-            with open(usa_json_path, 'r', encoding='utf-8') as f:
-                usa_data = json.load(f)
-            # Process the list of objects into a dictionary of abbreviations
-            for item in usa_data:
-                short_name = item.get("SHORT_NAME", "").strip().lower()
-                long_name = item.get("LONG_NAME", "").strip()
-                if short_name and long_name:
-                    # This creates the key-value pair the expander expects
-                    usa_patterns['common_abbreviations'][short_name] = long_name
-            logger.info(f"Loaded {len(usa_patterns['common_abbreviations'])} abbreviations from USA.json")
-        else:
-            logger.warning(f"USA JSON file not found at {usa_json_path}, running with default abbreviations only.")
-        ### END: CORRECTED USA.json LOADING ###
+                if clean_name := item.get('Clean Name'): 
+                    nhs_authority[clean_name] = item
+            logger.info(f"Loaded {len(nhs_authority)} NHS reference entries")
+        else: 
+            logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
+            sys.exit(1)
 
-        ### REFACTOR: INITIALIZATION ORDER IS NOW CRITICAL ###
-        
-        # 1. First, create all the component utilities for the parser.
-        abbreviation_expander = AbbreviationExpander(usa_patterns)
-        anatomy_extractor = AnatomyExtractor(nhs_authority, usa_patterns)
+        # STEP 4: Initialize utility components for parsing and preprocessing
+        abbreviation_expander = AbbreviationExpander()
+        anatomy_extractor = AnatomyExtractor(nhs_authority)
         laterality_detector = LateralityDetector()
-        contrast_mapper = USAContrastMapper()
+        contrast_mapper = ContrastMapper()
+        initialize_preprocessor(abbreviation_expander)
+        logger.info("Utility components initialized (Abbreviation, Anatomy, Laterality, Contrast, Preprocessor)")
         
-        # 2. Then, create the Semantic Parser which depends on them.
+        # STEP 5: Initialize semantic parser with all utilities
         semantic_parser = RadiologySemanticParser(
             nlp_processor=nlp_processor, 
             anatomy_extractor=anatomy_extractor,
@@ -125,22 +158,23 @@ def _initialize_app():
         )
         logger.info("RadiologySemanticParser initialized.")
         
-        # 3. Finally, create the Lookup Engine and INJECT the parser into it for unified logic.
+        # STEP 6: Initialize NHS lookup engine with unified parsing logic
         nhs_lookup_engine = NHSLookupEngine(
             nhs_json_path=nhs_json_path, 
             nlp_processor=nlp_processor,
-            semantic_parser=semantic_parser  # <-- The crucial injection
+            semantic_parser=semantic_parser  # Inject parser for unified logic
         )
         
         nhs_lookup_engine.validate_consistency()
-        logger.info("All components initialized successfully with unified parsing logic.")
+        logger.info("NHS lookup engine initialized with unified parsing logic.")
         logger.info(f"Initialization complete in {time.time() - start_time:.2f} seconds.")
 
     except Exception as e:
-        logger.critical(f"FATAL: Failed to initialize components: {e}", exc_info=True); sys.exit(1)
+        logger.critical(f"FATAL: Failed to initialize components: {e}", exc_info=True)
+        sys.exit(1)
 
 def _ensure_app_is_initialized():
-    """A thread-safe gatekeeper to ensure initialization runs only once."""
+    """Thread-safe gatekeeper to ensure initialization runs only once."""
     global _app_initialized
     if _app_initialized:
         return
@@ -148,9 +182,13 @@ def _ensure_app_is_initialized():
         if not _app_initialized:
             _initialize_app()
             _app_initialized = True
-# --- END: LAZY LOADING ---
+
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
 
 def get_optimal_worker_count(task_type: str = 'mixed', max_items: int = 100) -> int:
+    """Calculate optimal worker count for threading operations"""
     cpu_count = multiprocessing.cpu_count()
     if task_type == 'cpu_bound':
         return min(cpu_count, max_items)
@@ -158,6 +196,7 @@ def get_optimal_worker_count(task_type: str = 'mixed', max_items: int = 100) -> 
 
 def record_performance(endpoint: str, processing_time_ms: int, input_size: int,
                       success: bool, error_message: Optional[str] = None):
+    """Record performance metrics for monitoring and optimization"""
     _ensure_app_is_initialized()
     if not db_manager: return
     try:
@@ -171,149 +210,37 @@ def record_performance(endpoint: str, processing_time_ms: int, input_size: int,
     except Exception as e:
         logger.error(f"Failed to record performance metric: {e}")
 
-def _preprocess_exam_name(exam_name: str) -> str:
-    """Preprocess exam name to clean up common formatting issues."""
-    if not exam_name: return exam_name
-    
-    # Debug logging for preprocessing
-    if 'female' in exam_name.lower() or 'male' in exam_name.lower():
-        logger.info(f"DEBUG: Preprocessing input: '{exam_name}'")
-    
-    cleaned = exam_name
-    
-    # Strip "NO REPORT" suffix that appears in some data sources
-    if cleaned.upper().endswith(" - NO REPORT"):
-        cleaned = cleaned[:-len(" - NO REPORT")].strip()
-    elif cleaned.upper().endswith("- NO REPORT"):
-        cleaned = cleaned[:-len("- NO REPORT")].strip()
-    elif cleaned.upper().endswith("NO REPORT"):
-        cleaned = cleaned[:-len("NO REPORT")].strip()
-    
-    # Remove administrative qualifiers that don't affect semantic meaning
-    import re
-    cleaned = re.sub(r'\s*\(non-acute\)\s*', ' ', cleaned, flags=re.IGNORECASE)
-    cleaned = re.sub(r'\s*\(acute\)\s*', ' ', cleaned, flags=re.IGNORECASE)
-    
-    if abbreviation_expander:
-        pre_expansion = cleaned
-        cleaned = abbreviation_expander.expand(cleaned)
-        if ('female' in exam_name.lower() or 'male' in exam_name.lower()) and pre_expansion != cleaned:
-            logger.info(f"DEBUG: Abbreviation expansion: '{pre_expansion}' -> '{cleaned}'")
-    if '^' in cleaned:
-        cleaned = cleaned.split('^', 1)[1].strip()
-    if '/' in cleaned:
-        cleaned = cleaned.replace('/', ' ')
-    cleaned = _normalize_ordinals(cleaned)
-    cleaned = ' '.join(cleaned.split())
-    
-    # Debug logging for preprocessing output
-    if 'female' in exam_name.lower() or 'male' in exam_name.lower():
-        logger.info(f"DEBUG: Preprocessing output: '{cleaned}'")
-    
-    return cleaned
+# =============================================================================
+# NOTE: PREPROCESSING MOVED TO preprocessing.py MODULE
+# =============================================================================
+# Input preprocessing (cleaning and normalization) is now handled by the 
+# preprocessing module for better code organization and reusability.
 
-def _normalize_ordinals(text: str) -> str:
-    """Normalize ordinal numbers in obstetric exam names for better parsing."""
-    import re
-    ordinal_replacements = {
-        r'\b1ST\b': 'First', r'\b2ND\b': 'Second', r'\b3RD\b': 'Third',
-        r'\b1st\b': 'First', r'\b2nd\b': 'Second', r'\b3rd\b': 'Third',
-        r'\bfirst\b': 'First', r'\bsecond\b': 'Second', r'\bthird\b': 'Third',
-        r'\btrimester\b': 'Trimester', r'\bTRIMESTER\b': 'Trimester',
-        r'\bobstetric\b': 'Obstetric', r'\bOBSTETRIC\b': 'Obstetric',
-    }
-    result = text
-    for pattern, replacement in ordinal_replacements.items():
-        result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
-    return result
 
-def _detect_gender_context(exam_name: str, anatomy: List[str]) -> Optional[str]:
-    """Detect gender/pregnancy context from exam name and anatomy."""
-    import re
-    exam_lower = exam_name.lower()
-    
-    # Debug logging for gender detection
-    logger.info(f"DEBUG: Gender detection for '{exam_name}' -> '{exam_lower}'")
-    
-    pregnancy_patterns = [r'\b(obstetric|pregnancy|prenatal)\b', r'\b(fetal|fetus)\b', r'\b(trimester)\b']
-    if any(re.search(p, exam_lower) for p in pregnancy_patterns): 
-        logger.info(f"DEBUG: Detected pregnancy context for '{exam_name}'")
-        return 'pregnancy'
-    
-    female_anatomy = ['female pelvis', 'uterus', 'ovary', 'endometrial']
-    female_patterns = [r'\b(female)\b', r'\b(woman|women)\b', r'\b(gynecological|gynaecological)\b']
-    
-    # Check female anatomy terms
-    for term in female_anatomy:
-        if term.lower() in exam_lower:
-            logger.info(f"DEBUG: Detected female anatomy '{term}' in '{exam_name}'")
-            return 'female'
-    
-    # Check female patterns
-    for pattern in female_patterns:
-        if re.search(pattern, exam_lower):
-            logger.info(f"DEBUG: Detected female pattern '{pattern}' in '{exam_name}'")
-            return 'female'
-    
-    male_anatomy = ['prostate', 'testicular', 'scrotal']
-    male_patterns = [r'\b(male)\b', r'\b(men)\b']
-    
-    # Check male anatomy terms
-    for term in male_anatomy:
-        if term.lower() in exam_lower:
-            logger.info(f"DEBUG: Detected male anatomy '{term}' in '{exam_name}'")
-            return 'male'
-    
-    # Check male patterns
-    for pattern in male_patterns:
-        if re.search(pattern, exam_lower):
-            logger.info(f"DEBUG: Detected male pattern '{pattern}' in '{exam_name}'")
-            return 'male'
-    
-    logger.info(f"DEBUG: No gender context detected for '{exam_name}'")
-    return None
-
-def _detect_age_context(exam_name: str) -> Optional[str]:
-    """Detect age context from exam name (e.g., paediatric, adult)."""
-    import re
-    exam_lower = exam_name.lower()
-    pediatric_patterns = [
-        r'\b(paediatric|pediatric|paed|peds)\b',
-        r'\b(child|children|infant|infants|baby|babies)\b',
-        r'\b(newborn|neonate|neonatal)\b',
-        r'\b(toddler|adolescent|juvenile)\b'
-    ]
-    if any(re.search(p, exam_lower) for p in pediatric_patterns): return 'paediatric'
-    if any(re.search(p, exam_lower) for p in [r'\b(adult)\b']): return 'adult'
-    return None
-
-def _detect_clinical_context(exam_name: str, anatomy: List[str]) -> List[str]:
-    """Detect clinical context from exam name."""
-    import re
-    exam_lower = exam_name.lower()
-    contexts = []
-    context_patterns = {
-        'screening': [r'\b(screening|surveillance)\b'],
-        'emergency': [r'\b(emergency|urgent|stat|trauma)\b'],
-        'follow-up': [r'\b(follow.?up|post.?op)\b'],
-        'intervention': [r'\b(biopsy|drainage|injection)\b']
-    }
-    for context, patterns in context_patterns.items():
-        if any(re.search(p, exam_lower) for p in patterns):
-            contexts.append(context)
-    return contexts
+# =============================================================================
+# CORE PROCESSING PIPELINE
+# =============================================================================
+# Main processing function that orchestrates the entire pipeline
 
 def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None, nlp_proc: NLPProcessor = None) -> Dict:
-    """NHS-first processing pipeline that uses NHS.json as the single source of truth."""
+    """
+    NHS-first processing pipeline that uses NHS.json as the single source of truth.
+    
+    PROCESSING PIPELINE:
+    1. Preprocess: Clean and normalize the input exam name
+    2. Parse: Extract semantic components using NLP and parsing utilities
+    3. Lookup: Match against NHS reference data with confidence scoring
+    4. Format: Return standardized results with metadata
+    """
     _ensure_app_is_initialized()
     if not nhs_lookup_engine or not semantic_parser:
         logger.error("Core components (NHS Engine or Parser) not available")
         return {'error': 'Core components not initialized'}
     try:
-        # 1. Preprocess the raw input string
-        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        # STEP 1: Preprocess the raw input string
+        cleaned_exam_name = preprocess_exam_name(exam_name)
         
-        # 2. Parse the cleaned input string to get its components for matching
+        # STEP 2: Parse the cleaned input string to get its components for matching
         # Use provided NLP processor or fall back to global default
         if nlp_proc and nlp_proc != nlp_processor:
             # Create temporary parser with custom NLP processor
@@ -327,10 +254,11 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None, nlp_
         else:
             parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
         
-        # 3. Use the cleaned name and its parsed components to find the best match
-        nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components)
+        # STEP 3: Use the cleaned name and its parsed components to find the best match
+        # Pass the custom NLP processor to NHS lookup engine if provided
+        nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components, nlp_proc)
         
-        # 4. Format the final output, using components from the STANDARDIZED result
+        # STEP 4: Format the final output, using components from the STANDARDIZED result
         return {
             'input_exam': exam_name,
             'cleaned_exam': cleaned_exam_name,
@@ -345,11 +273,16 @@ def process_exam_with_nhs_lookup(exam_name: str, modality_code: str = None, nlp_
             'confidence': nhs_result.get('confidence'),
             'source': nhs_result.get('source'),
             'snomed_found': bool(nhs_result.get('snomed_id')),
-            'age_context': _detect_age_context(cleaned_exam_name)
+            'age_context': detect_age_context(cleaned_exam_name)
         }
     except Exception as e:
         logger.error(f"Error processing exam '{exam_name}': {e}", exc_info=True)
         return {'error': str(e)}
+
+# =============================================================================
+# LEGACY FORMAT ADAPTER
+# =============================================================================
+# Converts modern NHS lookup results to legacy endpoint format for backward compatibility
 
 def _adapt_nhs_to_legacy_format(nhs_result: Dict, original_exam_name: str, cleaned_exam_name: str) -> Dict:
     """Adapts the output of the modern NHS lookup to the legacy /parse endpoint format."""
@@ -376,22 +309,27 @@ def _adapt_nhs_to_legacy_format(nhs_result: Dict, original_exam_name: str, clean
         'laterality': laterality,
         'contrast': contrast,
         'technique': technique,
-        'gender_context': _detect_gender_context(cleaned_exam_name, anatomy),
-        'age_context': _detect_age_context(cleaned_exam_name),
-        'clinical_context': _detect_clinical_context(cleaned_exam_name, anatomy),
+        'gender_context': detect_gender_context(cleaned_exam_name, anatomy),
+        'age_context': detect_age_context(cleaned_exam_name),
+        'clinical_context': detect_clinical_context(cleaned_exam_name, anatomy),
         'confidence': nhs_result.get('confidence', 0.0),
         'snomed': snomed_data,
         'equivalence': {'clinical_equivalents': [], 'procedural_equivalents': []},
-        'is_paediatric': _detect_age_context(cleaned_exam_name) == 'paediatric',
+        'is_paediatric': detect_age_context(cleaned_exam_name) == 'paediatric',
         'modality': modality,
         'parsing_method': 'unified_nhs_lookup_v4', # Updated version
         'original_exam_name': original_exam_name,
         'cleaned_exam_name': cleaned_exam_name
     }
 
-# --- API Endpoints (No changes needed from here down) ---
+# =============================================================================
+# API ENDPOINTS
+# =============================================================================
+# REST API endpoints that expose the processing pipeline functionality
+
 @app.route('/health', methods=['GET'])
 def health_check():
+    """Health check endpoint for monitoring service availability"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat(), 'app_initialized': _app_initialized})
 
 @app.route('/cache-version', methods=['GET'])
@@ -417,7 +355,15 @@ def cache_version_info():
 
 @app.route('/parse', methods=['POST'])
 def parse_exam():
-    """Legacy parsing endpoint, now unified to use the modern NHS-first lookup pipeline."""
+    """
+    Legacy parsing endpoint, now unified to use the modern NHS-first lookup pipeline.
+    
+    ENDPOINT PIPELINE:
+    1. Validate input and check cache
+    2. Process exam using unified NHS lookup pipeline
+    3. Adapt results to legacy format for backward compatibility
+    4. Cache results and record performance metrics
+    """
     _ensure_app_is_initialized()
     start_time = time.time()
     
@@ -437,7 +383,7 @@ def parse_exam():
         
         # The core processing logic is now centralized
         nhs_result = process_exam_with_nhs_lookup(exam_name, modality, None)
-        cleaned_exam_name = _preprocess_exam_name(exam_name) # Needed for adapter
+        cleaned_exam_name = preprocess_exam_name(exam_name) # Needed for adapter
         adapted_result = _adapt_nhs_to_legacy_format(nhs_result, exam_name, cleaned_exam_name)
         
         cache_manager.set(cache_key, adapted_result)
@@ -452,7 +398,16 @@ def parse_exam():
 
 @app.route('/parse_enhanced', methods=['POST'])
 def parse_enhanced():
-    """Enhanced parsing endpoint using the new hybrid NLP parser."""
+    """
+    Enhanced parsing endpoint using the new hybrid NLP parser.
+    
+    ENDPOINT PIPELINE:
+    1. Validate input and select NLP model
+    2. Check cache for existing results
+    3. Process exam using selected NLP processor
+    4. Format enhanced response with detailed components
+    5. Cache results and record performance metrics
+    """
     _ensure_app_is_initialized()
     start_time = time.time()
     
@@ -475,7 +430,7 @@ def parse_enhanced():
         if cached_result := cache_manager.get(cache_key): return jsonify(cached_result)
 
         result = process_exam_with_nhs_lookup(exam_name, modality, selected_nlp_processor)
-        cleaned_exam_name = _preprocess_exam_name(exam_name)
+        cleaned_exam_name = preprocess_exam_name(exam_name)
         
         anatomy = [a for a in result.get('anatomy', []) if a]
         laterality = [l for l in result.get('laterality', []) if l]
@@ -483,7 +438,7 @@ def parse_enhanced():
         modality_list = [m for m in result.get('modality', []) if m]
         
         # Debug: Test gender detection
-        gender_result = _detect_gender_context(cleaned_exam_name, anatomy)
+        gender_result = detect_gender_context(cleaned_exam_name, anatomy)
         logger.info(f"DEBUG: Gender detection result for '{cleaned_exam_name}': {gender_result}")
 
         response = {
@@ -496,9 +451,9 @@ def parse_enhanced():
                 'technique': result.get('technique', []), 
                 'modality': modality_list, 
                 'confidence': result.get('confidence', 0.0),
-                'gender_context': _detect_gender_context(cleaned_exam_name, anatomy),
-                'age_context': _detect_age_context(cleaned_exam_name),
-                'clinical_context': _detect_clinical_context(cleaned_exam_name, anatomy),
+                'gender_context': detect_gender_context(cleaned_exam_name, anatomy),
+                'age_context': detect_age_context(cleaned_exam_name),
+                'clinical_context': detect_clinical_context(cleaned_exam_name, anatomy),
                 'clinical_equivalents': []
             },
             'metadata': {'processing_time_ms': int((time.time() - start_time) * 1000), 'confidence': result.get('confidence', 0.0), 'source': result.get('source')}
@@ -516,7 +471,16 @@ def parse_enhanced():
 
 @app.route('/parse_batch', methods=['POST'])
 def parse_batch():
-    """Optimized batch processing using the new hybrid parser."""
+    """
+    Optimized batch processing using the new hybrid parser.
+    
+    ENDPOINT PIPELINE:
+    1. Validate input and select NLP model
+    2. Check cache for existing results (cache optimization)
+    3. Process uncached exams using thread pool
+    4. Aggregate results and calculate statistics
+    5. Record performance metrics
+    """
     _ensure_app_is_initialized()
     start_time = time.time()
     try:
@@ -669,6 +633,11 @@ def retrain_patterns():
         logger.error(f"Retraining error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
+# =============================================================================
+# WORKER MANAGEMENT AND GRACEFUL SHUTDOWN
+# =============================================================================
+# Handles concurrent request processing and graceful application shutdown
+
 def _register_worker(worker_id: str):
     """Register a worker for tracking during graceful shutdown."""
     with _worker_lock:
@@ -742,6 +711,9 @@ def _setup_signal_handlers():
     atexit.register(_cleanup_resources)
     logger.info("Signal handlers registered for graceful shutdown")
 
+# =============================================================================
+# APPLICATION ENTRY POINT
+# =============================================================================
 
 if __name__ == '__main__':
     logger.info("Running in local development mode, initializing app immediately.")

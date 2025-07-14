@@ -1,7 +1,7 @@
 import re
 from typing import Dict, List, Optional, Set
 # UPDATED: Importing from our new utility file, NOT the old preprocessor
-from parsing_utils import AnatomyExtractor, LateralityDetector, USAContrastMapper
+from parsing_utils import AnatomyExtractor, LateralityDetector, ContrastMapper
 
 class RadiologySemanticParser:
     """
@@ -87,7 +87,7 @@ class RadiologySemanticParser:
         return self.laterality_detector.detect(lower_name) if self.laterality_detector else None
 
     def _parse_contrast(self, lower_name: str) -> Optional[str]:
-        """Parse contrast status using the dedicated USAContrastMapper."""
+        """Parse contrast status using the dedicated ContrastMapper."""
         return self.contrast_mapper.detect_contrast(lower_name) if self.contrast_mapper else None
 
     def _parse_technique(self, lower_name: str) -> List[str]:

@@ -2,11 +2,9 @@ import re
 from typing import Dict, List, Optional
 
 class AbbreviationExpander:
-    """Comprehensive abbreviation expansion"""
+    """Medical abbreviation expansion for radiology exam names"""
 
-    def __init__(self, usa_patterns: Dict = None):
-        self.usa_abbreviations = usa_patterns.get('common_abbreviations', {}) if usa_patterns else {}
-
+    def __init__(self):
         # Medical abbreviations from radiology
         self.medical_abbreviations = {
             # Anatomy
@@ -52,26 +50,50 @@ class AbbreviationExpander:
             'pda': 'patent ductus arteriosus', 'vsd': 'ventricular septal defect',
             'asd': 'atrial septal defect', 'tof': 'tetralogy of fallot',
         }
-        self.all_abbreviations = {**self.medical_abbreviations, **self.usa_abbreviations}
 
     def expand(self, text: str) -> str:
-        """Expand abbreviations in text"""
+        """Expand medical abbreviations in text"""
         words = text.split()
         expanded = []
         for word in words:
             # Remove common punctuation and brackets for matching
             clean_word = word.lower().rstrip('.,()[]/-').strip()
             # Try exact match first, then fallback to original word
-            expanded_word = self.all_abbreviations.get(clean_word, word)
+            expanded_word = self.medical_abbreviations.get(clean_word, word)
             expanded.append(expanded_word)
         return ' '.join(expanded)
+    
+    def normalize_ordinals(self, text: str) -> str:
+        """
+        Normalize ordinal numbers in obstetric exam names for better parsing.
+        
+        Converts various ordinal formats to standardized forms:
+        - 1st/2nd/3rd -> First/Second/Third
+        - Capitalizes key obstetric terms
+        
+        Args:
+            text: Input text containing potential ordinals
+            
+        Returns:
+            Text with normalized ordinals
+        """
+        ordinal_replacements = {
+            r'\b1ST\b': 'First', r'\b2ND\b': 'Second', r'\b3RD\b': 'Third',
+            r'\b1st\b': 'First', r'\b2nd\b': 'Second', r'\b3rd\b': 'Third',
+            r'\bfirst\b': 'First', r'\bsecond\b': 'Second', r'\bthird\b': 'Third',
+            r'\btrimester\b': 'Trimester', r'\bTRIMESTER\b': 'Trimester',
+            r'\bobstetric\b': 'Obstetric', r'\bOBSTETRIC\b': 'Obstetric',
+        }
+        result = text
+        for pattern, replacement in ordinal_replacements.items():
+            result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+        return result
 
 class AnatomyExtractor:
-    """Extract anatomy using NHS authority and USA patterns"""
+    """Extract anatomy using NHS authority data"""
 
-    def __init__(self, nhs_authority: Dict, usa_patterns: Dict = None):
+    def __init__(self, nhs_authority: Dict):
         self.nhs_authority = nhs_authority
-        self.usa_patterns = usa_patterns or {}
         self.anatomy_terms = self._build_anatomy_vocabulary()
 
     def _build_anatomy_vocabulary(self) -> Dict[str, str]:
@@ -169,8 +191,8 @@ class LateralityDetector:
             return 'right'
         return None
 
-class USAContrastMapper:
-    """Enhanced contrast detection with USA conventions"""
+class ContrastMapper:
+    """Contrast detection for radiology exam names"""
 
     def __init__(self):
         self.patterns = {
@@ -184,9 +206,10 @@ class USAContrastMapper:
         }
 
     def detect_contrast(self, text: str) -> Optional[str]:
-        """Detect contrast type with USA conventions"""
+        """Detect contrast type in radiology exam names"""
         # Check 'without' before 'with' to handle cases like 'non-enhanced' correctly
         for contrast_type in ['with and without', 'without', 'with']:
             if any(p.search(text) for p in self.compiled_patterns[contrast_type]):
                 return contrast_type
         return None
+
