@@ -65,9 +65,15 @@ The `priority_data_set.json` follows this structure:
 
 Both applications are static web applications with no build process. They run directly in the browser.
 
+### Python Command Policy
+**CRITICAL: Always use `python3` instead of `python` for all Python commands.**
+- The system requires Python 3 and `python` may not be available or may point to Python 2
+- Use `python3` for all scripts, testing, and development commands
+- Examples: `python3 -m http.server`, `python3 script.py`, `python3 -c "..."`
+
 ### HNZ Radiology Triage Tool
 Since there's no package.json, this project doesn't use npm/node build tools. To develop locally:
-- Serve files from root directory using a local web server (e.g., `python -m http.server` or VS Code Live Server)
+- Serve files from root directory using a local web server (e.g., `python3 -m http.server` or VS Code Live Server)
 - The app uses CDN imports for React from esm.sh
 - Deployed via Cloudflare Workers using the wrangler configuration (`wrangler.jsonc`)
 

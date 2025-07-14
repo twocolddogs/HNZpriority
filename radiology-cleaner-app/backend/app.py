@@ -159,16 +159,26 @@ def _detect_gender_context(exam_name: str, anatomy: List[str]) -> Optional[str]:
     pregnancy_patterns = [r'\b(obstetric|pregnancy|prenatal)\b', r'\b(fetal|fetus)\b', r'\b(trimester)\b']
     if any(re.search(p, exam_lower) for p in pregnancy_patterns): return 'pregnancy'
     female_anatomy = ['female pelvis', 'uterus', 'ovary', 'endometrial']
+    female_patterns = [r'\b(female)\b', r'\b(woman|women)\b', r'\b(gynecological|gynaecological)\b']
     if any(term.lower() in exam_lower for term in female_anatomy): return 'female'
+    if any(re.search(p, exam_lower) for p in female_patterns): return 'female'
     male_anatomy = ['prostate', 'testicular', 'scrotal']
+    male_patterns = [r'\b(male)\b', r'\b(men)\b']
     if any(term.lower() in exam_lower for term in male_anatomy): return 'male'
+    if any(re.search(p, exam_lower) for p in male_patterns): return 'male'
     return None
 
 def _detect_age_context(exam_name: str) -> Optional[str]:
     """Detect age context from exam name (e.g., paediatric, adult)."""
     import re
     exam_lower = exam_name.lower()
-    if any(re.search(p, exam_lower) for p in [r'\b(paediatric|pediatric|paed|peds)\b', r'\b(child|infant|newborn)\b']): return 'paediatric'
+    pediatric_patterns = [
+        r'\b(paediatric|pediatric|paed|peds)\b',
+        r'\b(child|children|infant|infants|baby|babies)\b',
+        r'\b(newborn|neonate|neonatal)\b',
+        r'\b(toddler|adolescent|juvenile)\b'
+    ]
+    if any(re.search(p, exam_lower) for p in pediatric_patterns): return 'paediatric'
     if any(re.search(p, exam_lower) for p in [r'\b(adult)\b']): return 'adult'
     return None
 

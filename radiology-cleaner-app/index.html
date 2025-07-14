@@ -5,139 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Radiology Code Semantic Cleaner</title>
     <!-- Fonts -->
-    <link href="../fonts/Poppins/Poppins-Regular.ttf" rel="stylesheet" type="text/css">
-    <link href="../fonts/PublicSans/PublicSans-Regular.ttf" rel="stylesheet" type="text/css">
+    <link href="../fonts/poppins.css" rel="stylesheet" type="text/css">
+    <link href="../fonts/publicsans.css" rel="stylesheet" type="text/css">
     <!-- Unified Design System -->
     <link href="unified-styles.css" rel="stylesheet" type="text/css">
-    <style>
-        /* App-specific overrides for legacy compatibility */
-        #fileInput { display: none; }
-        
-        /* Sanity test specific styles */
-        .file-details.error {
-            border-left: 4px solid #dc3545;
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        /* Specific color overrides for the radiology app branding */
-        .stat-value { 
-            color: var(--color-primary); 
-        }
-        
-        /* Feedback component styles - kept for functionality */
-        .component-editor { 
-            display: flex; 
-            flex-direction: column; 
-            gap: var(--space-2); 
-        }
-        .component-editor label { 
-            font-size: var(--font-size-sm); 
-            font-weight: var(--font-weight-bold); 
-        }
-        .component-editor input, .component-editor select { 
-            padding: var(--space-1); 
-            font-size: var(--font-size-sm); 
-        }
-        .component-tags { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: var(--space-1); 
-            margin-top: var(--space-2); 
-        }
-        .editable-tag { 
-            background: var(--color-info-light); 
-            color: var(--color-info); 
-            padding: var(--space-1) var(--space-2); 
-            border-radius: var(--radius-sm); 
-            font-size: var(--font-size-xs); 
-            cursor: pointer; 
-            border: 1px solid var(--color-info); 
-        }
-        .editable-tag:hover { 
-            background: #bbdefb; 
-        }
-        .add-anatomy-btn { 
-            background: var(--color-success); 
-            color: var(--color-white); 
-            border: none; 
-            padding: var(--space-1) var(--space-2); 
-            border-radius: var(--radius-sm); 
-            cursor: pointer; 
-            font-size: var(--font-size-xs); 
-        }
-        .add-anatomy-btn:hover { 
-            background: var(--color-success-hover); 
-        }
-        
-        /* Correction modal specific styles */
-        .correction-modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.5); 
-            z-index: var(--z-modal); 
-        }
-        .correction-modal-content { 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            background: var(--color-white); 
-            padding: var(--space-8); 
-            border-radius: var(--radius-base); 
-            max-width: 800px; 
-            width: 90%; 
-            max-height: 80vh; 
-            overflow-y: auto; 
-        }
-        .correction-form { 
-            display: flex; 
-            flex-direction: column; 
-            gap: var(--space-4); 
-        }
-        .correction-comparison { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: var(--space-4); 
-            margin: var(--space-4) 0; 
-        }
-        .correction-original, .correction-corrected { 
-            padding: var(--space-4); 
-            border-radius: var(--radius-base); 
-        }
-        .correction-original { 
-            background: var(--color-warning-light); 
-            border: 1px solid var(--color-warning); 
-        }
-        .correction-corrected { 
-            background: var(--color-info-light); 
-            border: 1px solid var(--color-info); 
-        }
-        .correction-buttons { 
-            display: flex; 
-            gap: var(--space-4); 
-            justify-content: flex-end; 
-            margin-top: var(--space-4); 
-        }
-        .feedback-button { 
-            background: var(--color-info); 
-            color: var(--color-white); 
-            border: none; 
-            padding: var(--space-1) var(--space-2); 
-            border-radius: var(--radius-sm); 
-            cursor: pointer; 
-            font-size: var(--font-size-xs); 
-            transition: var(--transition-base); 
-        }
-        .feedback-button:hover { 
-            background: var(--color-info); 
-            opacity: 0.8; 
-        }
-    </style>
 </head>
 <body>
     <div class="container">
@@ -834,8 +705,9 @@
                 if (batchResult.processing_stats) {
                     const stats = batchResult.processing_stats;
                     const hitRate = (stats.cache_hit_ratio * 100).toFixed(1);
-                    updateStatusMessage(`✅ Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${stats.processing_time_ms}ms total`);
-                    console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${stats.processing_time_ms}ms total`);
+                    const formattedTime = formatProcessingTime(stats.processing_time_ms);
+                    updateStatusMessage(`✅ Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${formattedTime} total`);
+                    console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${formattedTime} total`);
                 } else {
                     updateStatusMessage(`✅ Processing complete! ${allMappings.length} exam records processed successfully.`);
                 }
@@ -1428,6 +1300,24 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
         }
+        
+        function formatProcessingTime(milliseconds) {
+            if (milliseconds < 1000) {
+                return `${milliseconds}ms`;
+            } else if (milliseconds < 60000) {
+                const seconds = (milliseconds / 1000).toFixed(1);
+                return `${seconds}s`;
+            } else {
+                const minutes = Math.floor(milliseconds / 60000);
+                const seconds = Math.floor((milliseconds % 60000) / 1000);
+                if (seconds === 0) {
+                    return `${minutes}m`;
+                } else {
+                    return `${minutes}m ${seconds}s`;
+                }
+            }
+        }
+        
         function downloadJSON(data, filename) {
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             triggerDownload(blob, filename);
