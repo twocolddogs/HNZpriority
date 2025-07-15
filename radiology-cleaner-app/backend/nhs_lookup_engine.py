@@ -448,6 +448,47 @@ class NHSLookupEngine:
             'source': source_name
         }
 
+    # In nhs_lookup_engine.py, add this new method to the NHSLookupEngine class
+
+    def find_bilateral_peer(self, specific_clean_name: str) -> Optional[Dict]:
+        """
+        Finds the bilateral ("Both" or "Bilateral") peer of a given specific
+        (e.g., "Left" or "Right") clean name.
+
+        Args:
+            specific_clean_name: The clean name of the specific entry,
+                                 e.g., "MRI Knee Lt".
+
+        Returns:
+            The full dictionary of the bilateral peer NHS entry, or None if not found.
+        """
+        if not specific_clean_name:
+            return None
+
+        # Create a "base name" by stripping known laterality suffixes.
+        # This is more robust than simple replacement.
+        # e.g., "MRI Knee Lt" -> "MRI Knee"
+        base_name_pattern = re.compile(r'\s+(lt|rt|left|right)$', re.IGNORECASE)
+        base_name = base_name_pattern.sub('', specific_clean_name).strip()
+
+        # Now, search for an entry that matches this base name and has a bilateral term.
+        bilateral_pattern = re.compile(r'\s+(both|bilateral)$', re.IGNORECASE)
+
+        for entry in self.nhs_data:
+            entry_clean_name = entry.get("Clean Name", "")
+            # Check if the entry's name, when stripped of its bilateral suffix,
+            # matches our base name. This is a very precise way to find the peer.
+            entry_base_name = bilateral_pattern.sub('', entry_clean_name).strip()
+
+            if base_name.lower() == entry_base_name.lower():
+                # We found the peer. Verify it actually has a bilateral term.
+                if bilateral_pattern.search(entry_clean_name):
+                    logger.info(f"Found bilateral peer '{entry_clean_name}' for base '{base_name}'")
+                    return entry  # Return the full dictionary of the peer entry.
+
+        logger.warning(f"No bilateral peer found for base name '{base_name}'")
+        return None
+
     def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
         """
         Main method to standardize an exam using NHS reference data.
