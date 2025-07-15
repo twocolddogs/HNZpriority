@@ -134,13 +134,76 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('hamburgerDropdown').classList.toggle('hidden');
     });
 
-    document.getElementById('helpButton').addEventListener('click', showHelpModal);
-    document.getElementById('closeHelpModal').addEventListener('click', closeHelpModal);
-    document.getElementById('closeHelpBtn').addEventListener('click', closeHelpModal);
-    
-    document.getElementById('helpModal').addEventListener('click', (e) => {
-        if (e.target.id === 'helpModal') closeHelpModal();
+    // Close hamburger menu when clicking outside
+    document.addEventListener('click', (event) => {
+        const hamburgerMenu = document.getElementById('hamburgerDropdown');
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        
+        if (hamburgerMenu && hamburgerToggle) {
+            // Check if the click was outside both the toggle button and the dropdown menu
+            if (!hamburgerToggle.contains(event.target) && !hamburgerMenu.contains(event.target)) {
+                hamburgerMenu.classList.add('hidden');
+            }
+        }
     });
+    
+    // Prevent hamburger dropdown from closing when clicking inside it
+    const hamburgerDropdown = document.getElementById('hamburgerDropdown');
+    if (hamburgerDropdown) {
+        hamburgerDropdown.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+    }
+
+    // Help and Architecture button event listeners with debug verification
+    const helpButton = document.getElementById('helpButton');
+    const architectureButton = document.getElementById('architectureButton');
+    
+    if (helpButton) {
+        console.log('✓ Help button found, attaching event listener');
+        helpButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showHelpModal();
+        });
+    } else {
+        console.error('❌ Help button not found!');
+    }
+    
+    if (architectureButton) {
+        console.log('✓ Architecture button found, attaching event listener');
+        architectureButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showArchitectureModal();
+        });
+    } else {
+        console.error('❌ Architecture button not found!');
+    }
+    // Modal close button event listeners with error checking
+    const closeHelpModal1 = document.getElementById('closeHelpModal');
+    const closeHelpBtn = document.getElementById('closeHelpBtn');
+    const closeArchitectureModal1 = document.getElementById('closeArchitectureModal');
+    const closeArchitectureBtn = document.getElementById('closeArchitectureBtn');
+    
+    if (closeHelpModal1) closeHelpModal1.addEventListener('click', closeHelpModal);
+    if (closeHelpBtn) closeHelpBtn.addEventListener('click', closeHelpModal);
+    if (closeArchitectureModal1) closeArchitectureModal1.addEventListener('click', closeArchitectureModal);
+    if (closeArchitectureBtn) closeArchitectureBtn.addEventListener('click', closeArchitectureModal);
+    
+    // Modal click-outside to close functionality with error checking
+    const helpModal = document.getElementById('helpModal');
+    const architectureModal = document.getElementById('architectureModal');
+    
+    if (helpModal) {
+        helpModal.addEventListener('click', (e) => {
+            if (e.target.id === 'helpModal') closeHelpModal();
+        });
+    }
+    
+    if (architectureModal) {
+        architectureModal.addEventListener('click', (e) => {
+            if (e.target.id === 'architectureModal') closeArchitectureModal();
+        });
+    }
     
     function showHelpModal() {
         
@@ -231,6 +294,143 @@ window.addEventListener('DOMContentLoaded', function() {
     
     function closeHelpModal() {
         document.getElementById('helpModal').classList.add('hidden');
+    }
+    
+    function showArchitectureModal() {
+        // Close hamburger menu
+        document.getElementById('hamburgerDropdown').classList.add('hidden');
+        
+        // Populate modal with system architecture content
+        document.getElementById('architectureContent').innerHTML = getSystemArchitectureContent();
+        
+        // Show modal
+        document.getElementById('architectureModal').classList.remove('hidden');
+    }
+    
+    function closeArchitectureModal() {
+        document.getElementById('architectureModal').classList.add('hidden');
+    }
+    
+    function getSystemArchitectureContent() {
+        return `
+            <h1>Radiology Cleaner Application - System Architecture</h1>
+            
+            <h2>1. Overview</h2>
+            <p>The Radiology Cleaner application is a web-based tool designed to standardize and process radiology exam names. It leverages a Flask backend for API services, a Python-based natural language processing (NLP) engine for semantic parsing, and a simple HTML/JavaScript frontend for user interaction. The system aims to provide clean, standardized exam names, SNOMED codes, and extracted clinical components (anatomy, laterality, contrast, etc.) for improved data quality and interoperability.</p>
+            
+            <h2>2. Architecture Overview</h2>
+            <p>The system follows a modern web application architecture with the following key components:</p>
+            <ul>
+                <li><strong>Frontend</strong>: HTML/CSS/JavaScript interface for user interaction</li>
+                <li><strong>Backend API</strong>: Flask application with REST endpoints</li>
+                <li><strong>NLP Engine</strong>: Semantic parsing and text processing</li>
+                <li><strong>NHS Lookup</strong>: Standardization against NHS reference data</li>
+                <li><strong>Database</strong>: SQLite for performance metrics and feedback</li>
+                <li><strong>Cache System</strong>: In-memory caching with dynamic versioning</li>
+            </ul>
+            
+            <h2>3. Core Components</h2>
+            
+            <h3>3.1. Frontend</h3>
+            <ul>
+                <li><strong>index.html</strong>: Main entry point providing HTML structure</li>
+                <li><strong>app.js</strong>: JavaScript logic for UI interaction and API communication</li>
+                <li><strong>unified-styles.css</strong>: Professional healthcare-focused styling</li>
+            </ul>
+            
+            <h3>3.2. Backend Services</h3>
+            <ul>
+                <li><strong>RadiologySemanticParser</strong>: Core rule-based semantic parsing
+                    <ul>
+                        <li>Modality detection (XR, CT, MRI, XA, Fluoroscopy, DEXA)</li>
+                        <li>Technique classification (Angiography, Interventional, Barium Study)</li>
+                        <li>Component extraction (anatomy, laterality, contrast)</li>
+                    </ul>
+                </li>
+                <li><strong>NLPProcessor</strong>: Multi-model NLP support
+                    <ul>
+                        <li>PubMed embeddings (medical terminology optimized)</li>
+                        <li>BioLORD-2023 (advanced biomedical language model)</li>
+                        <li>General-purpose models for broad understanding</li>
+                    </ul>
+                </li>
+                <li><strong>NHSLookupEngine</strong>: NHS reference data standardization
+                    <ul>
+                        <li>Unified preprocessing pipeline</li>
+                        <li>Dynamic cache invalidation</li>
+                        <li>Dual lookup strategy (Clean Name + SNOMED FSN)</li>
+                        <li>Interventional procedure weighting</li>
+                    </ul>
+                </li>
+            </ul>
+            
+            <h2>4. Recent Improvements (2024)</h2>
+            
+            <h3>4.1. Enhanced Medical Accuracy</h3>
+            <ul>
+                <li><strong>Mammography Reclassification</strong>: Correctly classified as XR modality (technique) rather than separate modality</li>
+                <li><strong>Barium Studies</strong>: All barium procedures classified as Fluoroscopy modality</li>
+                <li><strong>XA Modality Support</strong>: X-Ray Angiography for interventional procedures</li>
+                <li><strong>DEXA Integration</strong>: Bone densitometry studies with dedicated patterns</li>
+            </ul>
+            
+            <h3>4.2. NHS Interventional Procedure Accuracy</h3>
+            <ul>
+                <li>Redefined based on NHS credentialing requirements</li>
+                <li>Specialist procedures in interventional labs (typically XA modality)</li>
+                <li>Distinguishes from general interventions (PICC lines, biopsies)</li>
+            </ul>
+            
+            <h3>4.3. Multi-Model NLP Support</h3>
+            <ul>
+                <li><strong>BioLORD Integration</strong>: FremyCompany/BioLORD-2023 for enhanced medical terminology</li>
+                <li><strong>Model Selection API</strong>: Users can specify model via request parameters</li>
+                <li><strong>Model Discovery</strong>: <code>/models</code> endpoint lists available models with status</li>
+            </ul>
+            
+            <h2>5. API Endpoints</h2>
+            <ul>
+                <li><code>/health</code>: Basic health check</li>
+                <li><code>/models</code>: Lists available NLP models with status and descriptions</li>
+                <li><code>/parse_enhanced</code>: Enhanced parsing with model selection support</li>
+                <li><code>/parse_batch</code>: Optimized batch processing</li>
+                <li><code>/validate</code>: Quality validation and scoring</li>
+                <li><code>/feedback</code>: User feedback submission</li>
+            </ul>
+            
+            <h2>6. Data Flow</h2>
+            <ol>
+                <li><strong>Input Processing</strong>: User uploads exam data or uses sanity test</li>
+                <li><strong>Preprocessing</strong>: Abbreviation expansion and normalization</li>
+                <li><strong>Semantic Parsing</strong>: Component extraction using rule-based methods</li>
+                <li><strong>NLP Enhancement</strong>: Semantic embeddings for similarity matching</li>
+                <li><strong>NHS Standardization</strong>: Match against NHS reference data</li>
+                <li><strong>SNOMED Mapping</strong>: Medical coding standards integration</li>
+                <li><strong>Output Generation</strong>: Structured results with confidence scores</li>
+            </ol>
+            
+            <h2>7. Key Technologies</h2>
+            <ul>
+                <li><strong>Frontend</strong>: HTML5, CSS3, ES6+ JavaScript</li>
+                <li><strong>Backend</strong>: Python 3.9+, Flask, Flask-CORS</li>
+                <li><strong>NLP</strong>: Hugging Face Inference API, NumPy</li>
+                <li><strong>Data Storage</strong>: SQLite, JSON, CSV</li>
+                <li><strong>Concurrency</strong>: ThreadPoolExecutor for batch processing</li>
+                <li><strong>Caching</strong>: Dynamic versioning with automatic invalidation</li>
+            </ul>
+            
+            <h2>8. Deployment Considerations</h2>
+            <ul>
+                <li><strong>Environment Variables</strong>: HUGGING_FACE_TOKEN required for NLP functionality</li>
+                <li><strong>Scalability</strong>: Batch processing and API-based NLP for performance</li>
+                <li><strong>Monitoring</strong>: Performance metrics recorded for optimization</li>
+                <li><strong>Graceful Shutdown</strong>: Ensures data integrity during restarts</li>
+            </ul>
+            
+            <div style="margin-top: 2rem; padding: 1rem; background: var(--color-primary-light); border-radius: var(--radius-base); border-left: 4px solid var(--color-primary);">
+                <p><strong>🏥 Healthcare Focus:</strong> This system is specifically designed for healthcare data processing with medical accuracy as the top priority. All improvements are validated against NHS reference standards.</p>
+            </div>
+        `;
     }
 
     // --- UPLOAD INTERFACE CONTROL ---
