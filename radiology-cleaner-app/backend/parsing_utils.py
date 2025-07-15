@@ -9,6 +9,7 @@ class AbbreviationExpander:
         self.medical_abbreviations = {
             # Anatomy
             'abd': 'abdomen', 'abdo': 'abdomen', 'pelv': 'pelvis', 'ext': 'extremity',
+            'br': 'breast',
             'ue': 'upper extremity', 'le': 'lower extremity', 'lle': 'left lower extremity',
             'rle': 'right lower extremity', 'rue': 'right upper extremity', 'lue': 'left upper extremity',
             'csp': 'cervical spine', 'tsp': 'thoracic spine', 'lsp': 'lumbar spine',
@@ -27,10 +28,13 @@ class AbbreviationExpander:
             'infant': 'infant', 'neonatal': 'neonatal', 'neonate': 'neonate',
             'baby': 'infant', 'child': 'pediatric', 'children': 'pediatric',
             'newborn': 'newborn', 'preterm': 'preterm',
-            # Laterality - comprehensive
+            # Laterality - comprehensive (case insensitive)
             'rt': 'right', 'lt': 'left', 'bil': 'bilateral', 'bilat': 'bilateral',
-            'r': 'right', 'l': 'left', 'both': 'bilateral',
+            'r': 'right', 'l': 'left', 'both': 'bilateral', 'Both': 'bilateral',
             'lhs': 'left', 'rhs': 'right', 'b/l': 'bilateral',
+            'Lt': 'left', 'Rt': 'right', 'Left': 'left', 'Right': 'right',
+            'bilateral': 'bilateral', 'Bilateral': 'bilateral',
+            'left': 'left', 'right': 'right',
             # Common terms
             'angio': 'angiography', 'venous': 'venography', 'arterial': 'arteriography',
             'fx': 'fracture', 'eval': 'evaluation', 'f/u': 'follow up',
@@ -198,7 +202,7 @@ class ContrastMapper:
         self.patterns = {
             'with and without': [r'\bw\s*and\s*wo\b', r'\bw/wo\b', r'\bwith\s*and\s*without\b', r'\bpre\s*&\s*post\b', r'\bpre/post\b', r'\b(pre and post contrast)\b'],
             'with': [r'\bw\s+(contrast|iv|gad)\b', r'\bwith\s+contrast\b', r'\benhanced\b', r'\bpost\s*contrast\b', r'\bc\+\b', r'\bC\+\b', r'\s+C\+$', r'\biv contrast\b'],
-            'without': [r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon\s*contrast\b', r'\bnon[\s\-]*enhanced\b', r'\bunenhanced\b', r'\bno\s+contrast\b', r'\bcontrast\s+not\s+given\b', r'\bpre[\s\-]*contrast\b', r'\bc[\s\-]\b', r'\bC[\s\-]\b', r'\s+C-$', r'\bplain\b', r'\bnative\b']
+            'without': [r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon[\s\-]*contrast\b', r'\bnon[\s\-]*enhanced\b', r'\bunenhanced\b', r'\bno\s+contrast\b', r'\bcontrast\s+not\s+given\b', r'\bpre[\s\-]*contrast\b', r'\bc[\s\-]\b', r'\bC[\s\-]\b', r'\s+C-$', r'\bplain\b', r'\bnative\b']
         }
         self.compiled_patterns = {
             ctype: [re.compile(p, re.IGNORECASE) for p in patterns]
