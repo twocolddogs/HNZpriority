@@ -23,6 +23,7 @@ class RadiologySemanticParser:
             'Colonography': [re.compile(p, re.I) for p in [r'colonography', r'virtual colonoscopy']],
             'Doppler': [re.compile(p, re.I) for p in [r'doppler', r'duplex']],
             'Tomosynthesis': [re.compile(p, re.I) for p in [r'tomosynthesis', r'tomsynthesis', r'tomo']],
+            'Barium Study': [re.compile(p, re.I) for p in [r'barium.*swallow', r'barium.*meal', r'barium.*enema', r'barium.*follow.*through', r'upper.*gi', r'lower.*gi']],
             'Interventional': [re.compile(p, re.I) for p in [r'stent', r'angioplasty', r'embolization', r'embolisation', r'thrombolysis', r'thrombectomy', r'atherectomy', r'vertebroplasty']],
             'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', 'aspir', r'injection', r'guided', r'procedure', 'ablation', 'placement', 'loc', 'bx', 'insertion', 'insert', 'picc', 'line', 'catheter']],
         }
@@ -76,7 +77,7 @@ class RadiologySemanticParser:
             'NM': re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy)\b', re.I),
             'PET': re.compile(r'\b(pet|positron emission)\b', re.I),
             'DEXA': re.compile(r'\b(dexa|dxa|bone densitometry)\b', re.I),
-            'Fluoroscopy': re.compile(r'\b(fl|fluoroscopy|screening)\b', re.I),
+            'Fluoroscopy': re.compile(r'\b(fl|fluoroscopy|screening|barium|swallow|meal|enema|follow.*through)\b', re.I),
         }
         for modality, pattern in modality_patterns.items():
             if pattern.search(lower_name):

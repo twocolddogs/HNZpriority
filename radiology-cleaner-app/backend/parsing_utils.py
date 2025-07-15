@@ -22,6 +22,8 @@ class AbbreviationExpander:
             # Contrast
             'w': 'with', 'wo': 'without', 'gad': 'gadolinium', 'iv': 'intravenous',
             'c+': 'with contrast', 'c-': 'without contrast',
+            # Barium/GI studies
+            'ugi': 'upper gi', 'sbft': 'small bowel follow through', 'dcbe': 'double contrast barium enema',
             # Gender/Age - comprehensive pediatric terms
             'm': 'male', 'f': 'female',
             'paed': 'paediatric', 'ped': 'pediatric', 'peds': 'pediatric',
@@ -130,7 +132,7 @@ class AnatomyExtractor:
             # Conjunctions and prepositions  
             'and', 'or', 'with', 'without', 'plus', 'including', 'via', 'through', 'during', 'for', 'of', 'in', 'on',
             # Imaging parameters
-            '18f', 'fdg', 'psma', 'gallium', 'technetium', 'iodine', 'barium', 'contrast',
+            '18f', 'fdg', 'psma', 'gallium', 'technetium', 'iodine', 'contrast',
             'non-contrast', 'pre-contrast', 'post-contrast', 'unenhanced',
             # Descriptive terms
             'plain', 'enhanced', 'dynamic', 'static', 'delayed', 'early', 'late', 'pre', 'post', 'follow', 'up',
