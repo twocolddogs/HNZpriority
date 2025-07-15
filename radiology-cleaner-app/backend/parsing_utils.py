@@ -41,7 +41,7 @@ class AbbreviationExpander:
             'angio': 'angiography', 'venous': 'venography', 'arterial': 'arteriography',
             'fx': 'fracture', 'eval': 'evaluation', 'f/u': 'follow up',
             'post-op': 'post operative', 'pre-op': 'pre operative',
-            'bx': 'biopsy', 'st': 'soft tissue',
+            'bx': 'biopsy', 'st': 'soft tissue', 'pc': 'percutaneous',
             # Important radiology abbreviations
             'mrcp': 'magnetic resonance cholangiopancreatography',
             'ercp': 'endoscopic retrograde cholangiopancreatography',
