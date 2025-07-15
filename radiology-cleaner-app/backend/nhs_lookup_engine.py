@@ -598,6 +598,21 @@ class NHSLookupEngine:
             if input_modality and input_modality.lower() == nhs_modality.lower():
                 combined_score += 0.1  # Modality alignment bonus
 
+            # MODIFICATION: Add a strong bonus for technique alignment.
+            input_techniques = set(extracted_input_components.get('technique', []))
+            nhs_techniques = set(nhs_components.get('technique', []))
+            
+            # If the input specifies techniques, reward matches heavily.
+            if input_techniques:
+                # Calculate the intersection of techniques
+                common_techniques = input_techniques.intersection(nhs_techniques)
+                if common_techniques:
+                    # Apply a significant bonus for each matching technique.
+                    # This makes technique a powerful feature for matching.
+                    technique_bonus = len(common_techniques) * 0.20
+                    combined_score += technique_bonus
+                    logger.debug(f"Technique bonus for '{nhs_clean_name}': +{technique_bonus:.3f} for matching techniques: {common_techniques}")
+
             # Contrast alignment scoring - FIXED: Handle all contrast matching scenarios
             input_contrast = extracted_input_components.get('contrast')
             if isinstance(input_contrast, list):
