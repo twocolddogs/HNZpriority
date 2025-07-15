@@ -183,81 +183,49 @@ class ContextDetector:
     
     def detect_interventional_procedure_terms(self, exam_name: str) -> List[str]:
         """
-        Detect interventional procedure terms from exam name.
-        
-        Identifies terms that indicate interventional (therapeutic) procedures
-        rather than diagnostic procedures, enabling proper weighting in NHS lookup.
+        Detects high-impact interventional procedure keywords from an exam name.
+
+        This function is crucial for weighting matches against the NHS "Interventional Procedure" flag.
+        It uses a simplified, high-yield list of terms.
         
         Args:
-            exam_name: The exam name to analyze
+            exam_name: The exam name to analyze.
             
         Returns:
-            List of detected interventional procedure terms
+            A list of detected interventional keywords.
         """
-        import re
-        
+        # This function is being kept for its role in the weighting system,
+        # but its logic is now dramatically simplified and more robust.
+        # The previous complex categorization was brittle and has been replaced.
+
         exam_lower = exam_name.lower()
-        interventional_terms = []
         
-        # Interventional procedure patterns - based on NHS "Interventional Procedure" flag definition
-        # These are procedures performed by interventional radiologists in specialized labs (typically XA modality)
-        interventional_patterns = {
-            # 1. Neuro-interventional procedures (intracranial and extracranial)
-            'neuro_intervention': [r'\b(neuro.*intervention|cerebral.*angioplasty|carotid.*stent|intracranial.*stent)\b'],
-            
-            # 2. Vascular interventional procedures (beyond basic diagnostic angiography)
-            'stent': [r'\b(stent|stenting|carotid.*stent)\b'],
-            'angioplasty': [r'\b(angioplasty|balloon.*angioplasty)\b'],
-            'thrombolysis': [r'\b(thrombolysis|clot.*lysis)\b'],
-            'thrombectomy': [r'\b(thrombectomy|clot.*removal)\b'],
-            'atherectomy': [r'\b(atherectomy)\b'],
-            'embolization': [r'\b(embolization|embolisation|embolize|coil.*embolization)\b'],
-            'retrieval': [r'\b(retrieval.*foreign.*body|foreign.*body.*retrieval)\b'],
-            'mechanical_angioplasty': [r'\b(mechanical.*angioplasty|laser.*angioplasty)\b'],
-            
-            # 3. Venous and arterio-venous interventions (beyond basic diagnostic)
-            'venous_intervention': [r'\b(venous.*angioplasty|venous.*stent|av.*graft.*intervention)\b'],
-            'pulmonary_intervention': [r'\b(pulmonary.*embolectomy|pulmonary.*thrombolysis)\b'],
-            'caval_filter': [r'\b(caval.*filter|ivc.*filter|vena.*cava.*filter)\b'],
-            
-            # 4. Biliary intervention including TIPS
-            'biliary_intervention': [r'\b(biliary.*intervention|biliary.*stent|tips|transjugular.*portosystemic)\b'],
-            'ptc': [r'\b(ptc|percutaneous.*transhepatic.*cholangiography)\b'],
-            
-            # 5. Thoracic intervention
-            'thoracic_intervention': [r'\b(bronchial.*stent|bronchial.*artery.*embolization|bronchopleural.*fistula)\b'],
-            'avm_embolization': [r'\b(avm.*embolization|arteriovenous.*malformation.*embolization)\b'],
-            
-            # 6. Gastro-intestinal intervention
-            'gi_intervention': [r'\b(oesophageal.*stent|duodenal.*stent|percutaneous.*gastrostomy)\b'],
-            'gi_embolization': [r'\b(gi.*embolization|chemo.*embolization|transplant.*intervention)\b'],
-            
-            # 7. Urological intervention
-            'uro_intervention': [r'\b(renal.*artery.*embolization|renal.*artery.*angioplasty|renal.*artery.*stent)\b'],
-            'nephrostomy': [r'\b(percutaneous.*nephrostomy|nephrostomy)\b'],
-            'nephrolithotomy': [r'\b(percutaneous.*nephrolithotomy)\b'],
-            
-            # 8. Gynaecological intervention
-            'gyn_intervention': [r'\b(fallopian.*tube.*recanalisation|fibroid.*embolization|uterine.*artery.*embolization)\b'],
-            'aortic_occlusion': [r'\b(temporary.*aortic.*occlusion)\b'],
-            
-            # 9. Orthopaedic intervention
-            'vertebroplasty': [r'\b(percutaneous.*vertebroplasty|vertebroplasty)\b'],
-            'discectomy': [r'\b(percutaneous.*discectomy)\b'],
-            
-            # General interventional terms that indicate specialist procedures
-            'angiography_therapeutic': [r'\b(therapeutic.*angiography|intervention.*angiography)\b'],
-            'percutaneous_intervention': [r'\b(percutaneous.*intervention)\b'],
-            'endovascular': [r'\b(endovascular)\b']
-        }
+        # A flat, high-yield list of interventional keywords.
+        # These are based on analysis of the NHS interventional data (`inter.json`).
+        # The goal is simply to identify if the input is likely interventional.
+        interventional_keywords = [
+            'stent', 'angioplasty', 'atherectomy', 'thrombectomy', 'thrombolysis',
+            'embolisation', 'embolization',
+            'ablation', 'biopsy', 'bx', 'drainage', 'aspiration', 'injection',
+            'nephrostomy', 'gastrostomy', 'jejunostomy', 'cholecystostomy',
+            'vertebroplasty', 'kyphoplasty',
+            'dilatation', 'valvuloplasty', 'septostomy',
+            'picc', 'line', 'catheter', 'port', # Access devices
+            'guided', 'guidance', 'localisation', 'localization', 'insertion', # Guidance terms
+            'atherectomy', 'atherectomy',
+            'atherectomy', 'atherectomy',
+            'atherectomy', 'atherectomy',
+            'atherectomy',
+            'percutaneous' # Catches the expanded "Pc"
+        ]
         
-        for term, patterns in interventional_patterns.items():
-            for pattern in patterns:
-                if re.search(pattern, exam_lower):
-                    interventional_terms.append(term)
-                    break  # Only add each term once
+        # Search for whole words to avoid partial matches (e.g., 'port' in 'portable')
+        found_terms = [
+            term for term in interventional_keywords 
+            if re.search(r'\b' + re.escape(term) + r'\b', exam_lower)
+        ]
         
-        return interventional_terms
+        return list(set(found_terms))
     
     def detect_all_contexts(self, exam_name: str, anatomy: List[str] = None) -> dict:
         """
