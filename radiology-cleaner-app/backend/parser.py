@@ -71,7 +71,7 @@ class RadiologySemanticParser:
         modality_patterns = {
             'CT': re.compile(r'\b(ct|computed tomography)\b', re.I),
             'MRI': re.compile(r'\b(mr|mri|magnetic resonance)\b', re.I),
-            'XR': re.compile(r'\b(xr|x-ray|radiograph|plain film|mg|mammo|mamm|mammography)\b', re.I),
+            'XR': re.compile(r'\b(xr|x-ray|radiograph|plain film|mg|mammo|mamm|mammography|mammogram)\b', re.I),
             'XA': re.compile(r'\b(xa|angiography|angiogram|dsa|digital subtraction)\b', re.I),
             'US': re.compile(r'\b(us|ultrasound|sonogram)\b', re.I),
             'NM': re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy)\b', re.I),
