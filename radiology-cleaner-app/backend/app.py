@@ -61,7 +61,7 @@ _app_initialized = False
 def _initialize_model_processors() -> Dict[str, NLPProcessor]:
     """Initialize available NLP processors for different models"""
     MODEL_MAPPING = {
-        'default': 'NeuML/pubmedbert-base-embeddings',  # PubMed model is now default for better medical terminology
+        'default': 'FremyCompany/BioLORD-2023',  # PubMed model is now default for better medical terminology
         'pubmed': 'NeuML/pubmedbert-base-embeddings',
         'biolord': 'FremyCompany/BioLORD-2023',  # Advanced biomedical language model for enhanced medical terminology
         'general': 'sentence-transformers/all-MiniLM-L6-v2'  # General-purpose model available as alternative
