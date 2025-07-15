@@ -17,16 +17,28 @@ class RadiologySemanticParser:
 
         self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'MG': 'XR', 'Mammo':'XR', 'Mamm': 'XR', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'XA': 'XA', 'Other': 'Other', 'BR': 'XR'}
 
-        self.technique_patterns = {
-            'Angiography': [re.compile(p, re.I) for p in [r'angiogram', r'angiography', r'\bcta\b', r'\bmra\b', r'venogram', r'angio', r'dsa', r'digital subtraction']],
-            'HRCT': [re.compile(p, re.I) for p in [r'hrct', r'high resolution']],
-            'Colonography': [re.compile(p, re.I) for p in [r'colonography', r'virtual colonoscopy']],
-            'Doppler': [re.compile(p, re.I) for p in [r'doppler', r'duplex']],
-            'Tomosynthesis': [re.compile(p, re.I) for p in [r'tomosynthesis', r'tomsynthesis', r'tomo']],
-            'Barium Study': [re.compile(p, re.I) for p in [r'barium.*swallow', r'barium.*meal', r'barium.*enema', r'barium.*follow.*through', r'upper.*gi', r'lower.*gi']],
-            'Interventional': [re.compile(p, re.I) for p in [r'stent', r'angioplasty', r'embolization', r'embolisation', r'thrombolysis', r'thrombectomy', r'atherectomy', r'vertebroplasty']],
-            'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', 'aspir', r'injection', r'guided', r'procedure', 'ablation', 'placement', 'loc', 'bx', 'insertion', 'insert', 'picc', 'line', 'catheter']],
-        }
+        # In parser.py -> Replace the old self.technique_patterns with this
+
+self.technique_patterns = {
+    # Specific imaging techniques
+    'Angiography': [re.compile(p, re.I) for p in [r'\b(angiogram|angiography|cta|mra|venogram|angio|dsa|digital subtraction)\b']],
+    'HRCT': [re.compile(p, re.I) for p in [r'\b(hrct|high resolution)\b']],
+    'Colonography': [re.compile(p, re.I) for p in [r'\b(colonography|virtual colonoscopy)\b']],
+    'Doppler': [re.compile(p, re.I) for p in [r'\b(doppler|duplex)\b']],
+    'Tomosynthesis': [re.compile(p, re.I) for p in [r'\b(tomosynthesis|tomo)\b']],
+    'Barium Study': [re.compile(p, re.I) for p in [r'barium.*swallow', r'barium.*meal', r'barium.*enema', r'barium.*follow.*through', r'\bupper.*gi\b', r'\blower.*gi\b']],
+
+    # Interventional Procedures (e.g., fixing or removing something)
+    'Interventional Procedure': [re.compile(p, re.I) for p in [
+        r'\b(stent|angioplasty|emboli[sz]ation|thrombolysis|thrombectomy|atherectomy|vertebroplasty|ablation)\b',
+        r'\b(biopsy|bx|drainage|aspirat|injection)\b' # aspirat* handles aspirate/aspiration
+    ]],
+    
+    # Interventional Device/Guidance (e.g., placing or using something)
+    'Interventional Guidance': [re.compile(p, re.I) for p in [
+        r'\b(guided|guidance|placement|localization|locali[sz]ation|insertion|insert|picc|line|catheter)\b'
+    ]]
+}
 
         self.anatomy_lookup = {}
         if self.anatomy_extractor:
