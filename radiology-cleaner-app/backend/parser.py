@@ -22,7 +22,8 @@ class RadiologySemanticParser:
             'HRCT': [re.compile(p, re.I) for p in [r'hrct', r'high resolution']],
             'Colonography': [re.compile(p, re.I) for p in [r'colonography', r'virtual colonoscopy']],
             'Doppler': [re.compile(p, re.I) for p in [r'doppler', r'duplex']],
-            'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', 'aspir', r'injection', r'guided', r'procedure', 'ablation', 'placement', 'loc', 'bx']],
+            'Tomosynthesis': [re.compile(p, re.I) for p in [r'tomosynthesis', r'tomsynthesis', r'tomo']],
+            'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', 'aspir', r'injection', r'guided', r'procedure', 'ablation', 'placement', 'loc', 'bx', 'insertion', 'insert', 'picc', 'line', 'catheter']],
         }
 
         self.anatomy_lookup = {}

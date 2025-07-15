@@ -221,7 +221,7 @@ class ContextDetector:
             'reconstruction': [r'\b(reconstruction|reconstruct)\b'],
             'removal': [r'\b(removal|remove)\b'],
             'placement': [r'\b(placement|place)\b'],
-            'insertion': [r'\b(insertion|insert)\b'],
+            'insertion': [r'\b(insertion|insert|picc.*line|catheter.*insertion|line.*insertion)\b'],
             'retrieval': [r'\b(retrieval|retrieve)\b'],
             'thrombectomy': [r'\b(thrombectomy)\b'],
             'thrombolysis': [r'\b(thrombolysis)\b'],
