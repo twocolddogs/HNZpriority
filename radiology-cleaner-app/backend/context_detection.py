@@ -90,9 +90,7 @@ class ContextDetector:
             
         exam_lower = exam_name.lower()
         anatomy = anatomy or []
-        
-        # Debug logging for gender detection
-        logger.info(f"DEBUG: Gender detection for '{exam_name}' -> '{exam_lower}'")
+      
         
         # Check for pregnancy context first (highest priority)
         for pattern in self.pregnancy_patterns:
