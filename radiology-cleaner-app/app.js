@@ -127,6 +127,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // Model toggle event listeners
     document.getElementById('defaultModelBtn').addEventListener('click', () => switchModel('default'));
     document.getElementById('pubmedModelBtn').addEventListener('click', () => switchModel('pubmed'));
+    document.getElementById('biolordModelBtn').addEventListener('click', () => switchModel('biolord'));
     
     // Help button event listener
     document.getElementById('hamburgerToggle').addEventListener('click', () => {
@@ -884,12 +885,15 @@ window.addEventListener('DOMContentLoaded', function() {
         } else if (modelType === 'pubmed') {
             document.getElementById('pubmedModelBtn').classList.add('active');
             document.getElementById('modelDescription').textContent = 'Using general-purpose model (all-MiniLM-L6-v2) for broader language understanding';
+        } else if (modelType === 'biolord') {
+            document.getElementById('biolordModelBtn').classList.add('active');
+            document.getElementById('modelDescription').textContent = 'Using BioLORD model for advanced biomedical language understanding';
         }
         
         console.log(`Switched to ${modelType} model`);
         
         // Show notification
-        updateStatusMessage(`🔄 Switched to ${modelType === 'default' ? 'PubMed (Default)' : 'General (Alternative)'} model`);
+        updateStatusMessage(`🔄 Switched to ${modelType === 'default' ? 'PubMed (Default)' : modelType === 'pubmed' ? 'General (Alternative)' : 'BioLORD (Advanced)'} model`);
         setTimeout(() => {
             const statusDiv = document.getElementById('statusMessage');
             if (statusDiv) statusDiv.style.display = 'none';
