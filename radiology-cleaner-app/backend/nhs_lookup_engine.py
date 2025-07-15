@@ -81,10 +81,11 @@ class NHSLookupEngine:
         # Step 5: Pre-compute embeddings for default NHS entries
         self._precompute_embeddings()
 
-        # NEW: Define stop words for specificity penalty calculation
+        # Specificity penalty configuration
+        self._specificity_penalty_weight = 0.08  # Configurable penalty per extra word
         self._specificity_stop_words = {
             # Standard English stop words
-            'a', 'an', 'the', 'and', 'or', 'with', 'without', 'for', 'of', 'in', 'on', 'to', 'is', 'of',
+            'a', 'an', 'the', 'and', 'or', 'with', 'without', 'for', 'of', 'in', 'on', 'to', 'is', 'from',
             # Modality terms (already handled by parsing/gating)
             'ct', 'mr', 'mri', 'us', 'xr', 'x-ray', 'nm', 'pet', 'dexa', 'dect', 'computed', 'tomography',
             'magnetic', 'resonance', 'ultrasound', 'radiograph', 'scan', 'scans', 'imaging', 'image', 'mammo', 'mammogram',
@@ -95,12 +96,25 @@ class NHSLookupEngine:
             # Generic radiology & anatomy terms
             'procedure', 'examination', 'study', 'protocol', 'view', 'views', 'projection',
             'series', 'ap', 'pa', 'lat', 'oblique', 'guidance', 'guided', 'body', 'whole',
-            'artery', 'vein', 'arterial', 'venous', 'joint', 'spine', 'tract', 'system'
+            'artery', 'vein', 'arterial', 'venous', 'joint', 'spine', 'tract', 'system',
+            # Time-related terms
+            'time', 'delayed', 'immediate', 'phase', 'early', 'late'
         }
 
         logger.info("NHSLookupEngine initialized with fully pre-parsed and embedded NHS data.")
+
+    def configure_specificity_penalty(self, penalty_weight: float = 0.08, additional_stop_words: Optional[set] = None):
+        """
+        Configure the specificity penalty system for better control over matching behavior.
         
-        logger.info("NHSLookupEngine initialized with fully pre-parsed and embedded NHS data.")
+        Args:
+            penalty_weight: Weight applied per extra word (default: 0.08)
+            additional_stop_words: Additional words to ignore in specificity calculation
+        """
+        self._specificity_penalty_weight = penalty_weight
+        if additional_stop_words:
+            self._specificity_stop_words.update(additional_stop_words)
+        logger.info(f"Specificity penalty configured: weight={penalty_weight}, stop_words={len(self._specificity_stop_words)}")
 
     def _load_nhs_data(self):
         """
@@ -712,8 +726,8 @@ class NHSLookupEngine:
             
             if extra_words:
                 # Apply a penalty for each "extra" unexplained word.
-                # A penalty of 0.08 per word is a strong signal.
-                specificity_penalty = len(extra_words) * 0.08
+                # Use configurable penalty weight for flexibility
+                specificity_penalty = len(extra_words) * self._specificity_penalty_weight
                 combined_score -= specificity_penalty
                 logger.debug(f"Specificity penalty for '{nhs_clean_name}': -{specificity_penalty:.3f} due to extra words: {extra_words}")
 
