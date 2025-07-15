@@ -38,6 +38,10 @@
                                 <span class="dropdown-icon nerd-icon">󰋖</span>
                                 Help
                             </button>
+                            <button id="architectureButton" class="dropdown-item">
+                                <span class="dropdown-icon nerd-icon">󰘦</span>
+                                How this works
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -48,12 +52,12 @@
             <div id="uploadSection" class="upload-section">
                 <div class="upload-icon">📤</div>
                 <h2>Upload Radiology Codes JSON</h2>
-                <p>Drop your codes.json file here or click to browse. You can also <a href="./example-codes.json" download>download a sample file</a>.</p>
+                <p>Drop your codes.json file here or click to browse.</p>
                 <input type="file" id="fileInput" accept=".json" />
             </div>
 
             <div id="sanityTestSection" class="sanity-test-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
-                <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white;">
+                <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white; border: none;">
                     🧪 Run Sanity Test
                 </button>
                 <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
@@ -63,9 +67,8 @@
 
             <!-- Model Settings Section -->
             <div id="modelSettingsSection" class="model-settings-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f8f9fa;">
-                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">🔧 AI Model Settings</h3>
-                <div class="model-toggle-container" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                    <label style="font-weight: 500; color: #555;">Embedding Model:</label>
+                <div class="model-header-container" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 1.1em; color: #333;">🔧 AI Model Settings</h3>
                     <div class="toggle-group">
                         <button class="button secondary model-toggle active" id="defaultModelBtn" data-model="default">
                             🏥 Default (PubMed)
@@ -77,9 +80,9 @@
                             🧠 BioLORD (Advanced)
                         </button>
                     </div>
-                    <div class="model-info" style="font-size: 0.85em; color: #666; flex: 1; min-width: 200px;">
-                        <span id="modelDescription">Using PubMed model optimized for medical terminology (default)</span>
-                    </div>
+                </div>
+                <div class="model-info" style="font-size: 0.85em; color: #666; margin-top: 10px;">
+                    <span id="modelDescription">Using PubMed model optimized for medical terminology (default)</span>
                 </div>
             </div>
 
@@ -152,6 +155,26 @@
             </div>
             <div class="modal-footer">
                 <button id="closeHelpBtn" class="button primary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Architecture Modal -->
+    <div id="architectureModal" class="modal-overlay hidden">
+        <div class="modal-container architecture-modal">
+            <div class="modal-header">
+                <h2>🏗️ System Architecture</h2>
+                <button id="closeArchitectureModal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="architecture-content">
+                    <div id="architectureContent" class="architecture-text">
+                        <!-- Architecture content will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="closeArchitectureBtn" class="button primary">Close</button>
             </div>
         </div>
     </div>

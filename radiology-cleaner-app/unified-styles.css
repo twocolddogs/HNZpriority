@@ -398,6 +398,107 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* Architecture Modal Specific Styling */
+.architecture-modal .modal-container {
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 1200px;
+}
+
+.architecture-content {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+.architecture-text {
+  font-family: var(--font-family-body);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-gray-700);
+}
+
+.architecture-text h1 {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-3xl);
+  color: var(--color-primary);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-3);
+  border-bottom: 3px solid var(--color-primary);
+}
+
+.architecture-text h2 {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-2xl);
+  color: var(--color-gray-900);
+  margin-top: var(--space-10);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 2px solid var(--color-secondary);
+}
+
+.architecture-text h3 {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xl);
+  color: var(--color-gray-800);
+  margin-top: var(--space-8);
+  margin-bottom: var(--space-3);
+  padding-left: var(--space-2);
+  border-left: 4px solid var(--color-accent);
+}
+
+.architecture-text h4 {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-lg);
+  color: var(--color-gray-700);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+}
+
+.architecture-text p {
+  margin-bottom: var(--space-4);
+  text-align: justify;
+}
+
+.architecture-text ul, .architecture-text ol {
+  margin-bottom: var(--space-4);
+  padding-left: var(--space-6);
+}
+
+.architecture-text li {
+  margin-bottom: var(--space-2);
+}
+
+.architecture-text code {
+  background-color: var(--color-gray-100);
+  color: var(--color-primary-dark);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-mono);
+  font-size: 0.9em;
+}
+
+.architecture-text pre {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-800);
+  padding: var(--space-4);
+  border-radius: var(--radius-base);
+  overflow-x: auto;
+  margin-bottom: var(--space-4);
+  font-family: var(--font-family-mono);
+  border-left: 4px solid var(--color-primary);
+}
+
+.architecture-text strong {
+  color: var(--color-gray-900);
+  font-weight: var(--font-weight-semibold);
+}
+
+.architecture-text em {
+  color: var(--color-secondary);
+  font-style: italic;
+}
+
 .help-text p {
   margin-bottom: var(--space-4);
   color: var(--color-gray-700);
@@ -1132,20 +1233,29 @@ a:focus-visible {
   flex-wrap: wrap;
 }
 
+/* Model Toggle Buttons - Custom Styling */
 .model-toggle {
   transition: all 0.2s ease;
   border: 2px solid transparent;
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-700);
 }
 
 .model-toggle.active {
-  background: var(--color-primary);
+  background-color: #143345; /* Left side of brand bar gradient */
   color: var(--color-white);
-  border-color: var(--color-primary);
+  border-color: #143345;
 }
 
 .model-toggle:hover:not(.active) {
-  border-color: var(--color-primary);
-  background: var(--color-gray-50);
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-800);
+  border-color: var(--color-gray-300);
+}
+
+.model-toggle.active:hover {
+  background-color: #0f2935; /* Slightly darker for hover state */
+  border-color: #0f2935;
 }
 
 .progress-bar {
