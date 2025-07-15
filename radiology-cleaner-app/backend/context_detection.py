@@ -199,45 +199,56 @@ class ContextDetector:
         exam_lower = exam_name.lower()
         interventional_terms = []
         
-        # Interventional procedure patterns
+        # Interventional procedure patterns - based on NHS "Interventional Procedure" flag definition
+        # These are procedures performed by interventional radiologists in specialized labs (typically XA modality)
         interventional_patterns = {
-            'biopsy': [r'\b(biopsy|biopsies)\b'],
-            'drainage': [r'\b(drainage|drain)\b'],
-            'injection': [r'\b(injection|inject)\b'],
-            'aspiration': [r'\b(aspiration|aspirate)\b'],
-            'ablation': [r'\b(ablation|ablate)\b'],
-            'embolization': [r'\b(embolization|embolisation|embolize)\b'],
-            'stent': [r'\b(stent|stenting)\b'],
-            'angioplasty': [r'\b(angioplasty)\b'],
-            'therapeutic': [r'\b(therapeutic|therapy)\b'],
-            'guided': [r'\b(guided|guide)\b'],
-            'percutaneous': [r'\b(percutaneous)\b'],
-            'endovascular': [r'\b(endovascular)\b'],
-            'catheter': [r'\b(catheter|catheterization)\b'],
-            'procedure': [r'\b(procedure)\b'],
-            'intervention': [r'\b(intervention|interventional)\b'],
-            'treatment': [r'\b(treatment|treat)\b'],
-            'repair': [r'\b(repair)\b'],
-            'reconstruction': [r'\b(reconstruction|reconstruct)\b'],
-            'removal': [r'\b(removal|remove)\b'],
-            'placement': [r'\b(placement|place)\b'],
-            'insertion': [r'\b(insertion|insert|picc.*line|catheter.*insertion|line.*insertion)\b'],
-            'retrieval': [r'\b(retrieval|retrieve)\b'],
-            'thrombectomy': [r'\b(thrombectomy)\b'],
-            'thrombolysis': [r'\b(thrombolysis)\b'],
-            'sclerotherapy': [r'\b(sclerotherapy)\b'],
-            'vertebroplasty': [r'\b(vertebroplasty)\b'],
-            'kyphoplasty': [r'\b(kyphoplasty)\b'],
-            'radiofrequency': [r'\b(radiofrequency|rf)\b'],
-            'cryotherapy': [r'\b(cryotherapy|cryo)\b'],
-            'balloon': [r'\b(balloon)\b'],
-            'coil': [r'\b(coil|coiling)\b'],
-            'filter': [r'\b(filter)\b'],
-            'nephrostomy': [r'\b(nephrostomy)\b'],
-            'gastrostomy': [r'\b(gastrostomy)\b'],
-            'cholecystostomy': [r'\b(cholecystostomy)\b'],
-            'biliary': [r'\b(biliary drainage|biliary stent)\b'],
-            'vascular': [r'\b(vascular access|vascular intervention)\b']
+            # 1. Neuro-interventional procedures (intracranial and extracranial)
+            'neuro_intervention': [r'\b(neuro.*intervention|cerebral.*angioplasty|carotid.*stent|intracranial.*stent)\b'],
+            
+            # 2. Vascular interventional procedures (beyond basic diagnostic angiography)
+            'stent': [r'\b(stent|stenting|carotid.*stent)\b'],
+            'angioplasty': [r'\b(angioplasty|balloon.*angioplasty)\b'],
+            'thrombolysis': [r'\b(thrombolysis|clot.*lysis)\b'],
+            'thrombectomy': [r'\b(thrombectomy|clot.*removal)\b'],
+            'atherectomy': [r'\b(atherectomy)\b'],
+            'embolization': [r'\b(embolization|embolisation|embolize|coil.*embolization)\b'],
+            'retrieval': [r'\b(retrieval.*foreign.*body|foreign.*body.*retrieval)\b'],
+            'mechanical_angioplasty': [r'\b(mechanical.*angioplasty|laser.*angioplasty)\b'],
+            
+            # 3. Venous and arterio-venous interventions (beyond basic diagnostic)
+            'venous_intervention': [r'\b(venous.*angioplasty|venous.*stent|av.*graft.*intervention)\b'],
+            'pulmonary_intervention': [r'\b(pulmonary.*embolectomy|pulmonary.*thrombolysis)\b'],
+            'caval_filter': [r'\b(caval.*filter|ivc.*filter|vena.*cava.*filter)\b'],
+            
+            # 4. Biliary intervention including TIPS
+            'biliary_intervention': [r'\b(biliary.*intervention|biliary.*stent|tips|transjugular.*portosystemic)\b'],
+            'ptc': [r'\b(ptc|percutaneous.*transhepatic.*cholangiography)\b'],
+            
+            # 5. Thoracic intervention
+            'thoracic_intervention': [r'\b(bronchial.*stent|bronchial.*artery.*embolization|bronchopleural.*fistula)\b'],
+            'avm_embolization': [r'\b(avm.*embolization|arteriovenous.*malformation.*embolization)\b'],
+            
+            # 6. Gastro-intestinal intervention
+            'gi_intervention': [r'\b(oesophageal.*stent|duodenal.*stent|percutaneous.*gastrostomy)\b'],
+            'gi_embolization': [r'\b(gi.*embolization|chemo.*embolization|transplant.*intervention)\b'],
+            
+            # 7. Urological intervention
+            'uro_intervention': [r'\b(renal.*artery.*embolization|renal.*artery.*angioplasty|renal.*artery.*stent)\b'],
+            'nephrostomy': [r'\b(percutaneous.*nephrostomy|nephrostomy)\b'],
+            'nephrolithotomy': [r'\b(percutaneous.*nephrolithotomy)\b'],
+            
+            # 8. Gynaecological intervention
+            'gyn_intervention': [r'\b(fallopian.*tube.*recanalisation|fibroid.*embolization|uterine.*artery.*embolization)\b'],
+            'aortic_occlusion': [r'\b(temporary.*aortic.*occlusion)\b'],
+            
+            # 9. Orthopaedic intervention
+            'vertebroplasty': [r'\b(percutaneous.*vertebroplasty|vertebroplasty)\b'],
+            'discectomy': [r'\b(percutaneous.*discectomy)\b'],
+            
+            # General interventional terms that indicate specialist procedures
+            'angiography_therapeutic': [r'\b(therapeutic.*angiography|intervention.*angiography)\b'],
+            'percutaneous_intervention': [r'\b(percutaneous.*intervention)\b'],
+            'endovascular': [r'\b(endovascular)\b']
         }
         
         for term, patterns in interventional_patterns.items():

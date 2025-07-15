@@ -15,14 +15,15 @@ class RadiologySemanticParser:
         self.laterality_detector = laterality_detector
         self.contrast_mapper = contrast_mapper
 
-        self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'MG': 'XR', 'Mammo':'XR', 'Mamm': 'XR', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'Other': 'Other', 'BR': 'XR'}
+        self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'MG': 'XR', 'Mammo':'XR', 'Mamm': 'XR', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'XA': 'XA', 'Other': 'Other', 'BR': 'XR'}
 
         self.technique_patterns = {
-            'Angiography': [re.compile(p, re.I) for p in [r'angiogram', r'angiography', r'\bcta\b', r'\bmra\b', r'venogram', r'angio']],
+            'Angiography': [re.compile(p, re.I) for p in [r'angiogram', r'angiography', r'\bcta\b', r'\bmra\b', r'venogram', r'angio', r'dsa', r'digital subtraction']],
             'HRCT': [re.compile(p, re.I) for p in [r'hrct', r'high resolution']],
             'Colonography': [re.compile(p, re.I) for p in [r'colonography', r'virtual colonoscopy']],
             'Doppler': [re.compile(p, re.I) for p in [r'doppler', r'duplex']],
             'Tomosynthesis': [re.compile(p, re.I) for p in [r'tomosynthesis', r'tomsynthesis', r'tomo']],
+            'Interventional': [re.compile(p, re.I) for p in [r'stent', r'angioplasty', r'embolization', r'embolisation', r'thrombolysis', r'thrombectomy', r'atherectomy', r'vertebroplasty']],
             'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', 'aspir', r'injection', r'guided', r'procedure', 'ablation', 'placement', 'loc', 'bx', 'insertion', 'insert', 'picc', 'line', 'catheter']],
         }
 
@@ -70,6 +71,7 @@ class RadiologySemanticParser:
             'CT': re.compile(r'\b(ct|computed tomography)\b', re.I),
             'MRI': re.compile(r'\b(mr|mri|magnetic resonance)\b', re.I),
             'XR': re.compile(r'\b(xr|x-ray|radiograph|plain film|mg|mammo|mamm|mammography)\b', re.I),
+            'XA': re.compile(r'\b(xa|angiography|angiogram|dsa|digital subtraction)\b', re.I),
             'US': re.compile(r'\b(us|ultrasound|sonogram)\b', re.I),
             'NM': re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy)\b', re.I),
             'PET': re.compile(r'\b(pet|positron emission)\b', re.I),
