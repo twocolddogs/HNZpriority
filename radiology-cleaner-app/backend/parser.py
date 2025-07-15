@@ -15,8 +15,16 @@ class RadiologySemanticParser:
         self.laterality_detector = laterality_detector
         self.contrast_mapper = contrast_mapper
 
-        self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'MG': 'XR', 'Mammo':'XR', 'Mamm': 'XR', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'XA': 'XA', 'Other': 'Other', 'BR': 'XR'}
-
+        # MODIFICATION 1: Update modality_map to be more comprehensive and consistent.
+        # Ensure all mammography-related codes map cleanly to a single canonical form, 'MG' (for Mammography).
+        self.modality_map = {
+            'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM',
+            'PET': 'PET',
+            'MG': 'MG', 'MAMM': 'MG', 'MAMMO': 'MG',  # Canonical mapping for mammography
+            'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'XA': 'XA', 'Other': 'Other',
+            'BR': 'MG'  # Map the common "BR" prefix directly to Mammography modality
+        }
+        
         self.technique_patterns = {
     # Specific Diagnostic Imaging Techniques
     'HRCT': [re.compile(p, re.I) for p in [r'\b(hrct|high resolution)\b']],
@@ -87,7 +95,8 @@ class RadiologySemanticParser:
         modality_patterns = {
             'CT': re.compile(r'\b(ct|computed tomography)\b', re.I),
             'MRI': re.compile(r'\b(mr|mri|magnetic resonance)\b', re.I),
-            'XR': re.compile(r'\b(xr|x-ray|radiograph|plain film|mg|mammo|mamm|mammography|mammogram)\b', re.I),
+            'MG': re.compile(r'\b(mg|mammo|mamm|mammography|mammogram|tomosynthesis|tomo|br)\b', re.I),
+            'XR': re.compile(r'\b(xr|x-ray|radiograph|plain film)\b', re.I), # Remove MG terms from general XR
             'XA': re.compile(r'\b(xa|angiography|angiogram|dsa|digital subtraction)\b', re.I),
             'US': re.compile(r'\b(us|ultrasound|sonogram)\b', re.I),
             'NM': re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy)\b', re.I),
@@ -98,6 +107,7 @@ class RadiologySemanticParser:
         for modality, pattern in modality_patterns.items():
             if pattern.search(lower_name):
                 return modality
+        # Use the updated modality_map for fallback
         if modality_code and modality_code.upper() in self.modality_map:
             return self.modality_map[modality_code.upper()]
         return modality_code or 'Other'
