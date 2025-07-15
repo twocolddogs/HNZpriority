@@ -572,18 +572,29 @@ class NHSLookupEngine:
             if input_modality and input_modality.lower() == nhs_modality.lower():
                 combined_score += 0.1  # Modality alignment bonus
 
-            # Contrast alignment scoring
+            # Contrast alignment scoring - FIXED: Handle all contrast matching scenarios
             input_contrast = extracted_input_components.get('contrast')
             if isinstance(input_contrast, list):
                 input_contrast = input_contrast[0] if input_contrast else None
                 
             nhs_contrast = nhs_components.get('contrast')
             
-            if input_contrast and nhs_contrast:
-                if input_contrast.lower() == nhs_contrast.lower():
+            # Normalize contrast values for comparison
+            input_contrast_norm = input_contrast.lower() if input_contrast else None
+            nhs_contrast_norm = nhs_contrast.lower() if nhs_contrast else None
+            
+            if input_contrast_norm and nhs_contrast_norm:
+                # Both have contrast specified - exact match gets strong bonus, mismatch gets penalty
+                if input_contrast_norm == nhs_contrast_norm:
                     combined_score += 0.15  # Strong bonus for contrast alignment
                 else:
-                    combined_score -= 0.1   # Reduced penalty for mismatch
+                    combined_score -= 0.2   # Strong penalty for contrast mismatch
+            elif input_contrast_norm and not nhs_contrast_norm:
+                # Input specifies contrast but NHS entry is ambiguous - apply penalty
+                combined_score -= 0.1   # Penalty for ambiguous NHS entry when input is specific
+            elif not input_contrast_norm and nhs_contrast_norm:
+                # NHS specifies contrast but input is ambiguous - minor penalty
+                combined_score -= 0.05  # Small penalty for specific NHS when input is ambiguous
             
             # INTERVENTIONAL PROCEDURE WEIGHTING: Boost score for matching procedure type
             nhs_is_interventional = entry.get('Interventional Procedure', 'N').upper() == 'Y'
