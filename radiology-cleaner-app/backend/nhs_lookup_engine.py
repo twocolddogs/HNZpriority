@@ -327,7 +327,7 @@ class NHSLookupEngine:
                         'mr': ['mri', 'magnetic resonance'],
                         'us': ['ultrasound', 'echo'],
                         'xr': ['x-ray', 'radiograph'],
-                        'mammography': ['mg', 'mammo', 'mamm', 'mammogram']
+                        'mamm': ['mg', 'mammo', 'mammography', 'mammogram']
                     }
                     
                     compatible = False
