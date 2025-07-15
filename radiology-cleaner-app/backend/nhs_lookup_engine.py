@@ -79,6 +79,25 @@ class NHSLookupEngine:
         
         # Step 5: Pre-compute embeddings for default NHS entries
         self._precompute_embeddings()
+
+        # NEW: Define stop words for specificity penalty calculation
+        self._specificity_stop_words = {
+            # Standard English stop words
+            'a', 'an', 'the', 'and', 'or', 'with', 'without', 'for', 'of', 'in', 'on', 'to', 'is', 'of',
+            # Modality terms (already handled by parsing/gating)
+            'ct', 'mr', 'mri', 'us', 'xr', 'x-ray', 'nm', 'pet', 'dexa', 'dect', 'computed', 'tomography',
+            'magnetic', 'resonance', 'ultrasound', 'radiograph', 'scan', 'scans', 'imaging', 'image', 'mammo', 'mammogram',
+            # Laterality terms (already handled)
+            'left', 'right', 'bilateral', 'lt', 'rt', 'bilat', 'both',
+            # Contrast terms (already handled)
+            'contrast', 'iv', 'gadolinium', 'gad', 'c+', 'c-', 'pre', 'post', 'enhanced', 'unenhanced',
+            # Generic radiology & anatomy terms
+            'procedure', 'examination', 'study', 'protocol', 'view', 'views', 'projection',
+            'series', 'ap', 'pa', 'lat', 'oblique', 'guidance', 'guided', 'body', 'whole',
+            'artery', 'vein', 'arterial', 'venous', 'joint', 'spine', 'tract', 'system'
+        }
+
+        logger.info("NHSLookupEngine initialized with fully pre-parsed and embedded NHS data.")
         
         logger.info("NHSLookupEngine initialized with fully pre-parsed and embedded NHS data.")
 
@@ -571,12 +590,8 @@ class NHSLookupEngine:
             # SCORING: Calculate combined confidence score
             # Use selected NLP processor for semantic similarity
             semantic_score = nlp_proc.calculate_semantic_similarity(input_embedding, nhs_embedding)
-            
-            # Use NHS Clean Name for fuzzy matching
             nhs_clean_name = nhs_components.get('cleanName', entry.get('Clean Name', ''))
             fuzzy_score = fuzz.ratio(input_exam.lower(), nhs_clean_name.lower()) / 100.0
-            
-            # Combined score: weighted average of semantic and fuzzy scores
             combined_score = (0.7 * semantic_score) + (0.3 * fuzzy_score)
 
             # BONUS SCORING: Component alignment bonuses
@@ -624,6 +639,28 @@ class NHSLookupEngine:
                 combined_score += 0.1
                 logger.debug(f"Diagnostic procedure match bonus applied for: {nhs_clean_name}")
             
+          =================================================================================
+            # NEW: SPECIFICITY PENALTY
+            # Penalize matches that are more specific than the input (e.g., have extra terms).
+            # This prevents a general input like "MRI Brain" from matching a specific procedure
+            # like "Diffusion Tensor MRI Brain".
+            # =================================================================================
+            
+            # Tokenize and filter stop words from both input and the NHS clean name
+            input_tokens = {word for word in input_exam.lower().split() if word not in self._specificity_stop_words}
+            nhs_tokens = {word for word in nhs_clean_name.lower().split() if word not in self._specificity_stop_words}
+            
+            # Find significant words that are in the NHS name but not in the input
+            extra_words = nhs_tokens - input_tokens
+            
+            if extra_words:
+                # Apply a penalty for each "extra" unexplained word.
+                # A penalty of 0.08 per word is a strong signal.
+                specificity_penalty = len(extra_words) * 0.08
+                combined_score -= specificity_penalty
+                logger.debug(f"Specificity penalty for '{nhs_clean_name}': -{specificity_penalty:.3f} due to extra words: {extra_words}")
+
+
             # Track best match
             if combined_score > highest_confidence:
                 highest_confidence, best_match = combined_score, entry
