@@ -520,30 +520,41 @@ class NHSLookupEngine:
             
             nhs_modality = nhs_components.get('modality')
             
-            # Relaxed modality matching - only skip if clearly incompatible
-            if input_modality and nhs_modality:
-                input_mod_lower = input_modality.lower() if input_modality else ''
-                nhs_mod_lower = nhs_modality.lower() if nhs_modality else ''
-                if input_mod_lower and nhs_mod_lower and input_mod_lower != nhs_mod_lower:
-                    # Allow common modality aliases for flexibility
-                    modality_aliases = {
-                        'ct': ['computed tomography', 'dect'],
-                        'mr': ['mri', 'magnetic resonance'],
-                        'us': ['ultrasound', 'echo'],
-                        'xr': ['x-ray', 'radiograph'],
-                        'mammography': ['mg', 'mammo', 'mamm', 'mammogram']
-                    }
+            # ==================================================================
+            # MODIFICATION: This block was changed to handle ambiguous modalities.
+            # ==================================================================
+            # MODALITY MATCHING GATEKEEPER:
+            # Only perform strict modality filtering if the input modality is known and is NOT 'Other'.
+            # If the input modality is 'Other', we skip this filter and let semantic scoring decide.
+            if input_modality and input_modality.lower() != 'other':
+                
+                # --- Start of Original Logic ---
+                # This code now only runs when we have a specific input modality like 'CT', 'MR', etc.
+                if nhs_modality:
+                    input_mod_lower = input_modality.lower()
+                    nhs_mod_lower = nhs_modality.lower()
                     
-                    compatible = False
-                    for canonical, aliases in modality_aliases.items():
-                        if (input_mod_lower == canonical and nhs_mod_lower in aliases) or \
-                           (nhs_mod_lower == canonical and input_mod_lower in aliases):
-                            compatible = True
-                            break
-                    
-                    if not compatible:
-                        logger.debug(f"Skipping due to modality mismatch: {input_mod_lower} vs {nhs_mod_lower}")
-                        continue
+                    if input_mod_lower != nhs_mod_lower:
+                        # Allow common modality aliases for flexibility
+                        modality_aliases = {
+                            'ct': ['computed tomography', 'dect'],
+                            'mr': ['mri', 'magnetic resonance'],
+                            'us': ['ultrasound', 'echo'],
+                            'xr': ['x-ray', 'radiograph'],
+                            'mammography': ['mg', 'mammo', 'mamm', 'mammogram']
+                        }
+                        
+                        compatible = False
+                        for canonical, aliases in modality_aliases.items():
+                            if (input_mod_lower == canonical and nhs_mod_lower in aliases) or \
+                               (nhs_mod_lower == canonical and input_mod_lower in aliases):
+                                compatible = True
+                                break
+                        
+                        if not compatible:
+                            logger.debug(f"Skipping due to modality mismatch: {input_mod_lower} vs {nhs_mod_lower}")
+                            continue
+                # --- End of Original Logic ---
 
             # Laterality matching - only enforce if both are specified
             input_lat = extracted_input_components.get('laterality')
