@@ -51,9 +51,10 @@ The Flask application (`backend/app.py`) serves as the central API hub. It expos
     *   `AbbreviationExpander`, `AnatomyExtractor`, `LateralityDetector`, `USAContrastMapper`: Utility classes for preprocessing and component extraction.
 *   **Endpoints**:
     *   `/health`: Basic health check.
+    *   `/models`: Lists available NLP models with status and descriptions.
     *   `/cache-version`: Provides cache information.
     *   `/parse` (Legacy): Unified to use the modern NHS-first lookup pipeline.
-    *   `/parse_enhanced`: Enhanced parsing endpoint using the hybrid NLP parser.
+    *   `/parse_enhanced`: Enhanced parsing endpoint supporting model selection (`{"model": "biolord"}`).
     *   `/parse_batch`: Optimized endpoint for processing multiple exam names concurrently.
     *   `/validate`: Validates exam data and provides quality scores, warnings, and suggestions.
     *   `/feedback`: Submits user feedback for corrections or general comments.
@@ -67,17 +68,34 @@ The Flask application (`backend/app.py`) serves as the central API hub. It expos
 
 *   **`backend/parser.py` (RadiologySemanticParser)**:
     *   The core component for rule-based semantic parsing of radiology exam names.
-    *   Identifies modality, anatomy, laterality, contrast, and technique.
-    *   Uses injected utility classes (`AnatomyExtractor`, `LateralityDetector`, `USAContrastMapper`) for specific parsing tasks.
+    *   **Modality Detection**: Accurately classifies imaging modalities including:
+        *   `XR`: Plain films and mammography (MG/Mammo/Mamm→XR)
+        *   `XA`: X-Ray Angiography for interventional procedures  
+        *   `Fluoroscopy`: All barium studies (swallow, meal, enema, follow-through)
+        *   `DEXA`: Bone densitometry studies
+    *   **Technique Classification**: Distinguishes between imaging techniques:
+        *   `Angiography`: Diagnostic vascular imaging including DSA
+        *   `Interventional`: NHS-defined specialist procedures (stents, angioplasty, embolization)
+        *   `Barium Study`: Fluoroscopic GI contrast procedures
+        *   `Intervention`: General procedures (biopsies, drainages, PICC lines)
+    *   Uses injected utility classes (`AnatomyExtractor`, `LateralityDetector`, `ContrastMapper`) for specific parsing tasks.
     *   Constructs a "clean name" and calculates a confidence score for the parse.
 *   **`backend/nlp_processor.py` (NLPProcessor)**:
-    *   Handles communication with the Hugging Face Inference API for generating text embeddings (e.g., using `sentence-transformers/all-MiniLM-L6-v2`).
+    *   Handles communication with the Hugging Face Inference API for generating text embeddings.
+    *   **Multiple Model Support**: Configurable models including:
+        *   `default`/`pubmed`: NeuML/pubmedbert-base-embeddings (medical terminology optimized)
+        *   `biolord`: FremyCompany/BioLORD-2023 (advanced biomedical language model)
+        *   `general`: sentence-transformers/all-MiniLM-L6-v2 (general-purpose)
     *   Uses direct `requests` calls for robustness and lightweight operation.
     *   Provides methods for single and batch embedding generation, and semantic similarity calculation.
     *   Requires `HUGGING_FACE_TOKEN` environment variable for functionality.
 *   **`backend/nhs_lookup_engine.py` (NHSLookupEngine)**:
     *   Responsible for standardizing exam names against a predefined NHS authority (from `core/NHS.json`).
-    *   Uses NLP embeddings to find the best match within the authority.
+    *   **Unified Preprocessing Pipeline**: Pre-processes NHS reference data with same rules as user input.
+    *   **Dynamic Cache Invalidation**: Embeddings cache incorporates system cache version to invalidate when parsing rules change.
+    *   **Dual Lookup Strategy**: Attempts Clean Name matching first, then SNOMED FSN matching for expanded terminology.
+    *   **Interventional Procedure Weighting**: Enhanced scoring for NHS-defined interventional procedures.
+    *   Uses NLP embeddings with configurable models for semantic similarity matching.
 *   **`backend/database_models.py` (DatabaseManager, CacheManager)**:
     *   `DatabaseManager`: Manages interactions with the SQLite database (`radiology_cleaner.db`) for storing performance metrics and feedback.
     *   `CacheManager`: Implements an in-memory cache to store parsing results, reducing redundant computations for frequently requested exam names.
@@ -85,11 +103,15 @@ The Flask application (`backend/app.py`) serves as the central API hub. It expos
     *   Manages the submission of user feedback, which can be used for future model retraining or rule refinement.
 *   **`backend/parsing_utils.py`**:
     *   Contains various utility classes and functions used by the `RadiologySemanticParser` and other modules for preprocessing and specific extraction tasks:
-        *   `AbbreviationExpander`: Expands common abbreviations.
-        *   `AnatomyExtractor`: Extracts anatomical terms.
-        *   `LateralityDetector`: Identifies laterality (e.g., left, right, bilateral).
-        *   `USAContrastMapper`: Maps contrast-related terms.
+        *   `AbbreviationExpander`: Expands medical abbreviations including anatomy (br→breast), laterality (bilateral→bilateral), and GI studies (ugi→upper gi, sbft→small bowel follow through).
+        *   `AnatomyExtractor`: Extracts anatomical terms from NHS authority data with comprehensive stop-word filtering.
+        *   `LateralityDetector`: Identifies laterality with case-sensitive normalization (Left/Right/Bilateral→left/right/bilateral).
+        *   `ContrastMapper`: Enhanced contrast detection supporting hyphenated variations (non-contrast, non contrast).
 *   **`backend/cache_version.py`**: Manages dynamic cache versioning to ensure cache invalidation when processing rules or data change.
+*   **`backend/context_detection.py`**: Provides contextual analysis including:
+    *   **Interventional Procedure Detection**: NHS-specific criteria for specialist procedures performed in interventional labs.
+    *   **Gender/Age Context**: Medical specialty and demographic context detection.
+    *   **Clinical Context**: Screening, emergency, follow-up, and intervention classification.
 
 ### 3.4. Data Storage
 
@@ -126,7 +148,39 @@ The Flask application (`backend/app.py`) serves as the central API hub. It expos
 *   **Concurrency**: Python's `threading`, `multiprocessing`, `concurrent.futures.ThreadPoolExecutor`
 *   **Logging**: Python's `logging` module
 
-## 6. Deployment Considerations
+## 6. Recent Architectural Improvements
+
+### 6.1. Enhanced Medical Accuracy (2024)
+
+**Modality Classification Improvements:**
+*   **Mammography Reclassification**: Mammography is now correctly classified as XR modality (technique) rather than separate modality, aligning with medical standards.
+*   **Barium Studies**: All barium procedures (swallow, meal, enema, follow-through) correctly classified as Fluoroscopy modality.
+*   **XA Modality Support**: Added X-Ray Angiography modality for interventional radiology procedures.
+*   **DEXA Integration**: Bone densitometry studies properly classified with dedicated patterns.
+
+**NHS Interventional Procedure Accuracy:**
+*   Redefined interventional detection based on NHS credentialing requirements for specialist procedures.
+*   Focuses on procedures performed by interventional radiologists in specialized labs (typically XA modality).
+*   Distinguishes NHS interventional procedures from general interventions (PICC lines, biopsies).
+
+**Preprocessing Pipeline Enhancements:**
+*   **Abbreviation Expansion**: Critical medical abbreviations (br→breast, bilateral case normalization).
+*   **Cache Invalidation**: NHS embeddings cache now incorporates system version for proper invalidation.
+*   **Consistent Processing**: NHS reference data uses identical preprocessing as user input.
+
+### 6.2. Multi-Model NLP Support
+
+**Advanced Biomedical Models:**
+*   **BioLORD Integration**: FremyCompany/BioLORD-2023 for enhanced medical terminology understanding.
+*   **Model Selection API**: Users can specify model via `{"model": "biolord"}` in requests.
+*   **Model Discovery**: `/models` endpoint lists available models with status and capabilities.
+
+**Improved Semantic Matching:**
+*   Dual lookup strategy (Clean Name + SNOMED FSN) for comprehensive matching.
+*   Enhanced confidence scoring with component alignment bonuses.
+*   Interventional procedure weighting for accurate NHS flag classification.
+
+## 7. Deployment Considerations
 
 *   **Environment Variables**: `HUGGING_FACE_TOKEN` is crucial for NLP functionality. `ADMIN_TOKEN` is required for the `/admin/retrain` endpoint.
 *   **Scalability**: The `parse_batch` endpoint and `ThreadPoolExecutor` are designed for efficient batch processing. The API-based NLP approach offloads heavy computation.
