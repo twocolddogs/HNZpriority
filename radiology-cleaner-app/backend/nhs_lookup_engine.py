@@ -16,6 +16,7 @@
 
 import json
 import logging
+import re
 from typing import Dict, List, Optional
 from collections import defaultdict
 from fuzzywuzzy import fuzz
@@ -695,7 +696,7 @@ class NHSLookupEngine:
                 combined_score += 0.1
                 logger.debug(f"Diagnostic procedure match bonus applied for: {nhs_clean_name}")
             
-          =================================================================================
+            # =================================================================================
             # NEW: SPECIFICITY PENALTY
             # Penalize matches that are more specific than the input (e.g., have extra terms).
             # This prevents a general input like "MRI Brain" from matching a specific procedure
