@@ -63,6 +63,7 @@ def _initialize_model_processors() -> Dict[str, NLPProcessor]:
     MODEL_MAPPING = {
         'default': 'NeuML/pubmedbert-base-embeddings',  # PubMed model is now default for better medical terminology
         'pubmed': 'NeuML/pubmedbert-base-embeddings',
+        'biolord': 'FremyCompany/BioLORD-2023',  # Advanced biomedical language model for enhanced medical terminology
         'general': 'sentence-transformers/all-MiniLM-L6-v2'  # General-purpose model available as alternative
     }
     
@@ -299,6 +300,53 @@ def health_check():
     """Health check endpoint for monitoring service availability"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat(), 'app_initialized': _app_initialized})
 
+@app.route('/models', methods=['GET'])
+def list_available_models():
+    """List available NLP models and their status"""
+    _ensure_app_is_initialized()
+    
+    try:
+        model_info = {}
+        for model_key, processor in model_processors.items():
+            if processor and processor.is_available():
+                model_info[model_key] = {
+                    'name': processor.model_name,
+                    'status': 'available',
+                    'description': _get_model_description(model_key)
+                }
+            else:
+                # Get model name from MODEL_MAPPING even if processor failed
+                model_mapping = {
+                    'default': 'NeuML/pubmedbert-base-embeddings',
+                    'pubmed': 'NeuML/pubmedbert-base-embeddings', 
+                    'biolord': 'FremyCompany/BioLORD-2023',
+                    'general': 'sentence-transformers/all-MiniLM-L6-v2'
+                }
+                model_info[model_key] = {
+                    'name': model_mapping.get(model_key, 'unknown'),
+                    'status': 'unavailable',
+                    'description': _get_model_description(model_key)
+                }
+        
+        return jsonify({
+            'models': model_info,
+            'default_model': 'default',
+            'usage': 'Add "model": "model_key" to your request to use a specific model'
+        })
+    except Exception as e:
+        logger.error(f"Models endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Failed to list models"}), 500
+
+def _get_model_description(model_key: str) -> str:
+    """Get description for each model type"""
+    descriptions = {
+        'default': 'PubMed-trained embeddings optimized for medical terminology (default)',
+        'pubmed': 'PubMed-trained embeddings optimized for medical terminology',
+        'biolord': 'Advanced biomedical language model with enhanced medical concept understanding',
+        'general': 'General-purpose sentence transformer for broad text understanding'
+    }
+    return descriptions.get(model_key, 'No description available')
+
 @app.route('/cache-version', methods=['GET'])
 def cache_version_info():
     """Get detailed cache version information for debugging and monitoring."""
@@ -340,8 +388,14 @@ def parse_enhanced():
     Unified parsing endpoint that handles both single exams and batches intelligently.
     
     INPUT FORMATS:
-    - Single exam: {"exam_name": "CT Chest", "modality_code": "CT", "model": "pubmed"}
-    - Batch exams: {"exams": [{"exam_name": "CT Chest", "modality_code": "CT"}, ...], "model": "pubmed"}
+    - Single exam: {"exam_name": "CT Chest", "modality_code": "CT", "model": "biolord"}
+    - Batch exams: {"exams": [{"exam_name": "CT Chest", "modality_code": "CT"}, ...], "model": "biolord"}
+    
+    AVAILABLE MODELS:
+    - "default": PubMed-trained embeddings (default)
+    - "pubmed": PubMed-trained embeddings 
+    - "biolord": FremyCompany/BioLORD-2023 - Advanced biomedical language model
+    - "general": General-purpose sentence transformer
     
     ENDPOINT PIPELINE:
     1. Detect input format (single vs batch)

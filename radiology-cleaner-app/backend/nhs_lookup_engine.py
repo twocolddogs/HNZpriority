@@ -222,11 +222,13 @@ class NHSLookupEngine:
         model_name = getattr(nlp_proc, 'model_name', 'unknown')
         
         # Check if embeddings are already cached for this model
-        # NOTE: We intentionally bypass cache after preprocessing pipeline changes
-        # to ensure NHS embeddings are regenerated with consistent preprocessing
-        cache_key = f"{model_name}_v4"  # v4 indicates proper preprocessing order: preprocess -> parse -> embed
+        # NOTE: We incorporate the cache version to ensure NHS embeddings are regenerated 
+        # when preprocessing pipeline changes (parsing_utils.py, parser.py, etc.)
+        from cache_version import get_current_cache_version
+        current_cache_version = get_current_cache_version()
+        cache_key = f"{model_name}_{current_cache_version}"  # Cache version ensures invalidation on preprocessing changes
         if cache_key in self._embeddings_cache:
-            logger.info(f"Using cached embeddings for model: {model_name} (v4)")
+            logger.info(f"Using cached embeddings for model: {model_name} (cache: {current_cache_version})")
             # Restore cached embeddings to NHS entries
             cached_embeddings = self._embeddings_cache[cache_key]
             for entry in self.nhs_data:
