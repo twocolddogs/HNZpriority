@@ -118,7 +118,8 @@ class AnatomyExtractor:
             'thyroid': 'thyroid', 'bone': 'bone', 'joint': 'joint', 'soft tissue': 'soft tissue',
             'muscle': 'muscle', 'vessel': 'vessel', 'artery': 'artery', 'vein': 'vein',
             'adrenal': 'adrenal', 'biliary': 'biliary', 'gallbladder': 'gallbladder', 'lymph': 'lymph node',
-            'parotid': 'parotid', 'submandibular': 'submandibular', 'salivary': 'salivary gland'
+            'parotid': 'parotid', 'submandibular': 'submandibular', 'salivary': 'salivary gland',
+            'aortic arch': 'aortic arch', 'carotid': 'carotid'
         }
         # Define comprehensive stop words for anatomy extraction
         anatomy_stop_words = {
