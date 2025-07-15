@@ -18,26 +18,32 @@ class RadiologySemanticParser:
         self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'MG': 'XR', 'Mammo':'XR', 'Mamm': 'XR', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'XA': 'XA', 'Other': 'Other', 'BR': 'XR'}
 
         self.technique_patterns = {
-            # Specific imaging techniques
-            'Angiography': [re.compile(p, re.I) for p in [r'\b(angiogram|angiography|cta|mra|venogram|angio|dsa|digital subtraction)\b']],
-            'HRCT': [re.compile(p, re.I) for p in [r'\b(hrct|high resolution)\b']],
-            'Colonography': [re.compile(p, re.I) for p in [r'\b(colonography|virtual colonoscopy)\b']],
-            'Doppler': [re.compile(p, re.I) for p in [r'\b(doppler|duplex)\b']],
-            'Tomosynthesis': [re.compile(p, re.I) for p in [r'\b(tomosynthesis|tomo)\b']],
-            'Barium Study': [re.compile(p, re.I) for p in [r'barium.*swallow', r'barium.*meal', r'barium.*enema', r'barium.*follow.*through', r'\bupper.*gi\b', r'\blower.*gi\b']],
+    # Specific Diagnostic Imaging Techniques
+    'HRCT': [re.compile(p, re.I) for p in [r'\b(hrct|high resolution)\b']],
+    'Colonography': [re.compile(p, re.I) for p in [r'\b(colonography|virtual colonoscopy)\b']],
+    'Doppler': [re.compile(p, re.I) for p in [r'\b(doppler|duplex)\b']],
+    'Tomosynthesis': [re.compile(p, re.I) for p in [r'\b(tomosynthesis|tomo)\b']],
+    'Barium Study': [re.compile(p, re.I) for p in [r'barium.*swallow', r'barium.*meal', r'barium.*enema', r'barium.*follow.*through', r'\bupper.*gi\b', r'\blower.*gi\b']],
 
-            # Interventional Procedures (e.g., fixing or removing something)
-            'Interventional Procedure': [re.compile(p, re.I) for p in [
-                r'\b(stent|angioplasty|emboli[sz]ation|thrombolysis|thrombectomy|atherectomy|vertebroplasty|ablation)\b',
-                r'\b(biopsy|bx|drainage|aspirat|injection)\b' # aspirat* handles aspirate/aspiration
-            ]],
-            
-            # Interventional Device/Guidance (e.g., placing or using something)
-            'Interventional Guidance': [re.compile(p, re.I) for p in [
-                r'\b(guided|guidance|placement|localization|locali[sz]ation|insertion|insert|picc|line|catheter)\b'
-            ]]
-        }
-
+    # Interventional Techniques (Split into Vascular and Non-Vascular)
+    'Vascular Interventional': [re.compile(p, re.I) for p in [
+        # Vascular imaging / angiography terms (previously 'Angiography')
+        r'\b(angiogram|angiography|cta|mra|venogram|angio|dsa|digital subtraction)\b',
+        # Endovascular therapeutic procedures
+        r'\b(stent|angioplasty|emboli[sz]ation|thrombolysis|thrombectomy|atherectomy)\b',
+        # Vascular access terms
+        r'\b(picc|line|catheter)\b'
+    ]],
+    
+    'Non-Vascular Interventional': [re.compile(p, re.I) for p in [
+        # Percutaneous procedures (biopsy, drainage, etc.)
+        r'\b(biopsy|bx|drainage|aspirat|injection)\b', # aspirat* handles aspirate/aspiration
+        # Other non-vascular therapies
+        r'\b(vertebroplasty|ablation)\b',
+        # General guidance and placement terms (previously 'Interventional Guidance')
+        r'\b(guided|guidance|placement|localization|locali[sz]ation|insertion|insert)\b'
+    ]]
+}
         self.anatomy_lookup = {}
         if self.anatomy_extractor:
             self.anatomy_lookup = self.anatomy_extractor.anatomy_terms
