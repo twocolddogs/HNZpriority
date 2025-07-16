@@ -1,13 +1,15 @@
 # --- START OF FILE parsing_utils.py ---
 
 import re
+import logging
 from typing import Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 class AbbreviationExpander:
     """Medical abbreviation expansion for radiology exam names"""
 
     def __init__(self):
-    
         self.medical_abbreviations = {
             # Anatomy
             'abd': 'abdomen', 'abdo': 'abdomen', 'pelv': 'pelvis', 'ext': 'extremity',
@@ -16,14 +18,14 @@ class AbbreviationExpander:
             'iam': 'internal auditory meatus', 'tmj': 'temporomandibular joint',
             # Modality & Combined Anatomy
             'cta': 'ct angiography', 'mra': 'mr angiography', 'ctpa': 'ct pulmonary angiography',
-            'cxr': 'chest xray', 'axr': 'abdominal xray', 
-            'kub': 'kidneys ureters bladder', # Critical fix for KUB
-            'mammo': 'mammogram', 'cap': 'chest abdomen pelvis', # Critical fix for CAP
+            'cxr': 'chest xray', 'axr': 'abdominal xray',
+            'kub': 'kidneys ureters bladder',
+            'mammo': 'mammogram', 'cap': 'chest abdomen pelvis',
             # Contrast
             'w': 'with', 'wo': 'without', 'gad': 'gadolinium', 'iv': 'intravenous',
             'c+': 'with contrast', 'c-': 'without contrast',
             # Interventional & Clinical
-            'bx': 'biopsy', 'fna': 'fine needle aspiration', # Critical fix for FNA
+            'bx': 'biopsy', 'fna': 'fine needle aspiration',
             'pc': 'percutaneous', 'st': 'soft tissue', 'f/u': 'follow up',
             # Other common terms
             'mrcp': 'magnetic resonance cholangiopancreatography',
@@ -34,14 +36,10 @@ class AbbreviationExpander:
         }
 
     def expand(self, text: str) -> str:
-        """Expand medical abbreviations in text"""
-        # Using regex to match whole words/abbreviations to avoid partial matches
-        # (e.g., 'br' in 'brain')
         words = text.split()
         expanded_words = []
         for word in words:
             clean_word = word.lower().strip('.,()[]/-+').strip()
-            # The key must match the entire cleaned word
             if clean_word in self.medical_abbreviations:
                  expanded_words.append(self.medical_abbreviations[clean_word])
             else:
@@ -49,7 +47,6 @@ class AbbreviationExpander:
         return ' '.join(expanded_words)
     
     def normalize_ordinals(self, text: str) -> str:
-        """Normalize ordinal numbers in obstetric exam names for better parsing."""
         ordinal_replacements = {
             r'\b1ST\b': 'First', r'\b2ND\b': 'Second', r'\b3RD\b': 'Third',
             r'\b1st\b': 'First', r'\b2nd\b': 'Second', r'\b3rd\b': 'Third',
@@ -58,7 +55,6 @@ class AbbreviationExpander:
         for pattern, replacement in ordinal_replacements.items():
             result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
         return result
-# --- Other classes (AnatomyExtractor, LateralityDetector, ContrastMapper) remain the same ---
 
 class AnatomyExtractor:
     """Extract anatomy using NHS authority data"""
@@ -68,7 +64,6 @@ class AnatomyExtractor:
         self.anatomy_terms = self._build_anatomy_vocabulary()
 
     def _build_anatomy_vocabulary(self) -> Dict[str, str]:
-        """Build comprehensive anatomy vocabulary from NHS clean names"""
         anatomy_vocab = {
             'head': 'head', 'brain': 'brain', 'skull': 'head', 'cranium': 'head', 'sinus': 'sinuses',
             'sinuses': 'sinuses', 'orbit': 'orbit', 'face': 'face', 'neck': 'neck', 'chest': 'chest',
@@ -91,10 +86,10 @@ class AnatomyExtractor:
         anatomy_stop_words = {
             'projection', 'projections', 'view', 'views', 'single', 'multiple', 'scan', 'scans', 'imaging', 'image',
             'mobile', 'portable', 'procedure', 'examination', 'study', 'protocol', 'technique', 'method',
-            'series', 'guidance', 'guided', 'localization', 'mapping','and', 'or', 'with', 'without', 'plus', 'including', 
-            'via', 'through', 'during', 'for', 'of', 'in', 'on','18f', 'fdg', 'psma', 'gallium', 'technetium', 'iodine', 
-            'contrast','non-contrast', 'pre-contrast', 'post-contrast', 'unenhanced', 'plain', 'enhanced', 'dynamic', 'static', 
-            'delayed', 'early', 'late', 'pre', 'post', 'follow', 'up','routine', 'standard', 'complete', 'limited', 'focused', 
+            'series', 'guidance', 'guided', 'localization', 'mapping','and', 'or', 'with', 'without', 'plus', 'including',
+            'via', 'through', 'during', 'for', 'of', 'in', 'on','18f', 'fdg', 'psma', 'gallium', 'technetium', 'iodine',
+            'contrast','non-contrast', 'pre-contrast', 'post-contrast', 'unenhanced', 'plain', 'enhanced', 'dynamic', 'static',
+            'delayed', 'early', 'late', 'pre', 'post', 'follow', 'up','routine', 'standard', 'complete', 'limited', 'focused',
             'targeted', 'selective','whole', 'body', 'full', 'partial', 'complete', 'limited', 'focused', 'targeted', 'selective',
             'doppler', 'duplex', 'flow', 'perfusion', 'diffusion', 'spectroscopy', 'angiography', 'venography',
             'arteriography', 'lymphangiography', 'cholangiography', 'pyelography', 'urography',
@@ -107,31 +102,39 @@ class AnatomyExtractor:
                 anatomy_parts = [p for p in parts if p not in modality_words and p not in anatomy_stop_words]
                 if anatomy_parts:
                     anatomy_phrase = ' '.join(anatomy_parts)
-                    if anatomy_phrase not in anatomy_vocab:
+                    if anatomy_phrase and anatomy_phrase not in anatomy_vocab:
                         if any(known_anatomy in anatomy_phrase for known_anatomy in anatomy_vocab.keys()):
                             anatomy_vocab[anatomy_phrase] = anatomy_phrase
-                    
                     for word in anatomy_parts:
-                        if len(word) > 2 and word not in modality_words and word not in anatomy_stop_words:
-                            # Also check here before adding/overwriting.
+                        if word and len(word) > 2 and word not in modality_words and word not in anatomy_stop_words:
                             if word not in anatomy_vocab:
                                 anatomy_vocab[word] = word
         return anatomy_vocab
 
     def extract(self, text: str) -> List[str]:
-        """Extract anatomy terms from text"""
         text_lower = text.lower()
         found_anatomy = set()
-        for term, standard_form in self.anatomy_terms.items():
-            # --- HYBRID FIX TO RESOLVE REGEX ERROR ---
-            # If the term is a multi-word phrase, use a simple substring search.
-            if ' ' in term:
-                if term in text_lower:
-                    found_anatomy.add(standard_form)
-            # If the term is a single word, use precise whole-word regex matching.
-            else:
-                if re.search(r'\b' + re.escape(term) + r'\b', text_lower):
-                    found_anatomy.add(standard_form)
+        # Sort terms by length, longest first, to match phrases like "cervical spine" before "spine".
+        sorted_terms = sorted(self.anatomy_terms.items(), key=lambda item: len(item[0]), reverse=True)
+        
+        for term, standard_form in sorted_terms:
+            try:
+                # This unified pattern correctly handles all cases without crashing.
+                # It asserts that the match is not immediately preceded or followed by a word character.
+                if re.search(r'(?<!\w)' + re.escape(term) + r'(?!\w)', text_lower, re.IGNORECASE):
+                    # To avoid adding sub-parts of an already found phrase, check against found standardized forms.
+                    # e.g., if we've already found "cervical spine", don't also add "spine".
+                    is_sub_part = False
+                    for found_item in found_anatomy:
+                        if standard_form in found_item:
+                           is_sub_part = True
+                           break
+                    if not is_sub_part:
+                       found_anatomy.add(standard_form)
+
+            except re.error:
+                logger.warning(f"Skipping invalid anatomy term for regex: '{term}'")
+                continue
         return sorted(list(found_anatomy))
 
 class LateralityDetector:
@@ -149,7 +152,6 @@ class LateralityDetector:
         }
 
     def detect(self, text: str) -> Optional[str]:
-        """Detect laterality from text"""
         text_lower = text.lower()
         if any(p.search(text_lower) for p in self.compiled_patterns['bilateral']):
             return 'bilateral'
@@ -174,7 +176,6 @@ class ContrastMapper:
         }
 
     def detect_contrast(self, text: str) -> Optional[str]:
-        """Detect contrast type in radiology exam names"""
         for contrast_type in ['with and without', 'without', 'with']:
             if any(p.search(text) for p in self.compiled_patterns[contrast_type]):
                 return contrast_type
