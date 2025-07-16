@@ -61,18 +61,20 @@ class AnatomyExtractor:
         self.anatomy_map = self._build_anatomy_vocabulary()
         
         # --- THE OPTIMIZED "MEGA-REGEX" ---
-        # 1. Sort all anatomy terms from longest to shortest. This is CRITICAL.
+        # 1. Sort all anatomy terms from longest to shortest to prioritize matching longer phrases.
         sorted_keys = sorted(self.anatomy_map.keys(), key=len, reverse=True)
         
-        # 2. Escape each term and join them with the OR pipe.
-        pattern_str = '|'.join(re.escape(key) for key in sorted_keys)
+        # 2. Escape each term to ensure it's treated as a literal string in the regex.
+        escaped_keys = [re.escape(key) for key in sorted_keys]
         
-        # 3. Compile the single, massive regex pattern once.
+        # 3. Join all escaped keys with the OR pipe to create one massive pattern.
+        pattern_str = '|'.join(escaped_keys)
+        
+        # 4. Compile the single, massive regex pattern once for hyper-efficiency.
         # The \b word boundaries ensure we match whole words/phrases.
         self.master_pattern = re.compile(r'\b(' + pattern_str + r')\b', re.IGNORECASE)
 
     def _build_anatomy_vocabulary(self) -> Dict[str, str]:
-        # This base vocabulary is our "source of truth".
         anatomy_vocab = {
             'head': 'head', 'brain': 'brain', 'skull': 'head', 'cranium': 'head', 'sinus': 'sinuses',
             'sinuses': 'sinuses', 'orbit': 'orbit', 'face': 'face', 'neck': 'neck', 'chest': 'chest',
@@ -92,28 +94,28 @@ class AnatomyExtractor:
             'parotid': 'parotid', 'submandibular': 'submandibular', 'salivary gland': 'salivary gland',
             'aortic arch': 'aortic arch', 'carotid': 'carotid'
         }
-        # This learning part is now safer because we don't use the keys for individual regex searches.
-        for clean_name in self.nhs_authority.keys():
-            # This logic can be simplified or removed if the base vocab is sufficient.
-            pass
+        # The dynamic learning from NHS data can be simplified or removed if the base vocab is sufficient.
+        # For now, a comprehensive base vocab is more stable.
         return anatomy_vocab
 
     def extract(self, text: str) -> List[str]:
         """
         Extracts anatomy by running the single master pattern and mapping the results.
-        This is extremely fast and avoids catastrophic backtracking.
+        This is extremely fast and avoids catastrophic backtracking and worker timeouts.
         """
         # Find all non-overlapping matches of the master pattern in the text.
         found_terms = self.master_pattern.findall(text.lower())
         
         # Use a set to get unique standardized forms.
-        # e.g., if we find "abdo" and "abdomen", both map to "abdomen", resulting in one entry.
+        # e.g., if "abdo" and "abdomen" are found, they both map to "abdomen", resulting in one entry.
+        if not found_terms:
+            return []
+            
         unique_standard_forms = {self.anatomy_map[term] for term in found_terms}
         
         return sorted(list(unique_standard_forms))
 
 class LateralityDetector:
-    # ... (no changes) ...
     def __init__(self):
         self.patterns = {
             'bilateral': [r'\b(bilateral|bilat|both|b/l)\b', r'\b(rt?\.?\s*(and|&|\+)\s*lt?\.?)\b', r'\b(left\s+and\s+right)\b'],
@@ -136,7 +138,6 @@ class LateralityDetector:
         return None
 
 class ContrastMapper:
-    # ... (no changes) ...
     def __init__(self):
         self.patterns = {
             'with and without': [r'\bw\s*and\s*wo\b', r'\bw/wo\b', r'\bwith\s*and\s*without\b', r'\bpre\s*&\s*post\b', r'\bpre/post\b', r'\b(pre and post contrast)\b'],
