@@ -81,9 +81,9 @@ class NHSLookupEngine:
         
         for entry in self.nhs_data:
             snomed_fsn = entry.get("snomed_fsn", "").strip()
-            clean_name = entry.get("clean_name", "").strip()
+            primary_name = entry.get("primary_source_name", "").strip()
             
-            text_to_process = snomed_fsn if snomed_fsn else clean_name
+            text_to_process = snomed_fsn if snomed_fsn else primary_name
             if not text_to_process: continue
 
             text_to_process = re.sub(r'\s*\((procedure|qualifier value)\)$', '', text_to_process, flags=re.I).strip()
@@ -126,7 +126,7 @@ class NHSLookupEngine:
         is_interventional = bool(detected_interventional_terms)
         is_diagnostic = not is_interventional
 
-        clean_name = best_match.get('clean_name', '')
+        clean_name = best_match.get('primary_source_name', '')
         if strip_laterality_from_name:
             clean_name = re.sub(r'\s+(lt|rt|left|right|both|bilateral)$', '', clean_name, flags=re.I).strip()
         
