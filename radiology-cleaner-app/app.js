@@ -677,6 +677,10 @@ window.addEventListener('DOMContentLoaded', function() {
             progressFill.style.width = '25%';
             updateStatusMessage(`🧪 Calling backend sanity test endpoint with model: '${currentModel}'...`);
 
+            // Debug: Log the URL being called
+            console.log('Sanity test URL:', apiConfig.SANITY_TEST_URL);
+            console.log('API config:', apiConfig);
+
             // Call the correct backend endpoint
             const response = await fetch(apiConfig.SANITY_TEST_URL, {
                 method: 'POST',
