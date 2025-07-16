@@ -17,7 +17,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from parser import RadiologySemanticParser
 from nlp_processor import NLPProcessor
 from nhs_lookup_engine import NHSLookupEngine
-from database_models import DatabaseManager, CacheManager, FeedbackTrainingManager
+from database_models import DatabaseManager, CacheManager
+from feedback_training import FeedbackTrainingManager
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
 from context_detection import detect_gender_context, detect_age_context, detect_clinical_context
 from preprocessing import initialize_preprocessor, preprocess_exam_name
