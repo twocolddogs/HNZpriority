@@ -173,6 +173,99 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proc:
     }
     return final_result
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for monitoring service availability"""
+    return jsonify({
+        'status': 'healthy', 
+        'timestamp': datetime.now().isoformat(), 
+        'app_initialized': _app_initialized
+    })
+
+@app.route('/models', methods=['GET'])
+def list_available_models():
+    """List available NLP models and their status"""
+    _ensure_app_is_initialized()
+    
+    try:
+        model_info = {}
+        for model_key, processor in model_processors.items():
+            if processor and processor.is_available():
+                model_info[model_key] = {
+                    'name': processor.model_name,
+                    'status': 'available',
+                    'description': _get_model_description(model_key)
+                }
+            else:
+                # Get model name from MODEL_MAPPING even if processor failed
+                model_mapping = {
+                    'default': 'FremyCompany/BioLORD-2023',
+                    'pubmed': 'NeuML/pubmedbert-base-embeddings', 
+                    'biolord': 'FremyCompany/BioLORD-2023',
+                    'general': 'sentence-transformers/all-MiniLM-L6-v2'
+                }
+                model_info[model_key] = {
+                    'name': model_mapping.get(model_key, 'unknown'),
+                    'status': 'unavailable',
+                    'description': _get_model_description(model_key)
+                }
+        
+        return jsonify({
+            'models': model_info,
+            'default_model': 'default',
+            'usage': 'Add "model": "model_key" to your request to use a specific model'
+        })
+    except Exception as e:
+        logger.error(f"Models endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Failed to list models"}), 500
+
+def _get_model_description(model_key: str) -> str:
+    """Get description for each model type"""
+    descriptions = {
+        'default': 'BioLORD - Advanced biomedical language model with superior medical concept understanding (preferred default)',
+        'pubmed': 'PubMed-trained embeddings optimized for medical terminology',
+        'biolord': 'Advanced biomedical language model with enhanced medical concept understanding',
+        'general': 'General-purpose sentence transformer for broad text understanding'
+    }
+    return descriptions.get(model_key, 'No description available')
+
+@app.route('/parse_enhanced', methods=['POST'])
+def parse_enhanced():
+    """Enhanced parsing endpoint for single exam processing"""
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    
+    try:
+        data = request.json
+        if not data or 'exam_name' not in data:
+            return jsonify({"error": "Missing exam_name in request data"}), 400
+        
+        exam_name = data['exam_name']
+        modality_code = data.get('modality_code')
+        model = data.get('model', 'default')
+        
+        # Get the appropriate NLP processor for the selected model
+        selected_nlp_processor = _get_nlp_processor(model)
+        if not selected_nlp_processor:
+            return jsonify({"error": f"Model '{model}' not available"}), 400
+        
+        logger.info(f"Using model '{model}' for exam: {exam_name}")
+        
+        # Process the exam
+        result = process_exam_request(exam_name, modality_code, selected_nlp_processor)
+        
+        # Add processing metadata
+        result['metadata'] = {
+            'processing_time_ms': int((time.time() - start_time) * 1000),
+            'model_used': model
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Parse enhanced endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Internal server error"}), 500
+
 @app.route('/process_sanity_test', methods=['POST'])
 def process_sanity_test_endpoint():
     """Processes the entire sanity_test.json file and returns the structured output."""
