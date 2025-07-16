@@ -86,7 +86,7 @@ def _initialize_app():
     nlp_processor = model_processors.get('default')
     
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    nhs_json_path = os.path.join(base_dir, 'NHS.json')
+    nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
     
     nhs_authority = {}
     if os.path.exists(nhs_json_path):
