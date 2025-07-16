@@ -169,9 +169,114 @@ class NHSLookupEngine:
             nhs_components = entry.get("_parsed_components")
             if not nhs_components or nhs_embedding is None: continue
 
+            # ================================================================
+            # MODALITY MATCHING GATEKEEPER - RESTORED FROM PRE-REFACTOR
+            # ================================================================
+            # Extract and normalize modality information for comparison
+            input_modality = extracted_input_components.get('modality')
+            if isinstance(input_modality, list):
+                input_modality = input_modality[0] if input_modality else None
+            
+            nhs_modality = nhs_components.get('modality')
+            
+            # Only perform strict modality filtering if the input modality is known and is NOT 'Other'.
+            # If the input modality is 'Other', we skip this filter and let semantic scoring decide.
+            if input_modality and input_modality.lower() != 'other':
+                if nhs_modality:
+                    input_mod_lower = input_modality.lower()
+                    nhs_mod_lower = nhs_modality.lower()
+                    
+                    if input_mod_lower != nhs_mod_lower:
+                        # Allow common modality aliases for flexibility
+                        modality_aliases = {
+                            'ct': ['computed tomography', 'dect'],
+                            'mr': ['mri', 'magnetic resonance'],
+                            'us': ['ultrasound', 'echo'],
+                            'xr': ['x-ray', 'radiograph'],
+                            'mammography': ['mg', 'mammo', 'mamm', 'mammogram']
+                        }
+                        
+                        compatible = False
+                        for canonical, aliases in modality_aliases.items():
+                            if (input_mod_lower == canonical and nhs_mod_lower in aliases) or \
+                               (nhs_mod_lower == canonical and input_mod_lower in aliases):
+                                compatible = True
+                                break
+                        
+                        if not compatible:
+                            logger.debug(f"Skipping due to modality mismatch: {input_mod_lower} vs {nhs_mod_lower}")
+                            continue
+
+            # ================================================================
+            # LATERALITY MATCHING - RESTORED FROM PRE-REFACTOR
+            # ================================================================
+            # Laterality matching - only enforce if both are specified
+            input_lat = extracted_input_components.get('laterality')
+            if isinstance(input_lat, list):
+                input_lat = input_lat[0] if input_lat else None
+                
+            nhs_lat = nhs_components.get('laterality')
+            
+            if input_lat and nhs_lat:
+                if input_lat.lower() != nhs_lat.lower():
+                    logger.debug(f"Skipping due to laterality mismatch: {input_lat} vs {nhs_lat}")
+                    continue
+
+            # ================================================================
+            # CORE SEMANTIC AND FUZZY SCORING
+            # ================================================================
             semantic_score = nlp_proc.calculate_semantic_similarity(input_embedding, nhs_embedding)
             fuzzy_score = fuzz.token_sort_ratio(input_exam.lower(), entry.get("_source_text_for_embedding", "").lower()) / 100.0
             combined_score = (0.7 * semantic_score) + (0.3 * fuzzy_score)
+
+            # ================================================================
+            # COMPONENT ALIGNMENT BONUSES - RESTORED FROM PRE-REFACTOR
+            # ================================================================
+            # Modality alignment bonus
+            if input_modality and nhs_modality and input_modality.lower() == nhs_modality.lower():
+                combined_score += 0.1  # Modality exact match bonus
+                logger.debug(f"Modality alignment bonus applied for: {input_modality}")
+
+            # Technique alignment bonus - strong feature for matching
+            input_techniques = set(extracted_input_components.get('technique', []))
+            nhs_techniques = set(nhs_components.get('technique', []))
+            
+            if input_techniques:
+                # Calculate the intersection of techniques
+                common_techniques = input_techniques.intersection(nhs_techniques)
+                if common_techniques:
+                    # Apply a significant bonus for each matching technique
+                    technique_bonus = len(common_techniques) * 0.20
+                    combined_score += technique_bonus
+                    logger.debug(f"Technique bonus: +{technique_bonus:.3f} for matching techniques: {common_techniques}")
+
+            # Contrast alignment scoring - comprehensive handling
+            input_contrast = extracted_input_components.get('contrast')
+            if isinstance(input_contrast, list):
+                input_contrast = input_contrast[0] if input_contrast else None
+                
+            nhs_contrast = nhs_components.get('contrast')
+            
+            # Normalize contrast values for comparison
+            input_contrast_norm = input_contrast.lower() if input_contrast else None
+            nhs_contrast_norm = nhs_contrast.lower() if nhs_contrast else None
+            
+            if input_contrast_norm and nhs_contrast_norm:
+                # Both have contrast specified - exact match gets strong bonus, mismatch gets penalty
+                if input_contrast_norm == nhs_contrast_norm:
+                    combined_score += 0.15  # Strong bonus for contrast alignment
+                    logger.debug(f"Contrast alignment bonus: +0.15 for {input_contrast_norm}")
+                else:
+                    combined_score -= 0.2   # Strong penalty for contrast mismatch
+                    logger.debug(f"Contrast mismatch penalty: -0.2 for {input_contrast_norm} vs {nhs_contrast_norm}")
+            elif input_contrast_norm and not nhs_contrast_norm:
+                # Input specifies contrast but NHS entry is ambiguous - apply penalty
+                combined_score -= 0.1   # Penalty for ambiguous NHS entry when input is specific
+                logger.debug(f"Ambiguous NHS contrast penalty: -0.1 (input: {input_contrast_norm}, NHS: none)")
+            elif not input_contrast_norm and nhs_contrast_norm:
+                # NHS specifies contrast but input is ambiguous - minor penalty
+                combined_score -= 0.05  # Small penalty for specific NHS when input is ambiguous
+                logger.debug(f"Ambiguous input contrast penalty: -0.05 (input: none, NHS: {nhs_contrast_norm})")
 
             nhs_interventional_terms = set(entry.get('_interventional_terms', []))
             is_interventional_nhs = bool(nhs_interventional_terms)
