@@ -359,9 +359,9 @@ def process_sanity_test_endpoint():
         if not selected_nlp_processor:
             return jsonify({"error": f"Model '{model_key}' not available"}), 400
 
-        # Load sanity_test.json from the same directory
+        # Load sanity_test.json from the core directory
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        sanity_test_path = os.path.join(base_dir, 'sanity_test.json')
+        sanity_test_path = os.path.join(base_dir, 'core', 'sanity_test.json')
         
         with open(sanity_test_path, 'r', encoding='utf-8') as f:
             sanity_data = json.load(f)
