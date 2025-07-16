@@ -1,19 +1,11 @@
 # --- START OF FILE nhs_lookup_engine.py ---
 
 # =============================================================================
-# NHS LOOKUP ENGINE (FINAL VERSION)
+# NHS LOOKUP ENGINE (FINAL VERSION - CLEAN DATA MODEL)
 # =============================================================================
-# This module provides the core NHS reference data lookup functionality.
-#
-# KEY ARCHITECTURAL FEATURES:
-# 1. FSN-First Pre-computation: Uses the SNOMED FSN for the richest semantic baseline.
-# 2. Unified Parsing: Applies the same semantic parser to both input and NHS data.
-# 3. Text-Driven Interventional Scoring: Derives procedure type from text, avoiding
-#    reliance on potentially inconsistent data flags.
-# 4. Specificity Penalty: Prevents over-matching general inputs to specific procedures.
-# 5. Intelligent Laterality Fallback: Handles non-specific inputs gracefully without
-#    hallucinating laterality.
-# =============================================================================
+# This version assumes the source NHS.json has been cleaned to use standard,
+# newline-free keys (e.g., "snomed_concept_id" instead of "SNOMED CT \nConcept-ID").
+# This is the most robust and maintainable architecture.
 
 import json
 import logging
@@ -32,10 +24,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 class NHSLookupEngine:
-    """
-    NHS lookup engine that standardizes radiology exam names using a robust,
-    multi-faceted matching strategy against the NHS reference dataset.
-    """
     def __init__(self, nhs_json_path: str, nlp_processor: NLPProcessor, semantic_parser: 'RadiologySemanticParser'):
         self.nhs_data = []
         self.snomed_lookup = {}
@@ -59,7 +47,7 @@ class NHSLookupEngine:
             'series', 'ap', 'pa', 'lat', 'oblique', 'guidance', 'guided', 'body', 'whole',
             'artery', 'vein', 'joint', 'spine', 'tract', 'system', 'time', 'delayed', 'immediate', 'phase', 'early', 'late'
         }
-        logger.info("NHSLookupEngine initialized with FSN-first pre-computation and intelligent laterality fallback.")
+        logger.info("NHSLookupEngine initialized with clean data model and FSN-first pre-computation.")
 
     def _load_nhs_data(self):
         try:
@@ -72,119 +60,83 @@ class NHSLookupEngine:
 
     def _build_lookup_tables(self):
         for entry in self.nhs_data:
-            if snomed_id := entry.get("SNOMED CT \nConcept-ID"):
+            # MODIFICATION: Using the new, clean key
+            if snomed_id := entry.get("snomed_concept_id"):
                 self.snomed_lookup[str(snomed_id)] = entry
         logger.info(f"Built SNOMED lookup table with {len(self.snomed_lookup)} entries")
 
     def _preprocess_and_parse_nhs_data(self):
-        """
-        Prepares the entire NHS dataset at startup by parsing its most descriptive field (FSN)
-        and caching the results for fast lookups.
-        """
         if not self.semantic_parser:
             raise RuntimeError("Semantic Parser required for NHS data preprocessing")
-
-        logger.info("Starting FSN-first pre-processing, parsing, and context detection of all NHS entries...")
-        
         from preprocessing import get_preprocessor
         preprocessor = get_preprocessor()
         if not preprocessor:
             raise RuntimeError("Preprocessor not initialized before NHS engine.")
-
-        successful_parses = 0
+        
         for entry in self.nhs_data:
-            # 1. Prioritize the text source: SNOMED FSN > Clean Name
-            snomed_fsn = entry.get("SNOMED CT FSN", "").strip()
-            clean_name = entry.get("Clean Name", "").strip()
+            # MODIFICATION: Using new, clean keys
+            snomed_fsn = entry.get("snomed_fsn", "").strip()
+            clean_name = entry.get("clean_name", "").strip()
             
-            text_to_process = snomed_fsn if snomed_fsn and len(snomed_fsn) > 5 else clean_name
+            text_to_process = snomed_fsn if snomed_fsn else clean_name
             
             if not text_to_process:
-                logger.warning(f"Skipping NHS entry with no usable FSN or Clean Name: {entry.get('SNOMED CT \\nConcept-ID')}")
+                logger.warning(f"Skipping NHS entry with no usable FSN or Clean Name: {entry.get('snomed_concept_id')}")
                 continue
 
             text_to_process = re.sub(r'\s*\((procedure|qualifier value)\)$', '', text_to_process, flags=re.I).strip()
             preprocessed_text = preprocessor.preprocess(text_to_process)
             entry["_source_text_for_embedding"] = preprocessed_text
-
-            # 2. Detect and cache interventional terms from the processed text
             entry["_interventional_terms"] = detect_interventional_procedure_terms(preprocessed_text)
-
-            # 3. Parse the pre-processed text to get structured components
-            try:
-                parsed_components = self.semantic_parser.parse_exam_name(preprocessed_text, 'Other')
-                entry['_parsed_components'] = parsed_components
-                successful_parses += 1
-            except Exception as e:
-                logger.error(f"Failed to parse NHS text '{preprocessed_text}': {e}")
-                entry['_parsed_components'] = None
-
-        logger.info(f"Successfully pre-processed and parsed {successful_parses}/{len(self.nhs_data)} NHS entries.")
+            entry['_parsed_components'] = self.semantic_parser.parse_exam_name(preprocessed_text, 'Other')
 
     def _precompute_embeddings(self, custom_nlp_processor: Optional[NLPProcessor] = None):
-        """Generates and caches embeddings from the FSN-derived text."""
         nlp_proc = custom_nlp_processor or self.nlp_processor
         if not nlp_proc or not nlp_proc.is_available(): return
-
         model_name = getattr(nlp_proc, 'model_name', 'unknown')
         if model_name in self._embeddings_cache: return
-        
         texts_to_embed = [e["_source_text_for_embedding"] for e in self.nhs_data if e.get("_source_text_for_embedding")]
         embeddings = nlp_proc.batch_get_embeddings(texts_to_embed)
         text_to_embedding = dict(zip(texts_to_embed, embeddings))
-        
         for entry in self.nhs_data:
             source_text = entry.get("_source_text_for_embedding")
             entry["_embedding"] = text_to_embedding.get(source_text)
 
-        successful_count = sum(1 for e in embeddings if e is not None)
-        logger.info(f"Successfully pre-computed {successful_count}/{len(texts_to_embed)} embeddings using {model_name}.")
-
     def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
-        """
-        Finds the bilateral ("Both" or "Bilateral") peer of a given specific
-        (e.g., "Left" or "Right") NHS entry.
-        """
-        specific_clean_name = specific_entry.get("Clean Name")
-        if not specific_clean_name:
-            return None
-
+        specific_clean_name = specific_entry.get("clean_name")
+        if not specific_clean_name: return None
         base_name_pattern = re.compile(r'\s+(lt|rt|left|right)$', re.IGNORECASE)
         base_name = base_name_pattern.sub('', specific_clean_name).strip()
-
         bilateral_pattern = re.compile(r'\s+(both|bilateral)$', re.IGNORECASE)
-
         for entry in self.nhs_data:
-            entry_clean_name = entry.get("Clean Name", "")
-            if not bilateral_pattern.search(entry_clean_name):
-                continue
-            
+            entry_clean_name = entry.get("clean_name", "")
+            if not bilateral_pattern.search(entry_clean_name): continue
             entry_base_name = bilateral_pattern.sub('', entry_clean_name).strip()
-
             if base_name.lower() == entry_base_name.lower():
                 logger.info(f"Laterality Fallback: Found bilateral peer '{entry_clean_name}' for specific match '{specific_clean_name}'")
                 return entry
-
         return None
 
     def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False) -> Dict:
-        """Helper to format the final result dictionary, with an option to strip laterality from the name."""
+        """Helper to format the final result dictionary, now with clean keys."""
         model_name = getattr(nlp_proc, 'model_name', 'default').split('/')[-1]
-        source_name = f'FSN_PRIMARY_MATCH_V11_{model_name.upper()}'
+        source_name = f'FSN_PRIMARY_MATCH_V12_{model_name.upper()}'
         
         detected_interventional_terms = best_match.get('_interventional_terms', [])
         is_interventional = bool(detected_interventional_terms)
         is_diagnostic = not is_interventional
 
-        clean_name = best_match.get('Clean Name', '')
+        clean_name = best_match.get('clean_name', '')
         if strip_laterality_from_name:
             clean_name = re.sub(r'\s+(lt|rt|left|right|both|bilateral)$', '', clean_name, flags=re.I).strip()
-            logger.info(f"Laterality Fallback: Stripped laterality from clean name. Final name: '{clean_name}'")
         
         return {
             'clean_name': clean_name,
-            'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
-            'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
+            # MODIFICATION: Using new, clean keys
+            'snomed_id': best_match.get('snomed_concept_id', ''),
+            'snomed_fsn': best_match.get('snomed_fsn', ''),
+            'snomed_laterality_concept_id': best_match.get('snomed_laterality_concept_id', ''),
+            'snomed_laterality_fsn': best_match.get('snomed_laterality_fsn', ''),
             'is_diagnostic': is_diagnostic,
             'is_interventional': is_interventional,
             'detected_interventional_terms': detected_interventional_terms,
@@ -198,9 +150,7 @@ class NHSLookupEngine:
         }
 
     def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
-        """
-        Main method to standardize an exam, now with intelligent laterality fallback.
-        """
+        """Main method to standardize an exam."""
         best_match, highest_confidence = None, 0.0
         nlp_proc = custom_nlp_processor or self.nlp_processor
 
@@ -219,58 +169,41 @@ class NHSLookupEngine:
             nhs_components = entry.get("_parsed_components")
             if not nhs_components or nhs_embedding is None: continue
 
-            # Core semantic and fuzzy scores
             semantic_score = nlp_proc.calculate_semantic_similarity(input_embedding, nhs_embedding)
-            fuzzy_score_clean = fuzz.token_sort_ratio(input_exam.lower(), entry.get("Clean Name", "").lower()) / 100.0
-            fuzzy_score_source = fuzz.token_sort_ratio(input_exam.lower(), entry.get("_source_text_for_embedding", "").lower()) / 100.0
-            fuzzy_score = max(fuzzy_score_clean, fuzzy_score_source)
-            
+            fuzzy_score = fuzz.token_sort_ratio(input_exam.lower(), entry.get("_source_text_for_embedding", "").lower()) / 100.0
             combined_score = (0.7 * semantic_score) + (0.3 * fuzzy_score)
 
-            # Text-driven interventional scoring
             nhs_interventional_terms = set(entry.get('_interventional_terms', []))
             is_interventional_nhs = bool(nhs_interventional_terms)
 
             if is_interventional_input and is_interventional_nhs:
                 overlap_bonus = 0.25 + (0.1 * len(input_interventional_terms.intersection(nhs_interventional_terms)))
                 combined_score += overlap_bonus
-            elif is_interventional_input and not is_interventional_nhs:
-                combined_score -= 0.30
-            elif not is_interventional_input and is_interventional_nhs:
-                combined_score -= 0.20
-            else:
-                combined_score += 0.10
+            elif is_interventional_input and not is_interventional_nhs: combined_score -= 0.30
+            elif not is_interventional_input and is_interventional_nhs: combined_score -= 0.20
+            else: combined_score += 0.10
 
-            # Specificity Penalty
             input_tokens = {word for word in input_exam.lower().split() if word not in self._specificity_stop_words}
             nhs_source_tokens = {word for word in entry.get("_source_text_for_embedding", "").lower().split() if word not in self._specificity_stop_words}
             extra_words = nhs_source_tokens - input_tokens
             if extra_words:
-                penalty = len(extra_words) * self._specificity_penalty_weight
-                combined_score -= penalty
+                combined_score -= len(extra_words) * self._specificity_penalty_weight
             
             if combined_score > highest_confidence:
                 highest_confidence, best_match = combined_score, entry
 
-        # --- POST-MATCHING LATERALITY LOGIC ---
         if best_match:
             input_laterality = extracted_input_components.get('laterality', [])
             best_match_parsed = best_match.get('_parsed_components', {})
             match_laterality = best_match_parsed.get('laterality', []) if best_match_parsed else []
 
             if not input_laterality and match_laterality and match_laterality[0] != 'bilateral':
-                logger.info("Laterality Fallback: Input is non-specific, but best match has laterality. Searching for a bilateral peer.")
-                
                 bilateral_peer = self.find_bilateral_peer(best_match)
-                
                 if bilateral_peer:
-                    # Ideal case: A bilateral version exists. Use it instead.
                     return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc)
                 else:
-                    # No bilateral peer found. Use the specific match but strip the laterality from the name.
                     return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=True)
 
-            # Standard case: Laterality matches or was not a factor.
             return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc)
         
         logger.warning(f"No suitable match found for input: '{input_exam}'")
