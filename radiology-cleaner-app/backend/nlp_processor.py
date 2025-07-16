@@ -33,31 +33,28 @@ class NLPProcessor:
         else:
             logger.info(f"Initialized API NLP Processor for model: {self.model_name} using direct requests.")
 
-	def _make_api_call(self, texts: List[str]) -> Optional[List]:
-    """
-    Makes a POST request to the Hugging Face Inference API and robustly handles the response.
-    """
-    payload = {
-        "inputs": texts,
-        "options": {
-            "wait_for_model": True  # Ensures the API waits for the model to be ready
-        }
-    }
-    
-    try:
-        response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=30)
-        
-        # Raise an exception for bad status codes (4xx or 5xx)
-        response.raise_for_status()
-        
-        result_data = response.json()
-        
-        # CRITICAL FIX: Check for API-level errors within a successful (200 OK) JSON response
-        if isinstance(result_data, dict) and 'error' in result_data:
-            logger.error(f"Hugging Face API returned an error: {result_data['error']}")
+	def _make_api_call(self, inputs: list[str]) -> Optional[list]:
+        """Helper function to make a POST request and robustly handle the response."""
+        payload = {"inputs": inputs, "options": {"wait_for_model": True}}
+        try:
+            # Small delay to respect API rate limits in concurrent scenarios
+            import time
+            time.sleep(0.1)  # 100ms delay
+            
+            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=30)
+            response.raise_for_status()
+            # The JSONDecodeError indicates the response body can be empty or non-JSON on error.
+            # We must handle this explicitly.
+            return response.json()
+        except json.JSONDecodeError:
+            logger.error(f"API call to {self.api_url} returned non-JSON response. Status: {response.status_code}, Body: {response.text[:200]}")
             return None
-
-        return result_data
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"API request failed with status {e.response.status_code} to URL {self.api_url}: {e.response.text}")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed due to a network issue: {e}")
+            return None
 
     except json.JSONDecodeError:
         # This occurs if the response body is empty or not valid JSON
