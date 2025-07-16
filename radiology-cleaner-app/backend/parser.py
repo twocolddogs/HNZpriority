@@ -14,7 +14,10 @@ class RadiologySemanticParser:
         self.modality_map = {
             'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM',
             'PET': 'PET', 'MG': 'MG', 'MAMM': 'MG', 'MAMMO': 'MG', 'DEXA': 'DEXA', 
-            'FL': 'Fluoroscopy', 'IR': 'IR', 'XA': 'XA', 'Other': 'Other', 'BR': 'MG'
+            'FL': 'Fluoroscopy', 
+            'IR': 'IR',  # ADDITION: Recognize 'IR' as a valid modality code.
+            'XA': 'IR',  # MODIFICATION: Map incoming 'XA' codes directly to 'IR'.
+            'Other': 'Other', 'BR': 'MG'
         }
         
         self.technique_patterns = {
@@ -24,7 +27,7 @@ class RadiologySemanticParser:
             'Tomosynthesis': [re.compile(p, re.I) for p in [r'\b(tomosynthesis|tomo)\b']],
             'Barium Study': [re.compile(p, re.I) for p in [r'barium', r'\bupper gi\b', r'\blower gi\b']],
             'Vascular Interventional': [re.compile(p, re.I) for p in [
-                r'\b(angiogram|angiography|cta|mra|venogram|angio|dsa)\b',
+                r'\b(angiogram|angiography|cta|mra|venography|angio|dsa)\b',
                 r'\b(stent|angioplasty|emboli[sz]ation|thrombolysis|thrombectomy|atherectomy|picc|line|catheter)\b'
             ]],
             'Non-Vascular Interventional': [re.compile(p, re.I) for p in [
@@ -51,21 +54,24 @@ class RadiologySemanticParser:
         }
 
     def _parse_modality(self, lower_name: str, modality_code: str) -> str:
+        # MODIFICATION: Added a comprehensive 'IR' pattern and removed 'XA'.
+        # This gives 'IR' high priority in text-based detection.
         modality_patterns = {
+            'IR': re.compile(r'\b(ir|interventional|xa|angiography|angiogram|dsa|picc|biopsy|drainage|stent|ablation|emboli[sz]ation)\b', re.I),
             'CT': re.compile(r'\b(ct|computed tomography)\b', re.I),
             'MRI': re.compile(r'\b(mr|mri|magnetic resonance)\b', re.I),
             'MG': re.compile(r'\b(mg|mammo|mamm|mammography|mammogram|tomosynthesis|tomo|br)\b', re.I),
-            'XR': re.compile(r'\b(xr|x-ray|xray|radiograph|plain film)\b', re.I),
             'US': re.compile(r'\b(us|ultrasound|sonogram|doppler|duplex)\b', re.I),
             'NM': re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy)\b', re.I),
             'PET': re.compile(r'\b(pet|positron emission)\b', re.I),
             'DEXA': re.compile(r'\b(dexa|dxa|bone densitometry)\b', re.I),
             'Fluoroscopy': re.compile(r'\b(fl|fluoroscopy|barium|swallow|meal|enema)\b', re.I),
-            'XA': re.compile(r'\b(xa|angiography|angiogram|dsa)\b', re.I),
+            'XR': re.compile(r'\b(xr|x-ray|xray|radiograph|plain film)\b', re.I), # XR is last as a fallback
         }
         for modality, pattern in modality_patterns.items():
             if pattern.search(lower_name):
                 return modality
+        # Fallback to the modality map if no text pattern matches
         return self.modality_map.get(str(modality_code).upper(), 'Other') if modality_code else 'Other'
 
     def _parse_laterality(self, lower_name: str) -> List[str]:
