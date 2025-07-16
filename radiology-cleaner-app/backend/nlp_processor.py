@@ -16,7 +16,7 @@ class NLPProcessor:
     client library issues while keeping the application lightweight to prevent memory errors.
     """
 
-    def __init__(self, model_name: str = 'sentence-transformers/all-MiniLM-L6-v2'):
+    def __init__(self, model_name: str = 'FremyCompany/BioLORD-2023'):
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
         self.model_name = model_name
         
