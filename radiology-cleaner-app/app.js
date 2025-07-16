@@ -39,8 +39,8 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         
         return {
-            API_URL: `${config.base}/parse_enhanced`,
-            BATCH_API_URL: `${config.base}/parse_batch`,
+            API_URL: `${config.base}/api/parse_enhanced`,
+            BATCH_API_URL: `${config.base}/api/parse_batch`,
             mode: config.mode,
             baseUrl: config.base
         };
@@ -59,7 +59,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // Test API connectivity on page load
     async function testApiConnectivity() {
         try {
-            const response = await fetch(`${apiConfig.baseUrl}/health`, { 
+            const response = await fetch(`${apiConfig.baseUrl}/api/health`, { 
                 method: 'GET',
                 timeout: 5000 
             });
@@ -704,7 +704,7 @@ window.addEventListener('DOMContentLoaded', function() {
             updateStatusMessage(`🧪 Calling backend sanity test endpoint with model: '${currentModel}'...`);
 
             // Call the correct backend endpoint
-            const response = await fetch(`${apiConfig.baseUrl}/process_sanity_test`, {
+            const response = await fetch(`${apiConfig.baseUrl}/api/process_sanity_test`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model: currentModel }) // Send the selected model
