@@ -66,7 +66,7 @@ class RadiologySemanticParser:
             'PET': re.compile(r'\b(pet|positron emission)\b', re.I),
             'DEXA': re.compile(r'\b(dexa|dxa|bone densitometry)\b', re.I),
             'Fluoroscopy': re.compile(r'\b(fl|fluoroscopy|barium|swallow|meal|enema)\b', re.I),
-            'XR': re.compile(r'\b(xr|x-ray|xray|radiograph|plain film)\b', re.I), # XR is last as a fallback
+            'XR': re.compile(r'\b(xr|x-ray|xray|radiograph|plain film|projection)\b', re.I), # XR is last as a fallback
         }
         for modality, pattern in modality_patterns.items():
             if pattern.search(lower_name):

@@ -7,7 +7,7 @@ class AbbreviationExpander:
     """Medical abbreviation expansion for radiology exam names"""
 
     def __init__(self):
-        # MODIFICATION: Added key missing abbreviations like CAP, KUB, PSMA and FNA
+    
         self.medical_abbreviations = {
             # Anatomy
             'abd': 'abdomen', 'abdo': 'abdomen', 'pelv': 'pelvis', 'ext': 'extremity',
@@ -107,11 +107,14 @@ class AnatomyExtractor:
                 anatomy_parts = [p for p in parts if p not in modality_words and p not in anatomy_stop_words]
                 if anatomy_parts:
                     anatomy_phrase = ' '.join(anatomy_parts)
-                    if any(known_anatomy in anatomy_phrase for known_anatomy in anatomy_vocab.keys()):
-                        anatomy_vocab[anatomy_phrase] = anatomy_phrase
+                    if anatomy_phrase not in anatomy_vocab:
+                        if any(known_anatomy in anatomy_phrase for known_anatomy in anatomy_vocab.keys()):
+                            anatomy_vocab[anatomy_phrase] = anatomy_phrase
+                    
                     for word in anatomy_parts:
                         if len(word) > 2 and word not in modality_words and word not in anatomy_stop_words:
-                            if word in anatomy_vocab:
+                            # Also check here before adding/overwriting.
+                            if word not in anatomy_vocab:
                                 anatomy_vocab[word] = word
         return anatomy_vocab
 
@@ -120,7 +123,9 @@ class AnatomyExtractor:
         text_lower = text.lower()
         found_anatomy = set()
         for term, standard_form in self.anatomy_terms.items():
-            if term in text_lower:
+            # --- FIX 2: Use whole-word matching ---
+            # This prevents "abdo" from matching inside "abdomen".
+            if re.search(r'\b' + re.escape(term) + r'\b', text_lower):
                 found_anatomy.add(standard_form)
         return sorted(list(found_anatomy))
 
