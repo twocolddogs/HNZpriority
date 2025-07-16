@@ -208,3 +208,42 @@ class NHSLookupEngine:
         
         logger.warning(f"No suitable match found for input: '{input_exam}'")
         return {'clean_name': input_exam, 'snomed_id': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
+
+    def validate_consistency(self):
+        """Validate the consistency of the NHS data and initialization state."""
+        validation_errors = []
+        
+        # Check if NHS data was loaded
+        if not self.nhs_data:
+            validation_errors.append("No NHS data loaded")
+        
+        # Check if SNOMED lookup table was built
+        if not self.snomed_lookup:
+            validation_errors.append("SNOMED lookup table is empty")
+        
+        # Check if semantic parser is available
+        if not self.semantic_parser:
+            validation_errors.append("Semantic parser not initialized")
+        
+        # Check if NLP processor is available
+        if not self.nlp_processor or not self.nlp_processor.is_available():
+            validation_errors.append("NLP processor not available")
+        
+        # Validate sample of entries have required preprocessing
+        sample_entries = self.nhs_data[:min(10, len(self.nhs_data))]
+        missing_preprocessing = 0
+        for entry in sample_entries:
+            if not entry.get("_source_text_for_embedding") or not entry.get("_parsed_components"):
+                missing_preprocessing += 1
+        
+        if missing_preprocessing > 0:
+            validation_errors.append(f"{missing_preprocessing}/{len(sample_entries)} sample entries missing preprocessing")
+        
+        # Log validation results
+        if validation_errors:
+            for error in validation_errors:
+                logger.error(f"NHS Lookup Engine validation error: {error}")
+            raise RuntimeError(f"NHS Lookup Engine validation failed: {'; '.join(validation_errors)}")
+        else:
+            logger.info("NHS Lookup Engine validation passed successfully")
+            logger.info(f"Loaded {len(self.nhs_data)} NHS entries with {len(self.snomed_lookup)} SNOMED mappings")
