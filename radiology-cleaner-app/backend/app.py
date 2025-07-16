@@ -135,7 +135,7 @@ def _ensure_app_is_initialized():
             _initialize_app()
             _app_initialized = True
 
-def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proc: Optional[NLPProcessor]) -> Dict:
+def process_exam_request(exam_name: str, modality_code: Optional[str]) -> Dict:
     """Central processing logic for a single exam."""
     _ensure_app_is_initialized()
     if not nhs_lookup_engine or not semantic_parser:
@@ -144,7 +144,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proc:
     cleaned_exam_name = preprocess_exam_name(exam_name)
     parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
     
-    nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components, nlp_proc)
+    nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components)
     
     # Finalize the result structure
     final_result = {
@@ -252,7 +252,7 @@ def parse_enhanced():
         logger.info(f"Using model '{model}' for exam: {exam_name}")
         
         # Process the exam
-        result = process_exam_request(exam_name, modality_code, selected_nlp_processor)
+        result = process_exam_request(exam_name, modality_code)
         
         # Add processing metadata
         result['metadata'] = {

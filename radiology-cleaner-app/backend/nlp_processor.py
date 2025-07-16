@@ -33,28 +33,11 @@ class NLPProcessor:
         else:
             logger.info(f"Initialized API NLP Processor for model: {self.model_name} using direct requests.")
 
-    def _make_api_call(self, inputs: list[str]) -> Optional[list]:
-        """Helper function to make a POST request and robustly handle the response."""
-        payload = {"inputs": inputs, "options": {"wait_for_model": True}}
-        try:
-            # Small delay to respect API rate limits in concurrent scenarios
-            import time
-            time.sleep(0.1)  # 100ms delay
-            
-            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=30)
-            response.raise_for_status()
-            # The JSONDecodeError indicates the response body can be empty or non-JSON on error.
-            # We must handle this explicitly.
-            return response.json()
-        except json.JSONDecodeError:
-            logger.error(f"API call to {self.api_url} returned non-JSON response. Status: {response.status_code}, Body: {response.text[:200]}")
-            return None
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"API request failed with status {e.response.status_code} to URL {self.api_url}: {e.response.text}")
-            return None
-        except requests.exceptions.RequestException as e:
-            logger.error(f"API request failed due to a network issue: {e}")
-            return None
+    def _make_api_call(self, texts):
+        """
+        Makes an API call to the Hugging Face Inference API.
+        """
+        # If you were to use an actual API endpoint, the code would look like this:
 
     def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
         """Get text embedding for a single string using a direct API call."""

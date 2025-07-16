@@ -149,10 +149,10 @@ class NHSLookupEngine:
             'technique': extracted_input_components.get('technique', []),
         }
 
-    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
+    def standardize_exam(self, input_exam: str, extracted_input_components: Dict) -> Dict:
         """Main method to standardize an exam."""
         best_match, highest_confidence = None, 0.0
-        nlp_proc = custom_nlp_processor or self.nlp_processor
+        nlp_proc = self.nlp_processor
 
         if not nlp_proc or not nlp_proc.is_available():
             return {'error': 'NLP Processor not available', 'confidence': 0.0}
