@@ -88,17 +88,17 @@ def _initialize_app():
     nhs_json_path = os.path.join(base_dir, 'NHS.json')
     
     nhs_authority = {}
-        if os.path.exists(nhs_json_path):
-            with open(nhs_json_path, 'r', encoding='utf-8') as f: 
-                nhs_data = json.load(f)
-            for item in nhs_data:
-                # MODIFICATION: Use the new, clean key name here
-                if clean_name := item.get('clean_name'): 
-                    nhs_authority[clean_name] = item
-            logger.info(f"Loaded {len(nhs_authority)} NHS reference entries")
-        else: 
-            logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
-            sys.exit(1)
+    if os.path.exists(nhs_json_path):
+        with open(nhs_json_path, 'r', encoding='utf-8') as f: 
+            nhs_data = json.load(f)
+        for item in nhs_data:
+            # MODIFICATION: Use the new, clean key name here
+            if clean_name := item.get('clean_name'): 
+                nhs_authority[clean_name] = item
+        logger.info(f"Loaded {len(nhs_authority)} NHS reference entries")
+    else: 
+        logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
+        sys.exit(1)
 
 
     abbreviation_expander = AbbreviationExpander()
