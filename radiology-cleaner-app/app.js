@@ -1,46 +1,31 @@
 window.addEventListener('DOMContentLoaded', function() {
     // --- DYNAMIC API CONFIGURATION ---
-    // Environment-aware API URL detection
     function detectApiUrls() {
         const hostname = window.location.hostname;
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-        const isProduction = hostname.includes('radiology-cleaner-frontend-prod') || hostname.includes('hnzradtools') || hostname.includes('pages.dev');
+        const isProduction = hostname.includes('radiology-cleaner-frontend-prod');
         const isStaging = hostname.includes('radiology-cleaner-frontend-staging');
         
-        // API base URLs - Use relative /api/ for static sites (proxied by Render)
         const apiConfigs = {
-            local: {
-                base: 'http://localhost:10000',
-                mode: 'LOCAL DEVELOPMENT'
-            },
-            staging: {
-                base: '/api', // Proxied to backend by Render static site
-                mode: 'STAGING (Static)'
-            },
-            production: {
-                base: 'https://radiology-api-staging.onrender.com', // Direct API for Cloudflare
-                mode: 'PRODUCTION (Direct)'
-            },
-            fallback: {
-                base: 'https://radiology-api-staging.onrender.com',
-                mode: 'STAGING (Direct)'
-            }
+            local: { base: 'http://localhost:10000', mode: 'LOCAL DEVELOPMENT' },
+            staging: { base: '/api', mode: 'STAGING (Proxied)' },
+            production: { base: '/api', mode: 'PRODUCTION (Proxied)' },
+            fallback: { base: 'https://radiology-api-staging.onrender.com', mode: 'STAGING (Direct)' }
         };
         
         let config;
-        if (isLocalhost) {
-            config = apiConfigs.local;
-        } else if (isProduction) {
-            config = apiConfigs.production;
-        } else if (isStaging) {
-            config = apiConfigs.staging;
-        } else {
-            config = apiConfigs.fallback;
-        }
+        if (isLocalhost) config = apiConfigs.local;
+        else if (isProduction) config = apiConfigs.production;
+        else if (isStaging) config = apiConfigs.staging;
+        else config = apiConfigs.fallback;
         
+        // CORRECTED: Construct the final URLs without adding an extra '/api'.
+        // The base already contains '/api' when running on Render.
         return {
-            API_URL: `${config.base}/api/parse_enhanced`,
-            BATCH_API_URL: `${config.base}/api/parse_batch`,
+            API_URL: `${config.base}/parse_enhanced`,
+            BATCH_API_URL: `${config.base}/parse_batch`,
+            HEALTH_URL: `${config.base}/health`,
+            SANITY_TEST_URL: `${config.base}/process_sanity_test`,
             mode: config.mode,
             baseUrl: config.base
         };
@@ -51,30 +36,18 @@ window.addEventListener('DOMContentLoaded', function() {
     const BATCH_API_URL = apiConfig.BATCH_API_URL;
     
     console.log(`Frontend running in ${apiConfig.mode} mode`);
-    console.log(`API endpoints: ${apiConfig.baseUrl}`);
+    console.log(`API base URL: ${apiConfig.baseUrl}`);
     
-    // Global model selection state
-    let currentModel = 'default';
-    
-    // Test API connectivity on page load
     async function testApiConnectivity() {
         try {
-            const response = await fetch(`${apiConfig.baseUrl}/api/health`, { 
-                method: 'GET',
-                timeout: 5000 
-            });
-            if (response.ok) {
-                console.log('✓ API connectivity test passed');
-            } else {
-                console.warn('⚠ API health check returned non-200 status:', response.status);
-            }
+            // CORRECTED: Use the full, pre-constructed URL.
+            const response = await fetch(apiConfig.HEALTH_URL, { method: 'GET', timeout: 5000 });
+            if (response.ok) console.log('✓ API connectivity test passed');
+            else console.warn('⚠ API health check failed:', response.status);
         } catch (error) {
             console.error('✗ API connectivity test failed:', error);
-            console.error(`Check if backend is deployed at: ${apiConfig.baseUrl}`);
         }
     }
-    
-    // Test API on page load
     testApiConnectivity();
 
     // --- STATE ---
@@ -704,10 +677,10 @@ window.addEventListener('DOMContentLoaded', function() {
             updateStatusMessage(`🧪 Calling backend sanity test endpoint with model: '${currentModel}'...`);
 
             // Call the correct backend endpoint
-            const response = await fetch(`${apiConfig.baseUrl}/api/process_sanity_test`, {
+            const response = await fetch(apiConfig.SANITY_TEST_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: currentModel }) // Send the selected model
+                body: JSON.stringify({ model: currentModel })
             });
             
             progressFill.style.width = '75%';
