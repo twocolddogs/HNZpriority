@@ -33,7 +33,7 @@ class NLPProcessor:
         else:
             logger.info(f"Initialized API NLP Processor for model: {self.model_name} using direct requests.")
 
-	def _make_api_call(self, inputs: list[str]) -> Optional[list]:
+    def _make_api_call(self, inputs: list[str]) -> Optional[list]:
         """Helper function to make a POST request and robustly handle the response."""
         payload = {"inputs": inputs, "options": {"wait_for_model": True}}
         try:
@@ -56,18 +56,6 @@ class NLPProcessor:
             logger.error(f"API request failed due to a network issue: {e}")
             return None
 
-    except json.JSONDecodeError:
-        # This occurs if the response body is empty or not valid JSON
-        logger.error(f"API call to {self.api_url} returned non-JSON response. Status: {response.status_code}, Body: {response.text[:200]}")
-        return None
-    except requests.exceptions.HTTPError as e:
-        # This handles non-2xx responses (e.g., 401 Unauthorized, 429 Rate Limit, 503 Service Unavailable)
-        logger.error(f"API request failed with status {e.response.status_code} to URL {self.api_url}: {e.response.text}")
-        return None
-    except requests.exceptions.RequestException as e:
-        # This handles network-level issues (e.g., DNS failure, connection timeout)
-        logger.error(f"API request failed due to a network or connection issue: {e}", exc_info=True)
-        return None
     def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
         """Get text embedding for a single string using a direct API call."""
         if not self.is_available() or not text or not text.strip():
