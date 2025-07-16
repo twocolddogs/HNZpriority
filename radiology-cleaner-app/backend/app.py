@@ -267,7 +267,7 @@ def parse_enhanced():
     except Exception as e:
         logger.error(f"Parse enhanced endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
-		
+        
 
 @app.route('/parse_batch', methods=['POST'])
 def parse_batch():

@@ -83,11 +83,11 @@ class ExamPreprocessor:
         if '^' in cleaned:
             # Take everything after the first caret (assumes format: "prefix^actual_content")
             cleaned = cleaned.split('^', 1)[1].strip()
-			
-			# --- FIX: Replace square brackets and parentheses with spaces ---
-        	cleaned = re.sub(r'[\[\]()]', ' ', cleaned)
-			
-		if '&' in cleaned:
+        
+        # --- FIX: Replace square brackets and parentheses with spaces ---
+        cleaned = re.sub(r'[\[\]()]', ' ', cleaned)
+        
+        if '&' in cleaned:
             cleaned = cleaned.replace('&', ' and ')
         
         # Replace forward slashes with spaces for better word tokenization

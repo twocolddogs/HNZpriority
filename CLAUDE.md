@@ -71,6 +71,14 @@ Both applications are static web applications with no build process. They run di
 - Use `python3` for all scripts, testing, and development commands
 - Examples: `python3 -m http.server`, `python3 script.py`, `python3 -c "..."`
 
+### Radiology Cleaner App Commands
+
+#### buildit
+Triggers deployment of the radiology cleaner app backend to Render.com:
+```bash
+curl -X POST "https://api.render.com/deploy/srv-d1mss0ripnbc7398djh0?key=AY2l21TBDdU"
+```
+
 ### HNZ Radiology Triage Tool
 Since there's no package.json, this project doesn't use npm/node build tools. To develop locally:
 - Serve files from root directory using a local web server (e.g., `python3 -m http.server` or VS Code Live Server)

@@ -155,12 +155,12 @@ class NHSLookupEngine:
         if not nlp_proc or not nlp_proc.is_available():
             return {'error': 'NLP Processor not available', 'confidence': 0.0}
 
-		model_name = getattr(nlp_proc, 'model_name', 'unknown')
+        model_name = getattr(nlp_proc, 'model_name', 'unknown')
         if model_name not in self._embeddings_cache:
             logger.info(f"Embeddings for model '{model_name}' not found in cache. Pre-computing now...")
             self._precompute_embeddings(custom_nlp_processor=nlp_proc)
             self._embeddings_cache[model_name] = True # Mark as cached
-			
+        
         input_embedding = nlp_proc.get_text_embedding(input_exam)
         if input_embedding is None:
             return {'error': 'Could not generate input embedding', 'confidence': 0.0}
