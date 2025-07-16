@@ -216,6 +216,8 @@ class NHSLookupEngine:
                 input_lat = input_lat[0] if input_lat else None
                 
             nhs_lat = nhs_components.get('laterality')
+            if isinstance(nhs_lat, list):
+                nhs_lat = nhs_lat[0] if nhs_lat else None
             
             if input_lat and nhs_lat:
                 if input_lat.lower() != nhs_lat.lower():
@@ -256,6 +258,8 @@ class NHSLookupEngine:
                 input_contrast = input_contrast[0] if input_contrast else None
                 
             nhs_contrast = nhs_components.get('contrast')
+            if isinstance(nhs_contrast, list):
+                nhs_contrast = nhs_contrast[0] if nhs_contrast else None
             
             # Normalize contrast values for comparison
             input_contrast_norm = input_contrast.lower() if input_contrast else None
