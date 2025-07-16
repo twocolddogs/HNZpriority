@@ -41,7 +41,7 @@ class NLPProcessor:
             import time
             time.sleep(0.1)  # 100ms delay
             
-            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=30)
+            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=300)
             response.raise_for_status()
             # The JSONDecodeError indicates the response body can be empty or non-JSON on error.
             # We must handle this explicitly.
@@ -69,7 +69,7 @@ class NLPProcessor:
         logger.error(f"Unexpected API response format for single text: {result}")
         return None
 
-    def batch_get_embeddings(self, texts: List[str], chunk_size: int = 50) -> List[Optional[np.ndarray]]:
+    def batch_get_embeddings(self, texts: List[str], chunk_size: int = 100) -> List[Optional[np.ndarray]]:
         """Get embeddings for multiple texts using chunked batch API calls."""
         if not self.is_available() or not texts:
             return []
