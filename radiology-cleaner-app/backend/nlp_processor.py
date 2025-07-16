@@ -69,8 +69,14 @@ class NLPProcessor:
         logger.error(f"Unexpected API response format for single text: {result}")
         return None
 
-    def batch_get_embeddings(self, texts: List[str], chunk_size: int = 100) -> List[Optional[np.ndarray]]:
-        """Get embeddings for multiple texts using chunked batch API calls."""
+    def batch_get_embeddings(self, texts: List[str], chunk_size: int = 50, chunk_delay: float = 2.0) -> List[Optional[np.ndarray]]:
+        """Get embeddings for multiple texts using chunked batch API calls.
+        
+        Args:
+            texts: List of text strings to get embeddings for
+            chunk_size: Number of texts to process in each API call (default: 50)
+            chunk_delay: Delay in seconds between chunks (default: 2.0)
+        """
         if not self.is_available() or not texts:
             return []
 
@@ -80,15 +86,24 @@ class NLPProcessor:
         # Process in chunks to avoid API limits and timeouts
         for i in range(0, len(stripped_texts), chunk_size):
             chunk = stripped_texts[i:i + chunk_size]
-            logger.info(f"Processing chunk {i//chunk_size + 1}/{(len(stripped_texts) + chunk_size - 1)//chunk_size} ({len(chunk)} items)")
+            chunk_num = i//chunk_size + 1
+            total_chunks = (len(stripped_texts) + chunk_size - 1)//chunk_size
+            
+            logger.info(f"Processing chunk {chunk_num}/{total_chunks} ({len(chunk)} items)")
             
             results = self._make_api_call(chunk)
             
             if isinstance(results, list) and all(isinstance(r, list) for r in results):
                 all_results.extend([np.array(emb) for emb in results])
             else:
-                logger.error(f"Unexpected batch API response format for chunk {i//chunk_size + 1}. Type: {type(results)}, Results: {results}")
+                logger.error(f"Unexpected batch API response format for chunk {chunk_num}. Type: {type(results)}, Results: {results}")
                 all_results.extend([None] * len(chunk))
+            
+            # Add delay between chunks (except for the last chunk)
+            if chunk_num < total_chunks and chunk_delay > 0:
+                import time
+                logger.info(f"Waiting {chunk_delay}s before processing next chunk...")
+                time.sleep(chunk_delay)
         
         return all_results
 
