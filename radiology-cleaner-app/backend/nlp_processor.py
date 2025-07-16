@@ -33,12 +33,44 @@ class NLPProcessor:
         else:
             logger.info(f"Initialized API NLP Processor for model: {self.model_name} using direct requests.")
 
-    def _make_api_call(self, texts):
-        """
-        Makes an API call to the Hugging Face Inference API.
-        """
-        # If you were to use an actual API endpoint, the code would look like this:
+	def _make_api_call(self, texts: List[str]) -> Optional[List]:
+    """
+    Makes a POST request to the Hugging Face Inference API and robustly handles the response.
+    """
+    payload = {
+        "inputs": texts,
+        "options": {
+            "wait_for_model": True  # Ensures the API waits for the model to be ready
+        }
+    }
+    
+    try:
+        response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=30)
+        
+        # Raise an exception for bad status codes (4xx or 5xx)
+        response.raise_for_status()
+        
+        result_data = response.json()
+        
+        # CRITICAL FIX: Check for API-level errors within a successful (200 OK) JSON response
+        if isinstance(result_data, dict) and 'error' in result_data:
+            logger.error(f"Hugging Face API returned an error: {result_data['error']}")
+            return None
 
+        return result_data
+
+    except json.JSONDecodeError:
+        # This occurs if the response body is empty or not valid JSON
+        logger.error(f"API call to {self.api_url} returned non-JSON response. Status: {response.status_code}, Body: {response.text[:200]}")
+        return None
+    except requests.exceptions.HTTPError as e:
+        # This handles non-2xx responses (e.g., 401 Unauthorized, 429 Rate Limit, 503 Service Unavailable)
+        logger.error(f"API request failed with status {e.response.status_code} to URL {self.api_url}: {e.response.text}")
+        return None
+    except requests.exceptions.RequestException as e:
+        # This handles network-level issues (e.g., DNS failure, connection timeout)
+        logger.error(f"API request failed due to a network or connection issue: {e}", exc_info=True)
+        return None
     def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
         """Get text embedding for a single string using a direct API call."""
         if not self.is_available() or not text or not text.strip():

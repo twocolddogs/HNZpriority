@@ -659,161 +659,80 @@ window.addEventListener('DOMContentLoaded', function() {
 
         const reader = new FileReader();
         reader.onload = async function(e) {
-            try {
-                const codes = JSON.parse(e.target.result);
-                if (!Array.isArray(codes) || codes.length === 0) {
-                    alert('JSON file is empty or not in the correct array format.');
-                    progressBar.style.display = 'none';
-                    // Show upload interface again on error
-                    showUploadInterface();
-                    return;
-                }
+  		    try {
+        		const codes = JSON.parse(e.target.result);
+        		if (!Array.isArray(codes) || codes.length === 0) {
+            		alert('JSON file is empty or not in the correct array format.');
+            		progressBar.style.display = 'none';
+            		showUploadInterface();
+            		return;
+        		}
 
-                console.log(`Processing ${codes.length} exam records...`);
-                updateStatusMessage(`📁 Loaded ${codes.length} exam records from ${file.name}. Starting processing...`);
-                
-                // Use batch processing for larger files (>50 records) or for efficiency
-                if (codes.length > 50) {
-                    await processBatch(codes);
-                } else {
-                    // Use batch processing even for smaller files for consistency
-                    await processBatch(codes);
-                }
-                
-                runAnalysis(allMappings);
+        		console.log(`Processing ${codes.length} exam records...`);
+        		updateStatusMessage(`📁 Loaded ${codes.length} exam records from ${file.name}. Starting processing...`);
+        
+				
+        		await processBatch(codes);
+        
+        		runAnalysis(allMappings);
 
-            } catch (error) {
-                alert('Error processing file: ' + error.message);
-                progressBar.style.display = 'none';
-                // Show upload interface again on error
-                showUploadInterface();
-            }
-        };
+   			 } catch (error) {
+        		alert('Error processing file: ' + error.message);
+        		progressBar.style.display = 'none';
+        		showUploadInterface();
+    		 }
+};
         
         reader.readAsText(file);
     }
 
+
+
     async function runSanityTest() {
         console.log('🧪 Sanity test button clicked - starting test...');
-        console.log('Current window location:', window.location.href);
-        console.log('API config:', apiConfig);
-        
+        const button = document.getElementById('sanityTestBtn');
+
         try {
-            // Update button state
-            const button = document.getElementById('sanityTestBtn');
-            const originalText = button.innerHTML;
-            button.disabled = true;
-            button.innerHTML = '⏳ Loading Test Data...';
-            console.log('Button state updated, attempting to fetch test data...');
-            
-            // Fetch the sanity test file - try multiple paths for different deployments
-            let response;
-            const possiblePaths = ['./sanity_test.json', '/sanity_test.json', 'sanity_test.json'];
-            let lastError;
-            
-            for (const path of possiblePaths) {
-                try {
-                    console.log(`Trying to fetch sanity test file from: ${path}`);
-                    response = await fetch(path);
-                    if (response.ok) {
-                        console.log(`Successfully fetched from: ${path}`);
-                        break;
-                    } else {
-                        console.warn(`Failed to fetch from ${path}: ${response.status} ${response.statusText}`);
-                        lastError = new Error(`Failed to load from ${path}: ${response.statusText}`);
-                    }
-                } catch (error) {
-                    console.warn(`Error fetching from ${path}:`, error);
-                    lastError = error;
-                }
-            }
-            
-            if (!response || !response.ok) {
-                throw lastError || new Error('Failed to load sanity test file from all attempted paths');
-            }
-            
-            const sanityData = await response.json();
-            console.log(`Loaded sanity test file with ${sanityData.length} test cases`);
-            
-            // Hide upload interface during processing (same as file upload)
+            // UI updates for processing
             hideUploadInterface();
-            
-            // MATCH FILE UPLOAD BEHAVIOR - Set up UI exactly like processFile()
-            fileInfo.innerHTML = `
-                <div class="file-details">
-                    <h3>🧪 Sanity Test Dataset</h3>
-                    <p><strong>Test Cases:</strong> ${sanityData.length}</p>
-                    <p><strong>Purpose:</strong> Engine performance verification</p>
-                </div>
-            `;
-            fileInfo.style.display = 'block';
-            
-            // Reset progress bar and show it
-            progressBar.style.display = 'block';
-            progressFill.style.width = '0%';
-            
-            // Hide results section initially (like file upload)
-            resultsSection.style.display = 'none';
-            
-            // Reset global state (like file upload)
-            allMappings = [];
-            summaryData = null;
-            
-            // Clear any existing status message (like file upload)
-            const existingStatus = document.getElementById('statusMessage');
-            if (existingStatus) existingStatus.style.display = 'none';
-            
+            button.disabled = true;
             button.innerHTML = '🔄 Processing Test Cases...';
+            fileInfo.innerHTML = `<strong>Test running:</strong> Verifying engine performance...`;
+            fileInfo.style.display = 'block';
+            progressBar.style.display = 'block';
+            progressFill.style.width = '25%';
+            updateStatusMessage(`🧪 Calling backend sanity test endpoint with model: '${currentModel}'...`);
+
+            // Call the correct backend endpoint
+            const response = await fetch(`${apiConfig.baseUrl}/process_sanity_test`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: currentModel }) // Send the selected model
+            });
             
-            console.log(`Starting to process ${sanityData.length} sanity test cases...`);
-            updateStatusMessage(`🧪 Starting sanity test with ${sanityData.length} test cases...`);
-            
-            // Validate data structure (same validation as file upload)
-            if (!Array.isArray(sanityData) || sanityData.length === 0) {
-                // Show upload interface again on error
-                showUploadInterface();
-                throw new Error('Sanity test data is empty or not in the correct array format.');
+            progressFill.style.width = '75%';
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API returned status ${response.status}: ${errorText}`);
             }
-            
-            // Process the sanity test data using the SAME logic as file upload
-            // Use batch processing for consistency (same as processFile does)
-            if (sanityData.length > 50) {
-                await processBatch(sanityData);
-            } else {
-                // Use batch processing even for smaller files for consistency
-                await processBatch(sanityData);
-            }
-            
+
+            allMappings = await response.json();
             console.log(`Completed processing. Generated ${allMappings.length} results.`);
             
-            // Run analysis on the results (uses global allMappings) - SAME AS FILE UPLOAD
+            progressFill.style.width = '100%';
+            updateStatusMessage(`✅ Sanity test complete!`);
+            
+            // Run analysis on the results
             runAnalysis(allMappings);
-            
-            // Restore button state
-            button.disabled = false;
-            button.innerHTML = originalText;
-            
-            console.log('Sanity test completed successfully');
-            
+
         } catch (error) {
             console.error('Sanity test failed:', error);
-            
-            // Show error in UI
-            fileInfo.innerHTML = `
-                <div class="file-details error">
-                    <h3>❌ Sanity Test Failed</h3>
-                    <p><strong>Error:</strong> ${error.message}</p>
-                </div>
-            `;
-            
-            // Hide progress bar on error (like file upload)
+            fileInfo.innerHTML = `<div class="file-details error"><h3>❌ Sanity Test Failed</h3><p><strong>Error:</strong> ${error.message}</p></div>`;
             progressBar.style.display = 'none';
-            
-            // Show upload interface again on error
             showUploadInterface();
-            
+        } finally {
             // Restore button state
-            const button = document.getElementById('sanityTestBtn');
             button.disabled = false;
             button.innerHTML = '🧪 Run Sanity Test';
         }

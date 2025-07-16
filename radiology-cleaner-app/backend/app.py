@@ -135,16 +135,18 @@ def _ensure_app_is_initialized():
             _initialize_app()
             _app_initialized = True
 
-def process_exam_request(exam_name: str, modality_code: Optional[str]) -> Dict:
+def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor) -> Dict:
     """Central processing logic for a single exam."""
     _ensure_app_is_initialized()
     if not nhs_lookup_engine or not semantic_parser:
         return {'error': 'Core components not initialized'}
 
     cleaned_exam_name = preprocess_exam_name(exam_name)
+    # The parser might not need the NLP processor, but the lookup engine definitely does
     parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
     
-    nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components)
+    # PASS THE PROCESSOR TO THE LOOKUP ENGINE
+    nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components, custom_nlp_processor=nlp_processor)
     
     # Finalize the result structure
     final_result = {
@@ -251,8 +253,8 @@ def parse_enhanced():
         
         logger.info(f"Using model '{model}' for exam: {exam_name}")
         
-        # Process the exam
-        result = process_exam_request(exam_name, modality_code)
+        # USE THE NEW SIGNATURE
+        result = process_exam_request(exam_name, modality_code, selected_nlp_processor)
         
         # Add processing metadata
         result['metadata'] = {
@@ -265,14 +267,98 @@ def parse_enhanced():
     except Exception as e:
         logger.error(f"Parse enhanced endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
+		
+
+@app.route('/parse_batch', methods=['POST'])
+def parse_batch():
+    """
+    Processes a batch of exam names concurrently for high performance.
+    Accepts a JSON payload with a list of exams and an optional model key.
+    """
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    
+    try:
+        data = request.json
+        if not data or 'exams' not in data:
+            return jsonify({"error": "Missing 'exams' list in request data"}), 400
+        
+        exams_to_process = data['exams']
+        model_key = data.get('model', 'default')
+        
+        logger.info(f"Starting batch processing for {len(exams_to_process)} exams using model: '{model_key}'")
+
+        selected_nlp_processor = _get_nlp_processor(model_key)
+        if not selected_nlp_processor:
+            return jsonify({"error": f"Model '{model_key}' not available"}), 400
+
+        results = []
+        errors = []
+        
+        # Use a ThreadPoolExecutor to process exams in parallel
+        # This is ideal for I/O-bound tasks like making API calls
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            # Map each future to its original exam for better error tracking
+            future_to_exam = {
+                executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor): exam 
+                for exam in exams_to_process
+            }
+            
+            for future in as_completed(future_to_exam):
+                original_exam = future_to_exam[future]
+                try:
+                    # Get the result from the future
+                    processed_result = future.result()
+                    results.append({
+                        "input": original_exam,
+                        "output": processed_result
+                    })
+                except Exception as e:
+                    logger.error(f"Error processing exam '{original_exam.get('exam_name')}': {e}", exc_info=True)
+                    errors.append({
+                        "original_exam": original_exam,
+                        "error": str(e)
+                    })
+
+        processing_time_ms = int((time.time() - start_time) * 1000)
+        logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {len(results)}, Errors: {len(errors)}")
+
+        return jsonify({
+            "results": results,
+            "errors": errors,
+            "processing_stats": {
+                "total_processed": len(exams_to_process),
+                "successful": len(results),
+                "errors": len(errors),
+                "processing_time_ms": processing_time_ms,
+                "model_used": model_key
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Batch endpoint failed with a critical error: {e}", exc_info=True)
+        return jsonify({"error": "An internal server error occurred during batch processing"}), 500
 
 @app.route('/process_sanity_test', methods=['POST'])
 def process_sanity_test_endpoint():
-    """Processes the entire sanity_test.json file and returns the structured output."""
+    """
+    Processes the entire sanity_test.json file using a user-specified model,
+    or the default model if none is provided.
+    """
     _ensure_app_is_initialized()
-    logger.info("Processing sanity_test.json...")
     
     try:
+        # Check if the user sent a JSON body with a model preference
+        data = request.json or {}
+        model_key = data.get('model', 'default') # Default to 'default' if no model is specified
+        
+        logger.info(f"Processing sanity_test.json using model: '{model_key}'")
+
+        # Get the NLP processor corresponding to the user's choice
+        selected_nlp_processor = _get_nlp_processor(model_key)
+        if not selected_nlp_processor:
+            return jsonify({"error": f"Model '{model_key}' not available"}), 400
+
         # Load sanity_test.json from the same directory
         base_dir = os.path.dirname(os.path.abspath(__file__))
         sanity_test_path = os.path.join(base_dir, 'sanity_test.json')
@@ -286,13 +372,21 @@ def process_sanity_test_endpoint():
             modality_code = exam.get("MODALITY_CODE")
             
             if exam_name:
-                processed_result = process_exam_request(exam_name, modality_code, nlp_processor)
+                # Use the SELECTED processor for the test
+                processed_result = process_exam_request(exam_name, modality_code, selected_nlp_processor)
+                
                 # Add original data source info back
                 processed_result['data_source'] = exam.get("DATA_SOURCE")
                 processed_result['exam_code'] = exam.get("EXAM_CODE")
                 results.append(processed_result)
         
         return jsonify(results)
+
+    except FileNotFoundError:
+        return jsonify({"error": "sanity_test.json not found"}), 404
+    except Exception as e:
+        logger.error(f"Error processing sanity test: {e}", exc_info=True)
+        return jsonify({"error": "Internal Server Error"}), 500
 
     except FileNotFoundError:
         return jsonify({"error": "sanity_test.json not found"}), 404
