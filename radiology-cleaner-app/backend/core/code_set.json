@@ -4326,7 +4326,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammo guided core biopsy breast Both"
+    "Clean Name": "XR Mammo guided core biopsy breast Both"
   },
   {
     "SNOMED CT \nConcept-ID": 305011000000108,
@@ -4335,7 +4335,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammo guided core biopsy breast Lt"
+    "Clean Name": "XR Mammo guided core biopsy breast Lt"
   },
   {
     "SNOMED CT \nConcept-ID": 305011000000108,
@@ -4344,7 +4344,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammo guided core biopsy breast Rt"
+    "Clean Name": "XR Mammo guided core biopsy breast Rt"
   },
   {
     "SNOMED CT \nConcept-ID": 428907005,
@@ -4353,7 +4353,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "N",
     "Interventional Procedure": "Y",
-    "Clean Name": "MG Mammo guided guidewire Loc breast B"
+    "Clean Name": "XR Mammo guided guidewire Loc breast B"
   },
   {
     "SNOMED CT \nConcept-ID": 428907005,
@@ -4362,7 +4362,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "N",
     "Interventional Procedure": "Y",
-    "Clean Name": "MG Mammo guided guidewire Loc breast Lt"
+    "Clean Name": "XR Mammo guided guidewire Loc breast Lt"
   },
   {
     "SNOMED CT \nConcept-ID": 428907005,
@@ -4371,7 +4371,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "N",
     "Interventional Procedure": "Y",
-    "Clean Name": "MG Mammo guided guidewire Loc breast Rt"
+    "Clean Name": "XR Mammo guided guidewire Loc breast Rt"
   },
   {
     "SNOMED CT \nConcept-ID": 241190000,
@@ -4398,7 +4398,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram magnification view Both"
+    "Clean Name": "XR Mammogram magnification view Both"
   },
   {
     "SNOMED CT \nConcept-ID": 241058008,
@@ -4407,7 +4407,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram magnification view Lt"
+    "Clean Name": "XR Mammogram magnification view Lt"
   },
   {
     "SNOMED CT \nConcept-ID": 241058008,
@@ -4416,7 +4416,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram magnification view Rt"
+    "Clean Name": "XR Mammogram magnification view Rt"
   },
   {
     "SNOMED CT \nConcept-ID": 306381000000106,
@@ -4902,7 +4902,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammary ductogram Both"
+    "Clean Name": "XR Mammary ductogram Both"
   },
   {
     "SNOMED CT \nConcept-ID": 420131003,
@@ -4911,7 +4911,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammary ductogram Lt"
+    "Clean Name": "XR Mammary ductogram Lt"
   },
   {
     "SNOMED CT \nConcept-ID": 420131003,
@@ -4920,7 +4920,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammary ductogram Rt"
+    "Clean Name": "XR Mammary ductogram Rt"
   },
   {
     "SNOMED CT \nConcept-ID": 432039002,
@@ -30057,7 +30057,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram compression view Lt"
+    "Clean Name": "XR Mammogram compression view Lt"
   },
   {
     "SNOMED CT \nConcept-ID": 439324009,
@@ -30066,7 +30066,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram compression view Rt"
+    "Clean Name": "XR Mammogram compression view Rt"
   },
   {
     "SNOMED CT \nConcept-ID": 439324009,
@@ -30075,7 +30075,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram compression view Both"
+    "Clean Name": "XR Mammogram compression view Both"
   },
   {
     "SNOMED CT \nConcept-ID": 702585002,
@@ -32280,7 +32280,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram Lt"
+    "Clean Name": "XR Mammogram Lt"
   },
   {
     "SNOMED CT \nConcept-ID": 566571000119105,
@@ -32289,7 +32289,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram Rt"
+    "Clean Name": "XR Mammogram Rt"
   },
   {
     "SNOMED CT \nConcept-ID": 43204002,
@@ -32298,7 +32298,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram Both"
+    "Clean Name": "XR Mammogram Both"
   },
   {
     "SNOMED CT \nConcept-ID": 392531000119105,
@@ -33162,7 +33162,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram excised tissue breast Left"
+    "Clean Name": "XR Mammogram excised tissue breast Left"
   },
   {
     "SNOMED CT \nConcept-ID": 491141000119108,
@@ -33171,7 +33171,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram excised tissue breast Right"
+    "Clean Name": "XR Mammogram excised tissue breast Right"
   },
   {
     "SNOMED CT \nConcept-ID": 1094061000000105,
@@ -33180,7 +33180,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram excised tissue breast Both"
+    "Clean Name": "XR Mammogram excised tissue breast Both"
   },
   {
     "SNOMED CT \nConcept-ID": 744880001,
@@ -37374,7 +37374,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "N",
     "Interventional Procedure": "Y",
-    "Clean Name": "MG Mammo guided aspiration breast Rt"
+    "Clean Name": "XR Mammo guided aspiration breast Rt"
   },
   {
     "SNOMED CT \nConcept-ID": 5971000087103,
@@ -37383,7 +37383,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "N",
     "Interventional Procedure": "Y",
-    "Clean Name": "MG Mammo guided aspiration breast Lt"
+    "Clean Name": "XR Mammo guided aspiration breast Lt"
   },
   {
     "SNOMED CT \nConcept-ID": 12641000087107,
@@ -37509,7 +37509,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "N",
     "Interventional Procedure": "Y",
-    "Clean Name": "MG Mammo guided aspiration breast Both"
+    "Clean Name": "XR Mammo guided aspiration breast Both"
   },
   {
     "SNOMED CT \nConcept-ID": 782657007,
@@ -42711,7 +42711,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram lateral view Lt"
+    "Clean Name": "XR Mammogram lateral view Lt"
   },
   {
     "SNOMED CT \nConcept-ID": 1333931003,
@@ -42828,7 +42828,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram lateral view Both"
+    "Clean Name": "XR Mammogram lateral view Both"
   },
   {
     "SNOMED CT \nConcept-ID": 1333935007,
@@ -42864,7 +42864,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram guided FNA breast Lt"
+    "Clean Name": "XR Mammogram guided FNA breast Lt"
   },
   {
     "SNOMED CT \nConcept-ID": 1334018004,
@@ -42999,7 +42999,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram guided FNA breast Both"
+    "Clean Name": "XR Mammogram guided FNA breast Both"
   },
   {
     "SNOMED CT \nConcept-ID": 1333933000,
@@ -43233,7 +43233,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram guided FNA breast Rt"
+    "Clean Name": "XR Mammogram guided FNA breast Rt"
   },
   {
     "SNOMED CT \nConcept-ID": 1293035006,
@@ -43512,7 +43512,7 @@
     "SNOMED FSN of Laterality": "Right and left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram extended view Both"
+    "Clean Name": "XR Mammogram extended view Both"
   },
   {
     "SNOMED CT \nConcept-ID": 1290520001,
@@ -43575,7 +43575,7 @@
     "SNOMED FSN of Laterality": "Left (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram extended view Lt"
+    "Clean Name": "XR Mammogram extended view Lt"
   },
   {
     "SNOMED CT \nConcept-ID": 1333894005,
@@ -43602,7 +43602,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram extended view Rt"
+    "Clean Name": "XR Mammogram extended view Rt"
   },
   {
     "SNOMED CT \nConcept-ID": 1290410009,
@@ -43683,7 +43683,7 @@
     "SNOMED FSN of Laterality": "Right (qualifier value)",
     "Diagnostic procedure": "Y",
     "Interventional Procedure": "N",
-    "Clean Name": "MG Mammogram lateral view Rt"
+    "Clean Name": "XR Mammogram lateral view Rt"
   },
   {
     "SNOMED CT \nConcept-ID": 1333936008,
