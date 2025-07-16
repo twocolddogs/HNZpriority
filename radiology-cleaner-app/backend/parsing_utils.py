@@ -17,7 +17,7 @@ class AbbreviationExpander:
             'iam': 'internal auditory meatus', 'tmj': 'temporomandibular joint',
             # Modality
             'cta': 'ct angiography', 'mra': 'mr angiography', 'ctpa': 'ct pulmonary angiography',
-            'cxr': 'chest xray', 'axr': 'abdominal xray', 'kub': 'kidneys ureters bladder',
+            'cxr': 'chest xray', 'axr': 'abdominal xray', 'kub': 'kidneys ureters and bladder',
             'mammo': 'mammogram',
             # Contrast
             'w': 'with', 'wo': 'without', 'gad': 'gadolinium', 'iv': 'intravenous',
@@ -50,6 +50,9 @@ class AbbreviationExpander:
             'vcug': 'voiding cystourethrography', 'mcug': 'micturating cystourethrography',
             'hssg': 'hysterosalpingography', 'hsg': 'hysterosalpingography',
             'pet-ct': 'positron emission tomography ct',
+            'cap': 'chest abdomen and pelvis',
+            'ncap': 'neck chest abdomen and pelvis',
+            'psma': 'prostate specific membrane antigen',
             # Pediatric specific
             'cdh': 'congenital dislocation of hip', 'ddh': 'developmental dysplasia of hip',
             'nec': 'necrotizing enterocolitis', 'rop': 'retinopathy of prematurity',
