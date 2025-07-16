@@ -61,7 +61,7 @@ _app_initialized = False
 def _initialize_model_processors() -> Dict[str, NLPProcessor]:
     """Initialize available NLP processors for different models"""
     MODEL_MAPPING = {
-        'default': 'FremyCompany/BioLORD-2023',  # PubMed model is now default for better medical terminology
+        'default': 'FremyCompany/BioLORD-2023',  # BioLORD is now the preferred default for superior medical terminology
         'pubmed': 'NeuML/pubmedbert-base-embeddings',
         'biolord': 'FremyCompany/BioLORD-2023',  # Advanced biomedical language model for enhanced medical terminology
         'general': 'sentence-transformers/all-MiniLM-L6-v2'  # General-purpose model available as alternative
@@ -317,7 +317,7 @@ def list_available_models():
             else:
                 # Get model name from MODEL_MAPPING even if processor failed
                 model_mapping = {
-                    'default': 'NeuML/pubmedbert-base-embeddings',
+                    'default': 'FremyCompany/BioLORD-2023',
                     'pubmed': 'NeuML/pubmedbert-base-embeddings', 
                     'biolord': 'FremyCompany/BioLORD-2023',
                     'general': 'sentence-transformers/all-MiniLM-L6-v2'
@@ -340,7 +340,7 @@ def list_available_models():
 def _get_model_description(model_key: str) -> str:
     """Get description for each model type"""
     descriptions = {
-        'default': 'PubMed-trained embeddings optimized for medical terminology (default)',
+        'default': 'BioLORD - Advanced biomedical language model with superior medical concept understanding (preferred default)',
         'pubmed': 'PubMed-trained embeddings optimized for medical terminology',
         'biolord': 'Advanced biomedical language model with enhanced medical concept understanding',
         'general': 'General-purpose sentence transformer for broad text understanding'
@@ -392,7 +392,7 @@ def parse_enhanced():
     - Batch exams: {"exams": [{"exam_name": "CT Chest", "modality_code": "CT"}, ...], "model": "biolord"}
     
     AVAILABLE MODELS:
-    - "default": PubMed-trained embeddings (default)
+    - "default": BioLORD - Advanced biomedical language model (preferred default)
     - "pubmed": PubMed-trained embeddings 
     - "biolord": FremyCompany/BioLORD-2023 - Advanced biomedical language model
     - "general": General-purpose sentence transformer
