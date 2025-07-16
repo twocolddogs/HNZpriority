@@ -129,6 +129,10 @@ class ExamPreprocessor:
         if '/' in cleaned:
             cleaned = cleaned.replace('/', ' ')
         
+        # Remove commas that can interfere with parsing
+        if ',' in cleaned:
+            cleaned = cleaned.replace(',', ' ')
+        
         return cleaned
     
     def _normalize_whitespace(self, text: str) -> str:
