@@ -123,10 +123,15 @@ class AnatomyExtractor:
         text_lower = text.lower()
         found_anatomy = set()
         for term, standard_form in self.anatomy_terms.items():
-            # --- FIX 2: Use whole-word matching ---
-            # This prevents "abdo" from matching inside "abdomen".
-            if re.search(r'\b' + re.escape(term) + r'\b', text_lower):
-                found_anatomy.add(standard_form)
+            # --- HYBRID FIX TO RESOLVE REGEX ERROR ---
+            # If the term is a multi-word phrase, use a simple substring search.
+            if ' ' in term:
+                if term in text_lower:
+                    found_anatomy.add(standard_form)
+            # If the term is a single word, use precise whole-word regex matching.
+            else:
+                if re.search(r'\b' + re.escape(term) + r'\b', text_lower):
+                    found_anatomy.add(standard_form)
         return sorted(list(found_anatomy))
 
 class LateralityDetector:
