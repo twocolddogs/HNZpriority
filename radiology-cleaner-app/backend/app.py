@@ -94,8 +94,8 @@ def _initialize_app():
             nhs_data = json.load(f)
         for item in nhs_data:
             # MODIFICATION: Use the new, clean key name here
-            if clean_name := item.get('clean_name'): 
-                nhs_authority[clean_name] = item
+            if primary_source_name := item.get('primary_source_name'): 
+                nhs_authority[primary_source_name] = item
         logger.info(f"Loaded {len(nhs_authority)} NHS reference entries")
     else: 
         logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")

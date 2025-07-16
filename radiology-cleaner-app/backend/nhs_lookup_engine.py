@@ -76,9 +76,9 @@ class NHSLookupEngine:
         for entry in self.nhs_data:
             # MODIFICATION: Using new, clean keys
             snomed_fsn = entry.get("snomed_fsn", "").strip()
-            clean_name = entry.get("clean_name", "").strip()
+            primary_source_name = entry.get("primary_source_name", "").strip()
             
-            text_to_process = snomed_fsn if snomed_fsn else clean_name
+            text_to_process = snomed_fsn if snomed_fsn else primary_source_name
             
             if not text_to_process:
                 logger.warning(f"Skipping NHS entry with no usable FSN or Clean Name: {entry.get('snomed_concept_id')}")
@@ -103,17 +103,17 @@ class NHSLookupEngine:
             entry["_embedding"] = text_to_embedding.get(source_text)
 
     def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
-        specific_clean_name = specific_entry.get("clean_name")
-        if not specific_clean_name: return None
+        specific_primary_source_name = specific_entry.get("primary_source_name")
+        if not specific_primary_source_name: return None
         base_name_pattern = re.compile(r'\s+(lt|rt|left|right)$', re.IGNORECASE)
-        base_name = base_name_pattern.sub('', specific_clean_name).strip()
+        base_name = base_name_pattern.sub('', specific_primary_source_name).strip()
         bilateral_pattern = re.compile(r'\s+(both|bilateral)$', re.IGNORECASE)
         for entry in self.nhs_data:
-            entry_clean_name = entry.get("clean_name", "")
-            if not bilateral_pattern.search(entry_clean_name): continue
-            entry_base_name = bilateral_pattern.sub('', entry_clean_name).strip()
+            entry_primary_source_name = entry.get("primary_source_name", "")
+            if not bilateral_pattern.search(entry_primary_source_name): continue
+            entry_base_name = bilateral_pattern.sub('', entry_primary_source_name).strip()
             if base_name.lower() == entry_base_name.lower():
-                logger.info(f"Laterality Fallback: Found bilateral peer '{entry_clean_name}' for specific match '{specific_clean_name}'")
+                logger.info(f"Laterality Fallback: Found bilateral peer '{entry_primary_source_name}' for specific match '{specific_primary_source_name}'")
                 return entry
         return None
 
@@ -126,7 +126,7 @@ class NHSLookupEngine:
         is_interventional = bool(detected_interventional_terms)
         is_diagnostic = not is_interventional
 
-        clean_name = best_match.get('clean_name', '')
+        clean_name = best_match.get('primary_source_name', '')
         if strip_laterality_from_name:
             clean_name = re.sub(r'\s+(lt|rt|left|right|both|bilateral)$', '', clean_name, flags=re.I).strip()
         
