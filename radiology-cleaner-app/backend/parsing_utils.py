@@ -17,7 +17,7 @@ class AbbreviationExpander:
             'iam': 'internal auditory meatus', 'tmj': 'temporomandibular joint',
             # Modality
             'cta': 'ct angiography', 'mra': 'mr angiography', 'ctpa': 'ct pulmonary angiography',
-            'cxr': 'chest xray', 'axr': 'abdominal xray', 'kub': 'kidneys ureters and bladder',
+            'cxr': 'chest xray', 'axr': 'abdominal xray', 'kub': 'renal tract',
             'mammo': 'mammogram',
             # Contrast
             'w': 'with', 'wo': 'without', 'gad': 'gadolinium', 'iv': 'intravenous',
