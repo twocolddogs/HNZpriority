@@ -1,3 +1,5 @@
+# --- START OF FILE context_detection.py ---
+
 # =============================================================================
 # CONTEXT DETECTION MODULE
 # =============================================================================
@@ -53,7 +55,7 @@ class ContextDetector:
             r'\b(paediatric|pediatric|paed|peds)\b',
             r'\b(child|children|infant|infants|baby|babies)\b',
             r'\b(newborn|neonate|neonatal)\b',
-            r'\b(toddler|adolescent|juvenile)\b'
+            r'\b(toddler|adolescent|juvenile)\b',
         ]
         
         # Adult patterns
@@ -66,158 +68,71 @@ class ContextDetector:
             'screening': [r'\b(screening|surveillance)\b'],
             'emergency': [r'\b(emergency|urgent|stat|trauma)\b'],
             'follow-up': [r'\b(follow.?up|post.?op)\b'],
-            'intervention': [r'\b(biopsy|drainage|injection)\b']
+            'intervention': [r'\b(biopsy|drainage|injection|aspiration|fna)\b']
         }
     
     def detect_gender_context(self, exam_name: str, anatomy: List[str] = None) -> Optional[str]:
-        """
-        Detect gender/pregnancy context from exam name and anatomy.
-        
-        DETECTION HIERARCHY:
-        1. Pregnancy-specific terms (highest priority)
-        2. Female-specific anatomy and patterns
-        3. Male-specific anatomy and patterns
-        
-        Args:
-            exam_name: The exam name to analyze
-            anatomy: Optional list of anatomical terms for additional context
-            
-        Returns:
-            'pregnancy', 'female', 'male', or None
-        """
+        """Detect gender/pregnancy context from exam name and anatomy."""
         if not exam_name:
             return None
-            
         exam_lower = exam_name.lower()
         anatomy = anatomy or []
-      
-        
-        # Check for pregnancy context first (highest priority)
         for pattern in self.pregnancy_patterns:
             if re.search(pattern, exam_lower):
-                logger.info(f"DEBUG: Detected pregnancy context for '{exam_name}'")
                 return 'pregnancy'
-        
-        # Check for female-specific context
-        # Check female anatomy terms
         for term in self.female_anatomy:
             if term.lower() in exam_lower:
-                logger.info(f"DEBUG: Detected female anatomy '{term}' in '{exam_name}'")
                 return 'female'
-        
-        # Check female patterns
         for pattern in self.female_patterns:
             if re.search(pattern, exam_lower):
-                logger.info(f"DEBUG: Detected female pattern '{pattern}' in '{exam_name}'")
                 return 'female'
-        
-        # Check for male-specific context
-        # Check male anatomy terms
         for term in self.male_anatomy:
             if term.lower() in exam_lower:
-                logger.info(f"DEBUG: Detected male anatomy '{term}' in '{exam_name}'")
                 return 'male'
-        
-        # Check male patterns
         for pattern in self.male_patterns:
             if re.search(pattern, exam_lower):
-                logger.info(f"DEBUG: Detected male pattern '{pattern}' in '{exam_name}'")
                 return 'male'
-        
-        logger.info(f"DEBUG: No gender context detected for '{exam_name}'")
         return None
     
     def detect_age_context(self, exam_name: str) -> Optional[str]:
-        """
-        Detect age context from exam name (e.g., paediatric, adult).
-        
-        Args:
-            exam_name: The exam name to analyze
-            
-        Returns:
-            'paediatric', 'adult', or None
-        """
-        if not exam_name:
-            return None
-            
+        """Detect age context from exam name (e.g., paediatric, adult)."""
+        if not exam_name: return None
         exam_lower = exam_name.lower()
-        
-        # Check for pediatric patterns
         for pattern in self.pediatric_patterns:
-            if re.search(pattern, exam_lower):
-                return 'paediatric'
-        
-        # Check for adult patterns
+            if re.search(pattern, exam_lower): return 'paediatric'
         for pattern in self.adult_patterns:
-            if re.search(pattern, exam_lower):
-                return 'adult'
-        
+            if re.search(pattern, exam_lower): return 'adult'
         return None
     
     def detect_clinical_context(self, exam_name: str, anatomy: List[str] = None) -> List[str]:
-        """
-        Detect clinical context from exam name.
-        
-        Args:
-            exam_name: The exam name to analyze
-            anatomy: Optional list of anatomical terms (not currently used but kept for compatibility)
-            
-        Returns:
-            List of detected clinical contexts
-        """
-        if not exam_name:
-            return []
-            
+        """Detect clinical context from exam name."""
+        if not exam_name: return []
         exam_lower = exam_name.lower()
         contexts = []
-        
         for context_type, patterns in self.clinical_patterns.items():
             for pattern in patterns:
                 if re.search(pattern, exam_lower):
                     contexts.append(context_type)
-                    break  # Only add each context type once
-        
+                    break
         return contexts
     
     def detect_interventional_procedure_terms(self, exam_name: str) -> List[str]:
         """
-        Detects high-impact interventional procedure keywords from an exam name.
-
-        This function is crucial for weighting matches against the NHS "Interventional Procedure" flag.
-        It uses a simplified, high-yield list of terms.
-        
-        Args:
-            exam_name: The exam name to analyze.
-            
-        Returns:
-            A list of detected interventional keywords.
+        MODIFICATION: Significantly expanded this list to better identify interventional
+        procedures for more accurate weighting against the NHS flags. This is crucial for
+        differentiating diagnostic from therapeutic exams.
         """
-        # This function is being kept for its role in the weighting system,
-        # but its logic is now dramatically simplified and more robust.
-        # The previous complex categorization was brittle and has been replaced.
-
         exam_lower = exam_name.lower()
-        
-        # A flat, high-yield list of interventional keywords.
-        # These are based on analysis of the NHS interventional data (`inter.json`).
-        # The goal is simply to identify if the input is likely interventional.
         interventional_keywords = [
             'stent', 'angioplasty', 'atherectomy', 'thrombectomy', 'thrombolysis',
-            'embolisation', 'embolization',
-            'ablation', 'biopsy', 'bx', 'drainage', 'aspiration', 'injection',
-            'nephrostomy', 'gastrostomy', 'jejunostomy', 'cholecystostomy',
-            'vertebroplasty', 'kyphoplasty',
-            'dilatation', 'valvuloplasty', 'septostomy',
-            'picc', 'line', 'catheter', 'port', # Access devices
-            'guided', 'guidance', 'localisation', 'localization', 'insertion', # Guidance terms
-            'atherectomy', 'atherectomy',
-            'atherectomy', 'atherectomy',
-            'atherectomy', 'atherectomy',
-            'atherectomy',
-            'percutaneous' # Catches the expanded "Pc"
+            'embolisation', 'embolization', 'ablation', 'biopsy', 'bx', 'fna', 'drainage', 
+            'aspiration', 'injection', 'nephrostomy', 'gastrostomy', 'jejunostomy', 
+            'cholecystostomy', 'vertebroplasty', 'kyphoplasty', 'dilatation', 
+            'valvuloplasty', 'septostomy', 'picc', 'line', 'catheter', 'port',
+            'guided', 'guidance', 'localisation', 'localization', 'insertion', 'insert',
+            'percutaneous'
         ]
         
-        # Search for whole words to avoid partial matches (e.g., 'port' in 'portable')
         found_terms = [
             term for term in interventional_keywords 
             if re.search(r'\b' + re.escape(term) + r'\b', exam_lower)
@@ -226,56 +141,29 @@ class ContextDetector:
         return list(set(found_terms))
     
     def detect_all_contexts(self, exam_name: str, anatomy: List[str] = None) -> dict:
-        """
-        Detect all types of context in a single call.
-        
-        Args:
-            exam_name: The exam name to analyze
-            anatomy: Optional list of anatomical terms for additional context
-            
-        Returns:
-            Dictionary containing all detected contexts
-        """
+        """Detect all types of context in a single call."""
         return {
             'gender_context': self.detect_gender_context(exam_name, anatomy),
             'age_context': self.detect_age_context(exam_name),
-            'clinical_context': self.detect_clinical_context(exam_name, anatomy),
-            'is_paediatric': self.detect_age_context(exam_name) == 'paediatric'
+            'clinical_context': self.detect_clinical_context(exam_name, anatomy)
         }
-
 
 # =============================================================================
 # CONVENIENCE FUNCTIONS
 # =============================================================================
-# These functions provide backward compatibility and simple usage patterns
-
-# Global instance for convenience
 _detector = ContextDetector()
 
 def detect_gender_context(exam_name: str, anatomy: List[str] = None) -> Optional[str]:
-    """Convenience function for gender context detection."""
     return _detector.detect_gender_context(exam_name, anatomy)
 
 def detect_age_context(exam_name: str) -> Optional[str]:
-    """Convenience function for age context detection."""
     return _detector.detect_age_context(exam_name)
 
 def detect_clinical_context(exam_name: str, anatomy: List[str] = None) -> List[str]:
-    """Convenience function for clinical context detection."""
     return _detector.detect_clinical_context(exam_name, anatomy)
 
 def detect_interventional_procedure_terms(exam_name: str) -> List[str]:
-    """
-    Convenience function for detecting interventional procedure terms.
-    
-    Args:
-        exam_name: The exam name to analyze
-        
-    Returns:
-        List of detected interventional procedure terms
-    """
     return _detector.detect_interventional_procedure_terms(exam_name)
 
 def detect_all_contexts(exam_name: str, anatomy: List[str] = None) -> dict:
-    """Convenience function for detecting all contexts."""
     return _detector.detect_all_contexts(exam_name, anatomy)

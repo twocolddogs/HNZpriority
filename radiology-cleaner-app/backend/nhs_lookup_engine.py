@@ -1,17 +1,18 @@
+# --- START OF FILE nhs_lookup_engine.py ---
+
 # =============================================================================
-# NHS LOOKUP ENGINE
+# NHS LOOKUP ENGINE (FINAL VERSION)
 # =============================================================================
-# This module provides the core NHS reference data lookup functionality for
-# standardizing radiology exam names. It uses semantic matching combined with
-# fuzzy string matching to find the best matches in the NHS reference data.
+# This module provides the core NHS reference data lookup functionality.
 #
-# KEY FEATURES:
-# - Pre-parsed NHS reference data using unified semantic parser
-# - Pre-computed embeddings for all NHS entries at startup
-# - Semantic similarity scoring using NLP models
-# - Support for multiple NLP models (default, PubMed, etc.)
-# - Component-based matching (anatomy, modality, contrast, etc.)
-# - SNOMED CT integration for medical coding standards
+# KEY ARCHITECTURAL FEATURES:
+# 1. FSN-First Pre-computation: Uses the SNOMED FSN for the richest semantic baseline.
+# 2. Unified Parsing: Applies the same semantic parser to both input and NHS data.
+# 3. Text-Driven Interventional Scoring: Derives procedure type from text, avoiding
+#    reliance on potentially inconsistent data flags.
+# 4. Specificity Penalty: Prevents over-matching general inputs to specific procedures.
+# 5. Intelligent Laterality Fallback: Handles non-specific inputs gracefully without
+#    hallucinating laterality.
 # =============================================================================
 
 import json
@@ -20,13 +21,11 @@ import re
 from typing import Dict, List, Optional
 from collections import defaultdict
 from fuzzywuzzy import fuzz
-# Use TYPE_CHECKING to avoid a circular import issue with parser.py
 from typing import TYPE_CHECKING 
 
 from nlp_processor import NLPProcessor
 from context_detection import detect_interventional_procedure_terms
 
-# This allows us to use 'RadiologySemanticParser' as a type hint
 if TYPE_CHECKING:
     from parser import RadiologySemanticParser
 
@@ -34,96 +33,35 @@ logger = logging.getLogger(__name__)
 
 class NHSLookupEngine:
     """
-    NHS lookup engine that standardizes radiology exam names using the NHS reference data.
-    
-    This engine provides unified semantic parsing for both input and NHS reference data,
-    ensuring consistency in component extraction and matching. It supports multiple NLP
-    models for semantic similarity and includes comprehensive caching and optimization.
-    
-    INITIALIZATION PIPELINE:
-    1. Load NHS reference data from JSON file
-    2. Build SNOMED lookup tables for medical coding
-    3. Pre-parse ALL NHS entries using unified semantic parser
-    4. Pre-compute embeddings for all NHS entries using selected NLP model
-    5. Validate data consistency and prepare for matching
-    
-    MATCHING PIPELINE:
-    1. Generate embedding for input exam using selected NLP model
-    2. Compare input components against pre-parsed NHS components
-    3. Calculate semantic similarity scores using embeddings
-    4. Apply fuzzy string matching for additional scoring
-    5. Select best match based on combined confidence scores
+    NHS lookup engine that standardizes radiology exam names using a robust,
+    multi-faceted matching strategy against the NHS reference dataset.
     """
     def __init__(self, nhs_json_path: str, nlp_processor: NLPProcessor, semantic_parser: 'RadiologySemanticParser'):
-        # Core components
         self.nhs_data = []
         self.snomed_lookup = {}
         self.nhs_json_path = nhs_json_path
-        self.nlp_processor = nlp_processor  # Default NLP processor
-        self.semantic_parser = semantic_parser  # Unified semantic parser
+        self.nlp_processor = nlp_processor
+        self.semantic_parser = semantic_parser
+        self._embeddings_cache = {}
         
-        # EMBEDDINGS CACHE: Store embeddings per model to avoid recomputation
-        self._embeddings_cache = {}  # model_name -> embeddings mapping
-        
-        # INITIALIZATION PIPELINE
-        # Step 1: Load NHS reference data
         self._load_nhs_data()
-        
-        # Step 2: Build lookup tables for fast SNOMED access
         self._build_lookup_tables()
-        
-        # Step 3: Pre-process all NHS Clean Names consistently
-        self._preprocess_nhs_clean_names()
-        
-        # Step 4: Pre-parse all NHS entries using unified semantic parser
-        self._pre_parse_nhs_data_with_semantic_parser()
-        
-        # Step 5: Pre-compute embeddings for default NHS entries
+        self._preprocess_and_parse_nhs_data()
         self._precompute_embeddings()
 
-        # Specificity penalty configuration
-        self._specificity_penalty_weight = 0.08  # Configurable penalty per extra word
+        self._specificity_penalty_weight = 0.08
         self._specificity_stop_words = {
-            # Standard English stop words
             'a', 'an', 'the', 'and', 'or', 'with', 'without', 'for', 'of', 'in', 'on', 'to', 'is', 'from',
-            # Modality terms (already handled by parsing/gating)
             'ct', 'mr', 'mri', 'us', 'xr', 'x-ray', 'nm', 'pet', 'dexa', 'dect', 'computed', 'tomography',
             'magnetic', 'resonance', 'ultrasound', 'radiograph', 'scan', 'scans', 'imaging', 'image', 'mammo', 'mammogram',
-            # Laterality terms (already handled)
-            'left', 'right', 'bilateral', 'lt', 'rt', 'bilat', 'both',
-            # Contrast terms (already handled)
-            'contrast', 'iv', 'gadolinium', 'gad', 'c+', 'c-', 'pre', 'post', 'enhanced', 'unenhanced',
-            # Generic radiology & anatomy terms
+            'left', 'right', 'bilateral', 'lt', 'rt', 'bilat', 'both', 'contrast', 'iv', 'gadolinium', 'gad', 'c+', 'c-',
             'procedure', 'examination', 'study', 'protocol', 'view', 'views', 'projection',
             'series', 'ap', 'pa', 'lat', 'oblique', 'guidance', 'guided', 'body', 'whole',
-            'artery', 'vein', 'arterial', 'venous', 'joint', 'spine', 'tract', 'system',
-            # Time-related terms
-            'time', 'delayed', 'immediate', 'phase', 'early', 'late'
+            'artery', 'vein', 'joint', 'spine', 'tract', 'system', 'time', 'delayed', 'immediate', 'phase', 'early', 'late'
         }
-
-        logger.info("NHSLookupEngine initialized with fully pre-parsed and embedded NHS data.")
-
-    def configure_specificity_penalty(self, penalty_weight: float = 0.08, additional_stop_words: Optional[set] = None):
-        """
-        Configure the specificity penalty system for better control over matching behavior.
-        
-        Args:
-            penalty_weight: Weight applied per extra word (default: 0.08)
-            additional_stop_words: Additional words to ignore in specificity calculation
-        """
-        self._specificity_penalty_weight = penalty_weight
-        if additional_stop_words:
-            self._specificity_stop_words.update(additional_stop_words)
-        logger.info(f"Specificity penalty configured: weight={penalty_weight}, stop_words={len(self._specificity_stop_words)}")
+        logger.info("NHSLookupEngine initialized with FSN-first pre-computation and intelligent laterality fallback.")
 
     def _load_nhs_data(self):
-        """
-        Load NHS reference data from JSON file.
-        
-        The NHS.json file contains the authoritative radiology exam names with
-        associated SNOMED CT codes and other metadata. This serves as the single
-        source of truth for standardization.
-        """
         try:
             with open(self.nhs_json_path, 'r', encoding='utf-8') as f:
                 self.nhs_data = json.load(f)
@@ -133,693 +71,207 @@ class NHSLookupEngine:
             raise
 
     def _build_lookup_tables(self):
-        """
-        Build optimized SNOMED lookup table for fast medical code retrieval.
-        
-        Creates a hash map from SNOMED CT concept IDs to NHS entries,
-        enabling O(1) lookup time for medical code validation and retrieval.
-        """
         for entry in self.nhs_data:
             if snomed_id := entry.get("SNOMED CT \nConcept-ID"):
                 self.snomed_lookup[str(snomed_id)] = entry
-        
         logger.info(f"Built SNOMED lookup table with {len(self.snomed_lookup)} entries")
 
-    def _preprocess_nhs_clean_names(self):
+    def _preprocess_and_parse_nhs_data(self):
         """
-        Pre-process all NHS Clean Names consistently before parsing and embedding.
-        
-        This ensures that the same preprocessing is applied to NHS data during both
-        parsing and embedding generation, maintaining consistency across the pipeline.
-        """
-        logger.info("Pre-processing all NHS Clean Names for consistent pipeline...")
-        
-        # Create preprocessor without NHS protection for consistent expansion
-        from parsing_utils import AbbreviationExpander
-        from preprocessing import ExamPreprocessor
-        
-        abbrev_expander = AbbreviationExpander()
-        nhs_preprocessor = ExamPreprocessor(abbrev_expander, nhs_clean_names=None)
-        
-        preprocessing_count = 0
-        for entry in self.nhs_data:
-            clean_name = entry.get("Clean Name")
-            if clean_name:
-                try:
-                    preprocessed_name = nhs_preprocessor.preprocess(clean_name)
-                    entry["_preprocessed_clean_name"] = preprocessed_name
-                    
-                    if preprocessed_name != clean_name:
-                        logger.debug(f"NHS preprocessing: '{clean_name}' -> '{preprocessed_name}'")
-                        preprocessing_count += 1
-                        
-                except Exception as e:
-                    logger.warning(f"Failed to preprocess NHS Clean Name '{clean_name}': {e}")
-                    entry["_preprocessed_clean_name"] = clean_name  # fallback to original
-        
-        logger.info(f"Pre-processed {preprocessing_count} NHS Clean Names that required expansion")
-
-    def _pre_parse_nhs_data_with_semantic_parser(self):
-        """
-        Pre-parses all NHS entries using the main RadiologySemanticParser.
-        This ensures the rules applied to the reference data are identical to the
-        rules applied to user input, and moves all parsing to startup time.
+        Prepares the entire NHS dataset at startup by parsing its most descriptive field (FSN)
+        and caching the results for fast lookups.
         """
         if not self.semantic_parser:
-            logger.error("CRITICAL: Semantic Parser not provided to NHSLookupEngine. Cannot pre-parse NHS data.")
             raise RuntimeError("Semantic Parser required for NHS data preprocessing")
 
-        logger.info("Pre-parsing all NHS entries using the unified RadiologySemanticParser...")
-        count = 0
-        failed_count = 0
+        logger.info("Starting FSN-first pre-processing, parsing, and context detection of all NHS entries...")
         
+        from preprocessing import get_preprocessor
+        preprocessor = get_preprocessor()
+        if not preprocessor:
+            raise RuntimeError("Preprocessor not initialized before NHS engine.")
+
+        successful_parses = 0
         for entry in self.nhs_data:
-            clean_name = entry.get("Clean Name")
-            preprocessed_clean_name = entry.get("_preprocessed_clean_name")
+            # 1. Prioritize the text source: SNOMED FSN > Clean Name
+            snomed_fsn = entry.get("SNOMED CT FSN", "").strip()
+            clean_name = entry.get("Clean Name", "").strip()
             
-            if clean_name and preprocessed_clean_name:
-                try:
-                    # Use the pre-processed clean name for consistent parsing
-                    # Provide a placeholder modality as it's often parsed from the name itself.
-                    parsed_components = self.semantic_parser.parse_exam_name(preprocessed_clean_name, 'Other')
-                    
-                    # Validate that we got meaningful results
-                    if not parsed_components or not isinstance(parsed_components, dict):
-                        logger.warning(f"Parser returned invalid result for NHS entry: '{clean_name}'")
-                        failed_count += 1
-                        continue
-                        
-                    # Cache the structured result directly on the entry.
-                    entry['_parsed_components'] = parsed_components
-                    count += 1
-                    
-                    # Log first few successful parses for verification
-                    if count <= 3:
-                        logger.info(f"Sample parse result for '{clean_name}': {parsed_components}")
-                        
-                except Exception as e:
-                    logger.error(f"Failed to parse NHS entry '{clean_name}': {e}")
-                    failed_count += 1
-                    
-        logger.info(f"Finished pre-parsing: {count} successful, {failed_count} failed out of {len(self.nhs_data)} NHS entries.")
-        
-        if count == 0:
-            raise RuntimeError("CRITICAL: No NHS entries were successfully pre-parsed. System will not function.")
-        elif failed_count > count * 0.5:  # More than 50% failures
-            logger.warning(f"High failure rate in NHS preprocessing: {failed_count}/{count + failed_count} failed")
+            text_to_process = snomed_fsn if snomed_fsn and len(snomed_fsn) > 5 else clean_name
+            
+            if not text_to_process:
+                logger.warning(f"Skipping NHS entry with no usable FSN or Clean Name: {entry.get('SNOMED CT \\nConcept-ID')}")
+                continue
+
+            text_to_process = re.sub(r'\s*\((procedure|qualifier value)\)$', '', text_to_process, flags=re.I).strip()
+            preprocessed_text = preprocessor.preprocess(text_to_process)
+            entry["_source_text_for_embedding"] = preprocessed_text
+
+            # 2. Detect and cache interventional terms from the processed text
+            entry["_interventional_terms"] = detect_interventional_procedure_terms(preprocessed_text)
+
+            # 3. Parse the pre-processed text to get structured components
+            try:
+                parsed_components = self.semantic_parser.parse_exam_name(preprocessed_text, 'Other')
+                entry['_parsed_components'] = parsed_components
+                successful_parses += 1
+            except Exception as e:
+                logger.error(f"Failed to parse NHS text '{preprocessed_text}': {e}")
+                entry['_parsed_components'] = None
+
+        logger.info(f"Successfully pre-processed and parsed {successful_parses}/{len(self.nhs_data)} NHS entries.")
 
     def _precompute_embeddings(self, custom_nlp_processor: Optional[NLPProcessor] = None):
-        """
-        Pre-compute embeddings for all NHS clean names using the specified NLP processor.
-        
-        This method generates vector embeddings for all NHS reference entries, enabling
-        semantic similarity calculations during matching. Uses caching to avoid recomputation.
-        
-        Args:
-            custom_nlp_processor: Optional custom NLP processor to use for embeddings
-                                 (e.g., PubMed model for enhanced medical terminology)
-        
-        EMBEDDING PROCESS:
-        1. Select appropriate NLP processor (custom or default)
-        2. Check if embeddings are already cached for this model
-        3. If cached, restore from cache; otherwise generate new embeddings
-        4. Cache embeddings for future use
-        5. Log success/failure statistics
-        """
-        # Select NLP processor - use custom if provided, otherwise use default
-        nlp_proc = custom_nlp_processor if custom_nlp_processor else self.nlp_processor
-        
-        if not nlp_proc or not nlp_proc.is_available():
-            logger.warning("NLP Processor not available. Skipping embedding pre-computation.")
-            return
+        """Generates and caches embeddings from the FSN-derived text."""
+        nlp_proc = custom_nlp_processor or self.nlp_processor
+        if not nlp_proc or not nlp_proc.is_available(): return
 
         model_name = getattr(nlp_proc, 'model_name', 'unknown')
+        if model_name in self._embeddings_cache: return
         
-        # Check if embeddings are already cached for this model
-        # NOTE: We incorporate the cache version to ensure NHS embeddings are regenerated 
-        # when preprocessing pipeline changes (parsing_utils.py, parser.py, etc.)
-        from cache_version import get_current_cache_version
-        current_cache_version = get_current_cache_version()
-        cache_key = f"{model_name}_{current_cache_version}"  # Cache version ensures invalidation on preprocessing changes
-        if cache_key in self._embeddings_cache:
-            logger.info(f"Using cached embeddings for model: {model_name} (cache: {current_cache_version})")
-            # Restore cached embeddings to NHS entries
-            cached_embeddings = self._embeddings_cache[cache_key]
-            for entry in self.nhs_data:
-                if clean_name := entry.get("Clean Name"):
-                    entry["_embedding"] = cached_embeddings.get(clean_name)
-            return
-        
-        logger.info(f"Pre-computing embeddings for all NHS clean names using model: {model_name}")
-        
-        # Extract pre-processed clean names for batch processing
-        all_clean_names = []
-        preprocessed_clean_names = []
+        texts_to_embed = [e["_source_text_for_embedding"] for e in self.nhs_data if e.get("_source_text_for_embedding")]
+        embeddings = nlp_proc.batch_get_embeddings(texts_to_embed)
+        text_to_embedding = dict(zip(texts_to_embed, embeddings))
         
         for entry in self.nhs_data:
-            clean_name = entry.get("Clean Name")
-            preprocessed_name = entry.get("_preprocessed_clean_name")
-            
-            if clean_name and preprocessed_name:
-                all_clean_names.append(clean_name)
-                preprocessed_clean_names.append(preprocessed_name)
-        
-        logger.info(f"Using {len(preprocessed_clean_names)} pre-processed NHS Clean Names for embedding generation")
-        
-        # Generate embeddings using batch processing for efficiency
-        embeddings = nlp_proc.batch_get_embeddings(preprocessed_clean_names)
-        
-        # Create mapping from clean names to embeddings
-        name_to_embedding = dict(zip(all_clean_names, embeddings))
-        
-        # Cache embeddings for future use with new cache key
-        self._embeddings_cache[cache_key] = name_to_embedding
-        
-        # Apply embeddings to NHS entries for current use
-        for entry in self.nhs_data:
-            if clean_name := entry.get("Clean Name"):
-                entry["_embedding"] = name_to_embedding.get(clean_name)
-        
+            source_text = entry.get("_source_text_for_embedding")
+            entry["_embedding"] = text_to_embedding.get(source_text)
+
         successful_count = sum(1 for e in embeddings if e is not None)
-        logger.info(f"Successfully pre-computed {successful_count}/{len(all_clean_names)} embeddings using {model_name}.")
+        logger.info(f"Successfully pre-computed {successful_count}/{len(texts_to_embed)} embeddings using {model_name}.")
 
-    def _match_against_snomed_fsn(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
-        """
-        Try to match input against SNOMED FSN (Fully Specified Name) instead of Clean Name.
-        
-        This is useful for cases where the input is an expanded form but NHS uses
-        abbreviations as Clean Names (e.g., "magnetic resonance cholangiopancreatography" vs "MRCP").
-        """
-        best_match, highest_confidence = None, 0.0
-        
-        # Select NLP processor
-        nlp_proc = custom_nlp_processor if custom_nlp_processor else self.nlp_processor
-        
-        if not nlp_proc or not nlp_proc.is_available():
-            return {}
-        
-        # Generate input embedding
-        input_embedding = nlp_proc.get_text_embedding(input_exam)
-        if input_embedding is None:
-            return {}
-        
-        # Ensure NHS embeddings match the same model
-        if custom_nlp_processor and custom_nlp_processor != self.nlp_processor:
-            self._precompute_embeddings(custom_nlp_processor)
-        
-        # INTERVENTIONAL PROCEDURE DETECTION
-        interventional_terms = detect_interventional_procedure_terms(input_exam)
-        is_interventional_input = len(interventional_terms) > 0
-        
-        # Match against SNOMED FSN instead of Clean Name
-        for entry in self.nhs_data:
-            nhs_embedding = entry.get("_embedding")
-            nhs_components = entry.get("_parsed_components")
-            
-            if not nhs_components or nhs_embedding is None:
-                continue
-            
-            # Use SNOMED FSN for matching if available
-            snomed_fsn = entry.get('SNOMED CT FSN', '')
-            if not snomed_fsn:
-                continue
-            
-            # Component matching (same as regular matching)
-            input_modality = extracted_input_components.get('modality')
-            if isinstance(input_modality, list):
-                input_modality = input_modality[0] if input_modality else None
-            
-            nhs_modality = nhs_components.get('modality')
-            
-            # Skip if modalities are clearly incompatible
-            if input_modality and nhs_modality:
-                input_mod_lower = input_modality.lower() if input_modality else ''
-                nhs_mod_lower = nhs_modality.lower() if nhs_modality else ''
-                if input_mod_lower and nhs_mod_lower and input_mod_lower != nhs_mod_lower:
-                    modality_aliases = {
-                        'ct': ['computed tomography', 'dect'],
-                        'mr': ['mri', 'magnetic resonance'],
-                        'us': ['ultrasound', 'echo'],
-                        'xr': ['x-ray', 'radiograph'],
-                        'mamm': ['mg', 'mammo', 'mammography', 'mammogram']
-                    }
-                    
-                    compatible = False
-                    for canonical, aliases in modality_aliases.items():
-                        if (input_mod_lower == canonical and nhs_mod_lower in aliases) or \
-                           (nhs_mod_lower == canonical and input_mod_lower in aliases):
-                            compatible = True
-                            break
-                    
-                    if not compatible:
-                        continue
-            
-            # Semantic similarity against SNOMED FSN
-            semantic_score = nlp_proc.calculate_semantic_similarity(input_embedding, nhs_embedding)
-            
-            # Fuzzy matching against SNOMED FSN (remove "(procedure)" suffix for better matching)
-            clean_fsn = snomed_fsn.replace('(procedure)', '').strip()
-            fuzzy_score = fuzz.ratio(input_exam.lower(), clean_fsn.lower()) / 100.0
-            
-            # Combined score with higher weight on semantic similarity for FSN matching
-            combined_score = (0.8 * semantic_score) + (0.2 * fuzzy_score)
-            
-            # Interventional procedure weighting
-            nhs_is_interventional = entry.get('Interventional Procedure', 'N').upper() == 'Y'
-            nhs_is_diagnostic = entry.get('Diagnostic procedure', 'N').upper() == 'Y'
-            
-            if is_interventional_input and nhs_is_interventional:
-                combined_score += 0.25
-            elif is_interventional_input and nhs_is_diagnostic and not nhs_is_interventional:
-                combined_score -= 0.15
-            elif not is_interventional_input and nhs_is_diagnostic:
-                combined_score += 0.1
-            
-            # Track best match
-            if combined_score > highest_confidence:
-                highest_confidence, best_match = combined_score, entry
-        
-        if best_match:
-            logger.info(f"FSN match found: '{best_match.get('Clean Name')}' via SNOMED FSN with confidence {highest_confidence:.3f}")
-            return self._format_match_result(best_match, extracted_input_components, highest_confidence, interventional_terms, nlp_proc, source_suffix="FSN")
-        
-        return {}
-
-    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, interventional_terms: List[str], nlp_proc: NLPProcessor, source_suffix: str = "") -> Dict:
-        """Format the match result consistently for both Clean Name and FSN matching."""
-        final_components = best_match.get('_parsed_components', {})
-        
-        # Normalize input components to list format
-        anatomy = extracted_input_components.get('anatomy', [])
-        if not isinstance(anatomy, list):
-            anatomy = [anatomy] if anatomy else []
-            
-        laterality = extracted_input_components.get('laterality')
-        if laterality and not isinstance(laterality, list):
-            laterality = [laterality]
-        elif not laterality:
-            laterality = []
-            
-        contrast = extracted_input_components.get('contrast')
-        if contrast and not isinstance(contrast, list):
-            contrast = [contrast]
-        elif not contrast:
-            contrast = []
-            
-        modality = extracted_input_components.get('modality')
-        if modality and not isinstance(modality, list):
-            modality = [modality]
-        elif not modality:
-            modality = []
-            
-        technique = extracted_input_components.get('technique', [])
-        if not isinstance(technique, list):
-            technique = [technique] if technique else []
-        
-        # Use the canonical NHS "Clean Name" as the standardized result
-        canonical_clean_name = best_match.get('Clean Name', final_components.get('cleanName', ''))
-        
-        model_name = getattr(nlp_proc, 'model_name', 'default')
-        
-        source_name = f'UNIFIED_PARSER_MATCH_V6_{model_name.upper()}'
-        if source_suffix:
-            source_name += f'_{source_suffix}'
-        
-        return {
-            'clean_name': canonical_clean_name,
-            'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
-            'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
-            'snomed_laterality_concept_id': best_match.get('SNOMED CT Concept-ID of Laterality', ''),
-            'snomed_laterality_fsn': best_match.get('SNOMED FSN of Laterality', ''),
-            'is_diagnostic': best_match.get('Diagnostic procedure', 'N').upper() == 'Y',
-            'is_interventional': best_match.get('Interventional Procedure', 'N').upper() == 'Y',
-            'detected_interventional_terms': interventional_terms,
-            'anatomy': anatomy,
-            'laterality': laterality,
-            'contrast': contrast,
-            'modality': modality,
-            'technique': technique,
-            'confidence': min(confidence, 1.0),
-            'source': source_name
-        }
-
-    # In nhs_lookup_engine.py, add this new method to the NHSLookupEngine class
-
-    def find_bilateral_peer(self, specific_clean_name: str) -> Optional[Dict]:
+    def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
         """
         Finds the bilateral ("Both" or "Bilateral") peer of a given specific
-        (e.g., "Left" or "Right") clean name.
-
-        Args:
-            specific_clean_name: The clean name of the specific entry,
-                                 e.g., "MRI Knee Lt".
-
-        Returns:
-            The full dictionary of the bilateral peer NHS entry, or None if not found.
+        (e.g., "Left" or "Right") NHS entry.
         """
+        specific_clean_name = specific_entry.get("Clean Name")
         if not specific_clean_name:
             return None
 
-        # Create a "base name" by stripping known laterality suffixes.
-        # This is more robust than simple replacement.
-        # e.g., "MRI Knee Lt" -> "MRI Knee"
         base_name_pattern = re.compile(r'\s+(lt|rt|left|right)$', re.IGNORECASE)
         base_name = base_name_pattern.sub('', specific_clean_name).strip()
 
-        # Now, search for an entry that matches this base name and has a bilateral term.
         bilateral_pattern = re.compile(r'\s+(both|bilateral)$', re.IGNORECASE)
 
         for entry in self.nhs_data:
             entry_clean_name = entry.get("Clean Name", "")
-            # Check if the entry's name, when stripped of its bilateral suffix,
-            # matches our base name. This is a very precise way to find the peer.
+            if not bilateral_pattern.search(entry_clean_name):
+                continue
+            
             entry_base_name = bilateral_pattern.sub('', entry_clean_name).strip()
 
             if base_name.lower() == entry_base_name.lower():
-                # We found the peer. Verify it actually has a bilateral term.
-                if bilateral_pattern.search(entry_clean_name):
-                    logger.info(f"Found bilateral peer '{entry_clean_name}' for base '{base_name}'")
-                    return entry  # Return the full dictionary of the peer entry.
+                logger.info(f"Laterality Fallback: Found bilateral peer '{entry_clean_name}' for specific match '{specific_clean_name}'")
+                return entry
 
-        logger.warning(f"No bilateral peer found for base name '{base_name}'")
         return None
+
+    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False) -> Dict:
+        """Helper to format the final result dictionary, with an option to strip laterality from the name."""
+        model_name = getattr(nlp_proc, 'model_name', 'default').split('/')[-1]
+        source_name = f'FSN_PRIMARY_MATCH_V11_{model_name.upper()}'
+        
+        detected_interventional_terms = best_match.get('_interventional_terms', [])
+        is_interventional = bool(detected_interventional_terms)
+        is_diagnostic = not is_interventional
+
+        clean_name = best_match.get('Clean Name', '')
+        if strip_laterality_from_name:
+            clean_name = re.sub(r'\s+(lt|rt|left|right|both|bilateral)$', '', clean_name, flags=re.I).strip()
+            logger.info(f"Laterality Fallback: Stripped laterality from clean name. Final name: '{clean_name}'")
+        
+        return {
+            'clean_name': clean_name,
+            'snomed_id': best_match.get('SNOMED CT \nConcept-ID', ''),
+            'snomed_fsn': best_match.get('SNOMED CT FSN', ''),
+            'is_diagnostic': is_diagnostic,
+            'is_interventional': is_interventional,
+            'detected_interventional_terms': detected_interventional_terms,
+            'confidence': min(confidence, 1.0),
+            'source': source_name,
+            'anatomy': extracted_input_components.get('anatomy', []),
+            'laterality': extracted_input_components.get('laterality', []),
+            'contrast': extracted_input_components.get('contrast', []),
+            'modality': extracted_input_components.get('modality', []),
+            'technique': extracted_input_components.get('technique', []),
+        }
 
     def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
         """
-        Main method to standardize an exam using NHS reference data.
-        
-        This method compares pre-parsed input components against pre-parsed NHS components
-        for maximum consistency and speed. It supports custom NLP processors for enhanced
-        medical terminology processing (e.g., PubMed-trained models).
-        
-        Args:
-            input_exam: Cleaned/preprocessed exam name string (not raw input)
-            extracted_input_components: Pre-parsed components from input exam
-            custom_nlp_processor: Optional custom NLP processor for embedding generation
-        
-        Returns:
-            Dictionary containing standardized exam information with SNOMED codes
-            
-        MATCHING PROCESS:
-        1. Generate input embedding using selected NLP processor
-        2. Compare input components against pre-parsed NHS components
-        3. Calculate semantic similarity scores using embeddings
-        4. Apply fuzzy string matching for additional scoring
-        5. Select best match based on combined confidence scores
+        Main method to standardize an exam, now with intelligent laterality fallback.
         """
         best_match, highest_confidence = None, 0.0
-        
-        # Select NLP processor - use custom if provided, otherwise use default
-        nlp_proc = custom_nlp_processor if custom_nlp_processor else self.nlp_processor
-        
-        if not nlp_proc or not nlp_proc.is_available():
-            logger.warning("Semantic search disabled; NLP processor not available.")
-            return {
-                'clean_name': input_exam, 
-                'snomed_id': '', 
-                'snomed_fsn': '', 
-                'snomed_laterality_concept_id': '', 
-                'snomed_laterality_fsn': '', 
-                'is_diagnostic': False,
-                'is_interventional': False,
-                'detected_interventional_terms': [],
-                'confidence': 0.0, 
-                'source': 'NO_SEMANTIC_SEARCH'
-            }
+        nlp_proc = custom_nlp_processor or self.nlp_processor
 
-        # Generate embedding for input exam using selected NLP processor
-        # IMPORTANT: The input_exam parameter is already the cleaned/preprocessed exam name
-        # This ensures consistency with NHS embeddings which are also from cleaned names
+        if not nlp_proc or not nlp_proc.is_available():
+            return {'error': 'NLP Processor not available', 'confidence': 0.0}
+
         input_embedding = nlp_proc.get_text_embedding(input_exam)
         if input_embedding is None:
-            logger.warning(f"Could not generate input embedding for cleaned exam '{input_exam}'.")
-            return {
-                'clean_name': input_exam, 
-                'snomed_id': '', 
-                'snomed_fsn': '', 
-                'snomed_laterality_concept_id': '', 
-                'snomed_laterality_fsn': '', 
-                'is_diagnostic': False,
-                'is_interventional': False,
-                'detected_interventional_terms': [],
-                'confidence': 0.0, 
-                'source': 'NO_INPUT_EMBEDDING'
-            }
-        
-        # If using custom NLP processor, ensure NHS embeddings match the same model
-        if custom_nlp_processor and custom_nlp_processor != self.nlp_processor:
-            logger.info(f"Custom NLP processor detected, ensuring NHS embeddings consistency")
-            self._precompute_embeddings(custom_nlp_processor)
+            return {'error': 'Could not generate input embedding', 'confidence': 0.0}
 
-        # INTERVENTIONAL PROCEDURE DETECTION: Detect interventional terms for weighting
-        interventional_terms = detect_interventional_procedure_terms(input_exam)
-        is_interventional_input = len(interventional_terms) > 0
-        
-        if is_interventional_input:
-            logger.info(f"Detected interventional procedure terms in input: {interventional_terms}")
+        input_interventional_terms = set(detect_interventional_procedure_terms(input_exam))
+        is_interventional_input = bool(input_interventional_terms)
 
-        # MAIN MATCHING LOOP: Compare input against all NHS entries
         for entry in self.nhs_data:
             nhs_embedding = entry.get("_embedding")
             nhs_components = entry.get("_parsed_components")
+            if not nhs_components or nhs_embedding is None: continue
 
-            # Skip entries without embeddings or parsed components
-            if not nhs_components or nhs_embedding is None:
-                continue
-
-            # COMPONENT MATCHING: Compare input components against NHS components
-            # Handle both string and list formats for flexibility
-            input_modality = extracted_input_components.get('modality')
-            if isinstance(input_modality, list):
-                input_modality = input_modality[0] if input_modality else None
-            
-            nhs_modality = nhs_components.get('modality')
-            
-            # ==================================================================
-            # MODIFICATION: This block was changed to handle ambiguous modalities.
-            # ==================================================================
-            # MODALITY MATCHING GATEKEEPER:
-            # Only perform strict modality filtering if the input modality is known and is NOT 'Other'.
-            # If the input modality is 'Other', we skip this filter and let semantic scoring decide.
-            if input_modality and input_modality.lower() != 'other':
-                
-                # --- Start of Original Logic ---
-                # This code now only runs when we have a specific input modality like 'CT', 'MR', etc.
-                if nhs_modality:
-                    input_mod_lower = input_modality.lower()
-                    nhs_mod_lower = nhs_modality.lower()
-                    
-                    if input_mod_lower != nhs_mod_lower:
-                        # Allow common modality aliases for flexibility
-                        modality_aliases = {
-                            'ct': ['computed tomography', 'dect'],
-                            'mr': ['mri', 'magnetic resonance'],
-                            'us': ['ultrasound', 'echo'],
-                            'xr': ['x-ray', 'radiograph'],
-                            'mammography': ['mg', 'mammo', 'mamm', 'mammogram']
-                        }
-                        
-                        compatible = False
-                        for canonical, aliases in modality_aliases.items():
-                            if (input_mod_lower == canonical and nhs_mod_lower in aliases) or \
-                               (nhs_mod_lower == canonical and input_mod_lower in aliases):
-                                compatible = True
-                                break
-                        
-                        if not compatible:
-                            logger.debug(f"Skipping due to modality mismatch: {input_mod_lower} vs {nhs_mod_lower}")
-                            continue
-                # --- End of Original Logic ---
-
-            # Laterality matching - only enforce if both are specified
-            input_lat = extracted_input_components.get('laterality')
-            if isinstance(input_lat, list):
-                input_lat = input_lat[0] if input_lat else None
-                
-            nhs_lat = nhs_components.get('laterality')
-            
-            if input_lat and nhs_lat:
-                if input_lat.lower() != nhs_lat.lower():
-                    logger.debug(f"Skipping due to laterality mismatch: {input_lat} vs {nhs_lat}")
-                    continue
-
-            # SCORING: Calculate combined confidence score
-            # Use selected NLP processor for semantic similarity
+            # Core semantic and fuzzy scores
             semantic_score = nlp_proc.calculate_semantic_similarity(input_embedding, nhs_embedding)
-            nhs_clean_name = nhs_components.get('cleanName', entry.get('Clean Name', ''))
-            fuzzy_score = fuzz.ratio(input_exam.lower(), nhs_clean_name.lower()) / 100.0
+            fuzzy_score_clean = fuzz.token_sort_ratio(input_exam.lower(), entry.get("Clean Name", "").lower()) / 100.0
+            fuzzy_score_source = fuzz.token_sort_ratio(input_exam.lower(), entry.get("_source_text_for_embedding", "").lower()) / 100.0
+            fuzzy_score = max(fuzzy_score_clean, fuzzy_score_source)
+            
             combined_score = (0.7 * semantic_score) + (0.3 * fuzzy_score)
 
-            # BONUS SCORING: Component alignment bonuses
-            if input_modality and input_modality.lower() == nhs_modality.lower():
-                combined_score += 0.1  # Modality alignment bonus
+            # Text-driven interventional scoring
+            nhs_interventional_terms = set(entry.get('_interventional_terms', []))
+            is_interventional_nhs = bool(nhs_interventional_terms)
 
-            # MODIFICATION: Add a strong bonus for technique alignment.
-            input_techniques = set(extracted_input_components.get('technique', []))
-            nhs_techniques = set(nhs_components.get('technique', []))
-            
-            # If the input specifies techniques, reward matches heavily.
-            if input_techniques:
-                # Calculate the intersection of techniques
-                common_techniques = input_techniques.intersection(nhs_techniques)
-                if common_techniques:
-                    # Apply a significant bonus for each matching technique.
-                    # This makes technique a powerful feature for matching.
-                    technique_bonus = len(common_techniques) * 0.20
-                    combined_score += technique_bonus
-                    logger.debug(f"Technique bonus for '{nhs_clean_name}': +{technique_bonus:.3f} for matching techniques: {common_techniques}")
+            if is_interventional_input and is_interventional_nhs:
+                overlap_bonus = 0.25 + (0.1 * len(input_interventional_terms.intersection(nhs_interventional_terms)))
+                combined_score += overlap_bonus
+            elif is_interventional_input and not is_interventional_nhs:
+                combined_score -= 0.30
+            elif not is_interventional_input and is_interventional_nhs:
+                combined_score -= 0.20
+            else:
+                combined_score += 0.10
 
-            # Contrast alignment scoring - FIXED: Handle all contrast matching scenarios
-            input_contrast = extracted_input_components.get('contrast')
-            if isinstance(input_contrast, list):
-                input_contrast = input_contrast[0] if input_contrast else None
-                
-            nhs_contrast = nhs_components.get('contrast')
-            
-            # Normalize contrast values for comparison
-            input_contrast_norm = input_contrast.lower() if input_contrast else None
-            nhs_contrast_norm = nhs_contrast.lower() if nhs_contrast else None
-            
-            if input_contrast_norm and nhs_contrast_norm:
-                # Both have contrast specified - exact match gets strong bonus, mismatch gets penalty
-                if input_contrast_norm == nhs_contrast_norm:
-                    combined_score += 0.15  # Strong bonus for contrast alignment
-                else:
-                    combined_score -= 0.2   # Strong penalty for contrast mismatch
-            elif input_contrast_norm and not nhs_contrast_norm:
-                # Input specifies contrast but NHS entry is ambiguous - apply penalty
-                combined_score -= 0.1   # Penalty for ambiguous NHS entry when input is specific
-            elif not input_contrast_norm and nhs_contrast_norm:
-                # NHS specifies contrast but input is ambiguous - minor penalty
-                combined_score -= 0.05  # Small penalty for specific NHS when input is ambiguous
-            
-            # INTERVENTIONAL PROCEDURE WEIGHTING: Boost score for matching procedure type
-            nhs_is_interventional = entry.get('Interventional Procedure', 'N').upper() == 'Y'
-            nhs_is_diagnostic = entry.get('Diagnostic procedure', 'N').upper() == 'Y'
-            
-            if is_interventional_input and nhs_is_interventional:
-                # Strong bonus for interventional input matching interventional NHS entry
-                combined_score += 0.25
-                logger.debug(f"Interventional procedure match bonus applied for: {nhs_clean_name}")
-            elif is_interventional_input and nhs_is_diagnostic and not nhs_is_interventional:
-                # Penalty for interventional input matching diagnostic-only NHS entry
-                combined_score -= 0.15
-                logger.debug(f"Interventional/diagnostic mismatch penalty applied for: {nhs_clean_name}")
-            elif not is_interventional_input and nhs_is_diagnostic:
-                # Small bonus for diagnostic input matching diagnostic NHS entry
-                combined_score += 0.1
-                logger.debug(f"Diagnostic procedure match bonus applied for: {nhs_clean_name}")
-            
-            # =================================================================================
-            # NEW: SPECIFICITY PENALTY
-            # Penalize matches that are more specific than the input (e.g., have extra terms).
-            # This prevents a general input like "MRI Brain" from matching a specific procedure
-            # like "Diffusion Tensor MRI Brain".
-            # =================================================================================
-            
-            # Tokenize and filter stop words from both input and the NHS clean name
+            # Specificity Penalty
             input_tokens = {word for word in input_exam.lower().split() if word not in self._specificity_stop_words}
-            nhs_tokens = {word for word in nhs_clean_name.lower().split() if word not in self._specificity_stop_words}
-            
-            # Find significant words that are in the NHS name but not in the input
-            extra_words = nhs_tokens - input_tokens
-            
+            nhs_source_tokens = {word for word in entry.get("_source_text_for_embedding", "").lower().split() if word not in self._specificity_stop_words}
+            extra_words = nhs_source_tokens - input_tokens
             if extra_words:
-                # Apply a penalty for each "extra" unexplained word.
-                # Use configurable penalty weight for flexibility
-                specificity_penalty = len(extra_words) * self._specificity_penalty_weight
-                combined_score -= specificity_penalty
-                logger.debug(f"Specificity penalty for '{nhs_clean_name}': -{specificity_penalty:.3f} due to extra words: {extra_words}")
-
-
-            # Track best match
+                penalty = len(extra_words) * self._specificity_penalty_weight
+                combined_score -= penalty
+            
             if combined_score > highest_confidence:
                 highest_confidence, best_match = combined_score, entry
 
-        # DUAL LOOKUP STRATEGY: Try Clean Name first, then SNOMED FSN
-        # Step 1: Try direct Clean Name matching (current logic)
-        if best_match and highest_confidence > 0.8:
-            # High confidence Clean Name match - use it directly
-            model_name = getattr(nlp_proc, 'model_name', 'default')
-            logger.info(f"High confidence Clean Name match: '{best_match.get('Clean Name')}' with confidence {highest_confidence:.3f}")
-            return self._format_match_result(best_match, extracted_input_components, highest_confidence, interventional_terms, nlp_proc, source_suffix="CLEAN")
-        
-        # Step 2: Try SNOMED FSN matching for potentially expanded forms
-        logger.info(f"Attempting SNOMED FSN matching for input: '{input_exam}'")
-        fsn_match = self._match_against_snomed_fsn(input_exam, extracted_input_components, custom_nlp_processor)
-        
-        # Step 3: Choose the best match between Clean Name and FSN
-        if fsn_match and fsn_match.get('confidence', 0) > 0.7:
-            # Good FSN match found
-            if best_match:
-                # Compare Clean Name vs FSN match confidence
-                clean_name_confidence = highest_confidence
-                fsn_confidence = fsn_match.get('confidence', 0)
-                
-                if fsn_confidence > clean_name_confidence:
-                    logger.info(f"FSN match ({fsn_confidence:.3f}) beats Clean Name match ({clean_name_confidence:.3f})")
-                    return fsn_match
-                else:
-                    logger.info(f"Clean Name match ({clean_name_confidence:.3f}) beats FSN match ({fsn_confidence:.3f})")
-                    return self._format_match_result(best_match, extracted_input_components, highest_confidence, interventional_terms, nlp_proc, source_suffix="CLEAN")
-            else:
-                # No Clean Name match, but FSN match exists
-                logger.info(f"No Clean Name match, using FSN match with confidence {fsn_match.get('confidence', 0):.3f}")
-                return fsn_match
-        
-        # Step 4: Fall back to Clean Name match even if confidence is lower
+        # --- POST-MATCHING LATERALITY LOGIC ---
         if best_match:
-            model_name = getattr(nlp_proc, 'model_name', 'default')
-            logger.info(f"Using Clean Name match as fallback: '{best_match.get('Clean Name')}' with confidence {highest_confidence:.3f}")
-            return self._format_match_result(best_match, extracted_input_components, highest_confidence, interventional_terms, nlp_proc, source_suffix="CLEAN")
-        
-        # No match found
-        logger.warning(f"No match found for input: '{input_exam}' after checking {len(self.nhs_data)} NHS entries")
-        return {
-            'clean_name': input_exam, 
-            'snomed_id': '', 
-            'snomed_fsn': '', 
-            'snomed_laterality_concept_id': '', 
-            'snomed_laterality_fsn': '', 
-            'is_diagnostic': False,
-            'is_interventional': False,
-            'detected_interventional_terms': interventional_terms,
-            'confidence': 0.0, 
-            'source': 'NO_MATCH'
-        }
+            input_laterality = extracted_input_components.get('laterality', [])
+            best_match_parsed = best_match.get('_parsed_components', {})
+            match_laterality = best_match_parsed.get('laterality', []) if best_match_parsed else []
 
-    def validate_consistency(self) -> Dict:
-        """
-        Validate NHS data consistency and integrity.
+            if not input_laterality and match_laterality and match_laterality[0] != 'bilateral':
+                logger.info("Laterality Fallback: Input is non-specific, but best match has laterality. Searching for a bilateral peer.")
+                
+                bilateral_peer = self.find_bilateral_peer(best_match)
+                
+                if bilateral_peer:
+                    # Ideal case: A bilateral version exists. Use it instead.
+                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc)
+                else:
+                    # No bilateral peer found. Use the specific match but strip the laterality from the name.
+                    return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=True)
+
+            # Standard case: Laterality matches or was not a factor.
+            return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc)
         
-        Checks that each SNOMED CT concept ID maps to only one clean name,
-        ensuring data integrity for medical coding standards. This validation
-        is critical for maintaining consistent standardization results.
-        
-        Returns:
-            Dictionary with validation results and inconsistency count
-        """
-        snomed_to_clean_names = defaultdict(set)
-        
-        # Build mapping from SNOMED IDs to clean names
-        for entry in self.nhs_data:
-            if snomed_id := entry.get("SNOMED CT \nConcept-ID"):
-                if clean_name := entry.get("Clean Name"):
-                    snomed_to_clean_names[snomed_id].add(clean_name)
-        
-        # Identify inconsistencies (SNOMED IDs with multiple clean names)
-        inconsistencies = {k: list(v) for k, v in snomed_to_clean_names.items() if len(v) > 1}
-        
-        if inconsistencies:
-            logger.warning(f"Found {len(inconsistencies)} SNOMED IDs with multiple clean names.")
-            # Log first few inconsistencies for debugging
-            for i, (snomed_id, clean_names) in enumerate(list(inconsistencies.items())[:3]):
-                logger.warning(f"  SNOMED {snomed_id}: {clean_names}")
-        else:
-            logger.info("NHS data consistency validation passed.")
-        
-        return {
-            'inconsistencies_found': len(inconsistencies),
-            'total_snomed_ids': len(snomed_to_clean_names),
-            'validation_passed': len(inconsistencies) == 0
-        }
+        logger.warning(f"No suitable match found for input: '{input_exam}'")
+        return {'clean_name': input_exam, 'snomed_id': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
