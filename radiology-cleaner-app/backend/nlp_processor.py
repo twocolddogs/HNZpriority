@@ -69,20 +69,28 @@ class NLPProcessor:
         logger.error(f"Unexpected API response format for single text: {result}")
         return None
 
-    def batch_get_embeddings(self, texts: List[str]) -> List[Optional[np.ndarray]]:
-        """Get embeddings for multiple texts in a single batch API call."""
+    def batch_get_embeddings(self, texts: List[str], chunk_size: int = 50) -> List[Optional[np.ndarray]]:
+        """Get embeddings for multiple texts using chunked batch API calls."""
         if not self.is_available() or not texts:
             return []
 
-        # For batch processing, pass the list directly (not wrapped in another list)
         stripped_texts = [text.strip() for text in texts]
-        results = self._make_api_call(stripped_texts)
-
-        if isinstance(results, list) and all(isinstance(r, list) for r in results):
-            return [np.array(emb) for emb in results]
-             
-        logger.error(f"Unexpected batch API response format for {len(texts)} items. Type: {type(results)}, Results: {results}")
-        return [None] * len(texts)
+        all_results = []
+        
+        # Process in chunks to avoid API limits and timeouts
+        for i in range(0, len(stripped_texts), chunk_size):
+            chunk = stripped_texts[i:i + chunk_size]
+            logger.info(f"Processing chunk {i//chunk_size + 1}/{(len(stripped_texts) + chunk_size - 1)//chunk_size} ({len(chunk)} items)")
+            
+            results = self._make_api_call(chunk)
+            
+            if isinstance(results, list) and all(isinstance(r, list) for r in results):
+                all_results.extend([np.array(emb) for emb in results])
+            else:
+                logger.error(f"Unexpected batch API response format for chunk {i//chunk_size + 1}. Type: {type(results)}, Results: {results}")
+                all_results.extend([None] * len(chunk))
+        
+        return all_results
 
     def calculate_semantic_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
         """Calculate cosine similarity between two embeddings."""
