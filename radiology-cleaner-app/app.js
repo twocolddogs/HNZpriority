@@ -53,6 +53,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- STATE ---
     let allMappings = [];
     let summaryData = null;
+    let currentModel = 'default'; // Initialize the current model
 
     // --- DOM ELEMENTS ---
     const uploadSection = document.getElementById('uploadSection');
