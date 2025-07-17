@@ -37,9 +37,7 @@ class NLPProcessor:
         """Helper function to make a POST request and robustly handle the response."""
         payload = {"inputs": inputs, "options": {"wait_for_model": True}}
         try:
-            # Small delay to respect API rate limits in concurrent scenarios
-            import time
-            time.sleep(0.1)  # 100ms delay
+            # Skip delay for faster cache building (Pro account has higher limits)
             
             response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=120)
             response.raise_for_status()
@@ -99,11 +97,9 @@ class NLPProcessor:
                 logger.error(f"Unexpected batch API response format for chunk {chunk_num}. Type: {type(results)}, Results: {results}")
                 all_results.extend([None] * len(chunk))
             
-            # Add delay between chunks (except for the last chunk)
+            # Skip delays for faster cache building (Pro account has higher limits)
             if chunk_num < total_chunks and chunk_delay > 0:
-                import time
-                logger.info(f"Waiting {chunk_delay}s before processing next chunk...")
-                time.sleep(chunk_delay)
+                logger.info(f"Skipping {chunk_delay}s delay for faster processing...")
         
         return all_results
 

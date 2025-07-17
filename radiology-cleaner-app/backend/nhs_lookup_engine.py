@@ -182,7 +182,7 @@ class NHSLookupEngine:
         # Cache miss - compute embeddings
         logger.info("Computing embeddings (no valid cache found)...")
         texts_to_embed = [e["_source_text_for_embedding"] for e in self.nhs_data if e.get("_source_text_for_embedding")]
-        embeddings = nlp_proc.batch_get_embeddings(texts_to_embed, chunk_size=10, chunk_delay=0.1)
+        embeddings = nlp_proc.batch_get_embeddings(texts_to_embed, chunk_size=50, chunk_delay=0.0)
         
         # Create embeddings dictionary
         text_to_embedding = dict(zip(texts_to_embed, embeddings))
