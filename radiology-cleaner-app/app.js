@@ -115,37 +115,56 @@ window.addEventListener('DOMContentLoaded', function() {
         Object.entries(availableModels).forEach(([modelKey, modelInfo]) => {
             console.log(`Creating button for ${modelKey}:`, modelInfo);
             
+            // Create a wrapper div for button + description layout
+            const modelWrapper = document.createElement('div');
+            modelWrapper.className = 'model-wrapper';
+            modelWrapper.style.cssText = 'display: flex; align-items: center; gap: 15px; margin-bottom: 10px;';
+            
             const button = document.createElement('button');
             button.className = `button secondary model-toggle ${modelKey === currentModel ? 'active' : ''}`;
             button.id = `${modelKey}ModelBtn`;
             button.dataset.model = modelKey;
+            button.style.cssText = 'min-width: 150px; flex-shrink: 0;';
             
-            // Status indicator
-            const statusIcon = modelInfo.status === 'available' ? '✓' : '⚠';
+            // Remove emoji status icons, just use text
+            const statusText = modelInfo.status === 'available' ? '' : ' (Unavailable)';
             const statusClass = modelInfo.status === 'available' ? 'available' : 'unavailable';
             
             button.innerHTML = `
-                <span class="model-status ${statusClass}">${statusIcon}</span>
-                <span class="model-name">${formatModelName(modelKey)}</span>
+                <span class="model-name">${formatModelName(modelKey)}${statusText}</span>
             `;
+            
+            // Create description element
+            const description = document.createElement('span');
+            description.className = 'model-description';
+            description.style.cssText = 'font-size: 0.85em; color: #666; flex: 1;';
+            description.textContent = modelInfo.description || '';
             
             // Set disabled state for unavailable models
             if (modelInfo.status !== 'available') {
                 button.disabled = true;
                 button.title = `${modelInfo.name} is currently unavailable`;
+                description.style.color = '#999';
             } else {
-                button.title = modelInfo.description;
                 button.addEventListener('click', () => switchModel(modelKey));
             }
             
-            modelContainer.appendChild(button);
-            console.log(`✓ Added ${modelKey} button to container`);
+            modelWrapper.appendChild(button);
+            modelWrapper.appendChild(description);
+            modelContainer.appendChild(modelWrapper);
+            console.log(`✓ Added ${modelKey} button with description to container`);
         });
         
         console.log(`✅ Model UI built with ${modelContainer.children.length} buttons`);
     }
     
     function formatModelName(modelKey) {
+        // Use dynamic model names from the API if available
+        if (availableModels && availableModels[modelKey] && availableModels[modelKey].name) {
+            return availableModels[modelKey].name;
+        }
+        
+        // Fallback to static mapping if API data not available
         const nameMap = {
             'default': 'BioLORD (Default)',
             'pubmed': 'PubMed',
@@ -298,10 +317,10 @@ window.addEventListener('DOMContentLoaded', function() {
         // Populate modal with system architecture content
         const helpContent = document.getElementById('helpContent');
         helpContent.innerHTML = `
-            <h2>🏥 Radiology Code Semantic Cleaner</h2>
+            <h2>Radiology Code Semantic Cleaner</h2>
             <p><strong>What it does:</strong> This application transforms messy, inconsistent radiology exam names from different hospital systems into standardized, clinically meaningful names with structured components.</p>
             
-            <h3>📋 How to Use This App</h3>
+            <h3>How to Use This App</h3>
             
             <div style="background: var(--color-gray-50); padding: 1rem; border-radius: var(--radius-base); margin: 1rem 0;">
                 <h4>Step 1: Prepare Your Data</h4>
@@ -322,7 +341,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 <p>• <strong>Automatic Processing:</strong> The app sends your data to AI processing engines</p>
             </div>
 
-            <h3>🔄 What Happens During Processing</h3>
+            <h3>What Happens During Processing</h3>
             
             <div style="background: var(--color-primary-light); padding: 1rem; border-radius: var(--radius-base); margin: 1rem 0;">
                 <h4>1. Intelligent Parsing</h4>
@@ -345,7 +364,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 <p>• <strong>Component Validation:</strong> Ensures all extracted parts make clinical sense</p>
             </div>
 
-            <h3>📊 Understanding Your Results</h3>
+            <h3>Understanding Your Results</h3>
             
             <p><strong>Full View:</strong> See every individual exam with its clean name, components, and confidence score</p>
             <p><strong>Consolidated View:</strong> Groups identical clean names together to show consolidation patterns</p>
@@ -358,7 +377,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 <li><strong>Processing Stats:</strong> Speed, cache hits, and success rates</li>
             </ul>
 
-            <h3>💾 Export Options</h3>
+            <h3>Export Options</h3>
             <p>• <strong>Export Mappings:</strong> Download cleaned data as JSON for your systems</p>
             <p>• <strong>Full Results:</strong> Complete dataset with all components and confidence scores</p>
             <p>• <strong>Analytics:</strong> Summary reports showing consolidation patterns</p>
@@ -582,14 +601,14 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- CORE PROCESSING FUNCTIONS ---
     // Process files individually (for small files)
     async function processIndividually(codes) {
-        updateStatusMessage(`🔄 Processing ${codes.length} exam records individually (one by one)...`);
+        updateStatusMessage(`Processing ${codes.length} exam records individually (one by one)...`);
         
         for (let i = 0; i < codes.length; i++) {
             const code = codes[i];
             
             // Update progress message every 10 items or so
             if (i % 10 === 0 || i === codes.length - 1) {
-                updateStatusMessage(`🔄 Processing exam ${i + 1} of ${codes.length}: "${code.EXAM_NAME}"...`);
+                updateStatusMessage(`Processing exam ${i + 1} of ${codes.length}: "${code.EXAM_NAME}"...`);
             }
             
             try {
@@ -628,7 +647,7 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         
         // Individual processing complete
-        updateStatusMessage(`✅ Individual processing complete! ${allMappings.length} exam records processed.`);
+        updateStatusMessage(`Individual processing complete! ${allMappings.length} exam records processed.`);
     }
     
     // Process files in batches (for large files)
@@ -636,7 +655,7 @@ window.addEventListener('DOMContentLoaded', function() {
         console.log(`Using batch processing for ${codes.length} records...`);
         
         // Update status message
-        updateStatusMessage(`🔄 Preparing ${codes.length} exam records for processing...`);
+        updateStatusMessage(`Preparing ${codes.length} exam records for processing...`);
         
         try {
             // Transform codes to the expected format for batch API
@@ -649,7 +668,7 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Set progress to 25% while sending batch request
             progressFill.style.width = '25%';
-            updateStatusMessage(`📤 Sending ${codes.length} exam records to AI processing engine...`);
+            updateStatusMessage(`Sending ${codes.length} exam records to AI processing engine...`);
             
             const response = await fetch(BATCH_API_URL, {
                 method: 'POST',
@@ -705,15 +724,15 @@ window.addEventListener('DOMContentLoaded', function() {
                 const stats = batchResult.processing_stats;
                 const hitRate = (stats.cache_hit_ratio * 100).toFixed(1);
                 const formattedTime = formatProcessingTime(stats.processing_time_ms);
-                updateStatusMessage(`✅ Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${formattedTime} total`);
+                updateStatusMessage(`Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${formattedTime} total`);
                 console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${formattedTime} total`);
             } else {
-                updateStatusMessage(`✅ Processing complete! ${allMappings.length} exam records processed successfully.`);
+                updateStatusMessage(`Processing complete! ${allMappings.length} exam records processed successfully.`);
             }
             
         } catch (error) {
             console.error('Batch processing failed:', error);
-            updateStatusMessage(`⚠️ Batch processing failed, falling back to individual processing...`);
+            updateStatusMessage(`Batch processing failed, falling back to individual processing...`);
             // Fall back to individual processing if batch fails
             console.log('Falling back to individual processing...');
             await processIndividually(codes);
@@ -784,12 +803,12 @@ window.addEventListener('DOMContentLoaded', function() {
             // UI updates for processing
             hideUploadInterface();
             button.disabled = true;
-            button.innerHTML = '🔄 Processing Test Cases...';
+            button.innerHTML = 'Processing Test Cases...';
             fileInfo.innerHTML = `<strong>Test running:</strong> Verifying engine performance...`;
             fileInfo.style.display = 'block';
             progressBar.style.display = 'block';
             progressFill.style.width = '25%';
-            updateStatusMessage(`🧪 Calling backend sanity test endpoint with model: '${currentModel}'...`);
+            updateStatusMessage(`Calling backend sanity test endpoint with model: '${currentModel}'...`);
 
             // Debug: Log the URL being called
             console.log('Sanity test URL:', apiConfig.SANITY_TEST_URL);
@@ -813,7 +832,7 @@ window.addEventListener('DOMContentLoaded', function() {
             console.log(`Completed processing. Generated ${allMappings.length} results.`);
             
             progressFill.style.width = '100%';
-            updateStatusMessage(`✅ Sanity test complete!`);
+            updateStatusMessage(`Sanity test complete!`);
             
             // Run analysis on the results
             runAnalysis(allMappings);
@@ -826,7 +845,7 @@ window.addEventListener('DOMContentLoaded', function() {
         } finally {
             // Restore button state
             button.disabled = false;
-            button.innerHTML = '🧪 Run Sanity Test';
+            button.innerHTML = '100 Exam Test Suite';
         }
     }
 
@@ -1109,7 +1128,7 @@ window.addEventListener('DOMContentLoaded', function() {
         
         // Show notification with dynamic model name
         const displayName = formatModelName(modelKey);
-        updateStatusMessage(`🔄 Switched to ${displayName} model`);
+        updateStatusMessage(`Switched to ${displayName} model`);
         setTimeout(() => {
             const statusDiv = document.getElementById('statusMessage');
             if (statusDiv) statusDiv.style.display = 'none';

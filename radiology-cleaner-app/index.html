@@ -50,28 +50,28 @@
 
         <div class="main-card">
             <div id="uploadSection" class="upload-section">
-                <div class="upload-icon">📤</div>
+                <div class="upload-icon"></div>
                 <h2>Upload Radiology Codes JSON</h2>
                 <p>Drop your codes.json file here or click to browse.</p>
                 <input type="file" id="fileInput" accept=".json" />
             </div>
 
-            <div id="sanityTestSection" class="sanity-test-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
+            <!-- Demos Section -->
+            <div id="demosSection" class="demos-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
+                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Demos</h3>
                 <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white; border: none;">
-                    🧪 Run Sanity Test
+                    100 Exam Test Suite
                 </button>
                 <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
-                    Load and process the built-in sanity test dataset to verify engine performance
+                    Load and process the built-in test dataset to verify engine performance
                 </p>
             </div>
 
             <!-- Model Settings Section -->
             <div id="modelSettingsSection" class="model-settings-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f8f9fa;">
-                <div class="model-header-container" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                    <h3 style="margin: 0; font-size: 1.1em; color: #333;">🔧 AI Model Settings</h3>
-                    <div class="toggle-group model-selection-container">
-                        <!-- Dynamic model buttons will be inserted here by JavaScript -->
-                    </div>
+                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">AI Model Settings</h3>
+                <div class="model-selection-container">
+                    <!-- Dynamic model buttons will be inserted here by JavaScript -->
                 </div>
                 <div class="model-info" style="font-size: 0.85em; color: #666; margin-top: 10px;">
                     <span id="modelDescription">Using BioLORD model for advanced biomedical language understanding (preferred default)</span>
@@ -82,7 +82,7 @@
             <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
 
             <div class="results-section" id="resultsSection">
-                <h2>📊 Cleaning Results</h2>
+                <h2>Cleaning Results</h2>
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-value" id="originalCount">0</div><div class="stat-label">Original Codes</div></div>
                     <div class="stat-card"><div class="stat-value" id="cleanCount">0</div><div class="stat-label">Clean Names</div></div>
@@ -92,14 +92,14 @@
                     <div class="stat-card"><div class="stat-value" id="genderContext">0</div><div class="stat-label">Gender Context</div></div>
                 </div>
                 <div class="action-buttons">
-                    <button class="button primary" id="newUploadBtn">📤 New Upload</button>
-                    <button class="button success" id="exportMappingsBtn">💾 Export Mappings</button>
+                    <button class="button primary" id="newUploadBtn">New Upload</button>
+                    <button class="button success" id="exportMappingsBtn">Export Mappings</button>
                 </div>
                 
                 <!-- View Toggle -->
                 <div class="view-toggle" style="margin: 2rem 0; text-align: center;">
-                    <button class="button active" id="fullViewBtn">📋 Full View</button>
-                    <button class="button secondary" id="consolidatedViewBtn">📊 Consolidated View</button>
+                    <button class="button active" id="fullViewBtn">Full View</button>
+                    <button class="button secondary" id="consolidatedViewBtn">Consolidated View</button>
                 </div>
                 
                 <!-- Full View -->
