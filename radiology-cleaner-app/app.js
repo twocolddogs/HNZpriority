@@ -76,19 +76,12 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function useFallbackModels() {
-        // CORRECTED: Fallback models are now aligned with the backend's nlp_processor.py.
-        // This prevents a bug where the UI could show an unsupported model if the
-        // backend API call to /models fails.
+        // Fallback models aligned with backend nlp_processor.py (without biolord)
         availableModels = {
             'default': {
                 name: 'BioLORD (Default)',
                 status: 'available',
                 description: 'BioLORD - Advanced biomedical language model (default)'
-            },
-            'biolord': {
-                name: 'BioLORD',
-                status: 'available',
-                description: 'BioLORD - Advanced biomedical language model'
             },
             'experimental': {
                 name: 'MedCPT (Experimental)',

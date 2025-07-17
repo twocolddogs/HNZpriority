@@ -28,12 +28,6 @@ class NLPProcessor:
             'description': 'BioLORD - Advanced biomedical language model (default)',
             'status': 'available'
         },
-        'biolord': {
-            'hf_name': 'FremyCompany/BioLORD-2023',
-            'name': 'BioLORD',
-            'description': 'BioLORD - Advanced biomedical language model',
-            'status': 'available'
-        },
         'experimental': {
             'hf_name': 'ncbi/MedCPT-Query-Encoder',
             'name': 'MedCPT (Experimental)',

@@ -43,10 +43,10 @@ cache_manager = None
 
 def _initialize_model_processors() -> Dict[str, NLPProcessor]:
     """Initialize available NLP processors for different models"""
-    # Use model keys that match nlp_processor.py MODELS
-    MODEL_KEYS = ['default', 'biolord', 'experimental']
+    # Get model keys dynamically from nlp_processor.py
+    available_models = NLPProcessor.get_available_models()
     processors = {}
-    for model_key in MODEL_KEYS:
+    for model_key in available_models.keys():
         try:
             processor = NLPProcessor(model_key=model_key)
             if processor.is_available():
@@ -211,7 +211,6 @@ def list_available_models():
                 # Get model name from MODEL_MAPPING even if processor failed
                 model_mapping = {
                     'default': 'FremyCompany/BioLORD-2023',
-                    'biolord': 'FremyCompany/BioLORD-2023',
                     'experimental': 'ncbi/MedCPT-Query-Encoder'
                 }
                 model_info[model_key] = {
@@ -233,7 +232,6 @@ def _get_model_description(model_key: str) -> str:
     """Get description for each model type"""
     descriptions = {
         'default': 'BioLORD - Advanced biomedical language model with superior medical concept understanding (preferred default)',
-        'biolord': 'BioLORD - Advanced biomedical language model with enhanced medical concept understanding',
         'experimental': 'MedCPT - NCBI Medical Clinical Practice Text encoder (experimental)'
     }
     return descriptions.get(model_key, 'No description available')
