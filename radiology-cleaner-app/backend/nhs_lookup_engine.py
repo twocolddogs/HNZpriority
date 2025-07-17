@@ -405,6 +405,12 @@ class NHSLookupEngine:
         
         return {'clean_name': input_exam, 'snomed_id': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
         
+    def requires_redeployment(self) -> bool:
+        """Check if the NHS data has changed and requires redeployment."""
+        # For now, always return False since we handle cache invalidation automatically
+        # This method exists for compatibility with app.py
+        return False
+        
     def validate_consistency(self):
         snomed_to_primary_names = defaultdict(set)
         for entry in self.nhs_data:
