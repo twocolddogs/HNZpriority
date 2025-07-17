@@ -22,21 +22,41 @@ class NLPProcessor:
 
     # Available model configurations
     MODELS = {
-        'production': 'FremyCompany/BioLORD-2023',
-        'experimental': 'ncbi/MedCPT-Query-Encoder'
+        'default': {
+            'hf_name': 'FremyCompany/BioLORD-2023',
+            'name': 'BioLORD (Default)',
+            'description': 'BioLORD - Advanced biomedical language model (default)',
+            'status': 'available'
+        },
+        'biolord': {
+            'hf_name': 'FremyCompany/BioLORD-2023',
+            'name': 'BioLORD',
+            'description': 'BioLORD - Advanced biomedical language model',
+            'status': 'available'
+        },
+        'experimental': {
+            'hf_name': 'ncbi/MedCPT-Query-Encoder',
+            'name': 'MedCPT (Experimental)',
+            'description': 'NCBI Medical Clinical Practice Text encoder (experimental)',
+            'status': 'available'
+        }
     }
 
-    def __init__(self, model_name: str = 'FremyCompany/BioLORD-2023'):
+    def __init__(self, model_key: str = 'default'):
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
         
-        # Support both direct model names and convenience aliases
-        if model_name in self.MODELS:
-            self.model_name = self.MODELS[model_name]
-        else:
-            self.model_name = model_name
+        # Resolve the Hugging Face model name from the model_key
+        model_info = self.MODELS.get(model_key)
+        if not model_info:
+            logger.warning(f"Model key '{model_key}' not found. Falling back to 'default' model.")
+            model_info = self.MODELS['default']
+            model_key = 'default' # Update model_key to 'default' for logging
+            
+        self.model_key = model_key
+        self.hf_model_name = model_info['hf_name']
+        self.model_description = model_info['description']
         
-        # CORRECTED URL: Using the router endpoint format which is proven to work for this task.
-        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.model_name}/pipeline/feature-extraction"
+        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.hf_model_name}/pipeline/feature-extraction"
         
         self.headers = {
             "Authorization": f"Bearer {self.api_token}",
@@ -46,8 +66,7 @@ class NLPProcessor:
         if not self.api_token:
             logger.error("HUGGING_FACE_TOKEN not set. API-based NLP processing is disabled.")
         else:
-            model_type = "experimental" if self.model_name == self.MODELS['experimental'] else "production"
-            logger.info(f"Initialized API NLP Processor for {model_type} model: {self.model_name} using direct requests.")
+            logger.info(f"Initialized API NLP Processor for model '{self.model_key}': {self.hf_model_name} using direct requests.")
 
     def _make_api_call(self, inputs: list[str]) -> Optional[list]:
         """Helper function to make a POST request and robustly handle the response."""
@@ -147,8 +166,7 @@ class NLPProcessor:
             # Test with a simple text
             test_result = self.get_text_embedding("test")
             if test_result is not None:
-                model_type = "experimental" if self.model_name == self.MODELS['experimental'] else "production"
-                logger.info(f"API connection test successful for {model_type} model. Embedding shape: {test_result.shape}")
+                logger.info(f"API connection test successful for model '{self.model_key}'. Embedding shape: {test_result.shape}")
                 return True
             else:
                 logger.error("API connection test failed - no embedding returned")
@@ -159,10 +177,10 @@ class NLPProcessor:
     
     @classmethod
     def get_available_models(cls) -> dict:
-        """Return available model configurations."""
+        """Return available model configurations with their details."""
         return cls.MODELS.copy()
     
     @classmethod
     def create_experimental(cls) -> 'NLPProcessor':
         """Create an instance using the experimental model."""
-        return cls(model_name='experimental')
+        return cls(model_key='experimental')

@@ -43,19 +43,15 @@ cache_manager = None
 
 def _initialize_model_processors() -> Dict[str, NLPProcessor]:
     """Initialize available NLP processors for different models"""
-    MODEL_MAPPING = {
-        'default': 'FremyCompany/BioLORD-2023',
-        'pubmed': 'NeuML/pubmedbert-base-embeddings',
-        'biolord': 'FremyCompany/BioLORD-2023',
-        'general': 'sentence-transformers/all-MiniLM-L6-v2'
-    }
+    # Use model keys that match nlp_processor.py MODELS
+    MODEL_KEYS = ['default', 'biolord', 'experimental']
     processors = {}
-    for model_key, model_name in MODEL_MAPPING.items():
+    for model_key in MODEL_KEYS:
         try:
-            processor = NLPProcessor(model_name=model_name)
+            processor = NLPProcessor(model_key=model_key)
             if processor.is_available():
                 processors[model_key] = processor
-                logger.info(f"Initialized model processor for '{model_key}' -> '{model_name}'")
+                logger.info(f"Initialized model processor for '{model_key}': {processor.hf_model_name}")
         except Exception as e:
             logger.error(f"Failed to initialize model processor for '{model_key}': {e}")
     return processors
@@ -76,6 +72,11 @@ def _initialize_app():
     start_time = time.time()
     
     # Simple in-memory cache for this example
+    # NOTE: This cache system imports cache_version utilities (line 25) but doesn't use them.
+    # The cache_version system provides automatic invalidation when critical files change,
+    # but this SimpleCache doesn't implement cache key generation with format_cache_key()
+    # or version-based invalidation with get_current_cache_version().
+    # For full caching, integrate with cache_version.py and implement in API endpoints.
     class SimpleCache:
         def __init__(self): self.cache = {}
         def get(self, key): return self.cache.get(key)
@@ -202,9 +203,8 @@ def list_available_models():
                 # Get model name from MODEL_MAPPING even if processor failed
                 model_mapping = {
                     'default': 'FremyCompany/BioLORD-2023',
-                    'pubmed': 'NeuML/pubmedbert-base-embeddings', 
                     'biolord': 'FremyCompany/BioLORD-2023',
-                    'general': 'sentence-transformers/all-MiniLM-L6-v2'
+                    'experimental': 'ncbi/MedCPT-Query-Encoder'
                 }
                 model_info[model_key] = {
                     'name': model_mapping.get(model_key, 'unknown'),
@@ -225,9 +225,8 @@ def _get_model_description(model_key: str) -> str:
     """Get description for each model type"""
     descriptions = {
         'default': 'BioLORD - Advanced biomedical language model with superior medical concept understanding (preferred default)',
-        'pubmed': 'PubMed-trained embeddings optimized for medical terminology',
-        'biolord': 'Advanced biomedical language model with enhanced medical concept understanding',
-        'general': 'General-purpose sentence transformer for broad text understanding'
+        'biolord': 'BioLORD - Advanced biomedical language model with enhanced medical concept understanding',
+        'experimental': 'MedCPT - NCBI Medical Clinical Practice Text encoder (experimental)'
     }
     return descriptions.get(model_key, 'No description available')
 

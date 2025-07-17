@@ -194,14 +194,58 @@ This ensures Gemini maintains comprehensive understanding of:
 
 ## Testing Policy
 
-**CRITICAL: Never attempt to run local tests automatically.**
+### Local Development Setup (Recommended)
 
-- **DO NOT** run `python app.py`, `npm start`, or any local server commands
-- **DO NOT** execute test commands like `pytest`, `npm test`, or similar
-- **DO NOT** assume the local environment is configured for running the application
-- Local testing environment may be broken or misconfigured
-- Focus on code analysis, file modification, and static code review only
-- When testing is needed, recommend the user run tests in their own environment
+**The radiology cleaner backend supports local development:**
+
+```bash
+# Run Flask server locally (from project root)
+python3 backend/app.py
+
+# Server runs on http://localhost:10000
+# Available endpoints:
+# - GET /health - Health check
+# - GET /models - List available NLP models  
+# - POST /parse_enhanced - Single exam processing
+# - POST /parse_batch - Batch exam processing
+```
+
+**Test endpoints:**
+```bash
+# Health check
+curl http://localhost:10000/health
+
+# Test parsing (requires working NLP models)
+curl -X POST http://localhost:10000/parse_enhanced \
+  -H "Content-Type: application/json" \
+  -d '{"exam_name": "CT CHEST"}'
+```
+
+**Notes:**
+- Dependencies available system-wide (Flask, numpy, requests, fuzzywuzzy)
+- Server initialization takes ~1 second
+- Use for development, debugging, and testing API changes
+
+**For NLP Model Support:**
+```bash
+# Set Hugging Face token (required for model endpoints)
+export HUGGING_FACE_TOKEN="your_hf_token_here"
+
+# Available models: default, biolord, experimental
+# Test with model parameter:
+curl -X POST http://localhost:10000/parse_enhanced \
+  -H "Content-Type: application/json" \
+  -d '{"exam_name": "CT CHEST", "model": "default"}'
+```
+
+**Model Troubleshooting:**
+- Without HF token: Basic NHS matching works, but no semantic similarity
+- With HF token: Full NLP processing with embedding-based matching
+- Check `/models` endpoint to see available models
+
+### Production Deployment
+- Production deployment still uses `buildit` command for Render.com
+- Local development complements but doesn't replace production testing
 
 ## Code Patterns
 

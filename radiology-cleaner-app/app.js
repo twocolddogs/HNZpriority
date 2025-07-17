@@ -76,11 +76,25 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function useFallbackModels() {
-        // Fallback to hardcoded models if API fails
+        // CORRECTED: Fallback models are now aligned with the backend's nlp_processor.py.
+        // This prevents a bug where the UI could show an unsupported model if the
+        // backend API call to /models fails.
         availableModels = {
-            'default': { name: 'FremyCompany/BioLORD-2023', status: 'available', description: 'BioLORD - Advanced biomedical language model (default)' },
-            'pubmed': { name: 'NeuML/pubmedbert-base-embeddings', status: 'available', description: 'PubMed-trained embeddings for medical terminology' },
-            'experimental': { name: 'ncbi/MedCPT-Query-Encoder', status: 'available', description: 'NCBI Medical Clinical Practice Text encoder (experimental)' }
+            'default': {
+                name: 'BioLORD (Default)',
+                status: 'available',
+                description: 'BioLORD - Advanced biomedical language model (default)'
+            },
+            'biolord': {
+                name: 'BioLORD',
+                status: 'available',
+                description: 'BioLORD - Advanced biomedical language model'
+            },
+            'experimental': {
+                name: 'MedCPT (Experimental)',
+                status: 'available',
+                description: 'NCBI Medical Clinical Practice Text encoder (experimental)'
+            }
         };
         currentModel = 'default';
         buildModelSelectionUI();
