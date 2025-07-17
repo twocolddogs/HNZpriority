@@ -18,8 +18,8 @@ services:
       value: /opt/render/.cache/pip
   buildCommand: "chmod +x build.sh && ./build.sh"
  
-  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 180 --preload --log-level debug 'radiology-cleaner-app.backend.app:app'"
-  autoDeploy: true
+  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 300 --preload --log-level debug 'radiology-cleaner-app.backend.app:app'"
+  autoDeploy: false
   healthCheckPath: /health
 
 - type: web
@@ -41,7 +41,7 @@ services:
       value: /opt/render/.cache/pip
   buildCommand: "chmod +x build.sh && ./build.sh"
  
-  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 180 --preload --log-level info 'radiology-cleaner-app.backend.app:app'"
+  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 300 --preload --log-level info 'radiology-cleaner-app.backend.app:app'"
   autoDeploy: false
   healthCheckPath: /health
 
@@ -49,7 +49,7 @@ services:
   name: radiology-cleaner-frontend-staging
   repo: https://github.com/twocolddogs/HNZpriority.git
   branch: develop
-  rootDir: ./radiology-cleaner-app/frontend
+  rootDir: ./radiology-cleaner-app/
   buildFilter:
     paths:
       - "radiology-cleaner-app/frontend/**"
@@ -68,10 +68,10 @@ services:
   name: radiology-cleaner-frontend-prod
   repo: https://github.com/twocolddogs/HNZpriority.git
   branch: main
-  rootDir: ./radiology-cleaner-app/frontend
+  rootDir: ./radiology-cleaner-app/
   buildFilter:
     paths:
-      - "radiology-cleaner-app/frontend/**"
+      - "radiology-cleaner-app/**"
   buildCommand: echo "Static files - no build needed"
   staticPublishPath: ./
   routes:
