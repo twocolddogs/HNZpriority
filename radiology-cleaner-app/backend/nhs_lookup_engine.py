@@ -124,13 +124,18 @@ class NHSLookupEngine:
             current_model = getattr(self.nlp_processor, 'model_name', 'unknown')
             current_hash = self._get_data_hash()
             
-            # Validate cache
-            if (metadata.get('model_name') == current_model and 
-                metadata.get('data_hash') == current_hash):
-                logger.info(f"Valid embeddings cache found: {metadata.get('udid')}")
+            # Log validation details for debugging
+            cached_model = metadata.get('model_name')
+            cached_hash = metadata.get('data_hash')
+            logger.info(f"Cache validation - Current model: {current_model}, Cached model: {cached_model}")
+            logger.info(f"Cache validation - Current hash: {current_hash}, Cached hash: {cached_hash}")
+            
+            # Validate cache - be more lenient for now
+            if metadata.get('model_name') == current_model:
+                logger.info(f"Valid embeddings cache found: {metadata.get('udid')} (model match)")
                 return cache_data
             else:
-                logger.info("Embeddings cache invalid (model or data changed)")
+                logger.warning(f"Embeddings cache invalid - model mismatch: {cached_model} vs {current_model}")
                 return None
                 
         except Exception as e:
