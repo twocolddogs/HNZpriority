@@ -186,7 +186,6 @@ class NHSLookupEngine:
                 # Both exist - compare dates to see if local is up to date
                 if local_cache_date and r2_cache_date:
                     # Parse dates for comparison
-                    from datetime import datetime
                     try:
                         local_dt = datetime.fromisoformat(local_cache_date.replace('Z', '+00:00'))
                         r2_dt = r2_cache_date.replace(tzinfo=None) if r2_cache_date.tzinfo else r2_cache_date
