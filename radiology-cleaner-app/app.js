@@ -38,6 +38,7 @@ window.addEventListener('DOMContentLoaded', function() {
     
     console.log(`Frontend running in ${apiConfig.mode} mode`);
     console.log(`API base URL: ${apiConfig.baseUrl}`);
+    console.log(`Models URL: ${MODELS_URL}`);
     
     async function testApiConnectivity() {
         try {
@@ -87,19 +88,28 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function buildModelSelectionUI() {
+        console.log('🔧 Building model selection UI...');
+        console.log('Available models:', availableModels);
+        
         const modelContainer = document.querySelector('.model-selection-container');
         if (!modelContainer) {
-            console.warn('Model selection container not found in HTML');
+            console.error('❌ Model selection container not found in HTML');
             return;
         }
+        
+        console.log('✓ Found model container:', modelContainer);
         
         // Clear existing buttons
         modelContainer.innerHTML = '';
         
         // Create model selection buttons dynamically
+        console.log(`🔄 Creating ${Object.keys(availableModels).length} model buttons...`);
+        
         Object.entries(availableModels).forEach(([modelKey, modelInfo]) => {
+            console.log(`Creating button for ${modelKey}:`, modelInfo);
+            
             const button = document.createElement('button');
-            button.className = `model-toggle ${modelKey === currentModel ? 'active' : ''}`;
+            button.className = `button secondary model-toggle ${modelKey === currentModel ? 'active' : ''}`;
             button.id = `${modelKey}ModelBtn`;
             button.dataset.model = modelKey;
             
@@ -122,7 +132,10 @@ window.addEventListener('DOMContentLoaded', function() {
             }
             
             modelContainer.appendChild(button);
+            console.log(`✓ Added ${modelKey} button to container`);
         });
+        
+        console.log(`✅ Model UI built with ${modelContainer.children.length} buttons`);
     }
     
     function formatModelName(modelKey) {
