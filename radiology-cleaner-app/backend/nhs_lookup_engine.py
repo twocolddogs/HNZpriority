@@ -43,6 +43,7 @@ class NHSLookupEngine:
         self.nlp_processor = nlp_processor
         self.semantic_parser = semantic_parser
         self._embeddings_cache = {}
+        self._cache_invalid_due_to_data_change = False
         
         # --- SCORING WEIGHTS ---
         # Component weights must sum to 1.0
@@ -158,6 +159,8 @@ class NHSLookupEngine:
                     logger.warning(f"Embeddings cache invalid - model mismatch: {metadata.get('model_name')} vs {current_model}")
                 if metadata.get('data_hash') != current_data_hash:
                     logger.warning(f"Embeddings cache invalid - data hash mismatch: {metadata.get('data_hash')} vs {current_data_hash}")
+                    # Set flag for graceful degradation in app mode
+                    self._cache_invalid_due_to_data_change = True
                 return None
         except Exception as e:
             logger.warning(f"Failed to load embeddings cache: {e}")
@@ -181,7 +184,7 @@ class NHSLookupEngine:
         except Exception as e:
             logger.error(f"Failed to save embeddings cache: {e}")
     
-    def _load_or_compute_embeddings(self, custom_nlp_processor: Optional[NLPProcessor] = None):
+    def _load_or_compute_embeddings(self, custom_nlp_processor: Optional[NLPProcessor] = None, allow_recompute: bool = False):
         nlp_proc = custom_nlp_processor or self.nlp_processor
         if not nlp_proc or not nlp_proc.is_available(): 
             logger.warning("NLP processor not available, skipping embeddings")
@@ -195,6 +198,11 @@ class NHSLookupEngine:
                 if source_text in embeddings_dict:
                     entry["_embedding"] = embeddings_dict[source_text]
             logger.info(f"Loaded {len(embeddings_dict)} embeddings from cache")
+            return
+        
+        # Check if cache is invalid due to data change and we're in app mode
+        if self._cache_invalid_due_to_data_change and not allow_recompute:
+            logger.error("NHS matching rules have been updated. The application requires redeployment before it can be used.")
             return
         
         logger.info("Computing embeddings (no valid cache found)...")
@@ -211,7 +219,11 @@ class NHSLookupEngine:
         logger.info(f"Computed and cached {len(text_to_embedding)} embeddings")
 
     def _precompute_embeddings(self, custom_nlp_processor: Optional[NLPProcessor] = None):
-        self._load_or_compute_embeddings(custom_nlp_processor)
+        self._load_or_compute_embeddings(custom_nlp_processor, allow_recompute=True)
+    
+    def requires_redeployment(self) -> bool:
+        """Check if the system requires redeployment due to NHS data changes."""
+        return self._cache_invalid_due_to_data_change
 
     def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
         primary_name = specific_entry.get("primary_source_name")
@@ -325,7 +337,7 @@ class NHSLookupEngine:
 
         if not hasattr(self, '_embeddings_precomputed_for_model') or not self._embeddings_precomputed_for_model.get(nlp_proc.hf_model_name):
             logger.info(f"Embeddings for model '{nlp_proc.hf_model_name}' not pre-computed. Running now.")
-            self._load_or_compute_embeddings(custom_nlp_processor=nlp_proc)
+            self._load_or_compute_embeddings(custom_nlp_processor=nlp_proc, allow_recompute=False)
             if not hasattr(self, '_embeddings_precomputed_for_model'):
                 self._embeddings_precomputed_for_model = {}
             self._embeddings_precomputed_for_model[nlp_proc.hf_model_name] = True
