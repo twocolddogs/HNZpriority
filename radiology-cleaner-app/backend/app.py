@@ -203,7 +203,7 @@ def list_available_models():
         for model_key, processor in model_processors.items():
             if processor and processor.is_available():
                 model_info[model_key] = {
-                    'name': processor.model_name,
+                    'name': processor.hf_model_name,
                     'status': 'available',
                     'description': _get_model_description(model_key)
                 }
