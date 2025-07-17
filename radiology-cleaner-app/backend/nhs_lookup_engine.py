@@ -110,19 +110,34 @@ class NHSLookupEngine:
         return os.path.join(cache_dir, f'nhs_embeddings_{model_key}_{data_hash}.pkl')
     
     def _get_data_hash(self) -> str:
-        """Generate a stable hash based on NHS file content only."""
+        """Generate a stable hash based on NHS data structure."""
         # NOTE: We don't include processing file changes (cache_version) for embedding cache
         # because embeddings should only be invalidated when NHS data changes, not processing logic
         # The cache_version tracking is intended for speeding up evaluation runs
         
-        # Use file content hash instead of modification time for consistency across environments
+        # Use the loaded NHS data structure for consistent hashing across environments
+        # This avoids issues with file content changes during deployment
         try:
-            with open(self.nhs_json_path, 'rb') as f:
-                nhs_content = f.read()
-            return hashlib.sha256(nhs_content).hexdigest()[:16]
+            # Create a stable representation of the NHS data
+            stable_data = []
+            for entry in self.nhs_data:
+                # Only include fields that affect embedding computation
+                stable_entry = {
+                    'snomed_concept_id': entry.get('snomed_concept_id'),
+                    'snomed_fsn': entry.get('snomed_fsn'),
+                    'primary_source_name': entry.get('primary_source_name')
+                }
+                stable_data.append(stable_entry)
+            
+            # Sort for consistent ordering
+            stable_data.sort(key=lambda x: str(x.get('snomed_concept_id', '')))
+            
+            # Generate hash from stable data structure
+            data_str = json.dumps(stable_data, sort_keys=True, separators=(',', ':'))
+            return hashlib.sha256(data_str.encode()).hexdigest()[:16]
         except Exception as e:
-            logger.error(f"Error reading NHS file for hash: {e}")
-            # Fallback to a default hash if file reading fails
+            logger.error(f"Error generating NHS data hash: {e}")
+            # Fallback to a default hash if hashing fails
             return hashlib.sha256(b"nhs_fallback").hexdigest()[:16]
 
     def _apply_embeddings_to_data(self, embeddings_dict: Dict):
