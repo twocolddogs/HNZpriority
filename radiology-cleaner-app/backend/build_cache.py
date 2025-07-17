@@ -38,16 +38,16 @@ def build_embeddings_cache():
     success_count = 0
     total_models = len(available_models)
     
-    for model_alias, model_name in available_models.items():
-        logger.info(f"\n=== Building cache for {model_alias} model: {model_name} ===")
+    for model_alias, model_info in available_models.items():
+        logger.info(f"\n=== Building cache for {model_alias} model: {model_info['hf_name']} ===")
         
         # --- 1. Initialize NLP Processor for this model ---
         try:
-            nlp_processor = NLPProcessor(model_name=model_alias)
+            nlp_processor = NLPProcessor(model_key=model_alias)
             if not nlp_processor.is_available():
                 logger.error("HUGGING_FACE_TOKEN is not set. Cannot build embeddings cache.")
                 sys.exit(1)
-            logger.info(f"Using NLP model: {nlp_processor.model_name}")
+            logger.info(f"Using NLP model: {nlp_processor.hf_model_name}")
         except Exception as e:
             logger.error(f"Failed to initialize NLP Processor for {model_alias}: {e}", exc_info=True)
             continue
