@@ -16,6 +16,11 @@
 import json
 import logging
 import re
+import os
+import pickle
+import hashlib
+import uuid
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from collections import defaultdict
 from fuzzywuzzy import fuzz
@@ -41,7 +46,7 @@ class NHSLookupEngine:
         self._load_nhs_data()
         self._build_lookup_tables()
         self._preprocess_and_parse_nhs_data()
-        self._precompute_embeddings()
+        self._load_or_compute_embeddings()
 
         self._specificity_penalty_weight = 0.08
         self._specificity_stop_words = {
@@ -92,17 +97,108 @@ class NHSLookupEngine:
             entry["_interventional_terms"] = detect_interventional_procedure_terms(preprocessed_text)
             entry['_parsed_components'] = self.semantic_parser.parse_exam_name(preprocessed_text, 'Other')
 
-    def _precompute_embeddings(self, custom_nlp_processor: Optional[NLPProcessor] = None):
+    def _get_cache_path(self) -> str:
+        """Get the path for the embeddings cache file."""
+        cache_dir = os.path.join(os.getcwd(), 'cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        return os.path.join(cache_dir, 'nhs_embeddings_cache.pkl')
+    
+    def _get_data_hash(self) -> str:
+        """Generate hash of NHS data for cache validation."""
+        # Create hash based on data content
+        data_str = json.dumps(self.nhs_data, sort_keys=True, default=str)
+        return hashlib.sha256(data_str.encode()).hexdigest()[:16]
+    
+    def _load_cache(self) -> Optional[Dict]:
+        """Load embeddings cache if valid."""
+        cache_path = self._get_cache_path()
+        if not os.path.exists(cache_path):
+            logger.info("No embeddings cache found")
+            return None
+            
+        try:
+            with open(cache_path, 'rb') as f:
+                cache_data = pickle.load(f)
+            
+            metadata = cache_data.get('cache_metadata', {})
+            current_model = getattr(self.nlp_processor, 'model_name', 'unknown')
+            current_hash = self._get_data_hash()
+            
+            # Validate cache
+            if (metadata.get('model_name') == current_model and 
+                metadata.get('data_hash') == current_hash):
+                logger.info(f"Valid embeddings cache found: {metadata.get('udid')}")
+                return cache_data
+            else:
+                logger.info("Embeddings cache invalid (model or data changed)")
+                return None
+                
+        except Exception as e:
+            logger.warning(f"Failed to load embeddings cache: {e}")
+            return None
+    
+    def _save_cache(self, embeddings_dict: Dict):
+        """Save embeddings to persistent cache with metadata."""
+        cache_path = self._get_cache_path()
+        
+        cache_data = {
+            'cache_metadata': {
+                'udid': str(uuid.uuid4()),
+                'model_name': getattr(self.nlp_processor, 'model_name', 'unknown'),
+                'data_hash': self._get_data_hash(),
+                'created_date': datetime.now(timezone.utc).isoformat(),
+                'version': '1.0',
+                'total_embeddings': len(embeddings_dict)
+            },
+            'embeddings': embeddings_dict
+        }
+        
+        try:
+            with open(cache_path, 'wb') as f:
+                pickle.dump(cache_data, f)
+            logger.info(f"Embeddings cache saved: {cache_data['cache_metadata']['udid']}")
+        except Exception as e:
+            logger.error(f"Failed to save embeddings cache: {e}")
+    
+    def _load_or_compute_embeddings(self, custom_nlp_processor: Optional[NLPProcessor] = None):
+        """Load embeddings from cache or compute them if cache is invalid."""
         nlp_proc = custom_nlp_processor or self.nlp_processor
-        if not nlp_proc or not nlp_proc.is_available(): return
-        model_name = getattr(nlp_proc, 'model_name', 'unknown')
-        if model_name in self._embeddings_cache: return
+        if not nlp_proc or not nlp_proc.is_available(): 
+            logger.warning("NLP processor not available, skipping embeddings")
+            return
+            
+        # Try to load from cache first
+        cache_data = self._load_cache()
+        if cache_data:
+            embeddings_dict = cache_data['embeddings']
+            # Apply cached embeddings to NHS data
+            for entry in self.nhs_data:
+                source_text = entry.get("_source_text_for_embedding")
+                if source_text in embeddings_dict:
+                    entry["_embedding"] = embeddings_dict[source_text]
+            logger.info(f"Loaded {len(embeddings_dict)} embeddings from cache")
+            return
+        
+        # Cache miss - compute embeddings
+        logger.info("Computing embeddings (no valid cache found)...")
         texts_to_embed = [e["_source_text_for_embedding"] for e in self.nhs_data if e.get("_source_text_for_embedding")]
         embeddings = nlp_proc.batch_get_embeddings(texts_to_embed, chunk_size=10, chunk_delay=0.1)
+        
+        # Create embeddings dictionary
         text_to_embedding = dict(zip(texts_to_embed, embeddings))
+        
+        # Apply embeddings to NHS data
         for entry in self.nhs_data:
             source_text = entry.get("_source_text_for_embedding")
             entry["_embedding"] = text_to_embedding.get(source_text)
+        
+        # Save to cache for next time
+        self._save_cache(text_to_embedding)
+        logger.info(f"Computed and cached {len(text_to_embedding)} embeddings")
+
+    def _precompute_embeddings(self, custom_nlp_processor: Optional[NLPProcessor] = None):
+        """Legacy method - now redirects to cache-aware implementation."""
+        self._load_or_compute_embeddings(custom_nlp_processor)
 
     def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
         specific_clean_name = specific_entry.get("clean_name")
