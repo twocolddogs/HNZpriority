@@ -114,9 +114,16 @@ class NHSLookupEngine:
         return os.path.join(cache_dir, f'nhs_embeddings_{model_key}_{data_hash}.pkl')
     
     def _get_data_hash(self) -> str:
-        """Generate hash of NHS data for cache validation."""
-        data_str = json.dumps(self.nhs_data, sort_keys=True, default=str)
-        return hashlib.sha256(data_str.encode()).hexdigest()[:16]
+        """Generate hash of the original NHS.json file content."""
+        try:
+            with open(self.nhs_json_path, 'rb') as f:
+                file_content = f.read()
+            return hashlib.sha256(file_content).hexdigest()[:16]
+        except Exception as e:
+            logger.warning(f"Failed to hash NHS file {self.nhs_json_path}: {e}")
+            # Fallback to data hash (less reliable but better than nothing)
+            data_str = json.dumps(self.nhs_data, sort_keys=True, default=str)
+            return hashlib.sha256(data_str.encode()).hexdigest()[:16]
 
     def _apply_embeddings_to_data(self, embeddings_dict: Dict):
         """Helper to map embeddings from a dictionary to the nhs_data list."""
