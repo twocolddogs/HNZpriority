@@ -141,6 +141,17 @@ class NHSLookupEngine:
                 cache_data = self.r2_manager.download_cache(model_key, data_hash)
                 if cache_data:
                     self._apply_embeddings_to_data(cache_data['embeddings'])
+                    
+                    # Save R2 cache to local disk for faster future access
+                    local_cache_path = self._get_local_cache_path()
+                    logger.info(f"Saving R2 cache to local path: {local_cache_path}")
+                    try:
+                        with open(local_cache_path, 'wb') as f:
+                            pickle.dump(cache_data, f)
+                        logger.info("Successfully saved R2 cache to local disk")
+                    except Exception as e:
+                        logger.error(f"Failed to save R2 cache to local disk: {e}")
+                    
                     return
             
             local_cache_path = self._get_local_cache_path()
