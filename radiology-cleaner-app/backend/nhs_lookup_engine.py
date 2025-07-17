@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING
 
 from nlp_processor import NLPProcessor
 from context_detection import detect_interventional_procedure_terms
+from r2_cache_manager import R2CacheManager
 
 if TYPE_CHECKING:
     from parser import RadiologySemanticParser
@@ -44,6 +45,7 @@ class NHSLookupEngine:
         self.semantic_parser = semantic_parser
         self._embeddings_cache = {}
         self._cache_invalid_due_to_data_change = False
+        self.r2_cache_manager = R2CacheManager()
         
         # --- SCORING WEIGHTS ---
         # Component weights must sum to 1.0
@@ -68,9 +70,8 @@ class NHSLookupEngine:
         self._build_lookup_tables()
         self._preprocess_and_parse_nhs_data()
         
-        # Don't load embeddings during initialization to avoid startup timeouts
-        # They will be loaded on-demand during the first standardize_exam call
-        logger.info("NHSLookupEngine initialized. Embeddings will be loaded on first use.")
+        # Load embeddings from R2 cache - should be fast since pre-computed
+        self._load_or_compute_embeddings()
 
         self._specificity_stop_words = {
             'a', 'an', 'the', 'and', 'or', 'with', 'without', 'for', 'of', 'in', 'on', 'to', 'is', 'from',
@@ -177,53 +178,86 @@ class NHSLookupEngine:
             return hashlib.sha256(data_str.encode()).hexdigest()[:16]
     
     def _load_cache(self) -> Optional[Dict]:
+        """Load cache from R2 first, fallback to local cache."""
+        current_model_key = getattr(self.nlp_processor, 'model_key', 'unknown')
+        current_data_hash = self._get_data_hash()
+        
+        # Try R2 cache first
+        if self.r2_cache_manager.is_available():
+            logger.info(f"Checking R2 cache for model '{current_model_key}' with hash {current_data_hash}")
+            cache_data = self.r2_cache_manager.download_cache(current_model_key, current_data_hash)
+            if cache_data:
+                logger.info(f"Valid embeddings cache found in R2 for model {current_model_key}")
+                return cache_data
+            else:
+                logger.info("No valid cache found in R2, checking local cache")
+        
+        # Fallback to local cache
         cache_path = self._get_cache_path()
         if not os.path.exists(cache_path):
-            logger.info("No embeddings cache found")
+            logger.info("No local embeddings cache found")
             return None
         try:
             with open(cache_path, 'rb') as f:
                 cache_data = pickle.load(f)
             metadata = cache_data.get('cache_metadata', {})
             current_model = getattr(self.nlp_processor, 'hf_model_name', 'unknown')
-            current_data_hash = self._get_data_hash()
             
             # Validate both model and data hash
             if (metadata.get('model_name') == current_model and 
                 metadata.get('data_hash') == current_data_hash):
-                logger.info(f"Valid embeddings cache found for model {current_model}")
+                logger.info(f"Valid local embeddings cache found for model {current_model}")
                 return cache_data
             else:
                 # Log specific reason for cache invalidation
                 if metadata.get('model_name') != current_model:
-                    logger.warning(f"Embeddings cache invalid - model mismatch: {metadata.get('model_name')} vs {current_model}")
+                    logger.warning(f"Local cache invalid - model mismatch: {metadata.get('model_name')} vs {current_model}")
                 if metadata.get('data_hash') != current_data_hash:
-                    logger.warning(f"Embeddings cache invalid - data hash mismatch: {metadata.get('data_hash')} vs {current_data_hash}")
+                    logger.warning(f"Local cache invalid - data hash mismatch: {metadata.get('data_hash')} vs {current_data_hash}")
                     # Set flag for graceful degradation in app mode
                     self._cache_invalid_due_to_data_change = True
                 return None
         except Exception as e:
-            logger.warning(f"Failed to load embeddings cache: {e}")
+            logger.warning(f"Failed to load local embeddings cache: {e}")
             return None
     
     def _save_cache(self, embeddings_dict: Dict):
-        cache_path = self._get_cache_path()
+        """Save cache to both local storage and R2."""
+        current_model_key = getattr(self.nlp_processor, 'model_key', 'unknown')
+        current_data_hash = self._get_data_hash()
+        
         cache_data = {
             'cache_metadata': {
                 'udid': str(uuid.uuid4()),
                 'model_name': getattr(self.nlp_processor, 'hf_model_name', 'unknown'),
-                'data_hash': self._get_data_hash(),
+                'model_key': current_model_key,
+                'data_hash': current_data_hash,
                 'created_date': datetime.now(timezone.utc).isoformat(),
                 'total_embeddings': len(embeddings_dict),
             },
             'embeddings': embeddings_dict
         }
+        
+        # Save to local cache first (for immediate use)
+        cache_path = self._get_cache_path()
         try:
             with open(cache_path, 'wb') as f:
                 pickle.dump(cache_data, f)
-            logger.info(f"Embeddings cache saved for model {cache_data['cache_metadata']['model_name']}")
+            logger.info(f"Local embeddings cache saved for model {cache_data['cache_metadata']['model_name']}")
         except Exception as e:
-            logger.error(f"Failed to save embeddings cache: {e}")
+            logger.error(f"Failed to save local embeddings cache: {e}")
+        
+        # Upload to R2 for persistence across deployments
+        if self.r2_cache_manager.is_available():
+            success = self.r2_cache_manager.upload_cache(cache_data, current_model_key, current_data_hash)
+            if success:
+                logger.info(f"Successfully uploaded cache to R2 for model {current_model_key}")
+                # Clean up old caches in R2
+                self.r2_cache_manager.cleanup_old_caches(current_model_key, keep_latest=3)
+            else:
+                logger.warning(f"Failed to upload cache to R2 for model {current_model_key}")
+        else:
+            logger.warning("R2 not available for cache upload")
     
     def _load_or_compute_embeddings(self, custom_nlp_processor: Optional[NLPProcessor] = None, allow_recompute: bool = False):
         nlp_proc = custom_nlp_processor or self.nlp_processor
@@ -380,9 +414,9 @@ class NHSLookupEngine:
         if not nlp_proc or not nlp_proc.is_available():
             return {'error': 'NLP Processor not available', 'confidence': 0.0}
 
-        # Lazy loading: ensure embeddings are available for the requested model
+        # Ensure embeddings are available for the requested model
         if not hasattr(self, '_embeddings_precomputed_for_model') or not self._embeddings_precomputed_for_model.get(nlp_proc.hf_model_name):
-            logger.info(f"Embeddings for model '{nlp_proc.hf_model_name}' not loaded yet. Loading now...")
+            logger.info(f"Loading embeddings for model '{nlp_proc.hf_model_name}'...")
             self._load_or_compute_embeddings(custom_nlp_processor=nlp_proc, allow_recompute=False)
             if not hasattr(self, '_embeddings_precomputed_for_model'):
                 self._embeddings_precomputed_for_model = {}

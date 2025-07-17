@@ -21,6 +21,7 @@ from parser import RadiologySemanticParser # NHSLookupEngine needs this for its 
 # Import all other dependencies required by the classes above
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
 from preprocessing import initialize_preprocessor
+from r2_cache_manager import R2CacheManager
 import sys
 import json
 
@@ -35,7 +36,13 @@ def build_embeddings_cache():
     embeddings using the persistent disk storage.
     """
     logger.info("--- Starting Pre-computation of NHS Embeddings Cache ---")
-    logger.info("NOTE: Build environment cannot access persistent disk. Cache will be rebuilt at runtime if needed.")
+    logger.info("Building cache to upload to Cloudflare R2 for persistent storage across deployments")
+    
+    # Initialize R2 cache manager
+    r2_manager = R2CacheManager()
+    if not r2_manager.is_available():
+        logger.error("R2 cache manager not available. Check R2_* environment variables.")
+        sys.exit(1)
     
     # Get available models from NLPProcessor
     available_models = NLPProcessor.get_available_models()

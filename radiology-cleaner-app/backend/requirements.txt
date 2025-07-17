@@ -20,6 +20,10 @@ fuzzywuzzy==0.18.0
 # Makes fuzzywuzzy much faster.
 python-Levenshtein==0.21.1
 
+# -- Cloud Storage --
+# Cloudflare R2 storage for embedding cache persistence
+boto3==1.34.131
+
 # -- Other Core Dependencies --
 # A common dependency for date/time handling.
 python-dateutil==2.9.0.post0
