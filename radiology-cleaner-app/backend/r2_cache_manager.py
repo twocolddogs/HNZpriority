@@ -228,6 +228,35 @@ class R2CacheManager:
         
         return False
     
+    def get_cache_metadata(self, model_key: str, data_hash: str) -> Optional[Dict]:
+        """Get cache metadata without downloading the full cache file."""
+        if not self.is_available():
+            return None
+        
+        # Check for both compressed and uncompressed versions
+        for compressed in [True, False]:
+            try:
+                object_key = self._get_cache_key(model_key, data_hash, compressed=compressed)
+                response = self.client.head_object(Bucket=self.bucket_name, Key=object_key)
+                
+                # Return metadata from S3 object
+                return {
+                    'last_modified': response['LastModified'],
+                    'size': response['ContentLength'],
+                    'object_key': object_key,
+                    'compressed': compressed,
+                    'metadata': response.get('Metadata', {})
+                }
+            except ClientError as e:
+                if e.response['Error']['Code'] != 'NoSuchKey':
+                    logger.error(f"Error getting cache metadata for {object_key}: {e}")
+                continue
+            except Exception as e:
+                logger.error(f"Error getting cache metadata for {object_key}: {e}")
+                continue
+        
+        return None
+    
     def list_cached_models(self) -> list:
         """List all cached model keys in R2."""
         if not self.is_available():

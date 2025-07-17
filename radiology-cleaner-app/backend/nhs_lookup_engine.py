@@ -137,13 +137,82 @@ class NHSLookupEngine:
         data_hash = self._get_data_hash()
         
         if not allow_recompute:
+            # Step 1: Check what's available in both stores
+            local_cache_path = self._get_local_cache_path()
+            local_cache_data = None
+            local_cache_date = None
+            
+            # Check local cache
+            if os.path.exists(local_cache_path):
+                try:
+                    with open(local_cache_path, 'rb') as f:
+                        local_cache_data = pickle.load(f)
+                    if local_cache_data.get('cache_metadata', {}).get('data_hash') == data_hash:
+                        local_cache_date = local_cache_data.get('cache_metadata', {}).get('created_date')
+                        logger.info(f"Found local cache created: {local_cache_date}")
+                    else:
+                        logger.warning("Local cache hash mismatch, ignoring")
+                        local_cache_data = None
+                except Exception as e:
+                    logger.error(f"Error reading local cache: {e}")
+                    local_cache_data = None
+            
+            # Check R2 cache metadata (without downloading)
+            r2_cache_metadata = None
+            r2_cache_date = None
             if self.r2_manager.is_available():
+                r2_cache_metadata = self.r2_manager.get_cache_metadata(model_key, data_hash)
+                if r2_cache_metadata:
+                    r2_cache_date = r2_cache_metadata['last_modified']
+                    logger.info(f"Found R2 cache modified: {r2_cache_date}")
+            
+            # Step 2: Compare versions and decide what to do
+            if local_cache_data and r2_cache_metadata:
+                # Both exist - compare dates to see if local is up to date
+                if local_cache_date and r2_cache_date:
+                    # Parse dates for comparison
+                    from datetime import datetime
+                    try:
+                        local_dt = datetime.fromisoformat(local_cache_date.replace('Z', '+00:00'))
+                        r2_dt = r2_cache_date.replace(tzinfo=None) if r2_cache_date.tzinfo else r2_cache_date
+                        
+                        if local_dt >= r2_dt:
+                            logger.info("Local cache is up to date, using local cache")
+                            self._apply_embeddings_to_data(local_cache_data['embeddings'])
+                            return
+                        else:
+                            logger.info("R2 cache is newer, downloading to update local cache")
+                    except Exception as e:
+                        logger.error(f"Error comparing cache dates: {e}")
+                        logger.info("Using local cache due to date comparison error")
+                        self._apply_embeddings_to_data(local_cache_data['embeddings'])
+                        return
+                else:
+                    logger.info("Cannot compare dates, using local cache")
+                    self._apply_embeddings_to_data(local_cache_data['embeddings'])
+                    return
+            
+            elif local_cache_data:
+                # Only local cache exists
+                logger.info("Using local cache (R2 not available or no R2 cache)")
+                self._apply_embeddings_to_data(local_cache_data['embeddings'])
+                return
+            
+            elif r2_cache_metadata:
+                # Only R2 cache exists
+                logger.info("No local cache, downloading from R2")
+            
+            else:
+                # Neither cache exists
+                logger.info("No cache found in either location")
+            
+            # Step 3: Download from R2 if needed
+            if self.r2_manager.is_available() and r2_cache_metadata:
                 cache_data = self.r2_manager.download_cache(model_key, data_hash)
                 if cache_data:
                     self._apply_embeddings_to_data(cache_data['embeddings'])
                     
                     # Save R2 cache to local disk for faster future access
-                    local_cache_path = self._get_local_cache_path()
                     logger.info(f"Saving R2 cache to local path: {local_cache_path}")
                     try:
                         with open(local_cache_path, 'wb') as f:
@@ -152,18 +221,6 @@ class NHSLookupEngine:
                     except Exception as e:
                         logger.error(f"Failed to save R2 cache to local disk: {e}")
                     
-                    return
-            
-            local_cache_path = self._get_local_cache_path()
-            if os.path.exists(local_cache_path):
-                logger.info(f"Loading cache from local path: {local_cache_path}")
-                with open(local_cache_path, 'rb') as f:
-                    cache_data = pickle.load(f)
-                if cache_data.get('cache_metadata', {}).get('data_hash') == data_hash:
-                    self._apply_embeddings_to_data(cache_data['embeddings'])
-                    if self.r2_manager.is_available() and not self.r2_manager.cache_exists(model_key, data_hash):
-                        logger.info("Uploading local cache to R2...")
-                        self.r2_manager.upload_cache(cache_data, model_key, data_hash)
                     return
 
         logger.info(f"No valid cache found for model '{model_key}'. Computing new embeddings...")
