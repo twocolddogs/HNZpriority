@@ -175,6 +175,7 @@ class NHSLookupEngine:
                 'model_name': getattr(self.nlp_processor, 'hf_model_name', 'unknown'),
                 'data_hash': self._get_data_hash(),
                 'created_date': datetime.now(timezone.utc).isoformat(),
+                'total_embeddings': len(embeddings_dict),
             },
             'embeddings': embeddings_dict
         }
