@@ -95,7 +95,7 @@ def build_embeddings_cache():
             contrast_mapper=contrast_mapper
         )
 
-        # --- 3. Initialize NHSLookupEngine and check/build cache ---
+        # --- 3. Initialize NHSLookupEngine (will auto-load from R2 or compute) ---
         logger.info(f"Initializing NHSLookupEngine for {model_alias} model...")
         try:
             engine = NHSLookupEngine(
@@ -104,16 +104,16 @@ def build_embeddings_cache():
                 semantic_parser=semantic_parser
             )
             
-            # Check if cache was loaded from R2 or needs to be computed
+            # The engine initialization already handled R2 loading/computing
+            # Check if cache now exists in R2 to confirm success
             current_data_hash = engine._get_data_hash()
             
-            # Check if cache exists in R2
             if r2_manager.cache_exists(model_alias, current_data_hash):
-                logger.info(f"SUCCESS: {model_alias} embeddings cache exists in R2 with hash {current_data_hash}")
+                logger.info(f"SUCCESS: {model_alias} embeddings cache available in R2 with hash {current_data_hash}")
                 success_count += 1
             else:
-                # Force recomputation and upload to R2
-                logger.info(f"No valid cache in R2 for {model_alias}, computing embeddings...")
+                # If not in R2, force a recomputation to ensure cache is created
+                logger.info(f"Forcing cache recomputation for {model_alias} to ensure R2 upload...")
                 engine._load_or_compute_embeddings(allow_recompute=True)
                 
                 # Verify cache was uploaded to R2
