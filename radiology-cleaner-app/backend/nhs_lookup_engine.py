@@ -122,20 +122,32 @@ class NHSLookupEngine:
         os.makedirs(cache_dir, exist_ok=True)
         
         # Create model-specific cache files to avoid overwriting
-        model_name = getattr(self.nlp_processor, 'hf_model_name', 'unknown')
-        if model_name and model_name != 'unknown':
-            # Use model name for cache file (replace / with _)
-            safe_model_name = model_name.replace('/', '_').replace('-', '_')
-            cache_filename = f'nhs_embeddings_cache_{safe_model_name}.pkl'
+        # Use model_key instead of hf_model_name to handle duplicate models
+        model_key = getattr(self.nlp_processor, 'model_key', 'unknown')
+        if model_key and model_key != 'unknown':
+            cache_filename = f'nhs_embeddings_cache_{model_key}.pkl'
         else:
-            # Fallback to original filename
-            cache_filename = 'nhs_embeddings_cache.pkl'
+            # Fallback: use hf_model_name if model_key not available
+            model_name = getattr(self.nlp_processor, 'hf_model_name', 'unknown')
+            if model_name and model_name != 'unknown':
+                safe_model_name = model_name.replace('/', '_').replace('-', '_')
+                cache_filename = f'nhs_embeddings_cache_{safe_model_name}.pkl'
+            else:
+                cache_filename = 'nhs_embeddings_cache.pkl'
             
         return os.path.join(cache_dir, cache_filename)
     
     def _get_data_hash(self) -> str:
-        data_str = json.dumps(self.nhs_data, sort_keys=True, default=str)
-        return hashlib.sha256(data_str.encode()).hexdigest()[:16]
+        """Get hash of the original NHS.json file content, not the processed data."""
+        try:
+            with open(self.nhs_json_path, 'rb') as f:
+                file_content = f.read()
+            return hashlib.sha256(file_content).hexdigest()[:16]
+        except Exception as e:
+            logger.warning(f"Failed to hash NHS file {self.nhs_json_path}: {e}")
+            # Fallback to data hash (less reliable but better than nothing)
+            data_str = json.dumps(self.nhs_data, sort_keys=True, default=str)
+            return hashlib.sha256(data_str.encode()).hexdigest()[:16]
     
     def _load_cache(self) -> Optional[Dict]:
         cache_path = self._get_cache_path()
