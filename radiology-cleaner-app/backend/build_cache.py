@@ -14,6 +14,13 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Also log to console for build visibility
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
 # We need to import the components that do the work
 from nlp_processor import NLPProcessor
 from nhs_lookup_engine import NHSLookupEngine
@@ -88,6 +95,16 @@ def build_embeddings_cache():
         cache_path = engine._get_cache_path()
         if os.path.exists(cache_path):
              logger.info(f"SUCCESS: Embeddings cache successfully created at: {cache_path}")
+             
+             # Log cache metadata for debugging
+             try:
+                 import pickle
+                 with open(cache_path, 'rb') as f:
+                     cache_data = pickle.load(f)
+                 metadata = cache_data.get('cache_metadata', {})
+                 logger.info(f"Cache metadata: UDID={metadata.get('udid')}, Model={metadata.get('model_name')}, Hash={metadata.get('data_hash')}, Embeddings={metadata.get('total_embeddings')}")
+             except Exception as e:
+                 logger.warning(f"Could not read cache metadata: {e}")
         else:
              logger.error("FAILURE: Embeddings cache file was not created.")
              sys.exit(1)
