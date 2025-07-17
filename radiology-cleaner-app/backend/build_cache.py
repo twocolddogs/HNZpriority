@@ -95,35 +95,33 @@ def build_embeddings_cache():
             contrast_mapper=contrast_mapper
         )
 
-        # --- 3. Initialize NHSLookupEngine and Trigger Cache Build ---
-        # The __init__ method of NHSLookupEngine automatically calls _load_or_compute_embeddings.
-        # Since no cache exists, it will compute them and save the file.
-        logger.info(f"Initializing NHSLookupEngine for {model_alias} model to trigger embedding computation...")
+        # --- 3. Initialize NHSLookupEngine and check/build cache ---
+        logger.info(f"Initializing NHSLookupEngine for {model_alias} model...")
         try:
             engine = NHSLookupEngine(
                 nhs_json_path=nhs_json_path,
                 nlp_processor=nlp_processor,
                 semantic_parser=semantic_parser
             )
-            # The cache is built during the engine's initialization.
-            # We just need to confirm it was created.
-            cache_path = engine._get_cache_path()
-            if os.path.exists(cache_path):
-                 logger.info(f"SUCCESS: {model_alias} embeddings cache successfully created at: {cache_path}")
-                 
-                 # Log cache metadata for debugging
-                 try:
-                     import pickle
-                     with open(cache_path, 'rb') as f:
-                         cache_data = pickle.load(f)
-                     metadata = cache_data.get('cache_metadata', {})
-                     logger.info(f"Cache metadata: UDID={metadata.get('udid')}, Model={metadata.get('model_name')}, Hash={metadata.get('data_hash')}, Embeddings={metadata.get('total_embeddings')}")
-                 except Exception as e:
-                     logger.warning(f"Could not read cache metadata: {e}")
-                 
-                 success_count += 1
+            
+            # Check if cache was loaded from R2 or needs to be computed
+            current_data_hash = engine._get_data_hash()
+            
+            # Check if cache exists in R2
+            if r2_manager.cache_exists(model_alias, current_data_hash):
+                logger.info(f"SUCCESS: {model_alias} embeddings cache exists in R2 with hash {current_data_hash}")
+                success_count += 1
             else:
-                 logger.error(f"FAILURE: {model_alias} embeddings cache file was not created.")
+                # Force recomputation and upload to R2
+                logger.info(f"No valid cache in R2 for {model_alias}, computing embeddings...")
+                engine._load_or_compute_embeddings(allow_recompute=True)
+                
+                # Verify cache was uploaded to R2
+                if r2_manager.cache_exists(model_alias, current_data_hash):
+                    logger.info(f"SUCCESS: {model_alias} embeddings cache computed and uploaded to R2")
+                    success_count += 1
+                else:
+                    logger.error(f"FAILURE: {model_alias} embeddings cache was not uploaded to R2")
 
         except Exception as e:
             logger.error(f"An error occurred during {model_alias} cache generation: {e}", exc_info=True)
