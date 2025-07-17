@@ -195,29 +195,18 @@ def health_check():
 
 @app.route('/models', methods=['GET'])
 def list_available_models():
-    """List available NLP models and their status"""
-    _ensure_app_is_initialized()
-    
+    """List available NLP models and their status (lightweight, no initialization required)"""
     try:
+        # Get model info directly from NLPProcessor without initializing the full app
+        available_models = NLPProcessor.get_available_models()
         model_info = {}
-        for model_key, processor in model_processors.items():
-            if processor and processor.is_available():
-                model_info[model_key] = {
-                    'name': processor.hf_model_name,
-                    'status': 'available',
-                    'description': _get_model_description(model_key)
-                }
-            else:
-                # Get model name from MODEL_MAPPING even if processor failed
-                model_mapping = {
-                    'default': 'FremyCompany/BioLORD-2023',
-                    'experimental': 'ncbi/MedCPT-Query-Encoder'
-                }
-                model_info[model_key] = {
-                    'name': model_mapping.get(model_key, 'unknown'),
-                    'status': 'unavailable',
-                    'description': _get_model_description(model_key)
-                }
+        
+        for model_key, model_config in available_models.items():
+            model_info[model_key] = {
+                'name': model_config['hf_name'],
+                'status': model_config['status'],
+                'description': model_config['description']
+            }
         
         return jsonify({
             'models': model_info,
