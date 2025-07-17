@@ -67,7 +67,10 @@ class NHSLookupEngine:
         self._load_nhs_data()
         self._build_lookup_tables()
         self._preprocess_and_parse_nhs_data()
-        self._load_or_compute_embeddings()
+        
+        # Don't load embeddings during initialization to avoid startup timeouts
+        # They will be loaded on-demand during the first standardize_exam call
+        logger.info("NHSLookupEngine initialized. Embeddings will be loaded on first use.")
 
         self._specificity_stop_words = {
             'a', 'an', 'the', 'and', 'or', 'with', 'without', 'for', 'of', 'in', 'on', 'to', 'is', 'from',
@@ -117,9 +120,31 @@ class NHSLookupEngine:
             entry['_parsed_components'] = self.semantic_parser.parse_exam_name(preprocessed_text, 'Other')
 
     def _get_cache_path(self) -> str:
-        # Use persistent disk storage mounted at /opt/render/project/src/cache
-        cache_dir = '/opt/render/project/src/cache'
-        os.makedirs(cache_dir, exist_ok=True)
+        # Determine if we're in build environment or runtime
+        # Build environment: Can't access persistent disk, use /tmp
+        # Runtime environment: Use persistent disk at /opt/render/project/src/cache
+        
+        # Check if persistent disk is available (runtime vs build detection)
+        persistent_cache_dir = '/opt/render/project/src/cache'
+        is_runtime = os.path.exists('/opt/render/project/src') and os.access('/opt/render/project/src', os.W_OK)
+        
+        if is_runtime:
+            cache_dir = persistent_cache_dir
+            logger.info(f"Using persistent disk cache directory: {cache_dir}")
+        else:
+            # Build environment - use /tmp and the app will rebuild cache at runtime
+            cache_dir = '/tmp/nhs_cache'
+            logger.info(f"Build environment detected - using temporary cache directory: {cache_dir}")
+        
+        try:
+            os.makedirs(cache_dir, exist_ok=True)
+            logger.info(f"Successfully ensured cache directory exists: {cache_dir}")
+        except Exception as e:
+            logger.error(f"Failed to create cache directory {cache_dir}: {e}")
+            # Ultimate fallback
+            cache_dir = '/tmp/nhs_cache_fallback'
+            os.makedirs(cache_dir, exist_ok=True)
+            logger.warning(f"Using ultimate fallback cache directory: {cache_dir}")
         
         # Create model-specific cache files to avoid overwriting
         # Use model_key instead of hf_model_name to handle duplicate models
@@ -135,7 +160,9 @@ class NHSLookupEngine:
             else:
                 cache_filename = 'nhs_embeddings_cache.pkl'
             
-        return os.path.join(cache_dir, cache_filename)
+        cache_path = os.path.join(cache_dir, cache_filename)
+        logger.info(f"Cache path resolved to: {cache_path}")
+        return cache_path
     
     def _get_data_hash(self) -> str:
         """Get hash of the original NHS.json file content, not the processed data."""
@@ -219,7 +246,11 @@ class NHSLookupEngine:
             logger.error("NHS matching rules have been updated. The application requires redeployment before it can be used.")
             return
         
+        # At runtime, if no cache exists (due to build/runtime separation), compute embeddings
+        # This handles the case where build creates cache in /tmp but runtime needs it on persistent disk
         logger.info("Computing embeddings (no valid cache found)...")
+        logger.info("This may occur at first runtime due to build/runtime storage separation")
+        
         texts_to_embed = [e["_source_text_for_embedding"] for e in self.nhs_data if e.get("_source_text_for_embedding")]
         embeddings = nlp_proc.batch_get_embeddings(texts_to_embed, chunk_size=50, chunk_delay=0.0)
         
@@ -230,7 +261,7 @@ class NHSLookupEngine:
             entry["_embedding"] = text_to_embedding.get(source_text)
         
         self._save_cache(text_to_embedding)
-        logger.info(f"Computed and cached {len(text_to_embedding)} embeddings")
+        logger.info(f"Computed and cached {len(text_to_embedding)} embeddings on persistent storage")
 
     def _precompute_embeddings(self, custom_nlp_processor: Optional[NLPProcessor] = None):
         self._load_or_compute_embeddings(custom_nlp_processor, allow_recompute=True)
@@ -349,8 +380,9 @@ class NHSLookupEngine:
         if not nlp_proc or not nlp_proc.is_available():
             return {'error': 'NLP Processor not available', 'confidence': 0.0}
 
+        # Lazy loading: ensure embeddings are available for the requested model
         if not hasattr(self, '_embeddings_precomputed_for_model') or not self._embeddings_precomputed_for_model.get(nlp_proc.hf_model_name):
-            logger.info(f"Embeddings for model '{nlp_proc.hf_model_name}' not pre-computed. Running now.")
+            logger.info(f"Embeddings for model '{nlp_proc.hf_model_name}' not loaded yet. Loading now...")
             self._load_or_compute_embeddings(custom_nlp_processor=nlp_proc, allow_recompute=False)
             if not hasattr(self, '_embeddings_precomputed_for_model'):
                 self._embeddings_precomputed_for_model = {}

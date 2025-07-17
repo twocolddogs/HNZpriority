@@ -28,8 +28,14 @@ def build_embeddings_cache():
     """
     Initializes the necessary components to compute and save NHS embeddings for both
     production and experimental models.
+    
+    NOTE: On Render.com, build commands run on separate compute that cannot access
+    persistent disks. The cache files created here will be in /tmp and won't persist
+    to runtime. The application will detect missing cache at runtime and rebuild
+    embeddings using the persistent disk storage.
     """
     logger.info("--- Starting Pre-computation of NHS Embeddings Cache ---")
+    logger.info("NOTE: Build environment cannot access persistent disk. Cache will be rebuilt at runtime if needed.")
     
     # Get available models from NLPProcessor
     available_models = NLPProcessor.get_available_models()
