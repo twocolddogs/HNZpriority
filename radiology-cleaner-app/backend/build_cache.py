@@ -33,85 +33,106 @@ import json
 
 def build_embeddings_cache():
     """
-    Initializes the necessary components to compute and save NHS embeddings.
+    Initializes the necessary components to compute and save NHS embeddings for both
+    production and experimental models.
     """
     logger.info("--- Starting Pre-computation of NHS Embeddings Cache ---")
     
-    # --- 1. Initialize NLP Processor ---
-    # It will use the default model defined in NLPProcessor, which matches the app's default.
-    # Ensure HUGGING_FACE_TOKEN is set in your build environment.
-    try:
-        nlp_processor = NLPProcessor()
-        if not nlp_processor.is_available():
-            logger.error("HUGGING_FACE_TOKEN is not set. Cannot build embeddings cache.")
-            sys.exit(1)
-        logger.info(f"Using NLP model: {nlp_processor.model_name}")
-    except Exception as e:
-        logger.error(f"Failed to initialize NLP Processor: {e}", exc_info=True)
-        sys.exit(1)
+    # Get available models from NLPProcessor
+    available_models = NLPProcessor.get_available_models()
+    logger.info(f"Building caches for models: {list(available_models.keys())}")
+    
+    success_count = 0
+    total_models = len(available_models)
+    
+    for model_alias, model_name in available_models.items():
+        logger.info(f"\n=== Building cache for {model_alias} model: {model_name} ===")
+        
+        # --- 1. Initialize NLP Processor for this model ---
+        try:
+            nlp_processor = NLPProcessor(model_name=model_alias)
+            if not nlp_processor.is_available():
+                logger.error("HUGGING_FACE_TOKEN is not set. Cannot build embeddings cache.")
+                sys.exit(1)
+            logger.info(f"Using NLP model: {nlp_processor.model_name}")
+        except Exception as e:
+            logger.error(f"Failed to initialize NLP Processor for {model_alias}: {e}", exc_info=True)
+            continue
 
-    # --- 2. Initialize Dependencies for NHSLookupEngine ---
-    # This part mimics the setup in _initialize_app() but is focused only on what's
-    # needed for the NHSLookupEngine to do its embedding work.
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
+        # --- 2. Initialize Dependencies for NHSLookupEngine ---
+        # This part mimics the setup in _initialize_app() but is focused only on what's
+        # needed for the NHSLookupEngine to do its embedding work.
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
 
-    nhs_authority = {}
-    if os.path.exists(nhs_json_path):
-        with open(nhs_json_path, 'r', encoding='utf-8') as f:
-            nhs_data = json.load(f)
-        for item in nhs_data:
-            if primary_source_name := item.get('primary_source_name'):
-                nhs_authority[primary_source_name] = item
-    else:
-        logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
-        sys.exit(1)
-
-    abbreviation_expander = AbbreviationExpander()
-    initialize_preprocessor(abbreviation_expander)
-    anatomy_extractor = AnatomyExtractor(nhs_authority)
-    laterality_detector = LateralityDetector()
-    contrast_mapper = ContrastMapper()
-
-    semantic_parser = RadiologySemanticParser(
-        nlp_processor=nlp_processor, # a processor is needed for the init
-        anatomy_extractor=anatomy_extractor,
-        laterality_detector=laterality_detector,
-        contrast_mapper=contrast_mapper
-    )
-
-    # --- 3. Initialize NHSLookupEngine and Trigger Cache Build ---
-    # The __init__ method of NHSLookupEngine automatically calls _load_or_compute_embeddings.
-    # Since no cache exists, it will compute them and save the file.
-    logger.info("Initializing NHSLookupEngine to trigger embedding computation...")
-    try:
-        engine = NHSLookupEngine(
-            nhs_json_path=nhs_json_path,
-            nlp_processor=nlp_processor,
-            semantic_parser=semantic_parser
-        )
-        # The cache is built during the engine's initialization.
-        # We just need to confirm it was created.
-        cache_path = engine._get_cache_path()
-        if os.path.exists(cache_path):
-             logger.info(f"SUCCESS: Embeddings cache successfully created at: {cache_path}")
-             
-             # Log cache metadata for debugging
-             try:
-                 import pickle
-                 with open(cache_path, 'rb') as f:
-                     cache_data = pickle.load(f)
-                 metadata = cache_data.get('cache_metadata', {})
-                 logger.info(f"Cache metadata: UDID={metadata.get('udid')}, Model={metadata.get('model_name')}, Hash={metadata.get('data_hash')}, Embeddings={metadata.get('total_embeddings')}")
-             except Exception as e:
-                 logger.warning(f"Could not read cache metadata: {e}")
+        nhs_authority = {}
+        if os.path.exists(nhs_json_path):
+            with open(nhs_json_path, 'r', encoding='utf-8') as f:
+                nhs_data = json.load(f)
+            for item in nhs_data:
+                if primary_source_name := item.get('primary_source_name'):
+                    nhs_authority[primary_source_name] = item
         else:
-             logger.error("FAILURE: Embeddings cache file was not created.")
-             sys.exit(1)
+            logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
+            sys.exit(1)
 
-    except Exception as e:
-        logger.error(f"An error occurred during cache generation: {e}", exc_info=True)
+        abbreviation_expander = AbbreviationExpander()
+        initialize_preprocessor(abbreviation_expander)
+        anatomy_extractor = AnatomyExtractor(nhs_authority)
+        laterality_detector = LateralityDetector()
+        contrast_mapper = ContrastMapper()
+
+        semantic_parser = RadiologySemanticParser(
+            nlp_processor=nlp_processor, # a processor is needed for the init
+            anatomy_extractor=anatomy_extractor,
+            laterality_detector=laterality_detector,
+            contrast_mapper=contrast_mapper
+        )
+
+        # --- 3. Initialize NHSLookupEngine and Trigger Cache Build ---
+        # The __init__ method of NHSLookupEngine automatically calls _load_or_compute_embeddings.
+        # Since no cache exists, it will compute them and save the file.
+        logger.info(f"Initializing NHSLookupEngine for {model_alias} model to trigger embedding computation...")
+        try:
+            engine = NHSLookupEngine(
+                nhs_json_path=nhs_json_path,
+                nlp_processor=nlp_processor,
+                semantic_parser=semantic_parser
+            )
+            # The cache is built during the engine's initialization.
+            # We just need to confirm it was created.
+            cache_path = engine._get_cache_path()
+            if os.path.exists(cache_path):
+                 logger.info(f"SUCCESS: {model_alias} embeddings cache successfully created at: {cache_path}")
+                 
+                 # Log cache metadata for debugging
+                 try:
+                     import pickle
+                     with open(cache_path, 'rb') as f:
+                         cache_data = pickle.load(f)
+                     metadata = cache_data.get('cache_metadata', {})
+                     logger.info(f"Cache metadata: UDID={metadata.get('udid')}, Model={metadata.get('model_name')}, Hash={metadata.get('data_hash')}, Embeddings={metadata.get('total_embeddings')}")
+                 except Exception as e:
+                     logger.warning(f"Could not read cache metadata: {e}")
+                 
+                 success_count += 1
+            else:
+                 logger.error(f"FAILURE: {model_alias} embeddings cache file was not created.")
+
+        except Exception as e:
+            logger.error(f"An error occurred during {model_alias} cache generation: {e}", exc_info=True)
+    
+    # Final summary
+    logger.info(f"\n=== Cache Build Summary ===")
+    logger.info(f"Successfully built {success_count}/{total_models} embedding caches")
+    
+    if success_count == 0:
+        logger.error("CRITICAL: No embedding caches were successfully created.")
         sys.exit(1)
+    elif success_count < total_models:
+        logger.warning(f"WARNING: Only {success_count}/{total_models} caches were created successfully.")
+    else:
+        logger.info("SUCCESS: All embedding caches created successfully.")
 
 if __name__ == '__main__':
     build_embeddings_cache()

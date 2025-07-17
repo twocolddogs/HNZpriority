@@ -34,6 +34,7 @@ window.addEventListener('DOMContentLoaded', function() {
     const apiConfig = detectApiUrls();
     const API_URL = apiConfig.API_URL;
     const BATCH_API_URL = apiConfig.BATCH_API_URL;
+    const MODELS_URL = `${apiConfig.baseUrl}/models`;
     
     console.log(`Frontend running in ${apiConfig.mode} mode`);
     console.log(`API base URL: ${apiConfig.baseUrl}`);
@@ -49,11 +50,107 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     testApiConnectivity();
+    
+    // --- DYNAMIC MODEL INITIALIZATION ---
+    async function loadAvailableModels() {
+        try {
+            console.log('🔍 Fetching available models from backend...');
+            const response = await fetch(MODELS_URL, { method: 'GET', timeout: 5000 });
+            if (response.ok) {
+                const modelsData = await response.json();
+                availableModels = modelsData.models || {};
+                currentModel = modelsData.default_model || 'default';
+                
+                console.log('✓ Available models loaded:', Object.keys(availableModels));
+                buildModelSelectionUI();
+                updateModelDescription();
+            } else {
+                console.warn('⚠ Models API unavailable, using fallback models');
+                useFallbackModels();
+            }
+        } catch (error) {
+            console.error('✗ Failed to load models:', error);
+            useFallbackModels();
+        }
+    }
+    
+    function useFallbackModels() {
+        // Fallback to hardcoded models if API fails
+        availableModels = {
+            'default': { name: 'FremyCompany/BioLORD-2023', status: 'available', description: 'BioLORD - Advanced biomedical language model (default)' },
+            'pubmed': { name: 'NeuML/pubmedbert-base-embeddings', status: 'available', description: 'PubMed-trained embeddings for medical terminology' },
+            'experimental': { name: 'ncbi/MedCPT-Query-Encoder', status: 'available', description: 'NCBI Medical Clinical Practice Text encoder (experimental)' }
+        };
+        currentModel = 'default';
+        buildModelSelectionUI();
+        updateModelDescription();
+    }
+    
+    function buildModelSelectionUI() {
+        const modelContainer = document.querySelector('.model-selection-container');
+        if (!modelContainer) {
+            console.warn('Model selection container not found in HTML');
+            return;
+        }
+        
+        // Clear existing buttons
+        modelContainer.innerHTML = '';
+        
+        // Create model selection buttons dynamically
+        Object.entries(availableModels).forEach(([modelKey, modelInfo]) => {
+            const button = document.createElement('button');
+            button.className = `model-toggle ${modelKey === currentModel ? 'active' : ''}`;
+            button.id = `${modelKey}ModelBtn`;
+            button.dataset.model = modelKey;
+            
+            // Status indicator
+            const statusIcon = modelInfo.status === 'available' ? '✓' : '⚠';
+            const statusClass = modelInfo.status === 'available' ? 'available' : 'unavailable';
+            
+            button.innerHTML = `
+                <span class="model-status ${statusClass}">${statusIcon}</span>
+                <span class="model-name">${formatModelName(modelKey)}</span>
+            `;
+            
+            // Set disabled state for unavailable models
+            if (modelInfo.status !== 'available') {
+                button.disabled = true;
+                button.title = `${modelInfo.name} is currently unavailable`;
+            } else {
+                button.title = modelInfo.description;
+                button.addEventListener('click', () => switchModel(modelKey));
+            }
+            
+            modelContainer.appendChild(button);
+        });
+    }
+    
+    function formatModelName(modelKey) {
+        const nameMap = {
+            'default': 'BioLORD (Default)',
+            'pubmed': 'PubMed',
+            'biolord': 'BioLORD',
+            'general': 'General',
+            'experimental': 'Experimental'
+        };
+        return nameMap[modelKey] || modelKey.charAt(0).toUpperCase() + modelKey.slice(1);
+    }
+    
+    function updateModelDescription() {
+        const descriptionElement = document.getElementById('modelDescription');
+        if (descriptionElement && availableModels[currentModel]) {
+            descriptionElement.textContent = availableModels[currentModel].description;
+        }
+    }
+    
+    // Initialize models on page load
+    loadAvailableModels();
 
     // --- STATE ---
     let allMappings = [];
     let summaryData = null;
     let currentModel = 'default'; // Initialize the current model
+    let availableModels = {}; // Store available models from API
 
     // --- DOM ELEMENTS ---
     const uploadSection = document.getElementById('uploadSection');
@@ -98,10 +195,7 @@ window.addEventListener('DOMContentLoaded', function() {
     document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
     document.getElementById('consolidatedSort').addEventListener('change', sortConsolidatedResults);
     
-    // Model toggle event listeners
-    document.getElementById('defaultModelBtn').addEventListener('click', () => switchModel('default'));
-    document.getElementById('pubmedModelBtn').addEventListener('click', () => switchModel('pubmed'));
-    document.getElementById('biolordModelBtn').addEventListener('click', () => switchModel('biolord'));
+    // Model toggle event listeners - now handled dynamically in buildModelSelectionUI()
     
     // Help button event listener
     document.getElementById('hamburgerToggle').addEventListener('click', () => {
@@ -969,28 +1063,33 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     // --- MODEL TOGGLE FUNCTIONS ---
-    function switchModel(modelType) {
+    function switchModel(modelKey) {
+        // Validate model exists and is available
+        if (!availableModels[modelKey] || availableModels[modelKey].status !== 'available') {
+            console.warn(`Model ${modelKey} is not available`);
+            return;
+        }
+        
         // Update global state
-        currentModel = modelType;
+        currentModel = modelKey;
         
         // Update UI - toggle active states
         document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
         
-        if (modelType === 'default') {
-            document.getElementById('defaultModelBtn').classList.add('active');
-            document.getElementById('modelDescription').textContent = 'Using BioLORD model for advanced biomedical language understanding (preferred default)';
-        } else if (modelType === 'pubmed') {
-            document.getElementById('pubmedModelBtn').classList.add('active');
-            document.getElementById('modelDescription').textContent = 'Using PubMed model optimized for medical terminology (alternative)';
-        } else if (modelType === 'biolord') {
-            document.getElementById('biolordModelBtn').classList.add('active');
-            document.getElementById('modelDescription').textContent = 'Using BioLORD model for advanced biomedical language understanding';
+        // Activate selected model button
+        const selectedButton = document.getElementById(`${modelKey}ModelBtn`);
+        if (selectedButton) {
+            selectedButton.classList.add('active');
         }
         
-        console.log(`Switched to ${modelType} model`);
+        // Update model description
+        updateModelDescription();
         
-        // Show notification
-        updateStatusMessage(`🔄 Switched to ${modelType === 'default' ? 'BioLORD (Default)' : modelType === 'pubmed' ? 'PubMed (Alternative)' : 'BioLORD (Advanced)'} model`);
+        console.log(`Switched to ${modelKey} model (${availableModels[modelKey].name})`);
+        
+        // Show notification with dynamic model name
+        const displayName = formatModelName(modelKey);
+        updateStatusMessage(`🔄 Switched to ${displayName} model`);
         setTimeout(() => {
             const statusDiv = document.getElementById('statusMessage');
             if (statusDiv) statusDiv.style.display = 'none';

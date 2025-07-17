@@ -1258,6 +1258,42 @@ a:focus-visible {
   border-color: #0f2935;
 }
 
+/* Enhanced model toggle styling for dynamic UI */
+.model-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 0.9em;
+}
+
+.model-toggle:disabled {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-400);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Model Status Indicators */
+.model-status {
+  font-size: 0.8em;
+  font-weight: 600;
+  line-height: 1;
+}
+.model-status.available {
+  color: var(--color-success);
+}
+.model-status.unavailable {
+  color: var(--color-warning);
+}
+.model-toggle:disabled .model-status.unavailable {
+  color: var(--color-gray-400);
+}
+
+.model-name {
+  font-weight: 500;
+}
+
 .progress-bar {
   width: 100%;
   height: 4px;

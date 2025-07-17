@@ -14,11 +14,26 @@ class NLPProcessor:
     API-based NLP processor that uses direct 'requests' calls to the correct Hugging Face
     Inference API endpoint. This approach is the most robust and reliable, bypassing
     client library issues while keeping the application lightweight to prevent memory errors.
+    
+    Supported Models:
+    - FremyCompany/BioLORD-2023 (default): Production model optimized for biomedical text
+    - ncbi/MedCPT-Query-Encoder (experimental): NCBI's Medical Clinical Practice Text encoder
     """
+
+    # Available model configurations
+    MODELS = {
+        'production': 'FremyCompany/BioLORD-2023',
+        'experimental': 'ncbi/MedCPT-Query-Encoder'
+    }
 
     def __init__(self, model_name: str = 'FremyCompany/BioLORD-2023'):
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
-        self.model_name = model_name
+        
+        # Support both direct model names and convenience aliases
+        if model_name in self.MODELS:
+            self.model_name = self.MODELS[model_name]
+        else:
+            self.model_name = model_name
         
         # CORRECTED URL: Using the router endpoint format which is proven to work for this task.
         self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.model_name}/pipeline/feature-extraction"
@@ -31,7 +46,8 @@ class NLPProcessor:
         if not self.api_token:
             logger.error("HUGGING_FACE_TOKEN not set. API-based NLP processing is disabled.")
         else:
-            logger.info(f"Initialized API NLP Processor for model: {self.model_name} using direct requests.")
+            model_type = "experimental" if self.model_name == self.MODELS['experimental'] else "production"
+            logger.info(f"Initialized API NLP Processor for {model_type} model: {self.model_name} using direct requests.")
 
     def _make_api_call(self, inputs: list[str]) -> Optional[list]:
         """Helper function to make a POST request and robustly handle the response."""
@@ -131,7 +147,8 @@ class NLPProcessor:
             # Test with a simple text
             test_result = self.get_text_embedding("test")
             if test_result is not None:
-                logger.info(f"API connection test successful. Embedding shape: {test_result.shape}")
+                model_type = "experimental" if self.model_name == self.MODELS['experimental'] else "production"
+                logger.info(f"API connection test successful for {model_type} model. Embedding shape: {test_result.shape}")
                 return True
             else:
                 logger.error("API connection test failed - no embedding returned")
@@ -139,3 +156,13 @@ class NLPProcessor:
         except Exception as e:
             logger.error(f"API connection test failed with exception: {e}")
             return False
+    
+    @classmethod
+    def get_available_models(cls) -> dict:
+        """Return available model configurations."""
+        return cls.MODELS.copy()
+    
+    @classmethod
+    def create_experimental(cls) -> 'NLPProcessor':
+        """Create an instance using the experimental model."""
+        return cls(model_name='experimental')
