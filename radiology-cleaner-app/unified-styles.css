@@ -1233,33 +1233,12 @@ a:focus-visible {
   flex-wrap: wrap;
 }
 
-/* Model Toggle Buttons - Custom Styling */
+/* Model Toggle Buttons - Simplified Bordered Design */
 .model-toggle {
   transition: all 0.2s ease;
-  border: 2px solid transparent;
-  background-color: var(--color-gray-100);
+  border: 2px solid var(--color-gray-300);
+  background-color: transparent;
   color: var(--color-gray-700);
-}
-
-.model-toggle.active {
-  background-color: #143345; /* Left side of brand bar gradient */
-  color: var(--color-white);
-  border-color: #143345;
-}
-
-.model-toggle:hover:not(.active) {
-  background-color: var(--color-gray-200);
-  color: var(--color-gray-800);
-  border-color: var(--color-gray-300);
-}
-
-.model-toggle.active:hover {
-  background-color: #0f2935; /* Slightly darker for hover state */
-  border-color: #0f2935;
-}
-
-/* Enhanced model toggle styling for dynamic UI */
-.model-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1267,11 +1246,33 @@ a:focus-visible {
   font-size: 0.9em;
 }
 
+/* Active state - filled */
+.model-toggle.active {
+  background-color: #143345; /* Left side of brand bar gradient */
+  color: var(--color-white);
+  border-color: #143345;
+}
+
+/* Hover state for inactive buttons */
+.model-toggle:hover:not(.active):not(:disabled) {
+  background-color: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+  color: var(--color-gray-800);
+}
+
+/* Hover state for active button */
+.model-toggle.active:hover {
+  background-color: #0f2935; /* Slightly darker for hover state */
+  border-color: #0f2935;
+}
+
+/* Disabled/unavailable state - clearly inactive */
 .model-toggle:disabled {
-  background-color: var(--color-gray-100);
+  background-color: transparent;
   color: var(--color-gray-400);
+  border-color: var(--color-gray-200);
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 /* Model Status Indicators */
