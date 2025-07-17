@@ -64,7 +64,6 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
                 buildModelSelectionUI();
-                updateModelDescription();
             } else {
                 console.warn('⚠ Models API unavailable, using fallback models');
                 useFallbackModels();
@@ -91,7 +90,6 @@ window.addEventListener('DOMContentLoaded', function() {
         };
         currentModel = 'default';
         buildModelSelectionUI();
-        updateModelDescription();
     }
     
     function buildModelSelectionUI() {
@@ -175,12 +173,6 @@ window.addEventListener('DOMContentLoaded', function() {
         return nameMap[modelKey] || modelKey.charAt(0).toUpperCase() + modelKey.slice(1);
     }
     
-    function updateModelDescription() {
-        const descriptionElement = document.getElementById('modelDescription');
-        if (descriptionElement && availableModels[currentModel]) {
-            descriptionElement.textContent = availableModels[currentModel].description;
-        }
-    }
     
     // Initialize models on page load
     loadAvailableModels();
@@ -1120,9 +1112,6 @@ window.addEventListener('DOMContentLoaded', function() {
         if (selectedButton) {
             selectedButton.classList.add('active');
         }
-        
-        // Update model description
-        updateModelDescription();
         
         console.log(`Switched to ${modelKey} model (${availableModels[modelKey].name})`);
         
