@@ -18,7 +18,7 @@ services:
       value: /opt/render/.cache/pip
   buildCommand: "chmod +x build.sh && ./build.sh"
  
-  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 900 --preload --log-level debug 'radiology-cleaner-app.backend.app:app'"
+  startCommand: "./backend/start.sh"
   autoDeploy: false
   healthCheckPath: /health
 
@@ -41,7 +41,7 @@ services:
       value: /opt/render/.cache/pip
   buildCommand: "chmod +x build.sh && ./build.sh"
  
-  startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 300 --preload --log-level info 'radiology-cleaner-app.backend.app:app'"
+  startCommand: "./backend/start.sh"
   autoDeploy: false
   healthCheckPath: /health
 
