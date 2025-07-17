@@ -110,17 +110,20 @@ class NHSLookupEngine:
         return os.path.join(cache_dir, f'nhs_embeddings_{model_key}_{data_hash}.pkl')
     
     def _get_data_hash(self) -> str:
-        """Generate a stable hash based on NHS file modification time only."""
+        """Generate a stable hash based on NHS file content only."""
         # NOTE: We don't include processing file changes (cache_version) for embedding cache
         # because embeddings should only be invalidated when NHS data changes, not processing logic
         # The cache_version tracking is intended for speeding up evaluation runs
         
-        # Include NHS file modification time for data changes
-        nhs_file_mtime = str(os.path.getmtime(self.nhs_json_path))
-        
-        # Create stable hash from file modification time only
-        hash_input = f"nhs_data_{nhs_file_mtime}"
-        return hashlib.sha256(hash_input.encode()).hexdigest()[:16]
+        # Use file content hash instead of modification time for consistency across environments
+        try:
+            with open(self.nhs_json_path, 'rb') as f:
+                nhs_content = f.read()
+            return hashlib.sha256(nhs_content).hexdigest()[:16]
+        except Exception as e:
+            logger.error(f"Error reading NHS file for hash: {e}")
+            # Fallback to a default hash if file reading fails
+            return hashlib.sha256(b"nhs_fallback").hexdigest()[:16]
 
     def _apply_embeddings_to_data(self, embeddings_dict: Dict):
         for entry in self.nhs_data:
