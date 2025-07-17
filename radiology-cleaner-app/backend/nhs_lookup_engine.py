@@ -98,7 +98,7 @@ class NHSLookupEngine:
         model_name = getattr(nlp_proc, 'model_name', 'unknown')
         if model_name in self._embeddings_cache: return
         texts_to_embed = [e["_source_text_for_embedding"] for e in self.nhs_data if e.get("_source_text_for_embedding")]
-        embeddings = nlp_proc.batch_get_embeddings(texts_to_embed, chunk_size=20, chunk_delay=0.3)
+        embeddings = nlp_proc.batch_get_embeddings(texts_to_embed, chunk_size=10, chunk_delay=0.1)
         text_to_embedding = dict(zip(texts_to_embed, embeddings))
         for entry in self.nhs_data:
             source_text = entry.get("_source_text_for_embedding")

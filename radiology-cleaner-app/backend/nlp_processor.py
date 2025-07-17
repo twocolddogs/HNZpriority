@@ -41,7 +41,7 @@ class NLPProcessor:
             import time
             time.sleep(0.1)  # 100ms delay
             
-            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=300)
+            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=120)
             response.raise_for_status()
             # The JSONDecodeError indicates the response body can be empty or non-JSON on error.
             # We must handle this explicitly.
