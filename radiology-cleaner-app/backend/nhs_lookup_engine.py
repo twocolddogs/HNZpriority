@@ -117,7 +117,8 @@ class NHSLookupEngine:
             entry['_parsed_components'] = self.semantic_parser.parse_exam_name(preprocessed_text, 'Other')
 
     def _get_cache_path(self) -> str:
-        cache_dir = os.path.join(os.getcwd(), 'cache')
+        # Use persistent disk storage for cache persistence between deployments
+        cache_dir = os.path.join('/opt/render/project/src', 'cache')
         os.makedirs(cache_dir, exist_ok=True)
         
         # Create model-specific cache files to avoid overwriting
