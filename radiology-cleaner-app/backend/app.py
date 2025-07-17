@@ -202,16 +202,24 @@ def list_available_models():
         model_info = {}
         
         for model_key, model_config in available_models.items():
+            # Check if embeddings are loaded for this model
+            embeddings_loaded = False
+            if nhs_lookup_engine and hasattr(nhs_lookup_engine, '_embeddings_loaded'):
+                embeddings_loaded = (nhs_lookup_engine._embeddings_loaded and 
+                                   nhs_lookup_engine.nlp_processor.model_key == model_key)
+            
             model_info[model_key] = {
                 'name': model_config['hf_name'],
                 'status': model_config['status'],
-                'description': model_config['description']
+                'description': model_config['description'],
+                'embeddings_loaded': embeddings_loaded
             }
         
         return jsonify({
             'models': model_info,
             'default_model': 'default',
-            'usage': 'Add "model": "model_key" to your request to use a specific model'
+            'usage': 'Add "model": "model_key" to your request to use a specific model',
+            'app_initialized': _app_initialized
         })
     except Exception as e:
         logger.error(f"Models endpoint error: {e}", exc_info=True)

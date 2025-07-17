@@ -51,7 +51,8 @@ class NHSLookupEngine:
         self._load_nhs_data()
         self._build_lookup_tables()
         self._preprocess_and_parse_nhs_data()
-        self._load_or_compute_embeddings()
+        # Defer embedding loading until specific model is requested
+        self._embeddings_loaded = False
 
         self._specificity_stop_words = {
             'a', 'an', 'the', 'and', 'or', 'with', 'without', 'for', 'of', 'in', 'on', 'to', 'is', 'from',
@@ -313,12 +314,19 @@ class NHSLookupEngine:
         if not nlp_proc or not nlp_proc.is_available():
             return {'error': 'NLP Processor not available', 'confidence': 0.0}
 
-        # This should now be handled by app.py's initialization logic
-        # but as a fallback, we can check here too.
-        if not hasattr(self, '_embeddings_applied'):
-            logger.info(f"Embeddings for model '{nlp_proc.model_key}' not pre-computed. Running now.")
-            self._load_or_compute_embeddings(custom_nlp_processor=nlp_proc)
-            self._embeddings_applied = True
+        # Load embeddings on-demand for the requested model
+        if not self._embeddings_loaded or self.nlp_processor.model_key != nlp_proc.model_key:
+            logger.info(f"Loading embeddings for model '{nlp_proc.model_key}'...")
+            
+            # Temporarily swap the processor and load embeddings
+            original_processor = self.nlp_processor
+            self.nlp_processor = nlp_proc
+            
+            # Load embeddings for this specific model
+            self._load_or_compute_embeddings()
+            self._embeddings_loaded = True
+            
+            logger.info(f"Successfully loaded embeddings for model '{nlp_proc.model_key}'")
         
         input_embedding = nlp_proc.get_text_embedding(input_exam)
         if input_embedding is None:
