@@ -118,7 +118,18 @@ class NHSLookupEngine:
     def _get_cache_path(self) -> str:
         cache_dir = os.path.join(os.getcwd(), 'cache')
         os.makedirs(cache_dir, exist_ok=True)
-        return os.path.join(cache_dir, 'nhs_embeddings_cache.pkl')
+        
+        # Create model-specific cache files to avoid overwriting
+        model_name = getattr(self.nlp_processor, 'hf_model_name', 'unknown')
+        if model_name and model_name != 'unknown':
+            # Use model name for cache file (replace / with _)
+            safe_model_name = model_name.replace('/', '_').replace('-', '_')
+            cache_filename = f'nhs_embeddings_cache_{safe_model_name}.pkl'
+        else:
+            # Fallback to original filename
+            cache_filename = 'nhs_embeddings_cache.pkl'
+            
+        return os.path.join(cache_dir, cache_filename)
     
     def _get_data_hash(self) -> str:
         data_str = json.dumps(self.nhs_data, sort_keys=True, default=str)
@@ -133,12 +144,20 @@ class NHSLookupEngine:
             with open(cache_path, 'rb') as f:
                 cache_data = pickle.load(f)
             metadata = cache_data.get('cache_metadata', {})
-            current_model = getattr(self.nlp_processor, 'model_name', 'unknown')
-            if metadata.get('model_name') == current_model:
+            current_model = getattr(self.nlp_processor, 'hf_model_name', 'unknown')
+            current_data_hash = self._get_data_hash()
+            
+            # Validate both model and data hash
+            if (metadata.get('model_name') == current_model and 
+                metadata.get('data_hash') == current_data_hash):
                 logger.info(f"Valid embeddings cache found for model {current_model}")
                 return cache_data
             else:
-                logger.warning(f"Embeddings cache invalid - model mismatch: {metadata.get('model_name')} vs {current_model}")
+                # Log specific reason for cache invalidation
+                if metadata.get('model_name') != current_model:
+                    logger.warning(f"Embeddings cache invalid - model mismatch: {metadata.get('model_name')} vs {current_model}")
+                if metadata.get('data_hash') != current_data_hash:
+                    logger.warning(f"Embeddings cache invalid - data hash mismatch: {metadata.get('data_hash')} vs {current_data_hash}")
                 return None
         except Exception as e:
             logger.warning(f"Failed to load embeddings cache: {e}")
@@ -149,7 +168,7 @@ class NHSLookupEngine:
         cache_data = {
             'cache_metadata': {
                 'udid': str(uuid.uuid4()),
-                'model_name': getattr(self.nlp_processor, 'model_name', 'unknown'),
+                'model_name': getattr(self.nlp_processor, 'hf_model_name', 'unknown'),
                 'data_hash': self._get_data_hash(),
                 'created_date': datetime.now(timezone.utc).isoformat(),
             },
@@ -209,7 +228,7 @@ class NHSLookupEngine:
         return None
 
     def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False) -> Dict:
-        model_name = getattr(nlp_proc, 'model_name', 'default').split('/')[-1]
+        model_name = getattr(nlp_proc, 'hf_model_name', 'default').split('/')[-1]
         source_name = f'UNIFIED_MATCH_V13_COMPONENT_{model_name.upper()}'
         
         detected_interventional_terms = best_match.get('_interventional_terms', [])
@@ -304,12 +323,12 @@ class NHSLookupEngine:
         if not nlp_proc or not nlp_proc.is_available():
             return {'error': 'NLP Processor not available', 'confidence': 0.0}
 
-        if not hasattr(self, '_embeddings_precomputed_for_model') or not self._embeddings_precomputed_for_model.get(nlp_proc.model_name):
-            logger.info(f"Embeddings for model '{nlp_proc.model_name}' not pre-computed. Running now.")
+        if not hasattr(self, '_embeddings_precomputed_for_model') or not self._embeddings_precomputed_for_model.get(nlp_proc.hf_model_name):
+            logger.info(f"Embeddings for model '{nlp_proc.hf_model_name}' not pre-computed. Running now.")
             self._load_or_compute_embeddings(custom_nlp_processor=nlp_proc)
             if not hasattr(self, '_embeddings_precomputed_for_model'):
                 self._embeddings_precomputed_for_model = {}
-            self._embeddings_precomputed_for_model[nlp_proc.model_name] = True
+            self._embeddings_precomputed_for_model[nlp_proc.hf_model_name] = True
         
         input_embedding = nlp_proc.get_text_embedding(input_exam)
         if input_embedding is None:
