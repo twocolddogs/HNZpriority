@@ -174,20 +174,40 @@ class NHSLookupEngine:
             self.r2_manager.upload_cache(cache_data, model_key, data_hash)
         
         logger.info(f"Computed and cached {len(text_to_embedding)} embeddings for model '{model_key}'.")
-
-    # ... [find_bilateral_peer, _format_match_result, etc. remain the same] ...
+		
+		
     def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
-        primary_name = specific_entry.get("primary_source_name")
-        if not primary_name: return None
-        base_name_pattern = re.compile(r'\s+(lt|rt|left|right)$', re.IGNORECASE)
-        base_name = base_name_pattern.sub('', primary_name).strip()
-        bilateral_pattern = re.compile(r'\s+(both|bilateral)$', re.IGNORECASE)
+        """
+        Finds a bilateral peer for a given specific (e.g., 'left' or 'right') entry
+        by comparing core parsed components, not raw strings.
+        """
+        specific_components = specific_entry.get('_parsed_components')
+        if not specific_components:
+            return None
+
+        # Define the target signature, excluding laterality
+        target_modality = specific_components.get('modality')
+        target_anatomy = set(specific_components.get('anatomy', []))
+        target_contrast = (specific_components.get('contrast') or [None])[0]
+        target_techniques = set(specific_components.get('technique', []))
+
         for entry in self.nhs_data:
-            entry_primary_name = entry.get("primary_source_name", "")
-            if not bilateral_pattern.search(entry_primary_name): continue
-            entry_base_name = bilateral_pattern.sub('', entry_primary_name).strip()
-            if base_name.lower() == entry_base_name.lower():
-                return entry
+            entry_components = entry.get('_parsed_components')
+            if not entry_components:
+                continue
+            
+            # 1. Must be a bilateral entry
+            entry_laterality = (entry_components.get('laterality') or [None])[0]
+            if entry_laterality != 'bilateral':
+                continue
+
+            # 2. Compare the core components for a structural match
+            if entry_components.get('modality') == target_modality and \
+               set(entry_components.get('anatomy', [])) == target_anatomy and \
+               (entry_components.get('contrast') or [None])[0] == target_contrast and \
+               set(entry_components.get('technique', [])) == target_techniques:
+                return entry  # Found a perfect structural peer that is bilateral
+
         return None
 
     def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False) -> Dict:
