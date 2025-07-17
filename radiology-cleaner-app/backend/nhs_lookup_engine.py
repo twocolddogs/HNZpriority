@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from nlp_processor import NLPProcessor
 from context_detection import detect_interventional_procedure_terms
 from r2_cache_manager import R2CacheManager
+from cache_version import get_current_cache_version
 
 if TYPE_CHECKING:
     from parser import RadiologySemanticParser
@@ -109,8 +110,17 @@ class NHSLookupEngine:
         return os.path.join(cache_dir, f'nhs_embeddings_{model_key}_{data_hash}.pkl')
     
     def _get_data_hash(self) -> str:
-        data_str = json.dumps(self.nhs_data, sort_keys=True, default=str)
-        return hashlib.sha256(data_str.encode()).hexdigest()[:16]
+        """Generate a stable hash based on NHS file modification time only."""
+        # NOTE: We don't include processing file changes (cache_version) for embedding cache
+        # because embeddings should only be invalidated when NHS data changes, not processing logic
+        # The cache_version tracking is intended for speeding up evaluation runs
+        
+        # Include NHS file modification time for data changes
+        nhs_file_mtime = str(os.path.getmtime(self.nhs_json_path))
+        
+        # Create stable hash from file modification time only
+        hash_input = f"nhs_data_{nhs_file_mtime}"
+        return hashlib.sha256(hash_input.encode()).hexdigest()[:16]
 
     def _apply_embeddings_to_data(self, embeddings_dict: Dict):
         for entry in self.nhs_data:

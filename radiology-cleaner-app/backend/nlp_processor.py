@@ -128,7 +128,7 @@ class NLPProcessor:
             
             # Skip delays for faster cache building (Pro account has higher limits)
             if chunk_num < total_chunks and chunk_delay > 0:
-                logger.info(f"Skipping {chunk_delay}s delay for faster processing...")
+                pass  # Skip delay without logging
         
         return all_results
 
