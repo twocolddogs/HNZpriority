@@ -193,7 +193,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // --- DOM ELEMENTS ---
     const uploadSection = document.getElementById('uploadSection');
-    const sanityTestSection = document.getElementById('sanityTestSection');
+    const demosSection = document.getElementById('demosSection');
     const fileInput = document.getElementById('fileInput');
     const fileInfo = document.getElementById('fileInfo');
     const progressBar = document.getElementById('progressBar');
@@ -543,12 +543,12 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- UPLOAD INTERFACE CONTROL ---
     function hideUploadInterface() {
         uploadSection.style.display = 'none';
-        sanityTestSection.style.display = 'none';
+        demosSection.style.display = 'none';
     }
     
     function showUploadInterface() {
         uploadSection.style.display = 'block';
-        sanityTestSection.style.display = 'block';
+        demosSection.style.display = 'block';
     }
     
     function startNewUpload() {
