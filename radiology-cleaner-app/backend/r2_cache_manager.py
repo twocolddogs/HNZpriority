@@ -16,6 +16,8 @@ import os
 import logging
 import pickle
 import boto3
+import gzip
+import time
 from botocore.exceptions import ClientError, NoCredentialsError
 from typing import Optional, Dict
 import hashlib
@@ -32,6 +34,10 @@ class R2CacheManager:
         
         self.client = None
         self._available = False
+        
+        # Compression settings
+        self.compression_threshold_mb = 50  # Compress files larger than 50MB
+        self.use_compression = True
         
         if all([self.access_key_id, self.secret_access_key, self.bucket_name, self.endpoint_url]):
             try:
@@ -53,13 +59,45 @@ class R2CacheManager:
         """Check if R2 storage is available."""
         return self._available and self.client is not None
     
-    def _get_cache_key(self, model_key: str, data_hash: str) -> str:
+    def _get_cache_key(self, model_key: str, data_hash: str, compressed: bool = False) -> str:
         """Generate R2 object key for cache file."""
-        return f"nhs-embeddings/{model_key}/{data_hash}.pkl"
+        extension = ".pkl.gz" if compressed else ".pkl"
+        return f"nhs-embeddings/{model_key}/{data_hash}{extension}"
+    
+    def _should_compress(self, data_size_mb: float) -> bool:
+        """Determine if data should be compressed based on size."""
+        return self.use_compression and data_size_mb > self.compression_threshold_mb
+    
+    def _compress_cache_data(self, cache_data: Dict) -> bytes:
+        """Compress cache data using gzip."""
+        start_time = time.time()
+        pickled_data = pickle.dumps(cache_data)
+        original_size_mb = len(pickled_data) / (1024 * 1024)
+        
+        compressed_data = gzip.compress(pickled_data, compresslevel=6)
+        compressed_size_mb = len(compressed_data) / (1024 * 1024)
+        compression_time = time.time() - start_time
+        
+        compression_ratio = compressed_size_mb / original_size_mb
+        
+        logger.info(f"Compression: {original_size_mb:.1f}MB → {compressed_size_mb:.1f}MB "
+                   f"({compression_ratio:.1%} of original, {compression_time:.2f}s)")
+        
+        return compressed_data
+    
+    def _decompress_cache_data(self, compressed_data: bytes) -> Dict:
+        """Decompress cache data using gzip."""
+        start_time = time.time()
+        decompressed_data = gzip.decompress(compressed_data)
+        cache_data = pickle.loads(decompressed_data)
+        decompression_time = time.time() - start_time
+        
+        logger.info(f"Decompression completed in {decompression_time:.2f}s")
+        return cache_data
     
     def upload_cache(self, cache_data: Dict, model_key: str, data_hash: str) -> bool:
         """
-        Upload cache data to R2.
+        Upload cache data to R2, with automatic compression for large files.
         
         Args:
             cache_data: Cache data dictionary with embeddings and metadata
@@ -74,23 +112,37 @@ class R2CacheManager:
             return False
         
         try:
-            # Serialize cache data
-            cache_bytes = pickle.dumps(cache_data)
-            cache_size_mb = len(cache_bytes) / (1024 * 1024)
+            # First, determine if we should compress
+            temp_bytes = pickle.dumps(cache_data)
+            uncompressed_size_mb = len(temp_bytes) / (1024 * 1024)
+            should_compress = self._should_compress(uncompressed_size_mb)
             
-            object_key = self._get_cache_key(model_key, data_hash)
+            if should_compress:
+                cache_bytes = self._compress_cache_data(cache_data)
+                object_key = self._get_cache_key(model_key, data_hash, compressed=True)
+                compression_info = " (compressed)"
+            else:
+                cache_bytes = temp_bytes
+                object_key = self._get_cache_key(model_key, data_hash, compressed=False)
+                compression_info = ""
             
-            logger.info(f"Uploading cache to R2: {object_key} ({cache_size_mb:.1f}MB)")
+            final_size_mb = len(cache_bytes) / (1024 * 1024)
+            
+            logger.info(f"Uploading cache to R2: {object_key} ({final_size_mb:.1f}MB{compression_info})")
+            
+            metadata = {
+                'model_key': model_key,
+                'data_hash': data_hash,
+                'embeddings_count': str(cache_data.get('cache_metadata', {}).get('total_embeddings', 0)),
+                'compressed': 'true' if should_compress else 'false',
+                'original_size_mb': f"{uncompressed_size_mb:.1f}"
+            }
             
             self.client.put_object(
                 Bucket=self.bucket_name,
                 Key=object_key,
                 Body=cache_bytes,
-                Metadata={
-                    'model_key': model_key,
-                    'data_hash': data_hash,
-                    'embeddings_count': str(cache_data.get('cache_metadata', {}).get('total_embeddings', 0))
-                }
+                Metadata=metadata
             )
             
             logger.info(f"Successfully uploaded cache to R2: {object_key}")
@@ -105,7 +157,7 @@ class R2CacheManager:
     
     def download_cache(self, model_key: str, data_hash: str) -> Optional[Dict]:
         """
-        Download cache data from R2.
+        Download cache data from R2, with automatic decompression support.
         
         Args:
             model_key: Model identifier
@@ -118,48 +170,63 @@ class R2CacheManager:
             logger.warning("R2 not available for cache download")
             return None
         
-        try:
-            object_key = self._get_cache_key(model_key, data_hash)
-            
-            logger.info(f"Downloading cache from R2: {object_key}")
-            
-            response = self.client.get_object(Bucket=self.bucket_name, Key=object_key)
-            cache_bytes = response['Body'].read()
-            cache_data = pickle.loads(cache_bytes)
-            
-            # Validate cache metadata
-            metadata = cache_data.get('cache_metadata', {})
-            if metadata.get('data_hash') == data_hash:
-                logger.info(f"Successfully downloaded valid cache from R2: {object_key}")
-                return cache_data
-            else:
-                logger.warning(f"Cache data hash mismatch for {object_key}")
-                return None
+        # Try compressed file first, then uncompressed for backward compatibility
+        for compressed in [True, False]:
+            try:
+                object_key = self._get_cache_key(model_key, data_hash, compressed=compressed)
                 
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'NoSuchKey':
-                logger.info(f"No cache found in R2 for {model_key} with hash {data_hash}")
-            else:
-                logger.error(f"AWS/R2 error downloading cache: {e}")
-            return None
-        except Exception as e:
-            logger.error(f"Failed to download cache from R2: {e}")
-            return None
+                logger.info(f"Downloading cache from R2: {object_key}")
+                
+                response = self.client.get_object(Bucket=self.bucket_name, Key=object_key)
+                cache_bytes = response['Body'].read()
+                
+                # Handle decompression if needed
+                if compressed:
+                    cache_data = self._decompress_cache_data(cache_bytes)
+                else:
+                    cache_data = pickle.loads(cache_bytes)
+                
+                # Validate cache metadata
+                metadata = cache_data.get('cache_metadata', {})
+                if metadata.get('data_hash') == data_hash:
+                    compression_info = " (compressed)" if compressed else ""
+                    logger.info(f"Successfully downloaded valid cache from R2: {object_key}{compression_info}")
+                    return cache_data
+                else:
+                    logger.warning(f"Cache data hash mismatch for {object_key}")
+                    continue  # Try the other format
+                    
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'NoSuchKey':
+                    continue  # Try the other format
+                else:
+                    logger.error(f"AWS/R2 error downloading cache {object_key}: {e}")
+                    continue
+            except Exception as e:
+                logger.error(f"Failed to download cache from R2 {object_key}: {e}")
+                continue
+        
+        logger.info(f"No valid cache found in R2 for {model_key} with hash {data_hash}")
+        return None
     
     def cache_exists(self, model_key: str, data_hash: str) -> bool:
-        """Check if cache exists in R2 without downloading."""
+        """Check if cache exists in R2 without downloading (checks both compressed and uncompressed)."""
         if not self.is_available():
             return False
         
-        try:
-            object_key = self._get_cache_key(model_key, data_hash)
-            self.client.head_object(Bucket=self.bucket_name, Key=object_key)
-            return True
-        except ClientError:
-            return False
-        except Exception as e:
-            logger.error(f"Error checking cache existence: {e}")
-            return False
+        # Check for both compressed and uncompressed versions
+        for compressed in [True, False]:
+            try:
+                object_key = self._get_cache_key(model_key, data_hash, compressed=compressed)
+                self.client.head_object(Bucket=self.bucket_name, Key=object_key)
+                return True
+            except ClientError:
+                continue
+            except Exception as e:
+                logger.error(f"Error checking cache existence for {object_key}: {e}")
+                continue
+        
+        return False
     
     def list_cached_models(self) -> list:
         """List all cached model keys in R2."""
