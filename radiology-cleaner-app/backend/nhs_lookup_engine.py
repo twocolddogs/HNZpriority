@@ -105,8 +105,14 @@ class NHSLookupEngine:
     
     def _get_data_hash(self) -> str:
         """Generate hash of NHS data for cache validation."""
-        # Create hash based on data content
-        data_str = json.dumps(self.nhs_data, sort_keys=True, default=str)
+        # Create hash based on data content (excluding embeddings which can't be serialized)
+        data_for_hash = []
+        for entry in self.nhs_data:
+            # Create copy without embeddings for hashing
+            hash_entry = {k: v for k, v in entry.items() if k != '_embedding'}
+            data_for_hash.append(hash_entry)
+        
+        data_str = json.dumps(data_for_hash, sort_keys=True, default=str)
         return hashlib.sha256(data_str.encode()).hexdigest()[:16]
     
     def _load_cache(self) -> Optional[Dict]:
