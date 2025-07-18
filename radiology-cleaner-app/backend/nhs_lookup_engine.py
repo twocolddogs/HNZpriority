@@ -222,20 +222,17 @@ class NHSLookupEngine:
             
             # Step 3: Download from R2 if needed
             if self.r2_manager.is_available() and r2_cache_metadata:
-                cache_data = self.r2_manager.download_cache(model_key, data_hash)
-                if cache_data:
-                    self._apply_embeddings_to_data(cache_data['embeddings'])
-                    
-                    # Save R2 cache to local disk for faster future access
-                    logger.info(f"Saving R2 cache to local path: {local_cache_path}")
+                download_success = self.r2_manager.download_cache(model_key, data_hash, local_cache_path)
+                if download_success:
+                    # Load the downloaded cache data
                     try:
-                        with open(local_cache_path, 'wb') as f:
-                            pickle.dump(cache_data, f)
-                        logger.info("Successfully saved R2 cache to local disk")
+                        with open(local_cache_path, 'rb') as f:
+                            cache_data = pickle.load(f)
+                        self._apply_embeddings_to_data(cache_data['embeddings'])
+                        logger.info("Successfully downloaded and loaded R2 cache")
+                        return
                     except Exception as e:
-                        logger.error(f"Failed to save R2 cache to local disk: {e}")
-                    
-                    return
+                        logger.error(f"Failed to load downloaded R2 cache: {e}")
 
         logger.info(f"No valid cache found for model '{model_key}'. Computing new embeddings...")
         texts_to_embed = [e["_source_text_for_embedding"] for e in self.nhs_data if e.get("_source_text_for_embedding")]
