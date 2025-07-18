@@ -5,6 +5,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
         const isProduction = hostname.includes('radiology-cleaner-frontend-prod');
         const isStaging = hostname.includes('radiology-cleaner-frontend-staging');
+        const isCustomDomain = hostname.includes('hnzradtools.nz');
         
         const apiConfigs = {
             local: { base: 'http://localhost:10000', mode: 'LOCAL DEVELOPMENT' },
@@ -17,6 +18,7 @@ window.addEventListener('DOMContentLoaded', function() {
         if (isLocalhost) config = apiConfigs.local;
         else if (isProduction) config = apiConfigs.production;
         else if (isStaging) config = apiConfigs.staging;
+        else if (isCustomDomain) config = apiConfigs.fallback; // Use direct API for custom domain
         else config = apiConfigs.fallback;
         
         // CORRECTED: Construct the final URLs without adding an extra '/api'.
