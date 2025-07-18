@@ -35,10 +35,8 @@ def sync_cache_from_r2():
     """
     logging.info("Starting cache synchronization from R2 to persistent disk.")
 
-    persistent_disk_path = os.environ.get('RENDER_DISK_PATH')
-    if not persistent_disk_path:
-        logging.info("RENDER_DISK_PATH environment variable not set. Skipping cache sync.")
-        return
+    persistent_disk_path = os.environ.get('RENDER_DISK_PATH', 'cache')
+    logging.info(f"Using persistent disk path: {persistent_disk_path}")
 
     if not os.path.exists(persistent_disk_path):
         logging.info(f"Creating persistent disk directory: {persistent_disk_path}")
@@ -69,7 +67,9 @@ def sync_cache_from_r2():
         
         # Local file is decompressed, so we remove .gz from the name
         # Ensure unique local filename by including model_key
-        base_filename = f"{model_key}_{os.path.basename(r2_object_key).replace('.gz', '')}"
+        # Match the naming convention used by nhs_lookup_engine.py: {model_key}_nhs_embeddings_{data_hash}.pkl
+        data_hash = os.path.basename(r2_object_key).replace('.pkl.gz', '').replace('.pkl', '')
+        base_filename = f"{model_key}_nhs_embeddings_{data_hash}.pkl"
         local_file_path = os.path.join(persistent_disk_path, base_filename)
 
         should_download = False
@@ -88,6 +88,7 @@ def sync_cache_from_r2():
         if should_download:
             try:
                 # Extract the data hash from the filename to pass to the download function
+                # base_filename format: {model_key}_nhs_embeddings_{data_hash}.pkl
                 data_hash = os.path.splitext(base_filename)[0].split('_')[-1]
                 logging.info(f"Downloading cache for model '{model_key}' with hash '{data_hash}'...")
                 
