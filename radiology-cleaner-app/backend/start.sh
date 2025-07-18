@@ -11,4 +11,4 @@ python sync_cache.py
 echo "--- Starting Gunicorn ---"
 # Use exec to replace the shell process with the Gunicorn process.
 # This is more efficient and ensures Gunicorn receives signals correctly.
-exec gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 900 --preload --log-level debug 'radiology-cleaner-app.backend.app:app'
+exec gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 900 --preload --log-level debug 'app:app'
