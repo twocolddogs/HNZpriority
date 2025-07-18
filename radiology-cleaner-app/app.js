@@ -846,10 +846,17 @@ window.addEventListener('DOMContentLoaded', function() {
     function runAnalysis(mappings) {
         summaryData = generateAnalyticsSummary(mappings);
         updateStatsUI(summaryData);
+        updateResultsTitle();
         displayResults(mappings);
         generateConsolidatedResults(mappings);
         generateSourceLegend(mappings);
         resultsSection.style.display = 'block';
+    }
+
+    function updateResultsTitle() {
+        const titleElement = document.getElementById('resultsTitle');
+        const modelDisplayName = formatModelName(currentModel);
+        titleElement.textContent = `Cleaning Results with ${modelDisplayName}`;
     }
 
     function generateSourceLegend(mappings) {

@@ -79,7 +79,7 @@
             <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
 
             <div class="results-section" id="resultsSection">
-                <h2>Cleaning Results</h2>
+                <h2 id="resultsTitle">Cleaning Results</h2>
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-value" id="originalCount">0</div><div class="stat-label">Original Codes</div></div>
                     <div class="stat-card"><div class="stat-value" id="cleanCount">0</div><div class="stat-label">Clean Names</div></div>
@@ -88,13 +88,11 @@
                     <div class="stat-card"><div class="stat-value" id="avgConfidence">0</div><div class="stat-label">Avg Confidence</div></div>
                     <div class="stat-card"><div class="stat-value" id="genderContext">0</div><div class="stat-label">Gender Context</div></div>
                 </div>
+                
+                <!-- Combined Action Buttons - All Four in One Row -->
                 <div class="action-buttons">
                     <button class="button primary" id="newUploadBtn">New Upload</button>
                     <button class="button success" id="exportMappingsBtn">Export Mappings</button>
-                </div>
-                
-                <!-- View Toggle -->
-                <div class="view-toggle" style="margin: 2rem 0; text-align: center;">
                     <button class="button active" id="fullViewBtn">Full View</button>
                     <button class="button secondary" id="consolidatedViewBtn">Consolidated View</button>
                 </div>

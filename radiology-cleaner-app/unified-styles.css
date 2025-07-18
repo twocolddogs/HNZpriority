@@ -1030,6 +1030,7 @@ a:focus-visible {
   position: sticky;
   top: 0;
   font-weight: var(--font-weight-semibold);
+  z-index: var(--z-sticky);
 }
 
 .results-table td {
@@ -1046,6 +1047,11 @@ a:focus-visible {
   overflow-y: auto;
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-base);
+}
+
+/* Add extra padding under the mapping title */
+#fullView h3 {
+  margin-bottom: var(--space-6);
 }
 
 /* ==========================================================================
@@ -1400,18 +1406,32 @@ a:focus-visible {
   display: flex;
   gap: var(--space-4);
   justify-content: center;
-  margin-top: var(--space-8);
-  flex-wrap: nowrap;
+  margin: var(--space-8) 0;
+  flex-wrap: wrap;
 }
 
-@media (max-width: 500px) {
+@media (max-width: 768px) {
   .action-buttons {
     gap: var(--space-2);
+    flex-wrap: wrap;
   }
   
   .action-buttons .button {
     padding: var(--space-2) var(--space-3);
     font-size: var(--font-size-sm);
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 500px) {
+  .action-buttons {
+    gap: var(--space-2);
+    flex-direction: column;
+  }
+  
+  .action-buttons .button {
+    width: 100%;
+    justify-content: center;
   }
 }
 
