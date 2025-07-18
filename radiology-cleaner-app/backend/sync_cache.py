@@ -35,7 +35,7 @@ def sync_cache_from_r2():
     """
     logging.info("Starting cache synchronization from R2 to persistent disk.")
 
-    persistent_disk_path = os.environ.get('RENDER_DISK_PATH', 'cache')
+    persistent_disk_path = os.environ.get('RENDER_DISK_PATH', 'embedding-caches')
     logging.info(f"Using persistent disk path: {persistent_disk_path}")
 
     if not os.path.exists(persistent_disk_path):

@@ -103,7 +103,7 @@ class NHSLookupEngine:
             entry['_parsed_components'] = self.semantic_parser.parse_exam_name(preprocessed_text, 'Other')
 
     def _get_local_cache_path(self) -> str:
-        cache_dir = os.environ.get('RENDER_DISK_PATH', 'cache')
+        cache_dir = os.environ.get('RENDER_DISK_PATH', 'embedding-caches')
         os.makedirs(cache_dir, exist_ok=True)
         model_key = self.nlp_processor.model_key
         data_hash = self._get_data_hash()
