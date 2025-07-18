@@ -3,9 +3,8 @@ window.addEventListener('DOMContentLoaded', function() {
     function detectApiUrls() {
         const hostname = window.location.hostname;
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-        const isProduction = hostname.includes('radiology-cleaner-frontend-prod');
-        const isStaging = hostname.includes('radiology-cleaner-frontend-staging');
-        const isCustomDomain = hostname.includes('develop.nzradtools.nz');
+        const isProduction = hostname === 'hnzradtools.nz';
+        const isStaging = hostname === 'develop.hnzradtools.nz';
         
         const apiConfigs = {
             local: { base: 'http://localhost:10000', mode: 'LOCAL DEVELOPMENT' },
@@ -885,7 +884,15 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Insert after the view toggle buttons
             const viewToggle = document.querySelector('.view-toggle');
-            viewToggle.parentNode.insertBefore(legendContainer, viewToggle.nextSibling);
+            if (viewToggle && viewToggle.parentNode) {
+                viewToggle.parentNode.insertBefore(legendContainer, viewToggle.nextSibling);
+            } else {
+                // Fallback: insert at the end of results section if viewToggle not found
+                const resultsSection = document.getElementById('resultsSection');
+                if (resultsSection) {
+                    resultsSection.appendChild(legendContainer);
+                }
+            }
         }
         
         // Generate legend content
