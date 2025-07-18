@@ -1233,46 +1233,77 @@ a:focus-visible {
   flex-wrap: wrap;
 }
 
-/* Model Toggle Buttons - Simplified Bordered Design */
+/* Model Toggle Buttons - Enhanced Visual Design */
 .model-toggle {
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 2px solid var(--color-gray-300);
-  background-color: transparent;
+  background-color: var(--color-white);
   color: var(--color-gray-700);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 10px 16px;
   font-size: 0.9em;
+  font-weight: 500;
+  border-radius: var(--radius-base);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
 }
 
-/* Active state - filled */
+/* Add subtle shine effect */
+.model-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s ease;
+}
+
+/* Active state - primary brand color with stronger visual emphasis */
 .model-toggle.active {
-  background-color: #143345; /* Left side of brand bar gradient */
+  background-color: var(--color-primary);
   color: var(--color-white);
-  border-color: #143345;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  font-weight: 600;
+  transform: translateY(-1px);
 }
 
-/* Hover state for inactive buttons */
+/* Shine effect on active */
+.model-toggle.active::before {
+  left: 100%;
+}
+
+/* Hover state for inactive buttons - more prominent */
 .model-toggle:hover:not(.active):not(:disabled) {
-  background-color: var(--color-gray-50);
-  border-color: var(--color-gray-400);
-  color: var(--color-gray-800);
+  background-color: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-/* Hover state for active button */
+/* Hover state for active button - darker with glow */
 .model-toggle.active:hover {
-  background-color: #0f2935; /* Slightly darker for hover state */
-  border-color: #0f2935;
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Disabled/unavailable state - clearly inactive */
 .model-toggle:disabled {
-  background-color: transparent;
+  background-color: var(--color-gray-100);
   color: var(--color-gray-400);
   border-color: var(--color-gray-200);
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Model Status Indicators */
@@ -1310,6 +1341,55 @@ a:focus-visible {
   background: var(--color-primary);
   width: 0%;
   transition: width 0.3s ease;
+}
+
+/* ==========================================================================
+   14. Source Indicators
+   ========================================================================== */
+
+.source-legend {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: var(--color-gray-50);
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-gray-200);
+}
+
+.source-legend h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+}
+
+.source-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.source-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}
+
+.source-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+/* Table source indicator styling */
+.results-table tbody tr td:first-child {
+  border-right: 1px solid var(--color-gray-200);
+}
+
+.results-table tbody tr:hover td:first-child {
+  opacity: 0.8;
 }
 
 /* ==========================================================================

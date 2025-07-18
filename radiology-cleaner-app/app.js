@@ -536,11 +536,13 @@ window.addEventListener('DOMContentLoaded', function() {
     function hideUploadInterface() {
         uploadSection.style.display = 'none';
         demosSection.style.display = 'none';
+        document.getElementById('modelSettingsSection').style.display = 'none';
     }
     
     function showUploadInterface() {
         uploadSection.style.display = 'block';
         demosSection.style.display = 'block';
+        document.getElementById('modelSettingsSection').style.display = 'block';
     }
     
     function startNewUpload() {
@@ -846,7 +848,52 @@ window.addEventListener('DOMContentLoaded', function() {
         updateStatsUI(summaryData);
         displayResults(mappings);
         generateConsolidatedResults(mappings);
+        generateSourceLegend(mappings);
         resultsSection.style.display = 'block';
+    }
+
+    function generateSourceLegend(mappings) {
+        // Get unique sources from the data
+        const uniqueSources = [...new Set(mappings.map(item => item.data_source))];
+        
+        // Source display names
+        const sourceNames = {
+            'C': 'Central',
+            'CO': 'SIRS (Canterbury)',
+            'K': 'Southern',
+            'TestData': 'Test Data',
+            'SanityTest': 'Sanity Test',
+            'Demo': 'Demo',
+            'Sample': 'Sample'
+        };
+        
+        // Create legend container if it doesn't exist
+        let legendContainer = document.getElementById('sourceLegend');
+        if (!legendContainer) {
+            legendContainer = document.createElement('div');
+            legendContainer.id = 'sourceLegend';
+            legendContainer.className = 'source-legend';
+            
+            // Insert after the view toggle buttons
+            const viewToggle = document.querySelector('.view-toggle');
+            viewToggle.parentNode.insertBefore(legendContainer, viewToggle.nextSibling);
+        }
+        
+        // Generate legend content
+        let legendHTML = '<h4>Data Sources</h4><div class="source-legend-grid">';
+        uniqueSources.forEach(source => {
+            const color = getSourceColor(source);
+            const displayName = sourceNames[source] || source;
+            legendHTML += `
+                <div class="source-legend-item">
+                    <div class="source-legend-color" style="background-color: ${color};"></div>
+                    <span>${displayName}</span>
+                </div>
+            `;
+        });
+        legendHTML += '</div>';
+        
+        legendContainer.innerHTML = legendHTML;
     }
 
     // --- UI & DISPLAY FUNCTIONS ---
@@ -859,11 +906,44 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('genderContext').textContent = summary.genderContextCount;
     }
 
+    // Source color mapping
+    const sourceColors = {
+        'C': '#1f77b4',            // Blue - Central
+        'CO': '#2ca02c',           // Green - SIRS (Canterbury)
+        'K': '#d62728',            // Red - Southern
+        'TestData': '#ff1493',     // Deep Pink
+        'SanityTest': '#00ced1',   // Dark Turquoise
+        'Demo': '#ffd700',         // Gold
+        'Sample': '#ff6347',       // Tomato
+        'Default': '#6c757d'       // Bootstrap secondary gray
+    };
+
+    function getSourceColor(source) {
+        return sourceColors[source] || sourceColors['Default'];
+    }
+
     function displayResults(results) {
         resultsBody.innerHTML = '';
         results.forEach(item => {
             const row = resultsBody.insertRow();
-            row.insertCell().textContent = item.data_source;
+            
+            // Add source indicator cell
+            const sourceCell = row.insertCell();
+            sourceCell.style.cssText = `
+                width: 12px;
+                padding: 0;
+                background-color: ${getSourceColor(item.data_source)};
+                border-right: none;
+                position: relative;
+            `;
+            
+            // Set tooltip with full source name
+            const sourceNames = {
+                'C': 'Central',
+                'CO': 'SIRS (Canterbury)', 
+                'K': 'Southern'
+            };
+            sourceCell.title = sourceNames[item.data_source] || item.data_source;
             row.insertCell().textContent = item.exam_code;
             row.insertCell().textContent = item.exam_name;
             const cleanNameCell = row.insertCell();
@@ -873,40 +953,36 @@ window.addEventListener('DOMContentLoaded', function() {
                 cleanNameCell.innerHTML = `<strong>${item.clean_name}</strong>`;
             }
 
-            // Add SNOMED Code cell
-            const snomedCodeCell = row.insertCell();
-            /*if (item.snomed && item.snomed.id) {
-                snomedCodeCell.textContent = item.snomed.id;
-            } else {
-                snomedCodeCell.innerHTML = '<span style="color: #999;">-</span>';
-            }*/
-
-            // Add SNOMED FSN cell
+            // Add SNOMED FSN cell with code underneath
             const snomedFsnCell = row.insertCell();
             if (item.snomed && item.snomed.fsn) {
-                snomedFsnCell.textContent = item.snomed.fsn;
+                let snomedContent = `<div>${item.snomed.fsn}</div>`;
+                if (item.snomed.id) {
+                    snomedContent += `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.id}</div>`;
+                }
+                snomedFsnCell.innerHTML = snomedContent;
             } else {
                 snomedFsnCell.innerHTML = '<span style="color: #999;">-</span>';
             }
 
-            const componentsCell = row.insertCell();
-            const { anatomy, laterality, contrast, technique } = item.components;
-            if(anatomy && anatomy.length > 0) anatomy.forEach(a => { if (a && a.trim()) componentsCell.innerHTML += `<span class="tag anatomy">${a}</span>`});
-            if(laterality && Array.isArray(laterality)) laterality.forEach(l => { if (l && l.trim()) componentsCell.innerHTML += `<span class="tag laterality">${l}</span>`});
-            else if(laterality && typeof laterality === 'string' && laterality.trim()) componentsCell.innerHTML += `<span class="tag laterality">${laterality}</span>`;
-            if(contrast && Array.isArray(contrast)) contrast.forEach(c => { if (c && c.trim()) componentsCell.innerHTML += `<span class="tag contrast">${c}</span>`});
-            else if(contrast && typeof contrast === 'string' && contrast.trim()) componentsCell.innerHTML += `<span class="tag contrast">${contrast}</span>`;
-            if(technique && technique.length > 0) technique.forEach(t => { if (t && t.trim()) componentsCell.innerHTML += `<span class="tag technique">${t}</span>`});
+            // Add combined Tags cell (components + context)
+            const tagsCell = row.insertCell();
+            const { anatomy, laterality, contrast, technique, gender_context, age_context, clinical_context, clinical_equivalents } = item.components;
             
-            // Add context cell
-            const contextCell = row.insertCell();
-            const { gender_context, age_context, clinical_context, clinical_equivalents } = item.components;
+            // Add component tags
+            if(anatomy && anatomy.length > 0) anatomy.forEach(a => { if (a && a.trim()) tagsCell.innerHTML += `<span class="tag anatomy">${a}</span>`});
+            if(laterality && Array.isArray(laterality)) laterality.forEach(l => { if (l && l.trim()) tagsCell.innerHTML += `<span class="tag laterality">${l}</span>`});
+            else if(laterality && typeof laterality === 'string' && laterality.trim()) tagsCell.innerHTML += `<span class="tag laterality">${laterality}</span>`;
+            if(contrast && Array.isArray(contrast)) contrast.forEach(c => { if (c && c.trim()) tagsCell.innerHTML += `<span class="tag contrast">${c}</span>`});
+            else if(contrast && typeof contrast === 'string' && contrast.trim()) tagsCell.innerHTML += `<span class="tag contrast">${contrast}</span>`;
+            if(technique && technique.length > 0) technique.forEach(t => { if (t && t.trim()) tagsCell.innerHTML += `<span class="tag technique">${t}</span>`});
             
-            if(gender_context && gender_context.trim()) contextCell.innerHTML += `<span class="tag gender">${gender_context}</span>`;
-            if(age_context && age_context.trim()) contextCell.innerHTML += `<span class="tag age">${age_context}</span>`;
-            if(clinical_context && clinical_context.length > 0) clinical_context.forEach(c => { if (c && c.trim()) contextCell.innerHTML += `<span class="tag clinical">${c}</span>`});
+            // Add context tags
+            if(gender_context && gender_context.trim()) tagsCell.innerHTML += `<span class="tag gender">${gender_context}</span>`;
+            if(age_context && age_context.trim()) tagsCell.innerHTML += `<span class="tag age">${age_context}</span>`;
+            if(clinical_context && clinical_context.length > 0) clinical_context.forEach(c => { if (c && c.trim()) tagsCell.innerHTML += `<span class="tag clinical">${c}</span>`});
             if(clinical_equivalents && clinical_equivalents.length > 0) {
-                clinical_equivalents.slice(0, 2).forEach(e => { if (e && e.trim()) contextCell.innerHTML += `<span class="tag equivalent">${e}</span>`});
+                clinical_equivalents.slice(0, 2).forEach(e => { if (e && e.trim()) tagsCell.innerHTML += `<span class="tag equivalent">${e}</span>`});
             }
             
             // Add confidence cell
