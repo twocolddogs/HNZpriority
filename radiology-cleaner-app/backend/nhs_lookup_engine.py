@@ -391,11 +391,11 @@ class NHSLookupEngine:
         
         # 5. Apply bonuses and penalties
         final_score += interventional_score
-        final_score -= specificity_penalty
+        final_score *= (1 - specificity_penalty)
         
         # NEW: Add a bonus for an exact match on the primary name
         if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
-            final_score += self.exact_match_bonus
+			final_score += self.exact_match_bonus
             
         return max(0, final_score)
 
@@ -471,6 +471,12 @@ class NHSLookupEngine:
                 specificity_penalty=specificity_penalty
             )
             
+
+			input_con = (extracted_input_components.get('contrast') or [None])[0]
+			nhs_con = (nhs_components.get('contrast') or [None])[0]
+			if input_con and nhs_con and input_con != nhs_con:
+				current_score -= 0.25 # Apply an additional penalty for a direct contrast mismatch
+			
             if current_score > highest_confidence:
                 highest_confidence, best_match = current_score, entry
 
