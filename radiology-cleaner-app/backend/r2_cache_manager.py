@@ -183,40 +183,28 @@ class R2CacheManager:
                 
                 # Stream the content to a temporary file first
                 temp_file_path = f"{local_file_path}.tmp"
-                with open(temp_file_path, 'wb') as f:
-                    for chunk in response['Body'].iter_chunks():
-                        f.write(chunk)
                 
-                # Decompress if needed, and then load/save
                 if compressed:
-                    with gzip.open(temp_file_path, 'rb') as f_in:
-                        decompressed_data = f_in.read()
-                    # Validate cache metadata before saving
-                    cache_data = pickle.loads(decompressed_data)
-                    metadata = cache_data.get('cache_metadata', {})
-                    if metadata.get('data_hash') == data_hash:
-                        with open(local_file_path, 'wb') as f_out:
-                            f_out.write(decompressed_data)
-                        logger.info(f"Successfully downloaded and decompressed valid cache from R2 to {local_file_path}")
-                        os.remove(temp_file_path) # Clean up temp file
-                        return True
-                    else:
-                        logger.warning(f"Cache data hash mismatch for {object_key}. Deleting temp file.")
-                        os.remove(temp_file_path)
-                        continue # Try the other format
+                    # Stream and decompress directly to the final file path
+                    with open(temp_file_path, 'wb') as f_out:
+                        with gzip.GzipFile(fileobj=response['Body'], mode='rb') as f_in:
+                            while True:
+                                chunk = f_in.read(8192) # Read in chunks
+                                if not chunk:
+                                    break
+                                f_out.write(chunk)
+                    logger.info(f"Successfully downloaded and decompressed cache from R2 to {temp_file_path}")
                 else:
-                    # For uncompressed, directly validate and move
-                    with open(temp_file_path, 'rb') as f_in:
-                        cache_data = pickle.load(f_in)
-                    metadata = cache_data.get('cache_metadata', {})
-                    if metadata.get('data_hash') == data_hash:
-                        os.rename(temp_file_path, local_file_path) # Atomically move temp to final
-                        logger.info(f"Successfully downloaded valid cache from R2 to {local_file_path}")
-                        return True
-                    else:
-                        logger.warning(f"Cache data hash mismatch for {object_key}. Deleting temp file.")
-                        os.remove(temp_file_path)
-                        continue # Try the other format
+                    # For uncompressed, directly stream to the temporary file
+                    with open(temp_file_path, 'wb') as f_out:
+                        for chunk in response['Body'].iter_chunks():
+                            f_out.write(chunk)
+                    logger.info(f"Successfully downloaded cache from R2 to {temp_file_path}")
+                
+                # Atomically move the temporary file to the final destination
+                os.rename(temp_file_path, local_file_path)
+                logger.info(f"Successfully saved cache to {local_file_path}")
+                return True
                     
             except ClientError as e:
                 if e.response['Error']['Code'] == 'NoSuchKey':
