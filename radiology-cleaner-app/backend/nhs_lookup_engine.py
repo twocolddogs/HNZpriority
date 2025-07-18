@@ -107,7 +107,7 @@ class NHSLookupEngine:
         os.makedirs(cache_dir, exist_ok=True)
         model_key = self.nlp_processor.model_key
         data_hash = self._get_data_hash()
-        return os.path.join(cache_dir, f'nhs_embeddings_{model_key}_{data_hash}.pkl')
+        return os.path.join(cache_dir, f'{model_key}_nhs_embeddings_{data_hash}.pkl')
     
     def _get_data_hash(self) -> str:
         """Generate a stable hash based on NHS data structure."""

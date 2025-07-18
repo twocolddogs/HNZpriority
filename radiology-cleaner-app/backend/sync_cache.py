@@ -68,7 +68,8 @@ def sync_cache_from_r2():
         r2_last_modified = latest_r2_object['LastModified']
         
         # Local file is decompressed, so we remove .gz from the name
-        base_filename = os.path.basename(r2_object_key).replace('.gz', '')
+        # Ensure unique local filename by including model_key
+        base_filename = f"{model_key}_{os.path.basename(r2_object_key).replace('.gz', '')}"
         local_file_path = os.path.join(persistent_disk_path, base_filename)
 
         should_download = False
