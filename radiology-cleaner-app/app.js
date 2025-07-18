@@ -5,6 +5,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
         const isProduction = hostname === 'hnzradtools.nz';
         const isStaging = hostname === 'develop.hnzradtools.nz';
+        const isCloudflarePages = hostname.includes('pages.dev');
         
         const apiConfigs = {
             local: { base: 'http://localhost:10000', mode: 'LOCAL DEVELOPMENT' },
@@ -17,7 +18,7 @@ window.addEventListener('DOMContentLoaded', function() {
         if (isLocalhost) config = apiConfigs.local;
         else if (isProduction) config = apiConfigs.production;
         else if (isStaging) config = apiConfigs.staging;
-        else if (isCustomDomain) config = apiConfigs.fallback; // Use direct API for custom domain
+        else if (isCloudflarePages) config = apiConfigs.fallback; // Use direct API for Cloudflare Pages
         else config = apiConfigs.fallback;
         
         // CORRECTED: Construct the final URLs without adding an extra '/api'.
