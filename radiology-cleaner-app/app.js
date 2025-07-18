@@ -5,7 +5,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
         const isProduction = hostname.includes('radiology-cleaner-frontend-prod');
         const isStaging = hostname.includes('radiology-cleaner-frontend-staging');
-        const isCustomDomain = hostname.includes('hnzradtools.nz');
+        const isCustomDomain = hostname.includes('develop.nzradtools.nz');
         
         const apiConfigs = {
             local: { base: 'http://localhost:10000', mode: 'LOCAL DEVELOPMENT' },
