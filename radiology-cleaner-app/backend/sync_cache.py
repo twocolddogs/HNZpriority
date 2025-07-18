@@ -91,22 +91,20 @@ def sync_cache_from_r2():
                 data_hash = os.path.splitext(base_filename)[0].split('_')[-1]
                 logging.info(f"Downloading cache for model '{model_key}' with hash '{data_hash}'...")
                 
-                # download_cache returns the decompressed Python object
-                cache_data = r2_manager.download_cache(model_key, data_hash)
+                # download_cache now saves directly to file
+                download_success = r2_manager.download_cache(model_key, data_hash, local_file_path)
                 
-                if cache_data:
+                if download_success:
                     # Clean up any other versions for this model on the local disk
                     for f in os.listdir(persistent_disk_path):
-                        if f.startswith(f"nhs_embeddings_{model_key}_") and f != base_filename:
+                        # Check for files that start with the model_key and are not the current base_filename
+                        # Also ensure we don't delete the .tmp file if it exists from a failed download
+                        if f.startswith(f"{model_key}_") and f != base_filename and not f.endswith(".tmp"):
                             logging.info(f"Removing old local cache file: {f}")
                             os.remove(os.path.join(persistent_disk_path, f))
-                    
-                    # Save the new cache data using pickle
-                    with open(local_file_path, 'wb') as f:
-                        pickle.dump(cache_data, f)
                     logging.info(f"Successfully saved cache to {local_file_path}")
                 else:
-                    logging.error(f"Download from R2 for model '{model_key}' returned no data.")
+                    logging.error(f"Download from R2 for model '{model_key}' failed.")
             except Exception as e:
                 logging.error(f"An error occurred during download/save for model '{model_key}': {e}", exc_info=True)
 

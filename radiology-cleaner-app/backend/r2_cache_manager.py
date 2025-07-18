@@ -155,59 +155,83 @@ class R2CacheManager:
             logger.error(f"Failed to upload cache to R2: {e}")
             return False
     
-    def download_cache(self, model_key: str, data_hash: str) -> Optional[Dict]:
+    def download_cache(self, model_key: str, data_hash: str, local_file_path: str) -> bool:
         """
-        Download cache data from R2, with automatic decompression support.
+        Download cache data from R2 and save it directly to a local file, 
+        with automatic decompression support.
         
         Args:
             model_key: Model identifier
             data_hash: Hash of the NHS data
+            local_file_path: The absolute path to save the decompressed cache file.
             
         Returns:
-            Cache data dictionary if found and valid, None otherwise
+            True if download and save successful, False otherwise
         """
         if not self.is_available():
             logger.warning("R2 not available for cache download")
-            return None
+            return False
         
         # Try compressed file first, then uncompressed for backward compatibility
         for compressed in [True, False]:
+            object_key = self._get_cache_key(model_key, data_hash, compressed=compressed)
+            
             try:
-                object_key = self._get_cache_key(model_key, data_hash, compressed=compressed)
-                
                 logger.info(f"Downloading cache from R2: {object_key}")
                 
                 response = self.client.get_object(Bucket=self.bucket_name, Key=object_key)
-                cache_bytes = response['Body'].read()
                 
-                # Handle decompression if needed
+                # Stream the content to a temporary file first
+                temp_file_path = f"{local_file_path}.tmp"
+                with open(temp_file_path, 'wb') as f:
+                    for chunk in response['Body'].iter_chunks():
+                        f.write(chunk)
+                
+                # Decompress if needed, and then load/save
                 if compressed:
-                    cache_data = self._decompress_cache_data(cache_bytes)
+                    with gzip.open(temp_file_path, 'rb') as f_in:
+                        decompressed_data = f_in.read()
+                    # Validate cache metadata before saving
+                    cache_data = pickle.loads(decompressed_data)
+                    metadata = cache_data.get('cache_metadata', {})
+                    if metadata.get('data_hash') == data_hash:
+                        with open(local_file_path, 'wb') as f_out:
+                            f_out.write(decompressed_data)
+                        logger.info(f"Successfully downloaded and decompressed valid cache from R2 to {local_file_path}")
+                        os.remove(temp_file_path) # Clean up temp file
+                        return True
+                    else:
+                        logger.warning(f"Cache data hash mismatch for {object_key}. Deleting temp file.")
+                        os.remove(temp_file_path)
+                        continue # Try the other format
                 else:
-                    cache_data = pickle.loads(cache_bytes)
-                
-                # Validate cache metadata
-                metadata = cache_data.get('cache_metadata', {})
-                if metadata.get('data_hash') == data_hash:
-                    compression_info = " (compressed)" if compressed else ""
-                    logger.info(f"Successfully downloaded valid cache from R2: {object_key}{compression_info}")
-                    return cache_data
-                else:
-                    logger.warning(f"Cache data hash mismatch for {object_key}")
-                    continue  # Try the other format
+                    # For uncompressed, directly validate and move
+                    with open(temp_file_path, 'rb') as f_in:
+                        cache_data = pickle.load(f_in)
+                    metadata = cache_data.get('cache_metadata', {})
+                    if metadata.get('data_hash') == data_hash:
+                        os.rename(temp_file_path, local_file_path) # Atomically move temp to final
+                        logger.info(f"Successfully downloaded valid cache from R2 to {local_file_path}")
+                        return True
+                    else:
+                        logger.warning(f"Cache data hash mismatch for {object_key}. Deleting temp file.")
+                        os.remove(temp_file_path)
+                        continue # Try the other format
                     
             except ClientError as e:
                 if e.response['Error']['Code'] == 'NoSuchKey':
                     continue  # Try the other format
                 else:
                     logger.error(f"AWS/R2 error downloading cache {object_key}: {e}")
+                    if os.path.exists(temp_file_path): os.remove(temp_file_path)
                     continue
             except Exception as e:
-                logger.error(f"Failed to download cache from R2 {object_key}: {e}")
+                logger.error(f"Failed to download cache from R2 {object_key}: {e}", exc_info=True)
+                if os.path.exists(temp_file_path): os.remove(temp_file_path)
                 continue
         
         logger.info(f"No valid cache found in R2 for {model_key} with hash {data_hash}")
-        return None
+        return False
     
     def cache_exists(self, model_key: str, data_hash: str) -> bool:
         """Check if cache exists in R2 without downloading (checks both compressed and uncompressed)."""
