@@ -1,22 +1,105 @@
 scoring:
   # Number of candidates to retrieve from the fast vector search before detailed scoring.
-  retriever_top_k: 20
+  retriever_top_k: 25
 
   # Weights for combining individual components into a single component score.
+  # Rebalanced based on training data analysis for better accuracy
   weights_component:
-    anatomy: 0.50
-    modality: 0.20
-    laterality: 0.10
-    contrast: 0.10
-    technique: 0.10
+    anatomy: 0.35      # Reduced from 0.50 - less reliance on extraction accuracy
+    modality: 0.25     # Increased from 0.20 - modality is most reliable component
+    laterality: 0.15   # Increased from 0.10 - important for precise matching
+    contrast: 0.15     # Increased from 0.10 - clinically significant differentiator
+    technique: 0.10    # Unchanged - least reliable component
 
   # Final weights for combining the component score and the semantic score.
+  # Enhanced with frequency-based scoring for popular exams
   weights_final:
-    component: 0.6
-    semantic: 0.4
+    component: 0.55    # Reduced from 0.60 to balance with semantic
+    semantic: 0.35     # Reduced from 0.40 to make room for frequency
+    frequency: 0.10    # NEW: popularity-based scoring for common exams
 
   # Bonuses and penalties applied to the final score.
-  interventional_bonus: 0.25
-  interventional_penalty: -0.50
-  specificity_penalty_weight: 0.10
-  exact_match_bonus: 0.50
+  # Refined to be less aggressive and more balanced
+  interventional_bonus: 0.15        # Reduced from 0.25 for subtler weighting
+  interventional_penalty: -0.20     # Reduced from -0.50 to avoid harsh penalties
+  specificity_penalty_weight: 0.05  # Reduced from 0.10 to prevent over-penalization
+  exact_match_bonus: 0.25           # Reduced from 0.50 for balanced scoring
+
+  # NEW scoring enhancements for better clinical context matching
+  synonym_match_bonus: 0.15         # Bonus for medical abbreviation matches
+  context_match_bonus: 0.10         # Bonus for matching clinical contexts
+  modality_similarity_threshold: 0.8 # Threshold for partial modality credit
+  
+  # Enhanced contrast scoring - less harsh penalties for mismatches
+  contrast_mismatch_score: 0.3      # Increased from 0.1 for fairer scoring
+  contrast_null_score: 0.7          # Increased from 0.5 for missing contrast info
+
+# Modality similarity matrix for partial credit scoring
+# Allows related modalities to receive partial credit instead of zero
+modality_similarity:
+  CT:
+    CECT: 0.9          # CT with contrast enhancement
+    DECT: 0.8          # Dual-energy CT
+    HRCT: 0.9          # High-resolution CT
+  MR:
+    MRI: 1.0           # Perfect match
+    FMRI: 0.8          # Functional MRI
+  XR:
+    "X-ray": 1.0       # Perfect match
+    "X-Ray": 1.0       # Case variation
+    Xray: 1.0          # Common abbreviation
+  US:
+    Ultrasound: 1.0    # Perfect match
+    USS: 0.9           # Ultrasound scan
+  Mamm:
+    Mammography: 1.0   # Perfect match
+    Mammogram: 1.0     # Common variation
+  NM:
+    "Nuclear Medicine": 1.0  # Perfect match
+    Scintigraphy: 0.8  # Related technique
+  PET:
+    "PET/CT": 0.95     # Hybrid imaging
+    "PET-CT": 0.95     # Alternative notation
+
+# Context-aware scoring bonuses for clinical scenarios
+context_scoring:
+  emergency_keywords: ["emergency", "urgent", "stat", "trauma", "acute"]
+  emergency_bonus: 0.10
+  
+  screening_keywords: ["screening", "surveillance", "routine", "annual"]
+  screening_bonus: 0.08
+  
+  intervention_keywords: ["biopsy", "drainage", "injection", "aspiration", "guided", "picc", "line"]
+  intervention_bonus: 0.12
+  
+  pregnancy_keywords: ["obstetric", "pregnancy", "prenatal", "fetal", "trimester"]
+  pregnancy_bonus: 0.15
+  
+  paediatric_keywords: ["paediatric", "pediatric", "paed", "peds", "child", "infant", "newborn"]
+  paediatric_bonus: 0.10
+
+# Enhanced preprocessing configuration
+preprocessing:
+  # Medical abbreviation expansion dictionary
+  medical_abbreviations:
+    "C+": "with contrast"
+    "C-": "without contrast"
+    "BILAT": "bilateral"
+    "RT": "right"
+    "LT": "left"
+    "PAED": "paediatric"
+    "AP": "anteroposterior"
+    "PA": "posteroanterior"
+    "LAT": "lateral"
+    "ABDPELV": "abdomen and pelvis"
+    "CAP": "chest abdomen pelvis"
+    "KUB": "kidneys ureters bladder"
+    
+  # Anatomy normalization patterns
+  anatomy_synonyms:
+    "ABDOMEN": "abdomen"
+    "PELV": "pelvis"
+    "CHED": "head"
+    "CCHT": "chest"
+    "CCSP": "cervical spine"
+    "MLSP": "lumbar spine"

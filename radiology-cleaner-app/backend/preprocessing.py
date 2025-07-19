@@ -19,12 +19,18 @@ class ExamPreprocessor:
     the accuracy of downstream semantic parsing and NHS lookup operations.
     """
     
-    def __init__(self, abbreviation_expander=None, nhs_clean_names=None):
-        """Initialize with optional abbreviation expander for text expansion."""
+    def __init__(self, abbreviation_expander=None, nhs_clean_names=None, config=None):
+        """Initialize with optional abbreviation expander and configuration."""
         self.abbreviation_expander = abbreviation_expander
         # MODIFICATION: The nhs_clean_names protection is no longer needed due to the dual-lookup strategy.
         # This simplifies the preprocessor's responsibility to straightforward cleaning.
         self.nhs_clean_names = nhs_clean_names or set()
+        
+        # Load configuration for enhanced preprocessing
+        self.config = config or {}
+        self.medical_abbreviations = self.config.get('medical_abbreviations', {})
+        self.anatomy_synonyms = self.config.get('anatomy_synonyms', {})
+        
         self._init_patterns()
     
     def _init_patterns(self):
@@ -67,12 +73,27 @@ class ExamPreprocessor:
     
     def _expand_abbreviations(self, text: str) -> str:
         """
-        MODIFICATION: Simplified to always expand. The new dual-lookup strategy
-        in the engine is a more robust way to handle NHS-specific abbreviations.
+        Enhanced abbreviation expansion using configuration-based medical abbreviations.
+        MODIFICATION: Now includes medical abbreviations from config alongside existing expander.
         """
-        if not self.abbreviation_expander:
-            return text
-        return self.abbreviation_expander.expand(text)
+        cleaned = text
+        
+        # Apply configuration-based medical abbreviations first
+        for abbrev, expansion in self.medical_abbreviations.items():
+            # Use word boundary regex to avoid partial matches
+            pattern = r'\b' + re.escape(abbrev) + r'\b'
+            cleaned = re.sub(pattern, expansion, cleaned, flags=re.IGNORECASE)
+        
+        # Apply anatomy synonyms normalization
+        for synonym, standard in self.anatomy_synonyms.items():
+            pattern = r'\b' + re.escape(synonym) + r'\b'
+            cleaned = re.sub(pattern, standard, cleaned, flags=re.IGNORECASE)
+        
+        # Apply legacy abbreviation expander if available
+        if self.abbreviation_expander:
+            cleaned = self.abbreviation_expander.expand(cleaned)
+        
+        return cleaned
     
     def _normalize_ordinals(self, text: str) -> str:
         """Convert ordinal numbers to standardized forms (1st -> First)."""
@@ -143,10 +164,10 @@ class ExamPreprocessor:
 # =============================================================================
 _preprocessor: Optional[ExamPreprocessor] = None
 
-def initialize_preprocessor(abbreviation_expander=None):
-    """Set up the global preprocessor instance with the given abbreviation expander."""
+def initialize_preprocessor(abbreviation_expander=None, config=None):
+    """Set up the global preprocessor instance with the given abbreviation expander and config."""
     global _preprocessor
-    _preprocessor = ExamPreprocessor(abbreviation_expander)
+    _preprocessor = ExamPreprocessor(abbreviation_expander, config=config)
 
 def preprocess_exam_name(exam_name: str) -> str:
     """Preprocess a single exam name using the global preprocessor instance."""

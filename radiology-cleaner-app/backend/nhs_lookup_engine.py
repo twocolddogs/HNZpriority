@@ -68,18 +68,29 @@ class NHSLookupEngine:
             with open(config_path, 'r') as f:
                 config = yaml.safe_load(f)
                 self.config = config['scoring']
-                logger.info(f"Loaded scoring configuration from {config_path}")
+                # Load additional configuration sections
+                self.modality_similarity = config.get('modality_similarity', {})
+                self.context_scoring = config.get('context_scoring', {})
+                self.preprocessing_config = config.get('preprocessing', {})
+                logger.info(f"Loaded enhanced scoring configuration from {config_path}")
         except Exception as e:
             logger.error(f"Could not load or parse {config_path}. Using default weights. Error: {e}")
             self.config = {
-                'retriever_top_k': 20,
-                'weights_component': {'anatomy': 0.5, 'modality': 0.2, 'laterality': 0.1, 'contrast': 0.1, 'technique': 0.1},
-                'weights_final': {'component': 0.6, 'semantic': 0.4},
-                'interventional_bonus': 0.25,
-                'interventional_penalty': -0.50,
-                'specificity_penalty_weight': 0.10,
-                'exact_match_bonus': 0.50
+                'retriever_top_k': 25,
+                'weights_component': {'anatomy': 0.35, 'modality': 0.25, 'laterality': 0.15, 'contrast': 0.15, 'technique': 0.10},
+                'weights_final': {'component': 0.55, 'semantic': 0.35, 'frequency': 0.10},
+                'interventional_bonus': 0.15,
+                'interventional_penalty': -0.20,
+                'specificity_penalty_weight': 0.05,
+                'exact_match_bonus': 0.25,
+                'synonym_match_bonus': 0.15,
+                'context_match_bonus': 0.10,
+                'contrast_mismatch_score': 0.3,
+                'contrast_null_score': 0.7
             }
+            self.modality_similarity = {}
+            self.context_scoring = {}
+            self.preprocessing_config = {}
 
     def _load_nhs_data(self):
         try:
@@ -217,15 +228,20 @@ class NHSLookupEngine:
         nhs_anatomy = set(nhs_components.get('anatomy', []))
         anatomy_score = len(input_anatomy.intersection(nhs_anatomy)) / len(input_anatomy.union(nhs_anatomy)) if input_anatomy.union(nhs_anatomy) else 1.0
         
-        modality_score = 1.0 if input_components.get('modality') == nhs_components.get('modality') else 0.0
+        # Enhanced modality scoring with similarity matrix
+        modality_score = self._calculate_modality_score(
+            input_components.get('modality'), 
+            nhs_components.get('modality')
+        )
         
         input_lat = (input_components.get('laterality') or [None])[0]
         nhs_lat = (nhs_components.get('laterality') or [None])[0]
         laterality_score = 1.0 if input_lat == nhs_lat else 0.5
         
+        # Enhanced contrast scoring with configurable penalties
         input_con = (input_components.get('contrast') or [None])[0]
         nhs_con = (nhs_components.get('contrast') or [None])[0]
-        contrast_score = 1.0 if input_con == nhs_con else (0.1 if (input_con and not nhs_con) or (not input_con and nhs_con) else 0.5)
+        contrast_score = self._calculate_contrast_score(input_con, nhs_con)
         
         input_tech = set(input_components.get('technique', []))
         nhs_tech = set(nhs_components.get('technique', []))
@@ -240,13 +256,35 @@ class NHSLookupEngine:
             cfg_comp['technique'] * technique_score
         )
         
+        # Enhanced final score calculation with context bonuses
         cfg_final = self.config['weights_final']
-        final_score = (cfg_final['component'] * component_score + cfg_final['semantic'] * semantic_score)
+        final_score = (
+            cfg_final['component'] * component_score + 
+            cfg_final['semantic'] * semantic_score
+        )
+        
+        # Add frequency scoring if available (placeholder for future implementation)
+        if 'frequency' in cfg_final:
+            frequency_score = self._calculate_frequency_score(nhs_entry)
+            final_score += cfg_final['frequency'] * frequency_score
+        
+        # Add interventional scoring
         final_score += interventional_score
+        
+        # Add context-aware bonuses
+        context_bonus = self._calculate_context_bonus(input_exam_text, nhs_entry)
+        final_score += context_bonus
+        
+        # Apply specificity penalty
         final_score *= (1 - specificity_penalty)
         
+        # Add exact match bonus
         if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
             final_score += self.config['exact_match_bonus']
+        
+        # Add synonym match bonus
+        synonym_bonus = self._calculate_synonym_bonus(input_exam_text, nhs_entry)
+        final_score += synonym_bonus
             
         return max(0, final_score)
 
@@ -296,6 +334,96 @@ class NHSLookupEngine:
             ):
                 return entry
         return None
+    
+    def _calculate_modality_score(self, input_modality: str, nhs_modality: str) -> float:
+        """Calculate modality score using similarity matrix for partial credit."""
+        if not input_modality or not nhs_modality:
+            return 1.0 if input_modality == nhs_modality else 0.0
+        
+        # Exact match
+        if input_modality == nhs_modality:
+            return 1.0
+        
+        # Check similarity matrix
+        if input_modality in self.modality_similarity:
+            similarity_map = self.modality_similarity[input_modality]
+            if nhs_modality in similarity_map:
+                return similarity_map[nhs_modality]
+        
+        # Reverse check (NHS -> input)
+        if nhs_modality in self.modality_similarity:
+            similarity_map = self.modality_similarity[nhs_modality]
+            if input_modality in similarity_map:
+                return similarity_map[input_modality]
+        
+        # No match
+        return 0.0
+    
+    def _calculate_contrast_score(self, input_contrast: str, nhs_contrast: str) -> float:
+        """Calculate contrast score with configurable penalties."""
+        # Exact match
+        if input_contrast == nhs_contrast:
+            return 1.0
+        
+        # One or both are None/null
+        if not input_contrast or not nhs_contrast:
+            return self.config.get('contrast_null_score', 0.7)
+        
+        # Mismatch
+        return self.config.get('contrast_mismatch_score', 0.3)
+    
+    def _calculate_context_bonus(self, input_exam: str, nhs_entry: dict) -> float:
+        """Calculate context-aware bonuses based on clinical scenarios."""
+        if not self.context_scoring:
+            return 0.0
+        
+        input_lower = input_exam.lower()
+        nhs_name_lower = nhs_entry.get('primary_source_name', '').lower()
+        bonus = 0.0
+        
+        # Check each context type
+        for context_type in ['emergency', 'screening', 'intervention', 'pregnancy', 'paediatric']:
+            keywords_key = f'{context_type}_keywords'
+            bonus_key = f'{context_type}_bonus'
+            
+            if keywords_key in self.context_scoring and bonus_key in self.context_scoring:
+                keywords = self.context_scoring[keywords_key]
+                
+                # Check if both input and NHS entry contain keywords from this context
+                input_has_context = any(keyword in input_lower for keyword in keywords)
+                nhs_has_context = any(keyword in nhs_name_lower for keyword in keywords)
+                
+                if input_has_context and nhs_has_context:
+                    bonus += self.context_scoring[bonus_key]
+        
+        return bonus
+    
+    def _calculate_synonym_bonus(self, input_exam: str, nhs_entry: dict) -> float:
+        """Calculate bonus for medical abbreviation/synonym matches."""
+        if not self.preprocessing_config.get('medical_abbreviations'):
+            return 0.0
+        
+        input_lower = input_exam.lower()
+        nhs_name_lower = nhs_entry.get('primary_source_name', '').lower()
+        abbreviations = self.preprocessing_config['medical_abbreviations']
+        
+        # Check for abbreviation expansions
+        for abbrev, expansion in abbreviations.items():
+            abbrev_lower = abbrev.lower()
+            expansion_lower = expansion.lower()
+            
+            # Check if input has abbreviation and NHS has expansion (or vice versa)
+            if ((abbrev_lower in input_lower and expansion_lower in nhs_name_lower) or
+                (expansion_lower in input_lower and abbrev_lower in nhs_name_lower)):
+                return self.config.get('synonym_match_bonus', 0.15)
+        
+        return 0.0
+    
+    def _calculate_frequency_score(self, nhs_entry: dict) -> float:
+        """Calculate frequency-based score (placeholder for future implementation)."""
+        # Future implementation: could use exam frequency data
+        # For now, return neutral score
+        return 0.5
         
     def validate_consistency(self):
         """Checks for any SNOMED IDs mapped to multiple different primary names."""
