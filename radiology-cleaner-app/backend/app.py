@@ -11,7 +11,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from typing import List, Dict, Optional
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 
 # Core processing components
 from parser import RadiologySemanticParser
@@ -121,8 +121,20 @@ def _initialize_app():
 
 
     abbreviation_expander = AbbreviationExpander()
-    # MODIFICATION: initialize_preprocessor no longer needs the NHS clean names set.
-    initialize_preprocessor(abbreviation_expander)
+    
+    # Load config for enhanced preprocessing with super-strong contrast detection
+    import yaml
+    try:
+        config_path = os.path.join(base_dir, 'config.yaml')
+        with open(config_path, 'r') as f:
+            full_config = yaml.safe_load(f)
+            preprocessing_config = full_config.get('preprocessing', {})
+    except Exception as e:
+        logger.warning(f"Could not load config.yaml: {e}")
+        preprocessing_config = {}
+    
+    # MODIFICATION: Pass config to preprocessor for enhanced contrast detection
+    initialize_preprocessor(abbreviation_expander, config=preprocessing_config)
     
     anatomy_extractor = AnatomyExtractor(nhs_authority)
     laterality_detector = LateralityDetector()
@@ -306,20 +318,29 @@ def parse_batch():
         results = []
         errors = []
         
-        # Use a ThreadPoolExecutor to process exams in parallel
-        # This is ideal for I/O-bound tasks like making API calls
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        # Dynamically size the worker pool based on CPU count.
+        # For I/O-bound work (API calls + light parsing) a 4× multiplier
+        # usually saturates the network without overwhelming the host.
+        cpu_cnt = os.cpu_count() or 1
+        max_workers = min(32, cpu_cnt * 4)
+        logger.info(f"ThreadPoolExecutor starting with max_workers={max_workers}")
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Map each future to its original exam for better error tracking
             future_to_exam = {
                 executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor): exam 
                 for exam in exams_to_process
             }
             
+            completed = 0
+            total = len(exams_to_process)
+            per_future_timeout = 60  # seconds
+
             for future in as_completed(future_to_exam):
                 original_exam = future_to_exam[future]
                 try:
                     # Get the result from the future
-                    processed_result = future.result()
+                    processed_result = future.result(timeout=per_future_timeout)
                     results.append({
                         "input": original_exam,
                         "output": processed_result
@@ -330,6 +351,10 @@ def parse_batch():
                         "original_exam": original_exam,
                         "error": str(e)
                     })
+                finally:
+                    completed += 1
+                    if completed % 100 == 0 or completed == total:
+                        logger.info(f"Batch progress: {completed}/{total} exams processed")
 
         processing_time_ms = int((time.time() - start_time) * 1000)
         logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {len(results)}, Errors: {len(errors)}")

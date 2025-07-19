@@ -35,27 +35,41 @@ class ContextDetector:
             r'\b(trimester)\b'
         ]
         
-        # Female-specific patterns
-        self.female_anatomy = ['female pelvis', 'uterus', 'ovary', 'endometrial']
+        # Female-specific patterns - ENHANCED
+        self.female_anatomy = [
+            'female pelvis', 'uterus', 'ovary', 'ovaries', 'endometrial', 'cervix', 'cervical', 
+            'mammogram', 'mammography', 'breast', 'breasts'
+        ]
         self.female_patterns = [
             r'\b(female)\b',
             r'\b(woman|women)\b',
-            r'\b(gynecological|gynaecological)\b'
+            r'\b(gynecological|gynaecological)\b',
+            r'\b(mammogram|mammography)\b',
+            r'\b(breast|breasts)\b'
         ]
         
-        # Male-specific patterns
-        self.male_anatomy = ['prostate', 'testicular', 'scrotal']
+        # Male-specific patterns - ENHANCED
+        self.male_anatomy = [
+            'prostate', 'testicular', 'scrotal', 'scrotum', 'testes', 'testicle', 'testicles',
+            'penis', 'penile'
+        ]
         self.male_patterns = [
             r'\b(male)\b',
-            r'\b(men)\b'
+            r'\b(men)\b',
+            r'\b(scrotal|scrotum)\b',
+            r'\b(testes|testicle|testicles|testicular)\b'
         ]
         
-        # Pediatric patterns
+        # Pediatric patterns - ENHANCED
         self.pediatric_patterns = [
             r'\b(paediatric|pediatric|paed|peds)\b',
             r'\b(child|children|infant|infants|baby|babies)\b',
             r'\b(newborn|neonate|neonatal)\b',
             r'\b(toddler|adolescent|juvenile)\b',
+            # Additional common pediatric terms
+            r'\b(cdh|congenital)\b',  # CDH screening, congenital conditions
+            r'\b(hip dysplasia|hips screening)\b',
+            r'\b(developmental)\b'
         ]
         
         # Adult patterns

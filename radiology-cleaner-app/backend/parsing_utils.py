@@ -82,22 +82,27 @@ class AnatomyExtractor:
     def _build_anatomy_vocabulary(self) -> Dict[str, str]:
         anatomy_vocab = {
             'head': 'head', 'brain': 'brain', 'skull': 'head', 'cranium': 'head', 'sinus': 'sinuses',
-            'sinuses': 'sinuses', 'orbit': 'orbit', 'face': 'face', 'neck': 'neck', 'chest': 'chest',
-            'thorax': 'chest', 'lung': 'chest', 'lungs': 'chest', 'heart': 'heart', 'cardiac': 'heart',
-            'mediastinum': 'mediastinum', 'pulmonary': 'chest', 'abdomen': 'abdomen', 'abdo': 'abdomen',
-            'belly': 'abdomen', 'tummy': 'abdomen', 'pelvis': 'pelvis', 'pelvic': 'pelvis', 'liver': 'liver',
-            'kidney': 'kidney', 'kidneys': 'kidney', 'renal': 'kidney', 'pancreas': 'pancreas', 'spleen': 'spleen',
-            'bladder': 'bladder', 'ureters': 'ureters', 'uterus': 'uterus', 'ovary': 'ovary', 'ovaries': 'ovary',
-            'prostate': 'prostate', 'spine': 'spine', 'spinal': 'spine', 'back': 'spine', 'cervical spine': 'cervical spine',
-            'thoracic spine': 'thoracic spine', 'lumbar spine': 'lumbar spine', 'sacrum': 'sacrum', 'coccyx': 'coccyx',
-            'shoulder': 'shoulder', 'arm': 'arm', 'elbow': 'elbow', 'wrist': 'wrist', 'hand': 'hand',
-            'finger': 'finger', 'thumb': 'thumb', 'hip': 'hip', 'thigh': 'thigh', 'knee': 'knee', 'leg': 'leg',
-            'ankle': 'ankle', 'foot': 'foot', 'toe': 'toe', 'breast': 'breast', 'mammary': 'breast',
-            'thyroid': 'thyroid', 'bone': 'bone', 'joint': 'joint', 'soft tissue': 'soft tissue',
-            'muscle': 'muscle', 'vessel': 'vessel', 'artery': 'artery', 'vein': 'vein',
-            'adrenal': 'adrenal', 'biliary': 'biliary', 'gallbladder': 'gallbladder', 'lymph node': 'lymph node',
-            'parotid': 'parotid', 'submandibular': 'submandibular', 'salivary gland': 'salivary gland',
-            'aortic arch': 'aortic arch', 'carotid': 'carotid'
+            'sinuses': 'sinuses', 'orbit': 'orbit', 'orbits': 'orbit', 'face': 'face', 'neck': 'neck', 
+            'chest': 'chest', 'thorax': 'chest', 'lung': 'chest', 'lungs': 'chest', 'heart': 'heart', 
+            'cardiac': 'heart', 'mediastinum': 'mediastinum', 'pulmonary': 'chest', 'abdomen': 'abdomen', 
+            'abdo': 'abdomen', 'belly': 'abdomen', 'tummy': 'abdomen', 'pelvis': 'pelvis', 'pelvic': 'pelvis', 
+            'liver': 'liver', 'kidney': 'kidney', 'kidneys': 'kidney', 'renal': 'kidney', 'pancreas': 'pancreas', 
+            'spleen': 'spleen', 'bladder': 'bladder', 'ureters': 'ureters', 'uterus': 'uterus', 'ovary': 'ovary', 
+            'ovaries': 'ovary', 'prostate': 'prostate', 'spine': 'spine', 'spinal': 'spine', 'back': 'spine', 
+            'cervical spine': 'cervical spine', 'thoracic spine': 'thoracic spine', 'lumbar spine': 'lumbar spine', 
+            'sacrum': 'sacrum', 'coccyx': 'coccyx', 'shoulder': 'shoulder', 'shoulders': 'shoulder', 'arm': 'arm', 
+            'arms': 'arm', 'elbow': 'elbow', 'elbows': 'elbow', 'wrist': 'wrist', 'wrists': 'wrist', 'hand': 'hand', 
+            'hands': 'hand', 'finger': 'finger', 'fingers': 'finger', 'thumb': 'thumb', 'thumbs': 'thumb', 
+            'hip': 'hip', 'hips': 'hip', 'thigh': 'thigh', 'thighs': 'thigh', 'knee': 'knee', 'knees': 'knee', 
+            'leg': 'leg', 'legs': 'leg', 'ankle': 'ankle', 'ankles': 'ankle', 'foot': 'foot', 'feet': 'foot', 
+            'toe': 'toe', 'toes': 'toe', 'breast': 'breast', 'breasts': 'breast', 'mammary': 'breast',
+            'thyroid': 'thyroid', 'bone': 'bone', 'bones': 'bone', 'joint': 'joint', 'joints': 'joint', 
+            'soft tissue': 'soft tissue', 'muscle': 'muscle', 'muscles': 'muscle', 'vessel': 'vessel', 
+            'vessels': 'vessel', 'artery': 'artery', 'arteries': 'artery', 'vein': 'vein', 'veins': 'vein',
+            'adrenal': 'adrenal', 'adrenals': 'adrenal', 'biliary': 'biliary', 'gallbladder': 'gallbladder', 
+            'lymph node': 'lymph node', 'lymph nodes': 'lymph node', 'parotid': 'parotid', 'submandibular': 'submandibular', 
+            'salivary gland': 'salivary gland', 'salivary glands': 'salivary gland', 'aortic arch': 'aortic arch', 
+            'carotid': 'carotid', 'eye': 'eye', 'eyes': 'eye', 'ear': 'ear', 'ears': 'ear'
         }
         # The dynamic learning from NHS data can be simplified or removed if the base vocab is sufficient.
         # For now, a comprehensive base vocab is more stable.
@@ -123,9 +128,25 @@ class AnatomyExtractor:
 class LateralityDetector:
     def __init__(self):
         self.patterns = {
-            'bilateral': [r'\b(bilateral|bilat|both|b/l)\b', r'\b(rt?\.?\s*(and|&|\+)\s*lt?\.?)\b', r'\b(left\s+and\s+right)\b'],
-            'left': [r'\b(left|lt?\.?|lft)\b(?!\s*(and|&|\+))'],
-            'right': [r'\b(right|rt?\.?|rgt)\b(?!\s*(and|&|\+))']
+            'bilateral': [
+                # Slash-separated patterns (highest priority)
+                r'\b(r/l|l/r|rt/lt|lt/rt|right/left|left/right)\b',
+                # Post-preprocessing expanded patterns
+                r'\bright\s+left\b|\bleft\s+right\b',
+                # Ampersand and plus patterns
+                r'\b(rt?\.?\s*[&+]\s*lt?\.?|lt?\.?\s*[&+]\s*rt?\.?)\b',
+                r'\b(right\s*[&+]\s*left|left\s*[&+]\s*right)\b',
+                # Parenthetical bilateral patterns (before preprocessing removes parens)
+                r'\(\s*b\s*\)|\(\s*bil\s*\)|\(\s*bilat\s*\)',
+                # Standalone B (after preprocessing removes parens)
+                r'\bb\b(?!\w)',
+                # Standard bilateral patterns
+                r'\b(bilateral|bilat|both|b/l)\b',
+                r'\b(rt?\.?\s*and\s*lt?\.?|lt?\.?\s*and\s*rt?\.?)\b',
+                r'\b(left\s+and\s+right|right\s+and\s+left)\b'
+            ],
+            'left': [r'\b(left|lt?\.?|lft)\b(?!\s*(and|&|\+|/))', r'\(\s*l\s*\)'],
+            'right': [r'\b(right|rt?\.?|rgt)\b(?!\s*(and|&|\+|/))', r'\(\s*r\s*\)']
         }
         self.compiled_patterns = {
             lat: [re.compile(p, re.IGNORECASE) for p in patterns]
@@ -146,8 +167,22 @@ class ContrastMapper:
     def __init__(self):
         self.patterns = {
             'with and without': [r'\bw\s*and\s*wo\b', r'\bw/wo\b', r'\bwith\s*and\s*without\b', r'\bpre\s*&\s*post\b', r'\bpre/post\b', r'\b(pre and post contrast)\b'],
-            'with': [r'\bw\s+(contrast|iv|gad)\b', r'\bwith\s+contrast\b', r'\benhanced\b', r'\bpost\s*contrast\b', r'\bc\+\b', r'\bC\+\b', r'\s+C\+$', r'\biv contrast\b'],
-            'without': [r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon[\s\-]*contrast\b', r'\bnon[\s\-]*enhanced\b', r'\bunenhanced\b', r'\bno\s+contrast\b', r'\bcontrast\s+not\s+given\b', r'\bpre[\s\-]*contrast\b', r'\bc[\s\-]\b', r'\bC[\s\-]\b', r'\s+C-$', r'\bplain\b', r'\bnative\b']
+            'with': [
+                # SUPER-STRONG: Preprocessed standardized tokens (highest priority)
+                r'\bWITH_CONTRAST\b',
+                # Original patterns
+                r'\bw\s+(contrast|iv|gad)\b', r'\bwith\s+contrast\b', r'\benhanced\b', r'\bpost\s*contrast\b', 
+                r'\bc\+\b', r'\bC\+\b', r'\s+C\+$', r'\biv contrast\b', r'\bgadolinium\b', r'\bgad\b'
+            ],
+            'without': [
+                # SUPER-STRONG: Preprocessed standardized tokens (highest priority)
+                r'\bWITHOUT_CONTRAST\b',
+                # Original patterns
+                r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon[\s\-]*contrast\b', 
+                r'\bnon[\s\-]*enhanced\b', r'\bunenhanced\b', r'\bno\s+contrast\b', 
+                r'\bcontrast\s+not\s+given\b', r'\bpre[\s\-]*contrast\b', r'\bc[\s\-]\b', 
+                r'\bC[\s\-]\b', r'\s+C-$', r'\bplain\b', r'\bnative\b'
+            ]
         }
         self.compiled_patterns = {
             ctype: [re.compile(p, re.IGNORECASE) for p in patterns]

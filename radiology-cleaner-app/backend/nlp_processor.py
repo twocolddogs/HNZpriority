@@ -6,7 +6,8 @@ import numpy as np
 import requests
 from typing import Optional, List
 import json
-import time # Added for retry logic
+import time  # Added for retry logic
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -60,25 +61,59 @@ class NLPProcessor:
             logger.info(f"Initialized API NLP Processor for model '{self.model_key}': {self.hf_model_name} using direct requests.")
 
     def _make_api_call(self, inputs: list[str]) -> Optional[list]:
-        """Helper function to make a POST request and robustly handle the response."""
+        """
+        Helper function to make a POST request with an exponential-back-off retry
+        strategy. Retries up to `max_retries` times on transient errors.
+        """
         payload = {"inputs": inputs, "options": {"wait_for_model": True}}
-        try:
-            response = requests.post(self.api_url, headers=self.headers, json=payload, timeout=120)
-            response.raise_for_status()
-            return response.json()
-        except json.JSONDecodeError:
-            logger.error(f"API call to {self.api_url} returned non-JSON response. Status: {response.status_code}, Body: {response.text[:200]}")
-            return None
-        except requests.exceptions.HTTPError as e:
-            if "currently loading" in e.response.text and e.response.status_code == 503:
-                logger.warning(f"Model {self.hf_model_name} is loading, retrying in 20 seconds...")
-                time.sleep(20)
-                return self._make_api_call(inputs) # Retry once
-            logger.error(f"API request failed with status {e.response.status_code} to URL {self.api_url}: {e.response.text}")
-            return None
-        except requests.exceptions.RequestException as e:
-            logger.error(f"API request failed due to a network issue: {e}")
-            return None
+        max_retries = 3
+        delay = 2.0  # initial delay in seconds
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = requests.post(
+                    self.api_url,
+                    headers=self.headers,
+                    json=payload,
+                    timeout=120
+                )
+                response.raise_for_status()
+                return response.json()
+
+            except json.JSONDecodeError:
+                logger.error(
+                    f"API call to {self.api_url} returned non-JSON response. "
+                    f"Status: {response.status_code}, Body: {response.text[:200]}"
+                )
+                return None
+
+            except requests.exceptions.HTTPError as e:
+                # 503 while model loads is considered transient
+                if e.response is not None and e.response.status_code == 503:
+                    logger.warning(
+                        f"Attempt {attempt}/{max_retries}: model loading or 503 error "
+                        f"for {self.hf_model_name}. Retrying in {delay} s…"
+                    )
+                else:
+                    logger.error(
+                        f"API request failed with status {e.response.status_code} "
+                        f"to URL {self.api_url}: {e.response.text}"
+                    )
+                    return None
+
+            except requests.exceptions.RequestException as e:
+                logger.warning(
+                    f"Attempt {attempt}/{max_retries}: network error '{e}'. "
+                    f"Retrying in {delay} s…"
+                )
+
+            # back-off and retry if attempts remain
+            if attempt < max_retries:
+                time.sleep(delay)
+                delay *= 2  # exponential back-off
+            else:
+                logger.error("Max retries reached. Giving up on API request.")
+                return None
 
     # --- START OF ADDED LOGIC ---
     def _pool_embedding(self, embedding_output) -> Optional[np.ndarray]:
@@ -102,19 +137,36 @@ class NLPProcessor:
             return None
     # --- END OF ADDED LOGIC ---
 
-    def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
-        """Get text embedding for a single string, with pooling for token-level models."""
+    # --------------------------------------------------------------------- #
+    #                               CACHING                                 #
+    # --------------------------------------------------------------------- #
+
+    def _get_embedding_uncached(self, text: str) -> Optional[np.ndarray]:
+        """
+        Internal helper that performs the real API call and pooling without
+        caching. Split out so we can wrap a cached version around it.
+        """
         if not self.is_available() or not text or not text.strip():
             return None
 
         result = self._make_api_call([text.strip()])
-        
         if isinstance(result, list) and result:
-            # MODIFICATION: Pass the raw embedding output to the pooling function
             return self._pool_embedding(result[0])
-        
+
         logger.error(f"Unexpected API response format for single text: {result}")
         return None
+
+    @lru_cache(maxsize=1024)
+    def _cached_text_embedding(self, text: str) -> Optional[np.ndarray]:
+        """
+        LRU-cached wrapper around `_get_embedding_uncached`.
+        Cache size 1024 should comfortably hold the most common radiology terms.
+        """
+        return self._get_embedding_uncached(text)
+
+    def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
+        """Public method to obtain (and cache) the embedding for a single text."""
+        return self._cached_text_embedding(text)
 
     def batch_get_embeddings(self, texts: List[str], chunk_size: int = 25, chunk_delay: float = 0.5, context_label: str = "items") -> List[Optional[np.ndarray]]:
         """Get embeddings for multiple texts, with pooling for token-level models."""

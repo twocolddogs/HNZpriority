@@ -33,6 +33,11 @@ scoring:
   # Enhanced contrast scoring - less harsh penalties for mismatches
   contrast_mismatch_score: 0.3      # Increased from 0.1 for fairer scoring
   contrast_null_score: 0.7          # Increased from 0.5 for missing contrast info
+  
+  # AGE/GENDER CONTEXT SCORING - Super-strong bonuses for matches
+  gender_context_match_bonus: 0.20  # Strong bonus for gender context matches
+  age_context_match_bonus: 0.15     # Strong bonus for age context matches
+  pregnancy_context_bonus: 0.25     # Extra strong bonus for pregnancy context
 
 # Modality similarity matrix for partial credit scoring
 # Allows related modalities to receive partial credit instead of zero
@@ -82,18 +87,118 @@ context_scoring:
 preprocessing:
   # Medical abbreviation expansion dictionary
   medical_abbreviations:
+    # ENHANCED CONTRAST PATTERNS - Super-strong detection
     "C+": "with contrast"
     "C-": "without contrast"
+    "+C": "with contrast"
+    "-C": "without contrast"
+    "W/C": "with contrast"
+    "W/O C": "without contrast"
+    "WC": "with contrast"
+    "WOC": "without contrast"
+    "WITH C": "with contrast"
+    "WITHOUT C": "without contrast"
+    "NON CONTRAST": "without contrast"
+    "NON-CONTRAST": "without contrast"
+    "NO CONTRAST": "without contrast"
+    "CONTRAST": "with contrast"
+    "IV CONTRAST": "with contrast"
+    "ORAL CONTRAST": "with contrast"
+    "GAD": "with contrast"
+    "GADOLINIUM": "with contrast"
+    
+    # AGE/GENDER CONTEXT PATTERNS - Super-strong detection
+    "PAED": "paediatric"
+    "PEDS": "paediatric"  
+    "CDH": "congenital hip dysplasia paediatric"
+    "INFANT": "infant paediatric"
+    "PREGNANCY": "pregnancy"
+    "OBSTETRIC": "obstetric pregnancy"
+    "PRENATAL": "prenatal pregnancy"
+    "TRIMESTER": "trimester pregnancy"
+    "MAMMOGRAM": "mammogram female"
+    "MAMMOGRAPHY": "mammography female"
+    "BREAST": "breast female"
+    "PROSTATE": "prostate male"
+    "SCROTAL": "scrotal male"
+    "SCROTUM": "scrotum male"
+    "TESTES": "testes male"
+    
+    # ANATOMICAL ABBREVIATIONS - From sanity test analysis
+    "CHED": "head"
+    "CCHT": "chest"
+    "CAAP": "abdomen and pelvis"
+    "CCAP": "chest abdomen and pelvis"
+    "CPAN": "pulmonary angiogram"
+    "CKUB": "kidneys ureters bladder"
+    "CCSP": "cervical spine"
+    "MLSP": "lumbar spine"
+    "MCSP": "cervical spine"
+    "MPRO": "prostate"
+    "MHED": "head"
+    "UABD": "abdomen"
+    "UPEL": "pelvis"
+    "UREN": "renal tract"
+    "UCDO": "carotid doppler"
+    "ULDV": "venous dvt lower limb"
+    "USST": "scrotum and testes"
+    "UTHY": "thyroid"
+    "UPRT": "pregnancy third trimester"
+    "ABD": "abdomen"
+    "PELV": "pelvis"
+    "LSP": "lumbar spine"
+    "CSP": "cervical spine"
+    "THY": "thyroid"
+    "REN": "renal"
+    
+    # MODALITY ABBREVIATIONS
+    "MRCP": "magnetic resonance cholangiopancreatography"
+    "DEXA": "dual-energy x-ray absorptiometry"
+    "NM": "nuclear medicine"
+    "IR": "interventional radiology"
+    "FL": "fluoroscopy"
+    "Mamm": "mammography"
+    "PET": "positron emission tomography"
+    
+    # CLINICAL CONTEXT ABBREVIATIONS
+    "DVT": "deep vein thrombosis"
+    "V/Q": "ventilation perfusion"
+    "MAG3": "mercaptoacetyltriglycine"
+    "FDG": "fluorodeoxyglucose"
+    "PSMA": "prostate specific membrane antigen"
+    "SPECT": "single photon emission computed tomography"
+    "WBSP": "whole body spect"
+    
+    # PROCEDURE ABBREVIATIONS
+    "WB": "whole body"
+    "PICC": "peripherally inserted central catheter"
+    "XA": "x-ray angiography"
+    "RF": "radiofrequency"
+    "II": "image intensifier"
+    
+    # BREAST IMAGING ABBREVIATIONS
+    "BR": "breast"
+    "BBMA": "bilateral mammogram"
+    "BRMA": "mammogram"
+    "BTBB": "bilateral breast tomosynthesis"
+    "BRUS": "breast ultrasound"
+    
+    # LATERALITY AND DIRECTIONAL ABBREVIATIONS
     "BILAT": "bilateral"
+    "BIL": "bilateral"
     "RT": "right"
     "LT": "left"
-    "PAED": "paediatric"
+    "R": "right"
+    "L": "left"
     "AP": "anteroposterior"
     "PA": "posteroanterior"
     "LAT": "lateral"
+    
+    # COMMON STUDY ABBREVIATIONS
     "ABDPELV": "abdomen and pelvis"
     "CAP": "chest abdomen pelvis"
     "KUB": "kidneys ureters bladder"
+    "3RD": "third"
     
   # Anatomy normalization patterns
   anatomy_synonyms:

@@ -27,6 +27,19 @@ class ExamPreprocessor:
         self.nhs_clean_names = nhs_clean_names or set()
         
         # Load configuration for enhanced preprocessing
+        if config is None:
+            # Load config from file if not provided
+            import yaml
+            import os
+            try:
+                config_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
+                with open(config_path, 'r') as f:
+                    full_config = yaml.safe_load(f)
+                    config = full_config.get('preprocessing', {})
+            except Exception as e:
+                logger.warning(f"Could not load config.yaml: {e}")
+                config = {}
+        
         self.config = config or {}
         self.medical_abbreviations = self.config.get('medical_abbreviations', {})
         self.anatomy_synonyms = self.config.get('anatomy_synonyms', {})
@@ -69,6 +82,45 @@ class ExamPreprocessor:
         # Apply each regex pattern to remove administrative noise
         for pattern, replacement in self.admin_qualifier_patterns:
             cleaned = re.sub(pattern, replacement, cleaned, flags=re.IGNORECASE)
+        return cleaned
+    
+    def _normalize_contrast_patterns(self, text: str) -> str:
+        """
+        PRIORITY 1: Super-strong contrast detection and normalization.
+        Handles all contrast patterns before general abbreviation expansion.
+        """
+        cleaned = text
+        
+        # Enhanced contrast pattern detection - simplified and robust
+        contrast_patterns = [
+            # Standard C+/C- patterns at word boundaries or end of string
+            (r'\bC\+(\s|$)', r' WITH_CONTRAST\1'),
+            (r'\bC-(\s|$)', r' WITHOUT_CONTRAST\1'),
+            (r'\bC \+(\s|$)', r' WITH_CONTRAST\1'),
+            (r'\bC -(\s|$)', r' WITHOUT_CONTRAST\1'),
+            
+            # Plus/minus at start (after space or beginning)
+            (r'(\s|^)\+C\b', r'\1 WITH_CONTRAST '),
+            (r'(\s|^)-C\b', r'\1 WITHOUT_CONTRAST '),
+            
+            # Word-based patterns (most reliable)
+            (r'\bWITH\s+CONTRAST\b', ' WITH_CONTRAST '),
+            (r'\bWITHOUT\s+CONTRAST\b', ' WITHOUT_CONTRAST '),
+            (r'\bNON\s*-?\s*CONTRAST\b', ' WITHOUT_CONTRAST '),
+            (r'\bNO\s+CONTRAST\b', ' WITHOUT_CONTRAST '),
+            (r'\bIV\s+CONTRAST\b', ' WITH_CONTRAST '),
+            (r'\bORAL\s+CONTRAST\b', ' WITH_CONTRAST '),
+            (r'\bGADOLINIUM\b', ' WITH_CONTRAST '),
+            (r'\bGAD\b', ' WITH_CONTRAST '),
+            
+            # Standalone contrast (when not followed by enhanced/study/exam)
+            (r'\bCONTRAST\b(?!\s+(ENHANCED|STUDY|EXAM))', ' WITH_CONTRAST '),
+        ]
+        
+        # Apply all contrast patterns
+        for pattern, replacement in contrast_patterns:
+            cleaned = re.sub(pattern, replacement, cleaned, flags=re.IGNORECASE)
+        
         return cleaned
     
     def _expand_abbreviations(self, text: str) -> str:
@@ -146,6 +198,8 @@ class ExamPreprocessor:
         cleaned = exam_name
         
         # Apply preprocessing steps in dependency order
+        # PRIORITY 1: Contrast normalization FIRST for super-strong detection
+        cleaned = self._normalize_contrast_patterns(cleaned)
         cleaned = self._remove_no_report_suffix(cleaned)
         cleaned = self._remove_admin_qualifiers(cleaned)
         cleaned = self._expand_abbreviations(cleaned)
