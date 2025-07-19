@@ -159,14 +159,6 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     if not nhs_lookup_engine or not semantic_parser:
         return {'error': 'Core components not initialized'}
     
-    # Check if system requires redeployment due to NHS data changes
-    if nhs_lookup_engine.requires_redeployment():
-        return {
-            'error': 'NHS matching rules have been updated. The application requires redeployment before it can be used.',
-            'error_type': 'redeployment_required',
-            'message': 'Please redeploy the application to continue using the NHS matching functionality.'
-        }
-
     cleaned_exam_name = preprocess_exam_name(exam_name)
     # The parser might not need the NLP processor, but the lookup engine definitely does
     parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
