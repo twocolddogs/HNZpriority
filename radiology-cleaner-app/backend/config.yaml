@@ -1,0 +1,22 @@
+scoring:
+  # Number of candidates to retrieve from the fast vector search before detailed scoring.
+  retriever_top_k: 20
+
+  # Weights for combining individual components into a single component score.
+  weights_component:
+    anatomy: 0.50
+    modality: 0.20
+    laterality: 0.10
+    contrast: 0.10
+    technique: 0.10
+
+  # Final weights for combining the component score and the semantic score.
+  weights_final:
+    component: 0.6
+    semantic: 0.4
+
+  # Bonuses and penalties applied to the final score.
+  interventional_bonus: 0.25
+  interventional_penalty: -0.50
+  specificity_penalty_weight: 0.10
+  exact_match_bonus: 0.50
