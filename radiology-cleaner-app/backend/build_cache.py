@@ -43,8 +43,37 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
     logger.info("Computing ensemble embeddings...")
     primary_names = [e["_clean_primary_name_for_embedding"] for e in engine.nhs_data]
     fsn_names = [e["_clean_fsn_for_embedding"] for e in engine.nhs_data]
-    primary_embeddings = np.array(nlp_processor.batch_get_embeddings(primary_names), dtype='float32')
-    fsn_embeddings = np.array(nlp_processor.batch_get_embeddings(fsn_names), dtype='float32')
+    
+    # Get embeddings and handle None values
+    logger.info(f"Getting embeddings for {len(primary_names)} primary names...")
+    primary_embeddings_raw = nlp_processor.batch_get_embeddings(primary_names)
+    logger.info(f"Getting embeddings for {len(fsn_names)} FSN names...")
+    fsn_embeddings_raw = nlp_processor.batch_get_embeddings(fsn_names)
+    
+    # Filter out None values and track valid indices
+    valid_indices = []
+    valid_primary_embeddings = []
+    valid_fsn_embeddings = []
+    valid_nhs_data = []
+    
+    for i, (primary_emb, fsn_emb) in enumerate(zip(primary_embeddings_raw, fsn_embeddings_raw)):
+        if primary_emb is not None and fsn_emb is not None:
+            valid_indices.append(i)
+            valid_primary_embeddings.append(primary_emb)
+            valid_fsn_embeddings.append(fsn_emb)
+            valid_nhs_data.append(engine.nhs_data[i])
+        else:
+            logger.warning(f"Skipping entry {i} due to missing embeddings: primary={primary_emb is not None}, fsn={fsn_emb is not None}")
+    
+    if len(valid_primary_embeddings) == 0:
+        logger.error("No valid embeddings generated. Cannot build cache.")
+        return False
+    
+    logger.info(f"Successfully generated embeddings for {len(valid_primary_embeddings)}/{len(primary_names)} entries")
+    
+    # Convert to numpy arrays
+    primary_embeddings = np.array(valid_primary_embeddings, dtype='float32')
+    fsn_embeddings = np.array(valid_fsn_embeddings, dtype='float32')
     ensemble_embeddings = np.concatenate([primary_embeddings, fsn_embeddings], axis=1)
     faiss.normalize_L2(ensemble_embeddings)
     
@@ -52,7 +81,9 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
     dimension = ensemble_embeddings.shape[1]
     vector_index = faiss.IndexFlatIP(dimension)
     vector_index.add(ensemble_embeddings)
-    index_to_snomed_id = [e.get('snomed_concept_id') for e in engine.nhs_data]
+    
+    # Use only valid entries for the SNOMED ID mapping
+    index_to_snomed_id = [e.get('snomed_concept_id') for e in valid_nhs_data]
 
     cache_content = {
         'index_data': faiss.serialize_index(vector_index),

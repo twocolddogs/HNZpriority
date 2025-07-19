@@ -133,12 +133,19 @@ class NLPProcessor:
             
             batch_results = self._make_api_call(chunk)
             
-            if isinstance(batch_results, list) and all(isinstance(r, list) for r in batch_results):
+            if isinstance(batch_results, list) and len(batch_results) == len(chunk):
                 # MODIFICATION: Apply pooling to each text's embedding result in the batch
-                pooled_embeddings = [self._pool_embedding(emb) for emb in batch_results]
+                pooled_embeddings = []
+                for j, emb in enumerate(batch_results):
+                    if isinstance(emb, list):
+                        pooled = self._pool_embedding(emb)
+                        pooled_embeddings.append(pooled)
+                    else:
+                        logger.warning(f"Unexpected embedding format for item {j} in chunk {chunk_num}: {type(emb)}")
+                        pooled_embeddings.append(None)
                 all_embeddings.extend(pooled_embeddings)
             else:
-                logger.error(f"Unexpected batch API response format for chunk {chunk_num}. Type: {type(batch_results)}, Results: {str(batch_results)[:200]}")
+                logger.error(f"Unexpected batch API response format for chunk {chunk_num}. Expected {len(chunk)} embeddings, got {len(batch_results) if isinstance(batch_results, list) else 'non-list'}. Type: {type(batch_results)}")
                 all_embeddings.extend([None] * len(chunk))
             
             if chunk_num < total_chunks and chunk_delay > 0:
