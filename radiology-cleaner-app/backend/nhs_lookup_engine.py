@@ -162,9 +162,9 @@ class NHSLookupEngine:
             except Exception as e:
                 logger.critical(f"CRITICAL: Failed to load FAISS index from '{index_cache_path}': {e}. This may cause slow performance or errors.")
         else:
-             logger.critical(f"CRITICAL: FAISS index cache not found at '{index_cache_path}'. The application requires this file to function correctly. Ensure sync_cache.py ran successfully.")
+            logger.critical(f"CRITICAL: FAISS index cache not found at '{index_cache_path}'. The application requires this file to function correctly. Ensure sync_cache.py ran successfully.")
             
-        def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
+    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
         nlp_proc = custom_nlp_processor or self.nlp_processor
         if not nlp_proc or not nlp_proc.is_available():
             return {'error': 'NLP Processor not available', 'confidence': 0.0}
