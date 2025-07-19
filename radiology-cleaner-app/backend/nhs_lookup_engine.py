@@ -1,15 +1,13 @@
 # --- START OF FILE nhs_lookup_engine.py ---
 
 # =============================================================================
-# NHS LOOKUP ENGINE (V2.1 - ARCHITECTURALLY ALIGNED)
+# NHS LOOKUP ENGINE (V2.2 - FINAL RUNTIME VERSION)
 # =============================================================================
-# This version implements a scalable Retriever-Ranker architecture.
-# - Retriever: Uses a FAISS vector index for high-speed candidate selection.
-# - Ranker: Applies detailed component scoring only to the top candidates.
-# - Features: Ensemble embeddings, externalized configuration.
-# - Fixes:
-#   - Re-introduces `validate_consistency` to fix AttributeError.
-#   - Simplifies cache loading to align with the build/sync/run workflow.
+# This is the definitive runtime engine with a strict separation of concerns.
+# - It ONLY loads the pre-built FAISS index from the local persistent disk.
+# - It trusts that `sync_cache.py` has already downloaded the latest version.
+# - It does NOT communicate with R2 or compute the index on the fly.
+# - It fixes the `AttributeError` by including the `validate_consistency` method.
 # =============================================================================
 
 import json
@@ -17,12 +15,9 @@ import logging
 import re
 import os
 import pickle
-import hashlib
-import uuid
 import yaml
 import numpy as np
 import faiss
-from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from collections import defaultdict
 from fuzzywuzzy import fuzz
@@ -41,7 +36,6 @@ class NHSLookupEngine:
     def __init__(self, nhs_json_path: str, nlp_processor: NLPProcessor, semantic_parser: 'RadiologySemanticParser', config_path: str = 'config.yaml'):
         self.nhs_data = []
         self.snomed_lookup = {}
-        # NEW: Store a direct mapping from FAISS index position to SNOMED ID
         self.index_to_snomed_id: List[str] = []
         self.vector_index: Optional[faiss.Index] = None
         
@@ -49,7 +43,6 @@ class NHSLookupEngine:
         self.nlp_processor = nlp_processor
         self.semantic_parser = semantic_parser
         
-        # Load scoring weights and other parameters from config file
         self._load_config(config_path)
         
         self._load_nhs_data()
@@ -67,7 +60,7 @@ class NHSLookupEngine:
             'series', 'ap', 'pa', 'lat', 'oblique', 'guidance', 'guided', 'body', 'whole',
             'artery', 'vein', 'joint', 'spine', 'tract', 'system', 'time', 'delayed', 'immediate', 'phase', 'early', 'late'
         }
-        logger.info("NHSLookupEngine initialized with V2.1 Retriever-Ranker architecture.")
+        logger.info("NHSLookupEngine initialized with V2.2 Final Runtime architecture.")
 
     def _load_config(self, config_path):
         """Loads scoring weights and parameters from a YAML config file."""
@@ -78,7 +71,6 @@ class NHSLookupEngine:
                 logger.info(f"Loaded scoring configuration from {config_path}")
         except Exception as e:
             logger.error(f"Could not load or parse {config_path}. Using default weights. Error: {e}")
-            # Fallback to default weights if config fails
             self.config = {
                 'retriever_top_k': 20,
                 'weights_component': {'anatomy': 0.5, 'modality': 0.2, 'laterality': 0.1, 'contrast': 0.1, 'technique': 0.1},
@@ -121,49 +113,38 @@ class NHSLookupEngine:
             entry["_clean_primary_name_for_embedding"] = preprocessor.preprocess(primary_name_raw)
             entry["_interventional_terms"] = detect_interventional_procedure_terms(entry["_clean_primary_name_for_embedding"])
             entry['_parsed_components'] = self.semantic_parser.parse_exam_name(entry["_clean_primary_name_for_embedding"], 'Other')
-    
-    def _get_local_cache_path(self) -> str:
-        """Generates path for the FAISS index cache file."""
+
+    def _find_local_cache_file(self) -> Optional[str]:
+        """Finds the single expected cache file on the local disk for the current model."""
         cache_dir = os.environ.get('RENDER_DISK_PATH', 'embedding-caches')
-        os.makedirs(cache_dir, exist_ok=True)
-        model_key = self.nlp_processor.model_key
-        data_hash = self._get_data_hash()
-        return os.path.join(cache_dir, f'{model_key}_faiss_index_{data_hash}.cache')
+        if not os.path.isdir(cache_dir):
+            return None
+            
+        # Since sync_cache.py cleans up, there should only be one file per model.
+        for filename in os.listdir(cache_dir):
+            if filename.startswith(f"{self.nlp_processor.model_key}_") and filename.endswith(".cache"):
+                return os.path.join(cache_dir, filename)
+        return None
 
-    def _get_data_hash(self) -> str:
-        """Generate a stable hash based on NHS data structure."""
-        try:
-            stable_data = [
-                {'snomed_concept_id': e.get('snomed_concept_id'), 'primary_source_name': e.get('primary_source_name'), 'snomed_fsn': e.get('snomed_fsn')}
-                for e in self.nhs_data
-            ]
-            stable_data.sort(key=lambda x: str(x.get('snomed_concept_id', '')))
-            data_str = json.dumps(stable_data, sort_keys=True, separators=(',', ':'))
-            return hashlib.sha256(data_str.encode()).hexdigest()[:16]
-        except Exception as e:
-            logger.error(f"Error generating NHS data hash: {e}")
-            return hashlib.sha256(b"nhs_fallback").hexdigest()[:16]
-
-    def _load_or_compute_index(self):
+    def _load_index_from_local_disk(self):
         """
-        Loads the FAISS index from the local disk path.
-        Trusts that the sync_cache.py script has already provided the latest version.
+        Loads the FAISS index from the single cache file on the local disk.
+        Trusts that sync_cache.py has already provided the latest version.
         """
-        index_cache_path = self._get_local_cache_path()
+        local_cache_path = self._find_local_cache_file()
 
-        if os.path.exists(index_cache_path):
+        if local_cache_path:
             try:
-                with open(index_cache_path, 'rb') as f:
+                with open(local_cache_path, 'rb') as f:
                     cache_content = pickle.load(f)
                 self.vector_index = faiss.deserialize_index(cache_content['index_data'])
                 self.index_to_snomed_id = cache_content['id_mapping']
-                logger.info(f"Successfully loaded FAISS index for model '{self.nlp_processor.model_key}' from local path: {index_cache_path}")
-                return
+                logger.info(f"Successfully loaded FAISS index for model '{self.nlp_processor.model_key}' from local path: {local_cache_path}")
             except Exception as e:
-                logger.critical(f"CRITICAL: Failed to load FAISS index from '{index_cache_path}': {e}. This may cause slow performance or errors.")
+                logger.critical(f"CRITICAL: Failed to load FAISS index from '{local_cache_path}': {e}.")
         else:
-            logger.critical(f"CRITICAL: FAISS index cache not found at '{index_cache_path}'. The application requires this file to function correctly. Ensure sync_cache.py ran successfully.")
-            
+             logger.critical(f"CRITICAL: Cache not found on local disk for model '{self.nlp_processor.model_key}'. Ensure sync_cache.py ran successfully.")
+
     def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
         nlp_proc = custom_nlp_processor or self.nlp_processor
         if not nlp_proc or not nlp_proc.is_available():
@@ -172,7 +153,7 @@ class NHSLookupEngine:
         if not self._embeddings_loaded or self.nlp_processor.model_key != nlp_proc.model_key:
             logger.info(f"Loading index for model '{nlp_proc.model_key}'...")
             self.nlp_processor = nlp_proc
-            self._load_or_compute_index()
+            self._load_index_from_local_disk()
             self._embeddings_loaded = True
         
         if not self.vector_index:
@@ -180,7 +161,6 @@ class NHSLookupEngine:
             
         # 1. RETRIEVAL STAGE
         primary_input_embedding = nlp_proc.get_text_embedding(input_exam)
-        # For the ensemble, we use the input twice to match the dimension
         input_ensemble_embedding = np.concatenate([primary_input_embedding, primary_input_embedding]).astype('float32')
         faiss.normalize_L2(input_ensemble_embedding.reshape(1, -1))
 
@@ -201,8 +181,10 @@ class NHSLookupEngine:
             input_interventional_terms = set(detect_interventional_procedure_terms(input_exam))
             nhs_interventional_terms = set(entry.get('_interventional_terms', []))
             interventional_score = 0
-            if input_interventional_terms and nhs_interventional_terms: interventional_score = self.config['interventional_bonus']
-            elif input_interventional_terms and not nhs_interventional_terms: interventional_score = self.config['interventional_penalty']
+            if input_interventional_terms and nhs_interventional_terms: 
+                interventional_score = self.config['interventional_bonus']
+            elif input_interventional_terms and not nhs_interventional_terms: 
+                interventional_score = self.config['interventional_penalty']
             
             input_tokens = {w for w in input_exam.lower().split() if w not in self._specificity_stop_words}
             nhs_tokens = {w for w in entry.get("_clean_primary_name_for_embedding", "").lower().split() if w not in self._specificity_stop_words}
@@ -214,13 +196,11 @@ class NHSLookupEngine:
                 highest_confidence, best_match = current_score, entry
 
         if best_match:
-            # Handle laterality logic for the final result formatting
             best_match_parsed = best_match.get('_parsed_components', {})
             match_laterality = (best_match_parsed.get('laterality') or [None])[0]
             input_laterality = (extracted_input_components.get('laterality') or [None])[0]
             strip_laterality = (not input_laterality and match_laterality and match_laterality != 'bilateral')
             
-            # If laterality is missing and we found a unilateral match, see if a bilateral peer exists
             if strip_laterality:
                 bilateral_peer = self.find_bilateral_peer(best_match)
                 if bilateral_peer:
@@ -236,35 +216,65 @@ class NHSLookupEngine:
         input_anatomy = set(input_components.get('anatomy', []))
         nhs_anatomy = set(nhs_components.get('anatomy', []))
         anatomy_score = len(input_anatomy.intersection(nhs_anatomy)) / len(input_anatomy.union(nhs_anatomy)) if input_anatomy.union(nhs_anatomy) else 1.0
+        
         modality_score = 1.0 if input_components.get('modality') == nhs_components.get('modality') else 0.0
+        
         input_lat = (input_components.get('laterality') or [None])[0]
         nhs_lat = (nhs_components.get('laterality') or [None])[0]
         laterality_score = 1.0 if input_lat == nhs_lat else 0.5
+        
         input_con = (input_components.get('contrast') or [None])[0]
         nhs_con = (nhs_components.get('contrast') or [None])[0]
         contrast_score = 1.0 if input_con == nhs_con else (0.1 if (input_con and not nhs_con) or (not input_con and nhs_con) else 0.5)
+        
         input_tech = set(input_components.get('technique', []))
         nhs_tech = set(nhs_components.get('technique', []))
         technique_score = len(input_tech.intersection(nhs_tech)) / len(input_tech.union(nhs_tech)) if input_tech.union(nhs_tech) else 1.0
+        
         cfg_comp = self.config['weights_component']
-        component_score = (cfg_comp['anatomy'] * anatomy_score + cfg_comp['modality'] * modality_score + cfg_comp['laterality'] * laterality_score + cfg_comp['contrast'] * contrast_score + cfg_comp['technique'] * technique_score)
+        component_score = (
+            cfg_comp['anatomy'] * anatomy_score + 
+            cfg_comp['modality'] * modality_score + 
+            cfg_comp['laterality'] * laterality_score + 
+            cfg_comp['contrast'] * contrast_score + 
+            cfg_comp['technique'] * technique_score
+        )
+        
         cfg_final = self.config['weights_final']
         final_score = (cfg_final['component'] * component_score + cfg_final['semantic'] * semantic_score)
         final_score += interventional_score
         final_score *= (1 - specificity_penalty)
+        
         if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
             final_score += self.config['exact_match_bonus']
+            
         return max(0, final_score)
 
     def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False) -> Dict:
         model_name = getattr(nlp_proc, 'model_key', 'default').split('/')[-1]
-        source_name = f'UNIFIED_MATCH_V2_1_RETRIEVER_{model_name.upper()}'
+        source_name = f'UNIFIED_MATCH_V2_2_RETRIEVER_{model_name.upper()}'
         is_interventional = bool(best_match.get('_interventional_terms', []))
         clean_name = best_match.get('primary_source_name', '')
+        
         if strip_laterality_from_name:
             clean_name = re.sub(r'\s+(lt|rt|left|right|both|bilateral)$', '', clean_name, flags=re.I).strip()
 
-        return {'clean_name': clean_name, 'snomed_id': best_match.get('snomed_concept_id', ''), 'snomed_fsn': best_match.get('snomed_fsn', ''), 'snomed_laterality_concept_id': best_match.get('snomed_laterality_concept_id', ''), 'snomed_laterality_fsn': best_match.get('snomed_laterality_fsn', ''), 'is_diagnostic': not is_interventional, 'is_interventional': is_interventional, 'confidence': min(confidence, 1.0), 'source': source_name, 'anatomy': extracted_input_components.get('anatomy', []), 'laterality': extracted_input_components.get('laterality', []), 'contrast': extracted_input_components.get('contrast', []), 'modality': extracted_input_components.get('modality', []), 'technique': extracted_input_components.get('technique', [])}
+        return {
+            'clean_name': clean_name, 
+            'snomed_id': best_match.get('snomed_concept_id', ''), 
+            'snomed_fsn': best_match.get('snomed_fsn', ''), 
+            'snomed_laterality_concept_id': best_match.get('snomed_laterality_concept_id', ''), 
+            'snomed_laterality_fsn': best_match.get('snomed_laterality_fsn', ''), 
+            'is_diagnostic': not is_interventional, 
+            'is_interventional': is_interventional, 
+            'confidence': min(confidence, 1.0), 
+            'source': source_name, 
+            'anatomy': extracted_input_components.get('anatomy', []), 
+            'laterality': extracted_input_components.get('laterality', []), 
+            'contrast': extracted_input_components.get('contrast', []), 
+            'modality': extracted_input_components.get('modality', []), 
+            'technique': extracted_input_components.get('technique', [])
+        }
 
     def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
         specific_components = specific_entry.get('_parsed_components')
@@ -273,14 +283,20 @@ class NHSLookupEngine:
         target_anatomy = set(specific_components.get('anatomy', []))
         target_contrast = (specific_components.get('contrast') or [None])[0]
         target_techniques = set(specific_components.get('technique', []))
+        
         for entry in self.nhs_data:
             entry_components = entry.get('_parsed_components')
             if not entry_components: continue
             if (entry_components.get('laterality') or [None])[0] != 'bilateral': continue
-            if entry_components.get('modality') == target_modality and set(entry_components.get('anatomy', [])) == target_anatomy and (entry_components.get('contrast') or [None])[0] == target_contrast and set(entry_components.get('technique', [])) == target_techniques: return entry
+            if (
+                entry_components.get('modality') == target_modality and 
+                set(entry_components.get('anatomy', [])) == target_anatomy and 
+                (entry_components.get('contrast') or [None])[0] == target_contrast and 
+                set(entry_components.get('technique', [])) == target_techniques
+            ):
+                return entry
         return None
         
-    # --- METHOD RESTORED TO FIX ATTRIBUTEERROR ---
     def validate_consistency(self):
         """Checks for any SNOMED IDs mapped to multiple different primary names."""
         snomed_to_primary_names = defaultdict(set)
@@ -289,6 +305,7 @@ class NHSLookupEngine:
                 if primary_name := entry.get("primary_source_name"):
                     snomed_to_primary_names[snomed_id].add(primary_name)
         inconsistencies = {k: list(v) for k, v in snomed_to_primary_names.items() if len(v) > 1}
+        
         if inconsistencies:
             logger.warning(f"Found {len(inconsistencies)} SNOMED IDs with multiple primary source names.")
         else:
