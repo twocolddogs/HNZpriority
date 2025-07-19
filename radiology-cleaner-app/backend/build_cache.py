@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 from nlp_processor import NLPProcessor
 from r2_cache_manager import R2CacheManager
-from nhs_lookup_engine import NHSLookupEngine # We will instantiate it to use its helper methods
+from nhs_lookup_engine import NHSLookupEngine
 from parser import RadiologySemanticParser
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
 from preprocessing import initialize_preprocessor
@@ -28,8 +28,9 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
     # 1. Initialize dependencies to create an engine instance
     base_dir = os.path.dirname(os.path.abspath(__file__))
     nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
-    with open(nhs_json_path, 'r') as f:
-        nhs_authority = {item.get('primary_source_name'): item for item in json.load(f)}
+    with open(nhs_json_path, 'r', encoding='utf-8') as f:
+        nhs_authority_data = json.load(f)
+    nhs_authority = {item.get('primary_source_name'): item for item in nhs_authority_data}
     abbreviation_expander = AbbreviationExpander()
     initialize_preprocessor(abbreviation_expander)
     anatomy_extractor = AnatomyExtractor(nhs_authority)
@@ -60,15 +61,14 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
     
     # 3. Create a versioned filename and upload to R2
     timestamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
-    filename = f"{timestamp}_faiss_index.cache"
+    filename = f"{model_key}_{timestamp}_faiss_index.cache"
     object_key = f"caches/{model_key}/{filename}"
 
     logger.info(f"Uploading index to R2 with key: {object_key}")
-    success = r2_manager.upload_object(object_key, pickle.dumps(cache_content))
+    success = r2_manager.upload_object(object_key, pickle.dumps(cache_content)) # <-- THIS CALL IS NOW CORRECT
     
     if success:
         logger.info(f"SUCCESS: Uploaded {object_key} to R2.")
-        # As a best practice, clean up old versions in R2
         r2_manager.cleanup_old_caches(model_key, keep_latest=3)
     else:
         logger.error(f"FAILURE: Could not upload {object_key} to R2.")
@@ -91,6 +91,7 @@ def main_build():
     
     logger.info(f"\n=== Build Summary: {success_count}/{len(available_models)} caches built and uploaded. ===")
     if success_count < len(available_models):
+        logger.error("Build failed: Not all caches were created.")
         sys.exit(1)
 
 if __name__ == '__main__':
