@@ -1350,6 +1350,99 @@ a:focus-visible {
 }
 
 /* ==========================================================================
+   14.a  Enhanced Status Messaging System
+   ========================================================================== */
+
+/* Container that holds the live status messages stacked vertically */
+.status-message-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+
+/* Generic message shell – colours are injected inline from JS but we
+   still include sensible fall-backs here so HTML-only render is graceful */
+.status-message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-800);
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
+  box-shadow: var(--shadow-sm);
+  animation: statusFadeIn 0.25s ease-out;
+  position: relative;
+}
+
+.status-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-close {
+  background: none;
+  border: none;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-gray-500);
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-2);
+  transition: color 0.2s ease;
+}
+.status-close:hover { color: var(--color-gray-700); }
+
+/* Spinner used for network / progress states */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Inline progress bar (inside a status message) */
+.status-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+
+.status-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+/* Animations */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes statusFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes statusFadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-6px); }
+}
+
+/* ==========================================================================
    14. Source Indicators
    ========================================================================== */
 

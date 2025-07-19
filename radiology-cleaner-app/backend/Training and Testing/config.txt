@@ -1,0 +1,210 @@
+scoring:
+  # Number of candidates to retrieve from the fast vector search before detailed scoring.
+  retriever_top_k: 25
+
+  # Weights for combining individual components into a single component score.
+  # Rebalanced based on training data analysis for better accuracy
+  weights_component:
+    anatomy: 0.35      # Reduced from 0.50 - less reliance on extraction accuracy
+    modality: 0.25     # Increased from 0.20 - modality is most reliable component
+    laterality: 0.15   # Increased from 0.10 - important for precise matching
+    contrast: 0.15     # Increased from 0.10 - clinically significant differentiator
+    technique: 0.10    # Unchanged - least reliable component
+
+  # Final weights for combining the component score and the semantic score.
+  # Enhanced with frequency-based scoring for popular exams
+  weights_final:
+    component: 0.55    # Reduced from 0.60 to balance with semantic
+    semantic: 0.35     # Reduced from 0.40 to make room for frequency
+    frequency: 0.10    # NEW: popularity-based scoring for common exams
+
+  # Bonuses and penalties applied to the final score.
+  # Refined to be less aggressive and more balanced
+  interventional_bonus: 0.15        # Reduced from 0.25 for subtler weighting
+  interventional_penalty: -0.20     # Reduced from -0.50 to avoid harsh penalties
+  specificity_penalty_weight: 0.05  # Reduced from 0.10 to prevent over-penalization
+  exact_match_bonus: 0.25           # Reduced from 0.50 for balanced scoring
+
+  # NEW scoring enhancements for better clinical context matching
+  synonym_match_bonus: 0.15         # Bonus for medical abbreviation matches
+  context_match_bonus: 0.10         # Bonus for matching clinical contexts
+  modality_similarity_threshold: 0.8 # Threshold for partial modality credit
+  
+  # Enhanced contrast scoring - less harsh penalties for mismatches
+  contrast_mismatch_score: 0.3      # Increased from 0.1 for fairer scoring
+  contrast_null_score: 0.7          # Increased from 0.5 for missing contrast info
+  
+  # AGE/GENDER CONTEXT SCORING - Super-strong bonuses for matches
+  gender_context_match_bonus: 0.20  # Strong bonus for gender context matches
+  age_context_match_bonus: 0.15     # Strong bonus for age context matches
+  pregnancy_context_bonus: 0.25     # Extra strong bonus for pregnancy context
+
+# Modality similarity matrix for partial credit scoring
+# Allows related modalities to receive partial credit instead of zero
+modality_similarity:
+  CT:
+    CECT: 0.9          # CT with contrast enhancement
+    DECT: 0.8          # Dual-energy CT
+    HRCT: 0.9          # High-resolution CT
+  MR:
+    MRI: 1.0           # Perfect match
+    FMRI: 0.8          # Functional MRI
+  XR:
+    "X-ray": 1.0       # Perfect match
+    "X-Ray": 1.0       # Case variation
+    Xray: 1.0          # Common abbreviation
+  US:
+    Ultrasound: 1.0    # Perfect match
+    USS: 0.9           # Ultrasound scan
+  Mamm:
+    Mammography: 1.0   # Perfect match
+    Mammogram: 1.0     # Common variation
+  NM:
+    "Nuclear Medicine": 1.0  # Perfect match
+    Scintigraphy: 0.8  # Related technique
+  PET:
+    "PET/CT": 0.95     # Hybrid imaging
+    "PET-CT": 0.95     # Alternative notation
+
+# Context-aware scoring bonuses for clinical scenarios
+context_scoring:
+  emergency_keywords: ["emergency", "urgent", "stat", "trauma", "acute"]
+  emergency_bonus: 0.10
+  
+  screening_keywords: ["screening", "surveillance", "routine", "annual"]
+  screening_bonus: 0.08
+  
+  intervention_keywords: ["biopsy", "drainage", "injection", "aspiration", "guided", "picc", "line"]
+  intervention_bonus: 0.12
+  
+  pregnancy_keywords: ["obstetric", "pregnancy", "prenatal", "fetal", "trimester"]
+  pregnancy_bonus: 0.15
+  
+  paediatric_keywords: ["paediatric", "pediatric", "paed", "peds", "child", "infant", "newborn"]
+  paediatric_bonus: 0.10
+
+# Enhanced preprocessing configuration
+preprocessing:
+  # Medical abbreviation expansion dictionary
+  medical_abbreviations:
+    # ENHANCED CONTRAST PATTERNS - Super-strong detection
+    "C+": "with contrast"
+    "C-": "without contrast"
+    "+C": "with contrast"
+    "-C": "without contrast"
+    "W/C": "with contrast"
+    "W/O C": "without contrast"
+    "WC": "with contrast"
+    "WOC": "without contrast"
+    "WITH C": "with contrast"
+    "WITHOUT C": "without contrast"
+    "NON CONTRAST": "without contrast"
+    "NON-CONTRAST": "without contrast"
+    "NO CONTRAST": "without contrast"
+    "CONTRAST": "with contrast"
+    "IV CONTRAST": "with contrast"
+    "ORAL CONTRAST": "with contrast"
+    "GAD": "with contrast"
+    "GADOLINIUM": "with contrast"
+    
+    # AGE/GENDER CONTEXT PATTERNS - Super-strong detection
+    "PAED": "paediatric"
+    "PEDS": "paediatric"  
+    "CDH": "congenital hip dysplasia paediatric"
+    "INFANT": "infant paediatric"
+    "PREGNANCY": "pregnancy"
+    "OBSTETRIC": "obstetric pregnancy"
+    "PRENATAL": "prenatal pregnancy"
+    "TRIMESTER": "trimester pregnancy"
+    "MAMMOGRAM": "mammogram female"
+    "MAMMOGRAPHY": "mammography female"
+    "BREAST": "breast female"
+    "PROSTATE": "prostate male"
+    "SCROTAL": "scrotal male"
+    "SCROTUM": "scrotum male"
+    "TESTES": "testes male"
+    
+    # ANATOMICAL ABBREVIATIONS - From sanity test analysis
+    "CHED": "head"
+    "CCHT": "chest"
+    "CAAP": "abdomen and pelvis"
+    "CCAP": "chest abdomen and pelvis"
+    "CPAN": "pulmonary angiogram"
+    "CKUB": "kidneys ureters bladder"
+    "CCSP": "cervical spine"
+    "MLSP": "lumbar spine"
+    "MCSP": "cervical spine"
+    "MPRO": "prostate"
+    "MHED": "head"
+    "UABD": "abdomen"
+    "UPEL": "pelvis"
+    "UREN": "renal tract"
+    "UCDO": "carotid doppler"
+    "ULDV": "venous dvt lower limb"
+    "USST": "scrotum and testes"
+    "UTHY": "thyroid"
+    "UPRT": "pregnancy third trimester"
+    "ABD": "abdomen"
+    "PELV": "pelvis"
+    "LSP": "lumbar spine"
+    "CSP": "cervical spine"
+    "THY": "thyroid"
+    "REN": "renal"
+    
+    # MODALITY ABBREVIATIONS
+    "MRCP": "magnetic resonance cholangiopancreatography"
+    "DEXA": "dual-energy x-ray absorptiometry"
+    "NM": "nuclear medicine"
+    "IR": "interventional radiology"
+    "FL": "fluoroscopy"
+    "Mamm": "mammography"
+    "PET": "positron emission tomography"
+    
+    # CLINICAL CONTEXT ABBREVIATIONS
+    "DVT": "deep vein thrombosis"
+    "V/Q": "ventilation perfusion"
+    "MAG3": "mercaptoacetyltriglycine"
+    "FDG": "fluorodeoxyglucose"
+    "PSMA": "prostate specific membrane antigen"
+    "SPECT": "single photon emission computed tomography"
+    "WBSP": "whole body spect"
+    
+    # PROCEDURE ABBREVIATIONS
+    "WB": "whole body"
+    "PICC": "peripherally inserted central catheter"
+    "XA": "x-ray angiography"
+    "RF": "radiofrequency"
+    "II": "image intensifier"
+    
+    # BREAST IMAGING ABBREVIATIONS
+    "BR": "breast"
+    "BBMA": "bilateral mammogram"
+    "BRMA": "mammogram"
+    "BTBB": "bilateral breast tomosynthesis"
+    "BRUS": "breast ultrasound"
+    
+    # LATERALITY AND DIRECTIONAL ABBREVIATIONS
+    "BILAT": "bilateral"
+    "BIL": "bilateral"
+    "RT": "right"
+    "LT": "left"
+    "R": "right"
+    "L": "left"
+    "AP": "anteroposterior"
+    "PA": "posteroanterior"
+    "LAT": "lateral"
+    
+    # COMMON STUDY ABBREVIATIONS
+    "ABDPELV": "abdomen and pelvis"
+    "CAP": "chest abdomen pelvis"
+    "KUB": "kidneys ureters bladder"
+    "3RD": "third"
+    
+  # Anatomy normalization patterns
+  anatomy_synonyms:
+    "ABDOMEN": "abdomen"
+    "PELV": "pelvis"
+    "CHED": "head"
+    "CCHT": "chest"
+    "CCSP": "cervical spine"
+    "MLSP": "lumbar spine"
