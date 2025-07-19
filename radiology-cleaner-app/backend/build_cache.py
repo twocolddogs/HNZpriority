@@ -18,12 +18,31 @@ from nhs_lookup_engine import NHSLookupEngine
 from parser import RadiologySemanticParser
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
 from preprocessing import initialize_preprocessor
+from cache_version import get_current_cache_version
 
 def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
     """
     Computes the FAISS index for a given model and uploads it to R2 with a timestamped filename.
+    Skips building if a cache with the current version already exists in R2.
     """
     logger.info(f"\n=== Building and uploading cache for {model_key} model ===")
+    
+    # Check if cache with current version already exists in R2
+    cache_version = get_current_cache_version()
+    logger.info(f"Current cache version: {cache_version}")
+    
+    prefix = f"caches/{model_key}/"
+    r2_objects = r2_manager.list_objects(prefix)
+    
+    # Check if any existing cache matches current version
+    for obj in r2_objects or []:
+        obj_key = obj['Key']
+        if f"_{cache_version}_" in obj_key:
+            logger.info(f"Cache with version {cache_version} already exists: {obj_key}")
+            logger.info("Skipping rebuild - NHS.json and dependencies haven't changed")
+            return True
+    
+    logger.info(f"No cache found for version {cache_version}. Building new cache...")
     
     # 1. Initialize dependencies to create an engine instance
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -92,7 +111,7 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
     
     # 3. Create a versioned filename and upload to R2
     timestamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
-    filename = f"{model_key}_{timestamp}_faiss_index.cache"
+    filename = f"{model_key}_{cache_version}_{timestamp}_faiss_index.cache"
     object_key = f"caches/{model_key}/{filename}"
 
     logger.info(f"Uploading index to R2 with key: {object_key}")
