@@ -15,11 +15,12 @@ class RadiologySemanticParser:
             'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM',
             'PET': 'PET', 'MG': 'MG', 'MAMM': 'MG', 'MAMMO': 'MG', 'DEXA': 'DEXA', 
             'FL': 'Fluoroscopy', 
-            'IR': 'IR',  # ADDITION: Recognize 'IR' as a valid modality code.
-            'XA': 'IR',  # MODIFICATION: Map incoming 'XA' codes directly to 'IR'.
+            'IR': 'IR',
+            'XA': 'IR',
             'Other': 'Other', 'BR': 'MG'
         }
         
+        # MODIFICATION: Significantly expanded interventional patterns
         self.technique_patterns = {
             'HRCT': [re.compile(p, re.I) for p in [r'\b(hrct|high resolution)\b']],
             'Colonography': [re.compile(p, re.I) for p in [r'\b(colonography|virtual colonoscopy)\b']],
@@ -31,7 +32,7 @@ class RadiologySemanticParser:
                 r'\b(stent|angioplasty|emboli[sz]ation|thrombolysis|thrombectomy|atherectomy|picc|line|catheter)\b'
             ]],
             'Non-Vascular Interventional': [re.compile(p, re.I) for p in [
-                r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation|insertion|insert)\b'
+                r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation|insertion|insert|excision|vacuum|ass)\b'
             ]]
         }
 
@@ -54,8 +55,6 @@ class RadiologySemanticParser:
         }
 
     def _parse_modality(self, lower_name: str, modality_code: str) -> str:
-        # MODIFICATION: Added a comprehensive 'IR' pattern and removed 'XA'.
-        # This gives 'IR' high priority in text-based detection.
         modality_patterns = {
             'IR': re.compile(r'\b(ir|interventional|xa|angiography|angiogram|dsa|picc|biopsy|drainage|stent|ablation|emboli[sz]ation)\b', re.I),
             'CT': re.compile(r'\b(ct|computed tomography)\b', re.I),
@@ -66,12 +65,11 @@ class RadiologySemanticParser:
             'PET': re.compile(r'\b(pet|positron emission)\b', re.I),
             'DEXA': re.compile(r'\b(dexa|dxa|bone densitometry)\b', re.I),
             'Fluoroscopy': re.compile(r'\b(fl|fluoroscopy|barium|swallow|meal|enema)\b', re.I),
-            'XR': re.compile(r'\b(xr|x-ray|xray|radiograph|plain film|projection)\b', re.I), # XR is last as a fallback
+            'XR': re.compile(r'\b(xr|x-ray|xray|radiograph|plain film|projection)\b', re.I),
         }
         for modality, pattern in modality_patterns.items():
             if pattern.search(lower_name):
                 return modality
-        # Fallback to the modality map if no text pattern matches
         return self.modality_map.get(str(modality_code).upper(), 'Other') if modality_code else 'Other'
 
     def _parse_laterality(self, lower_name: str) -> List[str]:
@@ -87,10 +85,8 @@ class RadiologySemanticParser:
         return sorted(list(techniques))
 
     def _build_clean_name(self, parsed: Dict) -> str:
-        """Constructs a standardized, human-readable clean name."""
         parts = [parsed.get('modality', 'Unknown')]
         
-        # Consolidate techniques for cleaner naming
         techniques = parsed.get('technique', [])
         if 'Vascular Interventional' in techniques: parts.append("Angiogram")
         
