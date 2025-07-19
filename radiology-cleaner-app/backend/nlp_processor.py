@@ -116,7 +116,7 @@ class NLPProcessor:
         logger.error(f"Unexpected API response format for single text: {result}")
         return None
 
-    def batch_get_embeddings(self, texts: List[str], chunk_size: int = 25, chunk_delay: float = 0.5) -> List[Optional[np.ndarray]]:
+    def batch_get_embeddings(self, texts: List[str], chunk_size: int = 25, chunk_delay: float = 0.5, context_label: str = "items") -> List[Optional[np.ndarray]]:
         """Get embeddings for multiple texts, with pooling for token-level models."""
         if not self.is_available() or not texts:
             return []
@@ -129,7 +129,7 @@ class NLPProcessor:
             chunk_num = i // chunk_size + 1
             total_chunks = (len(stripped_texts) + chunk_size - 1) // chunk_size
             
-            logger.info(f"Processing chunk {chunk_num}/{total_chunks} ({len(chunk)} items) for model '{self.model_key}'")
+            logger.info(f"Processing {context_label} chunk {chunk_num}/{total_chunks} ({len(chunk)} items) for model '{self.model_key}'")
             
             batch_results = self._make_api_call(chunk)
             

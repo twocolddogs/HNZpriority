@@ -24,8 +24,11 @@ def build_and_upload_for_model(model_key: str, engine_instance, r2_manager):
     primary_names = [e["_clean_primary_name_for_embedding"] for e in engine_instance.nhs_data]
     fsn_names = [e["_clean_fsn_for_embedding"] for e in engine_instance.nhs_data]
     
-    primary_embeddings_raw = nlp_proc.batch_get_embeddings(primary_names)
-    fsn_embeddings_raw = nlp_proc.batch_get_embeddings(fsn_names)
+    logger.info(f"Step 1/2: Generating embeddings for {len(primary_names)} Primary Names...")
+    primary_embeddings_raw = nlp_proc.batch_get_embeddings(primary_names, context_label="Primary Names")
+    
+    logger.info(f"Step 2/2: Generating embeddings for {len(fsn_names)} FSNs...")
+    fsn_embeddings_raw = nlp_proc.batch_get_embeddings(fsn_names, context_label="FSNs")
 
     # 2. Filter out failed embeddings and corresponding data
     valid_indices = [i for i, (p, f) in enumerate(zip(primary_embeddings_raw, fsn_embeddings_raw)) if p is not None and f is not None]
