@@ -1,113 +1,81 @@
+# --- START OF FILE sync_cache.py ---
+
 import os
 import logging
-import pickle
-from datetime import datetime, timezone
-
-# Assumes r2_cache_manager is in the same directory and is importable
 from r2_cache_manager import R2CacheManager
 
 # Configure logging for the sync script
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [CacheSync] - %(message)s')
 
-def get_latest_r2_object_for_model(r2_manager, model_key):
-    """Finds the most recent cache object in R2 for a given model by checking modification times."""
-    try:
-        prefix = f"nhs-embeddings/{model_key}/"
-        response = r2_manager.client.list_objects_v2(
-            Bucket=r2_manager.bucket_name,
-            Prefix=prefix
-        )
-        objects = response.get('Contents', [])
-        if not objects:
-            return None
-        
-        # Sort by last modified to find the newest object
-        objects.sort(key=lambda x: x['LastModified'], reverse=True)
-        return objects[0]
-    except Exception as e:
-        logging.error(f"Failed to list R2 objects for model '{model_key}': {e}")
-        return None
-
 def sync_cache_from_r2():
     """
-    Ensures the local persistent disk has the latest embedding caches from R2.
-    This script is intended to be run at application startup, before Gunicorn starts.
+    Ensures the local persistent disk has the single latest embedding cache from R2 for each model.
+    This script is intended to be run at application startup, before the main app starts.
+    It uses timestamped filenames for versioning.
     """
-    logging.info("Starting cache synchronization from R2 to persistent disk.")
+    logging.info("Starting timestamp-based cache synchronization from R2.")
 
+    # Get the path to the persistent disk where caches are stored
     persistent_disk_path = os.environ.get('RENDER_DISK_PATH', 'embedding-caches')
-    logging.info(f"Using persistent disk path: {persistent_disk_path}")
+    os.makedirs(persistent_disk_path, exist_ok=True)
+    logging.info(f"Local persistent disk path: {persistent_disk_path}")
 
-    if not os.path.exists(persistent_disk_path):
-        logging.info(f"Creating persistent disk directory: {persistent_disk_path}")
-        os.makedirs(persistent_disk_path)
-
+    # Initialize the R2 manager to communicate with Cloudflare R2
     r2_manager = R2CacheManager()
     if not r2_manager.is_available():
-        logging.warning("R2 Cache Manager is not available. Cannot sync cache.")
+        logging.warning("R2 Cache Manager is not available. Cannot sync cache. The application might fail if no local cache exists.")
         return
 
-    model_keys = r2_manager.list_cached_models()
+    # Dynamically get the list of models the application supports
+    from nlp_processor import NLPProcessor
+    model_keys = NLPProcessor.get_available_models().keys()
     if not model_keys:
-        logging.warning("No models found in R2. Nothing to sync.")
+        logging.warning("No models configured in NLPProcessor. Nothing to sync.")
         return
         
-    logging.info(f"Found models in R2 to check: {model_keys}")
+    logging.info(f"Found models to check for cache updates: {list(model_keys)}")
 
     for model_key in model_keys:
-        logging.info(f"--- Processing model: {model_key} ---")
-        latest_r2_object = get_latest_r2_object_for_model(r2_manager, model_key)
-
-        if not latest_r2_object:
-            logging.warning(f"No R2 cache object found for model '{model_key}'.")
-            continue
-
-        r2_object_key = latest_r2_object['Key']
-        r2_last_modified = latest_r2_object['LastModified']
+        logging.info(f"--- Syncing cache for model: {model_key} ---")
         
-        # Local file is decompressed, so we remove .gz from the name
-        # Ensure unique local filename by including model_key
-        # Match the naming convention used by nhs_lookup_engine.py: {model_key}_nhs_embeddings_{data_hash}.pkl
-        data_hash = os.path.basename(r2_object_key).replace('.pkl.gz', '').replace('.pkl', '')
-        base_filename = f"{model_key}_nhs_embeddings_{data_hash}.pkl"
-        local_file_path = os.path.join(persistent_disk_path, base_filename)
+        # 1. Find the latest cache file in R2 by filename
+        # The prefix defines the "folder" for this model's caches in R2
+        prefix = f"caches/{model_key}/"
+        r2_objects = r2_manager.list_objects(prefix)
+        
+        if not r2_objects:
+            logging.warning(f"No cache objects found in R2 for model '{model_key}'.")
+            continue
+        
+        # Sort by the object key (filename) in descending order.
+        # Since the filename starts with a timestamp, this finds the newest file.
+        r2_objects.sort(key=lambda x: x['Key'], reverse=True)
+        latest_r2_object_key = r2_objects[0]['Key']
+        latest_r2_filename = os.path.basename(latest_r2_object_key)
+        logging.info(f"Latest R2 version identified: {latest_r2_filename}")
 
-        should_download = False
-        if not os.path.exists(local_file_path):
-            logging.info(f"Local cache '{base_filename}' not found. Will download from R2.")
-            should_download = True
+        # 2. Check if this exact file already exists locally
+        local_file_path = os.path.join(persistent_disk_path, latest_r2_filename)
+        
+        if os.path.exists(local_file_path):
+            logging.info("Local cache is already the latest version. Sync not needed.")
         else:
-            local_last_modified_ts = os.path.getmtime(local_file_path)
-            local_last_modified_dt = datetime.fromtimestamp(local_last_modified_ts, tz=timezone.utc)
-            if r2_last_modified > local_last_modified_dt:
-                logging.info(f"R2 cache for '{model_key}' is newer. Will re-download.")
-                should_download = True
+            logging.info("Newer version found in R2. Starting download...")
+            download_success = r2_manager.download_cache(latest_r2_object_key, local_file_path)
+            
+            if download_success:
+                # 3. After a successful download, clean up any old local cache files for this model
+                for filename in os.listdir(persistent_disk_path):
+                    # Check for files that belong to the current model but are not the one we just downloaded
+                    if filename.startswith(f"{model_key}_") and filename != latest_r2_filename:
+                        old_file_path = os.path.join(persistent_disk_path, filename)
+                        logging.info(f"Removing old local cache file: {filename}")
+                        try:
+                            os.remove(old_file_path)
+                        except OSError as e:
+                            logging.error(f"Error removing old cache file {old_file_path}: {e}")
             else:
-                logging.info(f"Local cache for '{model_key}' is up to date.")
-
-        if should_download:
-            try:
-                # Extract the data hash from the filename to pass to the download function
-                # base_filename format: {model_key}_nhs_embeddings_{data_hash}.pkl
-                data_hash = os.path.splitext(base_filename)[0].split('_')[-1]
-                logging.info(f"Downloading cache for model '{model_key}' with hash '{data_hash}'...")
-                
-                # download_cache now saves directly to file
-                download_success = r2_manager.download_cache(model_key, data_hash, local_file_path)
-                
-                if download_success:
-                    # Clean up any other versions for this model on the local disk
-                    for f in os.listdir(persistent_disk_path):
-                        # Check for files that start with the model_key and are not the current base_filename
-                        # Also ensure we don't delete the .tmp file if it exists from a failed download
-                        if f.startswith(f"{model_key}_") and f != base_filename and not f.endswith(".tmp"):
-                            logging.info(f"Removing old local cache file: {f}")
-                            os.remove(os.path.join(persistent_disk_path, f))
-                    logging.info(f"Successfully saved cache to {local_file_path}")
-                else:
-                    logging.error(f"Download from R2 for model '{model_key}' failed.")
-            except Exception as e:
-                logging.error(f"An error occurred during download/save for model '{model_key}': {e}", exc_info=True)
+                logging.error(f"Failed to download latest cache {latest_r2_filename} from R2.")
 
     logging.info("Cache synchronization complete.")
 
