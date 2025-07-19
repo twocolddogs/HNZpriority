@@ -28,17 +28,22 @@ class AbbreviationExpander:
             'rt': 'right', 'lt': 'left', 'bil': 'bilateral', 'bilat': 'bilateral',
             'r': 'right', 'l': 'left', 'both': 'bilateral'
         }
+        # --- RECOMMENDED CHANGE: Use a single, powerful regex ---
+        # Sort keys by length (desc) to match longer abbreviations first (e.g., 'c-spine' before 'c-')
+        sorted_keys = sorted(self.medical_abbreviations.keys(), key=len, reverse=True)
+        # Escape special characters (like '+') and join into a single pattern
+        escaped_keys = [re.escape(key) for key in sorted_keys]
+        # Compile the master regex for efficiency
+        self.master_pattern = re.compile(r'\b(' + '|'.join(escaped_keys) + r')\b', re.IGNORECASE)
 
     def expand(self, text: str) -> str:
-        words = text.split()
-        expanded_words = []
-        for word in words:
-            clean_word = word.lower().strip('.,()[]/-+').strip()
-            if clean_word in self.medical_abbreviations:
-                 expanded_words.append(self.medical_abbreviations[clean_word])
-            else:
-                 expanded_words.append(word)
-        return ' '.join(expanded_words)
+        # --- RECOMMENDED CHANGE: Use a robust regex replacement function ---
+        # This function looks up the matched abbreviation in the dictionary
+        def repl(match):
+            return self.medical_abbreviations[match.group(0).lower()]
+        
+        # Use re.sub with the replacement function for a single-pass, robust expansion
+        return self.master_pattern.sub(repl, text)
     
     def normalize_ordinals(self, text: str) -> str:
         ordinal_replacements = {
