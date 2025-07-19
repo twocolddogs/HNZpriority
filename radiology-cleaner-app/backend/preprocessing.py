@@ -31,8 +31,13 @@ class ExamPreprocessor:
         """Set up regex patterns and string lists for text cleaning."""
         # Patterns for removing administrative qualifiers that add no clinical value
         self.admin_qualifier_patterns = [
-            (r'\s*\(non-acute\)\s*', ' '),  # "(non-acute)" -> " "
-            (r'\s*\(acute\)\s*', ' ')       # "(acute)" -> " "
+            # Original patterns
+            (r'\s*\(non-acute\)\s*', ' '),
+            (r'\s*\(acute\)\s*', ' '),
+            # --- RECOMMENDED ADDITION ---
+            # Expanded to remove operational noise for better clinical grouping
+            (r'\b(mobile|portable|ward|stat|opd|inpatient|outpatient)\b', ' '),
+            (r'\s*\((mobile|portable|ward|stat)\)\s*', ' ')
         ]
         
         # NO REPORT suffixes to remove (ordered by specificity to avoid partial matches)
