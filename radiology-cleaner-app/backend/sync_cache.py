@@ -9,7 +9,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [C
 def sync_cache_from_r2():
     """
     Ensures the local persistent disk has the single latest cache from R2 for each model.
-    This script is run at application startup.
     """
     logging.info("Starting timestamp-based cache synchronization from R2.")
 
@@ -30,13 +29,12 @@ def sync_cache_from_r2():
         logging.info(f"--- Syncing cache for model: {model_key} ---")
         
         prefix = f"caches/{model_key}/"
-        r2_objects = r2_manager.list_objects(prefix)
+        r2_objects = r2_manager.list_objects(prefix) # <-- USES NEW GENERIC METHOD
         
         if not r2_objects:
             logging.warning(f"No cache objects found in R2 for model '{model_key}'.")
             continue
         
-        # Filenames are timestamped, so sorting alphabetically finds the latest.
         r2_objects.sort(key=lambda x: x['Key'], reverse=True)
         latest_r2_object_key = r2_objects[0]['Key']
         latest_r2_filename = os.path.basename(latest_r2_object_key)
@@ -48,10 +46,9 @@ def sync_cache_from_r2():
             logging.info("Local cache is already the latest version. Sync not needed.")
         else:
             logging.info("Newer version found in R2. Starting download...")
-            download_success = r2_manager.download_object(latest_r2_object_key, local_file_path)
+            download_success = r2_manager.download_object(latest_r2_object_key, local_file_path) # <-- USES NEW GENERIC METHOD
             
             if download_success:
-                # After a successful download, clean up any old local cache files for this model
                 for filename in os.listdir(persistent_disk_path):
                     if filename.startswith(f"{model_key}_") and filename != latest_r2_filename:
                         old_file_path = os.path.join(persistent_disk_path, filename)
