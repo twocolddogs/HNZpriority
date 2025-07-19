@@ -1,10 +1,11 @@
 # --- START OF FILE context_detection.py ---
 
 # =============================================================================
-# CONTEXT DETECTION MODULE
+# CONTEXT DETECTION MODULE (V2 - ENHANCED PATTERNS)
 # =============================================================================
 # This module provides functionality for detecting various contextual information
 # from radiology exam names, including gender, age, and clinical contexts.
+# This version features significantly expanded keyword lists for greater accuracy.
 
 import re
 import logging
@@ -20,6 +21,7 @@ class ContextDetector:
     - Gender context (male, female, pregnancy)
     - Age context (paediatric, adult)
     - Clinical context (screening, emergency, follow-up, intervention)
+    - Specific interventional procedure terms for advanced scoring.
     """
     
     def __init__(self):
@@ -27,85 +29,88 @@ class ContextDetector:
         self._init_patterns()
     
     def _init_patterns(self):
-        """Initialize regex patterns for context detection."""
-        # Pregnancy patterns (highest priority in gender detection)
+        """Initialize regex patterns and keyword lists for context detection."""
+        # Pregnancy patterns (given highest priority in gender detection)
         self.pregnancy_patterns = [
             r'\b(obstetric|pregnancy|prenatal)\b',
             r'\b(fetal|fetus)\b',
             r'\b(trimester)\b'
         ]
         
-        # Female-specific patterns - ENHANCED
+        # Female-specific anatomy and keywords (ENHANCED)
         self.female_anatomy = [
             'female pelvis', 'uterus', 'ovary', 'ovaries', 'endometrial', 'cervix', 'cervical', 
-            'mammogram', 'mammography', 'breast', 'breasts'
+            'mammogram', 'mammography', 'breast', 'breasts', 'transvaginal'
         ]
         self.female_patterns = [
             r'\b(female)\b',
             r'\b(woman|women)\b',
-            r'\b(gynecological|gynaecological)\b',
-            r'\b(mammogram|mammography)\b',
-            r'\b(breast|breasts)\b'
+            r'\b(gynae|gynecological|gynaecological)\b' # Added 'gynae'
         ]
         
-        # Male-specific patterns - ENHANCED
+        # Male-specific anatomy and keywords (ENHANCED)
         self.male_anatomy = [
             'prostate', 'testicular', 'scrotal', 'scrotum', 'testes', 'testicle', 'testicles',
             'penis', 'penile'
         ]
         self.male_patterns = [
             r'\b(male)\b',
-            r'\b(men)\b',
-            r'\b(scrotal|scrotum)\b',
-            r'\b(testes|testicle|testicles|testicular)\b'
+            r'\b(men)\b'
         ]
         
-        # Pediatric patterns - ENHANCED
+        # Pediatric patterns (ENHANCED)
         self.pediatric_patterns = [
             r'\b(paediatric|pediatric|paed|peds)\b',
             r'\b(child|children|infant|infants|baby|babies)\b',
             r'\b(newborn|neonate|neonatal)\b',
             r'\b(toddler|adolescent|juvenile)\b',
-            # Additional common pediatric terms
-            r'\b(cdh|congenital)\b',  # CDH screening, congenital conditions
+            r'\b(cdh|congenital)\b',
             r'\b(hip dysplasia|hips screening)\b',
             r'\b(developmental)\b'
         ]
         
-        # Adult patterns
+        # Adult patterns (simple but useful for explicit cases)
         self.adult_patterns = [
             r'\b(adult)\b'
         ]
         
-        # Clinical context patterns
+        # Clinical context patterns for general classification
         self.clinical_patterns = {
             'screening': [r'\b(screening|surveillance)\b'],
             'emergency': [r'\b(emergency|urgent|stat|trauma)\b'],
             'follow-up': [r'\b(follow.?up|post.?op)\b'],
-            'intervention': [r'\b(biopsy|drainage|injection|aspiration|fna)\b']
+            'intervention': [r'\b(biopsy|drainage|injection|aspiration|fna|guided|insertion|line|picc)\b']
         }
     
     def detect_gender_context(self, exam_name: str, anatomy: List[str] = None) -> Optional[str]:
-        """Detect gender/pregnancy context from exam name and anatomy."""
+        """Detect gender/pregnancy context from exam name and parsed anatomy."""
         if not exam_name:
             return None
+            
         exam_lower = exam_name.lower()
-        anatomy = anatomy or []
+        anatomy = [a.lower() for a in (anatomy or [])]
+        
+        # Check for pregnancy first as it's the most specific context
         for pattern in self.pregnancy_patterns:
             if re.search(pattern, exam_lower):
                 return 'pregnancy'
+                
+        # Check female-specific anatomy and keywords
         for term in self.female_anatomy:
-            if term.lower() in exam_lower:
+            if term in exam_lower or term in anatomy:
                 return 'female'
         for pattern in self.female_patterns:
             if re.search(pattern, exam_lower):
                 return 'female'
+                
+        # Check male-specific anatomy and keywords
         for term in self.male_anatomy:
-            if term.lower() in exam_lower:
+            if term in exam_lower or term in anatomy:
                 return 'male'
         for pattern in self.male_patterns:
             if re.search(pattern, exam_lower):
                 return 'male'
+                
         return None
     
     def detect_age_context(self, exam_name: str) -> Optional[str]:
@@ -119,7 +124,7 @@ class ContextDetector:
         return None
     
     def detect_clinical_context(self, exam_name: str, anatomy: List[str] = None) -> List[str]:
-        """Detect clinical context from exam name."""
+        """Detect general clinical context from exam name (e.g., screening, emergency)."""
         if not exam_name: return []
         exam_lower = exam_name.lower()
         contexts = []
@@ -127,14 +132,14 @@ class ContextDetector:
             for pattern in patterns:
                 if re.search(pattern, exam_lower):
                     contexts.append(context_type)
-                    break
-        return contexts
+                    break # Avoid adding the same context type multiple times
+        return sorted(list(set(contexts)))
     
     def detect_interventional_procedure_terms(self, exam_name: str) -> List[str]:
         """
-        MODIFICATION: Significantly expanded this list to better identify interventional
-        procedures for more accurate weighting against the NHS flags. This is crucial for
-        differentiating diagnostic from therapeutic exams.
+        Detects specific interventional terms.
+        This list is crucial for differentiating diagnostic from therapeutic/interventional exams
+        and provides a strong signal for the scoring engine.
         """
         exam_lower = exam_name.lower()
         interventional_keywords = [
@@ -152,10 +157,10 @@ class ContextDetector:
             if re.search(r'\b' + re.escape(term) + r'\b', exam_lower)
         ]
         
-        return list(set(found_terms))
+        return sorted(list(set(found_terms)))
     
     def detect_all_contexts(self, exam_name: str, anatomy: List[str] = None) -> dict:
-        """Detect all types of context in a single call."""
+        """Detect all types of context in a single call for efficiency."""
         return {
             'gender_context': self.detect_gender_context(exam_name, anatomy),
             'age_context': self.detect_age_context(exam_name),
@@ -163,8 +168,9 @@ class ContextDetector:
         }
 
 # =============================================================================
-# CONVENIENCE FUNCTIONS
+# CONVENIENCE FUNCTIONS (SINGLETON PATTERN)
 # =============================================================================
+# Create a single global instance to avoid re-initializing patterns on every call.
 _detector = ContextDetector()
 
 def detect_gender_context(exam_name: str, anatomy: List[str] = None) -> Optional[str]:
@@ -181,3 +187,5 @@ def detect_interventional_procedure_terms(exam_name: str) -> List[str]:
 
 def detect_all_contexts(exam_name: str, anatomy: List[str] = None) -> dict:
     return _detector.detect_all_contexts(exam_name, anatomy)
+
+# --- END OF FILE context_detection.py ---
