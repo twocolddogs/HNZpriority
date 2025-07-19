@@ -71,16 +71,33 @@ def _initialize_app():
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
     
-    # Simple in-memory cache for this example
-    # NOTE: This cache system imports cache_version utilities (line 25) but doesn't use them.
-    # The cache_version system provides automatic invalidation when critical files change,
-    # but this SimpleCache doesn't implement cache key generation with format_cache_key()
-    # or version-based invalidation with get_current_cache_version().
-    # For full caching, integrate with cache_version.py and implement in API endpoints.
+    # Enhanced cache with version-based invalidation
     class SimpleCache:
-        def __init__(self): self.cache = {}
-        def get(self, key): return self.cache.get(key)
-        def set(self, key, value): self.cache[key] = value
+        def __init__(self):
+            self.cache = {}
+            self.cache_version = get_current_cache_version()
+            logger.info(f"Initialized cache with version: {self.cache_version}")
+        
+        def _check_version_and_clear_if_needed(self):
+            """Check if cache version has changed and clear if needed"""
+            current_version = get_current_cache_version()
+            if current_version != self.cache_version:
+                logger.info(f"Cache version changed from {self.cache_version} to {current_version}, clearing cache")
+                self.cache.clear()
+                self.cache_version = current_version
+        
+        def get(self, key):
+            self._check_version_and_clear_if_needed()
+            # Use format_cache_key for consistent key formatting
+            formatted_key = format_cache_key("simple_cache", self.cache_version, key)
+            return self.cache.get(formatted_key)
+        
+        def set(self, key, value):
+            self._check_version_and_clear_if_needed()
+            # Use format_cache_key for consistent key formatting
+            formatted_key = format_cache_key("simple_cache", self.cache_version, key)
+            self.cache[formatted_key] = value
+            return formatted_key
     cache_manager = SimpleCache()
 
     model_processors = _initialize_model_processors()
@@ -383,12 +400,6 @@ def process_sanity_test_endpoint():
                 results.append(processed_result)
         
         return jsonify(results)
-
-    except FileNotFoundError:
-        return jsonify({"error": "sanity_test.json not found"}), 404
-    except Exception as e:
-        logger.error(f"Error processing sanity test: {e}", exc_info=True)
-        return jsonify({"error": "Internal Server Error"}), 500
 
     except FileNotFoundError:
         return jsonify({"error": "sanity_test.json not found"}), 404
