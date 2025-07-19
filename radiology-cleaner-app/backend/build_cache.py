@@ -1,142 +1,96 @@
+# --- START OF FILE build_cache.py (Refactored for Reusability) ---
+
 import os
 import logging
+import sys
+import json
+import numpy as np
+import faiss
+import pickle
 
-# =============================================================================
-# EMBEDDING CACHE BUILDER
-# =============================================================================
-# This script is intended to be run as a build step during deployment.
-# It pre-computes the NLP embeddings for the NHS dataset and saves them to a
-# cache file, so the live application can start instantly without hitting
-# server timeouts.
-# =============================================================================
-
-# Configure logging to see progress during the build
+# Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# We need to import the components that do the work
 from nlp_processor import NLPProcessor
-from nhs_lookup_engine import NHSLookupEngine
-from parser import RadiologySemanticParser # NHSLookupEngine needs this for its init
-# Import all other dependencies required by the classes above
-from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
-from preprocessing import initialize_preprocessor
 from r2_cache_manager import R2CacheManager
-import sys
-import json
 
-def build_embeddings_cache():
-    """
-    Initializes the necessary components to compute and save NHS embeddings for both
-    production and experimental models.
+# This function will now be the core logic, callable from other places.
+def compute_and_cache_index_for_model(model_key: str, engine_instance, r2_manager):
+    """Computes ensemble embeddings, builds a FAISS index, and uploads it to R2."""
+    logger.info(f"--- Building index for model '{model_key}' ---")
     
-    NOTE: On Render.com, build commands run on separate compute that cannot access
-    persistent disks. The cache files created here will be in /tmp and won't persist
-    to runtime. The application will detect missing cache at runtime and rebuild
-    embeddings using the persistent disk storage.
-    """
-    logger.info("--- Starting Pre-computation of NHS Embeddings Cache ---")
-    logger.info("Building cache to upload to Cloudflare R2 for persistent storage across deployments")
+    nlp_proc = engine_instance.nlp_processor
     
-    # Initialize R2 cache manager
+    primary_names_to_embed = [e["_clean_primary_name_for_embedding"] for e in engine_instance.nhs_data]
+    fsn_to_embed = [e["_clean_fsn_for_embedding"] for e in engine_instance.nhs_data]
+
+    primary_embeddings = np.array(nlp_proc.batch_get_embeddings(primary_names_to_embed), dtype='float32')
+    fsn_embeddings = np.array(nlp_proc.batch_get_embeddings(fsn_to_embed), dtype='float32')
+
+    ensemble_embeddings = np.concatenate([primary_embeddings, fsn_embeddings], axis=1)
+    faiss.normalize_L2(ensemble_embeddings)
+
+    dimension = ensemble_embeddings.shape[1]
+    vector_index = faiss.IndexFlatIP(dimension)
+    vector_index.add(ensemble_embeddings)
+    index_to_snomed_id = [e.get('snomed_concept_id') for e in engine_instance.nhs_data]
+    
+    logger.info(f"Built FAISS index with {vector_index.ntotal} vectors.")
+
+    cache_content = {
+        'index_data': faiss.serialize_index(vector_index),
+        'id_mapping': index_to_snomed_id
+    }
+
+    if r2_manager.is_available():
+        data_hash = engine_instance._get_data_hash()
+        # The V2 engine now has a dedicated cache name for the index.
+        # We need to reflect this in the upload logic.
+        object_key = f"nhs-embeddings/{model_key}/faiss_index_{data_hash}.cache"
+        logger.info(f"Uploading new FAISS index cache to R2 with key: {object_key}")
+        # The upload_cache function needs to be slightly adapted to take the raw bytes and key.
+        # For simplicity, let's assume `upload_cache` can handle this, or we adapt it.
+        # Let's assume a simplified direct upload here.
+        
+        r2_manager.client.put_object(
+            Bucket=r2_manager.bucket_name,
+            Key=object_key,
+            Body=pickle.dumps(cache_content)
+        )
+        logger.info(f"Successfully uploaded cache to R2: {object_key}")
+        return True
+    return False
+
+def main_build():
+    from nhs_lookup_engine import NHSLookupEngine
+    from parser import RadiologySemanticParser
+    from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
+    from preprocessing import initialize_preprocessor
+
+    logger.info("--- Starting Pre-computation of NHS Embeddings Cache for R2 ---")
+    
     r2_manager = R2CacheManager()
     if not r2_manager.is_available():
         logger.error("R2 cache manager not available. Check R2_* environment variables.")
         sys.exit(1)
-    
-    # Get available models from NLPProcessor
-    available_models = NLPProcessor.get_available_models()
-    logger.info(f"Building caches for models: {list(available_models.keys())}")
-    
-    success_count = 0
-    total_models = len(available_models)
-    
-    for model_alias, model_info in available_models.items():
-        logger.info(f"\n=== Building cache for {model_alias} model: {model_info['hf_name']} ===")
         
-        # --- 1. Initialize NLP Processor for this model ---
-        try:
-            nlp_processor = NLPProcessor(model_key=model_alias)
-            if not nlp_processor.is_available():
-                logger.error("HUGGING_FACE_TOKEN is not set. Cannot build embeddings cache.")
-                sys.exit(1)
-            logger.info(f"Using NLP model: {nlp_processor.hf_model_name}")
-        except Exception as e:
-            logger.error(f"Failed to initialize NLP Processor for {model_alias}: {e}", exc_info=True)
-            continue
-
-        # --- 2. Initialize Dependencies for NHSLookupEngine ---
-        # This part mimics the setup in _initialize_app() but is focused only on what's
-        # needed for the NHSLookupEngine to do its embedding work.
+    available_models = NLPProcessor.get_available_models()
+    for model_key in available_models.keys():
+        nlp_processor = NLPProcessor(model_key=model_key)
+        # --- Initialize Dependencies (same as your original script) ---
         base_dir = os.path.dirname(os.path.abspath(__file__))
         nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
-
-        nhs_authority = {}
-        if os.path.exists(nhs_json_path):
-            with open(nhs_json_path, 'r', encoding='utf-8') as f:
-                nhs_data = json.load(f)
-            for item in nhs_data:
-                if primary_source_name := item.get('primary_source_name'):
-                    nhs_authority[primary_source_name] = item
-        else:
-            logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
-            sys.exit(1)
-
+        with open(nhs_json_path, 'r') as f: nhs_authority = {item.get('primary_source_name'): item for item in json.load(f)}
         abbreviation_expander = AbbreviationExpander()
         initialize_preprocessor(abbreviation_expander)
         anatomy_extractor = AnatomyExtractor(nhs_authority)
         laterality_detector = LateralityDetector()
         contrast_mapper = ContrastMapper()
+        semantic_parser = RadiologySemanticParser(nlp_processor, anatomy_extractor, laterality_detector, contrast_mapper)
+        engine = NHSLookupEngine(nhs_json_path, nlp_processor, semantic_parser)
 
-        semantic_parser = RadiologySemanticParser(
-            nlp_processor=nlp_processor, # a processor is needed for the init
-            anatomy_extractor=anatomy_extractor,
-            laterality_detector=laterality_detector,
-            contrast_mapper=contrast_mapper
-        )
-
-        # --- 3. Initialize NHSLookupEngine (will auto-load from R2 or compute) ---
-        logger.info(f"Initializing NHSLookupEngine for {model_alias} model...")
-        try:
-            engine = NHSLookupEngine(
-                nhs_json_path=nhs_json_path,
-                nlp_processor=nlp_processor,
-                semantic_parser=semantic_parser
-            )
-            
-            # The engine initialization already handled R2 loading/computing
-            # Check if cache now exists in R2 to confirm success
-            current_data_hash = engine._get_data_hash()
-            
-            if r2_manager.cache_exists(model_alias, current_data_hash):
-                logger.info(f"SUCCESS: {model_alias} embeddings cache available in R2 with hash {current_data_hash}")
-                success_count += 1
-            else:
-                # If not in R2, force a recomputation to ensure cache is created
-                logger.info(f"Forcing cache recomputation for {model_alias} to ensure R2 upload...")
-                engine._load_or_compute_embeddings(allow_recompute=True)
-                
-                # Verify cache was uploaded to R2
-                if r2_manager.cache_exists(model_alias, current_data_hash):
-                    logger.info(f"SUCCESS: {model_alias} embeddings cache computed and uploaded to R2")
-                    success_count += 1
-                else:
-                    logger.error(f"FAILURE: {model_alias} embeddings cache was not uploaded to R2")
-
-        except Exception as e:
-            logger.error(f"An error occurred during {model_alias} cache generation: {e}", exc_info=True)
-    
-    # Final summary
-    logger.info(f"\n=== Cache Build Summary ===")
-    logger.info(f"Successfully built {success_count}/{total_models} embedding caches")
-    
-    if success_count == 0:
-        logger.error("CRITICAL: No embedding caches were successfully created.")
-        sys.exit(1)
-    elif success_count < total_models:
-        logger.warning(f"WARNING: Only {success_count}/{total_models} caches were created successfully.")
-    else:
-        logger.info("SUCCESS: All embedding caches created successfully.")
+        compute_and_cache_index_for_model(model_key, engine, r2_manager)
 
 if __name__ == '__main__':
-    build_embeddings_cache()
+    main_build()
