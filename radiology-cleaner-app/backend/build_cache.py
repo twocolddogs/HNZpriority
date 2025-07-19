@@ -1,109 +1,97 @@
-# --- START OF FILE build_cache.py (Timestamp-based version) ---
+# --- START OF FILE build_cache.py (Corrected) ---
 
 import os
 import logging
 import sys
 import json
-import numpy as np
-import faiss
 import pickle
+import faiss
+import numpy as np
 from datetime import datetime, timezone
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [BuildCache] - %(message)s')
 logger = logging.getLogger(__name__)
 
 from nlp_processor import NLPProcessor
 from r2_cache_manager import R2CacheManager
+from nhs_lookup_engine import NHSLookupEngine # We will instantiate it to use its helper methods
+from parser import RadiologySemanticParser
+from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
+from preprocessing import initialize_preprocessor
 
-def build_and_upload_for_model(model_key: str, engine_instance, r2_manager):
-    logger.info(f"--- Building index for model '{model_key}' ---")
+def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
+    """
+    Computes the FAISS index for a given model and uploads it to R2 with a timestamped filename.
+    """
+    logger.info(f"\n=== Building and uploading cache for {model_key} model ===")
     
-    nlp_proc = engine_instance.nlp_processor
-    
-    # 1. Compute Embeddings
-    primary_names = [e["_clean_primary_name_for_embedding"] for e in engine_instance.nhs_data]
-    fsn_names = [e["_clean_fsn_for_embedding"] for e in engine_instance.nhs_data]
-    
-    logger.info(f"Step 1/2: Generating embeddings for {len(primary_names)} Primary Names...")
-    primary_embeddings_raw = nlp_proc.batch_get_embeddings(primary_names, context_label="Primary Names")
-    
-    logger.info(f"Step 2/2: Generating embeddings for {len(fsn_names)} FSNs...")
-    fsn_embeddings_raw = nlp_proc.batch_get_embeddings(fsn_names, context_label="FSNs")
+    # 1. Initialize dependencies to create an engine instance
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
+    with open(nhs_json_path, 'r') as f:
+        nhs_authority = {item.get('primary_source_name'): item for item in json.load(f)}
+    abbreviation_expander = AbbreviationExpander()
+    initialize_preprocessor(abbreviation_expander)
+    anatomy_extractor = AnatomyExtractor(nhs_authority)
+    laterality_detector = LateralityDetector()
+    contrast_mapper = ContrastMapper()
+    semantic_parser = RadiologySemanticParser(nlp_processor, anatomy_extractor, laterality_detector, contrast_mapper)
+    engine = NHSLookupEngine(nhs_json_path, nlp_processor, semantic_parser)
 
-    # 2. Filter out failed embeddings and corresponding data
-    valid_indices = [i for i, (p, f) in enumerate(zip(primary_embeddings_raw, fsn_embeddings_raw)) if p is not None and f is not None]
-    
-    if len(valid_indices) != len(primary_embeddings_raw):
-        failed_count = len(primary_embeddings_raw) - len(valid_indices)
-        logger.warning(f"Failed to generate {failed_count} embedding pairs. They will be excluded from the cache.")
-
-    if not valid_indices:
-        logger.error(f"No valid embeddings were generated. Aborting cache build for model '{model_key}'.")
-        return False
-
-    primary_embeddings = np.array([primary_embeddings_raw[i] for i in valid_indices], dtype='float32')
-    fsn_embeddings = np.array([fsn_embeddings_raw[i] for i in valid_indices], dtype='float32')
-    filtered_nhs_data = [engine_instance.nhs_data[i] for i in valid_indices]
-    index_to_snomed_id = [e.get('snomed_concept_id') for e in filtered_nhs_data]
-
-    # 3. Build FAISS Index
+    # 2. Compute the ensemble embeddings and FAISS index
+    logger.info("Computing ensemble embeddings...")
+    primary_names = [e["_clean_primary_name_for_embedding"] for e in engine.nhs_data]
+    fsn_names = [e["_clean_fsn_for_embedding"] for e in engine.nhs_data]
+    primary_embeddings = np.array(nlp_processor.batch_get_embeddings(primary_names), dtype='float32')
+    fsn_embeddings = np.array(nlp_processor.batch_get_embeddings(fsn_names), dtype='float32')
     ensemble_embeddings = np.concatenate([primary_embeddings, fsn_embeddings], axis=1)
     faiss.normalize_L2(ensemble_embeddings)
+    
+    logger.info("Building FAISS index...")
     dimension = ensemble_embeddings.shape[1]
     vector_index = faiss.IndexFlatIP(dimension)
     vector_index.add(ensemble_embeddings)
-    logger.info(f"Built FAISS index with {vector_index.ntotal} vectors.")
+    index_to_snomed_id = [e.get('snomed_concept_id') for e in engine.nhs_data]
 
-    # 4. Prepare Cache Content and Filename
     cache_content = {
         'index_data': faiss.serialize_index(vector_index),
         'id_mapping': index_to_snomed_id
     }
-    cache_bytes = pickle.dumps(cache_content)
     
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
-    object_key = f"caches/{model_key}/{timestamp}.cache"
+    # 3. Create a versioned filename and upload to R2
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
+    filename = f"{timestamp}_faiss_index.cache"
+    object_key = f"caches/{model_key}/{filename}"
 
-    # 5. Upload to R2
-    if not r2_manager.upload_cache(object_key, cache_bytes):
-        logger.error(f"CRITICAL: Failed to upload cache for model '{model_key}'.")
-        return False
-        
-    # 6. Cleanup old caches in R2
-    r2_manager.cleanup_old_caches(model_key, keep=3)
-    return True
+    logger.info(f"Uploading index to R2 with key: {object_key}")
+    success = r2_manager.upload_object(object_key, pickle.dumps(cache_content))
+    
+    if success:
+        logger.info(f"SUCCESS: Uploaded {object_key} to R2.")
+        # As a best practice, clean up old versions in R2
+        r2_manager.cleanup_old_caches(model_key, keep_latest=3)
+    else:
+        logger.error(f"FAILURE: Could not upload {object_key} to R2.")
+    
+    return success
 
 def main_build():
-    from nhs_lookup_engine import NHSLookupEngine
-    from parser import RadiologySemanticParser
-    from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
-    from preprocessing import initialize_preprocessor
-
-    logger.info("--- Starting Pre-computation of NHS Embeddings Cache for R2 (Timestamp Method) ---")
-    
+    logger.info("--- Starting Build and Upload Process ---")
     r2_manager = R2CacheManager()
     if not r2_manager.is_available():
-        logger.error("R2 cache manager not available. Check R2_* environment variables.")
+        logger.error("R2 manager not available. Aborting build.")
         sys.exit(1)
         
-    for model_key in NLPProcessor.get_available_models().keys():
-        logger.info(f"\n=== Processing model: {model_key} ===")
+    available_models = NLPProcessor.get_available_models()
+    success_count = 0
+    for model_key in available_models.keys():
         nlp_processor = NLPProcessor(model_key=model_key)
-        # Initialize dependencies...
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
-        with open(nhs_json_path, 'r') as f: nhs_authority = {item.get('primary_source_name'): item for item in json.load(f)}
-        abbreviation_expander = AbbreviationExpander()
-        initialize_preprocessor(abbreviation_expander)
-        anatomy_extractor = AnatomyExtractor(nhs_authority)
-        laterality_detector = LateralityDetector()
-        contrast_mapper = ContrastMapper()
-        semantic_parser = RadiologySemanticParser(nlp_processor, anatomy_extractor, laterality_detector, contrast_mapper)
-        
-        # We only need the engine for its pre-parsing of NHS data
-        engine = NHSLookupEngine(nhs_json_path, nlp_processor, semantic_parser)
-        
-        build_and_upload_for_model(model_key, engine, r2_manager)
+        if build_and_upload_cache_for_model(model_key, nlp_processor, r2_manager):
+            success_count += 1
+    
+    logger.info(f"\n=== Build Summary: {success_count}/{len(available_models)} caches built and uploaded. ===")
+    if success_count < len(available_models):
+        sys.exit(1)
 
 if __name__ == '__main__':
     main_build()
