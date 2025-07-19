@@ -90,6 +90,34 @@ Since there's no package.json, this project doesn't use npm/node build tools. To
 - Standalone HTML/CSS/JavaScript application
 - No external dependencies or build process required
 
+## Session Startup Protocol
+
+**CRITICAL: At the start of every session, automatically sync with remote repository:**
+
+### Automatic Git Sync Process:
+1. **Always run `git fetch origin`** immediately upon session start
+2. **Check for remote changes** with `git status` after fetch
+3. **If behind remote**: Ask user for confirmation before pulling changes
+4. **If confirmed**: Run `git pull origin develop` to sync local with remote
+5. **If declined**: Proceed with current local state but warn about potential conflicts
+
+### Example Startup Sequence:
+```bash
+# Automatic on session start
+git fetch origin
+git status
+
+# If behind remote, ask: "Remote has X new commits. Pull changes? (y/n)"
+# If yes:
+git pull origin develop
+```
+
+**Benefits:**
+- Prevents merge conflicts from working on outdated code
+- Ensures latest changes are available immediately
+- Maintains awareness of team collaboration
+- Reduces surprise conflicts during development
+
 ## Critical Branch Management Rules
 
 **NEVER make any code changes directly to the `main` branch. Always use the `develop` branch for all modifications.**
