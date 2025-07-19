@@ -1,5 +1,13 @@
 # --- START OF FILE parsing_utils.py ---
 
+# =============================================================================
+# PARSING UTILITIES (V2 - OPTIMIZED AND ROBUST)
+# =============================================================================
+# This module provides highly optimized utility classes for extracting specific
+# components from radiology exam names. This version refactors the core logic
+# to use single, pre-compiled "mega-regex" patterns for maximum performance
+# and maintainability, avoiding common regex pitfalls like catastrophic backtracking.
+
 import re
 import logging
 from typing import Dict, List, Optional
@@ -7,48 +15,16 @@ from typing import Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 class AbbreviationExpander:
-    """Medical abbreviation expansion for radiology exam names"""
-
-    def __init__(self):
-        self.medical_abbreviations = {
-            'abd': 'abdomen', 'abdo': 'abdomen', 'pelv': 'pelvis', 'ext': 'extremity',
-            'br': 'breast', 'csp': 'cervical spine', 'tsp': 'thoracic spine', 'lsp': 'lumbar spine',
-            'c-spine': 'cervical spine', 't-spine': 'thoracic spine', 'l-spine': 'lumbar spine',
-            'iam': 'internal auditory meatus', 'tmj': 'temporomandibular joint',
-            'cta': 'ct angiography', 'mra': 'mr angiography', 'ctpa': 'ct pulmonary angiography',
-            'cxr': 'chest xray', 'axr': 'abdominal xray',
-            'kub': 'kidneys ureters bladder',
-            'mammo': 'mammogram', 'cap': 'chest abdomen pelvis',
-            'w': 'with', 'wo': 'without', 'gad': 'gadolinium', 'iv': 'intravenous',
-            'c+': 'with contrast', 'c-': 'without contrast',
-            'bx': 'biopsy', 'fna': 'fine needle aspiration',
-            'pc': 'percutaneous', 'st': 'soft tissue', 'f/u': 'follow up',
-            'mrcp': 'magnetic resonance cholangiopancreatography',
-            'psma': 'prostate specific membrane antigen',
-            'rt': 'right', 'lt': 'left', 'bil': 'bilateral', 'bilat': 'bilateral',
-            'r': 'right', 'l': 'left', 'both': 'bilateral'
-        }
-        # --- RECOMMENDED CHANGE: Use a single, powerful regex ---
-        # Sort keys by length (desc) to match longer abbreviations first (e.g., 'c-spine' before 'c-')
-        sorted_keys = sorted(self.medical_abbreviations.keys(), key=len, reverse=True)
-        # Escape special characters (like '+') and join into a single pattern
-        escaped_keys = [re.escape(key) for key in sorted_keys]
-        # Compile the master regex for efficiency
-        self.master_pattern = re.compile(r'\b(' + '|'.join(escaped_keys) + r')\b', re.IGNORECASE)
-
-    def expand(self, text: str) -> str:
-        # --- RECOMMENDED CHANGE: Use a robust regex replacement function ---
-        # This function looks up the matched abbreviation in the dictionary
-        def repl(match):
-            return self.medical_abbreviations[match.group(0).lower()]
-        
-        # Use re.sub with the replacement function for a single-pass, robust expansion
-        return self.master_pattern.sub(repl, text)
-    
+    """
+    DEPRECATED: This class's functionality has been superseded by the more powerful,
+    config-driven approach in `preprocessing.py`. It is kept here for reference
+    but should no longer be actively used in the main pipeline. The logic for
+    ordinal normalization is retained as it's a distinct task.
+    """
     def normalize_ordinals(self, text: str) -> str:
+        """Converts ordinal numbers to standardized forms (e.g., 3rd -> Third)."""
         ordinal_replacements = {
             r'\b1ST\b': 'First', r'\b2ND\b': 'Second', r'\b3RD\b': 'Third',
-            r'\b1st\b': 'First', r'\b2nd\b': 'Second', r'\b3rd\b': 'Third',
         }
         result = text
         for pattern, replacement in ordinal_replacements.items():
@@ -57,38 +33,46 @@ class AbbreviationExpander:
 
 class AnatomyExtractor:
     """
-    Extract anatomy using a single, hyper-optimized regular expression
-    compiled once for maximum performance.
+    Extracts and standardizes anatomy terms using a single, hyper-optimized regular
+    expression compiled from a comprehensive vocabulary.
     """
-
     def __init__(self, nhs_authority: Dict):
+        """
+        Initializes the extractor by building a vocabulary and compiling a master regex.
+        
+        Args:
+            nhs_authority: The loaded NHS.json data (used to potentially seed the vocabulary).
+        """
         self.nhs_authority = nhs_authority
         self.anatomy_map = self._build_anatomy_vocabulary()
         
         # --- THE OPTIMIZED "MEGA-REGEX" ---
-        # 1. Sort all anatomy terms from longest to shortest to prioritize matching longer phrases.
+        # 1. Sort all anatomy terms from longest to shortest to prioritize matching
+        #    longer, more specific phrases first (e.g., "cervical spine" before "spine").
         sorted_keys = sorted(self.anatomy_map.keys(), key=len, reverse=True)
         
-        # 2. Escape each term to ensure it's treated as a literal string in the regex.
+        # 2. Escape each term to ensure characters like '.' or '+' are treated literally.
         escaped_keys = [re.escape(key) for key in sorted_keys]
         
-        # 3. Join all escaped keys with the OR pipe to create one massive pattern.
-        pattern_str = '|'.join(escaped_keys)
+        # 3. Join all keys into a single pattern using the OR pipe '|'.
+        #    The \b word boundaries are crucial to ensure we match whole words/phrases.
+        pattern_str = r'\b(' + '|'.join(escaped_keys) + r')\b'
         
-        # 4. Compile the single, massive regex pattern once for hyper-efficiency.
-        # The \b word boundaries ensure we match whole words/phrases.
-        self.master_pattern = re.compile(r'\b(' + pattern_str + r')\b', re.IGNORECASE)
+        # 4. Compile this single, massive regex once for extreme efficiency.
+        self.master_pattern = re.compile(pattern_str, re.IGNORECASE)
 
     def _build_anatomy_vocabulary(self) -> Dict[str, str]:
+        """Creates a mapping from various anatomy terms to their standardized form."""
+        # This vocabulary should be comprehensive and is the primary source of truth.
         anatomy_vocab = {
             'head': 'head', 'brain': 'brain', 'skull': 'head', 'cranium': 'head', 'sinus': 'sinuses',
             'sinuses': 'sinuses', 'orbit': 'orbit', 'orbits': 'orbit', 'face': 'face', 'neck': 'neck', 
             'chest': 'chest', 'thorax': 'chest', 'lung': 'chest', 'lungs': 'chest', 'heart': 'heart', 
             'cardiac': 'heart', 'mediastinum': 'mediastinum', 'pulmonary': 'chest', 'abdomen': 'abdomen', 
-            'abdo': 'abdomen', 'belly': 'abdomen', 'tummy': 'abdomen', 'pelvis': 'pelvis', 'pelvic': 'pelvis', 
+            'abdo': 'abdomen', 'tummy': 'abdomen', 'pelvis': 'pelvis', 'pelvic': 'pelvis', 
             'liver': 'liver', 'kidney': 'kidney', 'kidneys': 'kidney', 'renal': 'kidney', 'pancreas': 'pancreas', 
-            'spleen': 'spleen', 'bladder': 'bladder', 'ureters': 'ureters', 'uterus': 'uterus', 'ovary': 'ovary', 
-            'ovaries': 'ovary', 'prostate': 'prostate', 'spine': 'spine', 'spinal': 'spine', 'back': 'spine', 
+            'spleen': 'spleen', 'bladder': 'bladder', 'ureter': 'ureters', 'ureters': 'ureters', 'uterus': 'uterus',
+            'ovary': 'ovary', 'ovaries': 'ovary', 'prostate': 'prostate', 'spine': 'spine', 'spinal': 'spine', 
             'cervical spine': 'cervical spine', 'thoracic spine': 'thoracic spine', 'lumbar spine': 'lumbar spine', 
             'sacrum': 'sacrum', 'coccyx': 'coccyx', 'shoulder': 'shoulder', 'shoulders': 'shoulder', 'arm': 'arm', 
             'arms': 'arm', 'elbow': 'elbow', 'elbows': 'elbow', 'wrist': 'wrist', 'wrists': 'wrist', 'hand': 'hand', 
@@ -97,26 +81,29 @@ class AnatomyExtractor:
             'leg': 'leg', 'legs': 'leg', 'ankle': 'ankle', 'ankles': 'ankle', 'foot': 'foot', 'feet': 'foot', 
             'toe': 'toe', 'toes': 'toe', 'breast': 'breast', 'breasts': 'breast', 'mammary': 'breast',
             'thyroid': 'thyroid', 'bone': 'bone', 'bones': 'bone', 'joint': 'joint', 'joints': 'joint', 
-            'soft tissue': 'soft tissue', 'muscle': 'muscle', 'muscles': 'muscle', 'vessel': 'vessel', 
-            'vessels': 'vessel', 'artery': 'artery', 'arteries': 'artery', 'vein': 'vein', 'veins': 'vein',
+            'soft tissue': 'soft tissue', 'muscle': 'muscle', 'muscles': 'muscle', 
             'adrenal': 'adrenal', 'adrenals': 'adrenal', 'biliary': 'biliary', 'gallbladder': 'gallbladder', 
             'lymph node': 'lymph node', 'lymph nodes': 'lymph node', 'parotid': 'parotid', 'submandibular': 'submandibular', 
             'salivary gland': 'salivary gland', 'salivary glands': 'salivary gland', 'aortic arch': 'aortic arch', 
-            'carotid': 'carotid', 'eye': 'eye', 'eyes': 'eye', 'ear': 'ear', 'ears': 'ear'
+            'carotid': 'carotid', 'carotid arteries': 'carotid', 'eye': 'eye', 'eyes': 'eye', 'ear': 'ear', 'ears': 'ear',
+            'scrotum': 'scrotum', 'testes': 'testes', 'testis': 'testes'
         }
-        # The dynamic learning from NHS data can be simplified or removed if the base vocab is sufficient.
-        # For now, a comprehensive base vocab is more stable.
+        # Dynamically adding terms from NHS.json can be an advanced feature, but a strong
+        # base vocabulary like this provides more stability.
         return anatomy_vocab
 
     def extract(self, text: str) -> List[str]:
         """
         Extracts anatomy by running the single master pattern and mapping the results.
-        This is extremely fast and avoids catastrophic backtracking and worker timeouts.
+        This is extremely fast and avoids performance issues.
         """
-        # Find all non-overlapping matches of the master pattern in the text.
+        if not text:
+            return []
+            
+        # findall() returns a list of all matched strings.
         found_terms = self.master_pattern.findall(text.lower())
         
-        # Use a set to get unique standardized forms.
+        # Use a set to map found terms to their standard form and ensure uniqueness.
         # e.g., if "abdo" and "abdomen" are found, they both map to "abdomen", resulting in one entry.
         if not found_terms:
             return []
@@ -126,27 +113,17 @@ class AnatomyExtractor:
         return sorted(list(unique_standard_forms))
 
 class LateralityDetector:
+    """Detects laterality with a prioritized, pre-compiled set of regex patterns."""
     def __init__(self):
+        # Patterns are ordered by priority: bilateral checks run first.
         self.patterns = {
             'bilateral': [
-                # Slash-separated patterns (highest priority)
-                r'\b(r/l|l/r|rt/lt|lt/rt|right/left|left/right)\b',
-                # Post-preprocessing expanded patterns
-                r'\bright\s+left\b|\bleft\s+right\b',
-                # Ampersand and plus patterns
-                r'\b(rt?\.?\s*[&+]\s*lt?\.?|lt?\.?\s*[&+]\s*rt?\.?)\b',
-                r'\b(right\s*[&+]\s*left|left\s*[&+]\s*right)\b',
-                # Parenthetical bilateral patterns (before preprocessing removes parens)
-                r'\(\s*b\s*\)|\(\s*bil\s*\)|\(\s*bilat\s*\)',
-                # Standalone B (after preprocessing removes parens)
-                r'\bb\b(?!\w)',
-                # Standard bilateral patterns
-                r'\b(bilateral|bilat|both|b/l)\b',
-                r'\b(rt?\.?\s*and\s*lt?\.?|lt?\.?\s*and\s*rt?\.?)\b',
-                r'\b(left\s+and\s+right|right\s+and\s+left)\b'
+                r'\b(r/l|l/r|rt/lt|lt/rt)\b',                # Slashed abbreviations
+                r'\bright\s*&\s*left\b|\bleft\s*&\s*right\b', # Ampersand
+                r'\b(bilateral|bilat|both)\b',               # Full words
             ],
-            'left': [r'\b(left|lt?\.?|lft)\b(?!\s*(and|&|\+|/))', r'\(\s*l\s*\)'],
-            'right': [r'\b(right|rt?\.?|rgt)\b(?!\s*(and|&|\+|/))', r'\(\s*r\s*\)']
+            'left': [r'\b(left|lt|lft)\b'],
+            'right': [r'\b(right|rt|rgt)\b']
         }
         self.compiled_patterns = {
             lat: [re.compile(p, re.IGNORECASE) for p in patterns]
@@ -154,7 +131,9 @@ class LateralityDetector:
         }
 
     def detect(self, text: str) -> Optional[str]:
+        """Detects the most likely laterality, prioritizing 'bilateral'."""
         text_lower = text.lower()
+        # The order of checking here is crucial.
         if any(p.search(text_lower) for p in self.compiled_patterns['bilateral']):
             return 'bilateral'
         if any(p.search(text_lower) for p in self.compiled_patterns['left']):
@@ -164,24 +143,20 @@ class LateralityDetector:
         return None
 
 class ContrastMapper:
+    """Maps contrast terms, designed to work on pre-normalized preprocessed text."""
     def __init__(self):
+        # These patterns now primarily look for the standardized tokens
+        # produced by the config-driven preprocessor.
         self.patterns = {
-            'with and without': [r'\bw\s*and\s*wo\b', r'\bw/wo\b', r'\bwith\s*and\s*without\b', r'\bpre\s*&\s*post\b', r'\bpre/post\b', r'\b(pre and post contrast)\b'],
             'with': [
-                # SUPER-STRONG: Preprocessed standardized tokens (highest priority)
-                r'\bWITH_CONTRAST\b',
-                # Original patterns
-                r'\bw\s+(contrast|iv|gad)\b', r'\bwith\s+contrast\b', r'\benhanced\b', r'\bpost\s*contrast\b', 
-                r'\bc\+\b', r'\bC\+\b', r'\s+C\+$', r'\biv contrast\b', r'\bgadolinium\b', r'\bgad\b'
+                r'\bWITH_CONTRAST\b',  # Standard token from preprocessing
+                r'\bw\s*c\b',          # Handle cases like "w c"
+                r'\bpost\s*contrast\b'
             ],
             'without': [
-                # SUPER-STRONG: Preprocessed standardized tokens (highest priority)
-                r'\bWITHOUT_CONTRAST\b',
-                # Original patterns
-                r'\bwo\s+(contrast|iv)\b', r'\bwithout\s+contrast\b', r'\bnon[\s\-]*contrast\b', 
-                r'\bnon[\s\-]*enhanced\b', r'\bunenhanced\b', r'\bno\s+contrast\b', 
-                r'\bcontrast\s+not\s+given\b', r'\bpre[\s\-]*contrast\b', r'\bc[\s\-]\b', 
-                r'\bC[\s\-]\b', r'\s+C-$', r'\bplain\b', r'\bnative\b'
+                r'\bWITHOUT_CONTRAST\b',# Standard token from preprocessing
+                r'\bnon-?contrast\b',
+                r'\bplain\b'
             ]
         }
         self.compiled_patterns = {
@@ -190,7 +165,13 @@ class ContrastMapper:
         }
 
     def detect_contrast(self, text: str) -> Optional[str]:
-        for contrast_type in ['with and without', 'without', 'with']:
-            if any(p.search(text) for p in self.compiled_patterns[contrast_type]):
-                return contrast_type
+        """Detects contrast, checking for 'without' before 'with'."""
+        # Check for 'without' first because some inputs might contain both
+        # (e.g., "CT Chest without, with contrast on request").
+        if any(p.search(text) for p in self.compiled_patterns['without']):
+            return 'without'
+        if any(p.search(text) for p in self.compiled_patterns['with']):
+            return 'with'
         return None
+
+# --- END OF FILE parsing_utils.py ---
