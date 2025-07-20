@@ -61,10 +61,10 @@ class StatusManager {
                 this.container.id = 'statusMessageContainer';
                 this.container.className = 'status-message-container';
                 
-                // Insert after progress bar
-                const progressBar = document.getElementById('progressBar');
-                if (progressBar && progressBar.parentNode) {
-                    progressBar.parentNode.insertBefore(this.container, progressBar.nextSibling);
+                // Insert after file info
+                const fileInfo = document.getElementById('fileInfo');
+                if (fileInfo && fileInfo.parentNode) {
+                    fileInfo.parentNode.insertBefore(this.container, fileInfo.nextSibling);
                 } else {
                     // Fallback: insert at the top of the page
                     document.body.insertBefore(this.container, document.body.firstChild);
@@ -471,7 +471,7 @@ function getBatchSize() {
         return parseInt(window.ENV.NLP_BATCH_SIZE);
     }
     // Default batch size (same as backend default)
-    return 1000;
+    return 25;
 }
 
 // --- UTILITY FUNCTIONS (globally accessible) ---
@@ -705,8 +705,6 @@ window.addEventListener('DOMContentLoaded', function() {
     const demosSection = document.getElementById('demosSection');
     const fileInput = document.getElementById('fileInput');
     const fileInfo = document.getElementById('fileInfo');
-    const progressBar = document.getElementById('progressBar');
-    const progressFill = document.getElementById('progressFill');
     const resultsSection = document.getElementById('resultsSection');
     const resultsBody = document.getElementById('resultsBody');
 
@@ -1067,7 +1065,6 @@ window.addEventListener('DOMContentLoaded', function() {
         showUploadInterface();
         resultsSection.style.display = 'none';
         fileInfo.style.display = 'none';
-        progressBar.style.display = 'none';
         
         // Reset file input
         fileInput.value = '';
@@ -1101,9 +1098,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 color: var(--color-gray-700, #555);
                 font-weight: 500;
             `;
-            // Insert after progress bar
-            const progressBar = document.getElementById('progressBar');
-            progressBar.parentNode.insertBefore(newStatusDiv, progressBar.nextSibling);
+            // Insert after file info
+            const fileInfo = document.getElementById('fileInfo');
+            fileInfo.parentNode.insertBefore(newStatusDiv, fileInfo.nextSibling);
         }
         document.getElementById('statusMessage').innerHTML = message;
         document.getElementById('statusMessage').style.display = 'block';
@@ -1117,10 +1114,6 @@ window.addEventListener('DOMContentLoaded', function() {
         for (let i = 0; i < codes.length; i++) {
             const code = codes[i];
             
-            // Update progress message every 10 items or so
-            if (i % 10 === 0 || i === codes.length - 1) {
-                updateStatusMessage(`Processing exam ${i + 1} of ${codes.length}: "${code.EXAM_NAME}"...`);
-            }
             
             try {
                 const response = await fetch(API_URL, {
@@ -1154,7 +1147,6 @@ window.addEventListener('DOMContentLoaded', function() {
                 console.error(`Failed to parse code: ${code.EXAM_NAME}`, error);
                 allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
             }
-            progressFill.style.width = `${((i + 1) / codes.length) * 100}%`;
         }
         
         // Individual processing complete
@@ -1166,7 +1158,7 @@ window.addEventListener('DOMContentLoaded', function() {
         console.log(`Using batch processing for ${codes.length} records...`);
         
         // Update status message
-        updateStatusMessage(`Preparing ${codes.length} exam records for processing...`);
+        statusManager.show(`Preparing ${codes.length} exam records for processing...`, 'info', 4000);
         
         try {
             // Transform codes to the expected format for batch API
@@ -1177,25 +1169,21 @@ window.addEventListener('DOMContentLoaded', function() {
                 exam_code: code.EXAM_CODE
             }));
             
-            // Set progress to 25% while sending batch request
-            progressFill.style.width = '25%';
-            updateStatusMessage(`Sending ${codes.length} exam records to AI processing engine...`);
+            statusManager.show(`Sending ${codes.length} exam records to AI processing engine...`, 'progress', 6000);
             
             const response = await fetch(BATCH_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     exams: exams,
-                    chunk_size: 1000, // Process in chunks of 1000
+                    chunk_size: getBatchSize(), // Use configured batch size
                     model: currentModel
                 })
             });
             
             if (!response.ok) throw new Error(`Batch API returned status ${response.status}`);
             
-            // Set progress to 75% while processing response
-            progressFill.style.width = '75%';
-            updateStatusMessage(`🧠 AI engine processing exam names using biomedical BERT model...`);
+            statusManager.show(`🧠 AI engine processing exam names using biomedical BERT model...`, 'progress', 7000);
             
             const batchResult = await response.json();
             
@@ -1233,24 +1221,34 @@ window.addEventListener('DOMContentLoaded', function() {
             // Log batch processing stats and update user
             if (batchResult.processing_stats) {
                 const stats = batchResult.processing_stats;
-                const hitRate = (stats.cache_hit_ratio * 100).toFixed(1);
                 const formattedTime = formatProcessingTime(stats.processing_time_ms);
-                updateStatusMessage(`Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${formattedTime} total`);
-                console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${formattedTime} total`);
+                
+                // Handle optional cache statistics
+                if (stats.cache_hits !== undefined && stats.cache_hit_ratio !== undefined) {
+                    const hitRate = (stats.cache_hit_ratio * 100).toFixed(1);
+                    statusManager.show(`Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${formattedTime} total`, 'success', 8000);
+                    console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${formattedTime} total`);
+                } else {
+                    statusManager.show(`Processing complete! ${stats.successful} successful, ${formattedTime} total`, 'success', 8000);
+                    console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${formattedTime} total`);
+                }
             } else {
-                updateStatusMessage(`Processing complete! ${allMappings.length} exam records processed successfully.`);
+                statusManager.show(`Processing complete! ${allMappings.length} exam records processed successfully.`, 'success', 8000);
             }
             
         } catch (error) {
             console.error('Batch processing failed:', error);
-            updateStatusMessage(`Batch processing failed, falling back to individual processing...`);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+            statusManager.show(`Batch processing failed: ${error.message}. Falling back to individual processing...`, 'warning', 6000);
             // Fall back to individual processing if batch fails
             console.log('Falling back to individual processing...');
             await processIndividually(codes);
         }
         
-        // Set progress to 100%
-        progressFill.style.width = '100%';
     }
 
     // --- CORE LOGIC ---
@@ -1265,8 +1263,6 @@ window.addEventListener('DOMContentLoaded', function() {
         
         fileInfo.innerHTML = `<strong>File loaded:</strong> ${file.name} (${formatFileSize(file.size)})`;
         fileInfo.style.display = 'block';
-        progressBar.style.display = 'block';
-        progressFill.style.width = '0%';
         resultsSection.style.display = 'none';
         allMappings = [];
         summaryData = null;
@@ -1281,13 +1277,12 @@ window.addEventListener('DOMContentLoaded', function() {
                 const codes = JSON.parse(e.target.result);
                 if (!Array.isArray(codes) || codes.length === 0) {
                     alert('JSON file is empty or not in the correct array format.');
-                    progressBar.style.display = 'none';
                     showUploadInterface();
                     return;
                 }
 
                 console.log(`Processing ${codes.length} exam records...`);
-                updateStatusMessage(`📁 Loaded ${codes.length} exam records from ${file.name}. Starting processing...`);
+                statusManager.show(`📁 Loaded ${codes.length} exam records from ${file.name}. Starting processing...`, 'info', 5000);
         
                 
                 await processBatch(codes);
@@ -1296,7 +1291,6 @@ window.addEventListener('DOMContentLoaded', function() {
 
              } catch (error) {
                 alert('Error processing file: ' + error.message);
-                progressBar.style.display = 'none';
                 showUploadInterface();
              }
 };
@@ -1317,8 +1311,6 @@ window.addEventListener('DOMContentLoaded', function() {
             button.innerHTML = 'Processing Test Cases...';
             fileInfo.innerHTML = `<strong>Test running:</strong> Verifying engine performance...`;
             fileInfo.style.display = 'block';
-            progressBar.style.display = 'block';
-            progressFill.style.width = '25%';
             updateStatusMessage(`Calling backend sanity test endpoint with model: '${currentModel}'...`);
 
             // Debug: Log the URL being called
@@ -1331,8 +1323,6 @@ window.addEventListener('DOMContentLoaded', function() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ model: currentModel })
             });
-            
-            progressFill.style.width = '75%';
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -1341,9 +1331,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
             allMappings = await response.json();
             console.log(`Completed processing. Generated ${allMappings.length} results.`);
-            
-            progressFill.style.width = '100%';
-            updateStatusMessage(`Sanity test complete!`);
+            statusManager.show(`Sanity test complete!`, 'success', 5000);
             
             // Run analysis on the results
             runAnalysis(allMappings);
@@ -1351,7 +1339,6 @@ window.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Sanity test failed:', error);
             fileInfo.innerHTML = `<div class="file-details error"><h3>❌ Sanity Test Failed</h3><p><strong>Error:</strong> ${error.message}</p></div>`;
-            progressBar.style.display = 'none';
             showUploadInterface();
         } finally {
             // Restore button state
@@ -1368,6 +1355,7 @@ window.addEventListener('DOMContentLoaded', function() {
         generateConsolidatedResults(mappings);
         generateSourceLegend(mappings);
         resultsSection.style.display = 'block';
+        // NOTE: Upload interface stays hidden - only restored via "New Upload" button
     }
 
     function updateResultsTitle() {
