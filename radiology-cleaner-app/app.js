@@ -83,6 +83,16 @@ class StatusManager {
         this.stageMessage = null;
         this.statsMessage = null;
     }
+
+    // --- NEW: Clear persistent messages like stage, stats, and progress ---
+    clearPersistentMessages() {
+        if (this.progressMessage) this.remove(this.progressMessage);
+        if (this.stageMessage) this.remove(this.stageMessage);
+        if (this.statsMessage) this.remove(this.statsMessage);
+        this.progressMessage = null;
+        this.stageMessage = null;
+        this.statsMessage = null;
+    }
     
     // Show a status message with type (info, success, warning, error, network, progress)
     show(message, type = 'info', autoHideDuration = 0, id = null) {
@@ -207,75 +217,17 @@ class StatusManager {
         }, 300);
     }
     
-    // Show a progress status message with details
+    // --- UPDATED: Show a progress status message (text only) ---
     showProgress(message, current, total, type = 'progress') {
-        // Calculate percentage
         const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
-        
-        // Create or update progress message
+        const progressContent = `${message} <span class="status-progress-text">${current}/${total} (${percentage}%)</span>`;
+
         if (!this.progressMessage) {
             // Create new progress status
-            const id = this.show(
-                `${message} <div class="status-progress-text">${current}/${total} (${percentage}%)</div>`, 
-                type
-            );
-            
-            const messageElement = this.activeMessages.get(id);
-            
-            // Add progress bar
-            const progressElement = document.createElement('div');
-            progressElement.className = 'status-progress-bar';
-            progressElement.style.cssText = `
-                width: 100%;
-                height: 4px;
-                background: var(--color-gray-200, #eee);
-                border-radius: 2px;
-                margin-top: 8px;
-                overflow: hidden;
-            `;
-            
-            const progressFill = document.createElement('div');
-            progressFill.className = 'status-progress-fill';
-            progressFill.style.cssText = `
-                height: 100%;
-                background: var(--color-${type === 'progress' ? 'primary' : type}, #3f51b5);
-                width: ${percentage}%;
-                transition: width 0.3s ease;
-            `;
-            
-            progressElement.appendChild(progressFill);
-            messageElement.querySelector('.status-text').appendChild(progressElement);
-            
-            this.progressMessage = id;
+            this.progressMessage = this.show(progressContent, type);
         } else {
             // Update existing progress status
-            const messageElement = this.activeMessages.get(this.progressMessage);
-            if (!messageElement) {
-                // If message was removed, create a new one
-                this.progressMessage = null;
-                return this.showProgress(message, current, total, type);
-            }
-            
-            // Update progress text
-            const progressText = messageElement.querySelector('.status-progress-text');
-            if (progressText) {
-                progressText.textContent = `${current}/${total} (${percentage}%)`;
-            }
-            
-            // Update progress bar fill
-            const progressFill = messageElement.querySelector('.status-progress-fill');
-            if (progressFill) {
-                
-            }
-            
-            // Update message text (keeping the progress text)
-            const textElement = messageElement.querySelector('.status-text');
-            if (textElement) {
-                // Replace text content but keep the progress elements
-                const progressElements = textElement.querySelectorAll('.status-progress-text, .status-progress-bar');
-                textElement.innerHTML = message;
-                progressElements.forEach(el => textElement.appendChild(el));
-            }
+            this.update(this.progressMessage, progressContent);
         }
         
         return this.progressMessage;
@@ -299,7 +251,7 @@ class StatusManager {
         return this.stageMessage;
     }
     
-    // Show processing statistics
+    // --- UPDATED: Show processing statistics in a compact, single row ---
     showStats(stats) {
         const {
             elapsedTime,
@@ -316,22 +268,10 @@ class StatusManager {
         
         const statsMessage = `
             <div class="processing-stats">
-                <div class="stats-row">
-                    <div class="stats-label">Elapsed Time:</div>
-                    <div class="stats-value">${formattedTime}</div>
-                </div>
-                <div class="stats-row">
-                    <div class="stats-label">Processing Rate:</div>
-                    <div class="stats-value">${itemsPerSecond} items/sec</div>
-                </div>
-                <div class="stats-row">
-                    <div class="stats-label">Cache Hit Rate:</div>
-                    <div class="stats-value">${cacheHitRate}%</div>
-                </div>
-                <div class="stats-row">
-                    <div class="stats-label">Errors:</div>
-                    <div class="stats-value">${errors}</div>
-                </div>
+                <div class="stats-item"><strong>Time:</strong> ${formattedTime}</div>
+                <div class="stats-item"><strong>Rate:</strong> ${itemsPerSecond} items/sec</div>
+                <div class="stats-item"><strong>Cache:</strong> ${cacheHitRate}%</div>
+                <div class="stats-item"><strong>Errors:</strong> ${errors}</div>
             </div>
         `;
         
@@ -374,7 +314,7 @@ class StatusManager {
         return `${(value / total * 100).toFixed(precision)}%`;
     }
     
-    // Inject required CSS styles for animations
+    // --- UPDATED: Inject required CSS styles with changes for stats display ---
     injectStyles() {
         const styleId = 'status-manager-styles';
         if (document.getElementById(styleId)) return;
@@ -421,23 +361,23 @@ class StatusManager {
                 font-size: 13px;
                 opacity: 0.9;
             }
+            /* --- UPDATED: Styles for single-row stats --- */
             .processing-stats {
                 display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            .stats-row {
-                display: flex;
-                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 16px;
+                align-items: center;
+                width: 100%;
                 font-size: 13px;
             }
-            .stats-label {
-                font-weight: 500;
-                color: var(--color-gray-600, #666);
+            .stats-item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
             }
-            .stats-value {
+            .stats-item strong {
                 font-weight: 600;
-                color: var(--color-gray-800, #333);
+                color: var(--color-gray-600, #666);
             }
             .current-exam {
                 display: flex;
@@ -1310,8 +1250,11 @@ window.addEventListener('DOMContentLoaded', function() {
                 allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
             }
             
-            // Update progress bar
-            
+            // --- FIX: Update the main progress bar incrementally during individual processing. ---
+            const mainProgressBarFill = document.querySelector('#progressBar .progress-fill');
+            if (mainProgressBarFill) {
+                mainProgressBarFill.style.width = `${((i + 1) / codes.length) * 100}%`;
+            }
             
             // Show processing stats every 10 items or at the end
             if (i % 10 === 0 || i === codes.length - 1) {
@@ -1500,27 +1443,14 @@ window.addEventListener('DOMContentLoaded', function() {
                 const formattedTime = formatProcessingTime(stats.processing_time_ms);
                 
                 // Show processing stats
-                statusManager.show(
-                    `<div class="batch-stats">
-                        <div class="stats-row">
-                            <div class="stats-label">Successful:</div>
-                            <div class="stats-value">${stats.successful} exams</div>
-                        </div>
-                        <div class="stats-row">
-                            <div class="stats-label">Cache Hits:</div>
-                            <div class="stats-value">${stats.cache_hits} exams (${hitRate}%)</div>
-                        </div>
-                        <div class="stats-row">
-                            <div class="stats-label">Processing Time:</div>
-                            <div class="stats-value">${formattedTime}</div>
-                        </div>
-                        <div class="stats-row">
-                            <div class="stats-label">Model Used:</div>
-                            <div class="stats-value">${formatModelName(stats.model_used)}</div>
-                        </div>
-                    </div>`,
-                    'info', 8000
-                );
+                statusManager.showStats({
+                    elapsedTime: stats.processing_time_ms,
+                    processedItems: stats.successful,
+                    totalItems: codes.length,
+                    cacheHits: stats.cache_hits,
+                    errors: stats.errors,
+                    itemsPerSecond: stats.items_per_second
+                });
                 
                 console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${formattedTime} total`);
             } else {
@@ -1549,6 +1479,9 @@ window.addEventListener('DOMContentLoaded', function() {
         
         
         
+        // --- UPDATED: Clear persistent messages before showing the final completion notice ---
+        statusManager.clearPersistentMessages();
+
         // Show completion message
         const elapsedTime = Date.now() - processingState.startTime;
         const formattedTime = formatProcessingTime(elapsedTime);
@@ -1604,7 +1537,12 @@ window.addEventListener('DOMContentLoaded', function() {
         `;
         fileInfo.style.display = 'block';
         progressBar.style.display = 'block';
-        progressFill.style.width = '0%';
+        
+        const progressFill = document.querySelector('#progressBar .progress-fill');
+        if (progressFill) {
+            progressFill.style.width = '0%';
+        }
+
         resultsSection.style.display = 'none';
         allMappings = [];
         summaryData = null;
@@ -1689,7 +1627,11 @@ window.addEventListener('DOMContentLoaded', function() {
             `;
             fileInfo.style.display = 'block';
             progressBar.style.display = 'block';
-            progressFill.style.width = '25%';
+            
+            const progressFill = document.querySelector('#progressBar .progress-fill');
+            if (progressFill) {
+                progressFill.style.width = '0%';
+            }
             
             // Clear any existing status messages
             statusManager.clearAll();
@@ -1728,7 +1670,7 @@ window.addEventListener('DOMContentLoaded', function() {
             );
             
             // Process each test case
-            const allMappings = [];
+            const processedMappings = [];
             
             for (let i = 0; i < sanityTestCodes.length; i++) {
                 const code = sanityTestCodes[i];
@@ -1739,6 +1681,10 @@ window.addEventListener('DOMContentLoaded', function() {
                     `Processing sanity test cases...`,
                     i + 1, sanityTestCodes.length
                 );
+                
+                if (progressFill) {
+                    progressFill.style.width = `${((i + 1) / sanityTestCodes.length) * 100}%`;
+                }
                 
                 // Show status only every 10th test case to reduce verbosity
                 if (i % 10 === 0 || i === sanityTestCodes.length - 1) {
@@ -1769,7 +1715,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     // Add the original data and processed result
-                    allMappings.push({
+                    processedMappings.push({
                         ...code,
                         clean_name: parsed.clean_name || 'UNKNOWN',
                         components: parsed.components || {},
@@ -1791,10 +1737,8 @@ window.addEventListener('DOMContentLoaded', function() {
                     );
                     
                     processingState.errors++;
-                    allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
+                    processedMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
                 }
-                
-                // Status cleanup handled by periodic progress messages
                 
                 // Show processing stats every 10 items or at the end
                 if (i % 10 === 0 || i === sanityTestCodes.length - 1) {
@@ -1805,7 +1749,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     statusManager.showStats({
                         elapsedTime,
                         processedItems: processingState.processedItems,
-                        totalItems: processingState.totalItems,
+                        totalItems: sanityTestCodes.length,
                         cacheHits: processingState.cacheHits,
                         errors: processingState.errors,
                         itemsPerSecond
@@ -1813,6 +1757,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
+            // --- UPDATED: Clear persistent messages before showing final completion notice ---
+            statusManager.clearPersistentMessages();
+
             // Processing complete
             const elapsedTime = Date.now() - processingState.startTime;
             const formattedTime = formatProcessingTime(elapsedTime);
@@ -1823,7 +1770,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     <div class="complete-message">
                         <div class="complete-title">Sanity Test Complete</div>
                         <div class="complete-details">
-                            <span>${allMappings.length} test cases processed</span>
+                            <span>${processedMappings.length} test cases processed</span>
                             <span>${processingState.errors} errors</span>
                             <span>${formattedTime} total time</span>
                         </div>
@@ -1835,10 +1782,10 @@ window.addEventListener('DOMContentLoaded', function() {
             processingState.isProcessing = false;
             
             // Generate and display results
-            console.log('🧪 Sanity test results:', allMappings);
+            console.log('🧪 Sanity test results:', processedMappings);
             
             // Show analysis and visualizations for the test results
-            runAnalysis(allMappings);
+            runAnalysis(processedMappings);
             
         } catch (error) {
             console.error('❌ Sanity test failed:', error);
@@ -1857,19 +1804,26 @@ window.addEventListener('DOMContentLoaded', function() {
             // Reset UI
             button.disabled = false;
             button.innerHTML = 'Run Sanity Test';
-            progressFill.style.width = '0%';
             showUploadInterface();
         }
     }
 
     // --- ANALYSIS AND DISPLAY FUNCTIONS ---
     function runAnalysis(mappings) {
+        allMappings = mappings;
+
         summaryData = generateAnalyticsSummary(mappings);
         updateStatsUI(summaryData);
         updateResultsTitle();
         displayResults(mappings);
         generateConsolidatedResults(mappings);
         generateSourceLegend(mappings);
+
+        const progressFill = document.querySelector('#progressBar .progress-fill');
+        if (progressFill) {
+            progressFill.style.width = '100%';
+        }
+        
         resultsSection.style.display = 'block';
     }
 
