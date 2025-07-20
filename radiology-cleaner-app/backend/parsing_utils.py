@@ -1,12 +1,11 @@
 # --- START OF FILE parsing_utils.py ---
 
 # =============================================================================
-# PARSING UTILITIES (V2 - OPTIMIZED AND ROBUST)
+# PARSING UTILITIES (V2.2 - FULLY NORMALIZED)
 # =============================================================================
-# This module provides highly optimized utility classes for extracting specific
-# components from radiology exam names. This version refactors the core logic
-# to use single, pre-compiled "mega-regex" patterns for maximum performance
-# and maintainability, avoiding common regex pitfalls like catastrophic backtracking.
+# This version simplifies BOTH the ContrastMapper and LateralityDetector to
+# work exclusively with pre-normalized tokens from the config-driven preprocessor.
+# This creates a single source of truth for all abbreviation logic.
 
 import re
 import logging
@@ -37,33 +36,15 @@ class AnatomyExtractor:
     expression compiled from a comprehensive vocabulary.
     """
     def __init__(self, nhs_authority: Dict):
-        """
-        Initializes the extractor by building a vocabulary and compiling a master regex.
-        
-        Args:
-            nhs_authority: The loaded NHS.json data (used to potentially seed the vocabulary).
-        """
         self.nhs_authority = nhs_authority
         self.anatomy_map = self._build_anatomy_vocabulary()
         
-        # --- THE OPTIMIZED "MEGA-REGEX" ---
-        # 1. Sort all anatomy terms from longest to shortest to prioritize matching
-        #    longer, more specific phrases first (e.g., "cervical spine" before "spine").
         sorted_keys = sorted(self.anatomy_map.keys(), key=len, reverse=True)
-        
-        # 2. Escape each term to ensure characters like '.' or '+' are treated literally.
         escaped_keys = [re.escape(key) for key in sorted_keys]
-        
-        # 3. Join all keys into a single pattern using the OR pipe '|'.
-        #    The \b word boundaries are crucial to ensure we match whole words/phrases.
         pattern_str = r'\b(' + '|'.join(escaped_keys) + r')\b'
-        
-        # 4. Compile this single, massive regex once for extreme efficiency.
         self.master_pattern = re.compile(pattern_str, re.IGNORECASE)
 
     def _build_anatomy_vocabulary(self) -> Dict[str, str]:
-        """Creates a mapping from various anatomy terms to their standardized form."""
-        # This vocabulary should be comprehensive and is the primary source of truth.
         anatomy_vocab = {
             'head': 'head', 'brain': 'brain', 'skull': 'head', 'cranium': 'head', 'sinus': 'sinuses',
             'sinuses': 'sinuses', 'orbit': 'orbit', 'orbits': 'orbit', 'face': 'face', 'neck': 'neck', 
@@ -88,42 +69,31 @@ class AnatomyExtractor:
             'carotid': 'carotid', 'carotid arteries': 'carotid', 'eye': 'eye', 'eyes': 'eye', 'ear': 'ear', 'ears': 'ear',
             'scrotum': 'scrotum', 'testes': 'testes', 'testis': 'testes'
         }
-        # Dynamically adding terms from NHS.json can be an advanced feature, but a strong
-        # base vocabulary like this provides more stability.
         return anatomy_vocab
 
     def extract(self, text: str) -> List[str]:
-        """
-        Extracts anatomy by running the single master pattern and mapping the results.
-        This is extremely fast and avoids performance issues.
-        """
         if not text:
             return []
-            
-        # findall() returns a list of all matched strings.
         found_terms = self.master_pattern.findall(text.lower())
-        
-        # Use a set to map found terms to their standard form and ensure uniqueness.
-        # e.g., if "abdo" and "abdomen" are found, they both map to "abdomen", resulting in one entry.
         if not found_terms:
             return []
-            
         unique_standard_forms = {self.anatomy_map[term] for term in found_terms}
-        
         return sorted(list(unique_standard_forms))
 
 class LateralityDetector:
-    """Detects laterality with a prioritized, pre-compiled set of regex patterns."""
+    """
+    Detects laterality from a pre-normalized string. Assumes abbreviations like
+    'RT' or 'BILAT' have already been expanded to 'right' or 'bilateral'.
+    """
     def __init__(self):
-        # Patterns are ordered by priority: bilateral checks run first.
+        # --- CRITICAL FIX IS HERE ---
+        # The patterns are now extremely simple and only look for the final,
+        # standardized words. The logic for "rt", "l/r", etc., now lives
+        # exclusively in config.yaml.
         self.patterns = {
-            'bilateral': [
-                r'\b(r/l|l/r|rt/lt|lt/rt)\b',                # Slashed abbreviations
-                r'\bright\s*&\s*left\b|\bleft\s*&\s*right\b', # Ampersand
-                r'\b(bilateral|bilat|both)\b',               # Full words
-            ],
-            'left': [r'\b(left|lt|lft)\b'],
-            'right': [r'\b(right|rt|rgt)\b']
+            'bilateral': [r'\bbilateral\b'],
+            'left': [r'\bleft\b'],
+            'right': [r'\bright\b']
         }
         self.compiled_patterns = {
             lat: [re.compile(p, re.IGNORECASE) for p in patterns]
@@ -131,9 +101,10 @@ class LateralityDetector:
         }
 
     def detect(self, text: str) -> Optional[str]:
-        """Detects the most likely laterality, prioritizing 'bilateral'."""
+        """Detects the standardized laterality term, prioritizing 'bilateral'."""
         text_lower = text.lower()
-        # The order of checking here is crucial.
+        # The order of checking is crucial to correctly handle strings that might
+        # contain multiple terms post-processing (e.g., from a complex original string).
         if any(p.search(text_lower) for p in self.compiled_patterns['bilateral']):
             return 'bilateral'
         if any(p.search(text_lower) for p in self.compiled_patterns['left']):
@@ -143,23 +114,15 @@ class LateralityDetector:
         return None
 
 class ContrastMapper:
-    """Maps contrast terms, designed to work on pre-normalized preprocessed text."""
+    """
+    Maps contrast terms from a pre-normalized string. Assumes abbreviations
+    have already been standardized by the config-driven preprocessor.
+    """
     def __init__(self):
-        # These patterns now primarily look for the standardized tokens
-        # produced by the config-driven preprocessor.
+        # The patterns now ONLY look for the final standardized terms.
         self.patterns = {
-            'with': [
-                r'\bWITH_CONTRAST\b',  # Standard token from preprocessing
-                r'\bw\s*c\b',          # Handle cases like "w c"
-                r'\bpost\s*contrast\b',
-                r'\bc\+\b'             # Handle "C+" notation
-            ],
-            'without': [
-                r'\bWITHOUT_CONTRAST\b',# Standard token from preprocessing
-                r'\bnon[-\s]?contrast\b', # Handle "non-contrast", "non contrast", "noncontrast"
-                r'\bplain\b',
-                r'\bc-\b'               # Handle "C-" notation
-            ]
+            'with': [r'\bwith contrast\b'],
+            'without': [r'\bwithout contrast\b']
         }
         self.compiled_patterns = {
             ctype: [re.compile(p, re.IGNORECASE) for p in patterns]
@@ -167,9 +130,7 @@ class ContrastMapper:
         }
 
     def detect_contrast(self, text: str) -> Optional[str]:
-        """Detects contrast, checking for 'without' before 'with'."""
-        # Check for 'without' first because some inputs might contain both
-        # (e.g., "CT Chest without, with contrast on request").
+        """Detects the final, standardized contrast term."""
         if any(p.search(text) for p in self.compiled_patterns['without']):
             return 'without'
         if any(p.search(text) for p in self.compiled_patterns['with']):
