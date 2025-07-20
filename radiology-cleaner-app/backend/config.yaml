@@ -6,16 +6,16 @@ scoring:
   # Rebalanced based on training data analysis for better accuracy
   weights_component:
     anatomy: 0.35      # Reduced from 0.50 - less reliance on extraction accuracy
-    modality: 0.25     # Increased from 0.20 - modality is most reliable component
+    modality: 0.30     # Increased from 0.20 - modality is most reliable component
     laterality: 0.15   # Increased from 0.10 - important for precise matching
-    contrast: 0.15     # Increased from 0.10 - clinically significant differentiator
+    contrast: 0.10     # Increased from 0.10 - clinically significant differentiator
     technique: 0.10    # Unchanged - least reliable component
 
   # Final weights for combining the component score and the semantic score.
   # Enhanced with frequency-based scoring for popular exams
   weights_final:
-    component: 0.55    # Reduced from 0.60 to balance with semantic
-    semantic: 0.35     # Reduced from 0.40 to make room for frequency
+    component: 0.60    # Reduced from 0.60 to balance with semantic
+    semantic: 0.40     # Reduced from 0.40 to make room for frequency
     #frequency: 0.10    # NEW: popularity-based scoring for common exams
 
   # Bonuses and penalties applied to the final score.
@@ -113,11 +113,11 @@ preprocessing:
     "NON CONTRAST": "without contrast"
     "NON-CONTRAST": "without contrast"
     "NO CONTRAST": "without contrast"
-    "CONTRAST": "with contrast"
     "IV CONTRAST": "with contrast"
     "ORAL CONTRAST": "with contrast"
     "GAD": "with contrast"
     "GADOLINIUM": "with contrast"
+    "PRIMOVIST": "with contrast"
     
     # AGE/GENDER CONTEXT PATTERNS - Super-strong detection
     "PAED": "paediatric"

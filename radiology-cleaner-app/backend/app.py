@@ -172,17 +172,19 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
         return {'error': 'Core components not initialized'}
     
     cleaned_exam_name = preprocess_exam_name(exam_name)
-    # The parser might not need the NLP processor, but the lookup engine definitely does
     parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
     
-    # PASS THE PROCESSOR TO THE LOOKUP ENGINE
+    # The lookup engine performs the match and returns a dictionary with the correct final structure.
     nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components, custom_nlp_processor=nlp_processor)
     
-    # Finalize the result structure
+    # --- CRITICAL FIX IS HERE ---
+    # The nhs_result now contains a nested 'components' dictionary. We just use it directly.
+    components_from_engine = nhs_result.get('components', {})
+
     final_result = {
-        'data_source': 'N/A', # Placeholder, could be passed in
-        'modality_code': modality_code or parsed_input_components.get('modality', 'Other'),
-        'exam_code': 'N/A', # Placeholder
+        'data_source': 'N/A',
+        'modality_code': components_from_engine.get('modality'),
+        'exam_code': 'N/A',
         'exam_name': exam_name,
         'clean_name': nhs_result.get('clean_name', cleaned_exam_name),
         'snomed': {
@@ -193,14 +195,18 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             'laterality_fsn': nhs_result.get('snomed_laterality_fsn', '')
         },
         'components': {
-            'anatomy': nhs_result.get('anatomy', []),
-            'laterality': nhs_result.get('laterality', []),
-            'contrast': nhs_result.get('contrast', []),
-            'technique': nhs_result.get('technique', []),
-            'gender_context': detect_gender_context(cleaned_exam_name, nhs_result.get('anatomy', [])),
+            # Directly use the components from the authoritative engine result
+            'anatomy': components_from_engine.get('anatomy', []),
+            'laterality': components_from_engine.get('laterality', []),
+            'contrast': components_from_engine.get('contrast', []),
+            'technique': components_from_engine.get('technique', []),
+            
+            # Contexts are calculated once on the cleaned input for consistency
+            'gender_context': detect_gender_context(cleaned_exam_name, components_from_engine.get('anatomy', [])),
             'age_context': detect_age_context(cleaned_exam_name),
-            'clinical_context': detect_clinical_context(cleaned_exam_name, nhs_result.get('anatomy', [])),
-            'confidence': nhs_result.get('confidence', 0.0)
+            'clinical_context': detect_clinical_context(cleaned_exam_name, components_from_engine.get('anatomy', [])),
+            
+            'confidence': components_from_engine.get('confidence', 0.0)
         }
     }
     return final_result

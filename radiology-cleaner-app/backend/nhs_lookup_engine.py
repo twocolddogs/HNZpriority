@@ -182,25 +182,43 @@ class NHSLookupEngine:
         if best_match:
             input_laterality = (extracted_input_components.get('laterality') or [None])[0]
             match_laterality = (best_match.get('_parsed_components', {}).get('laterality') or [None])[0]
-            
-            if not input_laterality and match_laterality in ['left', 'right']:
-                bilateral_peer = self.find_bilateral_peer(best_match)
-                if bilateral_peer:
-                    logger.info(f"Ambiguous laterality: Swapping '{best_match.get('primary_source_name')}' for peer '{bilateral_peer.get('primary_source_name')}'.")
-                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc)
+            strip_laterality = (not input_laterality and match_laterality in ['left', 'right'])
 
-            return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc)
+            if strip_laterality:
+                if bilateral_peer := self.find_bilateral_peer(best_match):
+                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=False)
+
+            return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=strip_laterality)
         
         return {'clean_name': input_exam, 'snomed_id': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
+
+    def _calculate_laterality_score(self, input_lat: Optional[str], nhs_lat: Optional[str]) -> float:
+        """Calculates a more punitive score for laterality mismatches."""
+        if input_lat == nhs_lat:
+            return 1.0  # Perfect match
+        if not input_lat or not nhs_lat:
+            return 0.7  # Ambiguous match (e.g., input "Knee" vs NHS "Knee Rt")
+        return 0.1  # Direct mismatch (e.g., input "Left" vs NHS "Right")
 
     def _calculate_match_score(self, input_exam_text, input_components, nhs_entry, semantic_score, interventional_score, specificity_penalty):
         nhs_components = nhs_entry.get('_parsed_components', {})
         w = self.config['weights_component']
+        
+        # --- MODIFICATION: Use more punitive laterality scoring ---
+        input_lat = (input_components.get('laterality') or [None])[0]
+        nhs_lat = (nhs_components.get('laterality') or [None])[0]
+        laterality_score = self._calculate_laterality_score(input_lat, nhs_lat)
+        
         anatomy_score = self._calculate_set_score(input_components, nhs_components, 'anatomy')
         modality_score = self._calculate_modality_score(input_components.get('modality'), nhs_components.get('modality'))
-        laterality_score = 1.0 if (input_components.get('laterality') or [None])[0] == (nhs_components.get('laterality') or [None])[0] else 0.5
         contrast_score = self._calculate_contrast_score((input_components.get('contrast') or [None])[0], (nhs_components.get('contrast') or [None])[0])
         technique_score = self._calculate_set_score(input_components, nhs_components, 'technique')
+        
+        # --- MODIFICATION: Add heavy penalty for modality mismatch ---
+        if modality_score == 0.0:
+             # If modalities are completely different (e.g., CT vs US), slash the confidence.
+            return 0.0
+
         component_score = (w['anatomy'] * anatomy_score + w['modality'] * modality_score + w['laterality'] * laterality_score + w['contrast'] * contrast_score + w['technique'] * technique_score)
         
         wf = self.config['weights_final']
@@ -216,30 +234,32 @@ class NHSLookupEngine:
             
         return max(0.0, min(1.0, final_score))
 
-    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor) -> Dict:
-        
+    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False) -> Dict:
+        """
+        Formats the final result, ensuring it contains a fully populated 'components'
+        dictionary for consistent processing by the calling function.
+        """
         model_name = getattr(nlp_proc, 'model_key', 'default').split('/')[-1]
-        source_name = f'UNIFIED_MATCH_V2_4_CONFIG_{model_name.upper()}'
+        source_name = f'UNIFIED_MATCH_V2_5_PRECISION_{model_name.upper()}'
         is_interventional = bool(best_match.get('_interventional_terms', []))
         
-        # Start with the authoritative name from the matched NHS entry.
         clean_name = best_match.get('primary_source_name', '')
-        
-        # --- MODIFICATION START ---
-        # Check if the original input was ambiguous and we've matched to a bilateral/both entry.
-        # This condition detects if the "smart swap" in standardize_exam() was triggered.
-        input_laterality = (extracted_input_components.get('laterality') or [None])[0]
-        match_components = best_match.get('_parsed_components', {})
-        match_laterality = (match_components.get('laterality') or [None])[0]
 
-        if not input_laterality and match_laterality == 'bilateral':
-            # If so, remove "Both" or "Bilateral" from the clean_name to reflect
-            # the user's ambiguous input, while keeping the correct bilateral components.
-            clean_name = re.sub(r'\s+\b(both|bilateral)\b', '', clean_name, flags=re.I).strip()
-        # --- MODIFICATION END ---
-            
-        # Final Output Assembly
-        # The 'components' dictionary MUST reflect the user's original parsed input for accuracy.
+        if strip_laterality_from_name:
+            clean_name = re.sub(r'\s+(lt|rt|left|right|both|bilateral)$', '', clean_name, flags=re.I).strip()
+
+        input_contrast = (extracted_input_components.get('contrast') or [None])[0]
+        if input_contrast == 'with' and 'with contrast' not in clean_name.lower():
+            clean_name += " with contrast"
+
+        # --- CRITICAL FIX IS HERE ---
+        # Create the nested 'components' dictionary that app.py expects.
+        # This dictionary includes all parsed components AND the final confidence score.
+        final_components = {
+            **extracted_input_components,  # Unpack anatomy, laterality, contrast, technique
+            'confidence': confidence
+        }
+        
         return {
             'clean_name': clean_name.strip(),
             'snomed_id': best_match.get('snomed_concept_id', ''),
@@ -248,9 +268,8 @@ class NHSLookupEngine:
             'snomed_laterality_fsn': best_match.get('snomed_laterality_fsn', ''),
             'is_diagnostic': not is_interventional,
             'is_interventional': is_interventional,
-            'confidence': confidence,
             'source': source_name,
-            **extracted_input_components  # This ensures the output components match the input
+            'components': final_components # Return the components nested under one key
         }
 
     def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
