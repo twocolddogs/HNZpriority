@@ -84,9 +84,22 @@ class ExamPreprocessor:
         cleaned = text
         
         # Apply all medical abbreviations from config.
+        # Special handling for patterns with special characters like C+ and C-
         for abbrev, expansion in self.medical_abbreviations.items():
-            pattern = r'\b' + re.escape(abbrev) + r'\b'
-            cleaned = re.sub(pattern, expansion, cleaned, flags=re.IGNORECASE)
+            if any(char in abbrev for char in ['+', '-']):
+                # For abbreviations with + or -, use a more flexible pattern that doesn't require word boundaries after the symbol
+                escaped_abbrev = re.escape(abbrev)
+                # Match the abbreviation at word boundaries but allow symbols at the end
+                pattern = r'\b' + escaped_abbrev + r'(?=\s|$)'
+                cleaned = re.sub(pattern, expansion, cleaned, flags=re.IGNORECASE)
+            elif any(char in abbrev for char in ['/', '(', ')']):
+                # For other special characters, use standard escaping
+                pattern = r'\b' + re.escape(abbrev) + r'\b'
+                cleaned = re.sub(pattern, expansion, cleaned, flags=re.IGNORECASE)
+            else:
+                # Standard word boundary approach for normal abbreviations
+                pattern = r'\b' + re.escape(abbrev) + r'\b'
+                cleaned = re.sub(pattern, expansion, cleaned, flags=re.IGNORECASE)
         
         # Apply anatomy synonyms normalization from config.
         for synonym, standard in self.anatomy_synonyms.items():
