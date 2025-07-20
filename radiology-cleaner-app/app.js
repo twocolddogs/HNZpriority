@@ -1995,8 +1995,8 @@ window.addEventListener('DOMContentLoaded', function() {
             const snomedFsnCell = row.insertCell();
             if (item.snomed && item.snomed.fsn) {
                 let snomedContent = `<div>${item.snomed.fsn}</div>`;
-                if (item.snomed.id) {
-                    snomedContent += `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.id}</div>`;
+                if (item.snomed.concept_id) {
+                    snomedContent += `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.concept_id}</div>`;
                 }
                 snomedFsnCell.innerHTML = snomedContent;
             } else {
