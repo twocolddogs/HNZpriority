@@ -557,71 +557,14 @@ window.addEventListener('DOMContentLoaded', function() {
     console.log(`API base URL: ${apiConfig.baseUrl}`);
     console.log(`Models URL: ${MODELS_URL}`);
     
-    // ------------------------------------------------------------------
-    //  UNIVERSAL FETCH WITH TIMEOUT & RETRY (💡 used for all network IO)
-    // ------------------------------------------------------------------
-    /**
-     * Perform a fetch with automatic timeout and retry-on-failure.
-     * @param {string} url – request URL
-     * @param {object} options – fetch options (method, headers, body …)
-     * @param {number} maxRetries – how many times to retry (default 3)
-     * @param {number} timeoutMs – per-attempt timeout in ms (default 10000)
-     */
-    async function fetchWithRetry(url, options = {}, maxRetries = 3, timeoutMs = 10000) {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), timeoutMs);
-            try {
-                // Network activity handled silently
-                
-                const res = await fetch(url, { ...options, signal: controller.signal });
-                clearTimeout(id);
-                // Treat non-2xx as failure but still return the response
-                if (!res.ok) {
-                    if (attempt === maxRetries) {
-                        if (timeoutMs > 5000) {
-                            statusManager.show(`Server returned error: ${res.status} ${res.statusText}`, 'error');
-                        }
-                        return res; // let caller decide
-                    }
-                    console.warn(`Fetch ${url} failed (status ${res.status}), retrying ${attempt}/${maxRetries}…`);
-                    statusManager.show(`Request failed (${res.status}), retrying...`, 'warning', 3000);
-                } else {
-                    // Connection successful - no status message needed
-                    return res;
-                }
-            } catch (err) {
-                clearTimeout(id);
-                if (attempt === maxRetries || err.name === 'AbortError') {
-                    if (err.name === 'AbortError') {
-                        statusManager.show(`Request timed out after ${timeoutMs/1000}s`, 'error');
-                    } else {
-                        statusManager.show(`Connection error: ${err.message}`, 'error');
-                    }
-                    throw err;
-                }
-                console.warn(`Fetch ${url} error '${err}', retrying ${attempt}/${maxRetries}…`);
-                statusManager.show(`Connection error, retrying (${attempt}/${maxRetries})...`, 'warning', 3000);
-            }
-            // exponential backoff: 0.5s,1s,2s…
-            await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt - 1)));
-        }
-    }
-
     async function testApiConnectivity() {
         try {
-            // Test connectivity silently
-            const response = await fetchWithRetry(apiConfig.HEALTH_URL, { method: 'GET' }, 2, 5000);
-            if (response.ok) {
-                console.log('✓ API connectivity test passed');
-                // No status message - silent success
-            } else {
-                console.warn('⚠ API health check failed:', response.status);
-                // Only show error if API is completely down
-            }
+            // CORRECTED: Use the full, pre-constructed URL.
+            const response = await fetch(apiConfig.HEALTH_URL, { method: 'GET', timeout: 5000 });
+            if (response.ok) console.log('✓ API connectivity test passed');
+            else console.warn('⚠ API health check failed:', response.status);
         } catch (error) {
             console.error('✗ API connectivity test failed:', error);
-            // Only show error if API is completely down
         }
     }
     testApiConnectivity();
@@ -630,24 +573,20 @@ window.addEventListener('DOMContentLoaded', function() {
     async function loadAvailableModels() {
         try {
             console.log('🔍 Fetching available models from backend...');
-            // Load models silently
-            const response = await fetchWithRetry(MODELS_URL, { method: 'GET' }, 2, 8000);
+            const response = await fetch(MODELS_URL, { method: 'GET', timeout: 5000 });
             if (response.ok) {
                 const modelsData = await response.json();
                 availableModels = modelsData.models || {};
                 currentModel = modelsData.default_model || 'default';
                 
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
-                statusManager.show(`${Object.keys(availableModels).length} AI models loaded`, 'success', 2000);
                 buildModelSelectionUI();
             } else {
                 console.warn('⚠ Models API unavailable, using fallback models');
-                statusManager.show('Could not load models from server, using fallbacks', 'warning', 5000);
                 useFallbackModels();
             }
         } catch (error) {
             console.error('✗ Failed to load models:', error);
-            statusManager.show('Failed to load AI models, using fallbacks', 'error', 5000);
             useFallbackModels();
         }
     }
@@ -722,10 +661,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 button.title = `${modelInfo.name} is currently unavailable`;
                 description.style.color = '#999';
             } else {
-                button.addEventListener('click', () => {
-                    console.log(`🖱️ Model button clicked: ${modelKey}`);
-                    switchModel(modelKey);
-                });
+                button.addEventListener('click', () => switchModel(modelKey));
             }
             
             modelWrapper.appendChild(button);
@@ -761,16 +697,8 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- STATE ---
     let allMappings = [];
     let summaryData = null;
-    // currentModel and availableModels are now global variables
-    let processingState = {
-        isProcessing: false,
-        currentStage: '',
-        totalItems: 0,
-        processedItems: 0,
-        startTime: 0,
-        cacheHits: 0,
-        errors: 0
-    };
+    let currentModel = 'default'; // Initialize the current model
+    let availableModels = {}; // Store available models from API
 
     // --- DOM ELEMENTS ---
     const uploadSection = document.getElementById('uploadSection');
@@ -778,7 +706,7 @@ window.addEventListener('DOMContentLoaded', function() {
     const fileInput = document.getElementById('fileInput');
     const fileInfo = document.getElementById('fileInfo');
     const progressBar = document.getElementById('progressBar');
-    
+    const progressFill = document.getElementById('progressFill');
     const resultsSection = document.getElementById('resultsSection');
     const resultsBody = document.getElementById('resultsBody');
 
@@ -1147,83 +1075,64 @@ window.addEventListener('DOMContentLoaded', function() {
         // Clear global state
         allMappings = [];
         summaryData = null;
-        processingState = {
-            isProcessing: false,
-            currentStage: '',
-            totalItems: 0,
-            processedItems: 0,
-            startTime: 0,
-            cacheHits: 0,
-            errors: 0
-        };
         
         // Clear any status messages
-        statusManager.clearAll();
+        const existingStatus = document.getElementById('statusMessage');
+        if (existingStatus) existingStatus.style.display = 'none';
         
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // --- STATUS MESSAGING ---
+    function updateStatusMessage(message) {
+        const statusDiv = document.getElementById('statusMessage');
+        if (!statusDiv) {
+            // Create status message div if it doesn't exist
+            const newStatusDiv = document.createElement('div');
+            newStatusDiv.id = 'statusMessage';
+            newStatusDiv.style.cssText = `
+                margin: 10px 0;
+                padding: 12px 16px;
+                background: var(--color-info-light, #e3f2fd);
+                border: 1px solid var(--color-info, #2196f3);
+                border-radius: 6px;
+                font-size: 14px;
+                color: var(--color-gray-700, #555);
+                font-weight: 500;
+            `;
+            // Insert after progress bar
+            const progressBar = document.getElementById('progressBar');
+            progressBar.parentNode.insertBefore(newStatusDiv, progressBar.nextSibling);
+        }
+        document.getElementById('statusMessage').innerHTML = message;
+        document.getElementById('statusMessage').style.display = 'block';
+    }
+
     // --- CORE PROCESSING FUNCTIONS ---
     // Process files individually (for small files)
     async function processIndividually(codes) {
-        // Initialize processing state
-        processingState = {
-            isProcessing: true,
-            currentStage: 'Individual Processing',
-            totalItems: codes.length,
-            processedItems: 0,
-            startTime: Date.now(),
-            cacheHits: 0,
-            errors: 0
-        };
-        
-        // Show initial progress status
-        statusManager.showProgress(
-            `Processing ${codes.length} exam records individually...`,
-            0, codes.length
-        );
+        updateStatusMessage(`Processing ${codes.length} exam records individually (one by one)...`);
         
         for (let i = 0; i < codes.length; i++) {
             const code = codes[i];
             
-            // Update progress every item
-            processingState.processedItems = i + 1;
-            statusManager.showProgress(
-                `Processing exam records individually...`,
-                i + 1, codes.length
-            );
-            
-            // Show detailed status only every 10th exam to reduce verbosity
+            // Update progress message every 10 items or so
             if (i % 10 === 0 || i === codes.length - 1) {
-                statusManager.show(
-                    `Processing exam ${i + 1}/${codes.length}: ${code.EXAM_NAME}`,
-                    'processing', 1000 // Auto-clear after 1 second
-                );
+                updateStatusMessage(`Processing exam ${i + 1} of ${codes.length}: "${code.EXAM_NAME}"...`);
             }
             
             try {
-                // Process exam without verbose API stages (progress bar shows overall progress)
-                
-                const response = await fetchWithRetry(API_URL, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ exam_name: code.EXAM_NAME, modality_code: code.MODALITY_CODE, model: currentModel })
-                }, 3, 15000); // 3 retries, 15 second timeout for individual processing
-                
+                });
                 if (!response.ok) throw new Error(`API returned status ${response.status}`);
                 
                 const parsed = await response.json();
-                
-                // Check for cache hit
-                if (parsed.metadata && parsed.metadata.cache_hit) {
-                    processingState.cacheHits++;
-                }
-                
-                // Status updates handled by periodic progress messages
-                
                 allMappings.push({
-                    data_source: code.DATA_SOURCE || 'Unknown',
+                    data_source: code.DATA_SOURCE,
                     modality_code: code.MODALITY_CODE,
                     exam_code: code.EXAM_CODE,
                     exam_name: code.EXAM_NAME,
@@ -1243,60 +1152,21 @@ window.addEventListener('DOMContentLoaded', function() {
                 });
             } catch (error) {
                 console.error(`Failed to parse code: ${code.EXAM_NAME}`, error);
-                
-                // Error handled by periodic progress messages
-                
-                processingState.errors++;
                 allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
             }
-            
-            // --- FIX: Update the main progress bar incrementally during individual processing. ---
-            const mainProgressBarFill = document.querySelector('#progressBar .progress-fill');
-            if (mainProgressBarFill) {
-                mainProgressBarFill.style.width = `${((i + 1) / codes.length) * 100}%`;
-            }
-            
-            // Show processing stats every 10 items or at the end
-            if (i % 10 === 0 || i === codes.length - 1) {
-                const elapsedTime = Date.now() - processingState.startTime;
-                const itemsPerSecond = processingState.processedItems > 0 ? 
-                    Math.round((processingState.processedItems / (elapsedTime / 1000)) * 10) / 10 : 0;
-                
-                statusManager.showStats({
-                    elapsedTime,
-                    processedItems: processingState.processedItems,
-                    totalItems: processingState.totalItems,
-                    cacheHits: processingState.cacheHits,
-                    errors: processingState.errors,
-                    itemsPerSecond
-                });
-            }
+            progressFill.style.width = `${((i + 1) / codes.length) * 100}%`;
         }
         
-        // Processing complete - completion message shown by main calling function
-        const elapsedTime = Date.now() - processingState.startTime;
-        console.log(`Individual processing completed: ${allMappings.length} records in ${formatProcessingTime(elapsedTime)}`);
-        
-        processingState.isProcessing = false;
+        // Individual processing complete
+        updateStatusMessage(`Individual processing complete! ${allMappings.length} exam records processed.`);
     }
     
     // Process files in batches (for large files)
     async function processBatch(codes) {
         console.log(`Using batch processing for ${codes.length} records...`);
         
-        // Initialize processing state
-        processingState = {
-            isProcessing: true,
-            currentStage: 'Batch Processing',
-            totalItems: codes.length,
-            processedItems: 0,
-            startTime: Date.now(),
-            cacheHits: 0,
-            errors: 0
-        };
-        
-        // Show initial processing stage
-        statusManager.showStage('Preparation', `Preparing ${codes.length} exam records for batch processing`);
+        // Update status message
+        updateStatusMessage(`Preparing ${codes.length} exam records for processing...`);
         
         try {
             // Transform codes to the expected format for batch API
@@ -1307,79 +1177,32 @@ window.addEventListener('DOMContentLoaded', function() {
                 exam_code: code.EXAM_CODE
             }));
             
+            // Set progress to 25% while sending batch request
+            progressFill.style.width = '25%';
+            updateStatusMessage(`Sending ${codes.length} exam records to AI processing engine...`);
             
-            
-            // Show API call stage with animated indicator
-            statusManager.showStage(
-                'API Request', 
-                `Sending ${codes.length} exam records to AI processing engine`
-            );
-            
-            // Show detailed request information
-            statusManager.show(
-                `<div class="request-details">
-                    <div class="request-row">
-                        <div class="request-label">Endpoint:</div>
-                        <div class="request-value">${BATCH_API_URL}</div>
-                    </div>
-                    <div class="request-row">
-                        <div class="request-label">Model:</div>
-                        <div class="request-value">${formatModelName(currentModel)}</div>
-                    </div>
-                    <div class="request-row">
-                        <div class="request-label">Batch Size:</div>
-                        <div class="request-value">${getBatchSize()} records per chunk</div>
-                    </div>
-                </div>`,
-                'network'
-            );
-            
-            const response = await fetchWithRetry(BATCH_API_URL, {
+            const response = await fetch(BATCH_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     exams: exams,
-                    chunk_size: getBatchSize(), // Configurable batch size (matches backend NLP_BATCH_SIZE)
+                    chunk_size: 1000, // Process in chunks of 1000
                     model: currentModel
                 })
-            }, 2, 30000); // 2 retries, 30 second timeout for batch processing
+            });
             
-            if (!response.ok) {
-                throw new Error(`Batch API returned status ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Batch API returned status ${response.status}`);
             
+            // Set progress to 75% while processing response
+            progressFill.style.width = '75%';
+            updateStatusMessage(`🧠 AI engine processing exam names using biomedical BERT model...`);
             
+            const batchResult = await response.json();
             
-            // Show processing stage
-            statusManager.showStage(
-                'AI Processing', 
-                `Processing exam names with ${formatModelName(currentModel)} biomedical language model`
-            );
-            
-            // Show detailed processing steps
-            // Show simple processing message instead of verbose step animation
-            statusManager.show('Processing exams with AI engine...', 'progress', 2000);
-            
-            // Parse response
-            let batchResult;
-            try {
-                batchResult = await response.json();
-            } catch (parseError) {
-                throw new Error(`Failed to parse response JSON: ${parseError.message}`);
-            }
-            
-            // Show results stage
-            statusManager.showStage('Processing Results', 'Organizing and analyzing processed data');
-            
-            // Validate response structure
-            if (!batchResult || typeof batchResult !== 'object') {
-                throw new Error('Invalid response format from batch API');
-            }
-            
-            // Process batch results
+            // Process batch results - updated format from HEAD
             if (batchResult.results) {
                 allMappings = batchResult.results.map(item => ({
-                    data_source: item.input.data_source || 'Unknown',
+                    data_source: item.input.data_source,
                     modality_code: item.input.modality_code,
                     exam_code: item.input.exam_code,
                     exam_name: item.input.exam_name,
@@ -1390,35 +1213,11 @@ window.addEventListener('DOMContentLoaded', function() {
                         clinical_equivalents: item.output.clinical_equivalents || []
                     }
                 }));
-                
-                // Update processing state
-                processingState.processedItems = allMappings.length;
             }
             
-            // Handle any errors from batch processing
+            // Handle any errors from batch processing - updated format from HEAD
             if (batchResult.errors && batchResult.errors.length > 0) {
                 console.error('Errors returned from batch processing:', batchResult.errors);
-                
-                // Show error summary
-                statusManager.show(
-                    `<div class="error-summary">
-                        <div class="error-title">Processing Errors</div>
-                        <div class="error-count">${batchResult.errors.length} exams failed</div>
-                        <div class="error-list">
-                            ${batchResult.errors.slice(0, 3).map(err => 
-                                `<div class="error-item">
-                                    <span class="error-exam">${err.original_exam.exam_name}</span>
-                                    <span class="error-message">${err.error}</span>
-                                </div>`
-                            ).join('')}
-                            ${batchResult.errors.length > 3 ? 
-                                `<div class="error-more">...and ${batchResult.errors.length - 3} more errors</div>` : ''}
-                        </div>
-                    </div>`,
-                    'warning'
-                );
-                
-                // Add error mappings
                 batchResult.errors.forEach(err => {
                     allMappings.push({
                         data_source: err.original_exam.data_source,
@@ -1429,178 +1228,83 @@ window.addEventListener('DOMContentLoaded', function() {
                         components: {}
                     });
                 });
-                
-                // Update processing state
-                processingState.errors = batchResult.errors.length;
             }
             
             // Log batch processing stats and update user
             if (batchResult.processing_stats) {
                 const stats = batchResult.processing_stats;
-                processingState.cacheHits = stats.cache_hits || 0;
-                
                 const hitRate = (stats.cache_hit_ratio * 100).toFixed(1);
                 const formattedTime = formatProcessingTime(stats.processing_time_ms);
-                
-                // Show processing stats
-                statusManager.showStats({
-                    elapsedTime: stats.processing_time_ms,
-                    processedItems: stats.successful,
-                    totalItems: codes.length,
-                    cacheHits: stats.cache_hits,
-                    errors: stats.errors,
-                    itemsPerSecond: stats.items_per_second
-                });
-                
+                updateStatusMessage(`Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${formattedTime} total`);
                 console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${formattedTime} total`);
             } else {
-                // Stats not available, will show completion message at end of function
-                console.log(`Batch processing completed: ${allMappings.length} records processed`);
+                updateStatusMessage(`Processing complete! ${allMappings.length} exam records processed successfully.`);
             }
             
         } catch (error) {
             console.error('Batch processing failed:', error);
-            console.error('API URL:', BATCH_API_URL);
-            console.error('Request payload size:', codes.length, 'records');
-            statusManager.show(
-                `<div class="error-alert">
-                    <div class="error-title">Batch Processing Failed</div>
-                    <div class="error-message">${error.message}</div>
-                    <div class="error-recovery">Falling back to individual processing...</div>
-                    <div class="error-debug">Debug: ${codes.length} records, Model: ${formatModelName(currentModel)}</div>
-                </div>`,
-                'error'
-            );
-            
+            updateStatusMessage(`Batch processing failed, falling back to individual processing...`);
             // Fall back to individual processing if batch fails
             console.log('Falling back to individual processing...');
             await processIndividually(codes);
         }
         
-        
-        
-        // --- UPDATED: Clear persistent messages before showing the final completion notice ---
-        statusManager.clearPersistentMessages();
-
-        // Show completion message
-        const elapsedTime = Date.now() - processingState.startTime;
-        const formattedTime = formatProcessingTime(elapsedTime);
-        
-        statusManager.show(
-            `<div class="processing-complete">
-                <div class="complete-icon">✓</div>
-                <div class="complete-message">
-                    <div class="complete-title">Processing Complete</div>
-                    <div class="complete-details">
-                        <span>${allMappings.length} records processed</span>
-                        <span>${processingState.errors} errors</span>
-                        <span>${formattedTime} total time</span>
-                    </div>
-                </div>
-            </div>`,
-            'success', 8000
-        );
-        
-        processingState.isProcessing = false;
+        // Set progress to 100%
+        progressFill.style.width = '100%';
     }
 
     // --- CORE LOGIC ---
     async function processFile(file) {
-        const validJsonTypes = ['application/json', 'text/json'];
-        if (!file.name.toLowerCase().endsWith('.json') || !validJsonTypes.includes(file.type)) {
-            statusManager.show('Please upload a valid JSON file (.json).', 'error');
-            return;
-        }
-
-        // Prevent users from re-uploading while current run in progress
-        if (progressBar.style.display === 'block') {
-            statusManager.show('A file is already being processed. Please wait until it finishes.', 'warning');
+        if (!file.name.endsWith('.json')) {
+            alert('Please upload a valid JSON file.');
             return;
         }
 
         // Hide upload interface during processing
         hideUploadInterface();
         
-        // Show file info with enhanced details
-        fileInfo.innerHTML = `
-            <div class="file-details">
-                <div class="file-icon">📄</div>
-                <div class="file-info-content">
-                    <div class="file-name">${file.name}</div>
-                    <div class="file-meta">
-                        <span class="file-size">${formatFileSize(file.size)}</span>
-                        <span class="file-type">JSON</span>
-                        <span class="file-date">${new Date().toLocaleDateString()}</span>
-                    </div>
-                </div>
-            </div>
-        `;
+        fileInfo.innerHTML = `<strong>File loaded:</strong> ${file.name} (${formatFileSize(file.size)})`;
         fileInfo.style.display = 'block';
         progressBar.style.display = 'block';
-        
-        const progressFill = document.querySelector('#progressBar .progress-fill');
-        if (progressFill) {
-            progressFill.style.width = '0%';
-        }
-
+        progressFill.style.width = '0%';
         resultsSection.style.display = 'none';
         allMappings = [];
         summaryData = null;
         
-        // Clear any existing status messages
-        statusManager.clearAll();
-        
-        // Show loading message
-        statusManager.show('Reading file...', 'progress', 5000);
+        // Clear any existing status message
+        const existingStatus = document.getElementById('statusMessage');
+        if (existingStatus) existingStatus.style.display = 'none';
 
         const reader = new FileReader();
         reader.onload = async function(e) {
             try {
-                // Show parsing stage
-                statusManager.showStage('File Parsing', 'Reading and validating JSON data');
-                
                 const codes = JSON.parse(e.target.result);
                 if (!Array.isArray(codes) || codes.length === 0) {
-                    statusManager.show('JSON file is empty or not in the correct array format.', 'error');
+                    alert('JSON file is empty or not in the correct array format.');
                     progressBar.style.display = 'none';
                     showUploadInterface();
                     return;
                 }
 
                 console.log(`Processing ${codes.length} exam records...`);
-                statusManager.show(`
-                    <div class="file-loaded">
-                        <div class="loaded-icon">✓</div>
-                        <div class="loaded-message">
-                            <div class="loaded-title">File Loaded Successfully</div>
-                            <div class="loaded-details">${codes.length} exam records found in ${file.name}</div>
-                        </div>
-                    </div>
-                `, 'success', 800);
+                updateStatusMessage(`📁 Loaded ${codes.length} exam records from ${file.name}. Starting processing...`);
+        
                 
-                // Process the data
                 await processBatch(codes);
-                
-                // Run analysis and show results
+        
                 runAnalysis(allMappings);
 
-            } catch (error) {
-                statusManager.show(`
-                    <div class="file-error">
-                        <div class="error-icon">❌</div>
-                        <div class="error-message">
-                            <div class="error-title">Error Processing File</div>
-                            <div class="error-details">${error.message}</div>
-                        </div>
-                    </div>
-                `, 'error');
+             } catch (error) {
+                alert('Error processing file: ' + error.message);
                 progressBar.style.display = 'none';
                 showUploadInterface();
-            }
-        };
+             }
+};
         
         reader.readAsText(file);
     }
+
+
 
     async function runSanityTest() {
         console.log('🧪 Sanity test button clicked - starting test...');
@@ -1611,219 +1315,58 @@ window.addEventListener('DOMContentLoaded', function() {
             hideUploadInterface();
             button.disabled = true;
             button.innerHTML = 'Processing Test Cases...';
-            
-            // Show file info for sanity test
-            fileInfo.innerHTML = `
-                <div class="file-details test-details">
-                    <div class="file-icon">🧪</div>
-                    <div class="file-info-content">
-                        <div class="file-name">Sanity Test Suite</div>
-                        <div class="file-meta">
-                            <span class="file-type">100 Standard Test Cases</span>
-                            <span class="file-date">${new Date().toLocaleDateString()}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
+            fileInfo.innerHTML = `<strong>Test running:</strong> Verifying engine performance...`;
             fileInfo.style.display = 'block';
             progressBar.style.display = 'block';
-            
-            const progressFill = document.querySelector('#progressBar .progress-fill');
-            if (progressFill) {
-                progressFill.style.width = '0%';
-            }
-            
-            // Clear any existing status messages
-            statusManager.clearAll();
-            
-            // Initialize processing state
-            processingState = {
-                isProcessing: true,
-                currentStage: 'Sanity Test',
-                totalItems: 100, // Assuming 100 test cases
-                processedItems: 0,
-                startTime: Date.now(),
-                cacheHits: 0,
-                errors: 0
-            };
-            
-            // Show progress and load sanity test data
-            statusManager.showProgress(
-                `Loading sanity test data...`,
-                0, 100
-            );
-            
-            statusManager.showStage('Loading Test Data', 'Loading 100 standard test cases');
-            
-            // Load sanity test data from backend
-            const response = await fetchWithRetry('/backend/core/sanity_test.json', { method: 'GET' }, 2, 8000);
-            if (!response.ok) {
-                throw new Error(`Failed to load sanity test data: ${response.status}`);
-            }
-            
-            const sanityTestCodes = await response.json();
-            console.log(`✓ Loaded ${sanityTestCodes.length} sanity test cases`);
-            
-            statusManager.showStage(
-                'AI Processing', 
-                `Processing exam names with ${formatModelName(currentModel)} biomedical language model`
-            );
-            
-            // Process each test case
-            const processedMappings = [];
-            
-            for (let i = 0; i < sanityTestCodes.length; i++) {
-                const code = sanityTestCodes[i];
-                
-                // Update progress
-                processingState.processedItems = i + 1;
-                statusManager.showProgress(
-                    `Processing sanity test cases...`,
-                    i + 1, sanityTestCodes.length
-                );
-                
-                if (progressFill) {
-                    progressFill.style.width = `${((i + 1) / sanityTestCodes.length) * 100}%`;
-                }
-                
-                // Show status only every 10th test case to reduce verbosity
-                if (i % 10 === 0 || i === sanityTestCodes.length - 1) {
-                    statusManager.show(
-                        `Testing case ${i + 1}/${sanityTestCodes.length}: ${code.EXAM_NAME}`,
-                        'processing', 1000 // Auto-clear after 1 second
-                    );
-                }
-                
-                try {
-                    
-                    const apiResponse = await fetchWithRetry(API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            exam_name: code.EXAM_NAME,
-                            model: currentModel
-                        })
-                    }, 3, 15000); // 3 retries, 15 second timeout
-                    
-                    const parsed = await apiResponse.json();
-                    
-                    // Check for cache hit
-                    if (parsed.metadata && parsed.metadata.cache_hit) {
-                        processingState.cacheHits++;
-                    }
-                    
-                    // Add the original data and processed result
-                    processedMappings.push({
-                        ...code,
-                        clean_name: parsed.clean_name || 'UNKNOWN',
-                        components: parsed.components || {},
-                        metadata: parsed.metadata || {}
-                    });
-                    
-                } catch (error) {
-                    console.error(`Error processing ${code.EXAM_NAME}:`, error);
-                    statusManager.show(
-                        `<div class="processing-error">
-                            <div class="error-icon">⚠</div>
-                            <div class="error-details">
-                                <div class="error-exam">${code.EXAM_NAME}</div>
-                                <div class="error-reason">${error.message}</div>
-                            </div>
-                        </div>`,
-                        'error',
-                        3000
-                    );
-                    
-                    processingState.errors++;
-                    processedMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
-                }
-                
-                // Show processing stats every 10 items or at the end
-                if (i % 10 === 0 || i === sanityTestCodes.length - 1) {
-                    const elapsedTime = Date.now() - processingState.startTime;
-                    const itemsPerSecond = processingState.processedItems > 0 ? 
-                        Math.round((processingState.processedItems / (elapsedTime / 1000)) * 10) / 10 : 0;
-                    
-                    statusManager.showStats({
-                        elapsedTime,
-                        processedItems: processingState.processedItems,
-                        totalItems: sanityTestCodes.length,
-                        cacheHits: processingState.cacheHits,
-                        errors: processingState.errors,
-                        itemsPerSecond
-                    });
-                }
-            }
-            
-            // --- UPDATED: Clear persistent messages before showing final completion notice ---
-            statusManager.clearPersistentMessages();
+            progressFill.style.width = '25%';
+            updateStatusMessage(`Calling backend sanity test endpoint with model: '${currentModel}'...`);
 
-            // Processing complete
-            const elapsedTime = Date.now() - processingState.startTime;
-            const formattedTime = formatProcessingTime(elapsedTime);
+            // Debug: Log the URL being called
+            console.log('Sanity test URL:', apiConfig.SANITY_TEST_URL);
+            console.log('API config:', apiConfig);
+
+            // Call the correct backend endpoint
+            const response = await fetch(apiConfig.SANITY_TEST_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: currentModel })
+            });
             
-            statusManager.show(
-                `<div class="processing-complete">
-                    <div class="complete-icon">✓</div>
-                    <div class="complete-message">
-                        <div class="complete-title">Sanity Test Complete</div>
-                        <div class="complete-details">
-                            <span>${processedMappings.length} test cases processed</span>
-                            <span>${processingState.errors} errors</span>
-                            <span>${formattedTime} total time</span>
-                        </div>
-                    </div>
-                </div>`,
-                'success', 8000
-            );
+            progressFill.style.width = '75%';
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API returned status ${response.status}: ${errorText}`);
+            }
+
+            allMappings = await response.json();
+            console.log(`Completed processing. Generated ${allMappings.length} results.`);
             
-            processingState.isProcessing = false;
+            progressFill.style.width = '100%';
+            updateStatusMessage(`Sanity test complete!`);
             
-            // Generate and display results
-            console.log('🧪 Sanity test results:', processedMappings);
-            
-            // Show analysis and visualizations for the test results
-            runAnalysis(processedMappings);
-            
+            // Run analysis on the results
+            runAnalysis(allMappings);
+
         } catch (error) {
-            console.error('❌ Sanity test failed:', error);
-            statusManager.show(
-                `<div class="error-alert">
-                    <div class="error-title">Sanity Test Failed</div>
-                    <div class="error-message">${error.message}</div>
-                    <div class="error-suggestion">Check the console for more details.</div>
-                </div>`,
-                'error'
-            );
-            
-            processingState.isProcessing = false;
-            
-        } finally {
-            // Reset UI
-            button.disabled = false;
-            button.innerHTML = 'Run Sanity Test';
+            console.error('Sanity test failed:', error);
+            fileInfo.innerHTML = `<div class="file-details error"><h3>❌ Sanity Test Failed</h3><p><strong>Error:</strong> ${error.message}</p></div>`;
+            progressBar.style.display = 'none';
             showUploadInterface();
+        } finally {
+            // Restore button state
+            button.disabled = false;
+            button.innerHTML = '100 Exam Test Suite';
         }
     }
 
-    // --- ANALYSIS AND DISPLAY FUNCTIONS ---
     function runAnalysis(mappings) {
-        allMappings = mappings;
-
         summaryData = generateAnalyticsSummary(mappings);
         updateStatsUI(summaryData);
         updateResultsTitle();
         displayResults(mappings);
         generateConsolidatedResults(mappings);
         generateSourceLegend(mappings);
-
-        const progressFill = document.querySelector('#progressBar .progress-fill');
-        if (progressFill) {
-            progressFill.style.width = '100%';
-        }
-        
         resultsSection.style.display = 'block';
     }
 
@@ -1946,8 +1489,8 @@ window.addEventListener('DOMContentLoaded', function() {
             const snomedFsnCell = row.insertCell();
             if (item.snomed && item.snomed.fsn) {
                 let snomedContent = `<div>${item.snomed.fsn}</div>`;
-                if (item.snomed.concept_id) {
-                    snomedContent += `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.concept_id}</div>`;
+                if (item.snomed.id) {
+                    snomedContent += `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.id}</div>`;
                 }
                 snomedFsnCell.innerHTML = snomedContent;
             } else {
@@ -2109,9 +1652,7 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('consolidationModal').style.display = 'flex';
     }
 
-    function closeModal() { 
-        document.getElementById('consolidationModal').style.display = 'none'; 
-    }
+    function closeModal() { document.getElementById('consolidationModal').style.display = 'none'; }
     
     // --- CONSOLIDATED VIEW FUNCTIONS ---
     let consolidatedData = [];
@@ -2160,7 +1701,36 @@ window.addEventListener('DOMContentLoaded', function() {
         sortConsolidatedResults();
     }
     
-    // --- MODEL TOGGLE FUNCTIONS (moved to top of DOMContentLoaded) ---
+    // --- MODEL TOGGLE FUNCTIONS ---
+    function switchModel(modelKey) {
+        // Validate model exists and is available
+        if (!availableModels[modelKey] || availableModels[modelKey].status !== 'available') {
+            console.warn(`Model ${modelKey} is not available`);
+            return;
+        }
+        
+        // Update global state
+        currentModel = modelKey;
+        
+        // Update UI - toggle active states
+        document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
+        
+        // Activate selected model button
+        const selectedButton = document.getElementById(`${modelKey}ModelBtn`);
+        if (selectedButton) {
+            selectedButton.classList.add('active');
+        }
+        
+        console.log(`Switched to ${modelKey} model (${availableModels[modelKey].name})`);
+        
+        // Show notification with dynamic model name
+        const displayName = formatModelName(modelKey);
+        updateStatusMessage(`Switched to ${displayName} model`);
+        setTimeout(() => {
+            const statusDiv = document.getElementById('statusMessage');
+            if (statusDiv) statusDiv.style.display = 'none';
+        }, 3000);
+    }
     
     function showFullView() {
         document.getElementById('fullView').style.display = 'block';
@@ -2292,19 +1862,39 @@ window.addEventListener('DOMContentLoaded', function() {
         
         displayConsolidatedResults();
     }
-
-    // preventDefaults function moved to top of DOMContentLoaded
-
+    function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    }
+    
+    function formatProcessingTime(milliseconds) {
+        if (milliseconds < 1000) {
+            return `${milliseconds}ms`;
+        } else if (milliseconds < 60000) {
+            const seconds = (milliseconds / 1000).toFixed(1);
+            return `${seconds}s`;
+        } else {
+            const minutes = Math.floor(milliseconds / 60000);
+            const seconds = Math.floor((milliseconds % 60000) / 1000);
+            if (seconds === 0) {
+                return `${minutes}m`;
+            } else {
+                return `${minutes}m ${seconds}s`;
+            }
+        }
+    }
+    
     function downloadJSON(data, filename) {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         triggerDownload(blob, filename);
     }
-
     function downloadText(text, filename) {
         const blob = new Blob([text], { type: 'text/plain' });
         triggerDownload(blob, filename);
     }
-
     function triggerDownload(blob, filename) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -2316,11 +1906,4 @@ window.addEventListener('DOMContentLoaded', function() {
         URL.revokeObjectURL(url);
     }
     
-    // Event listener for file input change  
-    function handleFileSelect(e) {
-        if (e.target.files[0]) {
-            processFile(e.target.files[0]);
-        }
-    }
-    document.getElementById('fileInput').addEventListener('change', handleFileSelect);
 });
