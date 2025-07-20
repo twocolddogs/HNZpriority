@@ -265,7 +265,7 @@ class StatusManager {
             // Update progress bar fill
             const progressFill = messageElement.querySelector('.status-progress-fill');
             if (progressFill) {
-                progressFill.style.width = `${percentage}%`;
+                
             }
             
             // Update message text (keeping the progress text)
@@ -838,7 +838,7 @@ window.addEventListener('DOMContentLoaded', function() {
     const fileInput = document.getElementById('fileInput');
     const fileInfo = document.getElementById('fileInfo');
     const progressBar = document.getElementById('progressBar');
-    const progressFill = document.getElementById('progressFill');
+    
     const resultsSection = document.getElementById('resultsSection');
     const resultsBody = document.getElementById('resultsBody');
 
@@ -1283,7 +1283,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 // Status updates handled by periodic progress messages
                 
                 allMappings.push({
-                    data_source: code.DATA_SOURCE,
+                    data_source: code.DATA_SOURCE || 'Unknown',
                     modality_code: code.MODALITY_CODE,
                     exam_code: code.EXAM_CODE,
                     exam_name: code.EXAM_NAME,
@@ -1311,7 +1311,7 @@ window.addEventListener('DOMContentLoaded', function() {
             }
             
             // Update progress bar
-            progressFill.style.width = `${((i + 1) / codes.length) * 100}%`;
+            
             
             // Show processing stats every 10 items or at the end
             if (i % 10 === 0 || i === codes.length - 1) {
@@ -1364,8 +1364,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 exam_code: code.EXAM_CODE
             }));
             
-            // Set progress to 25% while sending batch request
-            progressFill.style.width = '25%';
+            
             
             // Show API call stage with animated indicator
             statusManager.showStage(
@@ -1406,8 +1405,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 throw new Error(`Batch API returned status ${response.status}`);
             }
             
-            // Set progress to 75% while processing response
-            progressFill.style.width = '75%';
+            
             
             // Show processing stage
             statusManager.showStage(
@@ -1438,7 +1436,7 @@ window.addEventListener('DOMContentLoaded', function() {
             // Process batch results
             if (batchResult.results) {
                 allMappings = batchResult.results.map(item => ({
-                    data_source: item.input.data_source,
+                    data_source: item.input.data_source || 'Unknown',
                     modality_code: item.input.modality_code,
                     exam_code: item.input.exam_code,
                     exam_name: item.input.exam_name,
@@ -1549,8 +1547,7 @@ window.addEventListener('DOMContentLoaded', function() {
             await processIndividually(codes);
         }
         
-        // Set progress to 100%
-        progressFill.style.width = '100%';
+        
         
         // Show completion message
         const elapsedTime = Date.now() - processingState.startTime;
