@@ -105,8 +105,8 @@ class RadiologySemanticParser:
         }
         
         for modality, pattern in explicit_modality_patterns.items():
-        if pattern.search(lower_name):
-            return modality # Return immediately if an explicit modality is found
+            if pattern.search(lower_name):
+                return modality # Return immediately if an explicit modality is found
 
         # Fallback to check for interventional/technique-based modalities
         inferred_modality_patterns = {
@@ -115,8 +115,8 @@ class RadiologySemanticParser:
         }
 
         for modality, pattern in inferred_modality_patterns.items():
-        if pattern.search(lower_name):
-            return modality
+            if pattern.search(lower_name):
+                return modality
     
         # Final fallback to the provided modality code
         return self.modality_map.get(str(modality_code).upper(), 'Other') if modality_code else 'Other'
