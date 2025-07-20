@@ -216,17 +216,52 @@ class NHSLookupEngine:
             
         return max(0.0, min(1.0, final_score))
 
-    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor) -> Dict:
+        def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor) -> Dict:
+        """
+        Formats the final result, intelligently combining the best match from NHS data
+        with the specific clinical details (contrast, laterality) from the user's input.
+        This version is for the V2.4 single-model pipeline.
+        """
         model_name = getattr(nlp_proc, 'model_key', 'default').split('/')[-1]
         source_name = f'UNIFIED_MATCH_V2_4_CONFIG_{model_name.upper()}'
         is_interventional = bool(best_match.get('_interventional_terms', []))
         
+        # Start with the authoritative name from the matched NHS entry as the base
+        clean_name = best_match.get('primary_source_name', '')
+        
+        # --- INTELLIGENT AUGMENTATION LOGIC ---
+        # Get the specific details parsed from the *original user input*
+        input_laterality = (extracted_input_components.get('laterality') or [None])[0]
+        input_contrast = (extracted_input_components.get('contrast') or [None])[0]
+
+        # 1. Augment Clean Name with Laterality if it's missing from the base name
+        clean_name_lower = clean_name.lower()
+        if input_laterality == 'left' and not any(lat in clean_name_lower for lat in ['left', ' lt']):
+            clean_name += " Lt"
+        elif input_laterality == 'right' and not any(lat in clean_name_lower for lat in ['right', ' rt']):
+            clean_name += " Rt"
+        elif input_laterality == 'bilateral' and not any(lat in clean_name_lower for lat in ['bilateral', 'both']):
+            clean_name += " Both"
+
+        # 2. Augment Clean Name with Contrast if it's missing from the base name
+        if input_contrast == 'with' and 'with contrast' not in clean_name_lower:
+            clean_name += " with contrast"
+        # Note: We intentionally don't add "without contrast" as it's often implied.
+        # The 'components' dictionary will correctly reflect the 'without' status.
+
+        # 3. Final Output Assembly
+        # The 'components' dictionary MUST reflect the user's original parsed input for accuracy.
         return {
-            'clean_name': best_match.get('primary_source_name', ''), 'snomed_id': best_match.get('snomed_concept_id', ''), 
-            'snomed_fsn': best_match.get('snomed_fsn', ''), 'snomed_laterality_concept_id': best_match.get('snomed_laterality_concept_id', ''), 
-            'snomed_laterality_fsn': best_match.get('snomed_laterality_fsn', ''), 'is_diagnostic': not is_interventional, 
-            'is_interventional': is_interventional, 'confidence': confidence, 'source': source_name, 
-            **extracted_input_components
+            'clean_name': clean_name.strip(),
+            'snomed_id': best_match.get('snomed_concept_id', ''),
+            'snomed_fsn': best_match.get('snomed_fsn', ''),
+            'snomed_laterality_concept_id': best_match.get('snomed_laterality_concept_id', ''),
+            'snomed_laterality_fsn': best_match.get('snomed_laterality_fsn', ''),
+            'is_diagnostic': not is_interventional,
+            'is_interventional': is_interventional,
+            'confidence': confidence,
+            'source': source_name,
+            **extracted_input_components  # This ensures the output components match the input
         }
 
     def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:

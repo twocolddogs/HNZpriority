@@ -93,7 +93,6 @@ class RadiologySemanticParser:
     def _parse_modality(self, lower_name: str, modality_code: str) -> str:
         """Determines modality from text, falling back to the provided code."""
         modality_patterns = {
-            'IR': re.compile(r'\b(ir|interventional|xa|angiography|angiogram|dsa|picc|biopsy|drainage|stent|ablation|emboli[sz]ation)\b', re.I),
             'CT': re.compile(r'\b(ct|computed tomography)\b', re.I),
             'MRI': re.compile(r'\b(mr|mri|mra|magnetic resonance)\b', re.I),
             'MG': re.compile(r'\b(mg|mammo|mamm|mammography|mammogram|tomosynthesis|tomo|br)\b', re.I),
@@ -104,10 +103,22 @@ class RadiologySemanticParser:
             'Fluoroscopy': re.compile(r'\b(fl|fluoroscopy|barium|swallow|meal|enema)\b', re.I),
             'XR': re.compile(r'\b(xr|x-ray|xray|radiograph|plain film|projection)\b', re.I),
         }
-        for modality, pattern in modality_patterns.items():
-            if pattern.search(lower_name):
-                return modality
-        # Fallback to modality_code if no pattern matches in the text
+        
+        for modality, pattern in explicit_modality_patterns.items():
+        if pattern.search(lower_name):
+            return modality # Return immediately if an explicit modality is found
+
+        # Fallback to check for interventional/technique-based modalities
+        inferred_modality_patterns = {
+        'IR': re.compile(r'\b(ir|interventional|xa|angiography|angiogram|dsa|picc|biopsy|drainage|stent)\b', re.I),
+        # Add other inferred modalities here if needed
+        }
+
+        for modality, pattern in inferred_modality_patterns.items():
+        if pattern.search(lower_name):
+            return modality
+    
+        # Final fallback to the provided modality code
         return self.modality_map.get(str(modality_code).upper(), 'Other') if modality_code else 'Other'
 
     def _parse_laterality(self, lower_name: str) -> List[str]:
