@@ -216,7 +216,7 @@ class NHSLookupEngine:
             
         return max(0.0, min(1.0, final_score))
 
-        def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor) -> Dict:
+    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor) -> Dict:
         """
         Formats the final result, intelligently combining the best match from NHS data
         with the specific clinical details (contrast, laterality) from the user's input.
