@@ -92,7 +92,7 @@ class RadiologySemanticParser:
 
     def _parse_modality(self, lower_name: str, modality_code: str) -> str:
         """Determines modality from text, falling back to the provided code."""
-        modality_patterns = {
+        explicit_modality_patterns = {
             'CT': re.compile(r'\b(ct|computed tomography)\b', re.I),
             'MRI': re.compile(r'\b(mr|mri|mra|magnetic resonance)\b', re.I),
             'MG': re.compile(r'\b(mg|mammo|mamm|mammography|mammogram|tomosynthesis|tomo|br)\b', re.I),
