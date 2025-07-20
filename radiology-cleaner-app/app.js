@@ -539,6 +539,52 @@ window.addEventListener('DOMContentLoaded', function() {
             fallback: { base: 'https://radiology-api-staging.onrender.com', mode: 'STAGING (Direct)' }
         };
         
+        // Batch processing configuration - matches backend NLP_BATCH_SIZE
+        // To configure batch size: set window.ENV.NLP_BATCH_SIZE or backend env var NLP_BATCH_SIZE
+        const getBatchSize = () => {
+            // Check for environment variable (in production this could be set via build-time env vars)
+            if (typeof window !== 'undefined' && window.ENV && window.ENV.NLP_BATCH_SIZE) {
+                return parseInt(window.ENV.NLP_BATCH_SIZE);
+            }
+            // Default batch size (same as backend default)
+            return 1000;
+        };
+
+        // --- UTILITY FUNCTIONS (defined early to avoid hoisting issues) ---
+        function preventDefaults(e) { 
+            e.preventDefault(); 
+            e.stopPropagation();
+        }
+
+        // --- MODEL TOGGLE FUNCTIONS ---
+        function switchModel(modelKey) {
+            console.log(`🔄 switchModel called with modelKey: ${modelKey}`);
+            
+            // Validate model exists and is available
+            if (!availableModels[modelKey] || availableModels[modelKey].status !== 'available') {
+                console.warn(`Model ${modelKey} is not available. Status:`, availableModels[modelKey]?.status);
+                return;
+            }
+            
+            console.log(`✓ Switching to model: ${modelKey}`);
+            
+            // Update global state
+            currentModel = modelKey;
+            
+            // Update UI - toggle active states
+            document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
+            
+            // Activate selected model button
+            const selectedButton = document.getElementById(`${modelKey}ModelBtn`);
+            if (selectedButton) {
+                selectedButton.classList.add('active');
+            }
+            
+            // Show feedback message
+            const displayName = formatModelName(modelKey);
+            statusManager.show(`Switched to ${displayName} model`, 'success', 3000);
+        }
+        
         let config;
         if (isLocalhost) config = apiConfigs.local;
         else if (isProduction) config = apiConfigs.production;
@@ -737,7 +783,10 @@ window.addEventListener('DOMContentLoaded', function() {
                 button.title = `${modelInfo.name} is currently unavailable`;
                 description.style.color = '#999';
             } else {
-                button.addEventListener('click', () => switchModel(modelKey));
+                button.addEventListener('click', () => {
+                    console.log(`🖱️ Model button clicked: ${modelKey}`);
+                    switchModel(modelKey);
+                });
             }
             
             modelWrapper.appendChild(button);
@@ -1207,33 +1256,24 @@ window.addEventListener('DOMContentLoaded', function() {
                 i + 1, codes.length
             );
             
-            // Show detailed status for current exam
-            const examStatusId = statusManager.show(
-                `<div class="current-exam">
-                    <div class="exam-label">Processing:</div>
-                    <div class="exam-value">${code.EXAM_NAME}</div>
-                    <div class="exam-details">
-                        <span class="exam-code">${code.EXAM_CODE}</span>
-                        <span class="exam-source">${code.DATA_SOURCE}</span>
-                    </div>
-                </div>`,
-                'progress'
-            );
+            // Show detailed status only every 10th exam to reduce verbosity
+            if (i % 10 === 0 || i === codes.length - 1) {
+                statusManager.show(
+                    `Processing exam ${i + 1}/${codes.length}: ${code.EXAM_NAME}`,
+                    'processing', 1000 // Auto-clear after 1 second
+                );
+            }
             
             try {
-                // Show API call stage
-                statusManager.showStage('API Request', 'Sending exam to AI processing engine');
+                // Process exam without verbose API stages (progress bar shows overall progress)
                 
-                const response = await fetch(API_URL, {
+                const response = await fetchWithRetry(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ exam_name: code.EXAM_NAME, modality_code: code.MODALITY_CODE, model: currentModel })
-                });
+                }, 3, 15000); // 3 retries, 15 second timeout for individual processing
                 
                 if (!response.ok) throw new Error(`API returned status ${response.status}`);
-                
-                // Show parsing stage
-                statusManager.showStage('Parsing Response', 'Processing AI engine results');
                 
                 const parsed = await response.json();
                 
@@ -1308,24 +1348,9 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Processing complete
+        // Processing complete - completion message shown by main calling function
         const elapsedTime = Date.now() - processingState.startTime;
-        const formattedTime = formatProcessingTime(elapsedTime);
-        
-        statusManager.show(
-            `<div class="processing-complete">
-                <div class="complete-icon">✓</div>
-                <div class="complete-message">
-                    <div class="complete-title">Processing Complete</div>
-                    <div class="complete-details">
-                        <span>${allMappings.length} records processed</span>
-                        <span>${processingState.errors} errors</span>
-                        <span>${formattedTime} total time</span>
-                    </div>
-                </div>
-            </div>`,
-            'success'
-        );
+        console.log(`Individual processing completed: ${allMappings.length} records in ${formatProcessingTime(elapsedTime)}`);
         
         processingState.isProcessing = false;
     }
@@ -1379,21 +1404,21 @@ window.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="request-row">
                         <div class="request-label">Batch Size:</div>
-                        <div class="request-value">1000 records per chunk</div>
+                        <div class="request-value">${getBatchSize()} records per chunk</div>
                     </div>
                 </div>`,
                 'network'
             );
             
-            const response = await fetch(BATCH_API_URL, {
+            const response = await fetchWithRetry(BATCH_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     exams: exams,
-                    chunk_size: 1000, // Process in chunks of 1000
+                    chunk_size: getBatchSize(), // Configurable batch size (matches backend NLP_BATCH_SIZE)
                     model: currentModel
                 })
-            });
+            }, 2, 30000); // 2 retries, 30 second timeout for batch processing
             
             if (!response.ok) {
                 throw new Error(`Batch API returned status ${response.status}`);
@@ -1409,32 +1434,24 @@ window.addEventListener('DOMContentLoaded', function() {
             );
             
             // Show detailed processing steps
-            const processingSteps = [
-                'Preprocessing exam names (abbreviation expansion, normalization)',
-                'Extracting anatomical components with medical vocabulary',
-                'Detecting laterality patterns (left, right, bilateral)',
-                'Identifying contrast usage patterns',
-                'Matching against standardized medical terminology',
-                'Generating SNOMED CT codes and clean names'
-            ];
-            
-            // Animate through processing steps
-            for (let i = 0; i < processingSteps.length; i++) {
-                statusManager.show(
-                    `<div class="processing-step">
-                        <div class="step-number">${i + 1}</div>
-                        <div class="step-description">${processingSteps[i]}</div>
-                    </div>`,
-                    'progress',
-                    i < processingSteps.length - 1 ? 800 : 0
-                );
-            }
+            // Show simple processing message instead of verbose step animation
+            statusManager.show('Processing exams with AI engine...', 'progress', 2000);
             
             // Parse response
-            const batchResult = await response.json();
+            let batchResult;
+            try {
+                batchResult = await response.json();
+            } catch (parseError) {
+                throw new Error(`Failed to parse response JSON: ${parseError.message}`);
+            }
             
             // Show results stage
             statusManager.showStage('Processing Results', 'Organizing and analyzing processed data');
+            
+            // Validate response structure
+            if (!batchResult || typeof batchResult !== 'object') {
+                throw new Error('Invalid response format from batch API');
+            }
             
             // Process batch results
             if (batchResult.results) {
@@ -1527,17 +1544,20 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${formattedTime} total`);
             } else {
-                // Show basic completion message if no stats available
-                statusManager.show(`Processing complete! ${allMappings.length} exam records processed successfully.`, 'success');
+                // Stats not available, will show completion message at end of function
+                console.log(`Batch processing completed: ${allMappings.length} records processed`);
             }
             
         } catch (error) {
             console.error('Batch processing failed:', error);
+            console.error('API URL:', BATCH_API_URL);
+            console.error('Request payload size:', codes.length, 'records');
             statusManager.show(
                 `<div class="error-alert">
                     <div class="error-title">Batch Processing Failed</div>
                     <div class="error-message">${error.message}</div>
                     <div class="error-recovery">Falling back to individual processing...</div>
+                    <div class="error-debug">Debug: ${codes.length} records, Model: ${formatModelName(currentModel)}</div>
                 </div>`,
                 'error'
             );
@@ -1742,21 +1762,17 @@ window.addEventListener('DOMContentLoaded', function() {
                     i + 1, sanityTestCodes.length
                 );
                 
-                // Show current exam being processed
-                const examStatusId = statusManager.show(
-                    `<div class="current-exam">
-                        <div class="exam-label">Testing:</div>
-                        <div class="exam-value">${code.EXAM_NAME}</div>
-                        <div class="exam-meta">${code.DATA_SOURCE} | ${code.MODALITY_CODE}</div>
-                    </div>`,
-                    'progress',
-                    false
-                );
+                // Show status only every 10th test case to reduce verbosity
+                if (i % 10 === 0 || i === sanityTestCodes.length - 1) {
+                    statusManager.show(
+                        `Testing case ${i + 1}/${sanityTestCodes.length}: ${code.EXAM_NAME}`,
+                        'processing', 1000 // Auto-clear after 1 second
+                    );
+                }
                 
                 try {
-                    statusManager.showStage('API Request', 'Sending exam to AI processing engine');
                     
-                    const apiResponse = await fetch(API_URL, {
+                    const apiResponse = await fetchWithRetry(API_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1765,9 +1781,7 @@ window.addEventListener('DOMContentLoaded', function() {
                             exam_name: code.EXAM_NAME,
                             model: currentModel
                         })
-                    });
-                    
-                    statusManager.showStage('Parsing Response', 'Processing AI engine results');
+                    }, 3, 15000); // 3 retries, 15 second timeout
                     
                     const parsed = await apiResponse.json();
                     
@@ -1872,6 +1886,511 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Event listener for file input change
+    // --- ANALYSIS AND DISPLAY FUNCTIONS ---
+    function runAnalysis(mappings) {
+        summaryData = generateAnalyticsSummary(mappings);
+        updateStatsUI(summaryData);
+        updateResultsTitle();
+        displayResults(mappings);
+        generateConsolidatedResults(mappings);
+        generateSourceLegend(mappings);
+        resultsSection.style.display = 'block';
+    }
+
+    function updateResultsTitle() {
+        const titleElement = document.getElementById('resultsTitle');
+        const modelDisplayName = formatModelName(currentModel);
+        titleElement.textContent = `Cleaning Results with ${modelDisplayName}`;
+    }
+
+    function generateSourceLegend(mappings) {
+        // Get unique sources from the data
+        const uniqueSources = [...new Set(mappings.map(item => item.data_source))];
+        
+        // Source display names
+        const sourceNames = {
+            'C': 'Central',
+            'CO': 'SIRS (Canterbury)',
+            'K': 'Southern',
+            'TestData': 'Test Data',
+            'SanityTest': 'Sanity Test',
+            'Demo': 'Demo',
+            'Sample': 'Sample'
+        };
+        
+        // Create legend container if it doesn't exist
+        let legendContainer = document.getElementById('sourceLegend');
+        if (!legendContainer) {
+            legendContainer = document.createElement('div');
+            legendContainer.id = 'sourceLegend';
+            legendContainer.className = 'source-legend';
+            
+            // Insert after the view toggle buttons
+            const viewToggle = document.querySelector('.view-toggle');
+            if (viewToggle && viewToggle.parentNode) {
+                viewToggle.parentNode.insertBefore(legendContainer, viewToggle.nextSibling);
+            } else {
+                // Fallback: insert at the end of results section if viewToggle not found
+                const resultsSection = document.getElementById('resultsSection');
+                if (resultsSection) {
+                    resultsSection.appendChild(legendContainer);
+                }
+            }
+        }
+        
+        // Generate legend content
+        let legendHTML = '<h4>Data Sources</h4><div class="source-legend-grid">';
+        uniqueSources.forEach(source => {
+            const color = getSourceColor(source);
+            const displayName = sourceNames[source] || source;
+            legendHTML += `
+                <div class="source-legend-item">
+                    <div class="source-legend-color" style="background-color: ${color};"></div>
+                    <span>${displayName}</span>
+                </div>
+            `;
+        });
+        legendHTML += '</div>';
+        
+        legendContainer.innerHTML = legendHTML;
+    }
+
+    // --- UI & DISPLAY FUNCTIONS ---
+    function updateStatsUI(summary) {
+        document.getElementById('originalCount').textContent = summary.totalOriginalCodes;
+        document.getElementById('cleanCount').textContent = summary.uniqueCleanNames;
+        document.getElementById('consolidationRatio').textContent = `${summary.consolidationRatio}:1`;
+        document.getElementById('modalityCount').textContent = Object.keys(summary.modalityBreakdown).length;
+        document.getElementById('avgConfidence').textContent = `${summary.avgConfidence}%`;
+        document.getElementById('genderContext').textContent = summary.genderContextCount;
+    }
+
+    // Source color mapping
+    const sourceColors = {
+        'C': '#1f77b4',            // Blue - Central
+        'CO': '#2ca02c',           // Green - SIRS (Canterbury)
+        'K': '#d62728',            // Red - Southern
+        'TestData': '#ff1493',     // Deep Pink
+        'SanityTest': '#00ced1',   // Dark Turquoise
+        'Demo': '#ffd700',         // Gold
+        'Sample': '#ff6347',       // Tomato
+        'Default': '#6c757d'       // Bootstrap secondary gray
+    };
+
+    function getSourceColor(source) {
+        return sourceColors[source] || sourceColors['Default'];
+    }
+
+    function displayResults(results) {
+        resultsBody.innerHTML = '';
+        results.forEach(item => {
+            const row = resultsBody.insertRow();
+            
+            // Add source indicator cell
+            const sourceCell = row.insertCell();
+            sourceCell.style.cssText = `
+                width: 12px;
+                padding: 0;
+                background-color: ${getSourceColor(item.data_source)};
+                border-right: none;
+                position: relative;
+            `;
+            
+            // Set tooltip with full source name
+            const sourceNames = {
+                'C': 'Central',
+                'CO': 'SIRS (Canterbury)', 
+                'K': 'Southern'
+            };
+            sourceCell.title = sourceNames[item.data_source] || item.data_source;
+            row.insertCell().textContent = item.exam_code;
+            row.insertCell().textContent = item.exam_name;
+            const cleanNameCell = row.insertCell();
+            if (item.clean_name && item.clean_name.startsWith('ERROR')) {
+                cleanNameCell.innerHTML = `<span class="error-message">${item.clean_name}</span>`;
+            } else {
+                cleanNameCell.innerHTML = `<strong>${item.clean_name}</strong>`;
+            }
+
+            // Add SNOMED FSN cell with code underneath
+            const snomedFsnCell = row.insertCell();
+            if (item.snomed && item.snomed.fsn) {
+                let snomedContent = `<div>${item.snomed.fsn}</div>`;
+                if (item.snomed.id) {
+                    snomedContent += `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.id}</div>`;
+                }
+                snomedFsnCell.innerHTML = snomedContent;
+            } else {
+                snomedFsnCell.innerHTML = '<span style="color: #999;">-</span>';
+            }
+
+            // Add combined Tags cell (components + context)
+            const tagsCell = row.insertCell();
+            const { anatomy, laterality, contrast, technique, gender_context, age_context, clinical_context, clinical_equivalents } = item.components;
+            
+            // Add component tags
+            if(anatomy && anatomy.length > 0) anatomy.forEach(a => { if (a && a.trim()) tagsCell.innerHTML += `<span class="tag anatomy">${a}</span>`});
+            if(laterality && Array.isArray(laterality)) laterality.forEach(l => { if (l && l.trim()) tagsCell.innerHTML += `<span class="tag laterality">${l}</span>`});
+            else if(laterality && typeof laterality === 'string' && laterality.trim()) tagsCell.innerHTML += `<span class="tag laterality">${laterality}</span>`;
+            if(contrast && Array.isArray(contrast)) contrast.forEach(c => { if (c && c.trim()) tagsCell.innerHTML += `<span class="tag contrast">${c}</span>`});
+            else if(contrast && typeof contrast === 'string' && contrast.trim()) tagsCell.innerHTML += `<span class="tag contrast">${contrast}</span>`;
+            if(technique && technique.length > 0) technique.forEach(t => { if (t && t.trim()) tagsCell.innerHTML += `<span class="tag technique">${t}</span>`});
+            
+            // Add context tags
+            if(gender_context && gender_context.trim()) tagsCell.innerHTML += `<span class="tag gender">${gender_context}</span>`;
+            if(age_context && age_context.trim()) tagsCell.innerHTML += `<span class="tag age">${age_context}</span>`;
+            if(clinical_context && clinical_context.length > 0) clinical_context.forEach(c => { if (c && c.trim()) tagsCell.innerHTML += `<span class="tag clinical">${c}</span>`});
+            if(clinical_equivalents && clinical_equivalents.length > 0) {
+                clinical_equivalents.slice(0, 2).forEach(e => { if (e && e.trim()) tagsCell.innerHTML += `<span class="tag equivalent">${e}</span>`});
+            }
+            
+            // Add confidence cell
+            const confidenceCell = row.insertCell();
+            const confidence = item.components.confidence || 0;
+            const confidencePercent = Math.round(confidence * 100);
+            const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
+            confidenceCell.innerHTML = `
+                <div class="confidence-bar">
+                    <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
+                </div>
+                <small>${confidencePercent}%</small>
+            `;
+        });
+    }
+
+    // --- UTILITY & EXPORT FUNCTIONS ---
+    function generateAnalyticsSummary(mappings) {
+        const summary = {
+            totalOriginalCodes: mappings.length,
+            uniqueCleanNames: new Set(mappings.map(m => m.clean_name).filter(n => n && !n.startsWith('ERROR'))).size,
+            modalityBreakdown: {}, 
+            contrastUsage: { with: 0, without: 0, 'with and without': 0, none: 0 },
+            lateralityDistribution: { left: 0, right: 0, bilateral: 0, none: 0 },
+            genderContextBreakdown: { male: 0, female: 0, pregnancy: 0, none: 0 },
+            clinicalContextBreakdown: { emergency: 0, screening: 0, follow_up: 0, intervention: 0, none: 0 },
+            avgConfidence: 0,
+            genderContextCount: 0
+        };
+        summary.consolidationRatio = summary.uniqueCleanNames > 0 ? (summary.totalOriginalCodes / summary.uniqueCleanNames).toFixed(2) : "0.00";
+        
+        const cleanNameGroups = {};
+        let totalConfidence = 0;
+        let confidenceCount = 0;
+        
+        mappings.forEach(m => {
+            if (!m.components || (m.clean_name && m.clean_name.startsWith('ERROR'))) return;
+            const { modality_code, components } = m;
+            const modality = m.components.modality || modality_code;
+            if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
+            
+            const contrastType = (Array.isArray(components.contrast) 
+                ? (components.contrast.length > 0 ? components.contrast[0] : 'none')
+                : String(components.contrast || 'none')).replace(' ', '_');
+            if(summary.contrastUsage.hasOwnProperty(contrastType)) summary.contrastUsage[contrastType]++;
+            
+            const laterality = (Array.isArray(components.laterality) 
+                ? (components.laterality.length > 0 ? components.laterality[0] : 'none')
+                : (components.laterality || 'none')).toLowerCase();
+            if(summary.lateralityDistribution.hasOwnProperty(laterality)) summary.lateralityDistribution[laterality]++;
+            
+            // Enhanced analytics
+            const genderContext = components.gender_context || 'none';
+            if(summary.genderContextBreakdown.hasOwnProperty(genderContext)) {
+                summary.genderContextBreakdown[genderContext]++;
+                if(genderContext !== 'none') summary.genderContextCount++;
+            }
+            
+            const clinicalContexts = components.clinical_context || [];
+            if(clinicalContexts.length > 0) {
+                clinicalContexts.forEach(context => {
+                    if(summary.clinicalContextBreakdown.hasOwnProperty(context)) {
+                        summary.clinicalContextBreakdown[context]++;
+                    }
+                });
+            } else {
+                summary.clinicalContextBreakdown.none++;
+            }
+            
+            if(components.confidence !== undefined) {
+                totalConfidence += components.confidence;
+                confidenceCount++;
+            }
+
+            if (!cleanNameGroups[m.clean_name]) cleanNameGroups[m.clean_name] = [];
+            cleanNameGroups[m.clean_name].push(m);
+        });
+        
+        summary.avgConfidence = confidenceCount > 0 ? Math.round((totalConfidence / confidenceCount) * 100) : 0;
+        summary.topConsolidatedExams = Object.entries(cleanNameGroups)
+            .filter(([, group]) => group.length > 1).sort((a, b) => b[1].length - a[1].length).slice(0, 10)
+            .map(([cleanName, group]) => ({
+                cleanName, originalCount: group.length,
+                examples: group.slice(0, 3).map(m => ({ source: m.data_source, code: m.exam_code, name: m.exam_name }))
+            }));
+        return summary;
+    }
+
+    function exportResults() {
+        if (!allMappings.length) return alert('No data to export.');
+        downloadJSON(allMappings, 'radiology_codes_cleaned.json');
+    }
+
+    function exportSummary() {
+        if (!summaryData) return alert('No summary to export.');
+        let report = `ENHANCED RADIOLOGY CODE CLEANING SUMMARY\n========================================\n`;
+        report += `Total Original Codes: ${summaryData.totalOriginalCodes}\n`;
+        report += `Unique Clean Names: ${summaryData.uniqueCleanNames}\n`;
+        report += `Consolidation Ratio: ${summaryData.consolidationRatio}:1\n`;
+        report += `Average Confidence: ${summaryData.avgConfidence}%\n`;
+        report += `Gender Context Detected: ${summaryData.genderContextCount} codes\n\n`;
+        
+        report += `GENDER CONTEXT BREAKDOWN\n-----------------------\n`;
+        Object.entries(summaryData.genderContextBreakdown).forEach(([context, count]) => {
+            if(count > 0) report += `${context}: ${count}\n`;
+        });
+        
+        report += `\nCLINICAL CONTEXT BREAKDOWN\n-------------------------\n`;
+        Object.entries(summaryData.clinicalContextBreakdown).forEach(([context, count]) => {
+            if(count > 0) report += `${context}: ${count}\n`;
+        });
+        
+        report += `\nTOP CONSOLIDATED EXAMS\n----------------------\n`;
+        summaryData.topConsolidatedExams.forEach(exam => {
+            report += `\n"${exam.cleanName}" (${exam.originalCount} codes)\n`;
+            exam.examples.forEach(ex => report += `   - [${ex.source}] ${ex.code}: ${ex.name}\n`);
+        });
+        downloadText(report, 'enhanced_radiology_cleaning_summary.txt');
+    }
+    
+    function showConsolidationExamples() {
+        if (!summaryData || !summaryData.topConsolidatedExams.length) return alert('No consolidation data available.');
+        const examplesDiv = document.getElementById('consolidationExamples');
+        examplesDiv.innerHTML = '';
+        summaryData.topConsolidatedExams.forEach(exam => {
+            const card = document.createElement('div');
+            card.className = 'example-card';
+            card.innerHTML = `<h4>${exam.cleanName} (${exam.originalCount} original codes)</h4>
+                              <div class="original-codes">
+                                  ${exam.examples.map(ex => `• [${ex.source}] ${ex.code}: "${ex.name}"`).join('<br>')}
+                                  ${exam.originalCount > 3 ? `<br>• ... and ${exam.originalCount - 3} more` : ''}
+                              </div>`;
+            examplesDiv.appendChild(card);
+        });
+        document.getElementById('consolidationModal').style.display = 'flex';
+    }
+
+    function closeModal() { 
+        document.getElementById('consolidationModal').style.display = 'none'; 
+    }
+    
+    // --- CONSOLIDATED VIEW FUNCTIONS ---
+    let consolidatedData = [];
+    let filteredConsolidatedData = [];
+    
+    function generateConsolidatedResults(mappings) {
+        const consolidatedGroups = {};
+        
+        // Group mappings by clean name
+        mappings.forEach(mapping => {
+            if (!mapping.clean_name || mapping.clean_name.startsWith('ERROR')) return;
+            
+            const cleanName = mapping.clean_name;
+            if (!consolidatedGroups[cleanName]) {
+                consolidatedGroups[cleanName] = {
+                    cleanName: cleanName,
+                    sourceCodes: [],
+                    totalCount: 0,
+                    avgConfidence: 0,
+                    components: mapping.components,
+                    dataSources: new Set(),
+                    modalities: new Set()
+                };
+            }
+            
+            consolidatedGroups[cleanName].sourceCodes.push({
+                dataSource: mapping.data_source,
+                examCode: mapping.exam_code,
+                examName: mapping.exam_name,
+                confidence: mapping.components.confidence || 0
+            });
+            
+            consolidatedGroups[cleanName].totalCount++;
+            consolidatedGroups[cleanName].dataSources.add(mapping.data_source);
+            consolidatedGroups[cleanName].modalities.add(mapping.modality_code);
+        });
+        
+        // Calculate average confidence for each group
+        Object.values(consolidatedGroups).forEach(group => {
+            const totalConfidence = group.sourceCodes.reduce((sum, code) => sum + code.confidence, 0);
+            group.avgConfidence = totalConfidence / group.sourceCodes.length;
+        });
+        
+        consolidatedData = Object.values(consolidatedGroups);
+        filteredConsolidatedData = [...consolidatedData];
+        sortConsolidatedResults();
+    }
+    
+    // --- MODEL TOGGLE FUNCTIONS (moved to top of DOMContentLoaded) ---
+    
+    function showFullView() {
+        document.getElementById('fullView').style.display = 'block';
+        document.getElementById('consolidatedView').style.display = 'none';
+        document.getElementById('fullViewBtn').classList.add('active');
+        document.getElementById('consolidatedViewBtn').classList.remove('active');
+    }
+    
+    function showConsolidatedView() {
+        document.getElementById('fullView').style.display = 'none';
+        document.getElementById('consolidatedView').style.display = 'block';
+        document.getElementById('fullViewBtn').classList.remove('active');
+        document.getElementById('consolidatedViewBtn').classList.add('active');
+        displayConsolidatedResults();
+    }
+    
+    function displayConsolidatedResults() {
+        const container = document.getElementById('consolidatedResults');
+        container.innerHTML = '';
+        
+        filteredConsolidatedData.forEach(group => {
+            const groupElement = document.createElement('div');
+            groupElement.className = 'consolidated-group';
+            
+            const confidencePercent = Math.round(group.avgConfidence * 100);
+            const confidenceClass = group.avgConfidence >= 0.8 ? 'confidence-high' : 
+                                   group.avgConfidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
+            
+            groupElement.innerHTML = `
+                <div class="consolidated-header">
+                    <div class="consolidated-title">${group.cleanName}</div>
+                    <div class="consolidated-count">${group.totalCount} codes</div>
+                </div>
+                <div class="consolidated-body">
+                    <div class="consolidated-meta">
+                        <div><strong>Sources:</strong> ${Array.from(group.dataSources).join(', ')}</div>
+                        <div><strong>Modalities:</strong> ${Array.from(group.modalities).join(', ')}</div>
+                        <div><strong>Avg Confidence:</strong> 
+                            <span class="confidence-bar">
+                                <span class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></span>
+                            </span>
+                            ${confidencePercent}%
+                        </div>
+                    </div>
+                    <div class="consolidated-components">
+                        ${generateComponentTags(group.components)}
+                    </div>
+                    <div class="source-codes">
+                        ${group.sourceCodes.map(code => `
+                            <div class="source-code">
+                                <div class="source-code-header">
+                                    <span>[${code.dataSource}] ${code.examCode}</span>
+                                </div>
+                                <div class="source-code-name">${code.examName}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(groupElement);
+        });
+    }
+    
+    function generateComponentTags(components) {
+        let tags = '';
+        
+        if (components.anatomy) {
+            components.anatomy.forEach(a => tags += `<span class="tag anatomy">${a}</span>`);
+        }
+        if (components.laterality && components.laterality.length > 0) {
+            const lateralityValue = Array.isArray(components.laterality) 
+                ? components.laterality.join(', ') 
+                : components.laterality;
+            tags += `<span class="tag laterality">${lateralityValue}</span>`;
+        }
+        if (components.contrast && components.contrast.length > 0) {
+            const contrastValue = Array.isArray(components.contrast) 
+                ? components.contrast.join(', ') 
+                : components.contrast;
+            tags += `<span class="tag contrast">${contrastValue}</span>`;
+        }
+        if (components.technique) {
+            components.technique.forEach(t => tags += `<span class="tag technique">${t}</span>`);
+        }
+        if (components.gender_context) {
+            tags += `<span class="tag gender">${components.gender_context}</span>`;
+        }
+        if (components.clinical_context) {
+            components.clinical_context.forEach(c => tags += `<span class="tag clinical">${c}</span>`);
+        }
+        
+        return tags;
+    }
+    
+    function filterConsolidatedResults() {
+        const searchTerm = document.getElementById('consolidatedSearch').value.toLowerCase();
+        
+        if (searchTerm === '') {
+            filteredConsolidatedData = [...consolidatedData];
+        } else {
+            filteredConsolidatedData = consolidatedData.filter(group => 
+                group.cleanName.toLowerCase().includes(searchTerm) ||
+                group.sourceCodes.some(code => 
+                    code.examName.toLowerCase().includes(searchTerm) ||
+                    code.examCode.toLowerCase().includes(searchTerm)
+                )
+            );
+        }
+        
+        sortConsolidatedResults();
+    }
+    
+    function sortConsolidatedResults() {
+        const sortBy = document.getElementById('consolidatedSort').value;
+        
+        filteredConsolidatedData.sort((a, b) => {
+            switch (sortBy) {
+                case 'count':
+                    return b.totalCount - a.totalCount;
+                case 'name':
+                    return a.cleanName.localeCompare(b.cleanName);
+                case 'confidence':
+                    return b.avgConfidence - a.avgConfidence;
+                default:
+                    return b.totalCount - a.totalCount;
+            }
+        });
+        
+        displayConsolidatedResults();
+    }
+
+    // preventDefaults function moved to top of DOMContentLoaded
+
+    function downloadJSON(data, filename) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        triggerDownload(blob, filename);
+    }
+
+    function downloadText(text, filename) {
+        const blob = new Blob([text], { type: 'text/plain' });
+        triggerDownload(blob, filename);
+    }
+
+    function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+    
+    // Event listener for file input change  
+    function handleFileSelect(e) {
+        if (e.target.files[0]) {
+            processFile(e.target.files[0]);
+        }
+    }
     document.getElementById('fileInput').addEventListener('change', handleFileSelect);
 });
