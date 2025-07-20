@@ -1707,4 +1707,171 @@ window.addEventListener('DOMContentLoaded', function() {
                 errors: 0
             };
             
-            // Show
+            // Show progress and load sanity test data
+            statusManager.showProgress(
+                `Loading sanity test data...`,
+                0, 100
+            );
+            
+            statusManager.showStage('Loading Test Data', 'Loading 100 standard test cases');
+            
+            // Load sanity test data from backend
+            const response = await fetchWithRetry('/backend/core/sanity_test.json', { method: 'GET' }, 2, 8000);
+            if (!response.ok) {
+                throw new Error(`Failed to load sanity test data: ${response.status}`);
+            }
+            
+            const sanityTestCodes = await response.json();
+            console.log(`✓ Loaded ${sanityTestCodes.length} sanity test cases`);
+            
+            statusManager.showStage(
+                'AI Processing', 
+                `Processing exam names with ${formatModelName(currentModel)} biomedical language model`
+            );
+            
+            // Process each test case
+            const allMappings = [];
+            
+            for (let i = 0; i < sanityTestCodes.length; i++) {
+                const code = sanityTestCodes[i];
+                
+                // Update progress
+                processingState.processedItems = i + 1;
+                statusManager.showProgress(
+                    `Processing sanity test cases...`,
+                    i + 1, sanityTestCodes.length
+                );
+                
+                // Show current exam being processed
+                const examStatusId = statusManager.show(
+                    `<div class="current-exam">
+                        <div class="exam-label">Testing:</div>
+                        <div class="exam-value">${code.EXAM_NAME}</div>
+                        <div class="exam-meta">${code.DATA_SOURCE} | ${code.MODALITY_CODE}</div>
+                    </div>`,
+                    'progress',
+                    false
+                );
+                
+                try {
+                    statusManager.showStage('API Request', 'Sending exam to AI processing engine');
+                    
+                    const apiResponse = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            exam_name: code.EXAM_NAME,
+                            model: currentModel
+                        })
+                    });
+                    
+                    statusManager.showStage('Parsing Response', 'Processing AI engine results');
+                    
+                    const parsed = await apiResponse.json();
+                    
+                    // Check for cache hit
+                    if (parsed.metadata && parsed.metadata.cache_hit) {
+                        processingState.cacheHits++;
+                    }
+                    
+                    // Add the original data and processed result
+                    allMappings.push({
+                        ...code,
+                        clean_name: parsed.clean_name || 'UNKNOWN',
+                        components: parsed.components || {},
+                        metadata: parsed.metadata || {}
+                    });
+                    
+                } catch (error) {
+                    console.error(`Error processing ${code.EXAM_NAME}:`, error);
+                    statusManager.show(
+                        `<div class="processing-error">
+                            <div class="error-icon">⚠</div>
+                            <div class="error-details">
+                                <div class="error-exam">${code.EXAM_NAME}</div>
+                                <div class="error-reason">${error.message}</div>
+                            </div>
+                        </div>`,
+                        'error',
+                        3000
+                    );
+                    
+                    processingState.errors++;
+                    allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
+                }
+                
+                // Remove current exam status after processing
+                statusManager.remove(examStatusId);
+                
+                // Show processing stats every 10 items or at the end
+                if (i % 10 === 0 || i === sanityTestCodes.length - 1) {
+                    const elapsedTime = Date.now() - processingState.startTime;
+                    const itemsPerSecond = processingState.processedItems > 0 ? 
+                        Math.round((processingState.processedItems / (elapsedTime / 1000)) * 10) / 10 : 0;
+                    
+                    statusManager.showStats({
+                        elapsedTime,
+                        processedItems: processingState.processedItems,
+                        totalItems: processingState.totalItems,
+                        cacheHits: processingState.cacheHits,
+                        errors: processingState.errors,
+                        itemsPerSecond
+                    });
+                }
+            }
+            
+            // Processing complete
+            const elapsedTime = Date.now() - processingState.startTime;
+            const formattedTime = formatProcessingTime(elapsedTime);
+            
+            statusManager.show(
+                `<div class="processing-complete">
+                    <div class="complete-icon">✓</div>
+                    <div class="complete-message">
+                        <div class="complete-title">Sanity Test Complete</div>
+                        <div class="complete-details">
+                            <span>${allMappings.length} test cases processed</span>
+                            <span>${processingState.errors} errors</span>
+                            <span>${formattedTime} total time</span>
+                        </div>
+                    </div>
+                </div>`,
+                'success'
+            );
+            
+            processingState.isProcessing = false;
+            
+            // Generate and display results
+            console.log('🧪 Sanity test results:', allMappings);
+            
+            // Show analysis and visualizations for the test results
+            statusManager.showStage('Analysis', 'Analyzing test results and generating report');
+            runAnalysis(allMappings);
+            
+        } catch (error) {
+            console.error('❌ Sanity test failed:', error);
+            statusManager.show(
+                `<div class="error-alert">
+                    <div class="error-title">Sanity Test Failed</div>
+                    <div class="error-message">${error.message}</div>
+                    <div class="error-suggestion">Check the console for more details.</div>
+                </div>`,
+                'error'
+            );
+            
+            processingState.isProcessing = false;
+            
+        } finally {
+            // Reset UI
+            button.disabled = false;
+            button.innerHTML = 'Run Sanity Test';
+            progressFill.style.width = '0%';
+            showUploadInterface();
+        }
+    }
+
+    // Event listener for file input change
+    document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+});

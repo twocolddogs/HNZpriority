@@ -16,10 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Critical files that should trigger cache invalidation when modified
 CRITICAL_FILES = [
-    # ML Model files
-    'radiology_classifier.pkl',
-    'radiology_vectorizer.pkl', 
-    'radiology_mlb.pkl',
+  
     
     # Processing logic files
     'nhs_lookup_engine.py',
@@ -27,15 +24,13 @@ CRITICAL_FILES = [
     'parsing_utils.py',
     'parser.py',
     'app.py',
+    'context_detection.py',
+    'config.yaml',
+    'preprocessing.py',
     
     # Data files
-    'abbreviations.csv',
-    'base_code_set.csv',
-    'code_set.json',
     'core/NHS.json',
-    
-    # Vector embeddings (if exists)
-    'resources/BioWordVec_PubMed_MIMICIII_d200.vec'
+ 
 ]
 
 def get_file_hash(file_path: str) -> Optional[str]:
