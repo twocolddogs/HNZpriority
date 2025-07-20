@@ -159,19 +159,6 @@ class RadiologySemanticParser:
 
         return " ".join(part for part in parts if part).strip()
 
-    def _calculate_confidence(self, result: Dict, original_exam_name: str) -> float:
-        """Calculates a basic confidence score based on what components were found."""
-        score = 0.5  # Base score for a valid input
-        if result.get('anatomy'):
-            score += 0.3
-        if result.get('modality') not in ['Other', 'Unknown']:
-            score += 0.1
-        if result.get('contrast'):
-            score += 0.05
-        if result.get('laterality'):
-            score += 0.05
-        
-        # Ensure the score is within a valid range [0.1, 1.0]
-        return max(0.1, min(1.0, round(score, 4)))
+    
 
 # --- END OF FILE parser.py ---

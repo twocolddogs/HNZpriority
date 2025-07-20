@@ -217,39 +217,28 @@ class NHSLookupEngine:
         return max(0.0, min(1.0, final_score))
 
     def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor) -> Dict:
-        """
-        Formats the final result, intelligently combining the best match from NHS data
-        with the specific clinical details (contrast, laterality) from the user's input.
-        This version is for the V2.4 single-model pipeline.
-        """
+        
         model_name = getattr(nlp_proc, 'model_key', 'default').split('/')[-1]
         source_name = f'UNIFIED_MATCH_V2_4_CONFIG_{model_name.upper()}'
         is_interventional = bool(best_match.get('_interventional_terms', []))
         
-        # Start with the authoritative name from the matched NHS entry as the base
+        # Start with the authoritative name from the matched NHS entry.
         clean_name = best_match.get('primary_source_name', '')
         
-        # --- INTELLIGENT AUGMENTATION LOGIC ---
-        # Get the specific details parsed from the *original user input*
+        # --- MODIFICATION START ---
+        # Check if the original input was ambiguous and we've matched to a bilateral/both entry.
+        # This condition detects if the "smart swap" in standardize_exam() was triggered.
         input_laterality = (extracted_input_components.get('laterality') or [None])[0]
-        input_contrast = (extracted_input_components.get('contrast') or [None])[0]
+        match_components = best_match.get('_parsed_components', {})
+        match_laterality = (match_components.get('laterality') or [None])[0]
 
-        # 1. Augment Clean Name with Laterality if it's missing from the base name
-        clean_name_lower = clean_name.lower()
-        if input_laterality == 'left' and not any(lat in clean_name_lower for lat in ['left', ' lt']):
-            clean_name += " Lt"
-        elif input_laterality == 'right' and not any(lat in clean_name_lower for lat in ['right', ' rt']):
-            clean_name += " Rt"
-        elif input_laterality == 'bilateral' and not any(lat in clean_name_lower for lat in ['bilateral', 'both']):
-            clean_name += " Both"
-
-        # 2. Augment Clean Name with Contrast if it's missing from the base name
-        if input_contrast == 'with' and 'with contrast' not in clean_name_lower:
-            clean_name += " with contrast"
-        # Note: We intentionally don't add "without contrast" as it's often implied.
-        # The 'components' dictionary will correctly reflect the 'without' status.
-
-        # 3. Final Output Assembly
+        if not input_laterality and match_laterality == 'bilateral':
+            # If so, remove "Both" or "Bilateral" from the clean_name to reflect
+            # the user's ambiguous input, while keeping the correct bilateral components.
+            clean_name = re.sub(r'\s+\b(both|bilateral)\b', '', clean_name, flags=re.I).strip()
+        # --- MODIFICATION END ---
+            
+        # Final Output Assembly
         # The 'components' dictionary MUST reflect the user's original parsed input for accuracy.
         return {
             'clean_name': clean_name.strip(),
