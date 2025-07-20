@@ -523,6 +523,17 @@ function formatPercentage(value, total, precision = 1) {
     return statusManager.formatPercentage(value, total, precision);
 }
 
+// Batch processing configuration - matches backend NLP_BATCH_SIZE
+// To configure batch size: set window.ENV.NLP_BATCH_SIZE or backend env var NLP_BATCH_SIZE
+function getBatchSize() {
+    // Check for environment variable (in production this could be set via build-time env vars)
+    if (typeof window !== 'undefined' && window.ENV && window.ENV.NLP_BATCH_SIZE) {
+        return parseInt(window.ENV.NLP_BATCH_SIZE);
+    }
+    // Default batch size (same as backend default)
+    return 1000;
+}
+
 window.addEventListener('DOMContentLoaded', function() {
     // --- DYNAMIC API CONFIGURATION ---
     function detectApiUrls() {
@@ -539,17 +550,6 @@ window.addEventListener('DOMContentLoaded', function() {
             fallback: { base: 'https://radiology-api-staging.onrender.com', mode: 'STAGING (Direct)' }
         };
         
-        // Batch processing configuration - matches backend NLP_BATCH_SIZE
-        // To configure batch size: set window.ENV.NLP_BATCH_SIZE or backend env var NLP_BATCH_SIZE
-        const getBatchSize = () => {
-            // Check for environment variable (in production this could be set via build-time env vars)
-            if (typeof window !== 'undefined' && window.ENV && window.ENV.NLP_BATCH_SIZE) {
-                return parseInt(window.ENV.NLP_BATCH_SIZE);
-            }
-            // Default batch size (same as backend default)
-            return 1000;
-        };
-
         // --- UTILITY FUNCTIONS (defined early to avoid hoisting issues) ---
         function preventDefaults(e) { 
             e.preventDefault(); 
@@ -1282,15 +1282,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     processingState.cacheHits++;
                 }
                 
-                // Update exam status to show results
-                statusManager.update(
-                    examStatusId,
-                    `<div class="current-exam">
-                        <div class="exam-label">Processed:</div>
-                        <div class="exam-value">${code.EXAM_NAME}</div>
-                        <div class="exam-result">→ ${parsed.clean_name}</div>
-                    </div>`
-                );
+                // Status updates handled by periodic progress messages
                 
                 allMappings.push({
                     data_source: code.DATA_SOURCE,
@@ -1314,15 +1306,7 @@ window.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 console.error(`Failed to parse code: ${code.EXAM_NAME}`, error);
                 
-                // Update exam status to show error
-                statusManager.update(
-                    examStatusId,
-                    `<div class="current-exam error">
-                        <div class="exam-label">Error:</div>
-                        <div class="exam-value">${code.EXAM_NAME}</div>
-                        <div class="exam-error">${error.message}</div>
-                    </div>`
-                );
+                // Error handled by periodic progress messages
                 
                 processingState.errors++;
                 allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
@@ -1816,8 +1800,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
                 }
                 
-                // Remove current exam status after processing
-                statusManager.remove(examStatusId);
+                // Status cleanup handled by periodic progress messages
                 
                 // Show processing stats every 10 items or at the end
                 if (i % 10 === 0 || i === sanityTestCodes.length - 1) {
