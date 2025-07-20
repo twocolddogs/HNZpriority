@@ -86,7 +86,6 @@ class RadiologySemanticParser:
         
         return {
             'clean_name': self._build_clean_name(parsed),
-            'confidence': self._calculate_confidence(parsed, exam_name),
             **parsed
         }
 
