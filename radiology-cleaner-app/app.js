@@ -630,7 +630,7 @@ window.addEventListener('DOMContentLoaded', function() {
             try {
                 // Show network activity in status system for long operations
                 if (timeoutMs > 5000) {
-                    statusManager.show(`Connecting to server (attempt ${attempt}/${maxRetries})...`, 'network');
+                    statusManager.show(`Connecting to server (attempt ${attempt}/${maxRetries})...`, 'network', 3000);
                 }
                 
                 const res = await fetch(url, { ...options, signal: controller.signal });
@@ -644,7 +644,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         return res; // let caller decide
                     }
                     console.warn(`Fetch ${url} failed (status ${res.status}), retrying ${attempt}/${maxRetries}…`);
-                    statusManager.show(`Request failed (${res.status}), retrying...`, 'warning');
+                    statusManager.show(`Request failed (${res.status}), retrying...`, 'warning', 3000);
                 } else {
                     if (timeoutMs > 5000) {
                         statusManager.show(`Connected to server successfully`, 'success', 1500);
@@ -662,7 +662,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     throw err;
                 }
                 console.warn(`Fetch ${url} error '${err}', retrying ${attempt}/${maxRetries}…`);
-                statusManager.show(`Connection error, retrying (${attempt}/${maxRetries})...`, 'warning');
+                statusManager.show(`Connection error, retrying (${attempt}/${maxRetries})...`, 'warning', 3000);
             }
             // exponential backoff: 0.5s,1s,2s…
             await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt - 1)));
@@ -671,7 +671,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
     async function testApiConnectivity() {
         try {
-            statusManager.show('Testing API connectivity...', 'network');
+            statusManager.show('Testing API connectivity...', 'network', 5000);
             const response = await fetchWithRetry(apiConfig.HEALTH_URL, { method: 'GET' }, 2, 5000);
             if (response.ok) {
                 console.log('✓ API connectivity test passed');
@@ -691,7 +691,7 @@ window.addEventListener('DOMContentLoaded', function() {
     async function loadAvailableModels() {
         try {
             console.log('🔍 Fetching available models from backend...');
-            statusManager.show('Loading AI models...', 'network');
+            statusManager.show('Loading AI models...', 'network', 8000);
             const response = await fetchWithRetry(MODELS_URL, { method: 'GET' }, 2, 8000);
             if (response.ok) {
                 const modelsData = await response.json();
@@ -703,12 +703,12 @@ window.addEventListener('DOMContentLoaded', function() {
                 buildModelSelectionUI();
             } else {
                 console.warn('⚠ Models API unavailable, using fallback models');
-                statusManager.show('Could not load models from server, using fallbacks', 'warning');
+                statusManager.show('Could not load models from server, using fallbacks', 'warning', 5000);
                 useFallbackModels();
             }
         } catch (error) {
             console.error('✗ Failed to load models:', error);
-            statusManager.show('Failed to load AI models, using fallbacks', 'error');
+            statusManager.show('Failed to load AI models, using fallbacks', 'error', 5000);
             useFallbackModels();
         }
     }
@@ -1618,7 +1618,7 @@ window.addEventListener('DOMContentLoaded', function() {
         statusManager.clearAll();
         
         // Show loading message
-        statusManager.show('Reading file...', 'progress');
+        statusManager.show('Reading file...', 'progress', 5000);
 
         const reader = new FileReader();
         reader.onload = async function(e) {
