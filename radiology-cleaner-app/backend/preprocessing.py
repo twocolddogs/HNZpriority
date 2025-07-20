@@ -1,11 +1,11 @@
 # --- START OF FILE preprocessing.py ---
 
 # =============================================================================
-# PREPROCESSING MODULE (V2 - CONFIG-DRIVEN)
+# PREPROCESSING MODULE (V2.1 - CORRECTED)
 # =============================================================================
 # Cleans and normalizes radiology exam names before semantic analysis.
-# This version is enhanced to be driven by the config.yaml file, allowing
-# for flexible and powerful abbreviation expansion and noise reduction.
+# This version is driven by config.yaml and corrects the AttributeError by
+# removing the call to the now-deprecated .expand() method.
 
 import re
 import logging
@@ -30,9 +30,8 @@ class ExamPreprocessor:
     
     def __init__(self, abbreviation_expander=None, nhs_clean_names=None, config=None):
         """Initialize with optional abbreviation expander and configuration."""
+        # The abbreviation_expander is now only used for ordinal normalization.
         self.abbreviation_expander = abbreviation_expander
-        # The nhs_clean_names protection is no longer needed due to the dual-lookup strategy.
-        self.nhs_clean_names = nhs_clean_names or set()
         
         # Load configuration for enhanced preprocessing from config.yaml
         if config is None:
@@ -53,18 +52,13 @@ class ExamPreprocessor:
     
     def _init_patterns(self):
         """Set up regex patterns and string lists for text cleaning."""
-        # Patterns for removing administrative qualifiers that add no clinical value.
-        # Expanded to remove operational noise for better clinical grouping.
         self.admin_qualifier_patterns = [
             (r'\s*\((non-acute|acute|mobile|portable|ward|stat)\)\s*', ' '),
             (r'\b(mobile|portable|ward|stat|opd|inpatient|outpatient)\b', ' ')
         ]
         
-        # 'NO REPORT' suffixes to remove, ordered by specificity to avoid partial matches.
         self.no_report_patterns = [
-            " - NO REPORT",    # Most specific
-            "- NO REPORT", 
-            "NO REPORT"        # Least specific
+            " - NO REPORT", " -NO REPORT", "- NO REPORT", "NO REPORT"
         ]
     
     def _remove_no_report_suffix(self, text: str) -> str:
@@ -72,7 +66,6 @@ class ExamPreprocessor:
         cleaned = text
         for pattern in self.no_report_patterns:
             if cleaned.upper().endswith(pattern):
-                # Remove the pattern and strip any resulting whitespace
                 return cleaned[:-len(pattern)].strip()
         return cleaned
     
@@ -86,30 +79,24 @@ class ExamPreprocessor:
     def _expand_abbreviations(self, text: str) -> str:
         """
         Unified and enhanced abbreviation expansion using config.yaml.
-        This is now the core normalization engine, handling contrast, medical terms,
-        and anatomical synonyms in one powerful, maintainable step.
+        This is now the core normalization engine.
         """
         cleaned = text
         
-        # Apply all medical abbreviations from config (includes contrast terms like C+).
-        # Using word boundaries (\b) is crucial to avoid partial matches (e.g., 'C' in 'Cervical').
+        # Apply all medical abbreviations from config.
         for abbrev, expansion in self.medical_abbreviations.items():
             pattern = r'\b' + re.escape(abbrev) + r'\b'
             cleaned = re.sub(pattern, expansion, cleaned, flags=re.IGNORECASE)
         
-        # Apply anatomy synonyms normalization
+        # Apply anatomy synonyms normalization from config.
         for synonym, standard in self.anatomy_synonyms.items():
             pattern = r'\b' + re.escape(synonym) + r'\b'
             cleaned = re.sub(pattern, standard, cleaned, flags=re.IGNORECASE)
         
-        # Apply legacy abbreviation expander for general, non-medical terms if available.
-        if self.abbreviation_expander:
-            cleaned = self.abbreviation_expander.expand(cleaned)
-        
         return cleaned
     
     def _normalize_ordinals(self, text: str) -> str:
-        """Convert ordinal numbers to standardized forms (e.g., 1st -> First)."""
+        """Convert ordinal numbers (e.g., 3rd -> Third)."""
         if not self.abbreviation_expander:
             return text
         return self.abbreviation_expander.normalize_ordinals(text)
@@ -117,13 +104,9 @@ class ExamPreprocessor:
     def _handle_special_characters(self, text: str) -> str:
         """Clean up special characters that interfere with parsing."""
         cleaned = text
-        
-        # Replace common delimiters with spaces for better word tokenization.
-        # This is more robust than individual 'if char in text' checks.
         cleaned = re.sub(r'[\[\]()/]', ' ', cleaned)
         cleaned = cleaned.replace('&', ' and ')
         cleaned = cleaned.replace(',', ' ')
-        
         return cleaned
     
     def _normalize_whitespace(self, text: str) -> str:
@@ -133,40 +116,23 @@ class ExamPreprocessor:
     def preprocess(self, exam_name: str) -> str:
         """
         Apply the complete, prioritized preprocessing pipeline.
-        
-        The order of operations is critical:
-        1. Remove specific suffixes/qualifiers.
-        2. Expand all configured abbreviations (this is the main step).
-        3. Clean up remaining special characters and whitespace.
-        
-        Args:
-            exam_name: Raw exam name from data source.
-            
-        Returns:
-            A cleaned and normalized exam name ready for semantic analysis.
         """
         if not exam_name:
             return ""
         
         cleaned = exam_name
         
-        # Apply preprocessing steps in a logical, dependency-aware order
         cleaned = self._remove_no_report_suffix(cleaned)
         cleaned = self._remove_admin_qualifiers(cleaned)
-        
-        # This is now the core normalization engine, handling contrast, acronyms, etc.
         cleaned = self._expand_abbreviations(cleaned)
-        
         cleaned = self._handle_special_characters(cleaned)
         cleaned = self._normalize_ordinals(cleaned)
-        
-        # Final cleanup step
         cleaned = self._normalize_whitespace(cleaned)
         
         return cleaned
     
     def preprocess_batch(self, exam_names: list) -> list:
-        """Process multiple exam names in a single operation for efficiency."""
+        """Process multiple exam names in a single operation."""
         return [self.preprocess(exam_name) for exam_name in exam_names]
 
 # =============================================================================
@@ -176,8 +142,7 @@ _preprocessor: Optional[ExamPreprocessor] = None
 
 def initialize_preprocessor(abbreviation_expander=None, config=None):
     """
-    Set up the global preprocessor instance with the given abbreviation expander
-    and the 'preprocessing' section of the application configuration.
+    Set up the global preprocessor instance.
     """
     global _preprocessor
     _preprocessor = ExamPreprocessor(abbreviation_expander, config=config)
@@ -189,7 +154,7 @@ def preprocess_exam_name(exam_name: str) -> str:
     return _preprocessor.preprocess(exam_name)
 
 def get_preprocessor() -> Optional[ExamPreprocessor]:
-    """Access the global preprocessor instance for advanced operations."""
+    """Access the global preprocessor instance."""
     return _preprocessor
 
 # --- END OF FILE preprocessing.py ---
