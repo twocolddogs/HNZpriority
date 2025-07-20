@@ -534,6 +534,45 @@ function getBatchSize() {
     return 1000;
 }
 
+// --- UTILITY FUNCTIONS (globally accessible) ---
+function preventDefaults(e) { 
+    e.preventDefault(); 
+    e.stopPropagation();
+}
+
+// --- GLOBAL VARIABLES ---
+let currentModel = 'default'; // Initialize the current model
+let availableModels = {}; // Store available models from API
+
+// --- MODEL TOGGLE FUNCTIONS (globally accessible) ---
+function switchModel(modelKey) {
+    console.log(`🔄 switchModel called with modelKey: ${modelKey}`);
+    
+    // Validate model exists and is available
+    if (!availableModels[modelKey] || availableModels[modelKey].status !== 'available') {
+        console.warn(`Model ${modelKey} is not available. Status:`, availableModels[modelKey]?.status);
+        return;
+    }
+    
+    console.log(`✓ Switching to model: ${modelKey}`);
+    
+    // Update global state
+    currentModel = modelKey;
+    
+    // Update UI - toggle active states
+    document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
+    
+    // Activate selected model button
+    const selectedButton = document.getElementById(`${modelKey}ModelBtn`);
+    if (selectedButton) {
+        selectedButton.classList.add('active');
+    }
+    
+    // Show feedback message
+    const displayName = formatModelName(modelKey);
+    statusManager.show(`Switched to ${displayName} model`, 'success', 3000);
+}
+
 window.addEventListener('DOMContentLoaded', function() {
     // --- DYNAMIC API CONFIGURATION ---
     function detectApiUrls() {
@@ -549,41 +588,6 @@ window.addEventListener('DOMContentLoaded', function() {
             production: { base: '/api', mode: 'PRODUCTION (Proxied)' },
             fallback: { base: 'https://radiology-api-staging.onrender.com', mode: 'STAGING (Direct)' }
         };
-        
-        // --- UTILITY FUNCTIONS (defined early to avoid hoisting issues) ---
-        function preventDefaults(e) { 
-            e.preventDefault(); 
-            e.stopPropagation();
-        }
-
-        // --- MODEL TOGGLE FUNCTIONS ---
-        function switchModel(modelKey) {
-            console.log(`🔄 switchModel called with modelKey: ${modelKey}`);
-            
-            // Validate model exists and is available
-            if (!availableModels[modelKey] || availableModels[modelKey].status !== 'available') {
-                console.warn(`Model ${modelKey} is not available. Status:`, availableModels[modelKey]?.status);
-                return;
-            }
-            
-            console.log(`✓ Switching to model: ${modelKey}`);
-            
-            // Update global state
-            currentModel = modelKey;
-            
-            // Update UI - toggle active states
-            document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
-            
-            // Activate selected model button
-            const selectedButton = document.getElementById(`${modelKey}ModelBtn`);
-            if (selectedButton) {
-                selectedButton.classList.add('active');
-            }
-            
-            // Show feedback message
-            const displayName = formatModelName(modelKey);
-            statusManager.show(`Switched to ${displayName} model`, 'success', 3000);
-        }
         
         let config;
         if (isLocalhost) config = apiConfigs.local;
@@ -822,8 +826,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- STATE ---
     let allMappings = [];
     let summaryData = null;
-    let currentModel = 'default'; // Initialize the current model
-    let availableModels = {}; // Store available models from API
+    // currentModel and availableModels are now global variables
     let processingState = {
         isProcessing: false,
         currentStage: '',
