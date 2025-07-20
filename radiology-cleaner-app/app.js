@@ -632,10 +632,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeoutMs);
             try {
-                // Show network activity in status system for long operations
-                if (timeoutMs > 5000) {
-                    statusManager.show(`Connecting to server (attempt ${attempt}/${maxRetries})...`, 'network', 3000);
-                }
+                // Network activity handled silently
                 
                 const res = await fetch(url, { ...options, signal: controller.signal });
                 clearTimeout(id);
@@ -650,9 +647,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     console.warn(`Fetch ${url} failed (status ${res.status}), retrying ${attempt}/${maxRetries}…`);
                     statusManager.show(`Request failed (${res.status}), retrying...`, 'warning', 3000);
                 } else {
-                    if (timeoutMs > 5000) {
-                        statusManager.show(`Connected to server successfully`, 'success', 1500);
-                    }
+                    // Connection successful - no status message needed
                     return res;
                 }
             } catch (err) {
@@ -675,18 +670,18 @@ window.addEventListener('DOMContentLoaded', function() {
 
     async function testApiConnectivity() {
         try {
-            statusManager.show('Testing API connectivity...', 'network', 5000);
+            // Test connectivity silently
             const response = await fetchWithRetry(apiConfig.HEALTH_URL, { method: 'GET' }, 2, 5000);
             if (response.ok) {
                 console.log('✓ API connectivity test passed');
-                statusManager.show('API connection successful', 'success', 2000);
+                // No status message - silent success
             } else {
                 console.warn('⚠ API health check failed:', response.status);
-                statusManager.show(`API health check failed: ${response.status}`, 'warning');
+                // Only show error if API is completely down
             }
         } catch (error) {
             console.error('✗ API connectivity test failed:', error);
-            statusManager.show('API connection failed - check your network', 'error');
+            // Only show error if API is completely down
         }
     }
     testApiConnectivity();
@@ -695,7 +690,7 @@ window.addEventListener('DOMContentLoaded', function() {
     async function loadAvailableModels() {
         try {
             console.log('🔍 Fetching available models from backend...');
-            statusManager.show('Loading AI models...', 'network', 8000);
+            // Load models silently
             const response = await fetchWithRetry(MODELS_URL, { method: 'GET' }, 2, 8000);
             if (response.ok) {
                 const modelsData = await response.json();
@@ -1526,7 +1521,7 @@ window.addEventListener('DOMContentLoaded', function() {
                             <div class="stats-value">${formatModelName(stats.model_used)}</div>
                         </div>
                     </div>`,
-                    'info'
+                    'info', 8000
                 );
                 
                 console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${formattedTime} total`);
@@ -1573,7 +1568,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
             </div>`,
-            'success'
+            'success', 8000
         );
         
         processingState.isProcessing = false;
@@ -1652,7 +1647,6 @@ window.addEventListener('DOMContentLoaded', function() {
                 await processBatch(codes);
                 
                 // Run analysis and show results
-                statusManager.showStage('Analysis', 'Analyzing results and generating visualizations');
                 runAnalysis(allMappings);
 
             } catch (error) {
@@ -1838,7 +1832,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 </div>`,
-                'success'
+                'success', 8000
             );
             
             processingState.isProcessing = false;
@@ -1847,7 +1841,6 @@ window.addEventListener('DOMContentLoaded', function() {
             console.log('🧪 Sanity test results:', allMappings);
             
             // Show analysis and visualizations for the test results
-            statusManager.showStage('Analysis', 'Analyzing test results and generating report');
             runAnalysis(allMappings);
             
         } catch (error) {
