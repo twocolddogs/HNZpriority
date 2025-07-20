@@ -488,28 +488,22 @@ let availableModels = {}; // Store available models from API
 function switchModel(modelKey) {
     console.log(`🔄 switchModel called with modelKey: ${modelKey}`);
     
-    // Validate model exists and is available
     if (!availableModels[modelKey] || availableModels[modelKey].status !== 'available') {
         console.warn(`Model ${modelKey} is not available. Status:`, availableModels[modelKey]?.status);
         return;
     }
     
     console.log(`✓ Switching to model: ${modelKey}`);
-    
-    // Update global state
     currentModel = modelKey;
     
-    // Update UI - toggle active states
     document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
-    
-    // Activate selected model button
     const selectedButton = document.getElementById(`${modelKey}ModelBtn`);
     if (selectedButton) {
         selectedButton.classList.add('active');
     }
     
-    // Show feedback message
     const displayName = formatModelName(modelKey);
+    // USE THIS:
     statusManager.show(`Switched to ${displayName} model`, 'success', 3000);
 }
 
@@ -1074,46 +1068,28 @@ window.addEventListener('DOMContentLoaded', function() {
         summaryData = null;
         
         // Clear any status messages
-        const existingStatus = document.getElementById('statusMessage');
-        if (existingStatus) existingStatus.style.display = 'none';
+        statusManager.clearAll();
         
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // --- STATUS MESSAGING ---
-    function updateStatusMessage(message) {
-        const statusDiv = document.getElementById('statusMessage');
-        if (!statusDiv) {
-            // Create status message div if it doesn't exist
-            const newStatusDiv = document.createElement('div');
-            newStatusDiv.id = 'statusMessage';
-            newStatusDiv.style.cssText = `
-                margin: 10px 0;
-                padding: 12px 16px;
-                background: var(--color-info-light, #e3f2fd);
-                border: 1px solid var(--color-info, #2196f3);
-                border-radius: 6px;
-                font-size: 14px;
-                color: var(--color-gray-700, #555);
-                font-weight: 500;
-            `;
-            // Insert after file info
-            const fileInfo = document.getElementById('fileInfo');
-            fileInfo.parentNode.insertBefore(newStatusDiv, fileInfo.nextSibling);
-        }
-        document.getElementById('statusMessage').innerHTML = message;
-        document.getElementById('statusMessage').style.display = 'block';
-    }
+    
 
     // --- CORE PROCESSING FUNCTIONS ---
     // Process files individually (for small files)
     async function processIndividually(codes) {
-        updateStatusMessage(`Processing ${codes.length} exam records individually (one by one)...`);
-        
+    // Inform the user this is a slower fallback method
+    statusManager.show('Batch processing failed. Using slower individual processing...', 'warning', 6000);
+    
+    // This function will now update a single progress message in real-time
+    try {
         for (let i = 0; i < codes.length; i++) {
             const code = codes[i];
             
+            // Update the progress bar before each API call for a responsive feel
+            // The showProgress method is designed to be updated repeatedly
+            statusManager.showProgress('Processing record', i + 1, codes.length);
             
             try {
                 const response = await fetch(API_URL, {
@@ -1149,9 +1125,13 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Individual processing complete
-        updateStatusMessage(`Individual processing complete! ${allMappings.length} exam records processed.`);
+        statusManager.show(`Individual processing complete! ${allMappings.length} records processed.`, 'success', 8000);
+
+    } finally {
+        // Use the dedicated method to clean up the progress, stage, and stats messages
+        statusManager.clearPersistentMessages();
     }
+}
     
     // Process files in batches (for large files)
     async function processBatch(codes) {
@@ -1267,9 +1247,6 @@ window.addEventListener('DOMContentLoaded', function() {
         allMappings = [];
         summaryData = null;
         
-        // Clear any existing status message
-        const existingStatus = document.getElementById('statusMessage');
-        if (existingStatus) existingStatus.style.display = 'none';
 
         const reader = new FileReader();
         reader.onload = async function(e) {
@@ -1301,51 +1278,66 @@ window.addEventListener('DOMContentLoaded', function() {
 
 
     async function runSanityTest() {
-        console.log('🧪 Sanity test button clicked - starting test...');
-        const button = document.getElementById('sanityTestBtn');
+    console.log('🧪 Sanity test button clicked - starting test...');
+    const button = document.getElementById('sanityTestBtn');
+    let statusId = null; // To hold the ID of the "in-progress" message
 
-        try {
-            // UI updates for processing
-            hideUploadInterface();
-            button.disabled = true;
-            button.innerHTML = 'Processing Test Cases...';
-            fileInfo.innerHTML = `<strong>Test running:</strong> Verifying engine performance...`;
-            fileInfo.style.display = 'block';
-            updateStatusMessage(`Calling backend sanity test endpoint with model: '${currentModel}'...`);
+    try {
+        // UI updates for processing
+        hideUploadInterface();
+        button.disabled = true;
+        button.innerHTML = 'Processing Test Cases...';
+        fileInfo.innerHTML = `<strong>Test running:</strong> Verifying engine performance...`;
+        fileInfo.style.display = 'block';
 
-            // Debug: Log the URL being called
-            console.log('Sanity test URL:', apiConfig.SANITY_TEST_URL);
-            console.log('API config:', apiConfig);
+        // Show a "progress" message that we can remove later
+        statusId = statusManager.show(`Running 100-exam test suite with model: '${currentModel}'...`, 'progress');
 
-            // Call the correct backend endpoint
-            const response = await fetch(apiConfig.SANITY_TEST_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: currentModel })
-            });
+        // Call the correct backend endpoint
+        const response = await fetch(apiConfig.SANITY_TEST_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: currentModel })
+        });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`API returned status ${response.status}: ${errorText}`);
-            }
-
-            allMappings = await response.json();
-            console.log(`Completed processing. Generated ${allMappings.length} results.`);
-            statusManager.show(`Sanity test complete!`, 'success', 5000);
-            
-            // Run analysis on the results
-            runAnalysis(allMappings);
-
-        } catch (error) {
-            console.error('Sanity test failed:', error);
-            fileInfo.innerHTML = `<div class="file-details error"><h3>❌ Sanity Test Failed</h3><p><strong>Error:</strong> ${error.message}</p></div>`;
-            showUploadInterface();
-        } finally {
-            // Restore button state
-            button.disabled = false;
-            button.innerHTML = '100 Exam Test Suite';
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API returned status ${response.status}: ${errorText}`);
         }
+
+        allMappings = await response.json();
+        console.log(`Completed processing. Generated ${allMappings.length} results.`);
+        
+        // On success, explicitly remove the progress message and show a success one
+        statusManager.remove(statusId);
+        statusId = null; // Clear the ID so the 'finally' block doesn't try to remove it again
+        statusManager.show(`Sanity test complete! Processed ${allMappings.length} records.`, 'success', 5000);
+        
+        // Run analysis on the results
+        runAnalysis(allMappings);
+
+    } catch (error) {
+        console.error('Sanity test failed:', error);
+        fileInfo.innerHTML = `<div class="file-details error"><h3>❌ Sanity Test Failed</h3><p><strong>Error:</strong> ${error.message}</p></div>`;
+        
+        // Show a persistent error message so the user can read it
+        statusManager.show(`<strong>Sanity Test Failed:</strong> ${error.message}`, 'error', 0);
+        showUploadInterface(); // Let the user try again or upload a file
+        
+    } finally {
+        // This 'finally' block ensures the UI is always restored correctly
+        
+        // If an error occurred before the success message, the progress status might still be visible.
+        // This ensures it's always removed.
+        if (statusId) {
+            statusManager.remove(statusId);
+        }
+        
+        // Restore button state
+        button.disabled = false;
+        button.innerHTML = '100 Exam Test Suite';
     }
+}
 
     function runAnalysis(mappings) {
         summaryData = generateAnalyticsSummary(mappings);
@@ -1689,36 +1681,7 @@ window.addEventListener('DOMContentLoaded', function() {
         sortConsolidatedResults();
     }
     
-    // --- MODEL TOGGLE FUNCTIONS ---
-    function switchModel(modelKey) {
-        // Validate model exists and is available
-        if (!availableModels[modelKey] || availableModels[modelKey].status !== 'available') {
-            console.warn(`Model ${modelKey} is not available`);
-            return;
-        }
-        
-        // Update global state
-        currentModel = modelKey;
-        
-        // Update UI - toggle active states
-        document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
-        
-        // Activate selected model button
-        const selectedButton = document.getElementById(`${modelKey}ModelBtn`);
-        if (selectedButton) {
-            selectedButton.classList.add('active');
-        }
-        
-        console.log(`Switched to ${modelKey} model (${availableModels[modelKey].name})`);
-        
-        // Show notification with dynamic model name
-        const displayName = formatModelName(modelKey);
-        updateStatusMessage(`Switched to ${displayName} model`);
-        setTimeout(() => {
-            const statusDiv = document.getElementById('statusMessage');
-            if (statusDiv) statusDiv.style.display = 'none';
-        }, 3000);
-    }
+    
     
     function showFullView() {
         document.getElementById('fullView').style.display = 'block';
