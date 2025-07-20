@@ -324,11 +324,10 @@ def parse_batch():
         results = []
         errors = []
         
-        # Dynamically size the worker pool based on CPU count.
-        # For I/O-bound work (API calls + light parsing) a 4× multiplier
-        # usually saturates the network without overwhelming the host.
+        # Conservative thread pool sizing for batch processing to prevent resource exhaustion.
+        # Use a more conservative approach to avoid overwhelming the system during initialization.
         cpu_cnt = os.cpu_count() or 1
-        max_workers = min(32, cpu_cnt * 4)
+        max_workers = min(8, max(2, cpu_cnt))
         logger.info(f"ThreadPoolExecutor starting with max_workers={max_workers}")
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
