@@ -974,14 +974,17 @@ a:focus-visible {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-6);
+  /* smaller minimum width so more cards fit per row */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  /* tighter gap for denser layout */
+  gap: var(--space-4);
   margin: var(--space-8) 0;
 }
 
 .stat-card {
   background: var(--color-gray-50);
-  padding: var(--space-6);
+  /* reduce internal padding */
+  padding: var(--space-4);
   border-radius: var(--radius-base);
   text-align: center;
   border: 1px solid var(--color-gray-200);
@@ -993,14 +996,16 @@ a:focus-visible {
 }
 
 .stat-value {
-  font-size: var(--font-size-4xl);
+  /* slightly smaller value font to fit compact card */
+  font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-primary);
   margin-bottom: var(--space-2);
 }
 
 .stat-label {
-  font-size: var(--font-size-sm);
+  /* smaller label text */
+  font-size: var(--font-size-xs);
   color: var(--color-gray-600);
   text-transform: uppercase;
   letter-spacing: 0.5px;

@@ -1,14 +1,11 @@
 # --- START OF FILE nhs_lookup_engine.py ---
 
 # =============================================================================
-# NHS LOOKUP ENGINE (V2.3 - ADVANCED SCORING & CONFIG-DRIVEN)
+# NHS LOOKUP ENGINE (V2.4 - CORRECTED INITIALIZATION)
 # =============================================================================
-# This version integrates a highly configurable and nuanced scoring model.
-# - It loads all weights, bonuses, and penalties from config.yaml.
-# - The scoring algorithm is a sophisticated blend of semantic similarity,
-#   component matching, contextual bonuses, and specificity penalties.
-# - It includes intelligent logic for handling ambiguous laterality.
-# - It trusts that `sync_cache.py` has provided the local FAISS index.
+# This version corrects a KeyError during cache building by ensuring that
+# the preprocessed NHS names are correctly created and stored during engine
+# initialization. It retains the advanced, config-driven scoring model.
 
 import json
 import logging
@@ -48,17 +45,16 @@ class NHSLookupEngine:
         
         self._load_nhs_data()
         self._build_lookup_tables()
-        self._preprocess_and_parse_nhs_data()
+        self._preprocess_and_parse_nhs_data() # This method will now function correctly
         
         self._embeddings_loaded = False
 
-        # Define specificity stop words (can be moved to config)
         self._specificity_stop_words = {
             'a', 'an', 'the', 'and', 'or', 'with', 'without', 'for', 'of', 'in', 'on', 'to',
             'ct', 'mr', 'mri', 'us', 'xr', 'x-ray', 'nm', 'pet', 'scan', 'imaging', 'procedure',
             'examination', 'study', 'left', 'right', 'bilateral', 'contrast', 'view'
         }
-        logger.info("NHSLookupEngine initialized with Advanced Scoring architecture.")
+        logger.info("NHSLookupEngine initialized with Advanced Scoring architecture (v2.4).")
 
     def _load_config(self, config_path):
         """Loads scoring weights and parameters from a YAML config file."""
@@ -72,7 +68,6 @@ class NHSLookupEngine:
                 logger.info(f"Loaded enhanced scoring configuration from {config_path}")
         except Exception as e:
             logger.error(f"Could not load or parse {config_path}. Using default weights. Error: {e}")
-            # Fallback to default configuration
             self.config = {
                 'retriever_top_k': 25, 'weights_component': {'anatomy': 0.35, 'modality': 0.25, 'laterality': 0.15, 'contrast': 0.15, 'technique': 0.10},
                 'weights_final': {'component': 0.55, 'semantic': 0.35, 'frequency': 0.10}, 'interventional_bonus': 0.15, 'interventional_penalty': -0.20,
@@ -96,17 +91,28 @@ class NHSLookupEngine:
         logger.info(f"Built SNOMED lookup table with {len(self.snomed_lookup)} entries")
 
     def _preprocess_and_parse_nhs_data(self):
+        """
+        CORRECTED METHOD: Ensures that preprocessed names are created and stored
+        in each NHS data entry before they are needed for cache building or scoring.
+        """
         if not self.semantic_parser: raise RuntimeError("Semantic Parser required.")
         preprocessor = get_preprocessor()
         if not preprocessor: raise RuntimeError("Preprocessor not initialized.")
         
         for entry in self.nhs_data:
+            snomed_fsn_raw = entry.get("snomed_fsn", "").strip()
             primary_name_raw = entry.get("primary_source_name", "").strip()
-            # Use the same powerful preprocessor on NHS data for consistency
-            clean_name = preprocessor.preprocess(primary_name_raw)
-            entry["_clean_primary_name_for_embedding"] = clean_name
-            entry["_interventional_terms"] = detect_interventional_procedure_terms(clean_name)
-            entry['_parsed_components'] = self.semantic_parser.parse_exam_name(clean_name, 'Other')
+            
+            snomed_fsn_clean = re.sub(r'\s*\((procedure|qualifier value|finding)\)$', '', snomed_fsn_raw, flags=re.I).strip()
+
+            # ** THE FIX IS HERE **
+            # Preprocess and assign the cleaned names to the expected internal keys.
+            entry["_clean_fsn_for_embedding"] = preprocessor.preprocess(snomed_fsn_clean)
+            entry["_clean_primary_name_for_embedding"] = preprocessor.preprocess(primary_name_raw)
+            
+            # These subsequent calls now have the clean names they need to function correctly.
+            entry["_interventional_terms"] = detect_interventional_procedure_terms(entry["_clean_primary_name_for_embedding"])
+            entry['_parsed_components'] = self.semantic_parser.parse_exam_name(entry["_clean_primary_name_for_embedding"], 'Other')
 
     def _find_local_cache_file(self) -> Optional[str]:
         cache_dir = os.environ.get('RENDER_DISK_PATH', 'embedding-caches')
@@ -141,11 +147,9 @@ class NHSLookupEngine:
         
         if not self.vector_index: return {'error': 'Vector index not loaded.', 'confidence': 0.0}
             
-        # 1. RETRIEVAL STAGE
         input_embedding = nlp_proc.get_text_embedding(input_exam)
         if input_embedding is None: return {'error': 'Failed to generate embedding for input.', 'confidence': 0.0}
         
-        # Use a simple ensemble of the same vector to match the index dimension
         input_ensemble_embedding = np.concatenate([input_embedding, input_embedding]).astype('float32')
         faiss.normalize_L2(input_ensemble_embedding.reshape(1, -1))
 
@@ -155,7 +159,6 @@ class NHSLookupEngine:
         candidate_snomed_ids = [self.index_to_snomed_id[i] for i in indices[0] if i < len(self.index_to_snomed_id)]
         candidate_entries = [self.snomed_lookup[str(sid)] for sid in candidate_snomed_ids if str(sid) in self.snomed_lookup]
 
-        # 2. RANKING STAGE
         best_match, highest_confidence = None, 0.0
         
         for i, entry in enumerate(candidate_entries):
@@ -177,7 +180,6 @@ class NHSLookupEngine:
                 highest_confidence, best_match = current_score, entry
 
         if best_match:
-            # 3. POST-RANKING LOGIC (SMART LATERALITY)
             input_laterality = (extracted_input_components.get('laterality') or [None])[0]
             match_laterality = (best_match.get('_parsed_components', {}).get('laterality') or [None])[0]
             
@@ -193,22 +195,17 @@ class NHSLookupEngine:
 
     def _calculate_match_score(self, input_exam_text, input_components, nhs_entry, semantic_score, interventional_score, specificity_penalty):
         nhs_components = nhs_entry.get('_parsed_components', {})
-        
-        # Calculate individual component scores
         w = self.config['weights_component']
         anatomy_score = self._calculate_set_score(input_components, nhs_components, 'anatomy')
         modality_score = self._calculate_modality_score(input_components.get('modality'), nhs_components.get('modality'))
         laterality_score = 1.0 if (input_components.get('laterality') or [None])[0] == (nhs_components.get('laterality') or [None])[0] else 0.5
         contrast_score = self._calculate_contrast_score((input_components.get('contrast') or [None])[0], (nhs_components.get('contrast') or [None])[0])
         technique_score = self._calculate_set_score(input_components, nhs_components, 'technique')
-        
         component_score = (w['anatomy'] * anatomy_score + w['modality'] * modality_score + w['laterality'] * laterality_score + w['contrast'] * contrast_score + w['technique'] * technique_score)
         
-        # Combine into a base weighted score
         wf = self.config['weights_final']
         final_score = (wf['component'] * component_score + wf['semantic'] * semantic_score)
         
-        # Apply bonuses and penalties
         final_score += interventional_score
         final_score += self._calculate_context_bonus(input_exam_text, nhs_entry)
         final_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
@@ -217,11 +214,11 @@ class NHSLookupEngine:
         if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
             final_score += self.config.get('exact_match_bonus', 0.25)
             
-        return max(0.0, min(1.0, final_score)) # Clamp score between 0 and 1
+        return max(0.0, min(1.0, final_score))
 
     def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor) -> Dict:
         model_name = getattr(nlp_proc, 'model_key', 'default').split('/')[-1]
-        source_name = f'UNIFIED_MATCH_V2_3_CONFIG_{model_name.upper()}'
+        source_name = f'UNIFIED_MATCH_V2_4_CONFIG_{model_name.upper()}'
         is_interventional = bool(best_match.get('_interventional_terms', []))
         
         return {
@@ -232,7 +229,6 @@ class NHSLookupEngine:
             **extracted_input_components
         }
 
-    # --- New and Refactored Helper Methods ---
     def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
         specific_components = specific_entry.get('_parsed_components')
         if not specific_components: return None
@@ -291,7 +287,6 @@ class NHSLookupEngine:
         return 0.0
 
     def validate_consistency(self):
-        """Checks for SNOMED IDs mapped to multiple primary names."""
         snomed_to_names = defaultdict(set)
         for entry in self.nhs_data:
             if snomed_id := entry.get("snomed_concept_id"):
