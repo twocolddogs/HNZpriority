@@ -151,12 +151,14 @@ class ContrastMapper:
             'with': [
                 r'\bWITH_CONTRAST\b',  # Standard token from preprocessing
                 r'\bw\s*c\b',          # Handle cases like "w c"
-                r'\bpost\s*contrast\b'
+                r'\bpost\s*contrast\b',
+                r'\bc\+\b'             # Handle "C+" notation
             ],
             'without': [
                 r'\bWITHOUT_CONTRAST\b',# Standard token from preprocessing
-                r'\bnon-?contrast\b',
-                r'\bplain\b'
+                r'\bnon[-\s]?contrast\b', # Handle "non-contrast", "non contrast", "noncontrast"
+                r'\bplain\b',
+                r'\bc-\b'               # Handle "C-" notation
             ]
         }
         self.compiled_patterns = {
