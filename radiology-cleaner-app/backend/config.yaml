@@ -171,6 +171,30 @@ scoring:
       - ["artery", "bone"]
       - ["vein", "muscle"]
   
+  # HYBRID MODALITY CONSTRAINTS - Prevent inappropriate hybrid modality confusion  
+  # CRITICAL: These rules prevent PET/CT → PET/MRI type errors that could affect clinical workflow
+  hybrid_modality_constraints:
+    enable: true  # Enable hybrid modality constraint checking
+    blocking_penalty: -6.0  # Penalty for inappropriate hybrid modality mapping
+    
+    # Define hybrid modality constraint rules
+    # Format: input_contains → must_not_match_nhs_containing
+    hybrid_incompatibilities:
+      # PET/CT hybrid scans should not match PET/MRI procedures
+      - input_pattern: "pet.*ct|pet/ct|pet-ct"
+        nhs_exclusions: ["pet.*mri", "pet/mri", "pet-mri", "mri.*pet"]
+        reason: "PET/CT should not map to PET/MRI procedures"
+        
+      # PET/MRI hybrid scans should not match PET/CT procedures  
+      - input_pattern: "pet.*mri|pet/mri|pet-mri"
+        nhs_exclusions: ["pet.*ct", "pet/ct", "pet-ct", "ct.*pet"]
+        reason: "PET/MRI should not map to PET/CT procedures"
+        
+      # CT/MRI combinations should be constrained
+      - input_pattern: "ct.*mri|ct/mri"
+        nhs_exclusions: ["mri.*ct", "mri/ct"]
+        reason: "Mixed CT/MRI modalities should have consistent ordering"
+
   # DIAGNOSTIC PROTECTION RULES - Prevent diagnostic exams mapping to interventional procedures
   # CRITICAL: These rules protect standard/routine diagnostic exams from being mapped to interventional procedures
   diagnostic_protection:

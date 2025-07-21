@@ -228,6 +228,13 @@ class NHSLookupEngine:
             logger.debug(f"Diagnostic protection violation detected, returning 0.0 confidence")
             return 0.0
         
+        # PIPELINE STEP: Check hybrid modality constraints  
+        # Prevent inappropriate hybrid modality confusion (e.g., PET/CT → PET/MRI)
+        hybrid_modality_penalty = self._check_hybrid_modality_constraints(input_exam_text, nhs_entry)
+        if hybrid_modality_penalty < -1.0:
+            logger.debug(f"Hybrid modality constraint violation detected, returning 0.0 confidence")
+            return 0.0
+        
         modality_score = self._calculate_modality_score(input_components.get('modality'), nhs_components.get('modality'))
         contrast_score = self._calculate_contrast_score((input_components.get('contrast') or [None])[0], (nhs_components.get('contrast') or [None])[0])
         technique_score = self._calculate_set_score(input_components, nhs_components, 'technique')
@@ -453,6 +460,53 @@ class NHSLookupEngine:
                           f"NHS entry has interventional indicators {triggered_interventional} "
                           f"(penalty: {blocking_penalty})")
             return blocking_penalty
+        
+        # No violation detected
+        return 0.0
+    
+    def _check_hybrid_modality_constraints(self, input_exam_text: str, nhs_entry: dict) -> float:
+        """
+        Check hybrid modality constraints to prevent inappropriate hybrid modality confusion.
+        
+        PIPELINE STEP: This method prevents hybrid modality confusion like PET/CT → PET/MRI 
+        that could affect clinical workflow and equipment availability.
+        
+        Args:
+            input_exam_text: Original user input exam name
+            nhs_entry: NHS database entry being considered for matching
+            
+        Returns:
+            float: 0.0 for normal processing, or penalty for hybrid modality violations
+        """
+        # Get hybrid modality constraints config
+        hybrid_config = self.config.get('hybrid_modality_constraints', {})
+        if not hybrid_config.get('enable', False):
+            return 0.0
+        
+        # Get constraint rules and penalty
+        incompatibilities = hybrid_config.get('hybrid_incompatibilities', [])
+        blocking_penalty = hybrid_config.get('blocking_penalty', -6.0)
+        
+        # Convert to lowercase for case-insensitive matching
+        input_lower = input_exam_text.lower()
+        nhs_name_lower = nhs_entry.get('primary_source_name', '').lower()
+        
+        # Check each hybrid incompatibility rule
+        for rule in incompatibilities:
+            input_pattern = rule.get('input_pattern', '')
+            nhs_exclusions = rule.get('nhs_exclusions', [])
+            reason = rule.get('reason', 'Hybrid modality constraint')
+            
+            # Check if input matches the pattern
+            if input_pattern and re.search(input_pattern, input_lower):
+                # Check if NHS entry matches any exclusion pattern
+                for exclusion_pattern in nhs_exclusions:
+                    if exclusion_pattern and re.search(exclusion_pattern, nhs_name_lower):
+                        logger.warning(f"HYBRID MODALITY CONSTRAINT VIOLATION: {reason}. "
+                                      f"Input '{input_exam_text}' matches pattern '{input_pattern}', "
+                                      f"NHS entry '{nhs_entry.get('primary_source_name', '')}' "
+                                      f"matches exclusion '{exclusion_pattern}' (penalty: {blocking_penalty})")
+                        return blocking_penalty
         
         # No violation detected
         return 0.0
