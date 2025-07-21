@@ -182,7 +182,7 @@ class NHSLookupEngine:
         if best_match:
             input_laterality = (extracted_input_components.get('laterality') or [None])[0]
             match_laterality = (best_match.get('_parsed_components', {}).get('laterality') or [None])[0]
-            strip_laterality = (not input_laterality and match_laterality in ['left', 'right'])
+            strip_laterality = (not input_laterality and match_laterality in ['left', 'right', 'bilateral'])
 
             if strip_laterality:
                 if bilateral_peer := self.find_bilateral_peer(best_match):
@@ -227,6 +227,7 @@ class NHSLookupEngine:
         final_score += interventional_score
         final_score += self._calculate_context_bonus(input_exam_text, nhs_entry)
         final_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
+        final_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
         final_score -= specificity_penalty
         
         if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
@@ -269,6 +270,7 @@ class NHSLookupEngine:
             'is_diagnostic': not is_interventional,
             'is_interventional': is_interventional,
             'source': source_name,
+            'ambiguous': strip_laterality_from_name,  # Track when laterality was stripped due to ambiguous input
             'components': final_components # Return the components nested under one key
         }
 
@@ -303,8 +305,19 @@ class NHSLookupEngine:
         return self.modality_similarity.get(input_modality, {}).get(nhs_modality, 0.0)
     
     def _calculate_contrast_score(self, input_contrast: Optional[str], nhs_contrast: Optional[str]) -> float:
-        if input_contrast == nhs_contrast: return 1.0
-        if not input_contrast or not nhs_contrast: return self.config.get('contrast_null_score', 0.7)
+        # Perfect match (both same, including both None)
+        if input_contrast == nhs_contrast: 
+            # Bonus for both being None when preference is enabled
+            if (not input_contrast and not nhs_contrast and 
+                self.config.get('prefer_no_contrast_when_unspecified', False)):
+                return 1.0 + self.config.get('no_contrast_preference_bonus', 0.15)
+            return 1.0
+        
+        # One has contrast, one doesn't
+        if not input_contrast or not nhs_contrast: 
+            return self.config.get('contrast_null_score', 0.7)
+        
+        # Both have contrast but different types (with vs without)    
         return self.config.get('contrast_mismatch_score', 0.3)
     
     def _calculate_context_bonus(self, input_exam: str, nhs_entry: dict) -> float:
@@ -327,6 +340,38 @@ class NHSLookupEngine:
             if (abbrev_l in input_lower and expansion_l in nhs_name_lower) or \
                (expansion_l in input_lower and abbrev_l in nhs_name_lower):
                 return self.config.get('synonym_match_bonus', 0.15)
+        return 0.0
+    
+    def _calculate_biopsy_modality_preference(self, input_exam: str, nhs_entry: dict) -> float:
+        """Calculate preference bonus/penalty for biopsy procedures based on modality."""
+        if not self.config.get('biopsy_modality_preference', False):
+            return 0.0
+            
+        input_lower = input_exam.lower()
+        nhs_name_lower = nhs_entry.get('primary_source_name', '').lower()
+        
+        # Check if this is a biopsy procedure without explicit modality in input
+        has_biopsy = 'biopsy' in input_lower or 'bx' in input_lower
+        if not has_biopsy:
+            return 0.0
+            
+        # Check if input already specifies a modality (if so, don't apply preference)
+        explicit_modalities = ['ct', 'us', 'ultrasound', 'fluoroscop', 'mri', 'mr']
+        if any(mod in input_lower for mod in explicit_modalities):
+            return 0.0
+            
+        # Apply modality preference based on NHS entry modality/name
+        nhs_components = nhs_entry.get('_parsed_components', {})
+        nhs_modality = nhs_components.get('modality', '').lower()
+        
+        # Check both modality and name content for guidance type
+        if nhs_modality == 'ct' or 'ct' in nhs_name_lower:
+            return self.config.get('biopsy_ct_preference_bonus', 0.25)
+        elif nhs_modality == 'us' or any(term in nhs_name_lower for term in ['us', 'ultrasound', 'sonograph']):
+            return self.config.get('biopsy_us_preference_bonus', 0.20)
+        elif nhs_modality in ['fluoroscopy', 'fl'] or any(term in nhs_name_lower for term in ['fluoroscop', 'fluoro']):
+            return self.config.get('biopsy_fl_preference_penalty', -0.15)
+            
         return 0.0
 
     def validate_consistency(self):

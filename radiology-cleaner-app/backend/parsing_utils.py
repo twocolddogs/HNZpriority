@@ -60,14 +60,14 @@ class AnatomyExtractor:
             'hands': 'hand', 'finger': 'finger', 'fingers': 'finger', 'thumb': 'thumb', 'thumbs': 'thumb', 
             'hip': 'hip', 'hips': 'hip', 'thigh': 'thigh', 'thighs': 'thigh', 'knee': 'knee', 'knees': 'knee', 
             'leg': 'leg', 'legs': 'leg', 'ankle': 'ankle', 'ankles': 'ankle', 'foot': 'foot', 'feet': 'foot', 
-            'toe': 'toe', 'toes': 'toe', 'breast': 'breast', 'breasts': 'breast', 'mammary': 'breast',
+            'toe': 'toe', 'toes': 'toe', 'breast': 'breast', 'breasts': 'breast', 'mammary': 'breast', 'mammogram': 'breast', 'mammography': 'breast',
             'thyroid': 'thyroid', 'bone': 'bone', 'bones': 'bone', 'joint': 'joint', 'joints': 'joint', 
             'soft tissue': 'soft tissue', 'muscle': 'muscle', 'muscles': 'muscle', 
             'adrenal': 'adrenal', 'adrenals': 'adrenal', 'biliary': 'biliary', 'gallbladder': 'gallbladder', 
             'lymph node': 'lymph node', 'lymph nodes': 'lymph node', 'parotid': 'parotid', 'submandibular': 'submandibular', 
             'salivary gland': 'salivary gland', 'salivary glands': 'salivary gland', 'aortic arch': 'aortic arch', 
             'carotid': 'carotid', 'carotid arteries': 'carotid', 'eye': 'eye', 'eyes': 'eye', 'ear': 'ear', 'ears': 'ear',
-            'scrotum': 'scrotum', 'testes': 'testes', 'testis': 'testes'
+            'scrotum': 'scrotum', 'testes': 'testes', 'testis': 'testes', 'whole body': 'whole body'
         }
         return anatomy_vocab
 

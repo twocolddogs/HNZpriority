@@ -34,10 +34,20 @@ scoring:
   contrast_mismatch_score: 0.3      # Increased from 0.1 for fairer scoring
   contrast_null_score: 0.7          # Increased from 0.5 for missing contrast info
   
+  # Contrast preference scoring - prefer non-contrast when input has no contrast
+  prefer_no_contrast_when_unspecified: true  # Enable preferential non-contrast matching
+  no_contrast_preference_bonus: 0.15         # Bonus for non-contrast when input has no contrast
+  
   # AGE/GENDER CONTEXT SCORING - Super-strong bonuses for matches
   gender_context_match_bonus: 0.20  # Strong bonus for gender context matches
   age_context_match_bonus: 0.15     # Strong bonus for age context matches
   pregnancy_context_bonus: 0.25     # Extra strong bonus for pregnancy context
+  
+  # BIOPSY MODALITY PREFERENCE - When exam name has "biopsy" but no explicit modality
+  biopsy_modality_preference: true   # Enable biopsy modality preference scoring
+  biopsy_ct_preference_bonus: 0.25   # Strong preference for CT-guided biopsies
+  biopsy_us_preference_bonus: 0.20   # Strong preference for US-guided biopsies
+  biopsy_fl_preference_penalty: -0.15 # Reduce preference for fluoroscopic biopsies
 
 # Modality similarity matrix for partial credit scoring
 # Allows related modalities to receive partial credit instead of zero
@@ -198,6 +208,7 @@ preprocessing:
     # LATERALITY AND DIRECTIONAL ABBREVIATIONS
     "BILAT": "bilateral"
     "BIL": "bilateral"
+    "BOTH": "bilateral"
     "RT": "right"
     "LT": "left"
     "R": "right"

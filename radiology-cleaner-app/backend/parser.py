@@ -59,6 +59,9 @@ class RadiologySemanticParser:
             ]],
             'Non-Vascular Interventional': [re.compile(p, re.I) for p in [
                 r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation|insertion|insert)\b'
+            ]],
+            'FDG PET': [re.compile(p, re.I) for p in [
+                r'\b(fdg|fluorodeoxyglucose|18f-fluorodeoxyglucose)\b'
             ]]
         }
 
@@ -91,25 +94,27 @@ class RadiologySemanticParser:
 
     def _parse_modality(self, lower_name: str, modality_code: str) -> str:
         """Determines modality from text, falling back to the provided code."""
-        explicit_modality_patterns = {
-            'CT': re.compile(r'\b(ct|computed tomography)\b', re.I),
-            'MRI': re.compile(r'\b(mr|mri|mra|magnetic resonance)\b', re.I),
-            'MG': re.compile(r'\b(mg|mammo|mamm|mammography|mammogram|tomosynthesis|tomo|br)\b', re.I),
-            'US': re.compile(r'\b(us|ultrasound|sonogram|doppler|duplex)\b', re.I),
-            'NM': re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy)\b', re.I),
-            'PET': re.compile(r'\b(pet|positron emission)\b', re.I),
-            'DEXA': re.compile(r'\b(dexa|dxa|bone densitometry)\b', re.I),
-            'Fluoroscopy': re.compile(r'\b(fl|fluoroscopy|barium|swallow|meal|enema)\b', re.I),
-            'XR': re.compile(r'\b(xr|x-ray|xray|radiograph|plain film|projection)\b', re.I),
-        }
+        # Order matters - check more specific modalities first to avoid conflicts
+        explicit_modality_patterns = [
+            ('IR', re.compile(r'\b(x-ray angiography.*(?:picc|peripherally inserted central catheter|biopsy|drainage|stent|intervention))\b', re.I)),
+            ('PET', re.compile(r'\b(pet|positron emission)\b', re.I)),
+            ('DEXA', re.compile(r'\b(dexa|dxa|bone densitometry|bone density|dual-energy x-ray absorptiometry)\b', re.I)),
+            ('MRI', re.compile(r'\b(mr|mri|mra|magnetic resonance)\b', re.I)),
+            ('MG', re.compile(r'\b(mg|mammo|mamm|mammography|mammogram|tomosynthesis|tomo|br)\b', re.I)),
+            ('US', re.compile(r'\b(us|ultrasound|sonogram|doppler|duplex)\b', re.I)),
+            ('NM', re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy)\b', re.I)),
+            ('Fluoroscopy', re.compile(r'\b(fl|fluoroscopy|barium|swallow|meal|enema)\b', re.I)),
+            ('CT', re.compile(r'\b(ct|computed tomography)\b', re.I)),
+            ('XR', re.compile(r'\b(xr|x-ray|xray|radiograph|plain film|projection)\b', re.I)),
+        ]
         
-        for modality, pattern in explicit_modality_patterns.items():
+        for modality, pattern in explicit_modality_patterns:
             if pattern.search(lower_name):
                 return modality # Return immediately if an explicit modality is found
 
         # Fallback to check for interventional/technique-based modalities
         inferred_modality_patterns = {
-        'IR': re.compile(r'\b(ir|interventional|xa|angiography|angiogram|dsa|picc|biopsy|drainage|stent)\b', re.I),
+        'IR': re.compile(r'\b(ir|interventional|xa|x-ray angiography|angiography|angiogram|dsa|picc|peripherally inserted central catheter|biopsy|drainage|stent)\b', re.I),
         # Add other inferred modalities here if needed
         }
 

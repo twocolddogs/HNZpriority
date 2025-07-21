@@ -53,8 +53,8 @@ class ExamPreprocessor:
     def _init_patterns(self):
         """Set up regex patterns and string lists for text cleaning."""
         self.admin_qualifier_patterns = [
-            (r'\s*\((non-acute|acute|mobile|portable|ward|stat)\)\s*', ' '),
-            (r'\b(mobile|portable|ward|stat|opd|inpatient|outpatient)\b', ' ')
+            (r'\s*\((non-acute|acute|mobile|portable|ward|stat|standard)\)\s*', ' '),
+            (r'\b(mobile|portable|ward|stat|opd|inpatient|outpatient|standard)\b', ' ')
         ]
         
         self.no_report_patterns = [
@@ -120,6 +120,10 @@ class ExamPreprocessor:
         cleaned = re.sub(r'[\[\]()/]', ' ', cleaned)
         cleaned = cleaned.replace('&', ' and ')
         cleaned = cleaned.replace(',', ' ')
+        # Clean up leftover hyphens and dashes
+        cleaned = re.sub(r'\s*-\s*$', '', cleaned)  # Remove trailing dash
+        cleaned = re.sub(r'^\s*-\s*', '', cleaned)  # Remove leading dash
+        cleaned = re.sub(r'\s+-\s+', ' ', cleaned)  # Replace spaced dashes with space
         return cleaned
     
     def _normalize_whitespace(self, text: str) -> str:
