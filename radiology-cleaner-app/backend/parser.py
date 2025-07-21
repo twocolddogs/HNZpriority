@@ -48,6 +48,7 @@ class RadiologySemanticParser:
         # MODIFICATION: Expanded and split interventional patterns for better granularity.
         # This allows the scoring engine to differentiate between vascular and non-vascular procedures.
         self.technique_patterns = {
+            'MRCP': [re.compile(p, re.I) for p in [r'\b(mrcp|magnetic resonance cholangiopancreatography|cholangiopancreatography)\b']],
             'HRCT': [re.compile(p, re.I) for p in [r'\b(hrct|high resolution)\b']],
             'Colonography': [re.compile(p, re.I) for p in [r'\b(colonography|virtual colonoscopy)\b']],
             'Doppler': [re.compile(p, re.I) for p in [r'\b(doppler|duplex)\b']],

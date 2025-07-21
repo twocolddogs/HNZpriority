@@ -1201,12 +1201,15 @@ a:focus-visible {
 }
 
 .consolidated-meta {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-4);
   margin-bottom: var(--space-4);
   font-size: var(--font-size-sm);
   color: var(--color-gray-600);
+  padding: var(--space-3);
+  background: var(--color-gray-50);
+  border-radius: var(--radius-base);
 }
 
 .meta-row {
@@ -1219,7 +1222,8 @@ a:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  min-width: 200px;
+  min-width: 0; /* Allow items to shrink in grid */
+  text-align: center;
 }
 
 .source-indicators {

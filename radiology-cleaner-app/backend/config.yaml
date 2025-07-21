@@ -5,11 +5,11 @@ scoring:
   # Weights for combining individual components into a single component score.
   # Rebalanced based on training data analysis for better accuracy
   weights_component:
-    anatomy: 0.30      # Reduced to make room for contrast
+    anatomy: 0.25      # Reduced to make room for technique
     modality: 0.30     # Unchanged - modality is most reliable component
     laterality: 0.15   # Unchanged - important for precise matching
     contrast: 0.20     # Doubled - contrast is clinically critical
-    technique: 0.05    # Reduced - least reliable component
+    technique: 0.10    # Increased - important for specialized procedures like MRCP
 
   # Final weights for combining the component score and the semantic score.
   # Enhanced with frequency-based scoring for popular exams

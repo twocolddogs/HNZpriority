@@ -1424,6 +1424,9 @@ window.addEventListener('DOMContentLoaded', function() {
             'C': 'Central',
             'CO': 'SIRS (Canterbury)',
             'K': 'Southern',
+            'NL': 'Northland',
+            'TMT': 'Te Manawa Taki',  // Placeholder code
+            'AM': 'Auckland Metro',   // Placeholder code
             'TestData': 'Test Data',
             'SanityTest': 'Sanity Test',
             'Demo': 'Demo',
@@ -1794,39 +1797,41 @@ window.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="consolidated-body">
                     <div class="consolidated-meta">
-                        <div class="meta-row">
-                            <div class="meta-item">
-                                <strong>Data Sources:</strong> 
-                                <div class="source-indicators">
-                                    ${Array.from(group.dataSources).map(source => 
-                                        `<span class="source-indicator" style="background-color: ${getSourceColor(source)}" title="${getSourceDisplayName(source)}">${source}</span>`
-                                    ).join('')}
-                                </div>
-                            </div>
-                            <div class="meta-item">
-                                <strong>Modalities:</strong> 
-                                <span class="modality-list">${Array.from(group.modalities).join(', ')}</span>
+                        <div class="meta-item">
+                            <strong>Data Sources</strong>
+                            <div class="source-indicators">
+                                ${Array.from(group.dataSources).map(source => 
+                                    `<div class="source-item" title="${getSourceDisplayName(source)}">${getSourceDisplayName(source)}</div>`
+                                ).join('')}
                             </div>
                         </div>
-                        <div class="meta-row">
-                            <div class="meta-item">
-                                <strong>Matching Engine:</strong> 
-                                <span class="methodology-badge">${matchingMethodology}</span>
-                            </div>
-                            <div class="meta-item">
-                                <strong>Avg Confidence:</strong> 
-                                <div class="confidence-display">
-                                    <div class="confidence-bar">
-                                        <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
-                                    </div>
-                                    <span class="confidence-text">${confidencePercent}%</span>
+                        <div class="meta-item">
+                            <strong>Modalities</strong>
+                            <div class="modality-list">${Array.from(group.modalities).join(', ')}</div>
+                        </div>
+                        <div class="meta-item">
+                            <strong>Matching Engine</strong>
+                            <div class="methodology-badge">${matchingMethodology}</div>
+                        </div>
+                        <div class="meta-item">
+                            <strong>Avg Confidence</strong>
+                            <div class="confidence-display">
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
                                 </div>
+                                <div class="confidence-text">${confidencePercent}%</div>
                             </div>
                         </div>
-                    </div>
-                    <div class="consolidated-components">
-                        <div class="components-label"><strong>Parsed Components:</strong></div>
-                        <div class="component-tags">${generateComponentTags(group.components)}</div>
+                        <div class="meta-item">
+                            <strong>Parsed Components</strong>
+                            <div class="component-tags">${generateComponentTags(group.components)}</div>
+                        </div>
+                        <div class="meta-item">
+                            <strong>SNOMED Info</strong>
+                            <div class="snomed-info">
+                                ${group.snomedId ? `<div class="snomed-id">${group.snomedId}</div>` : '<div class="no-snomed">No SNOMED</div>'}
+                            </div>
+                        </div>
                     </div>
                     <div class="source-codes">
                         <div class="source-codes-label"><strong>Source Exam Codes:</strong></div>
@@ -1903,26 +1908,39 @@ window.addEventListener('DOMContentLoaded', function() {
         const sources = new Set(sourceCodes.map(code => code.source));
         if (sources.size === 1) {
             const source = Array.from(sources)[0];
-            if (source.includes('UNIFIED_MATCH')) {
+            if (source && source.includes('UNIFIED_MATCH')) {
                 return 'NLP Semantic Matching';
-            } else if (source.includes('EXACT_MATCH')) {
+            } else if (source && source.includes('EXACT_MATCH')) {
                 return 'Exact Match';
-            } else if (source.includes('FUZZY_MATCH')) {
+            } else if (source && source.includes('FUZZY_MATCH')) {
                 return 'Fuzzy String Matching';
+            } else if (source && source.includes('NO_MATCH')) {
+                return 'No Match';
             }
         }
-        return sources.size > 1 ? 'Mixed Methods' : 'Unknown Method';
+        
+        // Check if we have any valid sources at all
+        const validSources = Array.from(sources).filter(s => s && s.trim() !== '');
+        if (validSources.length === 0) {
+            return 'NLP Semantic Matching'; // Default for new backend results
+        }
+        
+        return sources.size > 1 ? 'Mixed Methods' : 'NLP Semantic Matching';
     }
     
     // Get display name for data source
     function getSourceDisplayName(source) {
         const sourceNames = {
             'C': 'Central',
-            'CO': 'SIRS (Canterbury)',
+            'CO': 'SIRS (Canterbury)', 
             'K': 'Southern',
-            'CM': 'Counties Manukau',
             'NL': 'Northland',
-            'W': 'Waikato'
+            'TMT': 'Te Manawa Taki',  // Placeholder code
+            'AM': 'Auckland Metro',   // Placeholder code
+            'TestData': 'Test Data',
+            'SanityTest': 'Sanity Test',
+            'Demo': 'Demo',
+            'Upload': 'User Upload'
         };
         return sourceNames[source] || source;
     }
