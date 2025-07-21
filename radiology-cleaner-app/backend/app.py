@@ -20,7 +20,8 @@ from nhs_lookup_engine import NHSLookupEngine
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
-# Context detection now happens during NHS lookup scoring, not post-processing
+### FIX: Import detect_all_contexts for correct data flow. Context is determined from the input request.
+from context_detection import detect_all_contexts
 from preprocessing import initialize_preprocessor, preprocess_exam_name, get_preprocessor
 from cache_version import get_current_cache_version, format_cache_key
 
@@ -43,7 +44,6 @@ cache_manager = None
 
 def _initialize_model_processors() -> Dict[str, NLPProcessor]:
     """Initialize available NLP processors for different models"""
-    # Get model keys dynamically from nlp_processor.py
     available_models = NLPProcessor.get_available_models()
     processors = {}
     for model_key in available_models.keys():
@@ -71,7 +71,6 @@ def _initialize_app():
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
     
-    # Enhanced cache with version-based invalidation
     class SimpleCache:
         def __init__(self):
             self.cache = {}
@@ -79,7 +78,6 @@ def _initialize_app():
             logger.info(f"Initialized cache with version: {self.cache_version}")
         
         def _check_version_and_clear_if_needed(self):
-            """Check if cache version has changed and clear if needed"""
             current_version = get_current_cache_version()
             if current_version != self.cache_version:
                 logger.info(f"Cache version changed from {self.cache_version} to {current_version}, clearing cache")
@@ -88,13 +86,11 @@ def _initialize_app():
         
         def get(self, key):
             self._check_version_and_clear_if_needed()
-            # Use format_cache_key for consistent key formatting
             formatted_key = format_cache_key("simple_cache", self.cache_version, key)
             return self.cache.get(formatted_key)
         
         def set(self, key, value):
             self._check_version_and_clear_if_needed()
-            # Use format_cache_key for consistent key formatting
             formatted_key = format_cache_key("simple_cache", self.cache_version, key)
             self.cache[formatted_key] = value
             return formatted_key
@@ -111,7 +107,6 @@ def _initialize_app():
         with open(nhs_json_path, 'r', encoding='utf-8') as f: 
             nhs_data = json.load(f)
         for item in nhs_data:
-            # MODIFICATION: Use the new, clean key name here
             if primary_source_name := item.get('primary_source_name'): 
                 nhs_authority[primary_source_name] = item
         logger.info(f"Loaded {len(nhs_authority)} NHS reference entries")
@@ -119,10 +114,8 @@ def _initialize_app():
         logger.critical(f"CRITICAL: NHS JSON file not found at {nhs_json_path}")
         sys.exit(1)
 
-
     abbreviation_expander = AbbreviationExpander()
     
-    # Load config for enhanced preprocessing with super-strong contrast detection
     import yaml
     try:
         config_path = os.path.join(base_dir, 'config.yaml')
@@ -133,7 +126,6 @@ def _initialize_app():
         logger.warning(f"Could not load config.yaml: {e}")
         preprocessing_config = {}
     
-    # MODIFICATION: Pass config to preprocessor for enhanced contrast detection
     initialize_preprocessor(abbreviation_expander, config=preprocessing_config)
     
     anatomy_extractor = AnatomyExtractor(nhs_authority)
@@ -173,7 +165,6 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
 
     _preprocessor = get_preprocessor()
     
-    # Check if this exam should be excluded from analysis (conferences, MDMs, etc.)
     if _preprocessor and _preprocessor.should_exclude_exam(exam_name):
         return {
             'error': 'EXCLUDED_NON_CLINICAL',
@@ -185,12 +176,12 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     cleaned_exam_name = preprocess_exam_name(exam_name)
     parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
     
-    # The lookup engine performs the match and returns a dictionary with the correct final structure.
     nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components, custom_nlp_processor=nlp_processor)
     
-    # --- CRITICAL FIX IS HERE ---
-    # The nhs_result now contains a nested 'components' dictionary. We just use it directly.
+    ### FIX: The context (gender, age, etc.) is a property of the INPUT request, not the matched NHS entry.
+    ### We must calculate context here from the cleaned input string to ensure it's always correct.
     components_from_engine = nhs_result.get('components', {})
+    context_from_input = detect_all_contexts(cleaned_exam_name, parsed_input_components.get('anatomy', []))
 
     final_result = {
         'data_source': 'N/A',
@@ -198,7 +189,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
         'exam_code': 'N/A',
         'exam_name': exam_name,
         'clean_name': _medical_title_case(nhs_result.get('clean_name', cleaned_exam_name)),
-        'ambiguous': nhs_result.get('ambiguous', False),  # Track ambiguous input cases
+        'ambiguous': nhs_result.get('ambiguous', False),
         'snomed': {
             'found': bool(nhs_result.get('snomed_id')),
             'fsn': nhs_result.get('snomed_fsn', ''),
@@ -207,19 +198,17 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             'laterality_fsn': nhs_result.get('snomed_laterality_fsn', '')
         },
         'components': {
-            # Directly use the components from the authoritative engine result
+            # Components from the matched NHS entry (the result of the lookup)
             'anatomy': components_from_engine.get('anatomy', []),
             'laterality': components_from_engine.get('laterality', []),
             'contrast': components_from_engine.get('contrast', []),
             'technique': components_from_engine.get('technique', []),
+            'confidence': components_from_engine.get('confidence', 0.0),
             
-            # PIPELINE CHANGE: Context detection now happens during NHS lookup scoring 
-            # (not post-scoring) so these values come pre-calculated from the engine
-            'gender_context': components_from_engine.get('gender_context'),
-            'age_context': components_from_engine.get('age_context'), 
-            'clinical_context': components_from_engine.get('clinical_context', []),
-            
-            'confidence': components_from_engine.get('confidence', 0.0)
+            # Context from the original input request, calculated once and stored
+            'gender_context': context_from_input['gender_context'],
+            'age_context': context_from_input['age_context'],
+            'clinical_context': context_from_input['clinical_context'],
         }
     }
     return final_result
@@ -237,12 +226,10 @@ def health_check():
 def list_available_models():
     """List available NLP models and their status (lightweight, no initialization required)"""
     try:
-        # Get model info directly from NLPProcessor without initializing the full app
         available_models = NLPProcessor.get_available_models()
         model_info = {}
         
         for model_key, model_config in available_models.items():
-            # Check if embeddings are loaded for this model
             embeddings_loaded = False
             if nhs_lookup_engine and hasattr(nhs_lookup_engine, '_embeddings_loaded'):
                 embeddings_loaded = (nhs_lookup_engine._embeddings_loaded and 
@@ -267,52 +254,34 @@ def list_available_models():
 
 def _medical_title_case(text: str) -> str:
     """
-    Convert text to proper medical title case with special rules:
-    - Modalities in uppercase (CT, MRI, US, XR, etc.)
-    - Conjunctions and prepositions in lowercase (and, of, with, etc.)
-    - Laterality expanded (Rt→Right, Lt→Left, Both→Both)
-    - Medical terms properly capitalized
+    Convert text to proper medical title case with special rules.
     """
-    # Modalities that should always be uppercase
     modalities = {
         'ct', 'mri', 'mr', 'us', 'xr', 'pet', 'nm', 'dexa', 'dxa', 
         'mg', 'ir', 'picc', 'hrct', 'mrcp', 'cta', 'mra'
     }
-    
-    # Words that should be lowercase (conjunctions, prepositions, articles)
     lowercase_words = {
         'and', 'or', 'of', 'in', 'on', 'at', 'to', 'for', 'with', 'without',
         'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before',
         'after', 'above', 'below', 'between', 'among', 'a', 'an', 'the'
     }
-    
-    # Laterality expansions
     laterality_expansions = {
-        'rt': 'Right',
-        'lt': 'Left', 
-        'both': 'Both',
-        'bilateral': 'Both'
+        'rt': 'Right', 'lt': 'Left', 'both': 'Both', 'bilateral': 'Both'
     }
     
-    # Split into words and process each
     words = text.split()
     result_words = []
     
     for i, word in enumerate(words):
-        # Remove punctuation for comparison but keep it
         clean_word = re.sub(r'[^\w]', '', word.lower())
         
         if clean_word in modalities:
-            # Always uppercase modalities
             result_words.append(word.upper())
         elif clean_word in laterality_expansions:
-            # Expand laterality abbreviations
             result_words.append(laterality_expansions[clean_word])
         elif clean_word in lowercase_words and i > 0:
-            # Lowercase conjunctions/prepositions (except first word)
             result_words.append(word.lower())
         else:
-            # Title case for everything else
             result_words.append(word.capitalize())
     
     return ' '.join(result_words)
@@ -340,17 +309,14 @@ def parse_enhanced():
         modality_code = data.get('modality_code')
         model = data.get('model', 'default')
         
-        # Get the appropriate NLP processor for the selected model
         selected_nlp_processor = _get_nlp_processor(model)
         if not selected_nlp_processor:
             return jsonify({"error": f"Model '{model}' not available"}), 400
         
         logger.info(f"Using model '{model}' for exam: {exam_name}")
         
-        # USE THE NEW SIGNATURE
         result = process_exam_request(exam_name, modality_code, selected_nlp_processor)
         
-        # Add processing metadata
         result['metadata'] = {
             'processing_time_ms': int((time.time() - start_time) * 1000),
             'model_used': model
@@ -361,14 +327,11 @@ def parse_enhanced():
     except Exception as e:
         logger.error(f"Parse enhanced endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
-        
 
 @app.route('/parse_batch', methods=['POST'])
 def parse_batch():
     """
     Processes a batch of exam names concurrently with streaming output to disk.
-    Accepts a JSON payload with a list of exams and an optional model key.
-    Results are streamed to a temporary file to avoid memory accumulation.
     """
     _ensure_app_is_initialized()
     start_time = time.time()
@@ -381,7 +344,6 @@ def parse_batch():
         exams_to_process = data['exams']
         model_key = data.get('model', 'default')
         
-        # Create output directory and unique filename for streaming results
         import uuid
         output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
         os.makedirs(output_dir, exist_ok=True)
@@ -398,15 +360,12 @@ def parse_batch():
         success_count = 0
         error_count = 0
         
-        # Conservative thread pool sizing for batch processing to prevent resource exhaustion.
         cpu_cnt = os.cpu_count() or 1
         max_workers = min(8, max(2, cpu_cnt))
         logger.info(f"ThreadPoolExecutor starting with max_workers={max_workers}")
 
-        # Stream results to disk instead of accumulating in memory
         with open(results_filepath, 'w', encoding='utf-8') as f_out:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # Map each future to its original exam for better error tracking
                 future_to_exam = {
                     executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor): exam 
                     for exam in exams_to_process
@@ -414,25 +373,22 @@ def parse_batch():
                 
                 completed = 0
                 total = len(exams_to_process)
-                per_future_timeout = 60  # seconds
+                per_future_timeout = 60
 
                 for future in as_completed(future_to_exam):
                     original_exam = future_to_exam[future]
                     try:
-                        # Get the result from the future
                         processed_result = future.result(timeout=per_future_timeout)
-                        # Stream result directly to file in JSONL format
                         result_entry = {
                             "input": original_exam,
                             "output": processed_result,
                             "status": "success"
                         }
                         f_out.write(json.dumps(result_entry) + '\n')
-                        f_out.flush()  # Ensure data is written to disk immediately
+                        f_out.flush()
                         success_count += 1
                     except Exception as e:
                         logger.error(f"Error processing exam '{original_exam.get('exam_name')}': {e}", exc_info=True)
-                        # Stream error directly to file as well
                         error_entry = {
                             "input": original_exam,
                             "error": str(e),
@@ -448,30 +404,22 @@ def parse_batch():
 
         processing_time_ms = int((time.time() - start_time) * 1000)
         logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
-        logger.info(f"Results saved to: {results_filepath}")
 
-        # For frontend compatibility: return results in memory for small batches, 
-        # or file metadata for large batches
-        MAX_INMEMORY_RESULTS = 50  # Threshold for in-memory vs streaming
+        MAX_INMEMORY_RESULTS = 50
         
         if len(exams_to_process) <= MAX_INMEMORY_RESULTS:
-            # Read results back from file for small batches (frontend compatibility)
             results = []
             with open(results_filepath, 'r', encoding='utf-8') as f_in:
                 for line in f_in:
                     if line.strip():
                         results.append(json.loads(line.strip()))
-            
-            # Clean up the temporary file for small batches
             try:
                 os.remove(results_filepath)
             except Exception as e:
                 logger.warning(f"Could not remove temporary file {results_filepath}: {e}")
-            
-            # Return results in memory (frontend compatible format)
             return jsonify({
                 "message": "Batch processing complete.",
-                "results": results,  # Frontend expects this key
+                "results": results,
                 "processing_stats": {
                     "total_processed": len(exams_to_process),
                     "successful": success_count,
@@ -481,7 +429,6 @@ def parse_batch():
                 }
             })
         else:
-            # Return file metadata for large batches (streaming approach)
             return jsonify({
                 "message": "Batch processing complete. Results streamed to disk.",
                 "results_file": results_filepath,
@@ -502,25 +449,20 @@ def parse_batch():
 @app.route('/process_sanity_test', methods=['POST'])
 def process_sanity_test_endpoint():
     """
-    Processes the entire sanity_test.json file using a user-specified model,
-    or the default model if none is provided. Includes progress messaging.
+    Processes the entire sanity_test.json file using a user-specified model.
     """
     _ensure_app_is_initialized()
     start_time = time.time()
     
     try:
-        # Check if the user sent a JSON body with a model preference
         data = request.json or {}
-        model_key = data.get('model', 'default') # Default to 'default' if no model is specified
+        model_key = data.get('model', 'default')
         
         logger.info(f"Processing sanity_test.json using model: '{model_key}'")
-
-        # Get the NLP processor corresponding to the user's choice
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
             return jsonify({"error": f"Model '{model_key}' not available"}), 400
 
-        # Load sanity_test.json from the core directory
         base_dir = os.path.dirname(os.path.abspath(__file__))
         sanity_test_path = os.path.join(base_dir, 'core', 'sanity_test.json')
         
@@ -529,7 +471,6 @@ def process_sanity_test_endpoint():
 
         total_exams = len(sanity_data)
         logger.info(f"Starting sanity test processing for {total_exams} exams")
-
         results = []
         processed_count = 0
         
@@ -538,16 +479,12 @@ def process_sanity_test_endpoint():
             modality_code = exam.get("MODALITY_CODE")
             
             if exam_name:
-                # Use the SELECTED processor for the test
                 processed_result = process_exam_request(exam_name, modality_code, selected_nlp_processor)
-                
-                # Add original data source info back
                 processed_result['data_source'] = exam.get("DATA_SOURCE")
                 processed_result['exam_code'] = exam.get("EXAM_CODE")
                 results.append(processed_result)
                 processed_count += 1
                 
-                # Log progress every 25 exams or at the end
                 if (i + 1) % 25 == 0 or (i + 1) == total_exams:
                     progress_pct = ((i + 1) / total_exams) * 100
                     elapsed_time = time.time() - start_time
@@ -568,38 +505,30 @@ def process_sanity_test_endpoint():
 def load_batch_chunk(filename):
     """
     Load a chunk of batch processing results for pagination.
-    Accepts query parameters: offset, limit, sort_by, sort_order
     """
     try:
-        # Validate filename format for security
         if not filename.startswith('batch_results_') or not filename.endswith('.jsonl'):
             return jsonify({"error": "Invalid filename format"}), 400
         
-        # Get query parameters
         offset = int(request.args.get('offset', 0))
         limit = int(request.args.get('limit', 100))
         sort_by = request.args.get('sort_by', 'default')
         sort_order = request.args.get('sort_order', 'asc')
         
-        # Limit the maximum chunk size for performance
         limit = min(limit, 500)
         
-        # Get the output directory
         output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
         file_path = os.path.join(output_dir, filename)
         
-        # Check if file exists
         if not os.path.exists(file_path):
             return jsonify({"error": "File not found"}), 404
         
-        # Read all results from file
         results = []
         with open(file_path, 'r', encoding='utf-8') as f_in:
             for line in f_in:
                 if line.strip():
                     results.append(json.loads(line.strip()))
         
-        # Apply sorting if requested
         if sort_by == 'confidence':
             results.sort(key=lambda x: x.get('output', {}).get('components', {}).get('confidence', 0), 
                         reverse=(sort_order == 'desc'))
@@ -607,7 +536,6 @@ def load_batch_chunk(filename):
             results.sort(key=lambda x: x.get('output', {}).get('clean_name', ''), 
                         reverse=(sort_order == 'desc'))
         
-        # Apply pagination
         total_items = len(results)
         paginated_results = results[offset:offset + limit]
         
@@ -630,22 +558,17 @@ def load_batch_chunk(filename):
 def download_batch_results(filename):
     """
     Download batch processing results file by filename.
-    Provides secure access to batch processing output files.
     """
     try:
-        # Validate filename format for security
         if not filename.startswith('batch_results_') or not filename.endswith('.jsonl'):
             return jsonify({"error": "Invalid filename format"}), 400
         
-        # Get the output directory (same as used in batch processing)
         output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
         file_path = os.path.join(output_dir, filename)
         
-        # Check if file exists
         if not os.path.exists(file_path):
             return jsonify({"error": "File not found"}), 404
         
-        # Send file as attachment
         return send_file(
             file_path,
             as_attachment=True,
