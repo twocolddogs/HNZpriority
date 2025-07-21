@@ -189,7 +189,7 @@ class NHSLookupEngine:
 
             if strip_laterality:
                 if bilateral_peer := self.find_bilateral_peer(best_match):
-                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=False, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
+                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=True, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
 
             return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
         

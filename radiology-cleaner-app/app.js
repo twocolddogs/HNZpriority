@@ -877,7 +877,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const helpContent = document.getElementById('helpContent');
         helpContent.innerHTML = `
             <h2>Radiology Code Semantic Cleaner</h2>
-            <p><strong>What it does:</strong> This application transforms messy, inconsistent radiology exam names from different hospital systems into standardized, clinically meaningful names with structured components.</p>
+            <p><strong>What it does:</strong> This application transforms messy, inconsistent radiology exam names from different hospital systems into standardised, clinically meaningful names with structured components.</p>
             
             <h3>How to Use This App</h3>
             
@@ -916,7 +916,7 @@ window.addEventListener('DOMContentLoaded', function() {
             </div>
 
             <div style="background: var(--color-success-light); padding: 1rem; border-radius: var(--radius-base); margin: 1rem 0;">
-                <h4>2. Standardization</h4>
+                <h4>2. Standardisation</h4>
                 <p>• <strong>Clean Name Generation:</strong> Creates consistent exam names</p>
                 <p>• <strong>SNOMED Mapping:</strong> Links to medical terminology standards</p>
                 <p>• <strong>Confidence Scoring:</strong> Shows how certain the AI is about each result</p>
@@ -982,7 +982,7 @@ window.addEventListener('DOMContentLoaded', function() {
             <h1>Radiology Cleaner Application - System Architecture</h1>
             
             <h2>1. Overview</h2>
-            <p>The Radiology Cleaner application is a web-based tool designed to standardize and process radiology exam names. It leverages a Flask backend for API services, a Python-based natural language processing (NLP) engine for semantic parsing, and a simple HTML/JavaScript frontend for user interaction. The system aims to provide clean, standardized exam names, SNOMED codes, and extracted clinical components (anatomy, laterality, contrast, etc.) for improved data quality and interoperability.</p>
+            <p>The Radiology Cleaner application is a web-based tool designed to standardise and process radiology exam names. It leverages a Flask backend for API services, a Python-based natural language processing (NLP) engine for semantic parsing, and a simple HTML/JavaScript frontend for user interaction. The system aims to provide clean, standardised exam names, SNOMED codes, and extracted clinical components (anatomy, laterality, contrast, etc.) for improved data quality and interoperability.</p>
             
             <h2>2. Architecture Overview</h2>
             <p>The system follows a modern web application architecture with the following key components:</p>
@@ -990,7 +990,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 <li><strong>Frontend</strong>: HTML/CSS/JavaScript interface for user interaction</li>
                 <li><strong>Backend API</strong>: Flask application with REST endpoints</li>
                 <li><strong>NLP Engine</strong>: Semantic parsing and text processing</li>
-                <li><strong>NHS Lookup</strong>: Standardization against NHS reference data</li>
+                <li><strong>NHS Lookup</strong>: Standardisation against NHS reference data</li>
                 <li><strong>Database</strong>: SQLite for performance metrics and feedback</li>
                 <li><strong>Cache System</strong>: In-memory caching with dynamic versioning</li>
             </ul>
@@ -1020,7 +1020,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         <li>General-purpose models for broad understanding</li>
                     </ul>
                 </li>
-                <li><strong>NHSLookupEngine</strong>: NHS reference data standardization
+                <li><strong>NHSLookupEngine</strong>: NHS reference data standardisation
                     <ul>
                         <li>Unified preprocessing pipeline</li>
                         <li>Dynamic cache invalidation</li>
@@ -1030,24 +1030,10 @@ window.addEventListener('DOMContentLoaded', function() {
                 </li>
             </ul>
             
-            <h2>4. Recent Improvements (2024)</h2>
+            <h2>4. Recent Improvements</h2>
             
-            <h3>4.1. Enhanced Medical Accuracy</h3>
-            <ul>
-                <li><strong>Mammography Reclassification</strong>: Correctly classified as XR modality (technique) rather than separate modality</li>
-                <li><strong>Barium Studies</strong>: All barium procedures classified as Fluoroscopy modality</li>
-                <li><strong>XA Modality Support</strong>: X-Ray Angiography for interventional procedures</li>
-                <li><strong>DEXA Integration</strong>: Bone densitometry studies with dedicated patterns</li>
-            </ul>
             
-            <h3>4.2. NHS Interventional Procedure Accuracy</h3>
-            <ul>
-                <li>Redefined based on NHS credentialing requirements</li>
-                <li>Specialist procedures in interventional labs (typically XA modality)</li>
-                <li>Distinguishes from general interventions (PICC lines, biopsies)</li>
-            </ul>
-            
-            <h3>4.3. Multi-Model NLP Support</h3>
+            <h3>4.1. Multi-Model NLP Support</h3>
             <ul>
                 <li><strong>BioLORD Integration</strong>: FremyCompany/BioLORD-2023 for enhanced medical terminology</li>
                 <li><strong>Model Selection API</strong>: Users can specify model via request parameters</li>
@@ -1070,7 +1056,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 <li><strong>Preprocessing</strong>: Abbreviation expansion and normalization</li>
                 <li><strong>Semantic Parsing</strong>: Component extraction using rule-based methods</li>
                 <li><strong>NLP Enhancement</strong>: Semantic embeddings for similarity matching</li>
-                <li><strong>NHS Standardization</strong>: Match against NHS reference data</li>
+                <li><strong>NHS Standardisation</strong>: Match against NHS reference data</li>
                 <li><strong>SNOMED Mapping</strong>: Medical coding standards integration</li>
                 <li><strong>Output Generation</strong>: Structured results with confidence scores</li>
             </ol>

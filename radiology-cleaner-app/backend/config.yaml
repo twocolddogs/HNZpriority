@@ -22,7 +22,7 @@ scoring:
   # Refined to be less aggressive and more balanced
   interventional_bonus: 0.15        # Reduced from 0.25 for subtler weighting
   interventional_penalty: -0.20     # Reduced from -0.50 to avoid harsh penalties
-  specificity_penalty_weight: 0.25  # Increased to 0.25 to prevent overly specific matches
+  specificity_penalty_weight: 0.35  # Increased to 0.35 to strongly prevent overly specific matches
   exact_match_bonus: 0.25           # Reduced from 0.50 for balanced scoring
 
   # NEW scoring enhancements for better clinical context matching

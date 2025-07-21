@@ -59,7 +59,8 @@ class RadiologySemanticParser:
                 r'\b(stent|angioplasty|emboli[sz]ation|thrombolysis|thrombectomy|atherectomy|picc|line|catheter)\b'
             ]],
             'Non-Vascular Interventional': [re.compile(p, re.I) for p in [
-                r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation|insertion|insert)\b'
+                r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation)\b',
+                r'\b(?!.*\b(?:picc|line|catheter)\b)(insertion|insert)\b'
             ]],
             'FDG PET': [re.compile(p, re.I) for p in [
                 r'\b(fdg|fluorodeoxyglucose|18f-fluorodeoxyglucose)\b'
