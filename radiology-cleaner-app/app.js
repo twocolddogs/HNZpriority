@@ -1526,7 +1526,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
             // Add combined Tags cell (components + context)
             const tagsCell = row.insertCell();
-            const { anatomy, laterality, contrast, technique, gender_context, age_context, clinical_context, clinical_equivalents } = item.components;
+            const { anatomy, laterality, contrast, technique, gender_context, age_context, clinical_context, clinical_equivalents } = item.components || {};
             
             // Add component tags
             if(anatomy && anatomy.length > 0) anatomy.forEach(a => { if (a && a.trim()) tagsCell.innerHTML += `<span class="tag anatomy">${a}</span>`});
@@ -1579,7 +1579,7 @@ window.addEventListener('DOMContentLoaded', function() {
         
         mappings.forEach(m => {
             if (!m.components || (m.clean_name && m.clean_name.startsWith('ERROR'))) return;
-            const { modality_code, components } = m;
+            const { modality_code, components } = m || {};
             const modality = m.components.modality || modality_code;
             if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
             
