@@ -31,18 +31,32 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
     cache_version = get_current_cache_version()
     logger.info(f"Current cache version: {cache_version}")
     
+    # DEBUGGING: Check if R2 manager is available
+    if not r2_manager.is_available():
+        logger.warning("R2 cache manager not available - R2 environment variables may be missing")
+        logger.warning("This will force a cache rebuild even if cache already exists")
+        logger.info("R2 environment check:")
+        logger.info(f"  R2_ACCESS_KEY_ID: {'✓' if os.getenv('R2_ACCESS_KEY_ID') else '✗'}")
+        logger.info(f"  R2_SECRET_ACCESS_KEY: {'✓' if os.getenv('R2_SECRET_ACCESS_KEY') else '✗'}")
+        logger.info(f"  R2_BUCKET_NAME: {'✓' if os.getenv('R2_BUCKET_NAME') else '✗'}")
+        logger.info(f"  R2_ENDPOINT_URL: {'✓' if os.getenv('R2_ENDPOINT_URL') else '✗'}")
+    
     prefix = f"caches/{model_key}/"
     r2_objects = r2_manager.list_objects(prefix)
+    
+    logger.info(f"Found {len(r2_objects)} existing cache objects in R2 with prefix: {prefix}")
     
     # Check if any existing cache matches current version
     for obj in r2_objects or []:
         obj_key = obj['Key']
+        logger.info(f"Checking existing cache: {obj_key}")
         if f"_{cache_version}_" in obj_key:
             logger.info(f"Cache with version {cache_version} already exists: {obj_key}")
             logger.info("Skipping rebuild - NHS.json and dependencies haven't changed")
             return True
     
     logger.info(f"No cache found for version {cache_version}. Building new cache...")
+    logger.info("Reason: Either no R2 connection or no matching cache version found")
     
     # 1. Initialize dependencies to create an engine instance
     base_dir = os.path.dirname(os.path.abspath(__file__))
