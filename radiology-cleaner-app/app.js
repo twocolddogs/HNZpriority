@@ -299,6 +299,23 @@ function preventDefaults(e) {
 let currentModel = 'default';
 let availableModels = {};
 
+function formatModelName(modelKey) {
+    // Use dynamic model names from the API if available
+    if (availableModels && availableModels[modelKey] && availableModels[modelKey].name) {
+        return availableModels[modelKey].name;
+    }
+    
+    // Fallback to static mapping if API data not available
+    const nameMap = {
+        'default': 'BioLORD (Default)',
+        'pubmed': 'PubMed',
+        'biolord': 'BioLORD',
+        'general': 'General',
+        'experimental': 'Experimental'
+    };
+    return nameMap[modelKey] || modelKey.charAt(0).toUpperCase() + modelKey.slice(1);
+}
+
 function switchModel(modelKey) {
     if (!availableModels[modelKey] || availableModels[modelKey].status !== 'available') {
         console.warn(`Model ${modelKey} is not available.`);
@@ -440,23 +457,6 @@ window.addEventListener('DOMContentLoaded', function() {
         });
         
         console.log(`✅ Model UI built with ${modelContainer.children.length} buttons`);
-    }
-    
-    function formatModelName(modelKey) {
-        // Use dynamic model names from the API if available
-        if (availableModels && availableModels[modelKey] && availableModels[modelKey].name) {
-            return availableModels[modelKey].name;
-        }
-        
-        // Fallback to static mapping if API data not available
-        const nameMap = {
-            'default': 'BioLORD (Default)',
-            'pubmed': 'PubMed',
-            'biolord': 'BioLORD',
-            'general': 'General',
-            'experimental': 'Experimental'
-        };
-        return nameMap[modelKey] || modelKey.charAt(0).toUpperCase() + modelKey.slice(1);
     }
     
     loadAvailableModels();
