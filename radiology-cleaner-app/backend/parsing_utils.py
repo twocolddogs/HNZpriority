@@ -33,43 +33,25 @@ class AbbreviationExpander:
 class AnatomyExtractor:
     """
     Extracts and standardizes anatomy terms using a single, hyper-optimized regular
-    expression compiled from a comprehensive vocabulary.
+    expression compiled from a comprehensive, config-driven vocabulary.
     """
-    def __init__(self, nhs_authority: Dict):
-        self.nhs_authority = nhs_authority
-        self.anatomy_map = self._build_anatomy_vocabulary()
+    def __init__(self, anatomy_vocabulary: Dict[str, str]):
+        """
+        Initializes with an anatomy vocabulary, typically loaded from config.
+        Args:
+            anatomy_vocabulary (Dict[str, str]): A dictionary mapping synonyms to standard forms.
+        """
+        if not anatomy_vocabulary:
+            logger.error("AnatomyExtractor initialized with an empty vocabulary!")
+            self.anatomy_map = {}
+        else:
+            self.anatomy_map = {k.lower(): v.lower() for k, v in anatomy_vocabulary.items()}
         
+        # The rest of the __init__ method remains the same
         sorted_keys = sorted(self.anatomy_map.keys(), key=len, reverse=True)
         escaped_keys = [re.escape(key) for key in sorted_keys]
         pattern_str = r'\b(' + '|'.join(escaped_keys) + r')\b'
         self.master_pattern = re.compile(pattern_str, re.IGNORECASE)
-
-    def _build_anatomy_vocabulary(self) -> Dict[str, str]:
-        anatomy_vocab = {
-            'head': 'head', 'brain': 'brain', 'skull': 'head', 'cranium': 'head', 'sinus': 'sinuses',
-            'sinuses': 'sinuses', 'orbit': 'orbit', 'orbits': 'orbit', 'face': 'face', 'neck': 'neck', 
-            'chest': 'chest', 'thorax': 'chest', 'lung': 'chest', 'lungs': 'chest', 'heart': 'heart', 
-            'cardiac': 'heart', 'mediastinum': 'mediastinum', 'pulmonary': 'chest', 'abdomen': 'abdomen', 
-            'abdo': 'abdomen', 'tummy': 'abdomen', 'pelvis': 'pelvis', 'pelvic': 'pelvis', 
-            'liver': 'liver', 'kidney': 'kidney', 'kidneys': 'kidney', 'renal': 'kidney', 'pancreas': 'pancreas', 
-            'spleen': 'spleen', 'bladder': 'bladder', 'ureter': 'ureters', 'ureters': 'ureters', 'uterus': 'uterus',
-            'ovary': 'ovary', 'ovaries': 'ovary', 'prostate': 'prostate', 'spine': 'spine', 'spinal': 'spine', 
-            'cervical spine': 'cervical spine', 'thoracic spine': 'thoracic spine', 'lumbar spine': 'lumbar spine', 
-            'sacrum': 'sacrum', 'coccyx': 'coccyx', 'shoulder': 'shoulder', 'shoulders': 'shoulder', 'arm': 'arm', 
-            'arms': 'arm', 'elbow': 'elbow', 'elbows': 'elbow', 'wrist': 'wrist', 'wrists': 'wrist', 'hand': 'hand', 
-            'hands': 'hand', 'finger': 'finger', 'fingers': 'finger', 'thumb': 'thumb', 'thumbs': 'thumb', 
-            'hip': 'hip', 'hips': 'hip', 'thigh': 'thigh', 'thighs': 'thigh', 'knee': 'knee', 'knees': 'knee', 
-            'leg': 'leg', 'legs': 'leg', 'ankle': 'ankle', 'ankles': 'ankle', 'foot': 'foot', 'feet': 'foot', 
-            'toe': 'toe', 'toes': 'toe', 'breast': 'breast', 'breasts': 'breast', 'mammary': 'breast', 'mammogram': 'breast', 'mammography': 'breast',
-            'thyroid': 'thyroid', 'bone': 'bone', 'bones': 'bone', 'joint': 'joint', 'joints': 'joint', 
-            'soft tissue': 'soft tissue', 'muscle': 'muscle', 'muscles': 'muscle', 
-            'adrenal': 'adrenal', 'adrenals': 'adrenal', 'biliary': 'biliary', 'gallbladder': 'gallbladder', 
-            'lymph node': 'lymph node', 'lymph nodes': 'lymph node', 'parotid': 'parotid', 'submandibular': 'submandibular', 
-            'salivary gland': 'salivary gland', 'salivary glands': 'salivary gland', 'aortic arch': 'aortic arch', 
-            'carotid': 'carotid', 'carotid arteries': 'carotid', 'eye': 'eye', 'eyes': 'eye', 'ear': 'ear', 'ears': 'ear',
-            'scrotum': 'scrotum', 'testes': 'testes', 'testis': 'testes', 'whole body': 'whole body'
-        }
-        return anatomy_vocab
 
     def extract(self, text: str) -> List[str]:
         if not text:
@@ -101,16 +83,28 @@ class LateralityDetector:
         }
 
     def detect(self, text: str) -> Optional[str]:
-        """Detects the standardized laterality term, prioritizing 'bilateral'."""
+        """
+        Detects the standardized laterality term, correctly resolving cases where both left and right are mentioned to 'bilateral'.
+        """
         text_lower = text.lower()
-        # The order of checking is crucial to correctly handle strings that might
-        # contain multiple terms post-processing (e.g., from a complex original string).
+        # Check for the most specific term first.
         if any(p.search(text_lower) for p in self.compiled_patterns['bilateral']):
             return 'bilateral'
-        if any(p.search(text_lower) for p in self.compiled_patterns['left']):
+        
+        # Check for the presence of left and right individually 
+        found_left = any(p.search(text_lower) for p in self.compiled_patterns['left'])
+        found_right = any(p.search(text_lower) for p in self.compiled_patterns['right'])
+        
+        # If both are found, it's bilateral.
+        if found_left and found_right:
+            return 'bilateral'
+            
+        # Otherwise, return the specific one that was found.
+        if found_left:
             return 'left'
-        if any(p.search(text_lower) for p in self.compiled_patterns['right']):
+        if found_right:
             return 'right'
+        
         return None
 
 class ContrastMapper:
@@ -129,12 +123,22 @@ class ContrastMapper:
             for ctype, patterns in self.patterns.items()
         }
 
-    def detect_contrast(self, text: str) -> Optional[str]:
-        """Detects the final, standardized contrast term."""
-        if any(p.search(text) for p in self.compiled_patterns['without']):
-            return 'without'
-        if any(p.search(text) for p in self.compiled_patterns['with']):
-            return 'with'
-        return None
+    def detect_contrast(self, text: str) -> List[str]:
+        """
+        Detects all specified contrast states in the text.
+        Returns a list to handle multiphase studies (e.g., with AND without).
+        """
+        found_states = []
+        text_lower = text.lower() # Standardize to lower for searching
+        
+        # Use the lowercased text for all searches
+        if any(p.search(text_lower) for p in self.compiled_patterns['with']):
+            found_states.append('with')
+        
+        if any(p.search(text_lower) for p in self.compiled_patterns['without']):
+            found_states.append('without')
+        
+        # Return a sorted, unique list of states found
+        return sorted(list(set(found_states)))
 
 # --- END OF FILE parsing_utils.py ---
