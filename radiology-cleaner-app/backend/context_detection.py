@@ -77,9 +77,14 @@ class ContextDetector:
         # Clinical context patterns for general classification
         self.clinical_patterns = {
             'screening': [r'\b(screening|surveillance)\b'],
-            'emergency': [r'\b(emergency|urgent|stat|trauma)\b'],
-            'follow-up': [r'\b(follow.?up|post.?op)\b'],
-            'intervention': [r'\b(biopsy|drainage|injection|aspiration|fna|guided|insertion|line|picc)\b']
+            'emergency': [r'\b(emergency|urgent|stat|trauma|acute)\b'], # Added 'acute'
+            'follow-up': [r'\b(follow.?up|post.?op|fu)\b'], # Added 'fu'
+            
+            # NEW CATEGORY: Explicitly identify routine diagnostic scans. This is a very strong signal.
+            'diagnostic': [r'\b(standard|routine|plain|simple|diagnostic|baseline|non-contrast)\b'],
+            
+            # Keep intervention, but it's now balanced by the 'diagnostic' category
+            'intervention': [r'\b(biopsy|drainage|injection|aspiration|fna|guided|guidance|insertion|placement|line|picc)\b']
         }
     
     def detect_gender_context(self, exam_name: str, anatomy: List[str] = None) -> Optional[str]:
