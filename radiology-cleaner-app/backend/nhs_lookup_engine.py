@@ -166,12 +166,20 @@ class NHSLookupEngine:
             fuzzy_score = fuzz.token_sort_ratio(input_exam.lower(), entry.get("_clean_primary_name_for_embedding", "").lower()) / 100.0
             semantic_score = (0.7 * semantic_sim) + (0.3 * fuzzy_score)
 
-            input_interventional_terms = set(detect_interventional_procedure_terms(input_exam))
-            nhs_interventional_terms = set(entry.get('_interventional_terms', []))
-            interventional_score = self.config['interventional_bonus'] if input_interventional_terms and nhs_interventional_terms else (self.config['interventional_penalty'] if input_interventional_terms and not nhs_interventional_terms else 0)
+            # Check if the techniques parsed from the input contain 'Interventional'
+            input_techniques = set(extracted_input_components.get('technique', []))
+            is_input_interventional = any('Interventional' in t for t in input_techniques)
             
-            # Calculate anatomical specificity score (replacing old specificity penalty)
-            anatomical_specificity_score = self._calculate_anatomical_specificity_score(input_exam, entry)
+            # Check if the techniques from the NHS entry contain 'Interventional'
+            nhs_techniques = set(entry.get('_parsed_components', {}).get('technique', []))
+            is_nhs_interventional = any('Interventional' in t for t in nhs_techniques)
+
+            interventional_score = 0
+            if is_input_interventional and is_nhs_interventional:
+                interventional_score = self.config['interventional_bonus']
+            elif is_input_interventional and not is_nhs_interventional:
+                interventional_score = self.config['interventional_penalty']
+            
             
             current_score = self._calculate_match_score(input_exam, extracted_input_components, entry, semantic_score, interventional_score, anatomical_specificity_score)
 
