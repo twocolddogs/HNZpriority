@@ -1,12 +1,13 @@
 # --- START OF FILE parser.py ---
 
 # =============================================================================
-# RADIOLOGY SEMANTIC PARSER (V2 - ENHANCED TECHNIQUE DETECTION)
+# RADIOLOGY SEMANTIC PARSER (V2.9 - HYBRID & GRANULAR DETECTION)
 # =============================================================================
 # This module is responsible for breaking down a cleaned radiology exam name
-# into its constituent semantic components: modality, anatomy, laterality,
-# contrast, and specific techniques. This version features more granular
-# technique detection, especially for interventional procedures.
+# into its constituent semantic components. This enhanced version features:
+# - Detection of multiple modalities for hybrid imaging (e.g., PET/CT).
+# - More granular technique detection to differentiate diagnostic from
+#   interventional procedures and identify specific NM/Fluoro studies.
 
 import re
 from typing import Dict, List, Optional
@@ -18,12 +19,16 @@ class RadiologySemanticParser:
     
     It leverages utility classes to extract specific features and uses regex patterns
     to identify modality and specialized techniques. The output of this parser is a
-    key input for the NHSLookupEngine's scoring algorithm.
+    key input for the NHSLookupEngine's scoring algorithm, providing a rich,
+    structured representation of the exam's clinical intent.
     """
     def __init__(self, nlp_processor=None, anatomy_extractor=None, laterality_detector=None, contrast_mapper=None):
         """
-        Initializes the parser with necessary utility components.
-        
+        Initializes the parser with necessary utility components and pre-compiled regex patterns.
+
+        Why: Pre-compiling regex patterns in the constructor is a performance optimization.
+             This method sets up all the rules and definitions the parser will use for its analysis.
+
         Args:
             nlp_processor: An NLP model processor (optional, currently not used directly in parsing).
             anatomy_extractor: Utility to extract anatomical parts.
@@ -45,17 +50,33 @@ class RadiologySemanticParser:
             'Other': 'Other', 'BR': 'MG'
         }
         
-        # MODIFICATION: Expanded and split interventional patterns for better granularity.
-        # This allows the scoring engine to differentiate between vascular and non-vascular procedures.
+        # MODIFICATION: Expanded and split patterns for better granularity. This allows
+        # the scoring engine to differentiate between various procedure types with
+        # much higher precision.
         self.technique_patterns = {
+            # Core Modality-Specific Techniques
             'MRCP': [re.compile(p, re.I) for p in [r'\b(mrcp|magnetic resonance cholangiopancreatography|cholangiopancreatography)\b']],
             'HRCT': [re.compile(p, re.I) for p in [r'\b(hrct|high resolution)\b']],
             'Colonography': [re.compile(p, re.I) for p in [r'\b(colonography|virtual colonoscopy)\b']],
             'Doppler': [re.compile(p, re.I) for p in [r'\b(doppler|duplex)\b']],
             'Tomosynthesis': [re.compile(p, re.I) for p in [r'\b(tomosynthesis|tomo)\b']],
-            'Barium Study': [re.compile(p, re.I) for p in [r'\b(barium|upper gi|lower gi)\b']],
+            
+            # ENHANCED: Fluoroscopy and GI studies are now more inclusive.
+            'Fluoroscopic GI/Swallow Study': [re.compile(p, re.I) for p in [
+                r'\b(barium|upper gi|lower gi|swallow|meal|enema|videofluoroscopy)\b'
+            ]],
+            
+            # NEW: Specific Nuclear Medicine techniques for better differentiation.
+            'SPECT': [re.compile(p, re.I) for p in [r'\b(spect|single photon)\b']],
+            'V/Q Scan': [re.compile(p, re.I) for p in [r'\b(v/q|ventilation perfusion)\b']],
+            
+            # NEW: Differentiating diagnostic vascular from therapeutic interventional.
+            'Diagnostic Angiography': [re.compile(p, re.I) for p in [
+                r'\b(angiogram|angiography|arteriogram|arteriography|angio|dsa)\b'
+            ]],
+            
+            # Interventional Categories (now more focused on therapeutic/procedural actions).
             'Arterial Interventional': [re.compile(p, re.I) for p in [
-                r'\b(angiogram|angiography|arteriogram|arteriography|angio|dsa)\b',
                 r'\b(stent|angioplasty|emboli[sz]ation|thrombolysis|thrombectomy|atherectomy)\b',
                 r'\b(arterial|artery|aortic|aorta|carotid|femoral artery|renal artery)\b'
             ]],
@@ -69,6 +90,8 @@ class RadiologySemanticParser:
                 r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation)\b',
                 r'\b(?!.*\b(?:picc|line|catheter)\b)(insertion|insert)\b'
             ]],
+
+            # Specific PET Tracers (for advanced NM classification).
             '18F-FDG PET': [re.compile(p, re.I) for p in [
                 r'\b(fdg|18f.?fdg|f.?18.?fdg|fluorodeoxyglucose|18f.?fluorodeoxyglucose|fludeoxyglucose)\b'
             ]],
@@ -86,10 +109,14 @@ class RadiologySemanticParser:
     def parse_exam_name(self, exam_name: str, modality_code: str) -> Dict:
         """
         Executes the full parsing pipeline on a single cleaned exam name.
-        
+
+        Why: This is the main entry point for the parser. It orchestrates the calls to
+             the various private parsing methods in the correct sequence and assembles
+             the final structured output.
+
         Args:
             exam_name: The preprocessed exam name string.
-            modality_code: The original modality code from the source data.
+            modality_code: The original modality code from the source data (used as a fallback).
             
         Returns:
             A dictionary containing the parsed components and a generated clean name.
@@ -97,6 +124,7 @@ class RadiologySemanticParser:
         lower_name = exam_name.lower()
         anatomy = self.anatomy_extractor.extract(lower_name) if self.anatomy_extractor else []
         
+        # The parsed dictionary holds the structured output of each component.
         parsed = {
             'modality': self._parse_modality(lower_name, modality_code),
             'anatomy': anatomy,
@@ -105,57 +133,113 @@ class RadiologySemanticParser:
             'technique': self._parse_technique(lower_name),
         }
         
+        # The final output includes both the parsed components and a constructed
+        # standardized name for display or logging purposes.
         return {
             'clean_name': self._build_clean_name(parsed),
             **parsed
         }
 
-    def _parse_modality(self, lower_name: str, modality_code: str) -> str:
-        """Determines modality from text, falling back to the provided code."""
-        # Order matters - check more specific modalities first to avoid conflicts
-        explicit_modality_patterns = [
-            ('IR', re.compile(r'\b(x-ray angiography.*(?:picc|peripherally inserted central catheter|biopsy|drainage|stent|intervention))\b', re.I)),
-            ('NM', re.compile(r'\b(pet|positron emission)\b', re.I)),
-            ('DEXA', re.compile(r'\b(dexa|dxa|bone densitometry|bone density|dual-energy x-ray absorptiometry)\b', re.I)),
+    def _parse_modality(self, lower_name: str, modality_code: str) -> List[str]:
+        """
+        Determines all modalities from text, ordered by priority, returning a list.
+
+        Why: This function is critical for correctly identifying the imaging type.
+             Returning a list is essential for handling hybrid imaging (e.g., PET/CT),
+             where both 'NM' and 'CT' are correct. The patterns are ordered from most
+             to least specific to ensure accurate detection.
+
+        Args:
+            lower_name: The lowercased, cleaned exam name.
+            modality_code: The original modality code for fallback.
+
+        Returns:
+            A list of identified modality strings (e.g., ['NM', 'CT']).
+        """
+        # A single, prioritized list of patterns to detect modalities.
+        # Hybrid patterns are first to ensure both components are captured.
+        MODALITY_PATTERNS = [
+            # Hybrid Imaging (Highest Priority) - These patterns match both modalities.
+            ('NM', re.compile(r'\b(pet[/\- ]?ct|spect[/\- ]?ct)\b', re.I)),
+            ('CT', re.compile(r'\b(pet[/\- ]?ct|spect[/\- ]?ct)\b', re.I)),
+            ('NM', re.compile(r'\b(pet[/\- ]?mr|spect[/\- ]?mr)\b', re.I)),
+            ('MRI', re.compile(r'\b(pet[/\- ]?mr|spect[/\- ]?mr)\b', re.I)),
+            
+            # Interventional/Fluoroscopy
+            ('IR', re.compile(r'\b(x-ray angiography|biopsy|drainage|stent|intervention|picc|insert)\b', re.I)),
+            ('Fluoroscopy', re.compile(r'\b(fl|fluoroscopy|barium|swallow|meal|enema|videofluoroscopy|image intensifier)\b', re.I)),
+
+            # Primary Modalities (Ordered from more to less specific to avoid conflicts)
+            ('DEXA', re.compile(r'\b(dexa|dxa|bone densitometry)\b', re.I)),
             ('MRI', re.compile(r'\b(mr|mri|mra|magnetic resonance)\b', re.I)),
-            ('MG', re.compile(r'\b(mg|mammo|mamm|mammography|mammogram|tomosynthesis|tomo|br)\b', re.I)),
+            ('MG', re.compile(r'\b(mg|mammo|mamm|mammography|tomosynthesis)\b', re.I)),
             ('US', re.compile(r'\b(us|ultrasound|sonogram|doppler|duplex)\b', re.I)),
-            ('NM', re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy)\b', re.I)),
-            ('Fluoroscopy', re.compile(r'\b(fl|fluoroscopy|barium|swallow|meal|enema)\b', re.I)),
+            ('NM', re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy|pet|v/q|mag3|renogram)\b', re.I)),
             ('CT', re.compile(r'\b(ct|computed tomography)\b', re.I)),
-            ('XR', re.compile(r'\b(xr|x-ray|xray|radiograph|plain film|projection)\b', re.I)),
+            ('XR', re.compile(r'\b(xr|x-ray|xray|radiograph|plain film)\b', re.I)),
         ]
-        
-        for modality, pattern in explicit_modality_patterns:
-            if pattern.search(lower_name):
-                return modality # Return immediately if an explicit modality is found
 
-        # Fallback to check for interventional/technique-based modalities
-        inferred_modality_patterns = {
-        'IR': re.compile(r'\b(ir|interventional|xa|x-ray angiography|angiography|angiogram|dsa|picc|peripherally inserted central catheter|biopsy|drainage|stent)\b', re.I),
-        # Add other inferred modalities here if needed
-        }
-
-        for modality, pattern in inferred_modality_patterns.items():
+        found_modalities = []
+        for modality, pattern in MODALITY_PATTERNS:
             if pattern.search(lower_name):
-                return modality
-    
-        # Final fallback to the provided modality code
-        return self.modality_map.get(str(modality_code).upper(), 'Other') if modality_code else 'Other'
+                if modality not in found_modalities:  # Avoid adding duplicates
+                    found_modalities.append(modality)
+
+        # If text parsing found any modalities, return them.
+        if found_modalities:
+            return sorted(list(set(found_modalities)))
+
+        # Final fallback to the provided modality code if no text match was found.
+        fallback_modality = self.modality_map.get(str(modality_code).upper())
+        return [fallback_modality] if fallback_modality else []
+
 
     def _parse_laterality(self, lower_name: str) -> List[str]:
-        """Extracts laterality information using the LateralityDetector."""
+        """
+        Extracts laterality information using the LateralityDetector utility.
+
+        Why: Laterality (left, right, bilateral) is a critical component for patient safety
+             and accurate procedure mapping. This delegates the task to a specialized class.
+
+        Args:
+            lower_name: The lowercased, cleaned exam name.
+
+        Returns:
+            A list containing the detected laterality string, or an empty list if none found.
+        """
         detected = self.laterality_detector.detect(lower_name) if self.laterality_detector else None
         return [detected] if detected else []
 
     def _parse_contrast(self, lower_name: str) -> List[str]:
-        """Extracts contrast information using the ContrastMapper."""
-        # This now expects pre-normalized tokens like 'WITH_CONTRAST'
+        """
+        Extracts contrast information using the ContrastMapper utility.
+
+        Why: Contrast usage is a key differentiator between exam types and has significant
+             clinical and billing implications. This delegates the task to a specialized class.
+
+        Args:
+            lower_name: The lowercased, cleaned exam name.
+
+        Returns:
+            A list containing the detected contrast status, or an empty list if none found.
+        """
         detected = self.contrast_mapper.detect_contrast(lower_name) if self.contrast_mapper else None
         return [detected] if detected else []
 
     def _parse_technique(self, lower_name: str) -> List[str]:
-        """Identifies specific techniques based on predefined regex patterns."""
+        """
+        Identifies specific techniques based on predefined regex patterns.
+
+        Why: This provides a deeper level of clinical specificity beyond just modality and
+             anatomy (e.g., differentiating a standard 'MRI Brain' from an 'MRCP'). This
+             granularity is vital for accurate matching of complex procedures.
+
+        Args:
+            lower_name: The lowercased, cleaned exam name.
+
+        Returns:
+            A sorted list of unique technique names found in the text.
+        """
         techniques = {
             tech for tech, patterns in self.technique_patterns.items()
             if any(p.search(lower_name) for p in patterns)
@@ -163,12 +247,25 @@ class RadiologySemanticParser:
         return sorted(list(techniques))
 
     def _build_clean_name(self, parsed: Dict) -> str:
-        """Constructs a simple, standardized name from the parsed components."""
-        parts = [parsed.get('modality', 'Unknown')]
+        """
+        Constructs a simple, standardized name from the parsed components.
+
+        Why: This creates a consistent, human-readable representation of the parsed exam,
+             which is useful for logging, debugging, and final output.
+
+        Args:
+            parsed: The dictionary of parsed components.
+
+        Returns:
+            A standardized, space-separated string.
+        """
+        # Join multiple modalities with a '+' for clarity in hybrid scans (e.g., "NM+CT").
+        modality_str = "+".join(sorted(list(set(parsed.get('modality', []))))) or 'Unknown'
+        parts = [modality_str]
         
         techniques = parsed.get('technique', [])
         # Add "Angiogram" to the clean name if it's a vascular procedure for clarity
-        if 'Vascular Interventional' in techniques:
+        if 'Diagnostic Angiography' in techniques:
             parts.append("Angiogram")
         
         if parsed.get('anatomy'):
@@ -177,10 +274,9 @@ class RadiologySemanticParser:
         if parsed.get('laterality'):
             # Abbreviate laterality for a cleaner name
             lat_map = {'left': 'Lt', 'right': 'Rt', 'bilateral': 'Both'}
-            parts.append(lat_map.get(parsed['laterality'][0], parsed['laterality'][0].capitalize()))
+            lat = parsed['laterality'][0]
+            parts.append(lat_map.get(lat, lat.capitalize()))
 
         return " ".join(part for part in parts if part).strip()
-
-    
 
 # --- END OF FILE parser.py ---
