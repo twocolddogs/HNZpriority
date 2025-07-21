@@ -221,6 +221,13 @@ class NHSLookupEngine:
             logger.debug(f"Anatomical constraint violation detected, returning 0.0 confidence")
             return 0.0
         
+        # PIPELINE STEP: Check diagnostic protection rules
+        # Prevent diagnostic exams from mapping to interventional procedures
+        diagnostic_protection_penalty = self._check_diagnostic_protection(input_exam_text, nhs_entry)
+        if diagnostic_protection_penalty < -1.0:
+            logger.debug(f"Diagnostic protection violation detected, returning 0.0 confidence")
+            return 0.0
+        
         modality_score = self._calculate_modality_score(input_components.get('modality'), nhs_components.get('modality'))
         contrast_score = self._calculate_contrast_score((input_components.get('contrast') or [None])[0], (nhs_components.get('contrast') or [None])[0])
         technique_score = self._calculate_set_score(input_components, nhs_components, 'technique')
@@ -385,6 +392,55 @@ class NHSLookupEngine:
         if not input_anatomy.union(nhs_anatomy): 
             return 0.0
         return len(input_anatomy.intersection(nhs_anatomy)) / len(input_anatomy.union(nhs_anatomy))
+    
+    def _check_diagnostic_protection(self, input_exam_text: str, nhs_entry: dict) -> float:
+        """
+        Check diagnostic protection rules to prevent diagnostic exams mapping to interventional procedures.
+        
+        PIPELINE STEP: This method prevents diagnostic exams (marked as "Standard", "routine", etc.) 
+        from being incorrectly mapped to interventional procedures (containing "excision", "biopsy", etc.).
+        
+        Args:
+            input_exam_text: Original user input exam name
+            nhs_entry: NHS database entry being considered for matching
+            
+        Returns:
+            float: 0.0 for normal processing, or severe penalty for diagnostic→interventional violations
+        """
+        # Get diagnostic protection config
+        protection_config = self.config.get('diagnostic_protection', {})
+        if not protection_config.get('enable', False):
+            return 0.0
+        
+        # Get keyword lists from config
+        diagnostic_indicators = protection_config.get('diagnostic_indicators', [])
+        interventional_indicators = protection_config.get('interventional_indicators', [])
+        blocking_penalty = protection_config.get('blocking_penalty', -8.0)
+        
+        # Convert to lowercase for case-insensitive matching
+        input_lower = input_exam_text.lower()
+        nhs_name_lower = nhs_entry.get('primary_source_name', '').lower()
+        
+        # Check if input contains diagnostic indicators
+        input_has_diagnostic = any(indicator.lower() in input_lower for indicator in diagnostic_indicators)
+        
+        # Check if NHS entry contains interventional indicators  
+        nhs_has_interventional = any(indicator.lower() in nhs_name_lower for indicator in interventional_indicators)
+        
+        # If input is marked as diagnostic but NHS entry is interventional, block the mapping
+        if input_has_diagnostic and nhs_has_interventional:
+            # Find which specific indicators triggered the violation
+            triggered_diagnostic = [ind for ind in diagnostic_indicators if ind.lower() in input_lower]
+            triggered_interventional = [ind for ind in interventional_indicators if ind.lower() in nhs_name_lower]
+            
+            logger.warning(f"DIAGNOSTIC PROTECTION VIOLATION: Blocking diagnostic→interventional mapping. "
+                          f"Input has diagnostic indicators {triggered_diagnostic}, "  
+                          f"NHS entry has interventional indicators {triggered_interventional} "
+                          f"(penalty: {blocking_penalty})")
+            return blocking_penalty
+        
+        # No violation detected
+        return 0.0
     
     def _calculate_context_bonus(self, input_exam: str, nhs_entry: dict) -> float:
         if not self.context_scoring: return 0.0

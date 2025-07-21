@@ -171,6 +171,60 @@ scoring:
       - ["artery", "bone"]
       - ["vein", "muscle"]
   
+  # DIAGNOSTIC PROTECTION RULES - Prevent diagnostic exams mapping to interventional procedures
+  # CRITICAL: These rules protect standard/routine diagnostic exams from being mapped to interventional procedures
+  diagnostic_protection:
+    enable: true  # Enable diagnostic protection checking
+    blocking_penalty: -8.0  # Severe penalty for diagnostic→interventional mapping
+    
+    # Keywords that indicate a DIAGNOSTIC (non-interventional) exam
+    diagnostic_indicators:
+      - "standard"      # "US Breast - Standard" should never map to excision
+      - "routine" 
+      - "screening"
+      - "surveillance"
+      - "follow-up"
+      - "follow up"
+      - "baseline"
+      - "initial"
+      - "diagnostic"
+      - "plain"         # "Plain XR" vs guided procedures
+      - "simple"
+      - "basic"
+      - "without guidance"
+      - "non-contrast"  # Often indicates simple diagnostic scan
+    
+    # Keywords that indicate an INTERVENTIONAL procedure in NHS entries
+    interventional_indicators:
+      - "excision"      # Surgical removal
+      - "biopsy"
+      - "guided"        # Image-guided procedures
+      - "guidance" 
+      - "aspiration"
+      - "drainage"
+      - "injection"
+      - "insertion"
+      - "placement"
+      - "localization"
+      - "localisation"
+      - "ablation"
+      - "embolization"
+      - "embolisation"
+      - "stent"
+      - "angioplasty"
+      - "thrombectomy"
+      - "atherectomy"
+      - "vertebroplasty"
+      - "kyphoplasty"
+      - "arthrogram"    # Joint injection procedure
+      - "arthogram"
+      - "vacuum"        # Vacuum-assisted procedures
+      - "percutaneous"
+      - "endovascular"
+      - "catheter"
+      - "picc"
+      - "port"
+  
   # ANATOMICAL SPECIFICITY WORD LISTS
   anatomical_detail_words:
     # Vessel/vascular specificity
