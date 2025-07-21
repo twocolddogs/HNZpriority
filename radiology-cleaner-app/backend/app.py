@@ -20,7 +20,7 @@ from nhs_lookup_engine import NHSLookupEngine
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
-from context_detection import detect_gender_context, detect_age_context, detect_clinical_context
+# Context detection now happens during NHS lookup scoring, not post-processing
 from preprocessing import initialize_preprocessor, preprocess_exam_name, get_preprocessor
 from cache_version import get_current_cache_version, format_cache_key
 
@@ -213,10 +213,11 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             'contrast': components_from_engine.get('contrast', []),
             'technique': components_from_engine.get('technique', []),
             
-            # Contexts are calculated once on the cleaned input for consistency
-            'gender_context': detect_gender_context(cleaned_exam_name, components_from_engine.get('anatomy', [])),
-            'age_context': detect_age_context(cleaned_exam_name),
-            'clinical_context': detect_clinical_context(cleaned_exam_name, components_from_engine.get('anatomy', [])),
+            # PIPELINE CHANGE: Context detection now happens during NHS lookup scoring 
+            # (not post-scoring) so these values come pre-calculated from the engine
+            'gender_context': components_from_engine.get('gender_context'),
+            'age_context': components_from_engine.get('age_context'), 
+            'clinical_context': components_from_engine.get('clinical_context', []),
             
             'confidence': components_from_engine.get('confidence', 0.0)
         }

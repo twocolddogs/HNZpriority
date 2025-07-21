@@ -244,7 +244,8 @@ class NHSLookupEngine:
         final_score = (wf['component'] * component_score + wf['semantic'] * semantic_score)
         
         final_score += interventional_score
-        final_score += self._calculate_context_bonus(input_exam_text, nhs_entry)
+        # PIPELINE STEP: Apply context bonuses (now includes gender/age bonuses previously missing)
+        final_score += self._calculate_context_bonus(input_exam_text, nhs_entry, input_components.get('anatomy', []))
         final_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
         final_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
         final_score += self._calculate_anatomy_specificity_preference(input_components, nhs_entry)
@@ -275,10 +276,24 @@ class NHSLookupEngine:
 
         # --- CRITICAL FIX IS HERE ---
         # Create the nested 'components' dictionary that app.py expects.
-        # This dictionary includes all parsed components AND the final confidence score.
+        # This dictionary includes all parsed components, confidence score, AND context information.
+        
+        # PIPELINE STEP: Detect context information that was previously calculated post-scoring
+        # Now calculated here so it can influence the final result structure
+        from context_detection import detect_gender_context, detect_age_context, detect_clinical_context
+        
+        input_anatomy = extracted_input_components.get('anatomy', [])
+        gender_context = detect_gender_context(input_exam_text, input_anatomy)
+        age_context = detect_age_context(input_exam_text) 
+        clinical_context = detect_clinical_context(input_exam_text, input_anatomy)
+        
         final_components = {
             **extracted_input_components,  # Unpack anatomy, laterality, contrast, technique
-            'confidence': confidence
+            'confidence': confidence,
+            # Add context information that was previously calculated in app.py
+            'gender_context': gender_context,
+            'age_context': age_context, 
+            'clinical_context': clinical_context
         }
         
         # Check for biopsy ambiguity
@@ -442,16 +457,65 @@ class NHSLookupEngine:
         # No violation detected
         return 0.0
     
-    def _calculate_context_bonus(self, input_exam: str, nhs_entry: dict) -> float:
-        if not self.context_scoring: return 0.0
-        input_lower, nhs_name_lower = input_exam.lower(), nhs_entry.get('primary_source_name', '').lower()
-        bonus = 0.0
-        for context_type, details in self.context_scoring.items():
-            if isinstance(details, dict) and 'keywords' in details and 'bonus' in details:
-                keywords = details['keywords']
-                if any(k in input_lower for k in keywords) and any(k in nhs_name_lower for k in keywords):
-                    bonus += details['bonus']
-        return bonus
+    def _calculate_context_bonus(self, input_exam: str, nhs_entry: dict, input_anatomy: List[str] = None) -> float:
+        """
+        Calculate context-based bonuses including gender, age, pregnancy, and clinical contexts.
+        
+        PIPELINE STEP: This method applies context bonuses that were previously calculated 
+        post-scoring but are now integrated into the matching score calculation.
+        
+        Args:
+            input_exam: Original user input exam name
+            nhs_entry: NHS database entry being scored
+            input_anatomy: Parsed anatomy from input (for context detection)
+            
+        Returns:
+            float: Total context bonus to add to the final score
+        """
+        from context_detection import detect_gender_context, detect_age_context, detect_clinical_context
+        
+        total_bonus = 0.0
+        input_lower = input_exam.lower()
+        nhs_name_lower = nhs_entry.get('primary_source_name', '').lower()
+        
+        # PART 1: Calculate gender/age context bonuses (previously missing from scoring)
+        # Detect gender context from input
+        input_gender_context = detect_gender_context(input_exam, input_anatomy or [])
+        if input_gender_context:
+            # Check if NHS entry matches this gender context
+            if input_gender_context == 'pregnancy' and any(term in nhs_name_lower for term in ['pregnancy', 'obstetric', 'prenatal', 'fetal']):
+                pregnancy_bonus = self.config.get('pregnancy_context_bonus', 0.25)
+                total_bonus += pregnancy_bonus
+                logger.debug(f"Applied pregnancy context bonus: +{pregnancy_bonus}")
+                
+            elif input_gender_context == 'female' and any(term in nhs_name_lower for term in ['breast', 'mammography', 'female', 'gynae', 'uterus']):
+                gender_bonus = self.config.get('gender_context_match_bonus', 0.20)
+                total_bonus += gender_bonus
+                logger.debug(f"Applied female gender context bonus: +{gender_bonus}")
+                
+            elif input_gender_context == 'male' and any(term in nhs_name_lower for term in ['prostate', 'scrotal', 'male', 'penis']):
+                gender_bonus = self.config.get('gender_context_match_bonus', 0.20)
+                total_bonus += gender_bonus
+                logger.debug(f"Applied male gender context bonus: +{gender_bonus}")
+        
+        # Detect age context from input
+        input_age_context = detect_age_context(input_exam)
+        if input_age_context == 'paediatric' and any(term in nhs_name_lower for term in ['paediatric', 'pediatric', 'child', 'infant']):
+            age_bonus = self.config.get('age_context_match_bonus', 0.15)
+            total_bonus += age_bonus
+            logger.debug(f"Applied paediatric age context bonus: +{age_bonus}")
+        
+        # PART 2: Calculate clinical context bonuses (from context_scoring config)
+        if self.context_scoring:
+            for context_type, details in self.context_scoring.items():
+                if isinstance(details, dict) and 'keywords' in details and 'bonus' in details:
+                    keywords = details['keywords']
+                    if any(k in input_lower for k in keywords) and any(k in nhs_name_lower for k in keywords):
+                        clinical_bonus = details['bonus']
+                        total_bonus += clinical_bonus
+                        logger.debug(f"Applied {context_type} clinical context bonus: +{clinical_bonus}")
+        
+        return total_bonus
     
     def _calculate_synonym_bonus(self, input_exam: str, nhs_entry: dict) -> float:
         abbreviations = self.preprocessing_config.get('medical_abbreviations', {})
