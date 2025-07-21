@@ -128,7 +128,11 @@ def _initialize_app():
     
     initialize_preprocessor(abbreviation_expander, config=preprocessing_config)
     
-    anatomy_extractor = AnatomyExtractor(nhs_authority)
+    anatomy_vocab_from_config = preprocessing_config.get('anatomy_vocabulary', {})
+    if not anatomy_vocab_from_config:
+        logger.warning("Anatomy vocabulary not found in config.yaml. AnatomyExtractor will be empty.")
+
+    anatomy_extractor = AnatomyExtractor(anatomy_vocabulary=anatomy_vocab_from_config)
     laterality_detector = LateralityDetector()
     contrast_mapper = ContrastMapper()
 
@@ -138,6 +142,7 @@ def _initialize_app():
         laterality_detector=laterality_detector,
         contrast_mapper=contrast_mapper
     )
+
 
     nhs_lookup_engine = NHSLookupEngine(
         nhs_json_path=nhs_json_path,
