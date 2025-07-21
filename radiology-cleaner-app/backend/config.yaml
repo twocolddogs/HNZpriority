@@ -45,9 +45,87 @@ scoring:
   
   # BIOPSY MODALITY PREFERENCE - When exam name has "biopsy" but no explicit modality
   biopsy_modality_preference: true   # Enable biopsy modality preference scoring
-  biopsy_ct_preference_bonus: 0.25   # Strong preference for CT-guided biopsies
-  biopsy_us_preference_bonus: 0.20   # Strong preference for US-guided biopsies
-  biopsy_fl_preference_penalty: -0.15 # Reduce preference for fluoroscopic biopsies
+  
+  # ORGAN-SPECIFIC BIOPSY MODALITY PREFERENCES
+  # Maps anatomy keywords to preferred modality weightings (+/- scores)
+  biopsy_organ_modality_preferences:
+    # Lung/Chest - CT preferred, fluoroscopy strongly discouraged
+    lung:
+      ct: 0.40
+      us: 0.25
+      fluoroscopy: -0.50
+    pulmonary:
+      ct: 0.40
+      us: 0.25 
+      fluoroscopy: -0.50
+    chest:
+      ct: 0.35
+      us: 0.20
+      fluoroscopy: -0.45
+    thoracic:
+      ct: 0.35
+      us: 0.20
+      fluoroscopy: -0.45
+      
+    # Liver - US and CT both good, fluoroscopy discouraged
+    liver:
+      ct: 0.30
+      us: 0.35
+      fluoroscopy: -0.25
+    hepatic:
+      ct: 0.30
+      us: 0.35
+      fluoroscopy: -0.25
+      
+    # Kidney - CT and US preferred
+    kidney:
+      ct: 0.35
+      us: 0.30
+      fluoroscopy: -0.20
+    renal:
+      ct: 0.35
+      us: 0.30
+      fluoroscopy: -0.20
+      
+    # Thyroid - US strongly preferred
+    thyroid:
+      us: 0.45
+      ct: 0.15
+      fluoroscopy: -0.30
+      
+    # Breast - US and MRI preferred, avoid fluoroscopy
+    breast:
+      us: 0.40
+      mri: 0.25
+      ct: 0.10
+      fluoroscopy: -0.40
+      
+    # Bone - CT preferred for spine, fluoroscopy sometimes used
+    bone:
+      ct: 0.30
+      fluoroscopy: 0.10
+      us: -0.10
+    spine:
+      ct: 0.35
+      fluoroscopy: 0.05
+      us: -0.15
+    vertebr:  # vertebra/vertebral
+      ct: 0.35
+      fluoroscopy: 0.05
+      us: -0.15
+      
+    # Prostate - US and MRI preferred
+    prostate:
+      us: 0.40
+      mri: 0.30
+      ct: 0.10
+      fluoroscopy: -0.25
+      
+  # FALLBACK BIOPSY PREFERENCES (when no specific organ match)
+  biopsy_default_preferences:
+    ct: 0.25        # Default CT preference
+    us: 0.20        # Default US preference  
+    fluoroscopy: -0.15  # Default fluoroscopy penalty
   
   # ANATOMY SPECIFICITY PREFERENCE - Prefer generic entries for generic inputs
   anatomy_specificity_preference: true  # Enable anatomy specificity preference

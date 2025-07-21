@@ -370,19 +370,33 @@ class NHSLookupEngine:
         if any(mod in input_lower for mod in explicit_modalities):
             return 0.0
             
-        # Apply modality preference based on NHS entry modality/name
+        # Get organ-specific biopsy preferences from config
+        organ_preferences = self.config.get('biopsy_organ_modality_preferences', {})
+        default_preferences = self.config.get('biopsy_default_preferences', {})
+        
+        # Determine NHS entry modality
         nhs_components = nhs_entry.get('_parsed_components', {})
         nhs_modality = nhs_components.get('modality', '').lower()
         
-        # Check both modality and name content for guidance type
+        # Map NHS modality to config key
         if nhs_modality == 'ct' or 'ct' in nhs_name_lower:
-            return self.config.get('biopsy_ct_preference_bonus', 0.25)
+            modality_key = 'ct'
         elif nhs_modality == 'us' or any(term in nhs_name_lower for term in ['us', 'ultrasound', 'sonograph']):
-            return self.config.get('biopsy_us_preference_bonus', 0.20)
+            modality_key = 'us'
+        elif nhs_modality == 'mri' or any(term in nhs_name_lower for term in ['mri', 'mr ']):
+            modality_key = 'mri'
         elif nhs_modality in ['fluoroscopy', 'fl'] or any(term in nhs_name_lower for term in ['fluoroscop', 'fluoro']):
-            return self.config.get('biopsy_fl_preference_penalty', -0.15)
+            modality_key = 'fluoroscopy'
+        else:
+            return 0.0
             
-        return 0.0
+        # Find matching organ in input and apply specific preferences
+        for organ, preferences in organ_preferences.items():
+            if organ in input_lower:
+                return preferences.get(modality_key, 0.0)
+        
+        # Fall back to default preferences if no organ match
+        return default_preferences.get(modality_key, 0.0)
     
     def _is_biopsy_ambiguous(self, input_exam: str, nhs_entry: dict) -> bool:
         """Check if this is an ambiguous biopsy case where modality preference was applied."""
