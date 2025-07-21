@@ -217,10 +217,20 @@ class StatusManager {
         }, 300);
     }
     
-    // --- UPDATED: Show a progress status message (text only) ---
+    // Show a progress status message with visual progress bar
     showProgress(message, current, total, type = 'progress') {
         const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
-        const progressContent = `${message} <span class="status-progress-text">${current}/${total} (${percentage}%)</span>`;
+        const progressContent = `
+            <div class="progress-container">
+                <div class="progress-header">
+                    <span class="progress-message">${message}</span>
+                    <span class="progress-counter">${current}/${total} (${percentage}%)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${percentage}%"></div>
+                </div>
+            </div>
+        `;
 
         if (!this.progressMessage) {
             // Create new progress status
@@ -314,7 +324,19 @@ class StatusManager {
         return `${(value / total * 100).toFixed(precision)}%`;
     }
     
-    // --- UPDATED: Inject required CSS styles with changes for stats display ---
+    // Show file information in a consistent way
+    showFileInfo(fileName, fileSize) {
+        const fileMessage = `<strong>File loaded:</strong> ${fileName} (${this.formatFileSize(fileSize)})`;
+        return this.show(fileMessage, 'info');
+    }
+    
+    // Show test status in a consistent way
+    showTestInfo(testName, description) {
+        const testMessage = `<strong>${testName}:</strong> ${description}`;
+        return this.show(testMessage, 'info');
+    }
+    
+    // --- UPDATED: Inject required CSS styles with progress bar styles ---
     injectStyles() {
         const styleId = 'status-manager-styles';
         if (document.getElementById(styleId)) return;
@@ -405,6 +427,43 @@ class StatusManager {
                 color: var(--color-danger, #f44336);
                 font-weight: 500;
                 margin-top: 2px;
+            }
+            
+            /* Progress bar styles */
+            .progress-container {
+                width: 100%;
+            }
+            .progress-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+                font-size: 14px;
+            }
+            .progress-message {
+                font-weight: 500;
+            }
+            .progress-counter {
+                font-family: var(--font-family-mono, monospace);
+                font-size: 13px;
+                color: var(--color-gray-600, #666);
+            }
+            .progress-bar {
+                width: 100%;
+                height: 8px;
+                background-color: var(--color-gray-200, #e0e0e0);
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, var(--color-primary, #3f51b5), var(--color-primary-dark, #303f9f));
+                border-radius: 4px;
+                transition: width 0.3s ease;
+                min-width: 2px;
+            }
+            .progress-fill:empty {
+                background: var(--color-primary, #3f51b5);
             }
             .current-exam.error .exam-value {
                 color: var(--color-danger, #f44336);
@@ -1058,7 +1117,7 @@ window.addEventListener('DOMContentLoaded', function() {
         // Reset UI to initial state
         showUploadInterface();
         resultsSection.style.display = 'none';
-        fileInfo.style.display = 'none';
+        statusManager.clearAll();
         
         // Reset file input
         fileInput.value = '';
@@ -1241,8 +1300,8 @@ window.addEventListener('DOMContentLoaded', function() {
         // Hide upload interface during processing
         hideUploadInterface();
         
-        fileInfo.innerHTML = `<strong>File loaded:</strong> ${file.name} (${formatFileSize(file.size)})`;
-        fileInfo.style.display = 'block';
+        statusManager.clearAll();
+        statusManager.showFileInfo(file.name, file.size);
         resultsSection.style.display = 'none';
         allMappings = [];
         summaryData = null;
@@ -1287,8 +1346,8 @@ window.addEventListener('DOMContentLoaded', function() {
         hideUploadInterface();
         button.disabled = true;
         button.innerHTML = 'Processing Test Cases...';
-        fileInfo.innerHTML = `<strong>Test running:</strong> Verifying engine performance...`;
-        fileInfo.style.display = 'block';
+        statusManager.clearAll();
+        statusManager.showTestInfo('Sanity Test', 'Verifying engine performance...');
 
         // Show a "progress" message that we can remove later
         statusId = statusManager.show(`Running 100-exam test suite with model: '${currentModel}'...`, 'progress');
@@ -1318,7 +1377,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
     } catch (error) {
         console.error('Sanity test failed:', error);
-        fileInfo.innerHTML = `<div class="file-details error"><h3>❌ Sanity Test Failed</h3><p><strong>Error:</strong> ${error.message}</p></div>`;
+        statusManager.show(`❌ Sanity Test Failed: ${error.message}`, 'error');
         
         // Show a persistent error message so the user can read it
         statusManager.show(`<strong>Sanity Test Failed:</strong> ${error.message}`, 'error', 0);
@@ -1662,7 +1721,10 @@ window.addEventListener('DOMContentLoaded', function() {
                 dataSource: mapping.data_source,
                 examCode: mapping.exam_code,
                 examName: mapping.exam_name,
-                confidence: mapping.components.confidence || 0
+                confidence: mapping.components.confidence || 0,
+                snomedId: mapping.snomed_id || '',
+                source: mapping.source || 'UNKNOWN',
+                components: mapping.components || {}
             });
             
             consolidatedGroups[cleanName].totalCount++;
@@ -1670,10 +1732,16 @@ window.addEventListener('DOMContentLoaded', function() {
             consolidatedGroups[cleanName].modalities.add(mapping.modality_code);
         });
         
-        // Calculate average confidence for each group
+        // Calculate average confidence and collect additional metadata for each group
         Object.values(consolidatedGroups).forEach(group => {
             const totalConfidence = group.sourceCodes.reduce((sum, code) => sum + code.confidence, 0);
             group.avgConfidence = totalConfidence / group.sourceCodes.length;
+            
+            // Extract SNOMED ID from the first available source code that has one
+            group.snomedId = group.sourceCodes.find(code => code.snomedId)?.snomedId || '';
+            
+            // Set the components to the first available component set (they should be similar within a group)
+            group.components = group.sourceCodes.find(code => code.components)?.components || {};
         });
         
         consolidatedData = Object.values(consolidatedGroups);
@@ -1710,34 +1778,59 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidenceClass = group.avgConfidence >= 0.8 ? 'confidence-high' : 
                                    group.avgConfidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             
+            // Group source codes by data source for better organization
+            const sourceGroups = groupSourceCodesByDataSource(group.sourceCodes);
+            const matchingMethodology = getGroupMatchingMethodology(group.sourceCodes);
+            
             groupElement.innerHTML = `
                 <div class="consolidated-header">
-                    <div class="consolidated-title">${group.cleanName}</div>
+                    <div class="consolidated-title-section">
+                        <div class="consolidated-title">${group.cleanName}</div>
+                        <div class="consolidated-snomed">
+                            ${group.snomedId ? `<span class="snomed-badge">SNOMED: ${group.snomedId}</span>` : ''}
+                        </div>
+                    </div>
                     <div class="consolidated-count">${group.totalCount} codes</div>
                 </div>
                 <div class="consolidated-body">
                     <div class="consolidated-meta">
-                        <div><strong>Sources:</strong> ${Array.from(group.dataSources).join(', ')}</div>
-                        <div><strong>Modalities:</strong> ${Array.from(group.modalities).join(', ')}</div>
-                        <div><strong>Avg Confidence:</strong> 
-                            <span class="confidence-bar">
-                                <span class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></span>
-                            </span>
-                            ${confidencePercent}%
+                        <div class="meta-row">
+                            <div class="meta-item">
+                                <strong>Data Sources:</strong> 
+                                <div class="source-indicators">
+                                    ${Array.from(group.dataSources).map(source => 
+                                        `<span class="source-indicator" style="background-color: ${getSourceColor(source)}" title="${getSourceDisplayName(source)}">${source}</span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            <div class="meta-item">
+                                <strong>Modalities:</strong> 
+                                <span class="modality-list">${Array.from(group.modalities).join(', ')}</span>
+                            </div>
+                        </div>
+                        <div class="meta-row">
+                            <div class="meta-item">
+                                <strong>Matching Engine:</strong> 
+                                <span class="methodology-badge">${matchingMethodology}</span>
+                            </div>
+                            <div class="meta-item">
+                                <strong>Avg Confidence:</strong> 
+                                <div class="confidence-display">
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
+                                    </div>
+                                    <span class="confidence-text">${confidencePercent}%</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="consolidated-components">
-                        ${generateComponentTags(group.components)}
+                        <div class="components-label"><strong>Parsed Components:</strong></div>
+                        <div class="component-tags">${generateComponentTags(group.components)}</div>
                     </div>
                     <div class="source-codes">
-                        ${group.sourceCodes.map(code => `
-                            <div class="source-code">
-                                <div class="source-code-header">
-                                    <span>[${code.dataSource}] ${code.examCode}</span>
-                                </div>
-                                <div class="source-code-name">${code.examName}</div>
-                            </div>
-                        `).join('')}
+                        <div class="source-codes-label"><strong>Source Exam Codes:</strong></div>
+                        ${generateGroupedSourceCodes(sourceGroups)}
                     </div>
                 </div>
             `;
@@ -1749,32 +1842,121 @@ window.addEventListener('DOMContentLoaded', function() {
     function generateComponentTags(components) {
         let tags = '';
         
-        if (components.anatomy) {
-            components.anatomy.forEach(a => tags += `<span class="tag anatomy">${a}</span>`);
+        // Anatomy tags
+        if (components.anatomy && components.anatomy.length > 0) {
+            components.anatomy.forEach(a => tags += `<span class="tag anatomy" title="Anatomy">${a}</span>`);
         }
+        
+        // Modality tag (from the main component)
+        if (components.modality) {
+            tags += `<span class="tag modality" title="Modality">${components.modality}</span>`;
+        }
+        
+        // Laterality tags
         if (components.laterality && components.laterality.length > 0) {
             const lateralityValue = Array.isArray(components.laterality) 
                 ? components.laterality.join(', ') 
                 : components.laterality;
-            tags += `<span class="tag laterality">${lateralityValue}</span>`;
+            tags += `<span class="tag laterality" title="Laterality">${lateralityValue}</span>`;
         }
+        
+        // Contrast tags
         if (components.contrast && components.contrast.length > 0) {
             const contrastValue = Array.isArray(components.contrast) 
                 ? components.contrast.join(', ') 
                 : components.contrast;
-            tags += `<span class="tag contrast">${contrastValue}</span>`;
-        }
-        if (components.technique) {
-            components.technique.forEach(t => tags += `<span class="tag technique">${t}</span>`);
-        }
-        if (components.gender_context) {
-            tags += `<span class="tag gender">${components.gender_context}</span>`;
-        }
-        if (components.clinical_context) {
-            components.clinical_context.forEach(c => tags += `<span class="tag clinical">${c}</span>`);
+            tags += `<span class="tag contrast" title="Contrast">${contrastValue}</span>`;
         }
         
-        return tags;
+        // Technique tags
+        if (components.technique && components.technique.length > 0) {
+            components.technique.forEach(t => tags += `<span class="tag technique" title="Technique">${t}</span>`);
+        }
+        
+        // Gender context
+        if (components.gender_context) {
+            tags += `<span class="tag gender" title="Gender Context">${components.gender_context}</span>`;
+        }
+        
+        // Clinical context
+        if (components.clinical_context && components.clinical_context.length > 0) {
+            components.clinical_context.forEach(c => tags += `<span class="tag clinical" title="Clinical Context">${c}</span>`);
+        }
+        
+        return tags || '<span class="no-components">No parsed components</span>';
+    }
+    
+    // Group source codes by data source for better organization
+    function groupSourceCodesByDataSource(sourceCodes) {
+        const groups = {};
+        sourceCodes.forEach(code => {
+            if (!groups[code.dataSource]) {
+                groups[code.dataSource] = [];
+            }
+            groups[code.dataSource].push(code);
+        });
+        return groups;
+    }
+    
+    // Get the matching methodology for a group of source codes
+    function getGroupMatchingMethodology(sourceCodes) {
+        const sources = new Set(sourceCodes.map(code => code.source));
+        if (sources.size === 1) {
+            const source = Array.from(sources)[0];
+            if (source.includes('UNIFIED_MATCH')) {
+                return 'NLP Semantic Matching';
+            } else if (source.includes('EXACT_MATCH')) {
+                return 'Exact Match';
+            } else if (source.includes('FUZZY_MATCH')) {
+                return 'Fuzzy String Matching';
+            }
+        }
+        return sources.size > 1 ? 'Mixed Methods' : 'Unknown Method';
+    }
+    
+    // Get display name for data source
+    function getSourceDisplayName(source) {
+        const sourceNames = {
+            'C': 'Central',
+            'CO': 'SIRS (Canterbury)',
+            'K': 'Southern',
+            'CM': 'Counties Manukau',
+            'NL': 'Northland',
+            'W': 'Waikato'
+        };
+        return sourceNames[source] || source;
+    }
+    
+    // Generate grouped source codes display
+    function generateGroupedSourceCodes(sourceGroups) {
+        let html = '';
+        
+        Object.entries(sourceGroups).forEach(([dataSource, codes]) => {
+            const sourceColor = getSourceColor(dataSource);
+            const sourceDisplayName = getSourceDisplayName(dataSource);
+            
+            html += `
+                <div class="source-group">
+                    <div class="source-group-header">
+                        <span class="source-indicator" style="background-color: ${sourceColor}"></span>
+                        <span class="source-name">${sourceDisplayName} (${codes.length})</span>
+                    </div>
+                    <div class="source-group-codes">
+                        ${codes.map(code => `
+                            <div class="source-code">
+                                <div class="source-code-header">
+                                    <span class="exam-code">${code.examCode}</span>
+                                    <span class="confidence-mini">${Math.round(code.confidence * 100)}%</span>
+                                </div>
+                                <div class="source-code-name">${code.examName}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        });
+        
+        return html;
     }
     
     function filterConsolidatedResults() {
@@ -1814,12 +1996,7 @@ window.addEventListener('DOMContentLoaded', function() {
         displayConsolidatedResults();
     }
     function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-    }
+    // formatFileSize function removed - using StatusManager.formatFileSize instead
     
     function formatProcessingTime(milliseconds) {
         if (milliseconds < 1000) {

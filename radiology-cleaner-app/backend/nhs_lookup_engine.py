@@ -186,9 +186,9 @@ class NHSLookupEngine:
 
             if strip_laterality:
                 if bilateral_peer := self.find_bilateral_peer(best_match):
-                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=False)
+                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=False, input_exam_text=input_exam)
 
-            return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=strip_laterality)
+            return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam)
         
         return {'clean_name': input_exam, 'snomed_id': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
 
@@ -235,7 +235,7 @@ class NHSLookupEngine:
             
         return max(0.0, min(1.0, final_score))
 
-    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False) -> Dict:
+    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False, input_exam_text: str = "") -> Dict:
         """
         Formats the final result, ensuring it contains a fully populated 'components'
         dictionary for consistent processing by the calling function.
@@ -261,6 +261,9 @@ class NHSLookupEngine:
             'confidence': confidence
         }
         
+        # Check for biopsy ambiguity
+        biopsy_ambiguous = self._is_biopsy_ambiguous(input_exam_text, best_match)
+        
         return {
             'clean_name': clean_name.strip(),
             'snomed_id': best_match.get('snomed_concept_id', ''),
@@ -270,7 +273,7 @@ class NHSLookupEngine:
             'is_diagnostic': not is_interventional,
             'is_interventional': is_interventional,
             'source': source_name,
-            'ambiguous': strip_laterality_from_name,  # Track when laterality was stripped due to ambiguous input
+            'ambiguous': strip_laterality_from_name or biopsy_ambiguous,  # Track laterality or biopsy ambiguity
             'components': final_components # Return the components nested under one key
         }
 
@@ -373,6 +376,26 @@ class NHSLookupEngine:
             return self.config.get('biopsy_fl_preference_penalty', -0.15)
             
         return 0.0
+    
+    def _is_biopsy_ambiguous(self, input_exam: str, nhs_entry: dict) -> bool:
+        """Check if this is an ambiguous biopsy case where modality preference was applied."""
+        if not self.config.get('biopsy_modality_preference', False):
+            return False
+            
+        input_lower = input_exam.lower()
+        
+        # Check if this is a biopsy procedure without explicit modality in input
+        has_biopsy = 'biopsy' in input_lower or 'bx' in input_lower
+        if not has_biopsy:
+            return False
+            
+        # Check if input already specifies a modality (if so, not ambiguous)
+        explicit_modalities = ['ct', 'us', 'ultrasound', 'fluoroscop', 'mri', 'mr']
+        if any(mod in input_lower for mod in explicit_modalities):
+            return False
+            
+        # If we get here, it's a biopsy without explicit modality - this is ambiguous
+        return True
 
     def validate_consistency(self):
         snomed_to_names = defaultdict(set)
