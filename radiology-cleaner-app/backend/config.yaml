@@ -87,10 +87,14 @@ modality_similarity:
     "PET/CT": 0.95
     "PET-CT": 0.95
     CT: 0.7            # A PET/CT includes a CT
-  DEXA:                # NEWLY ADDED BLOCK
-    DXA: 1.0
+  DEXA:                # Dual Energy X-ray Absorptiometry
+    DXA: 1.0           # Perfect match - same exam, different abbreviation
     "Bone Densitometry": 1.0
     XR: 0.9            # A DEXA is fundamentally an X-ray technique
+  DXA:                 # Dual X-ray Absorptiometry  
+    DEXA: 1.0          # Perfect match - same exam, different abbreviation
+    "Bone Densitometry": 1.0
+    XR: 0.9            # A DXA is fundamentally an X-ray technique
 
 # Context-aware scoring bonuses for clinical scenarios
 context_scoring:
@@ -180,6 +184,7 @@ preprocessing:
     # MODALITY ABBREVIATIONS
     "MRCP": "magnetic resonance cholangiopancreatography"
     "DEXA": "dual-energy x-ray absorptiometry"
+    "DXA": "dual x-ray absorptiometry"
     "NM": "nuclear medicine"
     "IR": "interventional radiology"
     "FL": "fluoroscopy"
