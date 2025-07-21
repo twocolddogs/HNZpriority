@@ -36,7 +36,7 @@ scoring:
   
   # Contrast preference scoring - prefer non-contrast when input has no contrast
   prefer_no_contrast_when_unspecified: true  # Enable preferential non-contrast matching
-  no_contrast_preference_bonus: 0.15         # Bonus for non-contrast when input has no contrast
+  no_contrast_preference_bonus: 0.25         # Strong bonus for non-contrast when input has no contrast
   
   # AGE/GENDER CONTEXT SCORING - Super-strong bonuses for matches
   gender_context_match_bonus: 0.20  # Strong bonus for gender context matches
