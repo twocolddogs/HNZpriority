@@ -171,6 +171,15 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     if not nhs_lookup_engine or not semantic_parser:
         return {'error': 'Core components not initialized'}
     
+    # Check if this exam should be excluded from analysis (conferences, MDMs, etc.)
+    if preprocessor and preprocessor.should_exclude_exam(exam_name):
+        return {
+            'error': 'EXCLUDED_NON_CLINICAL',
+            'message': f'Excluded non-clinical entry: {exam_name}',
+            'exam_name': exam_name,
+            'excluded': True
+        }
+    
     cleaned_exam_name = preprocess_exam_name(exam_name)
     parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
     

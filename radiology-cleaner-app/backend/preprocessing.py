@@ -130,6 +130,38 @@ class ExamPreprocessor:
         """Collapse multiple spaces into single spaces and trim edges."""
         return ' '.join(text.split())
     
+    def should_exclude_exam(self, exam_name: str) -> bool:
+        """
+        Check if an exam should be excluded from analysis (non-clinical entries).
+        Returns True if the exam should be excluded.
+        """
+        if not exam_name:
+            return True
+            
+        exam_lower = exam_name.lower()
+        
+        # Administrative/educational exclusion patterns
+        exclusion_patterns = [
+            r'\b(conference|conferences)\b',
+            r'\b(mdm|multidisciplinary.?meeting)\b', 
+            r'\b(meeting|meetings)\b',
+            r'\b(discussion|discussions)\b',
+            r'\b(presentation|presentations)\b',
+            r'\b(teaching|education|educational)\b',
+            r'\b(review.?meeting|case.?review)\b',
+            r'\b(journal.?club)\b',
+            r'\b(admin|administrative)\b',
+            r'\b(cancelled|canceled|no.?show)\b',
+            r'\b(test.?patient|test.?case)\b'
+        ]
+        
+        for pattern in exclusion_patterns:
+            if re.search(pattern, exam_lower):
+                logger.debug(f"Excluding non-clinical entry: {exam_name}")
+                return True
+                
+        return False
+
     def preprocess(self, exam_name: str) -> str:
         """
         Apply the complete, prioritized preprocessing pipeline.
