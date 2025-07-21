@@ -1799,7 +1799,10 @@ window.addEventListener('DOMContentLoaded', function() {
                             <strong>Data Sources</strong>
                             <div class="source-indicators">
                                 ${Array.from(group.dataSources).map(source => 
-                                    `<div class="source-item" title="${getSourceDisplayName(source)}">${getSourceDisplayName(source)}</div>`
+                                    `<div class="source-item" title="${getSourceDisplayName(source)}">
+                                        <span class="source-color-dot" style="background-color: ${getSourceColor(source)}"></span>
+                                        ${getSourceDisplayName(source)}
+                                    </div>`
                                 ).join('')}
                             </div>
                         </div>
@@ -1823,12 +1826,6 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div class="meta-item">
                             <strong>Parsed Components</strong>
                             <div class="component-tags">${generateComponentTags(group.components)}</div>
-                        </div>
-                        <div class="meta-item">
-                            <strong>SNOMED Info</strong>
-                            <div class="snomed-info">
-                                ${group.snomedId ? `<div class="snomed-id">${group.snomedId}</div>` : '<div class="no-snomed">No SNOMED</div>'}
-                            </div>
                         </div>
                     </div>
                     <div class="source-codes">
@@ -1945,32 +1942,37 @@ window.addEventListener('DOMContentLoaded', function() {
     
     // Generate grouped source codes display
     function generateGroupedSourceCodes(sourceGroups) {
-        let html = '';
-        
+        // Flatten all codes with source information
+        let allCodes = [];
         Object.entries(sourceGroups).forEach(([dataSource, codes]) => {
             const sourceColor = getSourceColor(dataSource);
             const sourceDisplayName = getSourceDisplayName(dataSource);
-            
-            html += `
-                <div class="source-group">
-                    <div class="source-group-header">
-                        <span class="source-indicator" style="background-color: ${sourceColor}"></span>
-                        <span class="source-name">${sourceDisplayName} (${codes.length})</span>
-                    </div>
-                    <div class="source-group-codes">
-                        ${codes.map(code => `
-                            <div class="source-code">
-                                <div class="source-code-header">
-                                    <span class="exam-code">${code.examCode}</span>
-                                    <span class="confidence-mini">${Math.round(code.confidence * 100)}%</span>
-                                </div>
-                                <div class="source-code-name">${code.examName}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+            codes.forEach(code => {
+                allCodes.push({
+                    ...code,
+                    dataSource,
+                    sourceColor,
+                    sourceDisplayName
+                });
+            });
         });
+        
+        // Generate compact grid layout
+        const html = `
+            <div class="source-codes-grid">
+                ${allCodes.map(code => `
+                    <div class="source-code-compact">
+                        <div class="source-code-header">
+                            <span class="source-color-dot" style="background-color: ${code.sourceColor}"></span>
+                            <span class="exam-code">${code.examCode}</span>
+                            <span class="confidence-mini">${Math.round(code.confidence * 100)}%</span>
+                        </div>
+                        <div class="source-code-name">${code.examName}</div>
+                        <div class="source-code-source">${code.sourceDisplayName}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
         
         return html;
     }
