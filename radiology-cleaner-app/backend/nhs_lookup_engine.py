@@ -253,6 +253,13 @@ class NHSLookupEngine:
         if threshold_violation:
             logger.debug(f"Component threshold violation detected: {threshold_violation}")
             return 0.0
+        
+        # PIPELINE STEP: Check technique specialization constraints
+        # Prevent generic exams from mapping to specialized techniques without explicit indicators
+        technique_specialization_penalty = self._check_technique_specialization_constraints(input_exam_text, nhs_entry)
+        if technique_specialization_penalty < -1.0:
+            logger.debug(f"Technique specialization constraint violation detected, returning 0.0 confidence")
+            return 0.0
 
         component_score = (w['anatomy'] * anatomy_score + w['modality'] * modality_score + w['laterality'] * laterality_score + w['contrast'] * contrast_score + w['technique'] * technique_score)
         
@@ -590,6 +597,53 @@ class NHSLookupEngine:
         
         # All thresholds passed
         return None
+
+    def _check_technique_specialization_constraints(self, input_exam_text: str, nhs_entry: dict) -> float:
+        """
+        Check technique specialization constraints to prevent generic exams mapping to specialized techniques.
+        
+        PIPELINE STEP: This method ensures generic exam names (e.g., "MRI Brain") cannot be mapped 
+        to highly specialized techniques (e.g., "Diffusion Tensor") without explicit indicators in the input.
+        
+        Args:
+            input_exam_text: Original input exam name text
+            nhs_entry: NHS database entry being evaluated
+            
+        Returns:
+            float: 0.0 if no violation, negative penalty if specialized technique detected without indicators
+        """
+        # Get technique specialization configuration
+        constraint_config = self.config.get('technique_specialization_constraints', {})
+        if not constraint_config.get('enable', False):
+            return 0.0
+        
+        # Get penalty for violations
+        blocking_penalty = constraint_config.get('blocking_penalty', -5.0)
+        specialization_rules = constraint_config.get('specialization_rules', {})
+        
+        # Get NHS entry text for analysis
+        nhs_text = nhs_entry.get('primary_source_name', '').lower()
+        input_text_lower = input_exam_text.lower()
+        
+        # Check each specialization rule
+        for specialized_technique, rule in specialization_rules.items():
+            specialized_technique_lower = specialized_technique.lower()
+            required_indicators = rule.get('required_indicators', [])
+            reason = rule.get('reason', 'Specialized technique requires explicit indicators')
+            
+            # Check if NHS entry contains this specialized technique
+            if specialized_technique_lower in nhs_text:
+                # Check if any required indicator is present in the input
+                has_indicator = any(indicator.lower() in input_text_lower for indicator in required_indicators)
+                
+                if not has_indicator:
+                    logger.debug(f"TECHNIQUE SPECIALIZATION VIOLATION: Input '{input_exam_text}' lacks indicators "
+                               f"for specialized technique '{specialized_technique}'. Required indicators: "
+                               f"{required_indicators}. Reason: {reason}")
+                    return blocking_penalty
+        
+        # No violations detected
+        return 0.0
     
     def _calculate_context_bonus(self, input_exam: str, nhs_entry: dict, input_anatomy: List[str] = None) -> float:
         """

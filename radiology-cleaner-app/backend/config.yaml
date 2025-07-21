@@ -269,6 +269,81 @@ scoring:
       - "catheter"
       - "picc"
       - "port"
+
+  # TECHNIQUE SPECIALIZATION CONSTRAINTS - Prevent generic exams mapping to specialized techniques
+  # CRITICAL: These rules prevent generic exam names from being mapped to highly specialized procedures
+  technique_specialization_constraints:
+    enable: true  # Enable technique specialization constraint checking
+    blocking_penalty: -5.0  # Penalty for inappropriate technique specialization
+    
+    # Define specialized techniques that require explicit indicators in the input
+    # Format: specialized_technique_name -> required_indicators_in_input
+    specialization_rules:
+      # MRI Specializations - require explicit technique indicators
+      "diffusion tensor":
+        required_indicators: ["diffusion", "dti", "tensor", "tractography"]
+        reason: "Diffusion tensor imaging requires explicit diffusion/DTI indicators"
+      
+      "fmri":
+        required_indicators: ["functional", "fmri", "bold", "activation"]
+        reason: "Functional MRI requires explicit functional imaging indicators"
+        
+      "perfusion":
+        required_indicators: ["perfusion", "pwi", "asl", "arterial spin"]
+        reason: "Perfusion imaging requires explicit perfusion indicators"
+        
+      "spectroscopy":
+        required_indicators: ["spectroscopy", "mrs", "metabolite"]
+        reason: "MR spectroscopy requires explicit spectroscopy indicators"
+        
+      # CT Specializations - require explicit technique indicators  
+      "ct colonography":
+        required_indicators: ["colonography", "virtual colonoscopy", "ctc"]
+        reason: "CT colonography requires explicit colonography indicators"
+        
+      "ct angiography":
+        required_indicators: ["angiography", "angio", "cta", "vessel", "vascular"]
+        reason: "CT angiography requires explicit angiographic indicators"
+        
+      "hrct":
+        required_indicators: ["high resolution", "hrct", "hr", "thin section"]
+        reason: "High resolution CT requires explicit HRCT indicators"
+        
+      "cardiac ct":
+        required_indicators: ["cardiac", "coronary", "heart", "calcium score"]
+        reason: "Cardiac CT requires explicit cardiac indicators"
+        
+      # Interventional Specializations - require explicit procedure indicators
+      "vacuum":
+        required_indicators: ["vacuum", "mammotome", "vab", "assisted excision"]
+        reason: "Vacuum assisted procedures require explicit VAB indicators"
+        
+      "guided biopsy":
+        required_indicators: ["biopsy", "guided", "sampling", "histology"]
+        reason: "Guided biopsy requires explicit biopsy indicators"
+        
+      "drainage":
+        required_indicators: ["drainage", "aspiration", "fluid", "collection"]
+        reason: "Drainage procedures require explicit drainage indicators"
+        
+      "embolization":
+        required_indicators: ["embolization", "embolisation", "coiling", "occlusion"]
+        reason: "Embolization requires explicit embolization indicators"
+        
+      # Contrast Assumptions - require explicit contrast indicators
+      "with contrast":
+        required_indicators: ["with contrast", "contrast", "c+", "enhanced", "gadolinium", "iv"]
+        reason: "Contrast enhancement requires explicit contrast indicators"
+        
+      # Fluoroscopy Assumptions - require explicit guidance indicators
+      "fluoroscopic":
+        required_indicators: ["fluoroscopy", "fluoro", "fl", "screening", "real-time"]
+        reason: "Fluoroscopic guidance requires explicit fluoroscopy indicators"
+        
+      # Nuclear Medicine Specializations
+      "spect":
+        required_indicators: ["spect", "single photon", "tomographic", "3d"]
+        reason: "SPECT imaging requires explicit SPECT indicators"
   
   # ANATOMICAL SPECIFICITY WORD LISTS
   anatomical_detail_words:
