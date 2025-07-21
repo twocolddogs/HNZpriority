@@ -223,8 +223,9 @@ class RadiologySemanticParser:
         Returns:
             A list containing the detected contrast status, or an empty list if none found.
         """
-        detected = self.contrast_mapper.detect_contrast(lower_name) if self.contrast_mapper else None
-        return [detected] if detected else []
+        if self.contrast_mapper:
+            return self.contrast_mapper.detect_contrast(lower_name)
+        return []
 
     def _parse_technique(self, lower_name: str) -> List[str]:
         """
