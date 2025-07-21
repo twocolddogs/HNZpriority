@@ -6,7 +6,7 @@
 # This Flask application provides a unified processing pipeline for standardizing
 # radiology exam names against NHS reference data using NLP and semantic matching.
 
-import time, json, logging, threading, os, sys
+import time, json, logging, threading, os, sys, re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from typing import List, Dict, Optional
@@ -186,7 +186,8 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
         'modality_code': components_from_engine.get('modality'),
         'exam_code': 'N/A',
         'exam_name': exam_name,
-        'clean_name': nhs_result.get('clean_name', cleaned_exam_name),
+        'clean_name': _medical_title_case(nhs_result.get('clean_name', cleaned_exam_name)),
+        'ambiguous': nhs_result.get('ambiguous', False),  # Track ambiguous input cases
         'snomed': {
             'found': bool(nhs_result.get('snomed_id')),
             'fsn': nhs_result.get('snomed_fsn', ''),
@@ -251,6 +252,58 @@ def list_available_models():
     except Exception as e:
         logger.error(f"Models endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Failed to list models"}), 500
+
+def _medical_title_case(text: str) -> str:
+    """
+    Convert text to proper medical title case with special rules:
+    - Modalities in uppercase (CT, MRI, US, XR, etc.)
+    - Conjunctions and prepositions in lowercase (and, of, with, etc.)
+    - Laterality expanded (Rt→Right, Lt→Left, Both→Both)
+    - Medical terms properly capitalized
+    """
+    # Modalities that should always be uppercase
+    modalities = {
+        'ct', 'mri', 'mr', 'us', 'xr', 'pet', 'nm', 'dexa', 'dxa', 
+        'mg', 'ir', 'picc', 'hrct', 'mrcp', 'cta', 'mra'
+    }
+    
+    # Words that should be lowercase (conjunctions, prepositions, articles)
+    lowercase_words = {
+        'and', 'or', 'of', 'in', 'on', 'at', 'to', 'for', 'with', 'without',
+        'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before',
+        'after', 'above', 'below', 'between', 'among', 'a', 'an', 'the'
+    }
+    
+    # Laterality expansions
+    laterality_expansions = {
+        'rt': 'Right',
+        'lt': 'Left', 
+        'both': 'Both',
+        'bilateral': 'Both'
+    }
+    
+    # Split into words and process each
+    words = text.split()
+    result_words = []
+    
+    for i, word in enumerate(words):
+        # Remove punctuation for comparison but keep it
+        clean_word = re.sub(r'[^\w]', '', word.lower())
+        
+        if clean_word in modalities:
+            # Always uppercase modalities
+            result_words.append(word.upper())
+        elif clean_word in laterality_expansions:
+            # Expand laterality abbreviations
+            result_words.append(laterality_expansions[clean_word])
+        elif clean_word in lowercase_words and i > 0:
+            # Lowercase conjunctions/prepositions (except first word)
+            result_words.append(word.lower())
+        else:
+            # Title case for everything else
+            result_words.append(word.capitalize())
+    
+    return ' '.join(result_words)
 
 def _get_model_description(model_key: str) -> str:
     """Get description for each model type"""

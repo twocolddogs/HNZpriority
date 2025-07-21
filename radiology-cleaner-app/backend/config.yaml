@@ -5,11 +5,11 @@ scoring:
   # Weights for combining individual components into a single component score.
   # Rebalanced based on training data analysis for better accuracy
   weights_component:
-    anatomy: 0.35      # Reduced from 0.50 - less reliance on extraction accuracy
-    modality: 0.30     # Increased from 0.20 - modality is most reliable component
-    laterality: 0.15   # Increased from 0.10 - important for precise matching
-    contrast: 0.10     # Increased from 0.10 - clinically significant differentiator
-    technique: 0.10    # Unchanged - least reliable component
+    anatomy: 0.30      # Reduced to make room for contrast
+    modality: 0.30     # Unchanged - modality is most reliable component
+    laterality: 0.15   # Unchanged - important for precise matching
+    contrast: 0.20     # Doubled - contrast is clinically critical
+    technique: 0.05    # Reduced - least reliable component
 
   # Final weights for combining the component score and the semantic score.
   # Enhanced with frequency-based scoring for popular exams
@@ -30,9 +30,9 @@ scoring:
   context_match_bonus: 0.10         # Bonus for matching clinical contexts
   modality_similarity_threshold: 0.8 # Threshold for partial modality credit
   
-  # Enhanced contrast scoring - less harsh penalties for mismatches
-  contrast_mismatch_score: 0.3      # Increased from 0.1 for fairer scoring
-  contrast_null_score: 0.7          # Increased from 0.5 for missing contrast info
+  # Enhanced contrast scoring - severe penalties for critical mismatches
+  contrast_mismatch_score: 0.05     # Very severe penalty for wrong contrast (was 0.3)
+  contrast_null_score: 0.7          # Unchanged for missing contrast info
   
   # Contrast preference scoring - prefer non-contrast when input has no contrast
   prefer_no_contrast_when_unspecified: true  # Enable preferential non-contrast matching
@@ -48,6 +48,10 @@ scoring:
   biopsy_ct_preference_bonus: 0.25   # Strong preference for CT-guided biopsies
   biopsy_us_preference_bonus: 0.20   # Strong preference for US-guided biopsies
   biopsy_fl_preference_penalty: -0.15 # Reduce preference for fluoroscopic biopsies
+  
+  # ANATOMY SPECIFICITY PREFERENCE - Prefer generic entries for generic inputs
+  anatomy_specificity_preference: true  # Enable anatomy specificity preference
+  generic_anatomy_preference_bonus: 0.15 # Bonus for generic entries when input is generic
 
 # Modality similarity matrix for partial credit scoring
 # Allows related modalities to receive partial credit instead of zero

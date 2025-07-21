@@ -38,7 +38,7 @@ class RadiologySemanticParser:
         # A map to normalize modality codes and terms found in exam names.
         self.modality_map = {
             'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM',
-            'PET': 'PET', 'MG': 'MG', 'MAMM': 'MG', 'MAMMO': 'MG', 'DEXA': 'DEXA', 
+            'PET': 'NM', 'MG': 'MG', 'MAMM': 'MG', 'MAMMO': 'MG', 'DEXA': 'DEXA', 
             'FL': 'Fluoroscopy', 
             'IR': 'IR',
             'XA': 'IR',
@@ -97,7 +97,7 @@ class RadiologySemanticParser:
         # Order matters - check more specific modalities first to avoid conflicts
         explicit_modality_patterns = [
             ('IR', re.compile(r'\b(x-ray angiography.*(?:picc|peripherally inserted central catheter|biopsy|drainage|stent|intervention))\b', re.I)),
-            ('PET', re.compile(r'\b(pet|positron emission)\b', re.I)),
+            ('NM', re.compile(r'\b(pet|positron emission)\b', re.I)),
             ('DEXA', re.compile(r'\b(dexa|dxa|bone densitometry|bone density|dual-energy x-ray absorptiometry)\b', re.I)),
             ('MRI', re.compile(r'\b(mr|mri|mra|magnetic resonance)\b', re.I)),
             ('MG', re.compile(r'\b(mg|mammo|mamm|mammography|mammogram|tomosynthesis|tomo|br)\b', re.I)),

@@ -228,6 +228,7 @@ class NHSLookupEngine:
         final_score += self._calculate_context_bonus(input_exam_text, nhs_entry)
         final_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
         final_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
+        final_score += self._calculate_anatomy_specificity_preference(input_components, nhs_entry)
         final_score -= specificity_penalty
         
         if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
@@ -396,6 +397,28 @@ class NHSLookupEngine:
             
         # If we get here, it's a biopsy without explicit modality - this is ambiguous
         return True
+    
+    def _calculate_anatomy_specificity_preference(self, input_components: dict, nhs_entry: dict) -> float:
+        """Calculate preference bonus for generic NHS entries when input is generic."""
+        if not self.config.get('anatomy_specificity_preference', False):
+            return 0.0
+            
+        input_anatomy = input_components.get('anatomy', [])
+        nhs_components = nhs_entry.get('_parsed_components', {})
+        nhs_anatomy = nhs_components.get('anatomy', [])
+        
+        # Check if input is generic (no specific anatomy mentioned)
+        if len(input_anatomy) == 0:
+            # Input is generic - prefer NHS entries that are also generic
+            if len(nhs_anatomy) == 0:
+                return self.config.get('generic_anatomy_preference_bonus', 0.15)
+            # If NHS entry has specific anatomy but input doesn't, slight penalty
+            else:
+                return -0.05
+                
+        # If input has specific anatomy, prefer NHS entries with matching anatomy
+        # (this is handled by normal anatomy scoring, so no bonus needed)
+        return 0.0
 
     def validate_consistency(self):
         snomed_to_names = defaultdict(set)
