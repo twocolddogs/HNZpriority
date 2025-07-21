@@ -183,12 +183,15 @@ class NHSLookupEngine:
             input_laterality = (extracted_input_components.get('laterality') or [None])[0]
             match_laterality = (best_match.get('_parsed_components', {}).get('laterality') or [None])[0]
             strip_laterality = (not input_laterality and match_laterality in ['left', 'right', 'bilateral'])
+            
+            # If input was laterally ambiguous, it should ALWAYS be marked as ambiguous
+            laterally_ambiguous = (not input_laterality and match_laterality in ['left', 'right', 'bilateral'])
 
             if strip_laterality:
                 if bilateral_peer := self.find_bilateral_peer(best_match):
-                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=False, input_exam_text=input_exam)
+                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=False, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
 
-            return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam)
+            return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
         
         return {'clean_name': input_exam, 'snomed_id': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
 
@@ -236,7 +239,7 @@ class NHSLookupEngine:
             
         return max(0.0, min(1.0, final_score))
 
-    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False, input_exam_text: str = "") -> Dict:
+    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False, input_exam_text: str = "", force_ambiguous: bool = False) -> Dict:
         """
         Formats the final result, ensuring it contains a fully populated 'components'
         dictionary for consistent processing by the calling function.
@@ -265,6 +268,9 @@ class NHSLookupEngine:
         # Check for biopsy ambiguity
         biopsy_ambiguous = self._is_biopsy_ambiguous(input_exam_text, best_match)
         
+        # Determine if this match is ambiguous (laterality, biopsy, or forced)
+        is_ambiguous = force_ambiguous or strip_laterality_from_name or biopsy_ambiguous
+        
         return {
             'clean_name': clean_name.strip(),
             'snomed_id': best_match.get('snomed_concept_id', ''),
@@ -274,7 +280,7 @@ class NHSLookupEngine:
             'is_diagnostic': not is_interventional,
             'is_interventional': is_interventional,
             'source': source_name,
-            'ambiguous': strip_laterality_from_name or biopsy_ambiguous,  # Track laterality or biopsy ambiguity
+            'ambiguous': is_ambiguous,  # Track laterality, biopsy, or forced ambiguity
             'components': final_components # Return the components nested under one key
         }
 

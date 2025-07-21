@@ -7,7 +7,7 @@
 # radiology exam names against NHS reference data using NLP and semantic matching.
 
 import time, json, logging, threading, os, sys, re
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from typing import List, Dict, Optional
 from datetime import datetime
@@ -354,8 +354,9 @@ def parse_enhanced():
 @app.route('/parse_batch', methods=['POST'])
 def parse_batch():
     """
-    Processes a batch of exam names concurrently for high performance.
+    Processes a batch of exam names concurrently with streaming output to disk.
     Accepts a JSON payload with a list of exams and an optional model key.
+    Results are streamed to a temporary file to avoid memory accumulation.
     """
     _ensure_app_is_initialized()
     start_time = time.time()
@@ -368,62 +369,84 @@ def parse_batch():
         exams_to_process = data['exams']
         model_key = data.get('model', 'default')
         
+        # Create output directory and unique filename for streaming results
+        import uuid
+        output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
+        os.makedirs(output_dir, exist_ok=True)
+        results_filename = f"batch_results_{uuid.uuid4().hex}.jsonl"
+        results_filepath = os.path.join(output_dir, results_filename)
+        
         logger.info(f"Starting batch processing for {len(exams_to_process)} exams using model: '{model_key}'")
+        logger.info(f"Results will be streamed to: {results_filepath}")
 
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
             return jsonify({"error": f"Model '{model_key}' not available"}), 400
 
-        results = []
-        errors = []
+        success_count = 0
+        error_count = 0
         
         # Conservative thread pool sizing for batch processing to prevent resource exhaustion.
-        # Use a more conservative approach to avoid overwhelming the system during initialization.
         cpu_cnt = os.cpu_count() or 1
         max_workers = min(8, max(2, cpu_cnt))
         logger.info(f"ThreadPoolExecutor starting with max_workers={max_workers}")
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Map each future to its original exam for better error tracking
-            future_to_exam = {
-                executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor): exam 
-                for exam in exams_to_process
-            }
-            
-            completed = 0
-            total = len(exams_to_process)
-            per_future_timeout = 60  # seconds
+        # Stream results to disk instead of accumulating in memory
+        with open(results_filepath, 'w', encoding='utf-8') as f_out:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # Map each future to its original exam for better error tracking
+                future_to_exam = {
+                    executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor): exam 
+                    for exam in exams_to_process
+                }
+                
+                completed = 0
+                total = len(exams_to_process)
+                per_future_timeout = 60  # seconds
 
-            for future in as_completed(future_to_exam):
-                original_exam = future_to_exam[future]
-                try:
-                    # Get the result from the future
-                    processed_result = future.result(timeout=per_future_timeout)
-                    results.append({
-                        "input": original_exam,
-                        "output": processed_result
-                    })
-                except Exception as e:
-                    logger.error(f"Error processing exam '{original_exam.get('exam_name')}': {e}", exc_info=True)
-                    errors.append({
-                        "original_exam": original_exam,
-                        "error": str(e)
-                    })
-                finally:
-                    completed += 1
-                    if completed % 100 == 0 or completed == total:
-                        logger.info(f"Batch progress: {completed}/{total} exams processed")
+                for future in as_completed(future_to_exam):
+                    original_exam = future_to_exam[future]
+                    try:
+                        # Get the result from the future
+                        processed_result = future.result(timeout=per_future_timeout)
+                        # Stream result directly to file in JSONL format
+                        result_entry = {
+                            "input": original_exam,
+                            "output": processed_result,
+                            "status": "success"
+                        }
+                        f_out.write(json.dumps(result_entry) + '\n')
+                        f_out.flush()  # Ensure data is written to disk immediately
+                        success_count += 1
+                    except Exception as e:
+                        logger.error(f"Error processing exam '{original_exam.get('exam_name')}': {e}", exc_info=True)
+                        # Stream error directly to file as well
+                        error_entry = {
+                            "input": original_exam,
+                            "error": str(e),
+                            "status": "error"
+                        }
+                        f_out.write(json.dumps(error_entry) + '\n')
+                        f_out.flush()
+                        error_count += 1
+                    finally:
+                        completed += 1
+                        if completed % 100 == 0 or completed == total:
+                            logger.info(f"Batch progress: {completed}/{total} exams processed")
 
         processing_time_ms = int((time.time() - start_time) * 1000)
-        logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {len(results)}, Errors: {len(errors)}")
+        logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
+        logger.info(f"Results saved to: {results_filepath}")
 
+        # Return metadata about the batch processing and file location
         return jsonify({
-            "results": results,
-            "errors": errors,
+            "message": "Batch processing complete. Results streamed to disk.",
+            "results_file": results_filepath,
+            "results_filename": results_filename,
             "processing_stats": {
                 "total_processed": len(exams_to_process),
-                "successful": len(results),
-                "errors": len(errors),
+                "successful": success_count,
+                "errors": error_count,
                 "processing_time_ms": processing_time_ms,
                 "model_used": model_key
             }
@@ -437,9 +460,10 @@ def parse_batch():
 def process_sanity_test_endpoint():
     """
     Processes the entire sanity_test.json file using a user-specified model,
-    or the default model if none is provided.
+    or the default model if none is provided. Includes progress messaging.
     """
     _ensure_app_is_initialized()
+    start_time = time.time()
     
     try:
         # Check if the user sent a JSON body with a model preference
@@ -460,8 +484,13 @@ def process_sanity_test_endpoint():
         with open(sanity_test_path, 'r', encoding='utf-8') as f:
             sanity_data = json.load(f)
 
+        total_exams = len(sanity_data)
+        logger.info(f"Starting sanity test processing for {total_exams} exams")
+
         results = []
-        for exam in sanity_data:
+        processed_count = 0
+        
+        for i, exam in enumerate(sanity_data):
             exam_name = exam.get("EXAM_NAME")
             modality_code = exam.get("MODALITY_CODE")
             
@@ -473,6 +502,16 @@ def process_sanity_test_endpoint():
                 processed_result['data_source'] = exam.get("DATA_SOURCE")
                 processed_result['exam_code'] = exam.get("EXAM_CODE")
                 results.append(processed_result)
+                processed_count += 1
+                
+                # Log progress every 50 exams or at the end
+                if (i + 1) % 50 == 0 or (i + 1) == total_exams:
+                    progress_pct = ((i + 1) / total_exams) * 100
+                    elapsed_time = time.time() - start_time
+                    logger.info(f"Sanity test progress: {i + 1}/{total_exams} ({progress_pct:.1f}%) - Elapsed: {elapsed_time:.1f}s")
+        
+        processing_time_ms = int((time.time() - start_time) * 1000)
+        logger.info(f"Sanity test processing complete in {processing_time_ms}ms. Processed: {processed_count}/{total_exams} exams")
         
         return jsonify(results)
 
@@ -481,6 +520,37 @@ def process_sanity_test_endpoint():
     except Exception as e:
         logger.error(f"Error processing sanity test: {e}", exc_info=True)
         return jsonify({"error": "Internal Server Error"}), 500
+
+@app.route('/download_batch_results/<filename>', methods=['GET'])
+def download_batch_results(filename):
+    """
+    Download batch processing results file by filename.
+    Provides secure access to batch processing output files.
+    """
+    try:
+        # Validate filename format for security
+        if not filename.startswith('batch_results_') or not filename.endswith('.jsonl'):
+            return jsonify({"error": "Invalid filename format"}), 400
+        
+        # Get the output directory (same as used in batch processing)
+        output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
+        file_path = os.path.join(output_dir, filename)
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            return jsonify({"error": "File not found"}), 404
+        
+        # Send file as attachment
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/x-jsonlines'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error downloading batch results: {e}", exc_info=True)
+        return jsonify({"error": "Failed to download file"}), 500
 
 if __name__ == '__main__':
     logger.info("Running in local development mode, initializing app immediately.")
