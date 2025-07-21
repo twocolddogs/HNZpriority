@@ -421,3 +421,110 @@ preprocessing:
     "CSPINE": "cervical spine"
     "TSPINE": "thoracic spine"
     "MAMMARY": "breast"
+    
+  anatomy_vocabulary:
+    head: head
+    brain: brain
+    skull: head
+    cranium: head
+    sinus: sinuses
+    sinuses: sinuses
+    orbit: orbit
+    orbits: orbit
+    face: face
+    neck: neck
+    chest: chest
+    thorax: chest
+    lung: chest
+    lungs: chest
+    heart: heart
+    cardiac: heart
+    mediastinum: mediastinum
+    pulmonary: chest
+    abdomen: abdomen
+    abdo: abdomen
+    tummy: abdomen
+    pelvis: pelvis
+    pelvic: pelvis
+    liver: liver
+    kidney: kidney
+    kidneys: kidney
+    renal: kidney
+    pancreas: pancreas
+    spleen: spleen
+    bladder: bladder
+    ureter: ureters
+    ureters: ureters
+    uterus: uterus
+    ovary: ovary
+    ovaries: ovary
+    prostate: prostate
+    spine: spine
+    spinal: spine
+    'cervical spine': 'cervical spine'
+    'thoracic spine': 'thoracic spine'
+    'lumbar spine': 'lumbar spine'
+    sacrum: sacrum
+    coccyx: coccyx
+    shoulder: shoulder
+    shoulders: shoulder
+    arm: arm
+    arms: arm
+    elbow: elbow
+    elbows: elbow
+    wrist: wrist
+    wrists: wrist
+    hand: hand
+    hands: hand
+    finger: finger
+    fingers: finger
+    thumb: thumb
+    thumbs: thumb
+    hip: hip
+    hips: hip
+    thigh: thigh
+    thighs: thigh
+    knee: knee
+    knees: knee
+    leg: leg
+    legs: leg
+    ankle: ankle
+    ankles: ankle
+    foot: foot
+    feet: foot
+    toe: toe
+    toes: toe
+    breast: breast
+    breasts: breast
+    mammary: breast
+    mammogram: breast
+    mammography: breast
+    thyroid: thyroid
+    bone: bone
+    bones: bone
+    joint: joint
+    joints: joint
+    'soft tissue': 'soft tissue'
+    muscle: muscle
+    muscles: muscle
+    adrenal: adrenal
+    adrenals: adrenal
+    biliary: biliary
+    gallbladder: gallbladder
+    'lymph node': 'lymph node'
+    'lymph nodes': lymph node'
+    parotid: parotid
+    submandibular: submandibular
+    'salivary gland': 'salivary gland'
+    'salivary glands: 'salivary gland'
+    'aortic arch': 'aortic arch'
+    carotid: carotid
+    'carotid arteries: carotid
+    eye: eye
+    eyes: eye
+    ear: ear
+    ears: ear
+    scrotum: scrotum
+    testes: testes
+    testis: testes
+    'whole body': 'whole body'
