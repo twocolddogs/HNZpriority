@@ -440,7 +440,7 @@ def parse_batch():
                         error_count += 1
                     finally:
                         completed += 1
-                        if completed % 100 == 0 or completed == total:
+                        if completed % 25 == 0 or completed == total:
                             logger.info(f"Batch progress: {completed}/{total} exams processed")
 
         processing_time_ms = int((time.time() - start_time) * 1000)
@@ -513,8 +513,8 @@ def process_sanity_test_endpoint():
                 results.append(processed_result)
                 processed_count += 1
                 
-                # Log progress every 50 exams or at the end
-                if (i + 1) % 50 == 0 or (i + 1) == total_exams:
+                # Log progress every 25 exams or at the end
+                if (i + 1) % 25 == 0 or (i + 1) == total_exams:
                     progress_pct = ((i + 1) / total_exams) * 100
                     elapsed_time = time.time() - start_time
                     logger.info(f"Sanity test progress: {i + 1}/{total_exams} ({progress_pct:.1f}%) - Elapsed: {elapsed_time:.1f}s")
