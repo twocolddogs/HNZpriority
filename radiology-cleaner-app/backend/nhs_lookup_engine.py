@@ -211,14 +211,24 @@ class NHSLookupEngine:
         nhs_lat = (nhs_components.get('laterality') or [None])[0]
         laterality_score = self._calculate_laterality_score(input_lat, nhs_lat)
         
-        anatomy_score = self._calculate_set_score(input_components, nhs_components, 'anatomy')
+        # PIPELINE STEP: Calculate anatomy score with compatibility constraints
+        # This prevents impossible mappings like "Lower Limb" → "Penis"
+        anatomy_score = self._calculate_anatomy_score_with_constraints(input_components, nhs_components)
+        
+        # PIPELINE STEP: Check for anatomical compatibility violations
+        # If anatomy score is severely negative, this indicates an impossible mapping
+        if anatomy_score < -1.0:
+            logger.debug(f"Anatomical constraint violation detected, returning 0.0 confidence")
+            return 0.0
+        
         modality_score = self._calculate_modality_score(input_components.get('modality'), nhs_components.get('modality'))
         contrast_score = self._calculate_contrast_score((input_components.get('contrast') or [None])[0], (nhs_components.get('contrast') or [None])[0])
         technique_score = self._calculate_set_score(input_components, nhs_components, 'technique')
         
-        # --- MODIFICATION: Add heavy penalty for modality mismatch ---
+        # PIPELINE STEP: Check for modality mismatch
+        # If modalities are completely different (e.g., CT vs US), block the mapping
         if modality_score == 0.0:
-             # If modalities are completely different (e.g., CT vs US), slash the confidence.
+            logger.debug(f"Modality mismatch detected, returning 0.0 confidence")
             return 0.0
 
         component_score = (w['anatomy'] * anatomy_score + w['modality'] * modality_score + w['laterality'] * laterality_score + w['contrast'] * contrast_score + w['technique'] * technique_score)
@@ -328,6 +338,53 @@ class NHSLookupEngine:
         
         # Both have contrast but different types (with vs without)    
         return self.config.get('contrast_mismatch_score', 0.3)
+    
+    def _calculate_anatomy_score_with_constraints(self, input_components: dict, nhs_components: dict) -> float:
+        """
+        Calculate anatomy score with anatomical compatibility constraints.
+        
+        PIPELINE STEP: This method enforces anatomical compatibility constraints to prevent 
+        impossible mappings like "Lower Limb" → "Penis" that could cause patient safety issues.
+        
+        Args:
+            input_components: Parsed components from user input exam name
+            nhs_components: Parsed components from NHS database entry
+            
+        Returns:
+            float: Anatomy score (0.0 to 1.0), or severe penalty (-10.0) for incompatible pairs
+        """
+        # Get anatomy sets from both input and NHS entry
+        input_anatomy = set(str(a).lower() for a in input_components.get('anatomy', []))
+        nhs_anatomy = set(str(a).lower() for a in nhs_components.get('anatomy', []))
+        
+        # Check if anatomical compatibility constraints are enabled
+        constraint_config = self.config.get('anatomical_compatibility_constraints', {})
+        if constraint_config.get('enable', False):
+            # Get incompatible pairs from config
+            incompatible_pairs = constraint_config.get('incompatible_pairs', [])
+            blocking_penalty = constraint_config.get('blocking_penalty', -10.0)
+            
+            # Check each input anatomy term against each NHS anatomy term
+            for input_term in input_anatomy:
+                for nhs_term in nhs_anatomy:
+                    # Check if this combination is in the incompatible pairs list
+                    for pair in incompatible_pairs:
+                        if len(pair) >= 2:
+                            # Check both directions: [input, nhs] and [nhs, input]
+                            if ((input_term in pair[0] or pair[0] in input_term) and 
+                                (nhs_term in pair[1] or pair[1] in nhs_term)) or \
+                               ((input_term in pair[1] or pair[1] in input_term) and 
+                                (nhs_term in pair[0] or pair[0] in nhs_term)):
+                                logger.warning(f"ANATOMICAL CONSTRAINT VIOLATION: Blocking impossible mapping "
+                                             f"'{input_term}' → '{nhs_term}' (penalty: {blocking_penalty})")
+                                return blocking_penalty
+        
+        # If no constraints violated, calculate normal set-based anatomy score
+        if not input_anatomy and not nhs_anatomy: 
+            return 1.0
+        if not input_anatomy.union(nhs_anatomy): 
+            return 0.0
+        return len(input_anatomy.intersection(nhs_anatomy)) / len(input_anatomy.union(nhs_anatomy))
     
     def _calculate_context_bonus(self, input_exam: str, nhs_entry: dict) -> float:
         if not self.context_scoring: return 0.0

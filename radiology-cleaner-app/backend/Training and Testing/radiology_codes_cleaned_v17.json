@@ -1,0 +1,2605 @@
+[
+  {
+    "ambiguous": false,
+    "clean_name": "XR Chest",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "chest"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8597003164291381,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "D06",
+    "exam_name": "Chest (single projection)",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain chest X-ray (procedure)",
+      "id": 399208008,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Chest",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "chest"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9781338947296143,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "XRCHEST",
+    "exam_name": "Xray Chest",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain chest X-ray (procedure)",
+      "id": 399208008,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Chest",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "chest"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8859168099403381,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "MXRCHEST",
+    "exam_name": "Chest (Mobile)",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain chest X-ray (procedure)",
+      "id": 399208008,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Chest",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "chest"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8859168099403381,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "D20",
+    "exam_name": "Ward Chest",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain chest X-ray (procedure)",
+      "id": 399208008,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Head",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "head"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "CHED",
+    "exam_name": "CT Head",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of entire head (procedure)",
+      "id": 408754009,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Head",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "head"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8244369344711304,
+      "contrast": [
+        "without"
+      ],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "Q01",
+    "exam_name": "CT HEAD C-",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of entire head (procedure)",
+      "id": 408754009,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Head",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "head"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8244369344711304,
+      "contrast": [
+        "without"
+      ],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "CTHEAD",
+    "exam_name": "CT Head Non Contrast",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of entire head (procedure)",
+      "id": 408754009,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Head with Contrast",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "head"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [
+        "with"
+      ],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "Q02",
+    "exam_name": "CT HEAD C+",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computerized axial tomography of brain with radiopaque contrast (procedure)",
+      "id": 396207002,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Abdomen and Pelvis",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "abdomen",
+        "pelvis"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "CAAP",
+    "exam_name": "CT Abdomen and Pelvis",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of abdomen and pelvis (procedure)",
+      "id": 419394006,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Abdomen and Pelvis",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "abdomen",
+        "pelvis"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "CTABDPELV",
+    "exam_name": "CT Abdomen and Pelvis",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of abdomen and pelvis (procedure)",
+      "id": 419394006,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Abdomen with Contrast",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "abdomen"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [
+        "with"
+      ],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "Q22",
+    "exam_name": "CT ABDOMEN C+",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computerized tomography of abdomen with contrast (procedure)",
+      "id": 32962002,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Chest Abdomen and Pelvis",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "abdomen",
+        "chest",
+        "pelvis"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "CCAP",
+    "exam_name": "CT Chest and Abdomen and Pelvis",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of chest, abdomen and pelvis (procedure)",
+      "id": 418023006,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Chest Abdomen and Pelvis",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "abdomen",
+        "chest",
+        "pelvis"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "CTCAP",
+    "exam_name": "CT Chest, Abdomen and Pelvis",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of chest, abdomen and pelvis (procedure)",
+      "id": 418023006,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Angiogram Pulmonary",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "chest"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "Arterial Interventional"
+      ]
+    },
+    "data_source": "C",
+    "exam_code": "CPAN",
+    "exam_name": "CT Pulmonary Angiogram",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography angiography of pulmonary artery with contrast (procedure)",
+      "id": 16332841000119106,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Venography Pulmonary",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "chest"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9195363962173464,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "Arterial Interventional"
+      ]
+    },
+    "data_source": "K",
+    "exam_code": "CTANGPULM",
+    "exam_name": "CT Pulmonary Angiography",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography venography of pulmonary vein (procedure)",
+      "id": 439475006,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Chest",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "chest"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "CCHT",
+    "exam_name": "CT Chest",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of chest (procedure)",
+      "id": 169069000,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Chest",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "chest"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8217790142059327,
+      "contrast": [
+        "without"
+      ],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "Q17",
+    "exam_name": "CT CHEST C-",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of chest (procedure)",
+      "id": 169069000,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Urinary Tract",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "bladder",
+        "kidney",
+        "ureters"
+      ],
+      "clinical_context": [],
+      "confidence": 0.7173765321731567,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "CKUB",
+    "exam_name": "CT KUB",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of urinary tract (procedure)",
+      "id": 419084009,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Urinary Tract",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "bladder",
+        "kidney",
+        "ureters"
+      ],
+      "clinical_context": [],
+      "confidence": 0.7187928147315978,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "CTKUB",
+    "exam_name": "CT Kidneys, Ureters and Bladder",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of urinary tract (procedure)",
+      "id": 419084009,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Spine Cervical",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "cervical spine"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8756026363372802,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "CCSP",
+    "exam_name": "CT Cervical Spine",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of cervical spine (procedure)",
+      "id": 241578008,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Spine Cervical",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "spine"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "Q79",
+    "exam_name": "CT SPINE CERVICAL",
+    "modality_code": "CT",
+    "snomed": {
+      "found": true,
+      "fsn": "Computed tomography of cervical spine (procedure)",
+      "id": 241578008,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MRI Head",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "head"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9588592616081237,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "MHED",
+    "exam_name": "MR Head",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance imaging of head (procedure)",
+      "id": 241601008,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MRI Head Spectroscopy",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "head"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8674243751525881,
+      "contrast": [
+        "without"
+      ],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "E01",
+    "exam_name": "MRI HEAD C-",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance spectroscopy of head (procedure)",
+      "id": 241672000,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "Diffusion Tensor MR Brain",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "brain"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8098304642677306,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "MRBRAIN",
+    "exam_name": "MRI Brain",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Diffusion tensor magnetic resonance imaging of brain (procedure)",
+      "id": 448306001,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MRI Lumbar Spine with Contrast",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "lumbar spine"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8592162651062012,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "MLSP",
+    "exam_name": "MR Lumbar Spine",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance imaging of lumbar spine with contrast (procedure)",
+      "id": 41333006,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MRI Spine Lumbar",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "spine"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8775205774307252,
+      "contrast": [
+        "without"
+      ],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "E61",
+    "exam_name": "MRI SPINE LUMBAR C-",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance imaging of lumbar spine (procedure)",
+      "id": 241648005,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MRI Lumbar Spine with Contrast",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "lumbar spine"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9032261519432068,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "MRLSPINE",
+    "exam_name": "MRI Lumbar Spine",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance imaging of lumbar spine with contrast (procedure)",
+      "id": 41333006,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MRI Spine Cervical",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "cervical spine"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8617090095520019,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "MCSP",
+    "exam_name": "MR Cervical Spine",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance imaging of cervical spine (procedure)",
+      "id": 241646009,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MRCP",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "MRCP"
+      ]
+    },
+    "data_source": "C",
+    "exam_code": "MRCP",
+    "exam_name": "MR MRCP",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance cholangiopancreatography (procedure)",
+      "id": 314635004,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MRI Abdomen",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "abdomen"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8413727725982666,
+      "contrast": [
+        "without"
+      ],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "MRCP"
+      ]
+    },
+    "data_source": "CO",
+    "exam_code": "E36",
+    "exam_name": "MRI ABDOMEN MRCP C-",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance imaging of abdomen (procedure)",
+      "id": 241621009,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MRI Prostate with Contrast",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "prostate"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": "male",
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "MPRO",
+    "exam_name": "MR Prostate",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance imaging of prostate with contrast (procedure)",
+      "id": 709525001,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MRI Knee Right",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "knee"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9696865963935852,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "right"
+      ],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "MRKNEER",
+    "exam_name": "MRI Knee - Right",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance imaging of right knee (procedure)",
+      "id": 2491000087104,
+      "laterality_concept_id": 24028007,
+      "laterality_fsn": "Right (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": true,
+    "clean_name": "MRI Arthrogram Knee",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "knee"
+      ],
+      "clinical_context": [],
+      "confidence": 0.7366181818962099,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "E77",
+    "exam_name": "MRI KNEE",
+    "modality_code": "MRI",
+    "snomed": {
+      "found": true,
+      "fsn": "Magnetic resonance imaging arthrography of knee (procedure)",
+      "id": 241654006,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Abdomen",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "abdomen"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "UABD",
+    "exam_name": "US Abdomen",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Ultrasonography of abdomen (procedure)",
+      "id": 45036003,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Abdomen",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "abdomen"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "USABDO",
+    "exam_name": "US Abdomen",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Ultrasonography of abdomen (procedure)",
+      "id": 45036003,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Pelvis",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "pelvis"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "UPEL",
+    "exam_name": "US Pelvis",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Pelvic echography (procedure)",
+      "id": 24848001,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Pelvis",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "pelvis"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": "female",
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "USPELVFM",
+    "exam_name": "US Pelvis - Female",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Pelvic echography (procedure)",
+      "id": 24848001,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Pelvis Transvaginal",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "pelvis"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": "female",
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "U42",
+    "exam_name": "US Transvaginal/Transabdominal Pelvis",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Transvaginal ultrasonography of pelvis (procedure)",
+      "id": 429915000,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Multiple Pregnancy",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 0.997263455581665,
+      "contrast": [],
+      "gender_context": "pregnancy",
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "UPRT",
+    "exam_name": "US 3rd Trimester scan (GR)",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Ultrasonography of multiple pregnancy (procedure)",
+      "id": 855021000000107,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Multiple Pregnancy",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 0.9996245371818543,
+      "contrast": [],
+      "gender_context": "pregnancy",
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "USPREG3RD",
+    "exam_name": "US Pregnancy - 3rd Trimester",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Ultrasonography of multiple pregnancy (procedure)",
+      "id": 855021000000107,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Abdomen and Renal Tract",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "kidney"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8743012967109679,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "UREN",
+    "exam_name": "US Renal Tract",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Ultrasonography of abdomen and renal tract (procedure)",
+      "id": 353031000000108,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Abdomen and Renal Tract",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "kidney"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8743012967109679,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "U03",
+    "exam_name": "US Renal Tract",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Ultrasonography of abdomen and renal tract (procedure)",
+      "id": 353031000000108,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": true,
+    "clean_name": "US Doppler Carotid Artery",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "carotid"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8450673395156861,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "Arterial Interventional",
+        "Doppler"
+      ]
+    },
+    "data_source": "C",
+    "exam_code": "UCDO",
+    "exam_name": "US Carotid Doppler",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Carotid artery doppler assessment (procedure)",
+      "id": 394719009,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Doppler Lower Limb Veins Left",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "left"
+      ],
+      "technique": [
+        "Venous Interventional"
+      ]
+    },
+    "data_source": "C",
+    "exam_code": "ULDV",
+    "exam_name": "US Left Venous DVT lower limb",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Doppler ultrasonography of vein of left lower limb (procedure)",
+      "id": 18061000087100,
+      "laterality_concept_id": 7771000,
+      "laterality_fsn": "Left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": true,
+    "clean_name": "US Doppler Penis",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 0.9708567953109742,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "Doppler",
+        "Venous Interventional"
+      ]
+    },
+    "data_source": "K",
+    "exam_code": "USVENDOPLL",
+    "exam_name": "US Venous Doppler Lower Limb",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Ultrasound doppler scan of penis (procedure)",
+      "id": 418762008,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Testes",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "scrotum",
+        "testes"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": "male",
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "USST",
+    "exam_name": "US Scrotum and Testes",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Echography of scrotum and contents (procedure)",
+      "id": 24737001,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Testes",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "scrotum",
+        "testes"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": "male",
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "USSCROTEST",
+    "exam_name": "US Scrotum and Testes",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Echography of scrotum and contents (procedure)",
+      "id": 24737001,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "US Thyroid",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "thyroid"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "UTHY",
+    "exam_name": "US Thyroid",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Ultrasound scan of thyroid (procedure)",
+      "id": 241455000,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": true,
+    "clean_name": "US Hip",
+    "components": {
+      "age_context": "paediatric",
+      "anatomy": [
+        "hip"
+      ],
+      "clinical_context": [
+        "screening"
+      ],
+      "confidence": 0.6055147806167605,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "U22",
+    "exam_name": "US Paed Hips (CDH screening)",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Ultrasound scan of both hips (procedure)",
+      "id": 426903000,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": true,
+    "clean_name": "US Hip",
+    "components": {
+      "age_context": "paediatric",
+      "anatomy": [
+        "hip"
+      ],
+      "clinical_context": [],
+      "confidence": 0.5013509731292726,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "USINFHIPS",
+    "exam_name": "US Infant Hips",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Ultrasound scan of both hips (procedure)",
+      "id": 426903000,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MG Mammogram Both",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "breast"
+      ],
+      "clinical_context": [],
+      "confidence": 0.7948659236907959,
+      "contrast": [],
+      "gender_context": "female",
+      "laterality": [
+        "bilateral"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "BBMA",
+    "exam_name": "BR Bilateral Mammogram",
+    "modality_code": "MG",
+    "snomed": {
+      "found": true,
+      "fsn": "Bilateral mammography (procedure)",
+      "id": 43204002,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "MG Mammogram Both",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "breast"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8104520263671874,
+      "contrast": [],
+      "gender_context": "female",
+      "laterality": [
+        "bilateral"
+      ],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "BRMAMBIL",
+    "exam_name": "Mammogram Bilateral",
+    "modality_code": "MG",
+    "snomed": {
+      "found": true,
+      "fsn": "Bilateral mammography (procedure)",
+      "id": 43204002,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Breast Tomosynthesis Both",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "breast"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9427655654907228,
+      "contrast": [],
+      "gender_context": "female",
+      "laterality": [
+        "bilateral"
+      ],
+      "technique": [
+        "Tomosynthesis"
+      ]
+    },
+    "data_source": "C",
+    "exam_code": "BTBB",
+    "exam_name": "BR Bilateral Breast Tomosynthesis",
+    "modality_code": "MG",
+    "snomed": {
+      "found": true,
+      "fsn": "Digital tomosynthesis of bilateral breasts (procedure)",
+      "id": 723780005,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Screening Mammogram Right",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "breast"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9586308267593383,
+      "contrast": [],
+      "gender_context": "female",
+      "laterality": [
+        "right"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "BRMA",
+    "exam_name": "BR Right Mammogram",
+    "modality_code": "MG",
+    "snomed": {
+      "found": true,
+      "fsn": "Screening mammography of right breast (procedure)",
+      "id": 392521000119107,
+      "laterality_concept_id": 24028007,
+      "laterality_fsn": "Right (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": true,
+    "clean_name": "US Guid Vacuum Ass Excision Breast",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "breast"
+      ],
+      "clinical_context": [],
+      "confidence": 0.8884940015792848,
+      "contrast": [],
+      "gender_context": "female",
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "BRUS",
+    "exam_name": "US Breast - Standard",
+    "modality_code": "US",
+    "snomed": {
+      "found": true,
+      "fsn": "Vacuum assisted excision of breast using ultrasonographic guidance (procedure)",
+      "id": 713699007,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "CT Bone Densitometry",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "bone"
+      ],
+      "clinical_context": [],
+      "confidence": 0.7815157299041748,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "BD01",
+    "exam_name": "Bone density Scan",
+    "modality_code": "DEXA",
+    "snomed": {
+      "found": true,
+      "fsn": "Computerized tomography, bone density study (procedure)",
+      "id": 22059005,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Tomogram",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 0.8085190357208252,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "DEXA",
+    "exam_name": "Dexa",
+    "modality_code": "DEXA",
+    "snomed": {
+      "found": true,
+      "fsn": "X-ray tomography (procedure)",
+      "id": 439101006,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Tomogram",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 0.8172862736701966,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "DEXA",
+    "exam_name": "DEXA Imaging",
+    "modality_code": "DEXA",
+    "snomed": {
+      "found": true,
+      "fsn": "X-ray tomography (procedure)",
+      "id": 439101006,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "NM Whole Body PET MRI",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "whole body"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "18F-FDG PET"
+      ]
+    },
+    "data_source": "C",
+    "exam_code": "PFDG",
+    "exam_name": "PET/CT 18F-FDG WB Scan",
+    "modality_code": "NM",
+    "snomed": {
+      "found": true,
+      "fsn": "Positron emission tomography with magnetic resonance imaging of whole body (procedure)",
+      "id": 1097661000000109,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "NM Whole Body PET MRI",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "prostate",
+        "whole body"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9032881373405456,
+      "contrast": [],
+      "gender_context": "male",
+      "laterality": [],
+      "technique": [
+        "18F-PSMA PET"
+      ]
+    },
+    "data_source": "C",
+    "exam_code": "PMSA",
+    "exam_name": "PT PET/CT 18F PSMA WB Scan",
+    "modality_code": "NM",
+    "snomed": {
+      "found": true,
+      "fsn": "Positron emission tomography with magnetic resonance imaging of whole body (procedure)",
+      "id": 1097661000000109,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "NM Bone Whole Body",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "bone",
+        "whole body"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "NWBO",
+    "exam_name": "NM Whole body bone scan",
+    "modality_code": "NM",
+    "snomed": {
+      "found": true,
+      "fsn": "Radionuclide whole body bone study (procedure)",
+      "id": 418832007,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "NM Bone Whole Body with Spect",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "bone",
+        "whole body"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "NMBONEWBSP",
+    "exam_name": "NM Bone Whole Body SPECT CT",
+    "modality_code": "NM",
+    "snomed": {
+      "found": true,
+      "fsn": "Single photon emission computed tomography of bones of whole body (procedure)",
+      "id": 16534511000119102,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "NM Lung Ventilation and Perfusion",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "chest"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "NLVQ",
+    "exam_name": "NM Lung V/Q",
+    "modality_code": "NM",
+    "snomed": {
+      "found": true,
+      "fsn": "Radionuclide pulmonary ventilation and perfusion study (procedure)",
+      "id": 323251000000107,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "NM Probe Renogram",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "NRSM",
+    "exam_name": "NM Renogram MAG3",
+    "modality_code": "NM",
+    "snomed": {
+      "found": true,
+      "fsn": "Probe renogram (procedure)",
+      "id": 241371001,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "PICC Line Insertion",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [
+        "intervention"
+      ],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "Non-Vascular Interventional",
+        "Venous Interventional"
+      ]
+    },
+    "data_source": "CO",
+    "exam_code": "V99",
+    "exam_name": "PICC Line Insertion",
+    "modality_code": "IR",
+    "snomed": {
+      "found": true,
+      "fsn": "Insertion of peripherally inserted central catheter using fluoroscopic guidance (procedure)",
+      "id": 440447000,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "PICC Line Insertion",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [
+        "intervention"
+      ],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "Arterial Interventional",
+        "Non-Vascular Interventional",
+        "Venous Interventional"
+      ]
+    },
+    "data_source": "C",
+    "exam_code": "RPICC",
+    "exam_name": "XA PICC Line Insertion",
+    "modality_code": "IR",
+    "snomed": {
+      "found": true,
+      "fsn": "Insertion of peripherally inserted central catheter using fluoroscopic guidance (procedure)",
+      "id": 440447000,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": true,
+    "clean_name": "Fluoroscopic Guided Biopsy Lung",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "chest"
+      ],
+      "clinical_context": [
+        "intervention"
+      ],
+      "confidence": 0.27195795764923086,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "Non-Vascular Interventional"
+      ]
+    },
+    "data_source": "CO",
+    "exam_code": "I26",
+    "exam_name": "Lung Biopsy",
+    "modality_code": "IR",
+    "snomed": {
+      "found": true,
+      "fsn": "Biopsy of lung using fluoroscopic guidance (procedure)",
+      "id": 431721002,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "Video Swallow",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 0.9368305993080138,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "RSLS",
+    "exam_name": "RF Videofluoroscopy Swallow",
+    "modality_code": "Fluoroscopy",
+    "snomed": {
+      "found": true,
+      "fsn": "Videofluoroscopy swallow (procedure)",
+      "id": 241149003,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "Barium Swallow",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": [
+        "Barium Study"
+      ]
+    },
+    "data_source": "CO",
+    "exam_code": "F10",
+    "exam_name": "Barium Swallow (Upper G/I series)",
+    "modality_code": "Fluoroscopy",
+    "snomed": {
+      "found": true,
+      "fsn": "Barium swallow (procedure)",
+      "id": 168821007,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "Operative Cholangiogram",
+    "components": {
+      "age_context": null,
+      "anatomy": [],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "ROPC",
+    "exam_name": "II Operative Cholangiogram",
+    "modality_code": "Other",
+    "snomed": {
+      "found": true,
+      "fsn": "Intraoperative fluoroscopic cholangiography with contrast (procedure)",
+      "id": 16456981000119100,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "data_source": "CO",
+    "error": "EXCLUDED_NON_CLINICAL",
+    "exam_code": "Z10",
+    "exam_name": "Radiology Conferences",
+    "excluded": true,
+    "message": "Excluded non-clinical entry: Radiology Conferences"
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Abdomen",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "abdomen"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XABD",
+    "exam_name": "XR Abdomen",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of abdomen (procedure)",
+      "id": 168702005,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Abdomen",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "abdomen"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "F08",
+    "exam_name": "Abdomen (single projection)",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of abdomen (procedure)",
+      "id": 168702005,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Pelvis",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "pelvis"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XPEL",
+    "exam_name": "XR Pelvis",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of pelvis (procedure)",
+      "id": 713021002,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Pelvis",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "pelvis"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "XRPELVIS",
+    "exam_name": "Xray Pelvis",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of pelvis (procedure)",
+      "id": 713021002,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Lumbar Spine",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "lumbar spine"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XLSP",
+    "exam_name": "XR Lumbar Spine",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of lumbar vertebral column region (procedure)",
+      "id": 840361000,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Lumbar Spine",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "lumbar spine"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9808962371826172,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "XRLSPINE",
+    "exam_name": "Xray Lumbar Spine",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of lumbar vertebral column region (procedure)",
+      "id": 840361000,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Cervical Spine",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "cervical spine"
+      ],
+      "clinical_context": [],
+      "confidence": 1,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XCSP",
+    "exam_name": "XR Cervical Spine",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of cervical vertebral column region (procedure)",
+      "id": 712970008,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Cervical Spine",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "cervical spine"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9845385601997375,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "XRCSPINE",
+    "exam_name": "Xray Cervical Spine",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of cervical vertebral column region (procedure)",
+      "id": 712970008,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Knee Right",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "knee"
+      ],
+      "clinical_context": [],
+      "confidence": 0.925583918094635,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "right"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XRKN",
+    "exam_name": "XR Right Knee",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of right knee region (procedure)",
+      "id": 1290409004,
+      "laterality_concept_id": 24028007,
+      "laterality_fsn": "Right (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Knee Left",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "knee"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9184217214584351,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "left"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XLKN",
+    "exam_name": "XR Left Knee",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of left knee region (procedure)",
+      "id": 1290408007,
+      "laterality_concept_id": 7771000,
+      "laterality_fsn": "Left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Knee Both",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "knee"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9264474725723266,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "bilateral"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XBKN",
+    "exam_name": "XR Bilateral Knee",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of bilateral knee regions (procedure)",
+      "id": 1290410009,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Ankle Right",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "ankle"
+      ],
+      "clinical_context": [],
+      "confidence": 0.938988013267517,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "right"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XRAN",
+    "exam_name": "XR Right Ankle",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "X-ray of right ankle (procedure)",
+      "id": 426721006,
+      "laterality_concept_id": 24028007,
+      "laterality_fsn": "Right (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Ankle Left",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "ankle"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9368572568893432,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "left"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XLAN",
+    "exam_name": "XR Left Ankle",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "X-ray of left ankle (procedure)",
+      "id": 426420006,
+      "laterality_concept_id": 7771000,
+      "laterality_fsn": "Left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Ankle Both",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "ankle"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9434611501693726,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "bilateral"
+      ],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "XRANKLEB",
+    "exam_name": "Xray Ankle - Bilateral",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "X-ray of both ankles (procedure)",
+      "id": 425703002,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": true,
+    "clean_name": "XR Hand and Wrist for Metacarpal Index",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "hand",
+        "joint",
+        "wrist"
+      ],
+      "clinical_context": [],
+      "confidence": 0.5958016545295715,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "A10",
+    "exam_name": "Hand and/or wrist joint",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "X-ray of hand and wrist for metacarpal index (procedure)",
+      "id": 912541000000103,
+      "laterality_concept_id": "",
+      "laterality_fsn": ""
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Wrist Left",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "wrist"
+      ],
+      "clinical_context": [],
+      "confidence": 0.94533278465271,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "left"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XLWR",
+    "exam_name": "XR Left Wrist",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of left wrist (procedure)",
+      "id": 3821000087108,
+      "laterality_concept_id": 7771000,
+      "laterality_fsn": "Left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Wrist Right",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "wrist"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9395404211044311,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "right"
+      ],
+      "technique": []
+    },
+    "data_source": "K",
+    "exam_code": "XRWRISTR",
+    "exam_name": "Xray Wrist - Right",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of right wrist (procedure)",
+      "id": 3831000087105,
+      "laterality_concept_id": 24028007,
+      "laterality_fsn": "Right (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": true,
+    "clean_name": "XR Shoulder",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "shoulder"
+      ],
+      "clinical_context": [],
+      "confidence": 0.6346955522537232,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "A06",
+    "exam_name": "Shoulder",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of bilateral shoulders (procedure)",
+      "id": 4111000087108,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Shoulder Right",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "shoulder"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9407791423797607,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "right"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XRSH",
+    "exam_name": "XR Right Shoulder",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of right shoulder (procedure)",
+      "id": 3771000087100,
+      "laterality_concept_id": 24028007,
+      "laterality_fsn": "Right (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Shoulder Left",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "shoulder"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9358419132232665,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "left"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XLSH",
+    "exam_name": "XR Left Shoulder",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of left shoulder (procedure)",
+      "id": 3761000087109,
+      "laterality_concept_id": 7771000,
+      "laterality_fsn": "Left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Foot Right",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "foot"
+      ],
+      "clinical_context": [],
+      "confidence": 0.924903678894043,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "right"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XRFO",
+    "exam_name": "XR Right Foot",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "X-ray of right foot (procedure)",
+      "id": 426311001,
+      "laterality_concept_id": 24028007,
+      "laterality_fsn": "Right (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": false,
+    "clean_name": "XR Foot Left",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "foot"
+      ],
+      "clinical_context": [],
+      "confidence": 0.9151174068450929,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [
+        "left"
+      ],
+      "technique": []
+    },
+    "data_source": "C",
+    "exam_code": "XLFO",
+    "exam_name": "XR Left Foot",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "X-ray of left foot (procedure)",
+      "id": 426908009,
+      "laterality_concept_id": 7771000,
+      "laterality_fsn": "Left (qualifier value)"
+    }
+  },
+  {
+    "ambiguous": true,
+    "clean_name": "XR Wrist",
+    "components": {
+      "age_context": null,
+      "anatomy": [
+        "wrist"
+      ],
+      "clinical_context": [],
+      "confidence": 0.6235266568183899,
+      "contrast": [],
+      "gender_context": null,
+      "laterality": [],
+      "technique": []
+    },
+    "data_source": "CO",
+    "exam_code": "P16",
+    "exam_name": "WRIST (non-acute) - NO REPORT",
+    "modality_code": "XR",
+    "snomed": {
+      "found": true,
+      "fsn": "Plain X-ray of bilateral wrists (procedure)",
+      "id": 4141000087109,
+      "laterality_concept_id": 51440002,
+      "laterality_fsn": "Right and left (qualifier value)"
+    }
+  }
+]

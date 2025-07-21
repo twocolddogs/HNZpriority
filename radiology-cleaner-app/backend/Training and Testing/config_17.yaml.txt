@@ -134,43 +134,6 @@ scoring:
   anatomy_specificity_preference: true  # Enable anatomy specificity preference
   generic_anatomy_preference_bonus: 0.15 # Bonus for generic entries when input is generic
   
-  # ANATOMICAL COMPATIBILITY CONSTRAINTS - Prevent impossible anatomy mappings
-  # CRITICAL: These constraints block anatomically impossible mappings that could cause patient safety issues
-  anatomical_compatibility_constraints:
-    enable: true  # Enable anatomical compatibility checking
-    blocking_penalty: -10.0  # Severe penalty that effectively blocks incompatible mappings
-    
-    # Define anatomically incompatible pairs [input_anatomy, nhs_anatomy]
-    # These represent anatomy terms that should NEVER be mapped to each other
-    incompatible_pairs:
-      # Body region incompatibilities - different major body areas
-      - ["lower limb", "penis"]
-      - ["leg", "penis"]
-      - ["arm", "leg"]
-      - ["upper limb", "lower limb"]
-      - ["chest", "pelvis"]
-      - ["thorax", "pelvis"]
-      - ["head", "abdomen"]
-      - ["brain", "abdomen"]
-      - ["neck", "pelvis"]
-      
-      # Organ system incompatibilities
-      - ["heart", "kidney"]
-      - ["lung", "liver"] 
-      - ["brain", "liver"]
-      - ["spine", "heart"]
-      
-      # Gender-specific anatomy incompatibilities
-      - ["prostate", "breast"]
-      - ["prostate", "uterus"]
-      - ["penis", "breast"]
-      - ["penis", "uterus"]
-      - ["scrotum", "breast"]
-      
-      # Vascular vs non-vascular incompatibilities
-      - ["artery", "bone"]
-      - ["vein", "muscle"]
-  
   # ANATOMICAL SPECIFICITY WORD LISTS
   anatomical_detail_words:
     # Vessel/vascular specificity
