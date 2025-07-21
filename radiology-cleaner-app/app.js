@@ -788,9 +788,8 @@ window.addEventListener('DOMContentLoaded', function() {
     document.getElementById('closeModalBtn').addEventListener('click', closeModal);
     document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
     
-    // View toggle event listeners
-    document.getElementById('fullViewBtn').addEventListener('click', showFullView);
-    document.getElementById('consolidatedViewBtn').addEventListener('click', showConsolidatedView);
+    // View toggle event listener
+    document.getElementById('viewToggleBtn').addEventListener('click', toggleView);
     document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
     document.getElementById('consolidatedSort').addEventListener('change', sortConsolidatedResults);
     
@@ -1754,19 +1753,32 @@ window.addEventListener('DOMContentLoaded', function() {
     
     
     
-    function showFullView() {
-        document.getElementById('fullView').style.display = 'block';
-        document.getElementById('consolidatedView').style.display = 'none';
-        document.getElementById('fullViewBtn').classList.add('active');
-        document.getElementById('consolidatedViewBtn').classList.remove('active');
-    }
+    // Track current view state
+    let isFullView = true;
     
-    function showConsolidatedView() {
-        document.getElementById('fullView').style.display = 'none';
-        document.getElementById('consolidatedView').style.display = 'block';
-        document.getElementById('fullViewBtn').classList.remove('active');
-        document.getElementById('consolidatedViewBtn').classList.add('active');
-        displayConsolidatedResults();
+    function toggleView() {
+        const toggleBtn = document.getElementById('viewToggleBtn');
+        const fullView = document.getElementById('fullView');
+        const consolidatedView = document.getElementById('consolidatedView');
+        
+        if (isFullView) {
+            // Switch to consolidated view
+            fullView.style.display = 'none';
+            consolidatedView.style.display = 'block';
+            toggleBtn.textContent = 'Consolidated View';
+            toggleBtn.classList.remove('active');
+            toggleBtn.classList.add('secondary');
+            displayConsolidatedResults();
+            isFullView = false;
+        } else {
+            // Switch to full view
+            fullView.style.display = 'block';
+            consolidatedView.style.display = 'none';
+            toggleBtn.textContent = 'Full View';
+            toggleBtn.classList.remove('secondary');
+            toggleBtn.classList.add('active');
+            isFullView = true;
+        }
     }
     
     function displayConsolidatedResults() {
