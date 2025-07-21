@@ -48,11 +48,9 @@ class StatusManager {
             }
         };
         
-        // Ensure CSS animations are added
         this.injectStyles();
     }
     
-    // Initialize the container for status messages
     ensureContainer() {
         if (!this.container) {
             this.container = document.getElementById('statusMessageContainer');
@@ -60,13 +58,10 @@ class StatusManager {
                 this.container = document.createElement('div');
                 this.container.id = 'statusMessageContainer';
                 this.container.className = 'status-message-container';
-                
-                // Insert after file info
                 const fileInfo = document.getElementById('fileInfo');
                 if (fileInfo && fileInfo.parentNode) {
                     fileInfo.parentNode.insertBefore(this.container, fileInfo.nextSibling);
                 } else {
-                    // Fallback: insert at the top of the page
                     document.body.insertBefore(this.container, document.body.firstChild);
                 }
             }
@@ -74,7 +69,6 @@ class StatusManager {
         return this.container;
     }
     
-    // Clear all status messages
     clearAll() {
         const container = this.ensureContainer();
         container.innerHTML = '';
@@ -84,7 +78,6 @@ class StatusManager {
         this.statsMessage = null;
     }
 
-    // --- NEW: Clear persistent messages like stage, stats, and progress ---
     clearPersistentMessages() {
         if (this.progressMessage) this.remove(this.progressMessage);
         if (this.stageMessage) this.remove(this.stageMessage);
@@ -94,130 +87,73 @@ class StatusManager {
         this.statsMessage = null;
     }
     
-    // Show a status message with type (info, success, warning, error, network, progress)
     show(message, type = 'info', autoHideDuration = 0, id = null) {
         const container = this.ensureContainer();
         const style = this.typeConfig[type] || this.typeConfig.info;
         const messageId = id || `status-${++this.messageCounter}`;
         
-        // Create message element
         const messageElement = document.createElement('div');
         messageElement.id = messageId;
         messageElement.className = `status-message status-${type}`;
         messageElement.style.cssText = `
-            padding: 12px 16px;
-            background: ${style.background};
-            border: ${style.border};
-            border-radius: 6px;
-            font-size: 14px;
-            color: var(--color-gray-800, #333);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: statusFadeIn 0.3s ease-out;
-            position: relative;
+            padding: 12px 16px; background: ${style.background}; border: ${style.border}; border-radius: 6px;
+            font-size: 14px; color: var(--color-gray-800, #333); font-weight: 500; display: flex;
+            align-items: center; gap: 12px; animation: statusFadeIn 0.3s ease-out; position: relative;
         `;
         
-        // Create icon element
         const iconElement = document.createElement('div');
         iconElement.className = 'status-icon';
         iconElement.innerHTML = style.icon;
-        iconElement.style.cssText = `
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: ${style.color};
-        `;
+        iconElement.style.cssText = `flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: ${style.color};`;
         
-        // Create message text element
         const textElement = document.createElement('div');
         textElement.className = 'status-text';
         textElement.innerHTML = message;
-        textElement.style.cssText = `
-            flex-grow: 1;
-        `;
+        textElement.style.cssText = `flex-grow: 1;`;
         
-        // Add close button for non-auto-hiding messages
-        if (autoHideDuration === 0) {
-            const closeButton = document.createElement('button');
-            closeButton.className = 'status-close';
-            closeButton.innerHTML = '&times;';
-            closeButton.style.cssText = `
-                background: none;
-                border: none;
-                font-size: 18px;
-                cursor: pointer;
-                padding: 0;
-                line-height: 1;
-                color: var(--color-gray-600, #666);
-                opacity: 0.7;
-                transition: opacity 0.2s;
-            `;
-            closeButton.addEventListener('mouseenter', () => {
-                closeButton.style.opacity = '1';
-            });
-            closeButton.addEventListener('mouseleave', () => {
-                closeButton.style.opacity = '0.7';
-            });
-            closeButton.addEventListener('click', () => {
-                this.remove(messageId);
-            });
-            messageElement.appendChild(closeButton);
-        }
-        
-        // Assemble the message
         messageElement.appendChild(iconElement);
         messageElement.appendChild(textElement);
         
-        // Add to container
-        container.appendChild(messageElement);
+        if (autoHideDuration === 0) {
+            const closeButton = document.createElement('button');
+            closeButton.className = 'status-close';
+            closeButton.innerHTML = '×';
+            closeButton.style.cssText = `background: none; border: none; font-size: 18px; cursor: pointer; padding: 0; line-height: 1; color: var(--color-gray-600, #666); opacity: 0.7; transition: opacity 0.2s; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);`;
+            closeButton.addEventListener('click', () => this.remove(messageId));
+            messageElement.appendChild(closeButton);
+        }
         
-        // Store reference to the message
+        container.appendChild(messageElement);
         this.activeMessages.set(messageId, messageElement);
         
-        // Auto-hide if duration is set
         if (autoHideDuration > 0) {
-            setTimeout(() => {
-                this.remove(messageId);
-            }, autoHideDuration);
+            setTimeout(() => this.remove(messageId), autoHideDuration);
         }
         
         return messageId;
     }
     
-    // Update an existing status message
     update(id, message) {
         const messageElement = this.activeMessages.get(id);
-        if (!messageElement) {
-            return this.show(message, 'info');
-        }
+        if (!messageElement) return this.show(message, 'info');
         
-        // Update the message text
         const textElement = messageElement.querySelector('.status-text');
-        if (textElement) {
-            textElement.innerHTML = message;
-        }
+        if (textElement) textElement.innerHTML = message;
         
         return id;
     }
     
-    // Remove a status message with animation
     remove(id) {
         const messageElement = this.activeMessages.get(id);
         if (!messageElement) return;
         
         messageElement.style.animation = 'statusFadeOut 0.3s ease-out forwards';
         setTimeout(() => {
-            if (messageElement.parentNode) {
-                messageElement.parentNode.removeChild(messageElement);
-            }
+            messageElement.parentNode?.removeChild(messageElement);
             this.activeMessages.delete(id);
         }, 300);
     }
     
-    // Show a progress status message with visual progress bar
     showProgress(message, current, total, type = 'progress') {
         const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
         const progressContent = `
@@ -226,91 +162,50 @@ class StatusManager {
                     <span class="progress-message">${message}</span>
                     <span class="progress-counter">${current}/${total} (${percentage}%)</span>
                 </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${percentage}%"></div>
-                </div>
-            </div>
-        `;
+                <div class="progress-bar"><div class="progress-fill" style="width: ${percentage}%"></div></div>
+            </div>`;
 
         if (!this.progressMessage) {
-            // Create new progress status
             this.progressMessage = this.show(progressContent, type);
         } else {
-            // Update existing progress status
             this.update(this.progressMessage, progressContent);
         }
         
         return this.progressMessage;
     }
     
-    // Show processing stage with animation
     showStage(stage, description) {
-        const stageMessage = `
-            <div class="processing-stage">
-                <div class="stage-name">${stage}</div>
-                <div class="stage-description">${description}</div>
-            </div>
-        `;
-        
-        if (!this.stageMessage) {
-            this.stageMessage = this.show(stageMessage, 'progress');
-        } else {
-            this.update(this.stageMessage, stageMessage);
-        }
-        
+        const stageMessage = `<div class="processing-stage"><div class="stage-name">${stage}</div><div class="stage-description">${description}</div></div>`;
+        if (!this.stageMessage) this.stageMessage = this.show(stageMessage, 'progress');
+        else this.update(this.stageMessage, stageMessage);
         return this.stageMessage;
     }
     
-    // --- UPDATED: Show processing statistics in a compact, single row ---
     showStats(stats) {
-        const {
-            elapsedTime,
-            processedItems,
-            totalItems,
-            cacheHits,
-            errors,
-            itemsPerSecond
-        } = stats;
-        
-        const formattedTime = this.formatTime(elapsedTime);
-        const cacheHitRate = totalItems > 0 ? 
-            Math.round((cacheHits / totalItems) * 100) : 0;
-        
+        const { elapsedTime, itemsPerSecond, cacheHits, totalItems, errors } = stats;
+        const cacheHitRate = totalItems > 0 ? Math.round((cacheHits / totalItems) * 100) : 0;
         const statsMessage = `
             <div class="processing-stats">
-                <div class="stats-item"><strong>Time:</strong> ${formattedTime}</div>
+                <div class="stats-item"><strong>Time:</strong> ${this.formatTime(elapsedTime)}</div>
                 <div class="stats-item"><strong>Rate:</strong> ${itemsPerSecond} items/sec</div>
                 <div class="stats-item"><strong>Cache:</strong> ${cacheHitRate}%</div>
                 <div class="stats-item"><strong>Errors:</strong> ${errors}</div>
-            </div>
-        `;
+            </div>`;
         
-        if (!this.statsMessage) {
-            this.statsMessage = this.show(statsMessage, 'info');
-        } else {
-            this.update(this.statsMessage, statsMessage);
-        }
-        
+        if (!this.statsMessage) this.statsMessage = this.show(statsMessage, 'info');
+        else this.update(this.statsMessage, statsMessage);
         return this.statsMessage;
     }
     
-    // Format time in ms to a human-readable format
     formatTime(ms) {
         if (ms < 1000) return `${ms}ms`;
-        
         const seconds = Math.floor(ms / 1000);
         if (seconds < 60) return `${seconds}s`;
-        
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
-        if (minutes < 60) return `${minutes}m ${remainingSeconds}s`;
-        
-        const hours = Math.floor(minutes / 60);
-        const remainingMinutes = minutes % 60;
-        return `${hours}h ${remainingMinutes}m ${remainingSeconds}s`;
+        return `${minutes}m ${remainingSeconds}s`;
     }
     
-    // Format file size in bytes to a human-readable format
     formatFileSize(bytes) {
         const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
         if (bytes === 0) return '0 Bytes';
@@ -318,25 +213,19 @@ class StatusManager {
         return `${Math.round(bytes / Math.pow(1024, i) * 100) / 100} ${sizes[i]}`;
     }
     
-    // Format percentage with specified precision
     formatPercentage(value, total, precision = 1) {
         if (total === 0) return '0%';
         return `${(value / total * 100).toFixed(precision)}%`;
     }
     
-    // Show file information in a consistent way
     showFileInfo(fileName, fileSize) {
-        const fileMessage = `<strong>File loaded:</strong> ${fileName} (${this.formatFileSize(fileSize)})`;
-        return this.show(fileMessage, 'info');
+        return this.show(`<strong>File loaded:</strong> ${fileName} (${this.formatFileSize(fileSize)})`, 'info');
     }
     
-    // Show test status in a consistent way
     showTestInfo(testName, description) {
-        const testMessage = `<strong>${testName}:</strong> ${description}`;
-        return this.show(testMessage, 'info');
+        return this.show(`<strong>${testName}:</strong> ${description}`, 'info');
     }
     
-    // --- UPDATED: Inject required CSS styles with progress bar styles ---
     injectStyles() {
         const styleId = 'status-manager-styles';
         if (document.getElementById(styleId)) return;
@@ -344,169 +233,40 @@ class StatusManager {
         const style = document.createElement('style');
         style.id = styleId;
         style.textContent = `
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            .spinner {
-                width: 16px;
-                height: 16px;
-                border: 2px solid var(--color-primary, #3f51b5);
-                border-radius: 50%;
-                border-top-color: transparent;
-                animation: spin 1s linear infinite;
-            }
-            @keyframes statusFadeIn {
-                from { opacity: 0; transform: translateY(-10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            @keyframes statusFadeOut {
-                from { opacity: 1; transform: translateY(0); }
-                to { opacity: 0; transform: translateY(-10px); }
-            }
-            .status-message-container {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                margin: 16px 0;
-            }
-            .processing-stage {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-            .stage-name {
-                font-weight: 600;
-                font-size: 15px;
-            }
-            .stage-description {
-                font-size: 13px;
-                opacity: 0.9;
-            }
-            /* --- UPDATED: Styles for single-row stats --- */
-            .processing-stats {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 16px;
-                align-items: center;
-                width: 100%;
-                font-size: 13px;
-            }
-            .stats-item {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            .stats-item strong {
-                font-weight: 600;
-                color: var(--color-gray-600, #666);
-            }
-            .current-exam {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-            .exam-label {
-                font-size: 12px;
-                color: var(--color-gray-600, #666);
-                font-weight: 500;
-            }
-            .exam-value {
-                font-weight: 600;
-                font-family: var(--font-family-mono, monospace);
-                font-size: 14px;
-            }
-            .exam-result {
-                font-size: 13px;
-                color: var(--color-success, #4caf50);
-                font-weight: 500;
-                margin-top: 2px;
-            }
-            .exam-error {
-                font-size: 13px;
-                color: var(--color-danger, #f44336);
-                font-weight: 500;
-                margin-top: 2px;
-            }
-            
-            /* Progress bar styles */
-            .progress-container {
-                width: 100%;
-            }
-            .progress-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 8px;
-                font-size: 14px;
-            }
-            .progress-message {
-                font-weight: 500;
-            }
-            .progress-counter {
-                font-family: var(--font-family-mono, monospace);
-                font-size: 13px;
-                color: var(--color-gray-600, #666);
-            }
-            .progress-bar {
-                width: 100%;
-                height: 8px;
-                background-color: var(--color-gray-200, #e0e0e0);
-                border-radius: 4px;
-                overflow: hidden;
-            }
-            .progress-fill {
-                height: 100%;
-                background: linear-gradient(90deg, var(--color-primary, #3f51b5), var(--color-primary-dark, #303f9f));
-                border-radius: 4px;
-                transition: width 0.3s ease;
-                min-width: 2px;
-            }
-            .progress-fill:empty {
-                background: var(--color-primary, #3f51b5);
-            }
-            .current-exam.error .exam-value {
-                color: var(--color-danger, #f44336);
-            }
-            .processing-complete {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            .complete-icon {
-                font-size: 20px;
-                font-weight: bold;
-                color: var(--color-success, #4caf50);
-                background: var(--color-success-light, #e8f5e9);
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            .complete-message {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-            .complete-title {
-                font-weight: 600;
-                font-size: 15px;
-            }
-            .complete-details {
-                font-size: 13px;
-                color: var(--color-gray-600, #666);
-                display: flex;
-                gap: 12px;
-            }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            .spinner { width: 16px; height: 16px; border: 2px solid var(--color-primary, #3f51b5); border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; }
+            @keyframes statusFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes statusFadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
+            .status-message-container { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+            .processing-stage { display: flex; flex-direction: column; gap: 4px; }
+            .stage-name { font-weight: 600; font-size: 15px; }
+            .stage-description { font-size: 13px; opacity: 0.9; }
+            .processing-stats { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; width: 100%; font-size: 13px; }
+            .stats-item { display: flex; align-items: center; gap: 6px; }
+            .stats-item strong { font-weight: 600; color: var(--color-gray-600, #666); }
+            .current-exam { display: flex; flex-direction: column; gap: 4px; }
+            .exam-label { font-size: 12px; color: var(--color-gray-600, #666); font-weight: 500; }
+            .exam-value { font-weight: 600; font-family: var(--font-family-mono, monospace); font-size: 14px; }
+            .exam-result { font-size: 13px; color: var(--color-success, #4caf50); font-weight: 500; margin-top: 2px; }
+            .exam-error { font-size: 13px; color: var(--color-danger, #f44336); font-weight: 500; margin-top: 2px; }
+            .progress-container { width: 100%; }
+            .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
+            .progress-message { font-weight: 500; }
+            .progress-counter { font-family: var(--font-family-mono, monospace); font-size: 13px; color: var(--color-gray-600, #666); }
+            .progress-bar { width: 100%; height: 8px; background-color: var(--color-gray-200, #e0e0e0); border-radius: 4px; overflow: hidden; }
+            .progress-fill { height: 100%; background: linear-gradient(90deg, var(--color-primary, #3f51b5), var(--color-primary-dark, #303f9f)); border-radius: 4px; transition: width 0.3s ease; min-width: 2px; }
+            .progress-fill:empty { background: var(--color-primary, #3f51b5); }
+            .current-exam.error .exam-value { color: var(--color-danger, #f44336); }
+            .processing-complete { display: flex; align-items: center; gap: 12px; }
+            .complete-icon { font-size: 20px; font-weight: bold; color: var(--color-success, #4caf50); background: var(--color-success-light, #e8f5e9); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+            .complete-message { display: flex; flex-direction: column; gap: 4px; }
+            .complete-title { font-weight: 600; font-size: 15px; }
+            .complete-details { font-size: 13px; color: var(--color-gray-600, #666); display: flex; gap: 12px; }
         `;
-        
         document.head.appendChild(style);
     }
 }
 
-// Initialize the status manager
 const statusManager = new StatusManager();
 
 // Utility functions for formatting
@@ -522,98 +282,65 @@ function formatPercentage(value, total, precision = 1) {
     return statusManager.formatPercentage(value, total, precision);
 }
 
-// Batch processing configuration - matches backend NLP_BATCH_SIZE
-// To configure batch size: set window.ENV.NLP_BATCH_SIZE or backend env var NLP_BATCH_SIZE
 function getBatchSize() {
-    // Check for environment variable (in production this could be set via build-time env vars)
     if (typeof window !== 'undefined' && window.ENV && window.ENV.NLP_BATCH_SIZE) {
-        return parseInt(window.ENV.NLP_BATCH_SIZE);
+        return parseInt(window.ENV.NLP_BATCH_SIZE, 10);
     }
-    // Default batch size (same as backend default)
-    return 25;
+    return 25; // Default batch size
 }
 
-// --- UTILITY FUNCTIONS (globally accessible) ---
 function preventDefaults(e) { 
     e.preventDefault(); 
     e.stopPropagation();
 }
 
 // --- GLOBAL VARIABLES ---
-let currentModel = 'default'; // Initialize the current model
-let availableModels = {}; // Store available models from API
+// --- FIX: Declare these variables in the global scope so all functions share the same state. ---
+let currentModel = 'default';
+let availableModels = {};
 
-// --- MODEL TOGGLE FUNCTIONS (globally accessible) ---
 function switchModel(modelKey) {
-    console.log(`🔄 switchModel called with modelKey: ${modelKey}`);
-    
     if (!availableModels[modelKey] || availableModels[modelKey].status !== 'available') {
-        console.warn(`Model ${modelKey} is not available. Status:`, availableModels[modelKey]?.status);
+        console.warn(`Model ${modelKey} is not available.`);
         return;
     }
     
-    console.log(`✓ Switching to model: ${modelKey}`);
     currentModel = modelKey;
     
     document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
-    const selectedButton = document.getElementById(`${modelKey}ModelBtn`);
-    if (selectedButton) {
-        selectedButton.classList.add('active');
-    }
+    document.getElementById(`${modelKey}ModelBtn`)?.classList.add('active');
     
     const displayName = formatModelName(modelKey);
-    // USE THIS:
     statusManager.show(`Switched to ${displayName} model`, 'success', 3000);
 }
 
 window.addEventListener('DOMContentLoaded', function() {
-    // --- DYNAMIC API CONFIGURATION ---
     function detectApiUrls() {
         const hostname = window.location.hostname;
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-        const isProduction = hostname === 'hnzradtools.nz';
-        const isStaging = hostname === 'develop.hnzradtools.nz';
-        const isCloudflarePages = hostname.includes('pages.dev');
+        const isRender = hostname.endsWith('.onrender.com');
+        const apiBase = isLocalhost ? 'http://localhost:10000' : (isRender ? 'https://radiology-api-staging.onrender.com' : '/api');
+        const mode = isLocalhost ? 'LOCAL' : (isRender ? 'STAGING' : 'PROD');
         
-        const apiConfigs = {
-            local: { base: 'http://localhost:10000', mode: 'LOCAL DEVELOPMENT' },
-            staging: { base: '/api', mode: 'STAGING (Proxied)' },
-            production: { base: '/api', mode: 'PRODUCTION (Proxied)' },
-            fallback: { base: 'https://radiology-api-staging.onrender.com', mode: 'STAGING (Direct)' }
-        };
-        
-        let config;
-        if (isLocalhost) config = apiConfigs.local;
-        else if (isProduction) config = apiConfigs.production;
-        else if (isStaging) config = apiConfigs.staging;
-        else if (isCloudflarePages) config = apiConfigs.fallback; // Use direct API for Cloudflare Pages
-        else config = apiConfigs.fallback;
-        
-        // CORRECTED: Construct the final URLs without adding an extra '/api'.
-        // The base already contains '/api' when running on Render.
         return {
-            API_URL: `${config.base}/parse_enhanced`,
-            BATCH_API_URL: `${config.base}/parse_batch`,
-            HEALTH_URL: `${config.base}/health`,
-            SANITY_TEST_URL: `${config.base}/process_sanity_test`,
-            mode: config.mode,
-            baseUrl: config.base
+            baseUrl: apiBase,
+            mode: mode
         };
     }
     
     const apiConfig = detectApiUrls();
-    const API_URL = apiConfig.API_URL;
-    const BATCH_API_URL = apiConfig.BATCH_API_URL;
+    const API_URL = `${apiConfig.baseUrl}/parse_enhanced`;
+    const BATCH_API_URL = `${apiConfig.baseUrl}/parse_batch`;
     const MODELS_URL = `${apiConfig.baseUrl}/models`;
+    const HEALTH_URL = `${apiConfig.baseUrl}/health`;
+    // --- FIX: The sanity test will now use the batch API, so this dedicated URL is no longer needed. ---
+    // const SANITY_TEST_URL = `${apiConfig.baseUrl}/process_sanity_test`;
     
-    console.log(`Frontend running in ${apiConfig.mode} mode`);
-    console.log(`API base URL: ${apiConfig.baseUrl}`);
-    console.log(`Models URL: ${MODELS_URL}`);
-    
+    console.log(`Frontend running in ${apiConfig.mode} mode. API base: ${apiConfig.baseUrl}`);
+
     async function testApiConnectivity() {
         try {
-            // CORRECTED: Use the full, pre-constructed URL.
-            const response = await fetch(apiConfig.HEALTH_URL, { method: 'GET', timeout: 5000 });
+            const response = await fetch(HEALTH_URL, { method: 'GET' });
             if (response.ok) console.log('✓ API connectivity test passed');
             else console.warn('⚠ API health check failed:', response.status);
         } catch (error) {
@@ -621,12 +348,11 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     testApiConnectivity();
-    
-    // --- DYNAMIC MODEL INITIALIZATION ---
+
     async function loadAvailableModels() {
         try {
             console.log('🔍 Fetching available models from backend...');
-            const response = await fetch(MODELS_URL, { method: 'GET', timeout: 5000 });
+            const response = await fetch(MODELS_URL, { method: 'GET' });
             if (response.ok) {
                 const modelsData = await response.json();
                 availableModels = modelsData.models || {};
@@ -645,18 +371,9 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function useFallbackModels() {
-        // Fallback models aligned with backend nlp_processor.py (without biolord)
         availableModels = {
-            'default': {
-                name: 'BioLORD (Default)',
-                status: 'available',
-                description: 'BioLORD - Advanced biomedical language model (default)'
-            },
-            'experimental': {
-                name: 'MedCPT (Experimental)',
-                status: 'available',
-                description: 'NCBI Medical Clinical Practice Text encoder (experimental)'
-            }
+            'default': { name: 'BioLORD (Default)', status: 'available', description: 'Advanced biomedical language model (default)' },
+            'experimental': { name: 'MedCPT (Experimental)', status: 'available', description: 'NCBI Clinical Practice Text encoder' }
         };
         currentModel = 'default';
         buildModelSelectionUI();
@@ -696,7 +413,6 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Remove emoji status icons, just use text
             const statusText = modelInfo.status === 'available' ? '' : ' (Unavailable)';
-            const statusClass = modelInfo.status === 'available' ? 'available' : 'unavailable';
             
             button.innerHTML = `
                 <span class="model-name">${formatModelName(modelKey)}${statusText}</span>
@@ -743,22 +459,19 @@ window.addEventListener('DOMContentLoaded', function() {
         return nameMap[modelKey] || modelKey.charAt(0).toUpperCase() + modelKey.slice(1);
     }
     
-    
-    // Initialize models on page load
     loadAvailableModels();
 
     // --- STATE ---
+    // --- FIX: Removed redundant declarations. Global variables are used instead. ---
     let allMappings = [];
     let summaryData = null;
-    let currentModel = 'default'; // Initialize the current model
-    let availableModels = {}; // Store available models from API
-    
-    // Pagination state
+    let sortedMappings = [];
     let currentPage = 1;
     let pageSize = 100;
     let sortBy = 'default';
-    let sortedMappings = [];
 
+    // Pagination state
+    
     // --- DOM ELEMENTS ---
     const uploadSection = document.getElementById('uploadSection');
     const demosSection = document.getElementById('demosSection');
@@ -845,8 +558,6 @@ window.addEventListener('DOMContentLoaded', function() {
         sortAndDisplayResults();
     });
     
-    // Model toggle event listeners - now handled dynamically in buildModelSelectionUI()
-    
     // Help button event listener
     document.getElementById('hamburgerToggle').addEventListener('click', () => {
         document.getElementById('hamburgerDropdown').classList.toggle('hidden');
@@ -896,6 +607,7 @@ window.addEventListener('DOMContentLoaded', function() {
     } else {
         console.error('❌ Architecture button not found!');
     }
+    
     // Modal close button event listeners with error checking
     const closeHelpModal1 = document.getElementById('closeHelpModal');
     const closeHelpBtn = document.getElementById('closeHelpBtn');
@@ -1181,8 +893,6 @@ window.addEventListener('DOMContentLoaded', function() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    
-
     // --- CORE PROCESSING FUNCTIONS ---
     // Process files individually (for small files)
     async function processIndividually(codes) {
@@ -1348,16 +1058,13 @@ window.addEventListener('DOMContentLoaded', function() {
         
     }
 
-    // --- CORE LOGIC ---
+    // --- FILE PROCESSING ---
     async function processFile(file) {
         if (!file.name.endsWith('.json')) {
-            alert('Please upload a valid JSON file.');
+            statusManager.show('Please upload a valid JSON file.', 'error', 5000);
             return;
         }
-
-        // Hide upload interface during processing
         hideUploadInterface();
-        
         statusManager.clearAll();
         statusManager.showFileInfo(file.name, file.size);
         resultsSection.style.display = 'none';
@@ -1392,69 +1099,130 @@ window.addEventListener('DOMContentLoaded', function() {
         reader.readAsText(file);
     }
 
-
-
+    // --- FIX: New, refactored sanity test function ---
     async function runSanityTest() {
-    console.log('🧪 Sanity test button clicked - starting test...');
-    const button = document.getElementById('sanityTestBtn');
-    let statusId = null; // To hold the ID of the "in-progress" message
+        console.log('🧪 Sanity test button clicked - starting test...');
+        const button = document.getElementById('sanityTestBtn');
+        let statusId = null; // To hold the ID of the "in-progress" message
 
-    try {
-        // UI updates for processing
-        hideUploadInterface();
-        button.disabled = true;
-        button.innerHTML = 'Processing Test Cases...';
-        statusManager.clearAll();
-        statusManager.showTestInfo('Sanity Test', 'Verifying engine performance...');
+        try {
+            // UI updates for processing
+            hideUploadInterface();
+            button.disabled = true;
+            button.innerHTML = 'Processing Test Cases...';
+            statusManager.clearAll();
+            statusManager.showTestInfo('Sanity Test', 'Verifying engine performance...');
 
-        // Show a "progress" message that we can remove later
-        statusId = statusManager.show(`Running 100-exam test suite with model: '${currentModel}'...`, 'progress');
+            // Show a "progress" message that we can remove later
+            statusId = statusManager.show(`Running 100-exam test suite with model: '${currentModel}'...`, 'progress');
 
-        // Call the correct backend endpoint
-        const response = await fetch(apiConfig.SANITY_TEST_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: currentModel })
-        });
+            // Fetch the sanity test data from a local file
+            const response = await fetch('./core/sanity_test.json');
+            if (!response.ok) throw new Error(`Could not load test file: ${response.statusText}`);
+            const codes = await response.json();
+            
+            // Now, run the batch processing with this data
+            await runBatchProcessing(codes, "Sanity Test");
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`API returned status ${response.status}: ${errorText}`);
+        } catch (error) {
+            console.error('Sanity test failed:', error);
+            statusManager.show(`❌ Sanity Test Failed: ${error.message}`, 'error');
+            
+            // Show a persistent error message so the user can read it
+            statusManager.show(`<strong>Sanity Test Failed:</strong> ${error.message}`, 'error', 0);
+            showUploadInterface(); // Let the user try again or upload a file
+            
+        } finally {
+            // This 'finally' block ensures the UI is always restored correctly
+            
+            // If an error occurred before the success message, the progress status might still be visible.
+            // This ensures it's always removed.
+            if (statusId) {
+                statusManager.remove(statusId);
+            }
+            
+            // Restore button state
+            button.disabled = false;
+            button.innerHTML = '100 Exam Test Suite';
         }
-
-        allMappings = await response.json();
-        console.log(`Completed processing. Generated ${allMappings.length} results.`);
-        
-        // On success, explicitly remove the progress message and show a success one
-        statusManager.remove(statusId);
-        statusId = null; // Clear the ID so the 'finally' block doesn't try to remove it again
-        statusManager.show(`Sanity test complete! Processed ${allMappings.length} records.`, 'success', 5000);
-        
-        // Run analysis on the results
-        runAnalysis(allMappings);
-
-    } catch (error) {
-        console.error('Sanity test failed:', error);
-        statusManager.show(`❌ Sanity Test Failed: ${error.message}`, 'error');
-        
-        // Show a persistent error message so the user can read it
-        statusManager.show(`<strong>Sanity Test Failed:</strong> ${error.message}`, 'error', 0);
-        showUploadInterface(); // Let the user try again or upload a file
-        
-    } finally {
-        // This 'finally' block ensures the UI is always restored correctly
-        
-        // If an error occurred before the success message, the progress status might still be visible.
-        // This ensures it's always removed.
-        if (statusId) {
-            statusManager.remove(statusId);
-        }
-        
-        // Restore button state
-        button.disabled = false;
-        button.innerHTML = '100 Exam Test Suite';
     }
-}
+
+    // --- FIX: New, universal batch processing function with granular feedback ---
+    async function runBatchProcessing(codes, jobName) {
+        const button = document.getElementById('sanityTestBtn');
+        if (button) button.disabled = true;
+
+        allMappings = [];
+        const totalCodes = codes.length;
+        const batchSize = getBatchSize();
+        let processedCount = 0;
+        let progressId = null;
+
+        try {
+            // Loop through the data in chunks
+            for (let i = 0; i < totalCodes; i += batchSize) {
+                const chunk = codes.slice(i, i + batchSize);
+                
+                // Update progress before sending the batch
+                progressId = statusManager.showProgress(`Processing ${jobName}`, processedCount, totalCodes);
+
+                const exams = chunk.map(code => ({
+                    exam_name: code.EXAM_NAME,
+                    modality_code: code.MODALITY_CODE,
+                    data_source: code.DATA_SOURCE,
+                    exam_code: code.EXAM_CODE
+                }));
+
+                const response = await fetch(BATCH_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ exams: exams, model: currentModel })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Batch API failed (Chunk ${i / batchSize + 1}): ${errorText}`);
+                }
+
+                const batchResult = await response.json();
+                
+                // Process results from the chunk
+                if (batchResult.results) {
+                    const chunkMappings = batchResult.results.map(item => {
+                        return item.status === 'success' ? {
+                            data_source: item.input.data_source,
+                            modality_code: item.input.modality_code,
+                            exam_code: item.input.exam_code,
+                            exam_name: item.input.exam_name,
+                            clean_name: item.output.clean_name,
+                            snomed: item.output.snomed || {},
+                            components: item.output.components || {}
+                        } : {
+                            ...item.input,
+                            clean_name: `ERROR: ${item.error}`,
+                            components: {}
+                        };
+                    });
+                    allMappings.push(...chunkMappings);
+                }
+                
+                processedCount += chunk.length;
+                statusManager.showProgress(`Processing ${jobName}`, processedCount, totalCodes);
+            }
+
+            statusManager.show(`Successfully processed ${allMappings.length} records from ${jobName}.`, 'success', 5000);
+            runAnalysis(allMappings);
+
+        } catch (error) {
+            statusManager.show(`Processing failed: ${error.message}`, 'error', 0);
+            console.error('Batch processing error:', error);
+            showUploadInterface();
+        } finally {
+            if (button) button.disabled = false;
+            // Clear progress bar on completion or error
+            if (progressId) statusManager.remove(progressId);
+        }
+    }
 
     // --- CHUNKED LOADING FUNCTIONS ---
     async function loadBatchChunk(filename, offset, limit, sortBy) {
@@ -1571,46 +1339,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function applySortToMappings() {
-        sortedMappings = [...allMappings];
-        
-        switch (sortBy) {
-            case 'confidence-desc':
-                sortedMappings.sort((a, b) => (b.components?.confidence || 0) - (a.components?.confidence || 0));
-                break;
-            case 'confidence-asc':
-                sortedMappings.sort((a, b) => (a.components?.confidence || 0) - (b.components?.confidence || 0));
-                break;
-            case 'name-asc':
-                sortedMappings.sort((a, b) => (a.clean_name || '').localeCompare(b.clean_name || ''));
-                break;
-            case 'name-desc':
-                sortedMappings.sort((a, b) => (b.clean_name || '').localeCompare(a.clean_name || ''));
-                break;
-            default:
-                sortedMappings = [...allMappings]; // Default order
-        }
-    }
-    
-    function displayCurrentPage() {
-        if (window.currentBatchFilename) {
-            // For paginated data, data is already loaded for current page
-            displayResults(allMappings);
-        } else {
-            // For in-memory data, slice the sorted array
-            const startIndex = (currentPage - 1) * pageSize;
-            const endIndex = startIndex + pageSize;
-            const pageData = sortedMappings.slice(startIndex, endIndex);
-            displayResults(pageData);
-            
-            // Update pagination controls for in-memory data
-            const totalPages = Math.ceil(sortedMappings.length / pageSize);
-            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
-            document.getElementById('prevPageBtn').disabled = currentPage <= 1;
-            document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
-        }
-    }
-
     function runAnalysis(mappings) {
         // Clear all status messages before showing results
         statusManager.clearAll();
@@ -1721,6 +1449,40 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function getSourceColor(source) {
         return sourceColors[source] || sourceColors['Default'];
+    }
+
+    function displayCurrentPage() {
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const pageData = sortedMappings.slice(startIndex, endIndex);
+        displayResults(pageData);
+        
+        // Update pagination controls for in-memory data
+        const totalPages = Math.ceil(sortedMappings.length / pageSize);
+        document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+        document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+    }
+    
+    function applySortToMappings() {
+        sortedMappings = [...allMappings];
+        
+        switch (sortBy) {
+            case 'confidence-desc':
+                sortedMappings.sort((a, b) => (b.components?.confidence || 0) - (a.components?.confidence || 0));
+                break;
+            case 'confidence-asc':
+                sortedMappings.sort((a, b) => (a.components?.confidence || 0) - (b.components?.confidence || 0));
+                break;
+            case 'name-asc':
+                sortedMappings.sort((a, b) => (a.clean_name || '').localeCompare(b.clean_name || ''));
+                break;
+            case 'name-desc':
+                sortedMappings.sort((a, b) => (b.clean_name || '').localeCompare(a.clean_name || ''));
+                break;
+            default:
+                sortedMappings = [...allMappings]; // Default order
+        }
     }
 
     function displayResults(results) {
@@ -2255,29 +2017,17 @@ window.addEventListener('DOMContentLoaded', function() {
         
         displayConsolidatedResults();
     }
-    function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
-    // formatFileSize function removed - using StatusManager.formatFileSize instead
-    
-    function formatProcessingTime(milliseconds) {
-        if (milliseconds < 1000) {
-            return `${milliseconds}ms`;
-        } else if (milliseconds < 60000) {
-            const seconds = (milliseconds / 1000).toFixed(1);
-            return `${seconds}s`;
-        } else {
-            const minutes = Math.floor(milliseconds / 60000);
-            const seconds = Math.floor((milliseconds % 60000) / 1000);
-            if (seconds === 0) {
-                return `${minutes}m`;
-            } else {
-                return `${minutes}m ${seconds}s`;
-            }
-        }
-    }
     
     function downloadJSON(data, filename) {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        triggerDownload(blob, filename);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
     function downloadText(text, filename) {
         const blob = new Blob([text], { type: 'text/plain' });

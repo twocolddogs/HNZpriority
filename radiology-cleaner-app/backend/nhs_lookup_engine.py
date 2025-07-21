@@ -203,38 +203,38 @@ class NHSLookupEngine:
         return 0.1  # Direct mismatch (e.g., input "Left" vs NHS "Right")
 
     def _calculate_match_score(self, input_exam_text, input_components, nhs_entry, semantic_score, interventional_score, anatomical_specificity_score):
-		# --- START OF FIX ---
-		# 1. Calculate all penalties first.
-    	anatomy_score = self._calculate_anatomy_score_with_constraints(input_components, nhs_entry)
-    	diagnostic_penalty = self._check_diagnostic_protection(input_exam_text, nhs_entry)
-    	hybrid_modality_penalty = self._check_hybrid_modality_constraints(input_exam_text, nhs_entry)
-   		technique_specialization_penalty = self._check_technique_specialization_constraints(input_exam_text, nhs_entry)
+	        # --- START OF FIX ---
+        # 1. Calculate all penalties first.
+        anatomy_score = self._calculate_anatomy_score_with_constraints(input_components, nhs_entry)
+        diagnostic_penalty = self._check_diagnostic_protection(input_exam_text, nhs_entry)
+        hybrid_modality_penalty = self._check_hybrid_modality_constraints(input_exam_text, nhs_entry)
+        technique_specialization_penalty = self._check_technique_specialization_constraints(input_exam_text, nhs_entry)
 
-   		# 2. Check for any "blocking" level violations that should immediately reject the candidate.
-    	# Note: We check for values less than -1.0 to distinguish from fractional penalties.
-    	if anatomy_score < -1.0 or diagnostic_penalty < -1.0 or hybrid_modality_penalty < -1.0 or technique_specialization_penalty < -1.0:
-        logger.debug(f"Blocking violation detected for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
-        return 0.0
+        # 2. Check for any "blocking" level violations that should immediately reject the candidate.
+        # Note: We check for values less than -1.0 to distinguish from fractional penalties.
+        if anatomy_score < -1.0 or diagnostic_penalty < -1.0 or hybrid_modality_penalty < -1.0 or technique_specialization_penalty < -1.0:
+            logger.debug(f"Blocking violation detected for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
+            return 0.0
 
-    	nhs_components = nhs_entry.get('_parsed_components', {})
-    	w = self.config['weights_component']
+        nhs_components = nhs_entry.get('_parsed_components', {})
+        w = self.config['weights_component']
     
-    	input_lat = (input_components.get('laterality') or [None])[0]
-    	nhs_lat = (nhs_components.get('laterality') or [None])[0]
-    	laterality_score = self._calculate_laterality_score(input_lat, nhs_lat)
+        input_lat = (input_components.get('laterality') or [None])[0]
+        nhs_lat = (nhs_components.get('laterality') or [None])[0]
+        laterality_score = self._calculate_laterality_score(input_lat, nhs_lat)
     
-    	modality_score = self._calculate_modality_score(input_components.get('modality'), nhs_components.get('modality'))
-    	contrast_score = self._calculate_contrast_score((input_components.get('contrast') or [None])[0], (nhs_components.get('contrast') or [None])[0])
-    	technique_score = self._calculate_set_score(input_components, nhs_components, 'technique')
+        modality_score = self._calculate_modality_score(input_components.get('modality'), nhs_components.get('modality'))
+        contrast_score = self._calculate_contrast_score((input_components.get('contrast') or [None])[0], (nhs_components.get('contrast') or [None])[0])
+        technique_score = self._calculate_set_score(input_components, nhs_components, 'technique')
     
-    	if modality_score == 0.0:
-        return 0.0
+        if modality_score == 0.0:
+            return 0.0
 
-   		if (violation := self._check_component_thresholds(anatomy_score, modality_score, laterality_score, contrast_score, technique_score)):
-        logger.debug(f"Component threshold violation detected: {violation}")
-        return 0.0
+        if (violation := self._check_component_thresholds(anatomy_score, modality_score, laterality_score, contrast_score, technique_score)):
+            logger.debug(f"Component threshold violation detected: {violation}")
+            return 0.0
 
-    	component_score = (w['anatomy'] * anatomy_score + w['modality'] * modality_score + w['laterality'] * laterality_score + w['contrast'] * contrast_score + w['technique'] * technique_score)
+        component_score = (w['anatomy'] * anatomy_score + w['modality'] * modality_score + w['laterality'] * laterality_score + w['contrast'] * contrast_score + w['technique'] * technique_score)
         
         # PIPELINE STEP: Apply semantic weight limiting to prevent override of component logic
         wf = self.config['weights_final']
@@ -254,20 +254,20 @@ class NHSLookupEngine:
             final_score = (wf['component'] * component_score + wf['semantic'] * semantic_score)
         
         # 3. Add ALL bonuses and non-blocking penalties to the final score.
-    	final_score += interventional_score
-    	final_score += diagnostic_penalty  # <-- CRITICAL FIX: APPLY PENALTY
-   		final_score += hybrid_modality_penalty # <-- CRITICAL FIX: APPLY PENALTY
-    	final_score += technique_specialization_penalty # <-- CRITICAL FIX: APPLY PENALTY
-    	final_score += self._calculate_context_bonus(input_exam_text, nhs_entry, input_components.get('anatomy', []))
-    	final_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
-    	final_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
-    	final_score += self._calculate_anatomy_specificity_preference(input_components, nhs_entry)
-    	final_score += anatomical_specificity_score
+        final_score += interventional_score
+        final_score += diagnostic_penalty  # <-- CRITICAL FIX: APPLY PENALTY
+        final_score += hybrid_modality_penalty # <-- CRITICAL FIX: APPLY PENALTY
+        final_score += technique_specialization_penalty # <-- CRITICAL FIX: APPLY PENALTY
+        final_score += self._calculate_context_bonus(input_exam_text, nhs_entry, input_components.get('anatomy', []))
+        final_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
+        final_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
+        final_score += self._calculate_anatomy_specificity_preference(input_components, nhs_entry)
+        final_score += anatomical_specificity_score
     
-   		if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
-        final_score += self.config.get('exact_match_bonus', 0.25)
+        if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
+            final_score += self.config.get('exact_match_bonus', 0.25)
         
-    	return max(0.0, min(1.0, final_score))
+        return max(0.0, min(1.0, final_score))
 
     def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False, input_exam_text: str = "", force_ambiguous: bool = False) -> Dict:
         """
