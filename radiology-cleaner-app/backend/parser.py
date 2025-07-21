@@ -54,9 +54,16 @@ class RadiologySemanticParser:
             'Doppler': [re.compile(p, re.I) for p in [r'\b(doppler|duplex)\b']],
             'Tomosynthesis': [re.compile(p, re.I) for p in [r'\b(tomosynthesis|tomo)\b']],
             'Barium Study': [re.compile(p, re.I) for p in [r'\b(barium|upper gi|lower gi)\b']],
-            'Vascular Interventional': [re.compile(p, re.I) for p in [
-                r'\b(angiogram|angiography|cta|mra|venography|angio|dsa)\b',
-                r'\b(stent|angioplasty|emboli[sz]ation|thrombolysis|thrombectomy|atherectomy|picc|line|catheter)\b'
+            'Arterial Interventional': [re.compile(p, re.I) for p in [
+                r'\b(angiogram|angiography|arteriogram|arteriography|angio|dsa)\b',
+                r'\b(stent|angioplasty|emboli[sz]ation|thrombolysis|thrombectomy|atherectomy)\b',
+                r'\b(arterial|artery|aortic|aorta|carotid|femoral artery|renal artery)\b'
+            ]],
+            'Venous Interventional': [re.compile(p, re.I) for p in [
+                r'\b(venography|venogram|phlebography)\b',
+                r'\b(picc|line|catheter|port|hickman|tunneled)\b',
+                r'\b(venous|vein|vena cava|jugular|subclavian|femoral vein)\b',
+                r'\b(ivc filter|vena cava filter|thrombolysis venous)\b'
             ]],
             'Non-Vascular Interventional': [re.compile(p, re.I) for p in [
                 r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation)\b',
