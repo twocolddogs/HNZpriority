@@ -1546,7 +1546,7 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Add confidence cell
             const confidenceCell = row.insertCell();
-            const confidence = item.components.confidence || 0;
+            const confidence = (item.components && item.components.confidence) ? item.components.confidence : 0;
             const confidencePercent = Math.round(confidence * 100);
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             confidenceCell.innerHTML = `
