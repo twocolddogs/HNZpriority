@@ -41,6 +41,27 @@ scoring:
   prefer_no_contrast_when_unspecified: true  # Enable preferential non-contrast matching
   no_contrast_preference_bonus: 0.25         # Strong bonus for non-contrast when input has no contrast
   
+  # MINIMUM COMPONENT SCORE THRESHOLDS - Prevent semantic similarity from overriding component logic
+  # CRITICAL: These thresholds ensure component mismatches can't be overcome by high semantic similarity alone
+  minimum_component_thresholds:
+    enable: true  # Enable minimum component threshold checking
+    
+    # Individual component minimum scores (0.0 to 1.0)
+    # If any component falls below threshold, the match is rejected regardless of semantic similarity
+    anatomy_min: 0.1          # Minimum anatomy overlap required (very lenient - allows partial matches)
+    modality_min: 0.4         # Minimum modality similarity required (stricter - modality is critical)
+    laterality_min: 0.0       # No minimum for laterality (often missing or ambiguous)
+    contrast_min: 0.3         # Minimum contrast compatibility (moderate - contrast matters but not always specified)
+    technique_min: 0.0        # No minimum for technique (often missing in simple exams)
+    
+    # Combined component score minimum (0.0 to 1.0)
+    # The weighted combination of all components must meet this threshold
+    combined_min: 0.25        # Overall component score must be reasonable
+    
+    # Semantic override prevention
+    # Even if semantic similarity is very high, component mismatches below threshold will block the match
+    max_semantic_weight: 0.6  # Limit how much semantic similarity can compensate for poor components
+  
   # AGE/GENDER CONTEXT SCORING - Super-strong bonuses for matches
   gender_context_match_bonus: 0.20  # Strong bonus for gender context matches
   age_context_match_bonus: 0.15     # Strong bonus for age context matches

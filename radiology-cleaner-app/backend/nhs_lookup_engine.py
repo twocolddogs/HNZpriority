@@ -245,10 +245,33 @@ class NHSLookupEngine:
             logger.debug(f"Modality mismatch detected, returning 0.0 confidence")
             return 0.0
 
+        # PIPELINE STEP: Check minimum component score thresholds
+        # Prevent semantic similarity from overriding fundamental component mismatches
+        threshold_violation = self._check_component_thresholds(
+            anatomy_score, modality_score, laterality_score, contrast_score, technique_score
+        )
+        if threshold_violation:
+            logger.debug(f"Component threshold violation detected: {threshold_violation}")
+            return 0.0
+
         component_score = (w['anatomy'] * anatomy_score + w['modality'] * modality_score + w['laterality'] * laterality_score + w['contrast'] * contrast_score + w['technique'] * technique_score)
         
+        # PIPELINE STEP: Apply semantic weight limiting to prevent override of component logic
         wf = self.config['weights_final']
-        final_score = (wf['component'] * component_score + wf['semantic'] * semantic_score)
+        threshold_config = self.config.get('minimum_component_thresholds', {})
+        if threshold_config.get('enable', False):
+            max_semantic_weight = threshold_config.get('max_semantic_weight', 0.6)
+            # Limit semantic weight and rebalance with component weight
+            actual_semantic_weight = min(wf.get('semantic', 0.40), max_semantic_weight)
+            actual_component_weight = 1.0 - actual_semantic_weight
+            final_score = (actual_component_weight * component_score + actual_semantic_weight * semantic_score)
+            
+            if actual_semantic_weight < wf.get('semantic', 0.40):
+                logger.debug(f"Limited semantic weight from {wf.get('semantic', 0.40):.3f} to {actual_semantic_weight:.3f} "
+                           f"to prevent component override")
+        else:
+            # Use original weights if threshold checking disabled
+            final_score = (wf['component'] * component_score + wf['semantic'] * semantic_score)
         
         final_score += interventional_score
         # PIPELINE STEP: Apply context bonuses (now includes gender/age bonuses previously missing)
@@ -510,6 +533,63 @@ class NHSLookupEngine:
         
         # No violation detected
         return 0.0
+    
+    def _check_component_thresholds(self, anatomy_score: float, modality_score: float, 
+                                   laterality_score: float, contrast_score: float, technique_score: float) -> Optional[str]:
+        """
+        Check minimum component score thresholds to prevent semantic similarity override.
+        
+        PIPELINE STEP: This method ensures that fundamental component mismatches 
+        cannot be overcome by high semantic similarity alone, maintaining clinical accuracy.
+        
+        Args:
+            anatomy_score: Individual anatomy component score
+            modality_score: Individual modality component score  
+            laterality_score: Individual laterality component score
+            contrast_score: Individual contrast component score
+            technique_score: Individual technique component score
+            
+        Returns:
+            Optional[str]: Violation description if threshold violated, None if passed
+        """
+        # Get threshold configuration
+        threshold_config = self.config.get('minimum_component_thresholds', {})
+        if not threshold_config.get('enable', False):
+            return None
+        
+        # Get individual thresholds
+        anatomy_min = threshold_config.get('anatomy_min', 0.1)
+        modality_min = threshold_config.get('modality_min', 0.4)
+        laterality_min = threshold_config.get('laterality_min', 0.0)
+        contrast_min = threshold_config.get('contrast_min', 0.3)
+        technique_min = threshold_config.get('technique_min', 0.0)
+        
+        # Check individual component thresholds
+        if anatomy_score < anatomy_min:
+            return f"Anatomy score {anatomy_score:.3f} below minimum {anatomy_min}"
+        if modality_score < modality_min:
+            return f"Modality score {modality_score:.3f} below minimum {modality_min}"
+        if laterality_score < laterality_min:
+            return f"Laterality score {laterality_score:.3f} below minimum {laterality_min}"
+        if contrast_score < contrast_min:
+            return f"Contrast score {contrast_score:.3f} below minimum {contrast_min}"
+        if technique_score < technique_min:
+            return f"Technique score {technique_score:.3f} below minimum {technique_min}"
+        
+        # Check combined component score threshold
+        combined_min = threshold_config.get('combined_min', 0.25)
+        w = self.config.get('weights_component', {})
+        combined_score = (w.get('anatomy', 0.25) * anatomy_score + 
+                         w.get('modality', 0.30) * modality_score + 
+                         w.get('laterality', 0.15) * laterality_score + 
+                         w.get('contrast', 0.20) * contrast_score + 
+                         w.get('technique', 0.10) * technique_score)
+        
+        if combined_score < combined_min:
+            return f"Combined component score {combined_score:.3f} below minimum {combined_min}"
+        
+        # All thresholds passed
+        return None
     
     def _calculate_context_bonus(self, input_exam: str, nhs_entry: dict, input_anatomy: List[str] = None) -> float:
         """
