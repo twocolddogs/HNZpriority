@@ -1483,7 +1483,7 @@ window.addEventListener('DOMContentLoaded', function() {
     const sourceColors = {
         'C': '#1f77b4',            // Blue - Central
         'CO': '#2ca02c',           // Green - SIRS (Canterbury)
-        'K': '#d62728',            // Red - Southern
+        'K': '#9467bd',            // Purple - Southern (changed from red to avoid error implication)
         'TestData': '#ff1493',     // Deep Pink
         'SanityTest': '#00ced1',   // Dark Turquoise
         'Demo': '#ffd700',         // Gold

@@ -1085,8 +1085,8 @@ a:focus-visible {
 }
 
 .tag.contrast {
-  background: var(--color-danger-light);
-  color: var(--color-danger);
+  background: #e3f2fd;
+  color: #1565c0;
 }
 
 .tag.technique {
