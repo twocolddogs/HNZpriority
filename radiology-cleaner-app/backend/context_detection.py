@@ -39,7 +39,7 @@ class ContextDetector:
         
         # Female-specific anatomy and keywords (ENHANCED)
         self.female_anatomy = [
-            'female pelvis', 'uterus', 'ovary', 'ovaries', 'endometrial', 'cervix', 'cervical', 
+            'female pelvis', 'uterus', 'ovary', 'ovaries', 'endometrial', 'cervix', 'cervical screening', 'cervical smear',
             'mammogram', 'mammography', 'breast', 'breasts', 'transvaginal'
         ]
         self.female_patterns = [
