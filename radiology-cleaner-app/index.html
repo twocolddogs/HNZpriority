@@ -93,18 +93,38 @@
                 <!-- Combined Action Buttons - Reorganized Order -->
                 <div class="action-buttons view-toggle">
                     <button class="button active" id="viewToggleBtn">Switch to Consolidated View</button>
-                    <button class="button primary" id="newUploadBtn">New Upload</button>
+                    <button class="button primary new-upload" id="newUploadBtn">New Upload</button>
                     <button class="button success" id="exportMappingsBtn">Export Mappings</button>
                 </div>
                 
                 <!-- Full View -->
                 <div id="fullView">
                     <h3>Mappings</h3>
+                    <div class="table-controls">
+                        <select id="tableSortBy" style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
+                            <option value="default">Default Order</option>
+                            <option value="confidence-desc">Confidence: High to Low</option>
+                            <option value="confidence-asc">Confidence: Low to High</option>
+                            <option value="name-asc">Clean Name: A to Z</option>
+                            <option value="name-desc">Clean Name: Z to A</option>
+                        </select>
+                        <span id="tableInfo" class="table-info"></span>
+                    </div>
                     <div class="table-container">
                         <table class="results-table" id="resultsTable">
                             <thead><tr><th style="width: 12px; padding: 0;"></th><th>Original Code</th><th>Original Name</th><th>Clean Name</th><th>SNOMED FSN</th><th>Tags</th><th>Confidence</th></tr></thead>
                             <tbody id="resultsBody"></tbody>
                         </table>
+                    </div>
+                    <div class="pagination-controls" id="paginationControls" style="display: none;">
+                        <button id="prevPageBtn" class="button secondary">← Previous</button>
+                        <span id="pageInfo" class="page-info"></span>
+                        <button id="nextPageBtn" class="button secondary">Next →</button>
+                        <select id="pageSizeSelector" class="page-size-selector">
+                            <option value="50">50 per page</option>
+                            <option value="100" selected>100 per page</option>
+                            <option value="200">200 per page</option>
+                        </select>
                     </div>
                 </div>
                 

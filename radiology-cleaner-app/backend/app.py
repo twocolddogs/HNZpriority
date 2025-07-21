@@ -6,7 +6,7 @@
 # This Flask application provides a unified processing pipeline for standardizing
 # radiology exam names against NHS reference data using NLP and semantic matching.
 
-import time, json, logging, threading, os, sys, re
+import time, json, logging, threading, os, sys, re, math
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from typing import List, Dict, Optional
@@ -450,19 +450,50 @@ def parse_batch():
         logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
         logger.info(f"Results saved to: {results_filepath}")
 
-        # Return metadata about the batch processing and file location
-        return jsonify({
-            "message": "Batch processing complete. Results streamed to disk.",
-            "results_file": results_filepath,
-            "results_filename": results_filename,
-            "processing_stats": {
-                "total_processed": len(exams_to_process),
-                "successful": success_count,
-                "errors": error_count,
-                "processing_time_ms": processing_time_ms,
-                "model_used": model_key
-            }
-        })
+        # For frontend compatibility: return results in memory for small batches, 
+        # or file metadata for large batches
+        MAX_INMEMORY_RESULTS = 50  # Threshold for in-memory vs streaming
+        
+        if len(exams_to_process) <= MAX_INMEMORY_RESULTS:
+            # Read results back from file for small batches (frontend compatibility)
+            results = []
+            with open(results_filepath, 'r', encoding='utf-8') as f_in:
+                for line in f_in:
+                    if line.strip():
+                        results.append(json.loads(line.strip()))
+            
+            # Clean up the temporary file for small batches
+            try:
+                os.remove(results_filepath)
+            except Exception as e:
+                logger.warning(f"Could not remove temporary file {results_filepath}: {e}")
+            
+            # Return results in memory (frontend compatible format)
+            return jsonify({
+                "message": "Batch processing complete.",
+                "results": results,  # Frontend expects this key
+                "processing_stats": {
+                    "total_processed": len(exams_to_process),
+                    "successful": success_count,
+                    "errors": error_count,
+                    "processing_time_ms": processing_time_ms,
+                    "model_used": model_key
+                }
+            })
+        else:
+            # Return file metadata for large batches (streaming approach)
+            return jsonify({
+                "message": "Batch processing complete. Results streamed to disk.",
+                "results_file": results_filepath,
+                "results_filename": results_filename,
+                "processing_stats": {
+                    "total_processed": len(exams_to_process),
+                    "successful": success_count,
+                    "errors": error_count,
+                    "processing_time_ms": processing_time_ms,
+                    "model_used": model_key
+                }
+            })
         
     except Exception as e:
         logger.error(f"Batch endpoint failed with a critical error: {e}", exc_info=True)
@@ -532,6 +563,68 @@ def process_sanity_test_endpoint():
     except Exception as e:
         logger.error(f"Error processing sanity test: {e}", exc_info=True)
         return jsonify({"error": "Internal Server Error"}), 500
+
+@app.route('/load_batch_chunk/<filename>', methods=['GET'])
+def load_batch_chunk(filename):
+    """
+    Load a chunk of batch processing results for pagination.
+    Accepts query parameters: offset, limit, sort_by, sort_order
+    """
+    try:
+        # Validate filename format for security
+        if not filename.startswith('batch_results_') or not filename.endswith('.jsonl'):
+            return jsonify({"error": "Invalid filename format"}), 400
+        
+        # Get query parameters
+        offset = int(request.args.get('offset', 0))
+        limit = int(request.args.get('limit', 100))
+        sort_by = request.args.get('sort_by', 'default')
+        sort_order = request.args.get('sort_order', 'asc')
+        
+        # Limit the maximum chunk size for performance
+        limit = min(limit, 500)
+        
+        # Get the output directory
+        output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
+        file_path = os.path.join(output_dir, filename)
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            return jsonify({"error": "File not found"}), 404
+        
+        # Read all results from file
+        results = []
+        with open(file_path, 'r', encoding='utf-8') as f_in:
+            for line in f_in:
+                if line.strip():
+                    results.append(json.loads(line.strip()))
+        
+        # Apply sorting if requested
+        if sort_by == 'confidence':
+            results.sort(key=lambda x: x.get('output', {}).get('components', {}).get('confidence', 0), 
+                        reverse=(sort_order == 'desc'))
+        elif sort_by == 'name':
+            results.sort(key=lambda x: x.get('output', {}).get('clean_name', ''), 
+                        reverse=(sort_order == 'desc'))
+        
+        # Apply pagination
+        total_items = len(results)
+        paginated_results = results[offset:offset + limit]
+        
+        return jsonify({
+            "results": paginated_results,
+            "pagination": {
+                "offset": offset,
+                "limit": limit,
+                "total_items": total_items,
+                "total_pages": math.ceil(total_items / limit) if limit > 0 else 0,
+                "current_page": math.floor(offset / limit) + 1 if limit > 0 else 1
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error loading batch chunk: {e}", exc_info=True)
+        return jsonify({"error": "Failed to load batch chunk"}), 500
 
 @app.route('/download_batch_results/<filename>', methods=['GET'])
 def download_batch_results(filename):

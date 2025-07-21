@@ -752,6 +752,12 @@ window.addEventListener('DOMContentLoaded', function() {
     let summaryData = null;
     let currentModel = 'default'; // Initialize the current model
     let availableModels = {}; // Store available models from API
+    
+    // Pagination state
+    let currentPage = 1;
+    let pageSize = 100;
+    let sortBy = 'default';
+    let sortedMappings = [];
 
     // --- DOM ELEMENTS ---
     const uploadSection = document.getElementById('uploadSection');
@@ -792,6 +798,52 @@ window.addEventListener('DOMContentLoaded', function() {
     document.getElementById('viewToggleBtn').addEventListener('click', toggleView);
     document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
     document.getElementById('consolidatedSort').addEventListener('change', sortConsolidatedResults);
+    
+    // Pagination event listeners
+    document.getElementById('prevPageBtn').addEventListener('click', async () => {
+        if (currentPage > 1) {
+            currentPage--;
+            if (window.currentBatchFilename) {
+                const offset = (currentPage - 1) * pageSize;
+                await loadBatchChunk(window.currentBatchFilename, offset, pageSize, sortBy);
+            } else {
+                displayCurrentPage();
+            }
+        }
+    });
+    
+    document.getElementById('nextPageBtn').addEventListener('click', async () => {
+        const totalPages = window.paginationInfo ? 
+            window.paginationInfo.total_pages : 
+            Math.ceil(sortedMappings.length / pageSize);
+        
+        if (currentPage < totalPages) {
+            currentPage++;
+            if (window.currentBatchFilename) {
+                const offset = (currentPage - 1) * pageSize;
+                await loadBatchChunk(window.currentBatchFilename, offset, pageSize, sortBy);
+            } else {
+                displayCurrentPage();
+            }
+        }
+    });
+    
+    document.getElementById('pageSizeSelector').addEventListener('change', async (e) => {
+        pageSize = parseInt(e.target.value);
+        currentPage = 1; // Reset to first page when changing page size
+        
+        if (window.currentBatchFilename) {
+            await loadBatchChunk(window.currentBatchFilename, 0, pageSize, sortBy);
+        } else {
+            displayCurrentPage();
+        }
+    });
+    
+    document.getElementById('tableSortBy').addEventListener('change', (e) => {
+        sortBy = e.target.value;
+        currentPage = 1; // Reset to first page when changing sort
+        sortAndDisplayResults();
+    });
     
     // Model toggle event listeners - now handled dynamically in buildModelSelectionUI()
     
@@ -1110,6 +1162,17 @@ window.addEventListener('DOMContentLoaded', function() {
         // Clear global state
         allMappings = [];
         summaryData = null;
+        sortedMappings = [];
+        
+        // Reset pagination state
+        currentPage = 1;
+        pageSize = 100;
+        sortBy = 'default';
+        window.currentBatchFilename = null;
+        window.paginationInfo = null;
+        
+        // Hide pagination controls
+        document.getElementById('paginationControls').style.display = 'none';
         
         // Clear any status messages
         statusManager.clearAll();
@@ -1211,35 +1274,45 @@ window.addEventListener('DOMContentLoaded', function() {
             
             const batchResult = await response.json();
             
-            // Process batch results - updated format from HEAD
+            // Handle both in-memory results (small batches) and file-based results (large batches)
             if (batchResult.results) {
-                allMappings = batchResult.results.map(item => ({
-                    data_source: item.input.data_source,
-                    modality_code: item.input.modality_code,
-                    exam_code: item.input.exam_code,
-                    exam_name: item.input.exam_name,
-                    clean_name: item.output.clean_name,
-                    snomed: item.output.snomed || {},
-                    components: { 
-                        ...item.output.components,
-                        clinical_equivalents: item.output.clinical_equivalents || []
+                // In-memory results format (for small batches <= 50 items)
+                allMappings = batchResult.results.map(item => {
+                    if (item.status === 'success') {
+                        return {
+                            data_source: item.input.data_source,
+                            modality_code: item.input.modality_code,
+                            exam_code: item.input.exam_code,
+                            exam_name: item.input.exam_name,
+                            clean_name: item.output.clean_name,
+                            snomed: item.output.snomed || {},
+                            components: { 
+                                ...item.output.components,
+                                clinical_equivalents: item.output.clinical_equivalents || []
+                            }
+                        };
+                    } else {
+                        // Handle error entries
+                        return {
+                            data_source: item.input.data_source,
+                            modality_code: item.input.modality_code,
+                            exam_code: item.input.exam_code,
+                            exam_name: item.input.exam_name,
+                            clean_name: `ERROR: ${item.error}`,
+                            components: {}
+                        };
                     }
-                }));
-            }
-            
-            // Handle any errors from batch processing - updated format from HEAD
-            if (batchResult.errors && batchResult.errors.length > 0) {
-                console.error('Errors returned from batch processing:', batchResult.errors);
-                batchResult.errors.forEach(err => {
-                    allMappings.push({
-                        data_source: err.original_exam.data_source,
-                        modality_code: err.original_exam.modality_code,
-                        exam_code: err.original_exam.exam_code,
-                        exam_name: err.original_exam.exam_name,
-                        clean_name: `ERROR: ${err.error}`,
-                        components: {}
-                    });
                 });
+            } else if (batchResult.results_file) {
+                // File-based results format (for large batches > 50 items)
+                // Implement chunked loading for large datasets
+                statusManager.show(`Large batch complete! Loading results with pagination...`, 'info', 3000);
+                
+                // Store filename for chunked loading
+                window.currentBatchFilename = batchResult.results_filename;
+                
+                // Load first chunk
+                await loadBatchChunk(batchResult.results_filename, 0, pageSize, sortBy);
             }
             
             // Log batch processing stats and update user
@@ -1383,11 +1456,180 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 }
 
+    // --- CHUNKED LOADING FUNCTIONS ---
+    async function loadBatchChunk(filename, offset, limit, sortBy) {
+        try {
+            const sortParams = parseSortBy(sortBy);
+            const url = `${apiConfig.baseUrl}/load_batch_chunk/${filename}?offset=${offset}&limit=${limit}&sort_by=${sortParams.by}&sort_order=${sortParams.order}`;
+            
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Failed to load chunk: ${response.status}`);
+            
+            const chunkData = await response.json();
+            
+            // Convert chunk results to frontend format
+            allMappings = chunkData.results.map(item => {
+                if (item.status === 'success') {
+                    return {
+                        data_source: item.input.data_source,
+                        modality_code: item.input.modality_code,
+                        exam_code: item.input.exam_code,
+                        exam_name: item.input.exam_name,
+                        clean_name: item.output.clean_name,
+                        snomed: item.output.snomed || {},
+                        components: { 
+                            ...item.output.components,
+                            clinical_equivalents: item.output.clinical_equivalents || []
+                        }
+                    };
+                } else {
+                    return {
+                        data_source: item.input.data_source,
+                        modality_code: item.input.modality_code,
+                        exam_code: item.input.exam_code,
+                        exam_name: item.input.exam_name,
+                        clean_name: `ERROR: ${item.error}`,
+                        components: {}
+                    };
+                }
+            });
+            
+            // Store pagination info globally
+            window.paginationInfo = chunkData.pagination;
+            
+            // Enable pagination mode
+            enablePaginationMode(true);
+            
+            // Display results
+            runAnalysis(allMappings);
+            
+        } catch (error) {
+            console.error('Failed to load batch chunk:', error);
+            statusManager.show(`Failed to load results: ${error.message}`, 'error');
+        }
+    }
+    
+    function parseSortBy(sortBy) {
+        switch (sortBy) {
+            case 'confidence-desc': return { by: 'confidence', order: 'desc' };
+            case 'confidence-asc': return { by: 'confidence', order: 'asc' };
+            case 'name-asc': return { by: 'name', order: 'asc' };
+            case 'name-desc': return { by: 'name', order: 'desc' };
+            default: return { by: 'default', order: 'asc' };
+        }
+    }
+    
+    function enablePaginationMode(enable) {
+        const paginationControls = document.getElementById('paginationControls');
+        const tableInfo = document.getElementById('tableInfo');
+        
+        if (enable && window.paginationInfo) {
+            // Show pagination controls
+            paginationControls.style.display = 'flex';
+            
+            // Update pagination info
+            updatePaginationInfo();
+            
+            // Update table info
+            const info = window.paginationInfo;
+            tableInfo.textContent = `Showing ${info.offset + 1}-${Math.min(info.offset + info.limit, info.total_items)} of ${info.total_items} results`;
+        } else {
+            // Hide pagination controls for small datasets
+            paginationControls.style.display = 'none';
+            
+            if (allMappings.length > 0) {
+                tableInfo.textContent = `Showing all ${allMappings.length} results`;
+            }
+        }
+    }
+    
+    function updatePaginationInfo() {
+        const pageInfo = document.getElementById('pageInfo');
+        const prevBtn = document.getElementById('prevPageBtn');
+        const nextBtn = document.getElementById('nextPageBtn');
+        const info = window.paginationInfo;
+        
+        if (info) {
+            pageInfo.textContent = `Page ${info.current_page} of ${info.total_pages}`;
+            
+            // Update button states
+            prevBtn.disabled = info.current_page <= 1;
+            nextBtn.disabled = info.current_page >= info.total_pages;
+        }
+    }
+    
+    async function sortAndDisplayResults() {
+        if (window.currentBatchFilename) {
+            // For paginated data, reload from server with new sort
+            const info = window.paginationInfo || {};
+            const offset = (currentPage - 1) * pageSize;
+            await loadBatchChunk(window.currentBatchFilename, offset, pageSize, sortBy);
+        } else {
+            // For in-memory data, sort locally
+            applySortToMappings();
+            displayCurrentPage();
+        }
+    }
+    
+    function applySortToMappings() {
+        sortedMappings = [...allMappings];
+        
+        switch (sortBy) {
+            case 'confidence-desc':
+                sortedMappings.sort((a, b) => (b.components?.confidence || 0) - (a.components?.confidence || 0));
+                break;
+            case 'confidence-asc':
+                sortedMappings.sort((a, b) => (a.components?.confidence || 0) - (b.components?.confidence || 0));
+                break;
+            case 'name-asc':
+                sortedMappings.sort((a, b) => (a.clean_name || '').localeCompare(b.clean_name || ''));
+                break;
+            case 'name-desc':
+                sortedMappings.sort((a, b) => (b.clean_name || '').localeCompare(a.clean_name || ''));
+                break;
+            default:
+                sortedMappings = [...allMappings]; // Default order
+        }
+    }
+    
+    function displayCurrentPage() {
+        if (window.currentBatchFilename) {
+            // For paginated data, data is already loaded for current page
+            displayResults(allMappings);
+        } else {
+            // For in-memory data, slice the sorted array
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const pageData = sortedMappings.slice(startIndex, endIndex);
+            displayResults(pageData);
+            
+            // Update pagination controls for in-memory data
+            const totalPages = Math.ceil(sortedMappings.length / pageSize);
+            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+            document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+        }
+    }
+
     function runAnalysis(mappings) {
+        // Clear all status messages before showing results
+        statusManager.clearAll();
+        
         summaryData = generateAnalyticsSummary(mappings);
         updateStatsUI(summaryData);
         updateResultsTitle();
-        displayResults(mappings);
+        
+        // For in-memory data, set up sorting and pagination
+        if (!window.currentBatchFilename) {
+            sortedMappings = [...mappings];
+            applySortToMappings();
+            enablePaginationMode(mappings.length > pageSize);
+            displayCurrentPage();
+        } else {
+            // For chunked data, display as-is (already sorted server-side)
+            displayResults(mappings);
+        }
+        
         generateConsolidatedResults(mappings);
         generateSourceLegend(mappings);
         resultsSection.style.display = 'block';
@@ -1425,12 +1667,12 @@ window.addEventListener('DOMContentLoaded', function() {
             legendContainer.id = 'sourceLegend';
             legendContainer.className = 'source-legend';
             
-            // Insert after the view toggle buttons
-            const viewToggle = document.querySelector('.view-toggle');
-            if (viewToggle && viewToggle.parentNode) {
-                viewToggle.parentNode.insertBefore(legendContainer, viewToggle.nextSibling);
+            // Insert after the "Cleaning Results" title
+            const resultsTitle = document.getElementById('resultsTitle');
+            if (resultsTitle && resultsTitle.parentNode) {
+                resultsTitle.parentNode.insertBefore(legendContainer, resultsTitle.nextSibling);
             } else {
-                // Fallback: insert at the end of results section if viewToggle not found
+                // Fallback: insert at the end of results section if resultsTitle not found
                 const resultsSection = document.getElementById('resultsSection');
                 if (resultsSection) {
                     resultsSection.appendChild(legendContainer);
@@ -1438,8 +1680,8 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Generate legend content
-        let legendHTML = '<h4>Data Sources</h4><div class="source-legend-grid">';
+        // Generate legend content without title
+        let legendHTML = '<div class="source-legend-grid">';
         uniqueSources.forEach(source => {
             const color = getSourceColor(source);
             const displayName = sourceNames[source] || source;
