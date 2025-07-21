@@ -69,8 +69,17 @@ class RadiologySemanticParser:
                 r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation)\b',
                 r'\b(?!.*\b(?:picc|line|catheter)\b)(insertion|insert)\b'
             ]],
-            'FDG PET': [re.compile(p, re.I) for p in [
-                r'\b(fdg|fluorodeoxyglucose|18f-fluorodeoxyglucose)\b'
+            '18F-FDG PET': [re.compile(p, re.I) for p in [
+                r'\b(fdg|18f.?fdg|f.?18.?fdg|fluorodeoxyglucose|18f.?fluorodeoxyglucose|fludeoxyglucose)\b'
+            ]],
+            '18F-PSMA PET': [re.compile(p, re.I) for p in [
+                r'\b(psma|18f.?psma|f.?18.?psma|prostate.?specific.?membrane.?antigen)\b',
+                r'\b(18f.?dcfpyl|dcfpyl|18f.?pyl|pyl)\b'
+            ]],
+            'Gallium-68 PET': [re.compile(p, re.I) for p in [
+                r'\b(ga.?68|gallium.?68|68.?ga|68.?gallium)\b',
+                r'\b(ga.?68.?dotatate|dotatate|ga.?68.?dotanoc|dotanoc|ga.?68.?dotatoc|dotatoc)\b',
+                r'\b(ga.?68.?psma|68.?ga.?psma)\b'
             ]]
         }
 

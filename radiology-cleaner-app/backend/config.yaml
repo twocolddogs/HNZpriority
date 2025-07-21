@@ -190,8 +190,37 @@ preprocessing:
     "DVT": "deep vein thrombosis"
     "V/Q": "ventilation perfusion"
     "MAG3": "mercaptoacetyltriglycine"
+    
+    # NUCLEAR MEDICINE TRACERS - 18F-FDG variations
     "FDG": "fluorodeoxyglucose"
+    "18F-FDG": "18F fluorodeoxyglucose"
+    "F-18 FDG": "18F fluorodeoxyglucose"
+    "F18 FDG": "18F fluorodeoxyglucose"
+    "18F FDG": "18F fluorodeoxyglucose"
+    
+    # NUCLEAR MEDICINE TRACERS - 18F-PSMA variations  
     "PSMA": "prostate specific membrane antigen"
+    "18F-PSMA": "18F prostate specific membrane antigen"
+    "F-18 PSMA": "18F prostate specific membrane antigen"
+    "F18 PSMA": "18F prostate specific membrane antigen"
+    "18F PSMA": "18F prostate specific membrane antigen"
+    "DCFPYL": "18F DCFPyL"
+    "18F-DCFPYL": "18F DCFPyL"
+    "PYL": "18F DCFPyL"
+    
+    # NUCLEAR MEDICINE TRACERS - Gallium-68 variations
+    "GA-68": "gallium 68"
+    "GA68": "gallium 68"
+    "68GA": "gallium 68"
+    "68-GA": "gallium 68"
+    "GALLIUM-68": "gallium 68"
+    "DOTATATE": "gallium 68 dotatate"
+    "GA-68 DOTATATE": "gallium 68 dotatate"
+    "DOTANOC": "gallium 68 dotanoc"
+    "GA-68 DOTANOC": "gallium 68 dotanoc"
+    "DOTATOC": "gallium 68 dotatoc"
+    "GA-68 DOTATOC": "gallium 68 dotatoc"
+    
     "SPECT": "single photon emission computed tomography"
     "WBSP": "whole body spect"
     
