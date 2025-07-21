@@ -22,7 +22,10 @@ scoring:
   # Refined to be less aggressive and more balanced
   interventional_bonus: 0.15        # Reduced from 0.25 for subtler weighting
   interventional_penalty: -0.20     # Reduced from -0.50 to avoid harsh penalties
-  specificity_penalty_weight: 0.35  # Increased to 0.35 to strongly prevent overly specific matches
+  # ANATOMICAL SPECIFICITY HANDLING - More granular approach
+  anatomical_specificity_bonus: 0.10    # Bonus for clinically relevant anatomical detail
+  general_specificity_penalty: 0.20     # Penalty for irrelevant administrative detail
+  technique_specificity_bonus: 0.05     # Small bonus for technique specificity
   exact_match_bonus: 0.25           # Reduced from 0.50 for balanced scoring
 
   # NEW scoring enhancements for better clinical context matching
@@ -77,10 +80,10 @@ scoring:
       us: 0.35
       fluoroscopy: -0.25
       
-    # Kidney - CT and US preferred
+    # Kidney - US and CT preferred
     kidney:
-      ct: 0.35
-      us: 0.30
+      ct: 0.30
+      us: 0.35
       fluoroscopy: -0.20
     renal:
       ct: 0.35
@@ -130,6 +133,64 @@ scoring:
   # ANATOMY SPECIFICITY PREFERENCE - Prefer generic entries for generic inputs
   anatomy_specificity_preference: true  # Enable anatomy specificity preference
   generic_anatomy_preference_bonus: 0.15 # Bonus for generic entries when input is generic
+  
+  # ANATOMICAL SPECIFICITY WORD LISTS
+  anatomical_detail_words:
+    # Vessel/vascular specificity
+    - "artery"
+    - "arteries" 
+    - "vein"
+    - "veins"
+    - "vessel"
+    - "vessels"
+    - "aorta"
+    - "carotid"
+    - "cerebral"
+    - "coronary"
+    - "pulmonary"
+    - "renal"
+    - "hepatic"
+    - "mesenteric"
+    
+    # Organ specificity  
+    - "lobe"
+    - "lobes"
+    - "segment"
+    - "segments"
+    - "region"
+    - "regions"
+    - "cavity"
+    - "space"
+    - "tract"
+    - "system"
+    
+    # Bone/joint specificity
+    - "bone"
+    - "bones"
+    - "joint"
+    - "joints"
+    - "vertebra"
+    - "vertebrae"
+    - "disc"
+    - "discs"
+    
+  administrative_detail_words:
+    # Laterality (handled separately)
+    - "left"
+    - "right" 
+    - "bilateral"
+    - "both"
+    - "lt"
+    - "rt"
+    
+    # Administrative qualifiers
+    - "procedure"
+    - "examination"
+    - "study"
+    - "scan"
+    - "imaging"
+    - "view"
+    - "projection"
 
 # Modality similarity matrix for partial credit scoring
 # Allows related modalities to receive partial credit instead of zero

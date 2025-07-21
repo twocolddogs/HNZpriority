@@ -170,11 +170,10 @@ class NHSLookupEngine:
             nhs_interventional_terms = set(entry.get('_interventional_terms', []))
             interventional_score = self.config['interventional_bonus'] if input_interventional_terms and nhs_interventional_terms else (self.config['interventional_penalty'] if input_interventional_terms and not nhs_interventional_terms else 0)
             
-            input_tokens = {w for w in input_exam.lower().split() if w not in self._specificity_stop_words}
-            nhs_tokens = {w for w in entry.get("_clean_primary_name_for_embedding", "").lower().split() if w not in self._specificity_stop_words}
-            specificity_penalty = len(nhs_tokens - input_tokens) * self.config['specificity_penalty_weight']
+            # Calculate anatomical specificity score (replacing old specificity penalty)
+            anatomical_specificity_score = self._calculate_anatomical_specificity_score(input_exam, entry)
             
-            current_score = self._calculate_match_score(input_exam, extracted_input_components, entry, semantic_score, interventional_score, specificity_penalty)
+            current_score = self._calculate_match_score(input_exam, extracted_input_components, entry, semantic_score, interventional_score, anatomical_specificity_score)
 
             if current_score > highest_confidence:
                 highest_confidence, best_match = current_score, entry
@@ -203,7 +202,7 @@ class NHSLookupEngine:
             return 0.7  # Ambiguous match (e.g., input "Knee" vs NHS "Knee Rt")
         return 0.1  # Direct mismatch (e.g., input "Left" vs NHS "Right")
 
-    def _calculate_match_score(self, input_exam_text, input_components, nhs_entry, semantic_score, interventional_score, specificity_penalty):
+    def _calculate_match_score(self, input_exam_text, input_components, nhs_entry, semantic_score, interventional_score, anatomical_specificity_score):
         nhs_components = nhs_entry.get('_parsed_components', {})
         w = self.config['weights_component']
         
@@ -232,7 +231,7 @@ class NHSLookupEngine:
         final_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
         final_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
         final_score += self._calculate_anatomy_specificity_preference(input_components, nhs_entry)
-        final_score -= specificity_penalty
+        final_score += anatomical_specificity_score
         
         if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
             final_score += self.config.get('exact_match_bonus', 0.25)
@@ -439,6 +438,48 @@ class NHSLookupEngine:
         # If input has specific anatomy, prefer NHS entries with matching anatomy
         # (this is handled by normal anatomy scoring, so no bonus needed)
         return 0.0
+    
+    def _calculate_anatomical_specificity_score(self, input_exam: str, nhs_entry: dict) -> float:
+        """
+        Calculate anatomical specificity score using separate weights for:
+        - Anatomical detail (bonus for clinically relevant specificity)
+        - Administrative detail (penalty for irrelevant specificity)
+        - Technique specificity (small bonus for technique detail)
+        """
+        input_tokens = set(input_exam.lower().split())
+        nhs_name = nhs_entry.get('primary_source_name', '')
+        nhs_tokens = set(nhs_name.lower().split())
+        
+        # Find extra tokens in NHS entry not in input
+        extra_tokens = nhs_tokens - input_tokens
+        
+        # Get word lists from config
+        anatomical_words = set(self.config.get('anatomical_detail_words', []))
+        administrative_words = set(self.config.get('administrative_detail_words', []))
+        
+        # Categorize extra tokens
+        anatomical_extras = extra_tokens.intersection(anatomical_words)
+        administrative_extras = extra_tokens.intersection(administrative_words)
+        
+        # Check for technique-related specificity
+        technique_words = {'doppler', 'angiography', 'venography', 'arteriography', 
+                          'perfusion', 'diffusion', 'spectroscopy', 'elastography'}
+        technique_extras = extra_tokens.intersection(technique_words)
+        
+        # Calculate score components
+        anatomical_bonus = len(anatomical_extras) * self.config.get('anatomical_specificity_bonus', 0.10)
+        administrative_penalty = len(administrative_extras) * self.config.get('general_specificity_penalty', 0.20)
+        technique_bonus = len(technique_extras) * self.config.get('technique_specificity_bonus', 0.05)
+        
+        # Penalty for completely unrecognized extra words (neither anatomical nor administrative)
+        unrecognized_extras = extra_tokens - anatomical_words - administrative_words - technique_words
+        # Filter out stop words from unrecognized
+        unrecognized_extras = unrecognized_extras - self._specificity_stop_words
+        unrecognized_penalty = len(unrecognized_extras) * 0.15
+        
+        total_score = anatomical_bonus + technique_bonus - administrative_penalty - unrecognized_penalty
+        
+        return total_score
 
     def validate_consistency(self):
         snomed_to_names = defaultdict(set)
