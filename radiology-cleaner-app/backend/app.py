@@ -21,7 +21,7 @@ from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
 from context_detection import detect_gender_context, detect_age_context, detect_clinical_context
-from preprocessing import initialize_preprocessor, preprocess_exam_name
+from preprocessing import initialize_preprocessor, preprocess_exam_name, get_preprocessor
 from cache_version import get_current_cache_version, format_cache_key
 
 # Configure logging
@@ -170,9 +170,11 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     _ensure_app_is_initialized()
     if not nhs_lookup_engine or not semantic_parser:
         return {'error': 'Core components not initialized'}
+
+    _preprocessor = get_preprocessor()
     
     # Check if this exam should be excluded from analysis (conferences, MDMs, etc.)
-    if preprocessor and preprocessor.should_exclude_exam(exam_name):
+    if _preprocessor and _preprocessor.should_exclude_exam(exam_name):
         return {
             'error': 'EXCLUDED_NON_CLINICAL',
             'message': f'Excluded non-clinical entry: {exam_name}',
