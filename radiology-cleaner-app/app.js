@@ -1751,7 +1751,7 @@ window.addEventListener('DOMContentLoaded', function() {
             // Switch to consolidated view
             fullView.style.display = 'none';
             consolidatedView.style.display = 'block';
-            toggleBtn.textContent = 'Consolidated View';
+            toggleBtn.textContent = 'Switch to Full View';
             toggleBtn.classList.remove('active');
             toggleBtn.classList.add('secondary');
             displayConsolidatedResults();
@@ -1760,7 +1760,7 @@ window.addEventListener('DOMContentLoaded', function() {
             // Switch to full view
             fullView.style.display = 'block';
             consolidatedView.style.display = 'none';
-            toggleBtn.textContent = 'Full View';
+            toggleBtn.textContent = 'Switch to Consolidated View';
             toggleBtn.classList.remove('secondary');
             toggleBtn.classList.add('active');
             isFullView = true;
