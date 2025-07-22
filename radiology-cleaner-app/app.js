@@ -654,8 +654,11 @@ window.addEventListener('DOMContentLoaded', function() {
                     const fileReference = batchResult.file_reference || batchResult.results_file || batchResult.message;
                     console.log('Fetching results from file reference:', fileReference);
                     
+                    // Extract filename from path if needed (results_file includes path)
+                    const filename = fileReference.includes('/') ? fileReference.split('/').pop() : fileReference;
+                    
                     // Fetch the results file
-                    const fileResponse = await fetch(`${apiConfig.baseUrl}/get_results/${fileReference}`, {
+                    const fileResponse = await fetch(`${apiConfig.baseUrl}/get_results/${filename}`, {
                         method: 'GET'
                     });
                     
