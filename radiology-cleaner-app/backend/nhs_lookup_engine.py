@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 class NHSLookupEngine:
-    def __init__(self, nhs_json_path: str, nlp_processor: NLPProcessor, semantic_parser: 'RadiologySemanticParser', config_path: str = 'config.yaml'):
+    def __init__(self, nhs_json_path: str, nlp_processor: NLPProcessor, semantic_parser: 'RadiologySemanticParser', config_path: str = None):
         self.nhs_data = []
         self.snomed_lookup = {}
         self.index_to_snomed_id: List[str] = []
@@ -41,6 +41,9 @@ class NHSLookupEngine:
         self.nlp_processor = nlp_processor
         self.semantic_parser = semantic_parser
         
+        # Set default config path if not provided
+        if config_path is None:
+            config_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
         self._load_config(config_path)
         
         self._load_nhs_data()
