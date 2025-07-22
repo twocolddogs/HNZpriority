@@ -30,21 +30,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-# Configure CORS with explicit settings for Cloudflare Pages
-CORS(app, resources={
-    r"/*": {
-        "origins": [
-            "https://07b749ab.radiology-cleaner.pages.dev",
-            "https://radiology-cleaner.pages.dev", 
-            "https://*.radiology-cleaner.pages.dev",
-            "http://localhost:*",
-            "https://localhost:*"
-        ],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
-        "supports_credentials": True
-    }
-})
+CORS(app)
 
 # Global component instances
 semantic_parser: Optional[RadiologySemanticParser] = None
