@@ -578,7 +578,7 @@ window.addEventListener('DOMContentLoaded', function() {
             statusManager.showTestInfo('Sanity Test', 'Verifying engine performance...');
             statusId = statusManager.show(`Running 100-exam test suite with model: '${currentModel}'...`, 'progress');
 
-            const response = await fetch('./sanity_test.json');
+            const response = await fetch('./backend/core/sanity_test.json');
             if (!response.ok) throw new Error(`Could not load test file: ${response.statusText}`);
             const codes = await response.json();
             

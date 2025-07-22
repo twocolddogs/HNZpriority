@@ -97,36 +97,7 @@ def _initialize_app():
     cache_manager = SimpleCache()
 
     model_processors = _initialize_model_processors()
-    
-    # V3 Architecture: Initialize dual processors for retriever-reranker pipeline
-    retriever_processor = model_processors.get('default')  # BioLORD for retrieval
-    reranker_processor = model_processors.get('experimental')  # MedCPT for reranking
-    
-    # Ensure both required processors are available
-    if not retriever_processor:
-        logger.critical("Required retriever processor ('default' - BioLORD) could not be initialized.")
-        sys.exit(1)
-    if not reranker_processor:
-        logger.critical("Required reranker processor ('experimental' - MedCPT) could not be initialized.")
-        sys.exit(1)
-    
-    logger.info("🚀 [V3-INIT] Initializing V3 dual-processor architecture")
-    logger.info(f"📥 [V3-INIT] Retriever: {retriever_processor.hf_model_name} ({retriever_processor.pipeline})")
-    logger.info(f"🔄 [V3-INIT] Reranker: {reranker_processor.hf_model_name} ({reranker_processor.pipeline})")
-    
-    # Test processor availability
-    if retriever_processor.is_available():
-        logger.info("✅ [V3-INIT] Retriever processor ready")
-    else:
-        logger.warning("⚠️ [V3-INIT] Retriever processor not available (missing HF token)")
-        
-    if reranker_processor.is_available():
-        logger.info("✅ [V3-INIT] Reranker processor ready") 
-    else:
-        logger.warning("⚠️ [V3-INIT] Reranker processor not available (missing HF token)")
-    
-    # Backward compatibility - some parts of the code still expect nlp_processor
-    nlp_processor = retriever_processor
+    nlp_processor = model_processors.get('default')
     
     base_dir = os.path.dirname(os.path.abspath(__file__))
     nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
@@ -173,11 +144,9 @@ def _initialize_app():
     )
 
 
-    # V3 Architecture: Initialize NHSLookupEngine with dual processors
     nhs_lookup_engine = NHSLookupEngine(
         nhs_json_path=nhs_json_path,
-        retriever_processor=retriever_processor,
-        reranker_processor=reranker_processor,
+        nlp_processor=nlp_processor,
         semantic_parser=semantic_parser
     )
     
@@ -212,16 +181,19 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     cleaned_exam_name = preprocess_exam_name(exam_name)
     parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
     
-    # V3 Architecture: Always use the main dual-processor lookup engine
-    # The v3 architecture uses both retriever and reranker models regardless of API model parameter
+    # FIX: For thread safety in batch processing, create model-specific lookup engine if needed
     lookup_engine_to_use = nhs_lookup_engine
+    if nlp_processor.model_key != nhs_lookup_engine.nlp_processor.model_key:
+        # Create a separate lookup engine instance for this model to avoid race conditions
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
+        lookup_engine_to_use = NHSLookupEngine(
+            nhs_json_path=nhs_json_path,
+            nlp_processor=nlp_processor,
+            semantic_parser=semantic_parser
+        )
     
-    if nlp_processor.model_key != nhs_lookup_engine.retriever_processor.model_key:
-        logger.warning(f"🔄 [V3-API] Model parameter '{nlp_processor.model_key}' ignored - using V3 dual-processor pipeline")
-        logger.info(f"🔄 [V3-API] Pipeline: {nhs_lookup_engine.retriever_processor.model_key} → {nhs_lookup_engine.reranker_processor.model_key}")
-    
-    # V3 Architecture: Use dual-processor pipeline (custom_nlp_processor parameter deprecated)
-    nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components)
+    nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, custom_nlp_processor=nlp_processor)
     
     ### FIX: The context (gender, age, etc.) is a property of the INPUT request, not the matched NHS entry.
     ### We must calculate context here from the cleaned input string to ensure it's always correct.

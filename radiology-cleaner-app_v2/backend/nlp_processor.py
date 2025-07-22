@@ -6,7 +6,7 @@ import numpy as np
 import requests
 from typing import Optional, List
 import json
-import time  # Added for retry logic and performance monitoring
+import time  # Added for retry logic
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
@@ -25,14 +25,12 @@ class NLPProcessor:
             'hf_name': 'FremyCompany/BioLORD-2023',
             'name': 'BioLORD (Default)',
             'description': 'BioLORD - Advanced biomedical language model (default)',
-            'pipeline': 'feature-extraction',
             'status': 'available'
         },
         'experimental': {
-            'hf_name': 'ncbi/MedCPT-Cross-Encoder',
-            'name': 'MedCPT Cross-Encoder (Experimental)',
-            'description': 'NCBI Medical Clinical Practice Text cross-encoder for reranking (experimental)',
-            'pipeline': 'sentence-similarity',
+            'hf_name': 'ncbi/MedCPT-Query-Encoder',
+            'name': 'MedCPT (Experimental)',
+            'description': 'NCBI Medical Clinical Practice Text encoder (experimental)',
             'status': 'available'
         }
     }
@@ -49,9 +47,8 @@ class NLPProcessor:
         self.model_key = model_key
         self.hf_model_name = model_info['hf_name']
         self.model_description = model_info['description']
-        self.pipeline = model_info['pipeline']
         
-        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.hf_model_name}/pipeline/{self.pipeline}"
+        self.api_url = f"https://router.huggingface.co/hf-inference/models/{self.hf_model_name}/pipeline/feature-extraction"
         
         self.headers = {
             "Authorization": f"Bearer {self.api_token}",
@@ -222,91 +219,6 @@ class NLPProcessor:
         except Exception as e:
             logger.error(f"Failed to calculate similarity: {e}")
             return 0.0
-
-    def _sigmoid(self, logit: float) -> float:
-        """Convert logit to probability using sigmoid function."""
-        try:
-            return 1.0 / (1.0 + np.exp(-logit))
-        except OverflowError:
-            # Handle extreme negative values
-            return 0.0 if logit < 0 else 1.0
-
-    def get_rerank_scores(self, query: str, documents: List[str]) -> List[float]:
-        """
-        Get reranking scores for query-document pairs using cross-encoder model.
-        
-        Args:
-            query: The query string
-            documents: List of document strings to score against the query
-            
-        Returns:
-            List of similarity scores (0.0-1.0) corresponding to input documents
-        """
-        logger.info(f"[V3-RERANK] Starting cross-encoder scoring with {self.model_key} for {len(documents)} candidates")
-        logger.debug(f"[V3-RERANK] Query: '{query[:50]}{'...' if len(query) > 50 else ''}'")
-        
-        if not self.is_available() or not query or not documents:
-            logger.warning(f"[V3-RERANK] Invalid input - available: {self.is_available()}, query: {bool(query)}, documents: {len(documents) if documents else 0}")
-            return [0.0] * len(documents)
-        
-        if self.pipeline != 'sentence-similarity':
-            logger.error(f"[V3-RERANK] Wrong pipeline '{self.pipeline}' for reranking. Expected 'sentence-similarity'.")
-            return [0.0] * len(documents)
-        
-        # Prepare input pairs for cross-encoder
-        query_doc_pairs = []
-        for doc in documents:
-            if doc and doc.strip():
-                query_doc_pairs.append([query.strip(), doc.strip()])
-            else:
-                query_doc_pairs.append([query.strip(), ""])
-        
-        try:
-            # Make API call with query-document pairs
-            logger.debug(f"[V3-RERANK] Sending {len(query_doc_pairs)} query-document pairs to {self.hf_model_name}")
-            start_time = time.time()
-            result = self._make_api_call(query_doc_pairs)
-            api_time = time.time() - start_time
-            
-            if result is None:
-                logger.error("[V3-RERANK] API call returned None - likely model unavailable or API error")
-                return [0.0] * len(documents)
-            
-            if not isinstance(result, list) or len(result) != len(documents):
-                logger.error(f"[V3-RERANK] API response mismatch - expected {len(documents)} scores, got {type(result)} of length {len(result) if isinstance(result, list) else 'unknown'}")
-                return [0.0] * len(documents)
-            
-            logger.info(f"[V3-RERANK] API call completed in {api_time:.2f}s - processing {len(result)} scores")
-            
-            # Convert logits to probabilities using sigmoid
-            scores = []
-            score_stats = {"min": float('inf'), "max": float('-inf'), "avg": 0}
-            
-            for i, logit in enumerate(result):
-                try:
-                    if isinstance(logit, (int, float)):
-                        score = self._sigmoid(float(logit))
-                        scores.append(score)
-                        # Track statistics
-                        score_stats["min"] = min(score_stats["min"], score)
-                        score_stats["max"] = max(score_stats["max"], score)
-                        score_stats["avg"] += score
-                    else:
-                        logger.warning(f"[V3-RERANK] Invalid score format at index {i}: {type(logit)} = {logit}")
-                        scores.append(0.0)
-                except (ValueError, TypeError) as e:
-                    logger.warning(f"[V3-RERANK] Score processing error at index {i}: {e}")
-                    scores.append(0.0)
-            
-            if scores:
-                score_stats["avg"] /= len(scores)
-                logger.info(f"[V3-RERANK] Score statistics - Min: {score_stats['min']:.3f}, Max: {score_stats['max']:.3f}, Avg: {score_stats['avg']:.3f}")
-            
-            return scores
-            
-        except Exception as e:
-            logger.error(f"[V3-RERANK] Critical error in reranking: {e}")
-            return [0.0] * len(documents)
 
     def is_available(self) -> bool:
         """Check if the API processor is configured."""

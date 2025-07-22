@@ -32,11 +32,11 @@ scoring:
     technique: 0.10    # Importance of matching specific techniques (e.g., 'MRCP', 'SPECT').
 
   # --- FINAL SCORE WEIGHTS ---
-  # V3 Architecture: These weights combine the 'component_score' (rules-based) with the 'reranker_score' (cross-encoder)
-  # to produce the final confidence score in the two-stage retrieve-then-rerank pipeline.
+  # These weights combine the 'component_score' (rules-based) with the 'semantic_score' (NLP-based)
+  # to produce the final confidence score.
   weights_final:
-    component: 0.40    # How much to trust the structured component match (rules-based).
-    reranker: 0.60     # How much to trust the MedCPT cross-encoder reranking score.
+    component: 0.60    # How much to trust the structured component match.
+    semantic: 0.40     # How much to trust the NLP model's understanding of semantic similarity.
     # frequency: 0.10  # This appears to be a planned or deprecated feature for popularity-based scoring.
 
   # ----------------------------------------------------------------------------------

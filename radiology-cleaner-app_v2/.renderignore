@@ -1,0 +1,58 @@
+# Render ignore file - excludes files from deployment upload
+# This speeds up deployment by not uploading unnecessary files
+
+# Development files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.coverage
+.pytest_cache/
+.mypy_cache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Frontend build artifacts (if not needed for backend)
+node_modules/
+dist/
+build/
+
+# Large data files that are already in production
+*.vec
+*.bin
+wheels/
+
+# Backup files
+*.bak
+*.backup
+*_backup.*

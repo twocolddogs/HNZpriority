@@ -1,0 +1,33 @@
+# -- Web Server --
+# Core Flask components for running the web application.
+Flask==3.0.3
+Flask-CORS==4.0.1
+gunicorn==22.0.0
+# High-performance worker type for Gunicorn, specified in your start command.
+gevent==24.2.1
+
+# -- Core Utility Libraries --
+# Needed for numerical operations on the embedding vectors returned by the API.
+numpy==1.26.4
+
+# -- NLP & Semantic Similarity Libraries --
+# Used by the API-based NLPProcessor to make HTTP calls to Hugging Face.
+requests==2.32.3
+# Hugging Face Hub library for easier API interaction
+huggingface_hub==0.20.3
+# Used by the NHSLookupEngine as a secondary scoring mechanism.
+fuzzywuzzy==0.18.0
+# Makes fuzzywuzzy much faster.
+python-Levenshtein==0.21.1
+# Vector similarity search library for FAISS indexing in V2 Retriever-Ranker architecture
+faiss-cpu==1.7.4
+
+# -- Cloud Storage --
+# Cloudflare R2 storage for embedding cache persistence
+boto3==1.34.131
+
+# -- Other Core Dependencies --
+# A common dependency for date/time handling.
+python-dateutil==2.9.0.post0
+# YAML configuration file parsing for config.yaml
+PyYAML==6.0.1

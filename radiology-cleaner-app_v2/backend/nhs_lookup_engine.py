@@ -31,16 +31,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 class NHSLookupEngine:
-    def __init__(self, nhs_json_path: str, retriever_processor: NLPProcessor, reranker_processor: NLPProcessor, semantic_parser: 'RadiologySemanticParser', config_path: str = None):
+    def __init__(self, nhs_json_path: str, nlp_processor: NLPProcessor, semantic_parser: 'RadiologySemanticParser', config_path: str = None):
         self.nhs_data = []
         self.snomed_lookup = {}
         self.index_to_snomed_id: List[str] = []
         self.vector_index: Optional[faiss.Index] = None
         
         self.nhs_json_path = nhs_json_path
-        self.retriever_processor = retriever_processor
-        self.reranker_processor = reranker_processor
-        self.nlp_processor = retriever_processor  # Backward compatibility
+        self.nlp_processor = nlp_processor
         self.semantic_parser = semantic_parser
         
         # Set default config path if not provided
@@ -123,7 +121,7 @@ class NHSLookupEngine:
         cache_dir = os.environ.get('RENDER_DISK_PATH', 'embedding-caches')
         if not os.path.isdir(cache_dir): return None
         for filename in os.listdir(cache_dir):
-            if filename.startswith(f"{self.retriever_processor.model_key}_") and filename.endswith(".cache"):
+            if filename.startswith(f"{self.nlp_processor.model_key}_") and filename.endswith(".cache"):
                 return os.path.join(cache_dir, filename)
         return None
 
@@ -134,238 +132,80 @@ class NHSLookupEngine:
                 with open(local_cache_path, 'rb') as f: cache_content = pickle.load(f)
                 self.vector_index = faiss.deserialize_index(cache_content['index_data'])
                 self.index_to_snomed_id = cache_content['id_mapping']
-                logger.info(f"Successfully loaded FAISS index for model '{self.retriever_processor.model_key}' from: {local_cache_path}")
+                logger.info(f"Successfully loaded FAISS index for model '{self.nlp_processor.model_key}' from: {local_cache_path}")
             except Exception as e:
                 logger.critical(f"CRITICAL: Failed to load FAISS index from '{local_cache_path}': {e}.")
         else:
-            logger.critical(f"CRITICAL: Cache not found on local disk for model '{self.retriever_processor.model_key}'.")
-
-    def _calculate_component_score(self, input_exam_text: str, input_components: Dict, nhs_entry: Dict) -> float:
-        """
-        Calculate component-based score for a candidate NHS entry.
-        This is the core of the rule-based matching logic extracted from v2 architecture.
-        
-        Returns:
-            float: Component score (0.0-1.0), or 0.0 if blocking violations detected
-        """
-        # 1. Check for any "blocking" level violations that should immediately reject the candidate
-        diagnostic_penalty = self._check_diagnostic_protection(input_exam_text, nhs_entry)
-        hybrid_modality_penalty = self._check_hybrid_modality_constraints(input_exam_text, nhs_entry)
-        technique_specialization_penalty = self._check_technique_specialization_constraints(input_exam_text, nhs_entry)
-        
-        # Check for blocking penalties (< -1.0)
-        if diagnostic_penalty < -1.0 or hybrid_modality_penalty < -1.0 or technique_specialization_penalty < -1.0:
-            logger.debug(f"Blocking violation detected for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
-            return 0.0
-        
-        nhs_components = nhs_entry.get('_parsed_components', {})
-        
-        # 2. Calculate all component scores
-        anatomy_score = self._calculate_anatomy_score_with_constraints(input_components, nhs_components)
-        
-        # Check for anatomy blocking penalty after the fact
-        if anatomy_score < -1.0:
-            logger.debug(f"Anatomical blocking violation for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
-            return 0.0
-        
-        modality_score = self._calculate_modality_score(
-            input_components.get('modality', []),
-            nhs_components.get('modality', [])
-        )
-        contrast_score = self._calculate_contrast_score(
-            input_components.get('contrast', []),
-            nhs_components.get('contrast', [])
-        )
-        technique_score = self._calculate_set_score(
-            input_components.get('technique', []),
-            nhs_components.get('technique', [])
-        )
-        
-        input_lat = (input_components.get('laterality') or [None])[0]
-        nhs_lat = (nhs_components.get('laterality') or [None])[0]
-        laterality_score = self._calculate_laterality_score(input_lat, nhs_lat)
-        
-        # 3. Check component thresholds to gate low-quality matches
-        if (violation := self._check_component_thresholds(anatomy_score, modality_score, laterality_score, contrast_score, technique_score)):
-            logger.debug(f"Component threshold violation for '{nhs_entry.get('primary_source_name')}': {violation}")
-            return 0.0
-        
-        # 4. Combine the component scores using weights from the config
-        w = self.config['weights_component']
-        component_score = (
-            w.get('anatomy', 0.25) * anatomy_score +
-            w.get('modality', 0.30) * modality_score +
-            w.get('laterality', 0.15) * laterality_score +
-            w.get('contrast', 0.20) * contrast_score +
-            w.get('technique', 0.10) * technique_score
-        )
-        
-        # 5. Add interventional scoring
-        input_techniques = set(input_components.get('technique', []))
-        is_input_interventional = any('Interventional' in t for t in input_techniques)
-        nhs_techniques = set(nhs_components.get('technique', []))
-        is_nhs_interventional = any('Interventional' in t for t in nhs_techniques)
-        
-        interventional_score = 0
-        if is_input_interventional and is_nhs_interventional:
-            interventional_score = self.config['interventional_bonus']
-        elif is_input_interventional and not is_nhs_interventional:
-            interventional_score = self.config['interventional_penalty']
-        
-        # 6. Add anatomical specificity score
-        anatomical_specificity_score = self._calculate_anatomical_specificity_score(input_exam_text, nhs_entry)
-        
-        # 7. Add all bonuses and non-blocking penalties
-        bonus_score = interventional_score + anatomical_specificity_score
-        bonus_score += diagnostic_penalty + hybrid_modality_penalty + technique_specialization_penalty
-        bonus_score += self._calculate_context_bonus(input_exam_text, nhs_entry, input_components.get('anatomy', []))
-        bonus_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
-        bonus_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
-        bonus_score += self._calculate_anatomy_specificity_preference(input_components, nhs_entry)
-        
-        # Exact match bonus
-        if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
-            bonus_score += self.config.get('exact_match_bonus', 0.25)
-        
-        final_component_score = component_score + bonus_score
-        return max(0.0, min(1.0, final_component_score))
+            logger.critical(f"CRITICAL: Cache not found on local disk for model '{self.nlp_processor.model_key}'.")
 
     def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
-        """
-        V3 Two-Stage Pipeline: Retrieve candidates with BioLORD, then rerank with MedCPT + component scoring.
-        
-        Stage 1 (Retrieval): Use retriever_processor (BioLORD) to get top-k candidates via FAISS
-        Stage 2 (Reranking): Use reranker_processor (MedCPT) + component scoring to find best match
-        """
-        # === VALIDATION ===
-        if not self.retriever_processor or not self.retriever_processor.is_available():
-            return {'error': 'Retriever processor not available', 'confidence': 0.0}
-        if not self.reranker_processor or not self.reranker_processor.is_available():
-            return {'error': 'Reranker processor not available', 'confidence': 0.0}
+        nlp_proc = custom_nlp_processor or self.nlp_processor
+        if not nlp_proc or not nlp_proc.is_available(): return {'error': 'NLP Processor not available', 'confidence': 0.0}
 
-        # === STAGE 1: RETRIEVAL (using retriever_processor) ===
-        logger.info(f"[V3-PIPELINE] Starting retrieval stage with {self.retriever_processor.model_key} ({self.retriever_processor.hf_model_name})")
-        stage1_start = time.time()
-        
-        # Load FAISS index for retriever model if needed
-        if not self._embeddings_loaded or self.nlp_processor.model_key != self.retriever_processor.model_key:
-            logger.info(f"Loading index for retriever model '{self.retriever_processor.model_key}'...")
-            self.nlp_processor = self.retriever_processor  # Update for backward compatibility
+        if not self._embeddings_loaded or self.nlp_processor.model_key != nlp_proc.model_key:
+            logger.info(f"Loading index for model '{nlp_proc.model_key}'...")
+            self.nlp_processor = nlp_proc
             self._load_index_from_local_disk()
             self._embeddings_loaded = True
         
-        if not self.vector_index:
-            return {'error': 'Vector index not loaded.', 'confidence': 0.0}
+        if not self.vector_index: return {'error': 'Vector index not loaded.', 'confidence': 0.0}
+            
+        input_embedding = nlp_proc.get_text_embedding(input_exam)
+        if input_embedding is None: return {'error': 'Failed to generate embedding for input.', 'confidence': 0.0}
         
-        # Generate embedding for input using retriever
-        input_embedding = self.retriever_processor.get_text_embedding(input_exam)
-        if input_embedding is None:
-            return {'error': 'Failed to generate embedding for input.', 'confidence': 0.0}
-        
-        # Prepare ensemble embedding and search FAISS index
         input_ensemble_embedding = np.concatenate([input_embedding, input_embedding]).astype('float32')
         faiss.normalize_L2(input_ensemble_embedding.reshape(1, -1))
+
         top_k = self.config['retriever_top_k']
         distances, indices = self.vector_index.search(input_ensemble_embedding.reshape(1, -1), top_k)
         
-        # Get candidate entries
         candidate_snomed_ids = [self.index_to_snomed_id[i] for i in indices[0] if i < len(self.index_to_snomed_id)]
         candidate_entries = [self.snomed_lookup[str(sid)] for sid in candidate_snomed_ids if str(sid) in self.snomed_lookup]
-        
-        if not candidate_entries:
-            logger.warning("[V3-PIPELINE] Stage 1 failed - no candidates found during retrieval")
-            return {'error': 'No candidates found during retrieval stage.', 'confidence': 0.0}
-        
-        stage1_time = time.time() - stage1_start
-        logger.info(f"[V3-PIPELINE] Stage 1 completed in {stage1_time:.2f}s - retrieved {len(candidate_entries)} candidates")
-        
-        # Log top candidates for debugging
-        if candidate_entries:
-            logger.debug(f"[V3-PIPELINE] Top candidates: {', '.join([entry.get('primary_source_name', 'Unknown')[:30] for entry in candidate_entries[:3]])}")
-        
-        retrieval_scores = [float(distances[0][i]) for i in range(min(len(distances[0]), len(candidate_entries)))]
-        logger.debug(f"[V3-PIPELINE] Retrieval scores - Min: {min(retrieval_scores):.3f}, Max: {max(retrieval_scores):.3f}, Avg: {sum(retrieval_scores)/len(retrieval_scores):.3f}")
 
-        # === STAGE 2: RERANKING & SCORING ===
-        logger.info(f"[V3-PIPELINE] Starting reranking stage with {self.reranker_processor.model_key} ({self.reranker_processor.hf_model_name})")
-        stage2_start = time.time()
+        best_match, highest_confidence = None, 0.0
         
-        # Prepare candidate texts for cross-encoder reranking
-        candidate_texts = [entry.get('_clean_primary_name_for_embedding', '') for entry in candidate_entries]
-        logger.debug(f"[V3-PIPELINE] Prepared {len(candidate_texts)} candidate texts for reranking")
-        
-        # Get reranker scores using cross-encoder (MedCPT)
-        rerank_scores = self.reranker_processor.get_rerank_scores(input_exam, candidate_texts)
-        
-        if not rerank_scores or len(rerank_scores) != len(candidate_entries):
-            logger.warning(f"[V3-PIPELINE] Reranker failed (got {len(rerank_scores) if rerank_scores else 0} scores for {len(candidate_entries)} candidates) - using neutral fallback")
-            rerank_scores = [0.5] * len(candidate_entries)  # Neutral fallback
-        
-        # Find best match by combining reranking + component scores
-        best_match = None
-        highest_confidence = -1.0
-        
-        wf = self.config['weights_final']
-        reranker_weight = wf.get('reranker', 0.60)  # Updated from 'semantic' to 'reranker'
-        component_weight = wf.get('component', 0.40)
-        
-        component_scores = []
-        final_scores = []
-        
-        logger.debug(f"[V3-PIPELINE] Processing {len(candidate_entries)} candidates with weights: reranker={reranker_weight}, component={component_weight}")
-        
-        for i, (entry, rerank_score) in enumerate(zip(candidate_entries, rerank_scores)):
-            candidate_name = entry.get('primary_source_name', 'Unknown')
-            
-            # Calculate component score using extracted logic
-            component_start = time.time()
-            component_score = self._calculate_component_score(input_exam, extracted_input_components, entry)
-            component_time = time.time() - component_start
-            component_scores.append(component_score)
-            
-            # Combine reranker score and component score
-            final_score = (reranker_weight * rerank_score) + (component_weight * component_score)
-            final_scores.append(final_score)
-            
-            if final_score > highest_confidence:
-                highest_confidence = final_score
-                best_match = entry
-                logger.info(f"[V3-PIPELINE] New best match: '{candidate_name[:40]}' (final_score={final_score:.3f})")
-            
-            logger.debug(f"[V3-PIPELINE] Candidate {i+1}: '{candidate_name[:30]}' - rerank={rerank_score:.3f}, component={component_score:.3f}, final={final_score:.3f} (component_time={component_time:.3f}s)")
-        
-        stage2_time = time.time() - stage2_start
-        
-        # Log scoring statistics
-        if final_scores:
-            logger.info(f"[V3-PIPELINE] Stage 2 completed in {stage2_time:.2f}s")
-            logger.info(f"[V3-PIPELINE] Score statistics:")
-            logger.info(f"  Rerank scores - Min: {min(rerank_scores):.3f}, Max: {max(rerank_scores):.3f}, Avg: {sum(rerank_scores)/len(rerank_scores):.3f}")
-            logger.info(f"  Component scores - Min: {min(component_scores):.3f}, Max: {max(component_scores):.3f}, Avg: {sum(component_scores)/len(component_scores):.3f}")
-            logger.info(f"  Final scores - Min: {min(final_scores):.3f}, Max: {max(final_scores):.3f}, Avg: {sum(final_scores)/len(final_scores):.3f}")
+        for i, entry in enumerate(candidate_entries):
+            semantic_sim = float(distances[0][i])
+            fuzzy_score = fuzz.token_sort_ratio(input_exam.lower(), entry.get("_clean_primary_name_for_embedding", "").lower()) / 100.0
+            semantic_score = (0.7 * semantic_sim) + (0.3 * fuzzy_score)
 
-        # === RESULT FORMATTING ===
-        total_time = time.time() - stage1_start
-        
+            # Check if the techniques parsed from the input contain 'Interventional'
+            input_techniques = set(extracted_input_components.get('technique', []))
+            is_input_interventional = any('Interventional' in t for t in input_techniques)
+            
+            # Check if the techniques from the NHS entry contain 'Interventional'
+            nhs_techniques = set(entry.get('_parsed_components', {}).get('technique', []))
+            is_nhs_interventional = any('Interventional' in t for t in nhs_techniques)
+
+            interventional_score = 0
+            if is_input_interventional and is_nhs_interventional:
+                interventional_score = self.config['interventional_bonus']
+            elif is_input_interventional and not is_nhs_interventional:
+                interventional_score = self.config['interventional_penalty']
+            
+            # Calculate anatomical specificity score
+            anatomical_specificity_score = self._calculate_anatomical_specificity_score(input_exam, entry)
+            
+            current_score = self._calculate_match_score(input_exam, extracted_input_components, entry, semantic_score, interventional_score, anatomical_specificity_score)
+
+            if current_score > highest_confidence:
+                highest_confidence, best_match = current_score, entry
+
         if best_match:
-            logger.info(f"[V3-PIPELINE] ✅ Match found in {total_time:.2f}s total")
-            logger.info(f"[V3-PIPELINE] Best match: '{best_match.get('primary_source_name', '')}' (confidence={highest_confidence:.3f})")
-            logger.info(f"[V3-PIPELINE] SNOMED: {best_match.get('snomed_concept_id', 'Unknown')}")
-            
-            # Handle laterality logic
             input_laterality = (extracted_input_components.get('laterality') or [None])[0]
             match_laterality = (best_match.get('_parsed_components', {}).get('laterality') or [None])[0]
             strip_laterality = (not input_laterality and match_laterality in ['left', 'right', 'bilateral'])
-            laterally_ambiguous = (not input_laterality and match_laterality in ['left', 'right', 'bilateral'])
             
+            # If input was laterally ambiguous, it should ALWAYS be marked as ambiguous
+            laterally_ambiguous = (not input_laterality and match_laterality in ['left', 'right', 'bilateral'])
+
             if strip_laterality:
                 if bilateral_peer := self.find_bilateral_peer(best_match):
-                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=True, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
-            
-            return self._format_match_result(best_match, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
+                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=True, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
+
+            return self._format_match_result(best_match, extracted_input_components, highest_confidence, nlp_proc, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
         
-        logger.warning(f"[V3-PIPELINE] ❌ No suitable match found in {total_time:.2f}s total")
-        return {'error': 'No suitable match found.', 'confidence': 0.0}
+        return {'clean_name': input_exam, 'snomed_id': '', 'confidence': 0.0, 'source': 'NO_MATCH'}
 
     def _calculate_laterality_score(self, input_lat: Optional[str], nhs_lat: Optional[str]) -> float:
         """Calculates a more punitive score for laterality mismatches."""

@@ -1,0 +1,4972 @@
+[
+  {
+    "SHORT_NAME": "CT Abd Angio w/wo",
+    "LONG_NAME": "CT Abdomen Angio w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Abd wo",
+    "LONG_NAME": "CT Abdomen wo  IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Abd w/wo",
+    "LONG_NAME": "CT Abdomen w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Abd w",
+    "LONG_NAME": "CT Abdomen w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest Angio w/wo",
+    "LONG_NAME": "CT Chest Angio w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Head Angio w/wo",
+    "LONG_NAME": "CT Head Angio w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Leg Angio w/wo",
+    "LONG_NAME": "CT Lower Extremity Angio w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Neck Angio w/wo",
+    "LONG_NAME": "CT Neck Angio w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Pelv Angio w/wo",
+    "LONG_NAME": "CT Pelvis Angio w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest wo",
+    "LONG_NAME": "CT Chest wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest w/wo",
+    "LONG_NAME": "CT Chest w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest w",
+    "LONG_NAME": "CT Chest w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT C-Spine w/wo",
+    "LONG_NAME": "CT Cervical Spine w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT C-Spine w",
+    "LONG_NAME": "CT Cervical Spine w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT C-Spine wo",
+    "LONG_NAME": "CT Cervical Spine wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Head wo",
+    "LONG_NAME": "CT Head wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Head w/wo",
+    "LONG_NAME": "CT Head w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Head w",
+    "LONG_NAME": "CT Head w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT L-Spine wo",
+    "LONG_NAME": "CT Lumbar Spine wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT L-Spine w/wo",
+    "LONG_NAME": "CT Lumbar Spine w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT L-Spine w",
+    "LONG_NAME": "CT Lumbar Spine w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Maxillofacial wo",
+    "LONG_NAME": "CT Maxillofacial wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Maxillofacial w/wo",
+    "LONG_NAME": "CT Maxillofacial w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Maxillofacial w",
+    "LONG_NAME": "CT Maxillofacial w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Neck wo",
+    "LONG_NAME": "CT Neck wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Neck w/wo",
+    "LONG_NAME": "CT Neck w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Neck w",
+    "LONG_NAME": "CT Neck w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Orbits wo",
+    "LONG_NAME": "CT Orbits wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Temporal Bone wo",
+    "LONG_NAME": "CT Temporal Bone wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Orbits w/wo",
+    "LONG_NAME": "CT Orbits w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Temporal Bone w/wo",
+    "LONG_NAME": "CT Temporal Bone w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Orbits w",
+    "LONG_NAME": "CT Orbits w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Temporal Bone w",
+    "LONG_NAME": "CT Temporal Bone w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Pelv wo",
+    "LONG_NAME": "CT Pelvis wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Pelv w/wo",
+    "LONG_NAME": "CT Pelvis w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Pelv w",
+    "LONG_NAME": "CT Pelvis w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT 3D",
+    "LONG_NAME": "CT Post Processing",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT T-Spine wo",
+    "LONG_NAME": "CT Thoracic Spine wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT T-Spine w/wo",
+    "LONG_NAME": "CT Thoracic Spine w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT T-Spine w",
+    "LONG_NAME": "CT Thoracic Spine w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Sinuses wo",
+    "LONG_NAME": "CT Sinuses wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Sinuses w",
+    "LONG_NAME": "CT Sinuses w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Pelv Cystogram wo",
+    "LONG_NAME": "CT Pelvis Cystogram wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Spine wo Density",
+    "LONG_NAME": "CT Spine wo IV Contrast Density",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Teeth",
+    "LONG_NAME": "CT Teeth",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Sella w/wo",
+    "LONG_NAME": "CT Sella Turcica w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Colonography Screen",
+    "LONG_NAME": "CT Colonography Screening",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Colonography wo Diag",
+    "LONG_NAME": "CT Colonography wo IV Contrast Diagnostic",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Guide Needle Place",
+    "LONG_NAME": "CT Guidance for Needle Placement",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Colonography w Diag",
+    "LONG_NAME": "CT Colonography w IV Contrast Diagnostic",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Ltd F/U",
+    "LONG_NAME": "CT Limited Follow Up",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Head Perfusion",
+    "LONG_NAME": "CT Head w IV Contrast Perfusion",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Sinuses w/wo",
+    "LONG_NAME": "CT Sinuses w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Sella w",
+    "LONG_NAME": "CT Sella Turcica w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Sella wo",
+    "LONG_NAME": "CT Sella Turcica wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT UE w/wo",
+    "LONG_NAME": "CT Upper Extremity w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Arm w",
+    "LONG_NAME": "CT Upper Extremity w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Arm wo",
+    "LONG_NAME": "CT Upper Extremity wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT C-Spine w by Recon Neuro",
+    "LONG_NAME": "CT Cervical Spine w IV Contrast by Reconstruction Neuro",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT C-Spine w/o by Recon Neuro",
+    "LONG_NAME": "CT Cervical Spine wo IV Contrast by Reconstruction Neuro",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Abd Cholangio w/wo",
+    "LONG_NAME": "CT Abdomen Cholangiogram w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT L-Spine w by Recon",
+    "LONG_NAME": "CT Lumbar Spine w IV Contrast by Reconstruction",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT L-Spine wo by Recon",
+    "LONG_NAME": "CT Lumbar Spine wo IV Contrast by Reconstruction",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Abd/Pelv wo",
+    "LONG_NAME": "CT Abdomen/Pelvis wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Abd/Pelv w",
+    "LONG_NAME": "CT Abdomen/Pelvis w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest Airway wo",
+    "LONG_NAME": "CT Chest Airway wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest w Embolus",
+    "LONG_NAME": "CT Chest w IV Contrast Pulmonary Embolus",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Colonography wo Screen",
+    "LONG_NAME": "CT Colonography wo IV Contrast Screening",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Abd Enterography w",
+    "LONG_NAME": "CT Abdomen Enterography w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Pelv w by Recon",
+    "LONG_NAME": "CT Pelvis w IV Contrast by Reconstruction",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Pelv wo by Recon",
+    "LONG_NAME": "CT Pelvis wo IV Contrast by Reconstruction",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT T-Spine w by Recon",
+    "LONG_NAME": "CT Thoracic Spine w IV Contrast by Reconstruction",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT T-Spine w/o by Recon",
+    "LONG_NAME": "CT Thoracic Spine wo IV Contrast by Reconstruction",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Abd/Pelv w/wo",
+    "LONG_NAME": "CT Abdomen/Pelvis w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Head Perfusion Xenon w/wo",
+    "LONG_NAME": "CT Head Perfusion Xenon w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Head Angio w",
+    "LONG_NAME": "CT Head Angio w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Neck Angio w",
+    "LONG_NAME": "CT Neck Angio w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "MR 3D",
+    "LONG_NAME": "MR Post Processing",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Arm Angio w/wo",
+    "LONG_NAME": "MR Upper Extremity Angio w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Abd Angio w/wo",
+    "LONG_NAME": "MR Abdomen Angio w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Chest Angio w/wo",
+    "LONG_NAME": "MR Chest Angio w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head Angio w/wo",
+    "LONG_NAME": "MR Head Angio w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head Angio wo",
+    "LONG_NAME": "MR Head Angio wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Leg Angio w/wo",
+    "LONG_NAME": "MR Lower Extremity Angio w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Neck Angio w/wo",
+    "LONG_NAME": "MR Neck Angio w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Neck Angio wo",
+    "LONG_NAME": "MR Neck Angio wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Pelv Angio w/wo",
+    "LONG_NAME": "MR Pelvis Angio w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Forearm wo",
+    "LONG_NAME": "MR Forearm wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Abd wo",
+    "LONG_NAME": "MR Abdomen wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Abd w/wo",
+    "LONG_NAME": "MR Abdomen w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Abd w",
+    "LONG_NAME": "MR Abdomen w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Bone Marrow wo",
+    "LONG_NAME": "MR Bone Marrow wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Brachial Plexus wo",
+    "LONG_NAME": "MR Brachial Plexus wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head wo",
+    "LONG_NAME": "MR Head wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head w/wo",
+    "LONG_NAME": "MR Head w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head w",
+    "LONG_NAME": "MR Head w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Calf wo",
+    "LONG_NAME": "MR Calf wo IV contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR C-Spine w/wo",
+    "LONG_NAME": "MR Cervical Spine w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR C-Spine w",
+    "LONG_NAME": "MR Cervical Spine w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Chest wo",
+    "LONG_NAME": "MR Chest wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Chest w/wo",
+    "LONG_NAME": "MR Chest w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Chest w",
+    "LONG_NAME": "MR Chest w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Finger wo",
+    "LONG_NAME": "MR Finger wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Foot wo",
+    "LONG_NAME": "MR Foot wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Hand wo",
+    "LONG_NAME": "MR Hand wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Leg w",
+    "LONG_NAME": "MR Lower Extremity w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Leg wo",
+    "LONG_NAME": "MR Lower Extremity wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Leg Arthrogram",
+    "LONG_NAME": "MR Lower Extremity Arthrogram",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Leg Joint w/wo",
+    "LONG_NAME": "MR Lower Extremity Joint w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Leg Joint wo",
+    "LONG_NAME": "MR Lower Extremity Joint wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR L-Spine w/wo",
+    "LONG_NAME": "MR Lumbar Spine w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR L-Spine w",
+    "LONG_NAME": "MR Lumbar Spine w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Mediastinum wo",
+    "LONG_NAME": "MR Mediastinum wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Mediastinum w/wo",
+    "LONG_NAME": "MR Mediastinum w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Orbits w",
+    "LONG_NAME": "MR Orbits w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Face w",
+    "LONG_NAME": "MR Face w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Neck wo",
+    "LONG_NAME": "MR Neck wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Orbits wo",
+    "LONG_NAME": "MR Orbits wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Face wo",
+    "LONG_NAME": "MR Face wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Neck w/wo",
+    "LONG_NAME": "MR Neck w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Orbits w/wo",
+    "LONG_NAME": "MR Orbits w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Face w/wo",
+    "LONG_NAME": "MR Face w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Ankle wo",
+    "LONG_NAME": "MR Ankle wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Ankle w/wo",
+    "LONG_NAME": "MR Ankle w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Ankle w",
+    "LONG_NAME": "MR Ankle w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Elbow wo",
+    "LONG_NAME": "MR Elbow wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Elbow w/wo",
+    "LONG_NAME": "MR Elbow w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Elbow w",
+    "LONG_NAME": "MR Elbow w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Hip wo",
+    "LONG_NAME": "MR Hip wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Hip w/wo",
+    "LONG_NAME": "MR Hip w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Hip w",
+    "LONG_NAME": "MR Hip w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Knee wo",
+    "LONG_NAME": "MR Knee wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Knee w/wo",
+    "LONG_NAME": "MR Knee w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Knee w",
+    "LONG_NAME": "MR Knee w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Shoulder wo",
+    "LONG_NAME": "MR Shoulder wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Shoulder w/wo",
+    "LONG_NAME": "MR Shoulder w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Shoulder w",
+    "LONG_NAME": "MR Shoulder w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Wrist wo",
+    "LONG_NAME": "MR Wrist wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Wrist w/wo",
+    "LONG_NAME": "MR Wrist w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Wrist w",
+    "LONG_NAME": "MR Wrist w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Pelv wo",
+    "LONG_NAME": "MR Pelvis wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Pelv Rec Coil w/wo",
+    "LONG_NAME": "MR Pelvis Rectal Coil w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Pelv Rec Coil w",
+    "LONG_NAME": "MR Pelvis Rectal Coil w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Pelv w",
+    "LONG_NAME": "MR Pelvis w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Pelv Urethra Vag Coil wo",
+    "LONG_NAME": "MR Pelvis Urethra Vaginal Coil wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR L-Spine wo",
+    "LONG_NAME": "MR Lumbar Spine wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR T-Spine wo",
+    "LONG_NAME": "MR Thoracic Spine wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Thigh wo",
+    "LONG_NAME": "MR Thigh wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR T-Spine w/wo",
+    "LONG_NAME": "MR Thoracic Spine w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR T-Spine w",
+    "LONG_NAME": "MR Thoracic Spine w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR TMJ wo",
+    "LONG_NAME": "MR TMJ wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR TMJ w/wo",
+    "LONG_NAME": "MR TMJ w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Arm w",
+    "LONG_NAME": "MR Upper Extremity w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Arm Joint w/wo",
+    "LONG_NAME": "MR Upper Extremity Joint w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Arm Arthrogram",
+    "LONG_NAME": "MR Upper Extremity Arthrogram",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Upper Arm wo",
+    "LONG_NAME": "MR Upper Arm wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Arm wo",
+    "LONG_NAME": "MR Upper Extremity wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Arm Joint wo",
+    "LONG_NAME": "MR Upper Extremity Joint wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Abd Angio wo",
+    "LONG_NAME": "MR Abdomen Angio wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Chest Angio wo",
+    "LONG_NAME": "MR Chest Angio wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Leg Angio wo",
+    "LONG_NAME": "MR Lower Extremity Angio wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Neck Angio w",
+    "LONG_NAME": "MR Neck Angio w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Leg w/wo",
+    "LONG_NAME": "MR Lower Extremity w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Leg Joint w",
+    "LONG_NAME": "MR Lower Extremity Joint w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Pelv w/wo",
+    "LONG_NAME": "MR Pelvis w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Arm w/wo",
+    "LONG_NAME": "MR Upper Extremity w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Arm Joint w",
+    "LONG_NAME": "MR Upper Extremity Joint w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Spine Angio w/wo",
+    "LONG_NAME": "MR Spine Angio w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Breast w/wo Bilat",
+    "LONG_NAME": "MR Breast w and wo IV Contrast Bilateral",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Bone Marrow w/wo",
+    "LONG_NAME": "MR Bone Marrow w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Breast w Bilat",
+    "LONG_NAME": "MR Breast w IV Contrast Bilateral",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Breast Unilat",
+    "LONG_NAME": "MR Breast Unilateral",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Heart Velocity Flow",
+    "LONG_NAME": "MR Heart Velocity Flow",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Guide Marker",
+    "LONG_NAME": "MR Guidance Marker Placement",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head wo Peds",
+    "LONG_NAME": "MR Head wo IV Contrast Pediatric",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Bx Specimen",
+    "LONG_NAME": "MR Biopsy Specimen",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Spectro",
+    "LONG_NAME": "MR Spectroscopy",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Breast w/wo Unilat",
+    "LONG_NAME": "MR Breast w and wo IV Contrast Unilateral",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Abd/Pelv Enterography w/wo",
+    "LONG_NAME": "MR Abdomen/Pelvis Enterography w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Brachial Plexus w/wo",
+    "LONG_NAME": "MR Brachial Plexus w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Breast wo Bilat",
+    "LONG_NAME": "MR Breast wo IV Contrast Bilateral",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Breast wo Unilat",
+    "LONG_NAME": "MR Breast wo IV Contrast Unilateral",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Calf w/wo",
+    "LONG_NAME": "MR Calf w and wo IV contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Finger w",
+    "LONG_NAME": "MR Finger w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Finger w/wo",
+    "LONG_NAME": "MR Finger w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Foot w/wo",
+    "LONG_NAME": "MR Foot w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Hand w",
+    "LONG_NAME": "MR Hand w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Hand w/wo",
+    "LONG_NAME": "MR Hand w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Thigh w/wo",
+    "LONG_NAME": "MR Thigh w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Spine Angio",
+    "LONG_NAME": "MR Spine Angio wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Source Images",
+    "LONG_NAME": "MR Source Images",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "CT Leg w",
+    "LONG_NAME": "CT Lower Extremity w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Leg wo",
+    "LONG_NAME": "CT Lower Extremity wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Leg w/wo",
+    "LONG_NAME": "CT Lower Extremity w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Leg wo Leg Length",
+    "LONG_NAME": "CT Lower Extremity wo IV Contrast Leg Length",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Heart wo Calcium Scoring",
+    "LONG_NAME": "CT Heart wo IV Contrast Calcium Scoring",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT UE Angio w/wo",
+    "LONG_NAME": "CT Upper Extremity Angio w and wo IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Temporal Bone wo by Recon",
+    "LONG_NAME": "CT Temporal Bone wo IV Contrast by Reconstruction",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Pelv wo 3D",
+    "LONG_NAME": "CT Pelvis wo  IV Contrast Post Processing",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest wo 3D",
+    "LONG_NAME": "CT Chest wo IV Contrast Post Processing",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "MR Heart w/wo",
+    "LONG_NAME": "MR Heart w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Heart wo",
+    "LONG_NAME": "MR Heart wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head IAC w",
+    "LONG_NAME": "MR Head IAC w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head IAC wo",
+    "LONG_NAME": "MR Head IAC wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head IAC w/wo",
+    "LONG_NAME": "MR Head IAC w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head Vein wo",
+    "LONG_NAME": "MR Head Veins wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "US Abd",
+    "LONG_NAME": "US Abdomen",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Abd Ltd",
+    "LONG_NAME": "US Abdomen Limited",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Chest Axilla",
+    "LONG_NAME": "US Chest Axilla",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast",
+    "LONG_NAME": "US Breast",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Chest",
+    "LONG_NAME": "US Chest",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg F/U",
+    "LONG_NAME": "US Pregnancy Follow Up",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg 2nd/3rd Tri",
+    "LONG_NAME": "US Pregnancy 2nd/3rd Trimester",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg 2nd/3rd Tri Add",
+    "LONG_NAME": "US Pregnancy 2nd/3rd Trimester Additional",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg 1st Tri TA TV",
+    "LONG_NAME": "US Pregnancy 1st Trimester Transabdominal Transvaginal",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg 1st Tri Add",
+    "LONG_NAME": "US Pregnancy 1st Trimester Additional",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg Ltd",
+    "LONG_NAME": "US Pregnancy Limited",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg TV",
+    "LONG_NAME": "US Pregnancy Transvaginal",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Pelv",
+    "LONG_NAME": "US Pelvis",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Pelv Ltd",
+    "LONG_NAME": "US Pelvis Limited",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Scrotum",
+    "LONG_NAME": "US Scrotum",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Pelv TV",
+    "LONG_NAME": "US Pelvis Transvaginal",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Pelv Appendix",
+    "LONG_NAME": "US Pelvis Appendix",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Pelv Bladder",
+    "LONG_NAME": "US Pelvis Bladder",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Bilat",
+    "LONG_NAME": "US Breast Bilateral",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Left",
+    "LONG_NAME": "US Breast Left",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Right",
+    "LONG_NAME": "US Breast Right",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Gallbladder",
+    "LONG_NAME": "US Gallbladder",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Thyroid",
+    "LONG_NAME": "US Thyroid",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Prostate Transrectal",
+    "LONG_NAME": "US Prostate Transrectal",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Intraop",
+    "LONG_NAME": "US Intraoperative",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Retro",
+    "LONG_NAME": "US Retroperitoneum",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Retro Ltd",
+    "LONG_NAME": "US Retroperitoneum Limited",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Penis Doppler Ltd",
+    "LONG_NAME": "US Penis Doppler Limited",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Abd Ltd Pancreas",
+    "LONG_NAME": "US Abdomen Limited Pancreas",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Needle with Guide",
+    "LONG_NAME": "US Guidance for Needle Placement",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Abd Doppler",
+    "LONG_NAME": "US Abdomen Doppler",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Abd Doppler Ltd",
+    "LONG_NAME": "US Abdomen Doppler Limited",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Abd Ltd Spleen",
+    "LONG_NAME": "US Abdomen Limited Spleen",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Arm Soft Tissue",
+    "LONG_NAME": "US Upper Extremity Soft Tissue",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Intraop Guide",
+    "LONG_NAME": "US Intraoperative Guidance",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Leg Soft Tissue",
+    "LONG_NAME": "US Lower Extremity Soft Tissue",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Head Neck Soft Tissue",
+    "LONG_NAME": "US Head Neck Soft Tissue",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Neck Parotid",
+    "LONG_NAME": "US Neck Parotid",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Pelvis Ovary Torsion",
+    "LONG_NAME": "US Pelvis Ovary Torsion",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Neck Parathyroid",
+    "LONG_NAME": "US Neck Parathyroid",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Scrotum Tst Torsion",
+    "LONG_NAME": "US Scrotum Testicular Torsion",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "XR AC Joints Bilat",
+    "LONG_NAME": "XR Acromioclavicular Joints Bilateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Ankle 2V",
+    "LONG_NAME": "XR Ankle 2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest 1V",
+    "LONG_NAME": "XR Chest 1 View",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest 2V",
+    "LONG_NAME": "XR Chest 2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest 4+V",
+    "LONG_NAME": "XR Chest 4+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Clavicle",
+    "LONG_NAME": "XR Clavicle",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR C-Spine 2-3V",
+    "LONG_NAME": "XR Cervical Spine 2-3 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR C-Spine 4-5V",
+    "LONG_NAME": "XR Cervical Spine 4-5 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR C-Spine 2-3V+Flex/Ext",
+    "LONG_NAME": "XR Cervical Spine 2-3 Views With Flexion Extension",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Wrist Navicular",
+    "LONG_NAME": "XR Wrist Navicular",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Elbow 3+V",
+    "LONG_NAME": "XR Elbow 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Femur 2V",
+    "LONG_NAME": "XR Femur 2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Fingers",
+    "LONG_NAME": "XR Fingers",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Foot 3+V",
+    "LONG_NAME": "XR Foot 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Calcaneus 2V",
+    "LONG_NAME": "XR Calcaneus 2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Hip Intraop",
+    "LONG_NAME": "XR Hip Intraoperative",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Humerus",
+    "LONG_NAME": "XR Humerus",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Hand 3+V",
+    "LONG_NAME": "XR Hand 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Knee 1-2V",
+    "LONG_NAME": "XR Knee 1-2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Knee 4+V",
+    "LONG_NAME": "XR Knee 4+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR L-Spine 2-3V",
+    "LONG_NAME": "XR Lumbar Spine 2-3 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Mastoids 3+V Bilat",
+    "LONG_NAME": "XR Mastoids 3+ Views Bilateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Pelv 1V",
+    "LONG_NAME": "XR Pelvis 1 View",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Ribs 2V Unilat",
+    "LONG_NAME": "XR Ribs 2 Views Unilateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Shoulder 1V",
+    "LONG_NAME": "XR Shoulder 1 View",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Shoulder 2+V",
+    "LONG_NAME": "XR Shoulder 2+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Sinuses 3+V",
+    "LONG_NAME": "XR Paranasal Sinuses 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Spine",
+    "LONG_NAME": "XR Spine",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Thumb",
+    "LONG_NAME": "XR Thumb",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Tibia Fibula 2V",
+    "LONG_NAME": "XR Tibia Fibula 2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR TMJ Open+Closed Bilat",
+    "LONG_NAME": "XR Temporomandibular Joint Open and Closed Bilateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Wrist 3+V",
+    "LONG_NAME": "XR Wrist 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Abd 1V",
+    "LONG_NAME": "XR Abdomen 1 View",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Abd 3+V",
+    "LONG_NAME": "XR Abdomen 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Sella Turcica",
+    "LONG_NAME": "XR Sella Turcica",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Ankle 1-2V",
+    "LONG_NAME": "XR Ankle 1-2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Bone Age Extended",
+    "LONG_NAME": "XR Bone Age Extended",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR C-Spine 1V",
+    "LONG_NAME": "XR Cervical Spine 1 View",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "DXA Extremity",
+    "LONG_NAME": "DXA Bone Density Extremity",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Elbow 1-2V",
+    "LONG_NAME": "XR Elbow 1-2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Forearm 2V",
+    "LONG_NAME": "XR Forearm 2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Foot 1-2V",
+    "LONG_NAME": "XR Foot 1-2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Hip 2+V Bilat+AP Pelv",
+    "LONG_NAME": "XR Hip 2+ Views Bilateral With Anteroposterior Pelvis",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Hip 2+V",
+    "LONG_NAME": "XR Hip 2+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Hip 1V",
+    "LONG_NAME": "XR Hip 1 View",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Hand 1-2V",
+    "LONG_NAME": "XR Hand 1-2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR C-Spine 6+V",
+    "LONG_NAME": "XR Cervical Spine 6+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Knee 3V",
+    "LONG_NAME": "XR Knee 3 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR L-Spine 6+V Incl Bending",
+    "LONG_NAME": "XR Lumbar Spine 6+ Views Including Bending",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR L-Spine 4+V",
+    "LONG_NAME": "XR Lumbar Spine 4+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR L-Spine AP+Lat",
+    "LONG_NAME": "XR Lumbar Spine Anteroposterior and Lateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Pelv 3+V",
+    "LONG_NAME": "XR Pelvis 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Pelv 1V AP",
+    "LONG_NAME": "XR Pelvis 1 View Anteroposterior",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Scapula",
+    "LONG_NAME": "XR Scapula",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Entire Spine 2+V",
+    "LONG_NAME": "XR Entire Spine 2+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR T-Spine 2V",
+    "LONG_NAME": "XR Thoracic Spine 2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR TL-Spine 2V",
+    "LONG_NAME": "XR Thoracolumbar Spine 2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Wrist 1-2V",
+    "LONG_NAME": "XR Wrist 1-2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR L-Spine 1V",
+    "LONG_NAME": "XR Lumbar Spine 1 View",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Pelv 1-2V",
+    "LONG_NAME": "XR Pelvis 1-2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Pelvimetry",
+    "LONG_NAME": "XR Pelvimetry",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Ribs 3V Bilat",
+    "LONG_NAME": "XR Ribs 3 Views Bilateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR T-Spine 1V",
+    "LONG_NAME": "XR Thoracic Spine 1 View",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Coccyx 2+V",
+    "LONG_NAME": "XR Coccyx 2+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Knees AP Stand Bilat",
+    "LONG_NAME": "XR Knees Anteroposterior Standing Bilateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Bone Age Hand",
+    "LONG_NAME": "XR Bone Age Hand",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Optic Foramina",
+    "LONG_NAME": "XR Optic Foramina",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Eye FB",
+    "LONG_NAME": "XR Eye Foreign Body",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Neck Soft Tissue",
+    "LONG_NAME": "XR Neck Soft Tissue",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR TMJ Open+Closed Unilat",
+    "LONG_NAME": "XR Temporomandibular Joint Open and Closed Unilateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR T-Spine",
+    "LONG_NAME": "XR Thoracic Spine",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "MR Forearm w/wo",
+    "LONG_NAME": "MR Forearm w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Upper Arm w/wo",
+    "LONG_NAME": "MR Upper Arm w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "XR Sacrum Coccyx 2+V",
+    "LONG_NAME": "XR Sacrum Coccyx 2+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Facial",
+    "LONG_NAME": "XR Facial",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Nasal Bones",
+    "LONG_NAME": "XR Nasal Bones",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Sacroiliac Joints 3+V",
+    "LONG_NAME": "XR Sacroiliac Joints 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Ribs 2V Unilat+Chest",
+    "LONG_NAME": "XR Ribs 2 Views Unilateral With Chest",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Whole Body Infant",
+    "LONG_NAME": "XR Whole Body Infant",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Sinuses 1-2V",
+    "LONG_NAME": "XR Paranasal Sinuses 1-2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Salivary Gland",
+    "LONG_NAME": "XR Salivary Gland",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Orbits Comp 4+V",
+    "LONG_NAME": "XR Orbits Complete 4+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR T-Spine 1V Lat",
+    "LONG_NAME": "XR Thoracic Spine 1 View Lateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "MR Prostate wo",
+    "LONG_NAME": "MR Prostate wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "NM Hepatobiliary",
+    "LONG_NAME": "NM Hepatobiliary",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Bone Whole Body",
+    "LONG_NAME": "NM Bone Whole Body",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart Infarct",
+    "LONG_NAME": "NM Heart Infarction",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Brain CSF Leak",
+    "LONG_NAME": "NM Brain Cerebrospinal Fluid Leak",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Esoph GE Reflux",
+    "LONG_NAME": "NM Esophagus Gastroesophageal Reflux",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM GI Bleed",
+    "LONG_NAME": "NM Gastrointestinal Bleeding",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Liver Spleen",
+    "LONG_NAME": "NM Liver Spleen",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Liver Spleen w Flow",
+    "LONG_NAME": "NM Liver Spleen With Flow",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Lung Perfus w Quant",
+    "LONG_NAME": "NM Lung Perfusion With Quantification",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Lung Vent Perfus",
+    "LONG_NAME": "NM Lung Ventilation Perfusion",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Parathyroid",
+    "LONG_NAME": "NM Parathyroid",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Kidney SPECT",
+    "LONG_NAME": "NM Kidney SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Salivary Gland",
+    "LONG_NAME": "NM Salivary Gland",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Testicle w Flow",
+    "LONG_NAME": "NM Testicle With Flow",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Marrow Whole Body",
+    "LONG_NAME": "NM Bone Marrow Whole Body",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Bowel",
+    "LONG_NAME": "NM Bowel",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart Shunt Detect",
+    "LONG_NAME": "NM Heart Shunt Detection",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Liver",
+    "LONG_NAME": "NM Liver",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Liver SPECT",
+    "LONG_NAME": "NM Liver SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Thyroid",
+    "LONG_NAME": "NM Thyroid",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Lung Perfus",
+    "LONG_NAME": "NM Lung Perfusion",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Bone SPECT",
+    "LONG_NAME": "NM Bone SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Bone Ltd",
+    "LONG_NAME": "NM Bone Limited",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart Infarct SPECT",
+    "LONG_NAME": "NM Heart Infarction SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Esoph Motility",
+    "LONG_NAME": "NM Esophagus Motility",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Abd Perit Vein Shunt Paten",
+    "LONG_NAME": "NM Abdomen Peritoneal Venous Shunt Patency",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Lung Vent",
+    "LONG_NAME": "NM Lung Ventilation",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart Infarct First Pass",
+    "LONG_NAME": "NM Heart Infarction First Pass",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Gastric Empty Solid",
+    "LONG_NAME": "NM Gastric Emptying Solid",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Salivary Gland Func",
+    "LONG_NAME": "NM Salivary Gland Function",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart Pool 1st Pass",
+    "LONG_NAME": "NM Heart Blood Pool First Pass",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart Perfus Single",
+    "LONG_NAME": "NM Heart Perfusion Single",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Research",
+    "LONG_NAME": "NM Research",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Brain Thal SPECT",
+    "LONG_NAME": "NM Brain Thallium SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM SPECT Research",
+    "LONG_NAME": "NM SPECT Research",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "MG Specimen",
+    "LONG_NAME": "Mammo Breast Specimen",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag",
+    "LONG_NAME": "Mammo Breast Diagnostic",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Research",
+    "LONG_NAME": "Mammo Breast Diagnostic Research",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Left Poss US",
+    "LONG_NAME": "Mammo Breast Diagnostic Left With Ultrasound If Needed",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Right",
+    "LONG_NAME": "Mammo Breast Diagnostic Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Right Poss US",
+    "LONG_NAME": "Mammo Breast Diagnostic Right With Ultrasound If Needed",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Left",
+    "LONG_NAME": "Mammo Breast Diagnostic Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Ductogram",
+    "LONG_NAME": "Mammo Breast Ductogram",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Screen Implant",
+    "LONG_NAME": "Mammo Breast Screening Implants",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "Mammo Breast Addend",
+    "LONG_NAME": "Mammo Breast Addendum",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Breast Bx Out",
+    "LONG_NAME": "Mammo Breast Biopsy Outside",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Call Back",
+    "LONG_NAME": "Mammo Breast Diagnostic Call Back",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Screen",
+    "LONG_NAME": "Mammo Breast Screening",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Unilat Post Bx Clip",
+    "LONG_NAME": "Mammo Breast Diagnostic Unilateral Post Biopsy Clip",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "US Leg Arteries Bilat",
+    "LONG_NAME": "US Lower Extremity Arteries Bilateral",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Arm Arteries Bilat",
+    "LONG_NAME": "US Upper Extremity Arteries Bilateral",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Head Doppler",
+    "LONG_NAME": "US Head Doppler",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Head Doppler Ltd",
+    "LONG_NAME": "US Head Doppler Limited",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Heart",
+    "LONG_NAME": "US Heart",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Heart Doppler",
+    "LONG_NAME": "US Heart Doppler",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "MR Head Neck Angio",
+    "LONG_NAME": "MR Head Neck Angio",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Arm Angio wo",
+    "LONG_NAME": "MR Upper Extremity Angio wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Abd Runoff Angio w/wo Bilat",
+    "LONG_NAME": "MR Abdominal Aorta Iliofemoral Runoff Angio w and wo IV Contrast Bilateral",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MG Cyst Asp Add Area Guide Left",
+    "LONG_NAME": "Mammo Breast Cyst Aspiration Additional Area with Guidance Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Cyst Asp Add Area Guide Right",
+    "LONG_NAME": "Mammo Breast Cyst Aspiration Additional Area with Guidance Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Call Back Left",
+    "LONG_NAME": "Mammo Breast Diagnostic Call Back Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Call Back Right",
+    "LONG_NAME": "Mammo Breast Diagnostic Call Back Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Clip Guide Left",
+    "LONG_NAME": "Mammo Breast Clip with Guidance Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Clip Guide Right",
+    "LONG_NAME": "Mammo Breast Clip with Guidance Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Needle Loc Add Area Guide Left",
+    "LONG_NAME": "Mammo Breast Needle Loc Additional Area with Guidance Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Needle Loc Add Area GuideRight",
+    "LONG_NAME": "Mammo Breast Needle Loc Additional Area with Guidance Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Needle Loc w Specimen Guide Bilat",
+    "LONG_NAME": "Mammo Breast Needle Loc with Specimen Mammo with Guidance Bilateral",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Needle Loc Guide Left",
+    "LONG_NAME": "Mammo Breast Needle Loc with Guidance Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Needle Loc Guide Right",
+    "LONG_NAME": "Mammo Breast Needle Loc with Guidance Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Needle Loc w Specimen Guide Left",
+    "LONG_NAME": "Mammo Breast Needle Loc with Specimen Mammo with Guidance Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Needle Loc w Specimen Guide Right",
+    "LONG_NAME": "Mammo Breast Needle Loc with Specimen Mammo with Guidance Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "US Retro Aorta",
+    "LONG_NAME": "US Retroperitoneum Aorta",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Tendon",
+    "LONG_NAME": "US Tendon",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Head Peds",
+    "LONG_NAME": "US Head Pediatric",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Spine Peds",
+    "LONG_NAME": "US Spine Pediatric",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Pelv Hystero Doppler",
+    "LONG_NAME": "US Pelvis Hysterosonography Doppler",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Abd Ltd Liver",
+    "LONG_NAME": "US Abdomen Limited Liver",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Head Doppler Ltd Neo",
+    "LONG_NAME": "US Head Doppler Limited Neonatal",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Aspir Cyst Guide Left",
+    "LONG_NAME": "US Breast Aspiration Cyst with Guidance Left",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Aspir Cyst Guide Right",
+    "LONG_NAME": "US Breast Aspiration Cyst with Guidance Right",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Retro Guide Bx",
+    "LONG_NAME": "US Retro Guide Bx",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Leg Veins Ltd/Unilat/F/U",
+    "LONG_NAME": "US Lower Extremity Veins Limited/Unilateral/Follow Up",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Arm Veins Ltd/Unilat/F/U",
+    "LONG_NAME": "US Upper Extremity Veins Limited/Unilateral/Follow Up",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Elbow Inj",
+    "LONG_NAME": "US Elbow Injection",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg MCA Doppler",
+    "LONG_NAME": "US Pregnancy MCA Doppler",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg Umb Artery Doppler",
+    "LONG_NAME": "US Pregnancy Umbilical Artery Doppler",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg Abnl Add",
+    "LONG_NAME": "US Pregnancy Abnormal Additional",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg Abnl",
+    "LONG_NAME": "US Pregnancy Abnormal",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg F/U Add",
+    "LONG_NAME": "US Pregnancy Follow Up Additional",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg Multi 1st Tri TA TV",
+    "LONG_NAME": "US Pregnancy Multi 1st Trimester Transabdominal Transvaginal",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg Multi Abnl",
+    "LONG_NAME": "US Pregnancy Multi Abnormal",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Aspir Cyst Add Area Guide Left",
+    "LONG_NAME": "US Breast Aspiration Cyst Additional with Guidance Left",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Aspir Cyst Add Area Guide Right",
+    "LONG_NAME": "US Breast Aspiration Cyst Additional with Guidance Right",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg Multi 2nd/3rd Tri",
+    "LONG_NAME": "US Pregnancy Multi 2nd/3rd Trimester",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg 1st Tri",
+    "LONG_NAME": "US Pregnancy 1st Trimester",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Hip Peds Ltd Bilat Manip",
+    "LONG_NAME": "US Hip Pediatric Limited Bilateral Manipulation",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Heart Doppler Velocity ED",
+    "LONG_NAME": "US Heart Doppler Velocity ED",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Leg Arteries Ltd/Unilat/F/U",
+    "LONG_NAME": "US Lower Extremity Arteries Limited/Unilateral/Follow Up",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Needle with Guide",
+    "LONG_NAME": "US Breast Guidance for Needle Placement",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Preg Doppler",
+    "LONG_NAME": "US Pregnancy Doppler",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Penis Soft Tissue",
+    "LONG_NAME": "US Penis Soft Tissue",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Leg Veins Bilat",
+    "LONG_NAME": "US Lower Extremity Veins Bilateral",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Arm Veins Bilat",
+    "LONG_NAME": "US Upper Extremity Veins Bilateral",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "MR Prostate w",
+    "LONG_NAME": "MR Prostate w IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Guide Needle Loc",
+    "LONG_NAME": "MR Guidance Needle Loc",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Pelv Angio wo",
+    "LONG_NAME": "MR Pelvis Angio wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Abd/Pelv Enterography wo",
+    "LONG_NAME": "MR Abdomen/Pelvis Enterography wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR US Guide Insert IV",
+    "LONG_NAME": "MR Ultrasound Guidance Insert IV",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head w/wo Post-op",
+    "LONG_NAME": "MR Head w and wo IV Contrast Post-op",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Heart w/wo Stress",
+    "LONG_NAME": "MR Heart w and wo IV Contrast Stress",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Heart wo Stress",
+    "LONG_NAME": "MR Heart wo IV Contrast Stress",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Whole Body w/wo",
+    "LONG_NAME": "MR Whole Body w and wo IV Contrast",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "NM Kidney Flow/Fn Diuretic",
+    "LONG_NAME": "NM Kidney Flow/Function With Diuretic",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Whole Body MIBG",
+    "LONG_NAME": "NM Whole Body MIBG",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Whole Body Prostascint SPECT",
+    "LONG_NAME": "NM Whole Body Prostascint SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Whole Body Octreoscan SPECT",
+    "LONG_NAME": "NM Whole Body Octreoscan SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Whole Body Samarium",
+    "LONG_NAME": "NM Whole Body Samarium",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM WBCs Whole Body",
+    "LONG_NAME": "NM White Blood Cells Whole Body",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM WBCs Ltd",
+    "LONG_NAME": "NM White Blood Cells Limited",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM WBCs SPECT",
+    "LONG_NAME": "NM White Blood Cells SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Whole Body Zevalin",
+    "LONG_NAME": "NM Whole Body Zevalin",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "CT Abd Runoff Angio w/wo Bilat",
+    "LONG_NAME": "CT Abdominal Aorta/Iliofemoral Runoff Angio w and wo IV Contrast Bilateral",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Abd wo 3D",
+    "LONG_NAME": "CT Abdomen wo  IV Contrast Post Processing",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Abd/Pelv wo 3D",
+    "LONG_NAME": "CT Abdomen/Pelvis wo IV Contrast Post Processing",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest/Abd/Pel wo 3D",
+    "LONG_NAME": "CT Chest/Abdomen/Pelvis wo IV Contrast Post Processing",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest/Abd wo 3D",
+    "LONG_NAME": "CT Chest/Abdomen wo IV Contrast Post Processing",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest w Screen",
+    "LONG_NAME": "CT Chest w IV Contrast Screening",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest wo Lung Parenchyma",
+    "LONG_NAME": "CT Chest wo IV Contrast Lung Parenchyma",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Chest wo Screen",
+    "LONG_NAME": "CT Chest wo IV Contrast Screening",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Heart Coronary Angio w",
+    "LONG_NAME": "CT Heart Coronary Arteries Angio w IV Contrast",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Heart w Congential",
+    "LONG_NAME": "CT Heart w IV Contrast Congential Heart Disease",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Heart w Struc",
+    "LONG_NAME": "CT Heart w IV Contrast Structure Morphology",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Temporal Bone w by Recon",
+    "LONG_NAME": "CT Temporal Bone w IV Contrast by Reconstruction",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Urogram Post Process",
+    "LONG_NAME": "CT Urogram Post Processing",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Treatment Planning Complex",
+    "LONG_NAME": "CT Treatment Planning Complex",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Treatment Planning  Intermediate",
+    "LONG_NAME": "CT Treatment Planning  Intermediate",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Treatment Planning Simple",
+    "LONG_NAME": "CT Treatment Planning Simple",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "CT Scanogram",
+    "LONG_NAME": "CT Scanogram",
+    "MODALITY": "CT"
+  },
+  {
+    "SHORT_NAME": "NM/CT Lymph Node SPECT",
+    "LONG_NAME": "NM/CT Lymph Node SPECT",
+    "MODALITY": "NM&CT"
+  },
+  {
+    "SHORT_NAME": "NM/CT Parathyroid SPECT",
+    "LONG_NAME": "NM/CT Parathyroid SPECT",
+    "MODALITY": "NM&CT"
+  },
+  {
+    "SHORT_NAME": "PT/CT Bone Skull to Thigh",
+    "LONG_NAME": "PT/CT Bone Skull Base to Mid Thigh",
+    "MODALITY": "PT&CT"
+  },
+  {
+    "SHORT_NAME": "PT/CT Bone Whole Body",
+    "LONG_NAME": "PT/CT Bone Whole Body",
+    "MODALITY": "PT&CT"
+  },
+  {
+    "SHORT_NAME": "PT/CT Tumor Loc Ltd",
+    "LONG_NAME": "PT/CT Tumor Localization Limited",
+    "MODALITY": "PT&CT"
+  },
+  {
+    "SHORT_NAME": "PT/CT Tumor Loc Skull To Thigh",
+    "LONG_NAME": "PT/CT Tumor Localization Skull Base to Mid Thigh",
+    "MODALITY": "PT&CT"
+  },
+  {
+    "SHORT_NAME": "PT/CT Tumor Loc Whole Body",
+    "LONG_NAME": "PT/CT Tumor Localization Whole Body",
+    "MODALITY": "PT&CT"
+  },
+  {
+    "SHORT_NAME": "PT Brain Perfus",
+    "LONG_NAME": "PT Brain Perfusion",
+    "MODALITY": "PT"
+  },
+  {
+    "SHORT_NAME": "PT Heart Perfus",
+    "LONG_NAME": "PT Heart Perfusion Single",
+    "MODALITY": "PT"
+  },
+  {
+    "SHORT_NAME": "PT Heart Sarcoid",
+    "LONG_NAME": "PT Heart Sarcoid",
+    "MODALITY": "PT"
+  },
+  {
+    "SHORT_NAME": "PT Heart Viability",
+    "LONG_NAME": "PT Heart Viability",
+    "MODALITY": "PT"
+  },
+  {
+    "SHORT_NAME": "DXA Extremity Wrist",
+    "LONG_NAME": "DXA Bone Density Extremity Wrist",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Facial Bones 1-2V",
+    "LONG_NAME": "XR Facial Bones 1-2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Facial Bones 1-2V Zygoma",
+    "LONG_NAME": "XR Facial Bones 1-2 Views Zygoma",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Mastoids 1-2V Bilat",
+    "LONG_NAME": "XR Mastoids 1-2 Views Bilateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Sacroiliac Joints 1-2V",
+    "LONG_NAME": "XR Sacroiliac Joints 1-2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Abd AP Infant",
+    "LONG_NAME": "XR Abdomen Anteroposterior Infant",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Abd Lat X-Table Infant",
+    "LONG_NAME": "XR Abdomen Lateral Cross Table Infant",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest 1V AP Infant",
+    "LONG_NAME": "XR Chest 1 View Anteroposterior Infant",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest 1V Lat Infant",
+    "LONG_NAME": "XR Chest 1 View Lateral Infant",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest Lat, Decub, Or Bucky",
+    "LONG_NAME": "XR Chest Lateral, Decubitus, Or Bucky",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest 1V PA",
+    "LONG_NAME": "XR Chest 1 View Posteroanterior",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR L-Spine 1V Intraop",
+    "LONG_NAME": "XR Lumbar Spine 1 View Intraoperative",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Leg 2+V Infant",
+    "LONG_NAME": "XR Lower Extremity 2+ Views Infant",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Sacrum 2+V",
+    "LONG_NAME": "XR Sacrum 2+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Sternum 2+V",
+    "LONG_NAME": "XR Sternum 2+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Arm 2+V Infant",
+    "LONG_NAME": "XR Upper Extremity 2+ Views Infant",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Abd 2V GU",
+    "LONG_NAME": "XR Abdomen 2 Views Genitourinary",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Abd AP+Obl/Cone",
+    "LONG_NAME": "XR Abdomen Anteroposterior and Oblique/Cone",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Abd Supine/Erect",
+    "LONG_NAME": "XR Abdomen Supine And Erect",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Abd Supine/Erect+Chest",
+    "LONG_NAME": "XR Abdomen Supine And Erect With Chest",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest 2V+Apical Lordotic",
+    "LONG_NAME": "XR Chest 2 Views With Apical Lordotic",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest 2V+Decubs",
+    "LONG_NAME": "XR Chest 2 Views With Decubitus Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest 2V+Obls",
+    "LONG_NAME": "XR Chest 2 Views With Obliques",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest Insp/Exp",
+    "LONG_NAME": "XR Chest Inspiration Expiration",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Ribs 2V Unilat+Chest AP",
+    "LONG_NAME": "XR Ribs 2 Views Unilateral with Chest Anteroposterior",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Toes 2V",
+    "LONG_NAME": "XR Toes 2 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Mandible 1-3V",
+    "LONG_NAME": "XR Mandible 1-3 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Skull 1-3V",
+    "LONG_NAME": "XR Skull 1-3 Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Skull 1-3V AP+Lat",
+    "LONG_NAME": "XR Skull 1-3 Views Anteroposterior and Lateral",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Ankle 3+V",
+    "LONG_NAME": "XR Ankle 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Chest PA+Decub",
+    "LONG_NAME": "XR Chest Posteroanterior With Decubitus",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Facial Bones 3+V",
+    "LONG_NAME": "XR Facial Bones 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Sternoclavicular Joints 3+V",
+    "LONG_NAME": "XR Sternoclavicular Joints 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Tibia Fibula 3+V",
+    "LONG_NAME": "XR Tibia Fibula 3+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Ribs 3+V Bilat+Chest PA",
+    "LONG_NAME": "XR Ribs 3+ Views Bilateral with Chest Posteroanterior",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR T-Spine 3V Incl Swim",
+    "LONG_NAME": "XR Thoracic Spine 3 Views Including Swimmers View",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Mandible 4+V",
+    "LONG_NAME": "XR Mandible 4+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Skull Comp 4+V",
+    "LONG_NAME": "XR Skull Complete 4+ Views",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR TL-Spine Sup/Erect Scoli",
+    "LONG_NAME": "XR Thoracolumbar Spine Supine and Erect Scoliosis",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Knee 1-2V Intraop",
+    "LONG_NAME": "XR Knee 1-2 Views Intraoperative",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR TL-Spine Erect Scoli",
+    "LONG_NAME": "XR Thoracolumbar Spine Erect Scoliosis",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Hip 1V Port",
+    "LONG_NAME": "XR Hip 1 View Portable",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Bone Survey Infant",
+    "LONG_NAME": "XR Bone Survey Infant",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Nose To Rectum FB Peds",
+    "LONG_NAME": "XR Nose To Rectum Foreign Body Pediatric",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Hip 2+V Ortho Pre Op",
+    "LONG_NAME": "XR Hip 2+ Views Orthopedics Pre Operative",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Babygram",
+    "LONG_NAME": "XR Babygram",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR C-Spine 2-3V+Flex/Ext+Obls",
+    "LONG_NAME": "XR Cervical Spine 2-3 Views With Flexion Extension And Obliques",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Hips+Pelv 2+V Peds",
+    "LONG_NAME": "XR Hips and Pelvis 2+ Views Pediatric",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR L-Spine AP, Lat+Obls",
+    "LONG_NAME": "XR Lumbar Spine Anteroposterior, Lateral, and Obliques",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "FL/XR Chest 2V w Fluoro",
+    "LONG_NAME": "FL/XR Chest 2 Views With Fluoro",
+    "MODALITY": "XR&RF"
+  },
+  {
+    "SHORT_NAME": "FL/XR Chest 4+V w Fluoro",
+    "LONG_NAME": "FL/XR Chest 4+ Views With Fluoro",
+    "MODALITY": "XR&RF"
+  },
+  {
+    "SHORT_NAME": "RP Knee Aspir w Guide",
+    "LONG_NAME": "RP Knee Aspiration with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Major Joint Arthrocent w Guide",
+    "LONG_NAME": "RP Major Joint Arthrocentesis with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Small Joint Arthrocent w Guide",
+    "LONG_NAME": "RP Small Joint Arthrocentesis with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Kidney Bx w Guide",
+    "LONG_NAME": "RP Kidney Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Liver Bx w Guide",
+    "LONG_NAME": "RP Liver Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Lung Bx w guide",
+    "LONG_NAME": "RP Lung Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Mediastinal Bx w Guide",
+    "LONG_NAME": "RP Mediastinal Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Muscle Bx w Guide",
+    "LONG_NAME": "RP Muscle Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Pancreas Bx w Guide",
+    "LONG_NAME": "RP Pancreas Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Pleural Bx w Guide",
+    "LONG_NAME": "RP Pleural Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Prostate Bx w Guide",
+    "LONG_NAME": "RP Prostate Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Soft Tis Bx w Guide",
+    "LONG_NAME": "RP Soft Tissue Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Thyroid Bx w Guide",
+    "LONG_NAME": "RP Thyroid Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Abd Bx w Guide",
+    "LONG_NAME": "RP Abdomen Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Bone Bx w Guide",
+    "LONG_NAME": "RP Bone Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Neck or Chest Bx w Guide",
+    "LONG_NAME": "RP Neck or Chest Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Clip Place w Guide",
+    "LONG_NAME": "RP Clip Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Pleural Drain w Guide",
+    "LONG_NAME": "RP Pleural Drainage with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Abd Drain w Guide",
+    "LONG_NAME": "RP Abdomen Drainage with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Ankle Inj w Guide",
+    "LONG_NAME": "RP Ankle Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Hip Inj w Guide",
+    "LONG_NAME": "RP Hip Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Knee Inj w Guide",
+    "LONG_NAME": "RP Knee Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Shoulder Inj w Guide",
+    "LONG_NAME": "RP Shoulder Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP TMJ Inj w Guide",
+    "LONG_NAME": "RP Temporomandibular Joint Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Tendon Inj w Guide",
+    "LONG_NAME": "RP Tendon Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Wrist Inj w Guide",
+    "LONG_NAME": "RP Wrist Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Pericardiocent w Guide",
+    "LONG_NAME": "RP Pericardiocentesis with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Bone RFA",
+    "LONG_NAME": "RP Bone Radiofrequency Ablation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Pre-Op Clip Plac w Guide",
+    "LONG_NAME": "RP Pre-Operative Clip Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Cyst Aspir w Guide",
+    "LONG_NAME": "RP Cyst Aspiration with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Bone Aspir w Guide",
+    "LONG_NAME": "RP Bone Aspiration with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Kidney Cyst Aspir",
+    "LONG_NAME": "RP Kidney Cyst Aspiration with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Lymph Node Aspir w Guide",
+    "LONG_NAME": "RP Lymph Node Aspiration with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Lymph Node Bx w Guide",
+    "LONG_NAME": "RP Lymph Node Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP C-Spine Puncture CSF Drain",
+    "LONG_NAME": "RP Cervical Spine Puncture CSF Drainage with Imaging Guidance Therapeutic",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Arthrocent w Guide",
+    "LONG_NAME": "RP Arthrocentesis with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Bone Marrow Aspir",
+    "LONG_NAME": "RP Bone Marrow Aspiration with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Biliary Bx",
+    "LONG_NAME": "RP Biliary Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Bone Marrow Bx",
+    "LONG_NAME": "RP Bone Marrow Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Ureteral Bx",
+    "LONG_NAME": "RP Ureteral Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Kidney Cryo w guide",
+    "LONG_NAME": "RP Kidney Cryoablation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Liver Cryo w Guide",
+    "LONG_NAME": "RP Liver Cryoablation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Lung Cryoablation",
+    "LONG_NAME": "RP Lung Cryoablation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Drainage",
+    "LONG_NAME": "RP Drainage with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Epidural Inj w Guide",
+    "LONG_NAME": "RP Epidural Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP CV Cath Reposition",
+    "LONG_NAME": "RP Central Venous Catheter Injection",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP L-Spine Kyphoplasty",
+    "LONG_NAME": "RP Lumbar Spine Kyphoplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP T-Spine Kyphoplasty",
+    "LONG_NAME": "RP Thoracic Spine Kyphoplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP LP w Guide",
+    "LONG_NAME": "RP Lumbar Puncture with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Needle Place",
+    "LONG_NAME": "RP Needle Placement with Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Para w Guide",
+    "LONG_NAME": "RP Paracentesis with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP C-Spine Puncture",
+    "LONG_NAME": "RP Cervical Spine Puncture with Imaging Guidance Diagnostic",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Kidney RFA w Guide",
+    "LONG_NAME": "RP Kidney Radiofrequency Ablation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Liver RFA w Guide",
+    "LONG_NAME": "RP Liver Radioferquency Ablation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Lung RFA",
+    "LONG_NAME": "RP Lung Radiofrequency Ablation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Lung Pleura RFA",
+    "LONG_NAME": "RP Lung Pleura Radiofrequency Ablation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Thoracent w Guide",
+    "LONG_NAME": "RP Thoracentesis with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Abd Fiducial Place",
+    "LONG_NAME": "RP Abdomen Fiducial Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "FL Salivary Gland",
+    "LONG_NAME": "FL Salivary Gland",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Bladder Drain",
+    "LONG_NAME": "FL Bladder Drainage",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Feed Tube Advance",
+    "LONG_NAME": "FL Feeding Tube Advancement",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL BE Reduce Intussusception",
+    "LONG_NAME": "FL Barium Enema Reduce Intussusception",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Needle w Guide",
+    "LONG_NAME": "FL Guidance for Needle Placement",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL BE Double Screen",
+    "LONG_NAME": "FL Barium Enema Double Contrast Screening",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Sniff Test",
+    "LONG_NAME": "FL Sniff Test",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL BE Single",
+    "LONG_NAME": "FL Barium Enema Single Contrast",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL BE Double",
+    "LONG_NAME": "FL Barium Enema Double Contrast",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Esoph Pharynx",
+    "LONG_NAME": "FL Esophagus Pharynx",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Esoph Swallow",
+    "LONG_NAME": "FL Esophagus Barium Swallow",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Upper GI Double w SBFT",
+    "LONG_NAME": "FL Upper GI Double Contrast With Small Bowel Follow Through",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Upper GI Single w SBFT",
+    "LONG_NAME": "FL Upper GI Single Contrast With Small Bowel Follow Through",
+    "MODALITY": "XR&RF"
+  },
+  {
+    "SHORT_NAME": "FL Upper GI Double",
+    "LONG_NAME": "FL Upper GI Double Contrast",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Upper GI Single Barium",
+    "LONG_NAME": "FL Upper GI Single Contrast Barium",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL BE Single Water Sol",
+    "LONG_NAME": "FL Barium Enema Single Contrast Water Soluble",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Esoph Swallow Single Water Sol",
+    "LONG_NAME": "FL Esophagus Barium Swallow Single Contrast Water Soluble",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Upper GI Single Water Sol",
+    "LONG_NAME": "FL Upper GI Single Contrast Water Soluble",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Elbow Arthrogram",
+    "LONG_NAME": "FL Elbow Arthrogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Cystogram",
+    "LONG_NAME": "FL Cystogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Guide",
+    "LONG_NAME": "FL Guidance",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL < 1 Hr Intraop",
+    "LONG_NAME": "FL Less Than 1 Hour Intraoperative",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Portable",
+    "LONG_NAME": "FL Portable",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Whitaker Test",
+    "LONG_NAME": "FL Whitaker Test",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Small Bowel Enema",
+    "LONG_NAME": "FL Small Bowel Enema",
+    "MODALITY": "XR&RF"
+  },
+  {
+    "SHORT_NAME": "FL SBFT",
+    "LONG_NAME": "FL Small Bowel Follow Through",
+    "MODALITY": "XR&RF"
+  },
+  {
+    "SHORT_NAME": "FL Chest",
+    "LONG_NAME": "FL Chest",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL > 1 Hr",
+    "LONG_NAME": "FL More Than 1 Hour",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL <1 Hr",
+    "LONG_NAME": "FL Less Than 1 Hour",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "NM Heart MUGA Multi",
+    "LONG_NAME": "NM Heart Blood Pool Ejection Fraction Wall Motion (MUGA) Multiple",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart MUGA",
+    "LONG_NAME": "NM Heart Blood Pool Ejection Fraction Wall Motion (MUGA)",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart Pool EF 1st Pass",
+    "LONG_NAME": "NM Heart Blood Pool Ejection Fraction First Pass",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Brain Cisterns",
+    "LONG_NAME": "NM Brain Cisterns",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Inflam Ltd",
+    "LONG_NAME": "NM Inflammation Limited",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Inflam SPECT",
+    "LONG_NAME": "NM Inflammation SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Marrow Ltd",
+    "LONG_NAME": "NM Bone Marrow Limited",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Thyroid Whole Body Tumor",
+    "LONG_NAME": "NM Thyroid Whole Body Tumor",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Tumor Loc Whole Body",
+    "LONG_NAME": "NM Tumor Localization Whole Body",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Tumor Loc Ltd",
+    "LONG_NAME": "NM Tumor Localization Limited",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Tumor Loc SPECT",
+    "LONG_NAME": "NM Tumor Localization SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart SPECT Single",
+    "LONG_NAME": "NM Heart SPECT Single",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Thyroid Rx Oral",
+    "LONG_NAME": "NM Thyroid Therapy with Oral Administration",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Brain Flow Only Brain Death",
+    "LONG_NAME": "NM Brain Flow Only Brain Death",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Vessels Flow",
+    "LONG_NAME": "NM Vessels Flow",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Kidney Flow/Fn",
+    "LONG_NAME": "NM Kidney Flow/Function",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Bone w Flow",
+    "LONG_NAME": "NM Bone With Flow",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Gastric Empty Liquid",
+    "LONG_NAME": "NM Gastric Emptying Liquid",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Kidney GFR",
+    "LONG_NAME": "NM Kidney GFR",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Liver Hemang SPECT",
+    "LONG_NAME": "NM Liver Hemangioma SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Inflam Whole Body",
+    "LONG_NAME": "NM Inflammation Whole Body",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Shunt Patency",
+    "LONG_NAME": "NM Shunt Patency",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Parathyroid SPECT",
+    "LONG_NAME": "NM Parathyroid SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "XA Abd Aorta",
+    "LONG_NAME": "XA Abdominal Aorta",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Chest Aorta",
+    "LONG_NAME": "XA Chest Aorta",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Pelvic Arteries",
+    "LONG_NAME": "XA Pelvic Arteries",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Carotid Artery Bilat",
+    "LONG_NAME": "XA Carotid Artery Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Carotid Artery Unilat",
+    "LONG_NAME": "XA Carotid Artery Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Cervicocerebral Arteries Bilat",
+    "LONG_NAME": "XA Cervicocerebral Arteries Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Cervicocerebral Arteries Unilat",
+    "LONG_NAME": "XA Cervicocerebral Arteries Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Cerebral Artery Bilat",
+    "LONG_NAME": "XA Cerebral Artery Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Cerebral Artery Unilat",
+    "LONG_NAME": "XA Cerebral Artery Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Cerebral Sinus",
+    "LONG_NAME": "XA Cerebral Sinus",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Hepatic Veins",
+    "LONG_NAME": "XA Hepatic Veins",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Hepatic Veins Hemodynamic Eval",
+    "LONG_NAME": "XA Hepatic Veins with Hemodynamic Evaluation",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Inferior Vena Cava",
+    "LONG_NAME": "XA Inferior Vena Cava",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA L-Spine Intercostal Artery",
+    "LONG_NAME": "XA Lumbar Spine Intercostal Artery",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Internal Mammary Artery",
+    "LONG_NAME": "XA Internal Mammary Artery",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Abd Lymphangio Bilat",
+    "LONG_NAME": "XA Abdomen Lymphangiogram Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Abd Lymphangio Unilat",
+    "LONG_NAME": "XA Abdomen Lymphangiogram Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Extrem Lymphangio Bilat",
+    "LONG_NAME": "XA Extremity Lymphangiogram Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Lymphangio Pedal Bilat",
+    "LONG_NAME": "XA Lymphangiogram Pedal Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Lymphangio Pedal Unilat",
+    "LONG_NAME": "XA Lymphangiogram Pedal Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Lymphangio Cann Thoracic Duct",
+    "LONG_NAME": "XA Lymphangiogram Cannulation Thoracic Duct",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Portal Veins",
+    "LONG_NAME": "XA Portal Veins",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Portal Veins Pressures",
+    "LONG_NAME": "XA Portal Veins with Pressures",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Pulmonary Arteries Bilat",
+    "LONG_NAME": "XA Pulmonary Arteries Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Pulmonary Arteries Unilat",
+    "LONG_NAME": "XA Pulmonary Arteries Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Renal Arteries Bilat",
+    "LONG_NAME": "XA Renal Arteries Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Renal Arteries Unilat",
+    "LONG_NAME": "XA Renal Arteries Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Renal Veins Bilat",
+    "LONG_NAME": "XA Renal Veins Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Renal Veins Unilat",
+    "LONG_NAME": "XA Renal Veins Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Splenoportogram",
+    "LONG_NAME": "XA Splenoportogram",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Superior Vena Cava",
+    "LONG_NAME": "XA Superior Vena Cava",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Extremity Veins Bilat",
+    "LONG_NAME": "XA Extremity Veins Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Extremity Veins Unilat",
+    "LONG_NAME": "XA Extremity Veins Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Vertebral Arteries Bilat",
+    "LONG_NAME": "XA Vertebral Arteries Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Vertebral Arteries Unilat",
+    "LONG_NAME": "XA Vertebral Arteries Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Visceral Arteries",
+    "LONG_NAME": "XA Visceral Arteries",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Dialysis Fistula Add Punc",
+    "LONG_NAME": "XA Dialysis Fistulagram Additional Puncture",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA AV Fistula Retrograde",
+    "LONG_NAME": "XA Arteriovenous Fistula Retrograde",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA C-Spine Discogram",
+    "LONG_NAME": "XA Cervical Spine Discogram",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Dialysis Fistula",
+    "LONG_NAME": "XA Dialysis Fistulagram",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Extrem Arteries Bilat",
+    "LONG_NAME": "XA Extremity Arteries Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Extrem Arteries Unilat",
+    "LONG_NAME": "XA Extremity Arteries Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA L-Spine Discogram",
+    "LONG_NAME": "XA Lumbar Spine Discogram",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Sinogram Diag",
+    "LONG_NAME": "XA Sinogram Diagnostic",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "MG Breast Bx Stereo Add Area Guide Left",
+    "LONG_NAME": "Mammo Breast Biopsy with Stereotactic Additional Area Guidance Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Breast Bx Stereo Add Area Guide Right",
+    "LONG_NAME": "Mammo Breast Biopsy with Stereotactic Additional Area Guidance Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Breast Bx Stereo Guide Left",
+    "LONG_NAME": "Mammo Breast Biopsy with Stereotactic Guidance Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Breast Bx Stereo Guide Right",
+    "LONG_NAME": "Mammo Breast Biopsy with Stereotactic Guidance Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Breast Bx Vacuum Add Area Guide Left",
+    "LONG_NAME": "Mammo Breast Biopsy Vacuum Additional Area with Guidance Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Breast Bx Vacuum Add Area Guide Right",
+    "LONG_NAME": "Mammo Breast Biopsy Vacuum Additional Area with Guidance Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Breast Bx Vacuum Guide Left",
+    "LONG_NAME": "Mammo Breast Biopsy Vacuum with Guidance Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Breast Bx Vacuum Guide Right",
+    "LONG_NAME": "Mammo Breast Biopsy Vacuum with Guidance Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Call Back Tech",
+    "LONG_NAME": "Mammo Breast Diagnostic Call Back Technical",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Tomo Bilat",
+    "LONG_NAME": "Mammo Breast Diagnostic Tomosynthesis Bilateral",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Tomo Left",
+    "LONG_NAME": "Mammo Breast Diagnostic Tomosynthesis Left",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Diag Tomo Right",
+    "LONG_NAME": "Mammo Breast Diagnostic Tomosynthesis Right",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "MG Screen Tomo Bilat",
+    "LONG_NAME": "Mammo Breast Screening Tomosynthesis Bilateral",
+    "MODALITY": "MAMMOGRAPHY"
+  },
+  {
+    "SHORT_NAME": "FL/XR Upper GI Double w XR Abd",
+    "LONG_NAME": "FL/XR Upper GI Double Contrast With Abdominal Radiograph",
+    "MODALITY": "XR&RF"
+  },
+  {
+    "SHORT_NAME": "FL/XR Upper GI Single w XR Abd",
+    "LONG_NAME": "FL/XR Upper GI Single Contrast With Abdominal Radiograph",
+    "MODALITY": "XR&RF"
+  },
+  {
+    "SHORT_NAME": "MR Breast Bx Guide Left",
+    "LONG_NAME": "MR Breast Biopsy with Guidance Left",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Breast Bx Guide Right",
+    "LONG_NAME": "MR Breast Biopsy with Guidance Right",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Breast Needle Loc Guide Left",
+    "LONG_NAME": "MR Breast Needle Loc with Guidance Left",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Breast Needle Loc Guide Right",
+    "LONG_NAME": "MR Breast Needle Loc with Guidance Right",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head Func Motor",
+    "LONG_NAME": "MR Head Functional Motor",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head w/wo Mets",
+    "LONG_NAME": "MR Head w and wo IV Contrast Metastasis",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head w/wo Tumor HG",
+    "LONG_NAME": "MR Head w and wo IV Contrast Tumor High Grade",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head w/wo Tumor LG",
+    "LONG_NAME": "MR Head w and wo IV Contrast Tumor Low Grade",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "MR Head w/wo Tumor New",
+    "LONG_NAME": "MR Head w and wo IV Contrast Tumor New",
+    "MODALITY": "MR"
+  },
+  {
+    "SHORT_NAME": "NM Marrow Multi",
+    "LONG_NAME": "NM Bone Marrow Multiple Areas",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Bone Multi",
+    "LONG_NAME": "NM Bone Multiple Areas",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Bone Whole Body 3 Phase",
+    "LONG_NAME": "NM Bone Whole Body 3 Phase",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Cysto Reflux",
+    "LONG_NAME": "NM Cystogram Reflux",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Extrem Veins Thromb Bilat",
+    "LONG_NAME": "NM Extremity Veins Thrombosis Bilateral",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Extrem Veins Thromb Unilat",
+    "LONG_NAME": "NM Extremity Veins Thrombosis Unilateral",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Hepatobiliary w PI",
+    "LONG_NAME": "NM Hepatobiliary with Pharmacologic Intervention",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Brain 4+V",
+    "LONG_NAME": "NM Brain 4 or More Views",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Brain w Flow 4+V",
+    "LONG_NAME": "NM Brain With Flow 4 or More Views",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Brain w Flow <4V",
+    "LONG_NAME": "NM Brain With Flow Less Than 4 Views",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Brain Florbetapir SPECT",
+    "LONG_NAME": "NM Brain Florbetapir SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Brain Tc SPECT",
+    "LONG_NAME": "NM Brain Technetium SPECT",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart SPECT Multi",
+    "LONG_NAME": "NM Heart SPECT Multiple",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart Failure",
+    "LONG_NAME": "NM Heart Failure",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Heart Perfus Multi",
+    "LONG_NAME": "NM Heart Perfusion Multiple",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Kidney Cortex",
+    "LONG_NAME": "NM Kidney Cortex",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Kidney Flow/Fn Drug Multi",
+    "LONG_NAME": "NM Kidney Flow/Function With Drug Multiple",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Kidney Transplant",
+    "LONG_NAME": "NM Kidney Transplant",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Liver Spleen Multi",
+    "LONG_NAME": "NM Liver Spleen Multiple Views",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Lymph Node",
+    "LONG_NAME": "NM Lymph Node",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Lymph Node Bilat",
+    "LONG_NAME": "NM Lymph Node Bilateral",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Lymph Node Lymphedema",
+    "LONG_NAME": "NM Lymph Node Lymphedema",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Lung VQ w Quant",
+    "LONG_NAME": "NM Lung Ventilation Perfusion With Quantification",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM IV Rx Radium",
+    "LONG_NAME": "NM IV Therapy Radium",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Rx SIR-spheres",
+    "LONG_NAME": "NM Therapy SIR-spheres",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Rx Theraspheres",
+    "LONG_NAME": "NM Therapy Theraspheres",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Spleen",
+    "LONG_NAME": "NM Spleen",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Thyroid Dosimetry",
+    "LONG_NAME": "NM Thyroid Dosimetry",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Thyroid Uptake",
+    "LONG_NAME": "NM Thyroid Uptake",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Thyroid Mets Ltd",
+    "LONG_NAME": "NM Thyroid Tumor Metastases Limited",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Thyroid UPTAke Multi",
+    "LONG_NAME": "NM Thyroid Uptake Multiple Determinations",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Thyroid Whole Body Post Rx",
+    "LONG_NAME": "NM Thyroid Whole Body Post Therapy",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Tumor Loc Multi",
+    "LONG_NAME": "NM Tumor Localization Multiple Areas",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM Tumor Loc Whole Body Multi",
+    "LONG_NAME": "NM Tumor Localization Whole Body Multiple Days",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "NM WBCs Ltd Infection",
+    "LONG_NAME": "NM White Blood Cells Limited Infection",
+    "MODALITY": "NM"
+  },
+  {
+    "SHORT_NAME": "PT Brain Amyloid",
+    "LONG_NAME": "PT Brain Amyloid",
+    "MODALITY": "PT"
+  },
+  {
+    "SHORT_NAME": "PT Brain Metab",
+    "LONG_NAME": "PT Brain Metabolic",
+    "MODALITY": "PT"
+  },
+  {
+    "SHORT_NAME": "PT Heart Perfus Multi",
+    "LONG_NAME": "PT Heart Perfusion Multiple",
+    "MODALITY": "PT"
+  },
+  {
+    "SHORT_NAME": "PT/CT Simulation Limited Area",
+    "LONG_NAME": "PT/CT Simulation Limited Area",
+    "MODALITY": "PT&CT"
+  },
+  {
+    "SHORT_NAME": "DXA Axial",
+    "LONG_NAME": "DXA Bone Density Axial",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "DXA Spine Fx",
+    "LONG_NAME": "DXA Bone Density Spine Fracture",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Scanogram Bone Length",
+    "LONG_NAME": "XR Scanogram Bone Length",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Bone Survey Comp",
+    "LONG_NAME": "XR Bone Survey Complete",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Bone Survey Ltd",
+    "LONG_NAME": "XR Bone Survey Limited",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XR Cephalogram",
+    "LONG_NAME": "XR Cephalogram",
+    "MODALITY": "XR"
+  },
+  {
+    "SHORT_NAME": "XA Sinogram Rx",
+    "LONG_NAME": "XA Sinogram Therapeutic",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "RP Para Tube Plac w Guide",
+    "LONG_NAME": "RP Paracentesis Tube Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Aorta PTA",
+    "LONG_NAME": "RP Aorta Percutaneous Transluminal Angioplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Ganglion Cyst Aspir w Guide",
+    "LONG_NAME": "RP Ganglion Cyst Aspiration with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP AV Tx w Guide",
+    "LONG_NAME": "RP Arteriovenous Fistula Treatment with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Brachio Artery PTA",
+    "LONG_NAME": "RP Brachiocephalic Artery Percutaneous Transluminal Angioplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Bone Bx Deep w Guide",
+    "LONG_NAME": "RP Bone Biopsy Deep with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP FNA w Guide",
+    "LONG_NAME": "RP Biopsy Fine Needle with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Transcath Bx",
+    "LONG_NAME": "RP Transcatheter Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Cath Fibrin Sheath Removal",
+    "LONG_NAME": "RP Pericatheter Fibrin Sheath Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Transcath Stent Place",
+    "LONG_NAME": "RP Transcatheter Stent Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Thoracent Tube Plac w Guide",
+    "LONG_NAME": "RP Thoracentesis Tube Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Chest Port Place",
+    "LONG_NAME": "RP Chest Port Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Chest Port Replace",
+    "LONG_NAME": "RP Chest Port Replacement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Chest Tube Check Thrombo Add",
+    "LONG_NAME": "RP Chest Tube Check with Thrombolytic with Imaging Guidance Additional Day",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Chest Tube Check Thrombo",
+    "LONG_NAME": "RP Chest Tube Check with Thrombolytic with Imaging Guidance Intial Day",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Chest Tube Place",
+    "LONG_NAME": "RP Chest Tube Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Chest Tube Exchange",
+    "LONG_NAME": "RP Chest Tube Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Celiac Plexus Nerve Block",
+    "LONG_NAME": "RP Celiac Plexus Nerve Block with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP CV Cath Injection",
+    "LONG_NAME": "RP Central Venous Catheter Reposition with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Non-Tunneled CV Cath Exchange",
+    "LONG_NAME": "RP Non-Tunneled Central Venous Catheter Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Tunnel CV Cath Place",
+    "LONG_NAME": "RP Tunneled Central Venous Catheter Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Tunnel CV Cath Removal",
+    "LONG_NAME": "RP Tunneled Central Venous Catheter Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Tunnel CV Cath Repair",
+    "LONG_NAME": "RP Tunneled Central Venous Catheter Repair with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Tunnel CV Cath Exchange",
+    "LONG_NAME": "RP Tunneled Central Venous Catheter Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Dialysis Artery Anast PTA",
+    "LONG_NAME": "RP Dialysis Artery/Arterial Anastomosis Percutaneous Transluminal Angioplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Dialysis Vein PTA",
+    "LONG_NAME": "RP Dialysis Vein Percutaneous Transluminal Angioplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Denver Shunt Check",
+    "LONG_NAME": "RP Denver Shunt Check with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Denver Shunt Place",
+    "LONG_NAME": "RP Denver Shunt Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Denver Shunt Removal",
+    "LONG_NAME": "RP Denver Shunt Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Denver Shunt Revision",
+    "LONG_NAME": "RP Denver Shunt Revision with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Facet Inj",
+    "LONG_NAME": "RP Facet Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Fallopian Tube Dilation",
+    "LONG_NAME": "RP Fallopian Tube Dilation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Cholecystostomy",
+    "LONG_NAME": "RP Cholecystostomy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP G To G-J Tube Conversion",
+    "LONG_NAME": "RP G Tube to G-J Tube Conversion with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP G-J Tube Place",
+    "LONG_NAME": "RP G-J Tube Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP G-J Tube Exchange",
+    "LONG_NAME": "RP G-J Tube Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP G Tube Place",
+    "LONG_NAME": "RP G-Tube Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP G Tube Exchange",
+    "LONG_NAME": "RP G Tube Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Biliary Cath Retrieval",
+    "LONG_NAME": "RP Biliary Catheter Retrieval with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Biliary Stricture Dilation",
+    "LONG_NAME": "RP Biliary Stricture Dilation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Perc Biliary Drain Place",
+    "LONG_NAME": "RP Percutaneous Biliary Drainage Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Perc Biliary Drain Revision",
+    "LONG_NAME": "RP Percutaneous Biliary Drainage Revision with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Cholangioscopy",
+    "LONG_NAME": "RP Cholangioscopy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Cholangioscopy Stone Removal",
+    "LONG_NAME": "RP Cholangioscopy Stone Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Biliary Stone Removal",
+    "LONG_NAME": "RP Biliary Stone Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Biliary Tube Check",
+    "LONG_NAME": "RP Biliary Tube Check with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Intercostal Nerve Block",
+    "LONG_NAME": "RP Intercostal Nerve Block with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Iliac Artery Endograft",
+    "LONG_NAME": "RP Iliac Artery Endograft with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Iliac Artery PTA Add",
+    "LONG_NAME": "RP Iliac Artery Percutaneous Transluminal Angioplasty  with Imaging Guidance Each Additional Vessel",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Iliac Artery PTA",
+    "LONG_NAME": "RP Iliac Artery Percutaneous Transluminal Angioplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Iliac Artery Stent Place Add",
+    "LONG_NAME": "RP Iliac Artery Stent Placement with Imaging GuidanceEach Additional Vessel",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Iliac Artery Stent Place",
+    "LONG_NAME": "RP Iliac Artery Stent Placement with Imaging Guidance Initial Vessel",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Ureterostomy Exchange Conduit",
+    "LONG_NAME": "RP Ureterostomy Exchange through Ileal Conduit with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vessel Infusion Non-Thrombo",
+    "LONG_NAME": "RP Vessel Infusion Non-Thrombolytic with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Plasma Inj w Guide",
+    "LONG_NAME": "RP Injection Platelet Rich Plasma with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vessel Infusion Add Day",
+    "LONG_NAME": "RP Vessel Thrombolytic Infusion with Imaging Guidance Additional Day",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vessel Infusion Final Day",
+    "LONG_NAME": "RP Vessel Thrombolytic Infusion with Imaging Guidance Final Day",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Arterial Thrombo Inf",
+    "LONG_NAME": "RP Artery Thrombolytic Infusion with Imaging Guidance Initial Day",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Trigger Inj 1-2 Musc w Guide",
+    "LONG_NAME": "RP Injection Trigger Point with Imaging Guidance 1 to 2 Muscles",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Trigger Inj 3+ Musc w Guide",
+    "LONG_NAME": "RP Injection Trigger Point with Imaging Guidance 3 or more Muscles",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP IVC Filter Place",
+    "LONG_NAME": "RP Inferior Vena Cava Filter Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP IVC Filter Removal",
+    "LONG_NAME": "RP Inferior Vena Cava Filter Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP IVC Filter Reposition",
+    "LONG_NAME": "RP Inferior Vena Cava Filter Reposition with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP J Tube Exchange",
+    "LONG_NAME": "RP J Tube Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Med Joint Arthrocent w Guide",
+    "LONG_NAME": "RP Intermediate Joint Arthrocentesis with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Renal Artery PTA",
+    "LONG_NAME": "RP Renal Artery Percutaneous Transluminal Angioplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Pcnu Stent Place",
+    "LONG_NAME": "RP Percutaneous Nephroureteral Stent Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Pcnu Stent Removal",
+    "LONG_NAME": "RP Percutaneous Nephroureteral Stent Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Perc NU Stent Exchange",
+    "LONG_NAME": "RP Percutanous Nephroureteral Stent Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Nephrostomy Place",
+    "LONG_NAME": "RP Nephrostomy Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Veterbral Kyphoplasty",
+    "LONG_NAME": "RP Vertebral Kyphoplasty With Imaging Guidance 1 Level",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Fem Pop Artery PTA",
+    "LONG_NAME": "RP Femoral Popliteal Arteries Percutaneous Transluminal Angioplasty with Imaging Guidance Unilateral",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Fem Pop Artery Stent",
+    "LONG_NAME": "RP Femoral Popliteal Artery Stent Placement with Imaging Guidance Unilateral",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Lymphatic Ligation",
+    "LONG_NAME": "RP Lymphatic Ligation",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP L-Spine Kyphoplasty Add Lev",
+    "LONG_NAME": "RP Lumbar Spine Kyphoplasty with Imaging Guidance Each Additional Level",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP L-Spine Vertebroplasty Add Lev",
+    "LONG_NAME": "RP Lumbar Spine Vertebroplasty with Imaging Guidance Additional Level",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP L-Spine Vertebroplasty",
+    "LONG_NAME": "RP Lumbar Spine Vertebroplasty with Imaging Guidance 1 Level",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Lung Microwave Ablation",
+    "LONG_NAME": "RP Lung Microwave Ablation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Lung Fiducial Place",
+    "LONG_NAME": "RP Lung Fiducial Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Liver Microwave Ablation",
+    "LONG_NAME": "RP Liver Microwave Ablation with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Hepatic Wedge Pres",
+    "LONG_NAME": "RP Hepatic Wedge Pressures",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Nerve Root Black",
+    "LONG_NAME": "RP Nerve Root Block with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Nerve Inj w Guide",
+    "LONG_NAME": "RP Nerve Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Perc Cholangiogram",
+    "LONG_NAME": "RP Percutaneous Cholangiogram with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Peritoneal Cath Place",
+    "LONG_NAME": "RP Peritoneal Catheter Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Peritoneal Cath Removal",
+    "LONG_NAME": "RP Peritoneal Catheter Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Peritoneal Cath Reposition",
+    "LONG_NAME": "RP Peritoneal Catheter Reposition with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Peritoneal FB Removal",
+    "LONG_NAME": "RP Peritoneal Foreign Body Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Peritoneal Port Place",
+    "LONG_NAME": "RP Peritoneal Port Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Peritoneal Port Removal",
+    "LONG_NAME": "RP Peritoneal Port Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Stab Phlebectomy <20 Incis",
+    "LONG_NAME": "RP Stab Phlebectomy greater than 20 Incisions",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP PICC Place",
+    "LONG_NAME": "RP Peripherally Inserted Central Catheter Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP PICC Exchange",
+    "LONG_NAME": "RP Peripherally Inserted Central Catheter Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Pelv Drain w Guide",
+    "LONG_NAME": "RP Pelvis Drainage with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Port Removal",
+    "LONG_NAME": "RP Port Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Port Repair",
+    "LONG_NAME": "RP Port Repair with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Port Exchange",
+    "LONG_NAME": "RP Port Catheter Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Tunnel Pleural Cath Place",
+    "LONG_NAME": "RP Tunneled Pleural Catheter Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Pseudoaneursym Thrombin Inj",
+    "LONG_NAME": "RP Pseudoaneursym Thrombin Injection with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Swan-Ganz Cath Place",
+    "LONG_NAME": "RP Swan-Ganz Catheter Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP SVC Filter Place",
+    "LONG_NAME": "RP SuperiorVena Cava Filter Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP SVC Filter Removal",
+    "LONG_NAME": "RP Superior Vena Cava Filter Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP SVC Filter Reposition",
+    "LONG_NAME": "RP Superior Vena Cava Filter Reposition with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Perc Sympathect Nerve Block",
+    "LONG_NAME": "RP Percutaneous Sympathectomy Nerve Block with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP LL PTA >2 Add Ves",
+    "LONG_NAME": "RP Lower Leg Percutaneous Transluminal Angioplasty with Imaging Guidance 1-2 Additional Vessels",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP LL PTA",
+    "LONG_NAME": "RP Lower Leg Percutaneous Transluminal Angioplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP LL Stent Place Add Vess",
+    "LONG_NAME": "RP Lower Leg Stent Placement with Imaging Guidance Each Additional Vessel",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Clot Removal",
+    "LONG_NAME": "RP Clot Removal any Method",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Thrombus Removal",
+    "LONG_NAME": "RP Intraluminal Thrombus Mechanical Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Transjug Kidney Bx",
+    "LONG_NAME": "RP Transjugular Kidney Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Transjug Kidney Bx Veno",
+    "LONG_NAME": "RP Transjugular Kidney Biopsy with Imaging Guidance Venography",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Transjug Liver Bx",
+    "LONG_NAME": "RP Transjugular Liver Biopsy with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Transjug Liver Bx Veno",
+    "LONG_NAME": "RP Transjugular Liver Biopsy with Imaging Guidance Venography",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Transjug Liver Bx Press",
+    "LONG_NAME": "RP Transjugular Liver Biopsy with Imaging Guidance Pressures",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP T-Spine Kyphoplasty Add Lv",
+    "LONG_NAME": "RP Thoracic Spine Kyphoplasty with Imaging Guidance Each Additional Level",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP T-Spine Vertebroplasty Add Lv",
+    "LONG_NAME": "RP Thoracic Spine Vertebroplasty with Imaging Guidance Additional Level",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP T-Spine Vertebroplasty",
+    "LONG_NAME": "RP Thoracic Vertebroplasty with Imaging Guidance 1 Level",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Tumor Artery Embo",
+    "LONG_NAME": "RP Tumor Arterial Embolization with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Arm Port Place",
+    "LONG_NAME": "RP Arm Port Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Arm Port Replace",
+    "LONG_NAME": "RP Arm Port Replacement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Bronchial Artery Embo",
+    "LONG_NAME": "RP Bronchial Artery Embolization with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP UAE",
+    "LONG_NAME": "RP Uterine Artery Embolization with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vertebral Augment Add Lev",
+    "LONG_NAME": "RP Vertebral Augmentation with Imaging Guidance Each Additional Level",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Visceral Artery Stent Place",
+    "LONG_NAME": "RP Visceral Artery Stent Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Visceral Artery PTA",
+    "LONG_NAME": "RP Visceral Artery Percutaneous Transluminal Angioplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Endovenous Laser Ablation",
+    "LONG_NAME": "RP Endovenous Laser Ablation",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Endovenous Laser Ablation Add",
+    "LONG_NAME": "RP Endovenous Laser Ablation Additional Area",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Arterial Embo",
+    "LONG_NAME": "RP Artery Embolization with Imaging Guidance excluding (Trauma, Tumor)",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Artery Stent Place Add Vess",
+    "LONG_NAME": "RP Artery Stent Placement with Imaging Guidance Excluding (Iliac, Fem-Pop, Tibial) Each Additional Vessel",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Artery Stent Place",
+    "LONG_NAME": "RP Artery Stent Placement with Imaging Guidance Excluding (Iliac, Fem-Pop, Tibial)",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Artery Thrombect Add Proc",
+    "LONG_NAME": "RP Artery Mechanical Thrombectomy wuth Imaging Guidance Additional Procedure",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Artery Thrombect Add Vess",
+    "LONG_NAME": "RP Artery Mechanical Thrombectomy with Imaging Guidance Additional Vessel Same Family",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Artery Thrombect",
+    "LONG_NAME": "RP Artery Mechanical Thrombectomy wuth Imaging Guidance Initial Vessel",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Bleeding Vessel Embo",
+    "LONG_NAME": "RP Bleeding Vessel Embolization with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vein Embo/Sclero Rx Non-Bleeding",
+    "LONG_NAME": "RP Vein Embolization/Sclerotherapy non-bleeding with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vessel FB Retrieval",
+    "LONG_NAME": "RP Vessel Foreign Body Retrieval with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vein Thrombo Infu Initial",
+    "LONG_NAME": "RP Vein Thrombolytic Infusion with Imaging Guidance Initial Day",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vein PTA",
+    "LONG_NAME": "RP Vein Percutaneous Transluminal Angioplasty with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vein Sampling",
+    "LONG_NAME": "RP Vein Sampling",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vein Stent/Covered Place Add",
+    "LONG_NAME": "RP Vein Stent/Covered Stent Placement with Imaging Guidance Each Additional Vessel",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vein Stent/Covered Place",
+    "LONG_NAME": "RP Vein Stent/Covered Stent Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vein Mech Thrombect Add",
+    "LONG_NAME": "RP Vein Mechanical Thrombectomy with Imaging Guidance Additional Day",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vein Mech Thrombect",
+    "LONG_NAME": "RP Vein Mechanical Thrombectomy with Imaging Guidance Initial Day",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Vertebroplasty Add Lev",
+    "LONG_NAME": "RP Vertebroplasty with Imaging Guidance Each Additional Level",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Wire Plac w Guide",
+    "LONG_NAME": "RP Wire Placement with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Wire Plac w Guide Add",
+    "LONG_NAME": "RP Wire Placement with Imaging Guidance Additional",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Transureth NU Stent Removal",
+    "LONG_NAME": "RP Transurethral Nephroureteral Stent Removal with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Transureth NU Exchange",
+    "LONG_NAME": "RP Transurethral Nephroureteral Stent Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "FL Ankle Arthro",
+    "LONG_NAME": "FL Ankle Arthrogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Bladder Drain Suprapubic",
+    "LONG_NAME": "FL Bladder Drainage Suprapubic",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Cath Fallopian Tube",
+    "LONG_NAME": "FL Catheterization of Fallopian Tube",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Cisternogram",
+    "LONG_NAME": "FL Cisternogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Oral Cholecystogram",
+    "LONG_NAME": "FL Oral Cholecystogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Cholecysto Post Fatty Meal",
+    "LONG_NAME": "FL Cholecystogram Post Fatty Meal",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL IV Cholangiogram",
+    "LONG_NAME": "FL Intravenous Cholangiogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Cholangio Intraop",
+    "LONG_NAME": "FL Cholangiogram Intraoperative",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Cholangio Intraop Additional",
+    "LONG_NAME": "FL Cholangiogram Intraoperative Additional",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL C-Spine Discogram",
+    "LONG_NAME": "FL Cervical Spine Discogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL C-Spine Myelo",
+    "LONG_NAME": "FL Cervical Spine Myelogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Cystourethrogram",
+    "LONG_NAME": "FL Cystourethrogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Defecography",
+    "LONG_NAME": "FL Defecography",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL ERCP Biliary",
+    "LONG_NAME": "FL ERCP Biliary",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL ERCP Biliary Pancreas",
+    "LONG_NAME": "FL ERCP Biliary and Pancreas",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL ERCP Pancreas",
+    "LONG_NAME": "FL ERCP Pancreas",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Esoph Swallow Func Single w Video",
+    "LONG_NAME": "FL Esophagus Barium Swallowing Function Single Contrast With Video",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Fistula GI",
+    "LONG_NAME": "FL Fistula Gastrointestinal",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Fistula GU",
+    "LONG_NAME": "FL Fistula Genitourinary",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Fistula",
+    "LONG_NAME": "FL Fistula Sinus Tract",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Feeding Tube Check",
+    "LONG_NAME": "FL Feeding Tube Check",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Feed Tube Place Long",
+    "LONG_NAME": "FL Fleeding Tube Placement Long",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Tube Change",
+    "LONG_NAME": "FL Tube Change",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Hip Arthro",
+    "LONG_NAME": "FL Hip Arthrogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Hystero",
+    "LONG_NAME": "FL Hysterosalpingogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Inj Non-Vasc Shunt",
+    "LONG_NAME": "FL Injection Non-Vascular Shunt",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL IV Urogram",
+    "LONG_NAME": "FL Intravenous Urogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL IV Urogram Ltd",
+    "LONG_NAME": "FL Intravenous Urogram Limited",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Joint Aspir",
+    "LONG_NAME": "FL Joint Aspiration",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Kidney Manometry",
+    "LONG_NAME": "FL Kidney Manometry",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Knee Arthro",
+    "LONG_NAME": "FL Knee Arthrogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Guide LP",
+    "LONG_NAME": "FL Guidance for Lumbar Puncture",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL L-Spine Discogram",
+    "LONG_NAME": "FL L-Spine Discogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL L-Spine Myelo",
+    "LONG_NAME": "FL Lumbar Spine Myelogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Loopogram",
+    "LONG_NAME": "FL Loopogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Post Fossa Myelo",
+    "LONG_NAME": "FL Posterior Fossa Myelogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Post Fossa Myelo Bilat",
+    "LONG_NAME": "FL Posterior Fossa Myelogram Bilateral",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Post Fossa Myelo Unilat",
+    "LONG_NAME": "FL Posterior Fossa Myelogram Unilateral",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Pouchogram",
+    "LONG_NAME": "FL Pouchogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Pyelo Antegrade",
+    "LONG_NAME": "FL Pyelogram Antegrade",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Pyelo Antegrade  Nephrost",
+    "LONG_NAME": "FL Pyelogram Antegrade Nephrostomy",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Pyelo Retrograde",
+    "LONG_NAME": "FL Pyelogram Retrograde",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Pyelo Retrograde Bilat",
+    "LONG_NAME": "FL Pyelogram Retrograde Bilateral",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Pyelo Retrograde Intraop",
+    "LONG_NAME": "FL Pyelogram Retrograde Intraoperative",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Salivary Gland Sial",
+    "LONG_NAME": "FL Salivary Gland Sialogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Shoulder Arthro",
+    "LONG_NAME": "FL Shoulder Arthrogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Shoulder Arthro Ltd",
+    "LONG_NAME": "FL Shoulder Arthrogram Limited",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Spine Myelo",
+    "LONG_NAME": "FL Spine Myelogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Seminal Vesiculogram",
+    "LONG_NAME": "FL Seminal Vesiculogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Esoph Swallow Func w Video Speech",
+    "LONG_NAME": "FL Esophagus Barium Swallowing Function With Video And Speech",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL TMJ Arthro",
+    "LONG_NAME": "FL Temporomandibular Joint Arthrogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL T-Spine Myelo",
+    "LONG_NAME": "FL Thoracic Spine Myelogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Urethro Retrograde",
+    "LONG_NAME": "FL Urethrogram Retrograde",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL VCUG",
+    "LONG_NAME": "FL Voiding Cystourethrogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "FL Wrist Arthro",
+    "LONG_NAME": "FL Wrist Arthrogram",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "US Abd Wall",
+    "LONG_NAME": "US Abdomen Wall",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Aorta Iliac Doppler",
+    "LONG_NAME": "US Aorta Iliac Vessels Doppler",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Aorta Iliac Doppler Ltd/F/U",
+    "LONG_NAME": "US Aorta Iliac Vessels Doppler Limted/Follow Up",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Bx Vacuum Guide Left",
+    "LONG_NAME": "US Breast Biopsy Vacuum with Guidance Left",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Bx Vacuum Guide Right",
+    "LONG_NAME": "US Breast Biopsy Vacuum with Guidance Right",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Bx Core Guide Left",
+    "LONG_NAME": "US Breast Biopsy Needle Core with Guidance Left",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Bx Core Guide Right",
+    "LONG_NAME": "US Breast Biopsy Needle Core with Guidance Right",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Carpal Tunnel Inj",
+    "LONG_NAME": "US Carpal Tunnel Injection",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Kidney Transplant Doppler",
+    "LONG_NAME": "US Kidney Transplant Doppler",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Pelv Groin Pseudo",
+    "LONG_NAME": "US Pelvis Groin Pseudoaneurysm",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Pelv IVF Base",
+    "LONG_NAME": "US Pelvis In Vitro Fertilization Baseline",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Prostate Transrectal Vol",
+    "LONG_NAME": "US Prostate Transrectal Volume",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Retro Kidney Vessels",
+    "LONG_NAME": "US Retroperitoneum Kidney Vessels",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Needle Loc w Specimen Guide Left",
+    "LONG_NAME": "US Breast Needle Loc with Specimen with Guidance Left",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Needle Loc w Specimen Guide Right",
+    "LONG_NAME": "US Breast Needle Loc with Specimen with Guidance Right",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Carotid Doppler Bilat",
+    "LONG_NAME": "US Carotid Doppler Bilateral",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Carotid Doppler Ltd/F/U",
+    "LONG_NAME": "US Carotid Doppler Limited/Follow Up",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "FL Feed Tube Place",
+    "LONG_NAME": "FL Feeding Tube Placement",
+    "MODALITY": "RADIO-FLUOROSCOPY"
+  },
+  {
+    "SHORT_NAME": "US Pelv Bladder Post-Void",
+    "LONG_NAME": "US Pelvis Bladder Post-Void Residual",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Ext MSK",
+    "LONG_NAME": "US Extremity Musculoskeletal",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Ext MSK Ltd",
+    "LONG_NAME": "US Extremity Musculoskeletal Limited",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Bx FNA Guide Left",
+    "LONG_NAME": "US Breast Biopsy Fine Needle with Guidance Left",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Breast Bx FNA Guide Right",
+    "LONG_NAME": "US Breast Biopsy Fine Needle with Guidance Right",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "US Penis Doppler",
+    "LONG_NAME": "US Penis Doppler",
+    "MODALITY": "ULTRASOUND"
+  },
+  {
+    "SHORT_NAME": "XA Cholangiogram Via Existing Cath",
+    "LONG_NAME": "XA Cholangiogram Through Existing Catheter with Imaging Guidance",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Dialysis Fistula Existing Cath/Needle",
+    "LONG_NAME": "XA Dialysis Fistulagram Existing Catheter/Needle",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Abd Aorta Bilat Leg",
+    "LONG_NAME": "XA Abdomen Aorta Bilateral Lower Extremity",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA Ureterogram",
+    "LONG_NAME": "XA Ureterogram",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA IJ Vein Bilateral",
+    "LONG_NAME": "XA Internal Jugular Vein Bilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "XA IJVein Unilateral",
+    "LONG_NAME": "XA Internal Jugular Vein Unilateral",
+    "MODALITY": "XA"
+  },
+  {
+    "SHORT_NAME": "RP Transhepatic Tube Revision",
+    "LONG_NAME": "RP TransHepatic Tube Revision with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP TIPS No Embo",
+    "LONG_NAME": "RP TIPS excluding Embolization with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP TIPS Revision",
+    "LONG_NAME": "RP TIPS Revision with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Thyroid FNA w Guide",
+    "LONG_NAME": "RP Thyroid Biopsy Fine Needle with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "RP Nephrostomy Exchange",
+    "LONG_NAME": "RP Nephrostomy Exchange with Imaging Guidance",
+    "MODALITY": "RADIOLOGY PROCEDURE"
+  },
+  {
+    "SHORT_NAME": "",
+    "LONG_NAME": "",
+    "MODALITY": "XR"
+  }
+]
