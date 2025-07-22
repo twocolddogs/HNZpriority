@@ -338,15 +338,24 @@ window.addEventListener('DOMContentLoaded', function() {
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
         const isRender = hostname.endsWith('.onrender.com');
         const isPagesDev = hostname.endsWith('.pages.dev');
-        const apiBase = isLocalhost ? 'http://localhost:10000' : 
-                       (isRender ? 'https://radiology-api-staging.onrender.com' : 
-                       (isPagesDev ? 'https://radiology-api-staging.onrender.com' : '/api'));
-        const mode = isLocalhost ? 'LOCAL' : (isRender ? 'STAGING' : (isPagesDev ? 'PAGES.DEV' : 'PROD'));
         
-        return {
-            baseUrl: apiBase,
-            mode: mode
-        };
+        let apiBase, mode;
+        
+        if (isLocalhost) {
+            apiBase = 'http://localhost:10000';
+            mode = 'LOCAL';
+        } else if (isRender) {
+            apiBase = 'https://radiology-api-staging.onrender.com';
+            mode = 'RENDER_STAGING';
+        } else if (isPagesDev) {
+            apiBase = 'https://radiology-api-staging.onrender.com';  
+            mode = 'PAGES_DEV';
+        } else {
+            apiBase = '/api';  // Default fallback
+            mode = 'PROD';
+        }
+        
+        return { baseUrl: apiBase, mode: mode };
     }
     
     const apiConfig = detectApiUrls();
