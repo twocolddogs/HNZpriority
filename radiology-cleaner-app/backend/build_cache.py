@@ -1,5 +1,6 @@
 # --- START OF FILE build_cache.py (Corrected) ---
 
+import yaml
 import os
 import logging
 import sys
