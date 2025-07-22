@@ -468,10 +468,40 @@ def parse_batch():
         processing_time_ms = int((time.time() - start_time) * 1000)
         logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
 
-        # Always return file reference to avoid I/O storm that causes restarts
-        # V3 Fix: Skip file re-reading that was triggering app restarts
-        logger.info(f"Returning file reference to avoid post-processing I/O issues: {results_filename}")
+        # V3 Fix: Use lighter approach to avoid I/O storm restarts
+        # For small batches, provide results but avoid heavy disk I/O
+        MAX_INMEMORY_RESULTS = 10  # Reduced from 50 to minimize I/O
         
+        if len(exams_to_process) <= MAX_INMEMORY_RESULTS:
+            # Minimal I/O approach: read once, no deletion
+            try:
+                results = []
+                with open(results_filepath, 'r', encoding='utf-8') as f_in:
+                    for line in f_in:
+                        if line.strip():
+                            results.append(json.loads(line.strip()))
+                logger.info(f"Loaded {len(results)} results into memory (no file deletion to avoid I/O issues)")
+                
+                return jsonify({
+                    "message": "Batch processing complete.",
+                    "results": results,
+                    "results_file": results_filepath,
+                    "results_filename": results_filename,
+                    "processing_stats": {
+                        "total_processed": len(exams_to_process),
+                        "successful": success_count,
+                        "errors": error_count,
+                        "processing_time_ms": processing_time_ms,
+                        "model_used": model_key
+                    }
+                })
+            except Exception as read_error:
+                logger.error(f"Failed to read results file: {read_error}")
+                # Fallback to file reference
+                pass
+        
+        # For larger batches or if reading failed, return file reference
+        logger.info(f"Returning file reference to avoid I/O issues: {results_filename}")
         return jsonify({
             "message": "Batch processing complete. Results streamed to disk.",
             "results_file": results_filepath,
