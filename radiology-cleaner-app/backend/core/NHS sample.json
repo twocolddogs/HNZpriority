@@ -1,0 +1,126 @@
+{
+    "snomed_concept_id": 169070004,
+    "snomed_fsn": "Computed tomography of abdomen (procedure)",
+    "snomed_laterality_concept_id": "",
+    "snomed_laterality_fsn": "",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Abdomen"
+  },
+  {
+    "snomed_concept_id": 419394006,
+    "snomed_fsn": "Computed tomography of abdomen and pelvis (procedure)",
+    "snomed_laterality_concept_id": "",
+    "snomed_laterality_fsn": "",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Abdomen and pelvis"
+  },
+  {
+    "snomed_concept_id": 420017001,
+    "snomed_fsn": "Computed tomography angiography of aortic arch and carotid arteries (procedure)",
+    "snomed_laterality_concept_id": 51440002,
+    "snomed_laterality_fsn": "Right and left (qualifier value)",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Angio aortic arch and carotid Both"
+  },
+  {
+    "snomed_concept_id": 419545005,
+    "snomed_fsn": "Computed tomography angiography of coronary arteries (procedure)",
+    "snomed_laterality_concept_id": "",
+    "snomed_laterality_fsn": "",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Cardiac angiogram coronary"
+  },
+  {
+    "snomed_concept_id": 241550007,
+    "snomed_fsn": "Computed tomography of adrenals (procedure)",
+    "snomed_laterality_concept_id": 51440002,
+    "snomed_laterality_fsn": "Right and left (qualifier value)",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Adrenal Both"
+  },
+  {
+    "snomed_concept_id": 419949007,
+    "snomed_fsn": "Computed tomography angiography of intracranial artery (procedure)",
+    "snomed_laterality_concept_id": "",
+    "snomed_laterality_fsn": "",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Angiogram intracranial"
+  },
+  {
+    "snomed_concept_id": 419089004,
+    "snomed_fsn": "Computed tomography angiography of lower limb artery (procedure)",
+    "snomed_laterality_concept_id": 51440002,
+    "snomed_laterality_fsn": "Right and left (qualifier value)",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Angiogram lower limb Both"
+  },
+  {
+    "snomed_concept_id": 419277007,
+    "snomed_fsn": "Computed tomography angiography of upper limb artery (procedure)",
+    "snomed_laterality_concept_id": 51440002,
+    "snomed_laterality_fsn": "Right and left (qualifier value)",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Angiogram upper limb Both"
+  },
+  {
+    "snomed_concept_id": 419995000,
+    "snomed_fsn": "Computed tomography cholangiogram (procedure)",
+    "snomed_laterality_concept_id": "",
+    "snomed_laterality_fsn": "",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Cholangiogram"
+  },
+  {
+    "snomed_concept_id": 241545001,
+    "snomed_fsn": "Computed tomography of brachial plexus (procedure)",
+    "snomed_laterality_concept_id": "",
+    "snomed_laterality_fsn": "",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Brachial plexus"
+  },
+  {
+    "snomed_concept_id": 418891003,
+    "snomed_fsn": "Computed tomography of chest and abdomen (procedure)",
+    "snomed_laterality_concept_id": "",
+    "snomed_laterality_fsn": "",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Chest and abdomen"
+  },
+  {
+    "snomed_concept_id": 420145009,
+    "snomed_fsn": "Computed tomography of calcaneum (procedure)",
+    "snomed_laterality_concept_id": 51440002,
+    "snomed_laterality_fsn": "Right and left (qualifier value)",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Calcaneus Both"
+  },
+  {
+    "snomed_concept_id": 418023006,
+    "snomed_fsn": "Computed tomography of chest, abdomen and pelvis (procedure)",
+    "snomed_laterality_concept_id": "",
+    "snomed_laterality_fsn": "",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Chest abdomen and pelvis"
+  },
+  {
+    "snomed_concept_id": 169069000,
+    "snomed_fsn": "Computed tomography of chest (procedure)",
+    "snomed_laterality_concept_id": "",
+    "snomed_laterality_fsn": "",
+    "is_diagnostic": "Y",
+    "is_interventional": "N",
+    "primary_source_name": "CT Chest"
+  }
