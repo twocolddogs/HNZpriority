@@ -250,11 +250,15 @@ class ScalableTrainingFramework:
         start_time = time.time()
         
         # Initialize processing components for this chunk
-        nlp_processor = NLPProcessor()
-        semantic_parser = RadiologySemanticParser()
+        # V3 Architecture: Initialize dual processors for training
+        retriever_processor = NLPProcessor(model_key='default')  # BioLORD for retrieval
+        reranker_processor = NLPProcessor(model_key='experimental')  # MedCPT for reranking
+        semantic_parser = RadiologySemanticParser(nlp_processor=retriever_processor)  # Use retriever for parsing
+        
         nhs_engine = NHSLookupEngine(
             nhs_json_path='core/NHS.json',
-            nlp_processor=nlp_processor,
+            retriever_processor=retriever_processor,
+            reranker_processor=reranker_processor,
             semantic_parser=semantic_parser,
             config_path=self.config_path
         )

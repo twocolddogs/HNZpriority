@@ -96,10 +96,15 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
         contrast_mapper=contrast_mapper
     )
 
-    # 5. Initialize the NHSLookupEngine, which will now parse the data correctly
+    # 5. Initialize the NHSLookupEngine for cache building (V3 architecture)
+    # For cache building, we only need the retriever processor since we're building the FAISS index
+    # We can use a dummy reranker processor since it won't be used during cache generation
+    dummy_reranker = NLPProcessor(model_key='experimental')  # Won't be used for cache building
+    
     engine = NHSLookupEngine(
         nhs_json_path=nhs_json_path,
-        nlp_processor=nlp_processor,
+        retriever_processor=nlp_processor,  # This is the processor we're building cache for
+        reranker_processor=dummy_reranker,  # Required by v3 constructor but not used here
         semantic_parser=semantic_parser,
         config_path=config_path # Pass the config path to the engine as well
     )
