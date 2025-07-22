@@ -128,7 +128,11 @@ def _initialize_app():
     
     initialize_preprocessor(abbreviation_expander, config=preprocessing_config)
     
-    anatomy_extractor = AnatomyExtractor(nhs_authority)
+    anatomy_vocab_from_config = preprocessing_config.get('anatomy_vocabulary', {})
+    if not anatomy_vocab_from_config:
+        logger.warning("Anatomy vocabulary not found in config.yaml. AnatomyExtractor will be empty.")
+
+    anatomy_extractor = AnatomyExtractor(anatomy_vocabulary=anatomy_vocab_from_config)
     laterality_detector = LateralityDetector()
     contrast_mapper = ContrastMapper()
 
@@ -138,6 +142,7 @@ def _initialize_app():
         laterality_detector=laterality_detector,
         contrast_mapper=contrast_mapper
     )
+
 
     nhs_lookup_engine = NHSLookupEngine(
         nhs_json_path=nhs_json_path,
@@ -183,6 +188,9 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     components_from_engine = nhs_result.get('components', {})
     context_from_input = detect_all_contexts(cleaned_exam_name, parsed_input_components.get('anatomy', []))
 
+    matched_modalities = components_from_engine.get('modality', [])
+    primary_modality_code = matched_modalities[0] if matched_modalities else (modality_code or 'Other')
+
     final_result = {
         'data_source': 'N/A',
         'modality_code': components_from_engine.get('modality'),
@@ -203,6 +211,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             'laterality': components_from_engine.get('laterality', []),
             'contrast': components_from_engine.get('contrast', []),
             'technique': components_from_engine.get('technique', []),
+            'modality': matched_modalities, # NEW: Keep the full list here for transparency
             'confidence': components_from_engine.get('confidence', 0.0),
             
             # Context from the original input request, calculated once and stored

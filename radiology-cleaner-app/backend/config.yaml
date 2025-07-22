@@ -1,400 +1,213 @@
+# ====================================================================================
+# UNIFIED SCORING & PREPROCESSING CONFIGURATION (V3.1 - AUGMENTED)
+# ====================================================================================
+# This file centralizes all business logic, weights, rules, and abbreviations for the
+# radiology exam standardization engine. It is the "brain" of the application.
+#
+# HOW TO USE:
+# - Adjust weights to change the importance of different matching components.
+# - Add new abbreviations to the 'preprocessing' section to handle new exam names.
+# - Define new rules and constraints to enforce clinical safety and logic.
+# - Comments explain the purpose and impact of each section.
+# ====================================================================================
+
 scoring:
-  # Number of candidates to retrieve from the fast vector search before detailed scoring.
+  # ----------------------------------------------------------------------------------
+  # RETRIEVER & CORE SCORING WEIGHTS
+  # Controls the behavior of the main matching algorithm.
+  # ----------------------------------------------------------------------------------
+
+  # Number of initial candidates to retrieve from the fast vector search (FAISS).
+  # A larger number might find a better match but increases processing time for the scoring stage.
   retriever_top_k: 25
 
-  # Weights for combining individual components into a single component score.
-  # Rebalanced based on training data analysis for better accuracy
+  # --- COMPONENT WEIGHTS ---
+  # These weights determine the importance of each structured part of the exam name when
+  # calculating the 'component_score'. The total should ideally be 1.0.
   weights_component:
-    anatomy: 0.25      # Reduced to make room for technique
-    modality: 0.30     # Unchanged - modality is most reliable component
-    laterality: 0.15   # Unchanged - important for precise matching
-    contrast: 0.20     # Doubled - contrast is clinically critical
-    technique: 0.10    # Increased - important for specialized procedures like MRCP
+    anatomy: 0.25      # Importance of matching anatomy (e.g., 'head', 'chest').
+    modality: 0.30     # Importance of matching modality (e.g., 'CT', 'MRI'). Highest weight as it's critical.
+    laterality: 0.15   # Importance of matching laterality (e.g., 'left', 'right').
+    contrast: 0.20     # Increased importance of matching contrast status (e.g., 'with contrast').
+    technique: 0.10    # Importance of matching specific techniques (e.g., 'MRCP', 'SPECT').
 
-  # Final weights for combining the component score and the semantic score.
-  # Enhanced with frequency-based scoring for popular exams
+  # --- FINAL SCORE WEIGHTS ---
+  # These weights combine the 'component_score' (rules-based) with the 'semantic_score' (NLP-based)
+  # to produce the final confidence score.
   weights_final:
-    component: 0.60    # Reduced from 0.60 to balance with semantic
-    semantic: 0.40     # Reduced from 0.40 to make room for frequency
-    #frequency: 0.10    # NEW: popularity-based scoring for common exams
+    component: 0.60    # How much to trust the structured component match.
+    semantic: 0.40     # How much to trust the NLP model's understanding of semantic similarity.
+    # frequency: 0.10  # This appears to be a planned or deprecated feature for popularity-based scoring.
 
-  # Bonuses and penalties applied to the final score.
-  # Refined to be less aggressive and more balanced
-  interventional_bonus: 0.15        # Reduced from 0.25 for subtler weighting
-  interventional_penalty: -0.20     # Reduced from -0.50 to avoid harsh penalties
-  # ANATOMICAL SPECIFICITY HANDLING - More granular approach
-  anatomical_specificity_bonus: 0.10    # Bonus for clinically relevant anatomical detail
-  general_specificity_penalty: 0.20     # Penalty for irrelevant administrative detail
-  technique_specificity_bonus: 0.05     # Small bonus for technique specificity
-  exact_match_bonus: 0.25           # Reduced from 0.50 for balanced scoring
+  # ----------------------------------------------------------------------------------
+  # BONUSES & PENALTIES
+  # Fine-tunes the final score based on specific contextual clues and match quality.
+  # ----------------------------------------------------------------------------------
 
-  # NEW scoring enhancements for better clinical context matching
-  synonym_match_bonus: 0.15         # Bonus for medical abbreviation matches
-  context_match_bonus: 0.10         # Bonus for matching clinical contexts
-  modality_similarity_threshold: 0.8 # Threshold for partial modality credit
-  
-  # Enhanced contrast scoring - severe penalties for critical mismatches
-  contrast_mismatch_score: 0.05     # Very severe penalty for wrong contrast (was 0.3)
-  contrast_null_score: 0.7          # Unchanged for missing contrast info
-  
-  # Contrast preference scoring - prefer non-contrast when input has no contrast
-  prefer_no_contrast_when_unspecified: true  # Enable preferential non-contrast matching
-  no_contrast_preference_bonus: 0.25         # Strong bonus for non-contrast when input has no contrast
-  
-  # MINIMUM COMPONENT SCORE THRESHOLDS - Prevent semantic similarity from overriding component logic
-  # CRITICAL: These thresholds ensure component mismatches can't be overcome by high semantic similarity alone
+  interventional_bonus: 0.15        # Small bonus if both input and candidate are interventional.
+  interventional_penalty: -0.20     # Penalty if input is interventional but the candidate is not.
+  exact_match_bonus: 0.25           # Strong bonus if the cleaned input string is an exact match to the candidate name.
+  synonym_match_bonus: 0.15         # Bonus if a match is found via an abbreviation (e.g., input 'LSP' matches 'lumbar spine').
+  context_match_bonus: 0.10         # General bonus for matching clinical contexts (e.g., both are 'emergency').
+  modality_similarity_threshold: 0.8 # A threshold that is likely used elsewhere to gate partial modality credit.
+
+  # --- ANATOMICAL SPECIFICITY SCORING ---
+  # A more nuanced approach than a simple penalty. It rewards useful detail and penalizes noise.
+  anatomical_specificity_bonus: 0.10    # Bonus for clinically relevant extra words in the candidate (e.g., 'artery').
+  general_specificity_penalty: 0.20     # Penalty for irrelevant extra words (e.g., 'procedure', 'examination').
+  technique_specificity_bonus: 0.05     # Small bonus for extra words indicating a more specific technique.
+
+  # --- CONTRAST SCORING ---
+  # Contrast is clinically critical, so mismatches are penalized heavily.
+  contrast_mismatch_score: 0.05     # SEVERE penalty if input is 'with' and candidate is 'without' (or vice-versa).
+  contrast_null_score: 0.7          # Score when one has contrast info and the other does not (an ambiguous case).
+  prefer_no_contrast_when_unspecified: true  # If true, an input without contrast info will prefer a non-contrast candidate.
+  no_contrast_preference_bonus: 0.25         # The bonus applied if the above condition is met.
+
+  # ----------------------------------------------------------------------------------
+  # ADVANCED SCORING RULES & CLINICAL SAFETY CONSTRAINTS
+  # These sections act as powerful safety nets to prevent clinically dangerous or
+  # illogical matches, even if the semantic similarity is high.
+  # ----------------------------------------------------------------------------------
+
+  # --- MINIMUM COMPONENT SCORE THRESHOLDS ---
+  # CRITICAL: Prevents high semantic similarity from overriding clear component mismatches.
   minimum_component_thresholds:
-    enable: true  # Enable minimum component threshold checking
-    
-    # Individual component minimum scores (0.0 to 1.0)
-    # If any component falls below threshold, the match is rejected regardless of semantic similarity
-    anatomy_min: 0.1          # Minimum anatomy overlap required (very lenient - allows partial matches)
-    modality_min: 0.4         # Minimum modality similarity required (stricter - modality is critical)
-    laterality_min: 0.0       # No minimum for laterality (often missing or ambiguous)
-    contrast_min: 0.3         # Minimum contrast compatibility (moderate - contrast matters but not always specified)
-    technique_min: 0.0        # No minimum for technique (often missing in simple exams)
-    
-    # Combined component score minimum (0.0 to 1.0)
-    # The weighted combination of all components must meet this threshold
-    combined_min: 0.25        # Overall component score must be reasonable
-    
-    # Semantic override prevention
-    # Even if semantic similarity is very high, component mismatches below threshold will block the match
-    max_semantic_weight: 0.6  # Limit how much semantic similarity can compensate for poor components
-  
-  # AGE/GENDER CONTEXT SCORING - Super-strong bonuses for matches
-  gender_context_match_bonus: 0.20  # Strong bonus for gender context matches
-  age_context_match_bonus: 0.15     # Strong bonus for age context matches
-  pregnancy_context_bonus: 0.25     # Extra strong bonus for pregnancy context
-  
-  # BIOPSY MODALITY PREFERENCE - When exam name has "biopsy" but no explicit modality
-  biopsy_modality_preference: true   # Enable biopsy modality preference scoring
-  
-  # ORGAN-SPECIFIC BIOPSY MODALITY PREFERENCES
-  # Maps anatomy keywords to preferred modality weightings (+/- scores)
+    enable: true
+    # Individual component scores (0.0 to 1.0) must meet these minimums to be considered.
+    anatomy_min: 0.1
+    modality_min: 0.4
+    laterality_min: 0.0
+    contrast_min: 0.3
+    technique_min: 0.0
+    # The overall weighted component score must also meet a minimum threshold.
+    combined_min: 0.25
+    # Limits how much a high semantic score can compensate for a poor component score.
+    max_semantic_weight: 0.6
+
+  # --- AGE/GENDER CONTEXT BONUSES ---
+  gender_context_match_bonus: 0.20  # For matching 'female'/'male' contexts (e.g., prostate, breast).
+  age_context_match_bonus: 0.15     # For matching 'paediatric' context.
+  pregnancy_context_bonus: 0.25     # Extra strong bonus for matching 'pregnancy' context.
+
+  # --- BIOPSY MODALITY PREFERENCE ---
+  # When an input says "Biopsy" without a modality, this prefers the most common modality for that anatomy.
+  biopsy_modality_preference: true
   biopsy_organ_modality_preferences:
-    # Lung/Chest - CT preferred, fluoroscopy strongly discouraged
-    lung:
-      ct: 0.40
-      us: 0.25
-      fluoroscopy: -0.50
-    pulmonary:
-      ct: 0.40
-      us: 0.25 
-      fluoroscopy: -0.50
-    chest:
-      ct: 0.35
-      us: 0.20
-      fluoroscopy: -0.45
-    thoracic:
-      ct: 0.35
-      us: 0.20
-      fluoroscopy: -0.45
-      
-    # Liver - US and CT both good, fluoroscopy discouraged
-    liver:
-      ct: 0.30
-      us: 0.35
-      fluoroscopy: -0.25
-    hepatic:
-      ct: 0.30
-      us: 0.35
-      fluoroscopy: -0.25
-      
-    # Kidney - US and CT preferred
-    kidney:
-      ct: 0.30
-      us: 0.35
-      fluoroscopy: -0.20
-    renal:
-      ct: 0.35
-      us: 0.30
-      fluoroscopy: -0.20
-      
-    # Thyroid - US strongly preferred
-    thyroid:
-      us: 0.45
-      ct: 0.15
-      fluoroscopy: -0.30
-      
-    # Breast - US and MRI preferred, avoid fluoroscopy
-    breast:
-      us: 0.40
-      mri: 0.25
-      ct: 0.10
-      fluoroscopy: -0.40
-      
-    # Bone - CT preferred for spine, fluoroscopy sometimes used
-    bone:
-      ct: 0.30
-      fluoroscopy: 0.10
-      us: -0.10
-    spine:
-      ct: 0.35
-      fluoroscopy: 0.05
-      us: -0.15
-    vertebr:  # vertebra/vertebral
-      ct: 0.35
-      fluoroscopy: 0.05
-      us: -0.15
-      
-    # Prostate - US and MRI preferred
-    prostate:
-      us: 0.40
-      mri: 0.30
-      ct: 0.10
-      fluoroscopy: -0.25
-      
-  # FALLBACK BIOPSY PREFERENCES (when no specific organ match)
+    lung: { ct: 0.40, us: 0.25, fluoroscopy: -0.50 }
+    pulmonary: { ct: 0.40, us: 0.25, fluoroscopy: -0.50 }
+    chest: { ct: 0.35, us: 0.20, fluoroscopy: -0.45 }
+    thoracic: { ct: 0.35, us: 0.20, fluoroscopy: -0.45 }
+    liver: { ct: 0.30, us: 0.35, fluoroscopy: -0.25 }
+    hepatic: { ct: 0.30, us: 0.35, fluoroscopy: -0.25 }
+    kidney: { ct: 0.30, us: 0.35, fluoroscopy: -0.20 }
+    renal: { ct: 0.35, us: 0.30, fluoroscopy: -0.20 }
+    thyroid: { us: 0.45, ct: 0.15, fluoroscopy: -0.30 }
+    breast: { us: 0.40, mri: 0.25, ct: 0.10, fluoroscopy: -0.40 }
+    bone: { ct: 0.30, fluoroscopy: 0.10, us: -0.10 }
+    spine: { ct: 0.35, fluoroscopy: 0.05, us: -0.15 }
+    vertebr: { ct: 0.35, fluoroscopy: 0.05, us: -0.15 } # For vertebra/vertebral
+    prostate: { us: 0.40, mri: 0.30, ct: 0.10, fluoroscopy: -0.25 }
   biopsy_default_preferences:
-    ct: 0.25        # Default CT preference
-    us: 0.20        # Default US preference  
-    fluoroscopy: -0.15  # Default fluoroscopy penalty
-  
-  # ANATOMY SPECIFICITY PREFERENCE - Prefer generic entries for generic inputs
-  anatomy_specificity_preference: true  # Enable anatomy specificity preference
-  generic_anatomy_preference_bonus: 0.15 # Bonus for generic entries when input is generic
-  
-  # ANATOMICAL COMPATIBILITY CONSTRAINTS - Prevent impossible anatomy mappings
-  # CRITICAL: These constraints block anatomically impossible mappings that could cause patient safety issues
+    ct: 0.25
+    us: 0.20
+    fluoroscopy: -0.15
+
+  # --- ANATOMY SPECIFICITY PREFERENCE ---
+  # For a generic input (e.g., "CT"), this gives a bonus to a generic candidate (e.g., "CT without contrast").
+  anatomy_specificity_preference: true
+  generic_anatomy_preference_bonus: 0.15
+
+  # --- ANATOMICAL COMPATIBILITY CONSTRAINTS ---
+  # CRITICAL: Blocks anatomically impossible mappings to ensure patient safety.
   anatomical_compatibility_constraints:
-    enable: true  # Enable anatomical compatibility checking
-    blocking_penalty: -10.0  # Severe penalty that effectively blocks incompatible mappings
-    
-    # Define anatomically incompatible pairs [input_anatomy, nhs_anatomy]
-    # These represent anatomy terms that should NEVER be mapped to each other
+    enable: true
+    blocking_penalty: -10.0 # A score so low it effectively rejects the match.
     incompatible_pairs:
-      # Body region incompatibilities - different major body areas
       - ["lower limb", "penis"]
       - ["leg", "penis"]
       - ["arm", "leg"]
       - ["upper limb", "lower limb"]
       - ["chest", "pelvis"]
-      - ["thorax", "pelvis"]
       - ["head", "abdomen"]
-      - ["brain", "abdomen"]
-      - ["neck", "pelvis"]
-      
-      # Organ system incompatibilities
       - ["heart", "kidney"]
-      - ["lung", "liver"] 
-      - ["brain", "liver"]
-      - ["spine", "heart"]
-      
-      # Gender-specific anatomy incompatibilities
+      - ["lung", "liver"]
       - ["prostate", "breast"]
       - ["prostate", "uterus"]
-      - ["penis", "breast"]
-      - ["penis", "uterus"]
-      - ["scrotum", "breast"]
-      
-      # Vascular vs non-vascular incompatibilities
       - ["artery", "bone"]
-      - ["vein", "muscle"]
-  
-  # HYBRID MODALITY CONSTRAINTS - Prevent inappropriate hybrid modality confusion  
-  # CRITICAL: These rules prevent PET/CT → PET/MRI type errors that could affect clinical workflow
+
+  # --- HYBRID MODALITY CONSTRAINTS ---
+  # CRITICAL: Prevents incorrect mapping between different types of hybrid scans (e.g., PET/CT vs. PET/MRI).
   hybrid_modality_constraints:
-    enable: true  # Enable hybrid modality constraint checking
-    blocking_penalty: -6.0  # Penalty for inappropriate hybrid modality mapping
-    
-    # Define hybrid modality constraint rules
-    # Format: input_contains → must_not_match_nhs_containing
+    enable: true
+    blocking_penalty: -6.0
     hybrid_incompatibilities:
-      # PET/CT hybrid scans should not match PET/MRI procedures
       - input_pattern: "pet.*ct|pet/ct|pet-ct"
         nhs_exclusions: ["pet.*mri", "pet/mri", "pet-mri", "mri.*pet"]
         reason: "PET/CT should not map to PET/MRI procedures"
-        
-      # PET/MRI hybrid scans should not match PET/CT procedures  
       - input_pattern: "pet.*mri|pet/mri|pet-mri"
         nhs_exclusions: ["pet.*ct", "pet/ct", "pet-ct", "ct.*pet"]
         reason: "PET/MRI should not map to PET/CT procedures"
-        
-      # CT/MRI combinations should be constrained
       - input_pattern: "ct.*mri|ct/mri"
         nhs_exclusions: ["mri.*ct", "mri/ct"]
         reason: "Mixed CT/MRI modalities should have consistent ordering"
 
-  # DIAGNOSTIC PROTECTION RULES - Prevent diagnostic exams mapping to interventional procedures
-  # CRITICAL: These rules protect standard/routine diagnostic exams from being mapped to interventional procedures
+  # --- DIAGNOSTIC PROTECTION RULES ---
+  # CRITICAL: Prevents a simple diagnostic exam (e.g., "XR Chest") from mapping to an interventional one.
   diagnostic_protection:
-    enable: true  # Enable diagnostic protection checking
-    blocking_penalty: -8.0  # Severe penalty for diagnostic→interventional mapping
-    
-    # Keywords that indicate a DIAGNOSTIC (non-interventional) exam
+    enable: true
+    blocking_penalty: -8.0
     diagnostic_indicators:
-      - "standard"      # "US Breast - Standard" should never map to excision
-      - "routine" 
+      - "standard"
+      - "routine"
       - "screening"
-      - "surveillance"
-      - "follow-up"
-      - "follow up"
-      - "baseline"
-      - "initial"
-      - "diagnostic"
-      - "plain"         # "Plain XR" vs guided procedures
+      - "plain"
       - "simple"
-      - "basic"
       - "without guidance"
-      - "non-contrast"  # Often indicates simple diagnostic scan
-    
-    # Keywords that indicate an INTERVENTIONAL procedure in NHS entries
+      - "non-contrast"
     interventional_indicators:
-      - "excision"      # Surgical removal
       - "biopsy"
-      - "guided"        # Image-guided procedures
-      - "guidance" 
-      - "aspiration"
+      - "guided"
+      - "guidance"
       - "drainage"
       - "injection"
       - "insertion"
-      - "placement"
-      - "localization"
-      - "localisation"
-      - "ablation"
-      - "embolization"
-      - "embolisation"
       - "stent"
-      - "angioplasty"
-      - "thrombectomy"
-      - "atherectomy"
-      - "vertebroplasty"
-      - "kyphoplasty"
-      - "arthrogram"    # Joint injection procedure
-      - "arthogram"
-      - "vacuum"        # Vacuum-assisted procedures
+      - "ablation"
       - "percutaneous"
-      - "endovascular"
-      - "catheter"
       - "picc"
-      - "port"
 
-  # TECHNIQUE SPECIALIZATION CONSTRAINTS - Prevent generic exams mapping to specialized techniques
-  # CRITICAL: These rules prevent generic exam names from being mapped to highly specialized procedures
+  # --- TECHNIQUE SPECIALIZATION CONSTRAINTS ---
+  # CRITICAL: Prevents a generic exam from mapping to a highly specialized one unless the input explicitly asks for it.
   technique_specialization_constraints:
-    enable: true  # Enable technique specialization constraint checking
-    blocking_penalty: -5.0  # Penalty for inappropriate technique specialization
-    
-    # Define specialized techniques that require explicit indicators in the input
-    # Format: specialized_technique_name -> required_indicators_in_input
+    enable: true
+    blocking_penalty: -5.0
     specialization_rules:
-      # MRI Specializations - require explicit technique indicators
-      "diffusion tensor":
-        required_indicators: ["diffusion", "dti", "tensor", "tractography"]
-        reason: "Diffusion tensor imaging requires explicit diffusion/DTI indicators"
-      
-      "fmri":
-        required_indicators: ["functional", "fmri", "bold", "activation"]
-        reason: "Functional MRI requires explicit functional imaging indicators"
-        
-      "perfusion":
-        required_indicators: ["perfusion", "pwi", "asl", "arterial spin"]
-        reason: "Perfusion imaging requires explicit perfusion indicators"
-        
-      "spectroscopy":
-        required_indicators: ["spectroscopy", "mrs", "metabolite"]
-        reason: "MR spectroscopy requires explicit spectroscopy indicators"
-        
-      # CT Specializations - require explicit technique indicators  
-      "ct colonography":
-        required_indicators: ["colonography", "virtual colonoscopy", "ctc"]
-        reason: "CT colonography requires explicit colonography indicators"
-        
-      "ct angiography":
-        required_indicators: ["angiography", "angio", "cta", "vessel", "vascular"]
-        reason: "CT angiography requires explicit angiographic indicators"
-        
-      "hrct":
-        required_indicators: ["high resolution", "hrct", "hr", "thin section"]
-        reason: "High resolution CT requires explicit HRCT indicators"
-        
-      "cardiac ct":
-        required_indicators: ["cardiac", "coronary", "heart", "calcium score"]
-        reason: "Cardiac CT requires explicit cardiac indicators"
-        
-      # Interventional Specializations - require explicit procedure indicators
-      "vacuum":
-        required_indicators: ["vacuum", "mammotome", "vab", "assisted excision"]
-        reason: "Vacuum assisted procedures require explicit VAB indicators"
-        
-      "guided biopsy":
-        required_indicators: ["biopsy", "guided", "sampling", "histology"]
-        reason: "Guided biopsy requires explicit biopsy indicators"
-        
-      "drainage":
-        required_indicators: ["drainage", "aspiration", "fluid", "collection"]
-        reason: "Drainage procedures require explicit drainage indicators"
-        
-      "embolization":
-        required_indicators: ["embolization", "embolisation", "coiling", "occlusion"]
-        reason: "Embolization requires explicit embolization indicators"
-        
-      # Contrast Assumptions - require explicit contrast indicators
-      "with contrast":
-        required_indicators: ["with contrast", "contrast", "c+", "enhanced", "gadolinium", "iv"]
-        reason: "Contrast enhancement requires explicit contrast indicators"
-        
-      # Fluoroscopy Assumptions - require explicit guidance indicators
-      "fluoroscopic":
-        required_indicators: ["fluoroscopy", "fluoro", "fl", "screening", "real-time"]
-        reason: "Fluoroscopic guidance requires explicit fluoroscopy indicators"
-        
-      # Nuclear Medicine Specializations
-      "spect":
-        required_indicators: ["spect", "single photon", "tomographic", "3d"]
-        reason: "SPECT imaging requires explicit SPECT indicators"
-  
-  # ANATOMICAL SPECIFICITY WORD LISTS
+      "diffusion tensor": { required_indicators: ["diffusion", "dti", "tensor"] }
+      "fmri": { required_indicators: ["functional", "fmri", "bold"] }
+      "perfusion": { required_indicators: ["perfusion", "pwi", "asl"] }
+      "spectroscopy": { required_indicators: ["spectroscopy", "mrs"] }
+      "ct colonography": { required_indicators: ["colonography", "virtual colonoscopy"] }
+      "ct angiography": { required_indicators: ["angiography", "angio", "cta"] }
+      "hrct": { required_indicators: ["high resolution", "hrct"] }
+      "with contrast": { required_indicators: ["with contrast", "c+", "iv"] }
+      "spect": { required_indicators: ["spect", "single photon"] }
+
+  # --- WORD LISTS FOR SPECIFICITY SCORING ---
   anatomical_detail_words:
-    # Vessel/vascular specificity
     - "artery"
-    - "arteries" 
     - "vein"
-    - "veins"
     - "vessel"
-    - "vessels"
     - "aorta"
     - "carotid"
-    - "cerebral"
     - "coronary"
     - "pulmonary"
     - "renal"
-    - "hepatic"
-    - "mesenteric"
-    
-    # Organ specificity  
     - "lobe"
-    - "lobes"
     - "segment"
-    - "segments"
-    - "region"
-    - "regions"
-    - "cavity"
-    - "space"
-    - "tract"
-    - "system"
-    
-    # Bone/joint specificity
-    - "bone"
-    - "bones"
-    - "joint"
-    - "joints"
     - "vertebra"
-    - "vertebrae"
     - "disc"
-    - "discs"
-    
   administrative_detail_words:
-    # Laterality (handled separately)
-    - "left"
-    - "right" 
-    - "bilateral"
-    - "both"
-    - "lt"
-    - "rt"
-    
-    # Administrative qualifiers
     - "procedure"
     - "examination"
     - "study"
@@ -403,71 +216,62 @@ scoring:
     - "view"
     - "projection"
 
-# Modality similarity matrix for partial credit scoring
-# Allows related modalities to receive partial credit instead of zero
+# ====================================================================================
+# MODALITY SIMILARITY
+# Defines a "partial credit" score for related but different modalities.
+# ====================================================================================
 modality_similarity:
-  CT:
-    CECT: 0.9          # CT with contrast enhancement
-    DECT: 0.8          # Dual-energy CT
-    HRCT: 0.9          # High-resolution CT
-    PET: 0.7           # Related but different (for PET/CT)
-  MR:
-    MRI: 1.0           # Perfect match
-    MRA: 0.95          # MR Angiography is a type of MRI
-    FMRI: 0.8          # Functional MRI
-  XR:
-    "X-ray": 1.0       # Perfect match
-    "X-Ray": 1.0       # Case variation
-    Xray: 1.0          # Common abbreviation
-    MG: 0.5            # Mammography is a specialized X-ray
-    FL: 0.6            # Fluoroscopy is a related X-ray technique
-  US:
-    Ultrasound: 1.0    # Perfect match
-    USS: 0.9           # Ultrasound scan
-  MG:                  
-    Mammography: 1.0   # Perfect match
-    Mammogram: 1.0     # Common variation
-    Tomosynthesis: 0.9 # Tomosynthesis is a 3D mammogram
-    XR: 0.5            # A mammogram is a type of X-ray
-  NM:
-    "Nuclear Medicine": 1.0
-    Scintigraphy: 0.8
-    SPECT: 0.9
-  PET:
-    "PET/CT": 0.95
-    "PET-CT": 0.95
-    CT: 0.7            # A PET/CT includes a CT
-  DEXA:                # Dual Energy X-ray Absorptiometry
-    DXA: 1.0           # Perfect match - same exam, different abbreviation
-    "Bone Densitometry": 1.0
-    XR: 0.9            # A DEXA is fundamentally an X-ray technique
-  DXA:                 # Dual X-ray Absorptiometry  
-    DEXA: 1.0          # Perfect match - same exam, different abbreviation
-    "Bone Densitometry": 1.0
-    XR: 0.9            # A DXA is fundamentally an X-ray technique
+  CT: { CECT: 0.9, DECT: 0.8, HRCT: 0.9, PET: 0.7, XR: 0.2, Fluoroscopy: 0.1 }
+  MR: { MRI: 1.0, MRA: 0.95, FMRI: 0.8, CT: 0.1 }
+  XR: { "X-ray": 1.0, Xray: 1.0, MG: 0.5, FL: 0.6, DEXA: 0.9 }
+  US: { Ultrasound: 1.0, USS: 0.9, MRI: 0.1 }
+  MG: { Mammography: 1.0, Mammogram: 1.0, Tomosynthesis: 0.9, XR: 0.5 }
+  NM: { "Nuclear Medicine": 1.0, Scintigraphy: 0.8, SPECT: 0.9, PET: 0.4 }
+  PET: { "PET/CT": 0.95, CT: 0.7 }
+  DEXA: { DXA: 1.0, "Bone Densitometry": 1.0, XR: 0.9 }
+  DXA: { DEXA: 1.0, "Bone Densitometry": 1.0, XR: 0.9 }
+  IR: { Fluoroscopy: 0.6, CT: 0.2, US: 0.2 }
+  FL: { Fluoroscopy: 1.0, XR: 0.6, IR: 0.6 } # Assuming FL is Fluoroscopy
 
-# Context-aware scoring bonuses for clinical scenarios
+# ====================================================================================
+# CONTEXT-AWARE SCORING (DEPRECATED IN FAVOR OF BONUSES ABOVE, KEPT FOR REFERENCE)
+# This section appears to be an older model for context scoring. The `context_match_bonus`
+# and specific `gender/age/pregnancy_context_bonus` are the modern replacements.
+# ====================================================================================
 context_scoring:
   emergency_keywords: ["emergency", "urgent", "stat", "trauma", "acute"]
   emergency_bonus: 0.10
-  
   screening_keywords: ["screening", "surveillance", "routine", "annual"]
   screening_bonus: 0.08
-  
   intervention_keywords: ["biopsy", "drainage", "injection", "aspiration", "guided", "picc", "line"]
   intervention_bonus: 0.12
-  
   pregnancy_keywords: ["obstetric", "pregnancy", "prenatal", "fetal", "trimester"]
   pregnancy_bonus: 0.15
-  
   paediatric_keywords: ["paediatric", "pediatric", "paed", "peds", "child", "infant", "newborn"]
   paediatric_bonus: 0.10
 
-# Enhanced preprocessing configuration
+# ====================================================================================
+# PREPROCESSING CONFIGURATION
+# The single source of truth for all text cleaning, normalization, and abbreviation expansion.
+# This section is critical for standardizing messy real-world data.
+# ====================================================================================
 preprocessing:
-  # Medical abbreviation expansion dictionary
+  # The primary dictionary for expanding medical abbreviations.
+  # The key is the abbreviation, and the value is the full term.
   medical_abbreviations:
-    # ENHANCED CONTRAST PATTERNS - Super-strong detection
+    # --- AUGMENTED ABBREVIATIONS FROM SANITY TEST ANALYSIS ---
+    "II": "image intensifier fluoroscopy"   # For "II Operative Cholangiogram" to ensure modality is parsed
+    "RF": "radiofrequency fluoroscopy"     # For "RF Videofluoroscopy Swallow"
+    "USS": "ultrasound scan"               # Normalize common alternative
+    "Videofluoroscopy": "videofluoroscopy swallow" # Helps group swallow studies for technique parsing
+    "C spine": "cervical spine"            # Handle common variant
+    "L spine": "lumbar spine"              # Handle common variant
+    "T spine": "thoracic spine"            # Handle common variant
+    "Bone density": "dexa"                 # Normalize "Bone density Scan" to DEXA modality
+    "Renogram": "renogram"                 # Ensure renogram is a standalone term for parser
+    "Xray": "x-ray"                        # Standardize "Xray" to "x-ray"
+
+    # --- CRITICAL: CONTRAST ---
     "C+": "with contrast"
     "C-": "without contrast"
     "+C": "with contrast"
@@ -487,9 +291,9 @@ preprocessing:
     "GADOLINIUM": "with contrast"
     "PRIMOVIST": "with contrast"
     
-    # AGE/GENDER CONTEXT PATTERNS - Super-strong detection
+    # --- AGE/GENDER CONTEXT ---
     "PAED": "paediatric"
-    "PEDS": "paediatric"  
+    "PEDS": "paediatric"
     "CDH": "congenital hip dysplasia paediatric"
     "INFANT": "infant paediatric"
     "PREGNANCY": "pregnancy"
@@ -504,7 +308,7 @@ preprocessing:
     "SCROTUM": "scrotum male"
     "TESTES": "testes male"
     
-    # ANATOMICAL ABBREVIATIONS - From sanity test analysis
+    # --- ANATOMICAL ABBREVIATIONS (FROM CODES & COMMON USAGE) ---
     "CHED": "head"
     "CCHT": "chest"
     "CAAP": "abdomen and pelvis"
@@ -531,69 +335,53 @@ preprocessing:
     "THY": "thyroid"
     "REN": "renal"
     
-    # MODALITY ABBREVIATIONS
+    # --- MODALITY & TECHNIQUE ---
     "MRCP": "magnetic resonance cholangiopancreatography"
     "DEXA": "dual-energy x-ray absorptiometry"
-    "DXA": "dual x-ray absorptiometry"
+    "DXA": "dexa" # Normalize DXA to DEXA
     "NM": "nuclear medicine"
     "IR": "interventional radiology"
     "FL": "fluoroscopy"
     "Mamm": "mammography"
     "PET": "positron emission tomography"
     
-    # CLINICAL CONTEXT ABBREVIATIONS
+    # --- CLINICAL CONTEXT & TRACERS ---
     "DVT": "deep vein thrombosis"
     "V/Q": "ventilation perfusion"
     "MAG3": "mercaptoacetyltriglycine"
-    
-    # NUCLEAR MEDICINE TRACERS - 18F-FDG variations
     "FDG": "fluorodeoxyglucose"
-    "18F-FDG": "18F fluorodeoxyglucose"
-    "F-18 FDG": "18F fluorodeoxyglucose"
-    "F18 FDG": "18F fluorodeoxyglucose"
-    "18F FDG": "18F fluorodeoxyglucose"
-    
-    # NUCLEAR MEDICINE TRACERS - 18F-PSMA variations  
+
+    # --- NUCLEAR MEDICINE TRACERS ---
+    "18F-FDG": "18f fluorodeoxyglucose"
+    "F-18 FDG": "18f fluorodeoxyglucose"
+    "18F FDG": "18f fluorodeoxyglucose"
     "PSMA": "prostate specific membrane antigen"
-    "18F-PSMA": "18F prostate specific membrane antigen"
-    "F-18 PSMA": "18F prostate specific membrane antigen"
-    "F18 PSMA": "18F prostate specific membrane antigen"
-    "18F PSMA": "18F prostate specific membrane antigen"
-    "DCFPYL": "18F DCFPyL"
-    "18F-DCFPYL": "18F DCFPyL"
-    "PYL": "18F DCFPyL"
-    
-    # NUCLEAR MEDICINE TRACERS - Gallium-68 variations
+    "18F-PSMA": "18f prostate specific membrane antigen"
+    "F-18 PSMA": "18f prostate specific membrane antigen"
+    "18F PSMA": "18f prostate specific membrane antigen"
+    "DCFPYL": "18f dcfpyl"
+    "18F-DCFPYL": "18f dcfpyl"
+    "PYL": "18f dcfpyl"
     "GA-68": "gallium 68"
     "GA68": "gallium 68"
     "68GA": "gallium 68"
-    "68-GA": "gallium 68"
-    "GALLIUM-68": "gallium 68"
     "DOTATATE": "gallium 68 dotatate"
-    "GA-68 DOTATATE": "gallium 68 dotatate"
     "DOTANOC": "gallium 68 dotanoc"
-    "GA-68 DOTANOC": "gallium 68 dotanoc"
     "DOTATOC": "gallium 68 dotatoc"
-    "GA-68 DOTATOC": "gallium 68 dotatoc"
-    
     "SPECT": "single photon emission computed tomography"
     "WBSP": "whole body spect"
     
-    # PROCEDURE ABBREVIATIONS
+    # --- PROCEDURE & BREAST IMAGING ---
     "WB": "whole body"
     "PICC": "peripherally inserted central catheter"
     "XA": "x-ray angiography"
-    "RF": "radiofrequency"
-    "II": "image intensifier"
-    
-    # BREAST IMAGING ABBREVIATIONS
     "BR": "breast"
     "BBMA": "bilateral mammogram"
     "BRMA": "mammogram"
     "BTBB": "bilateral breast tomosynthesis"
     "BRUS": "breast ultrasound"
     
-    # LATERALITY AND DIRECTIONAL ABBREVIATIONS
+    # --- LATERALITY & DIRECTIONAL ---
     "BILAT": "bilateral"
     "BIL": "bilateral"
     "BOTH": "bilateral"
@@ -605,17 +393,138 @@ preprocessing:
     "PA": "posteroanterior"
     "LAT": "lateral"
     
-    # COMMON STUDY ABBREVIATIONS
+    # --- COMMON STUDY ABBREVIATIONS ---
     "ABDPELV": "abdomen and pelvis"
     "CAP": "chest abdomen pelvis"
     "KUB": "kidneys ureters bladder"
     "3RD": "third"
     
-  # Anatomy normalization patterns
+  # Normalizes different ways of writing the same anatomy to a single standard form.
+  # This is applied after medical abbreviations.
   anatomy_synonyms:
+    # --- AUGMENTED LIST FOR BETTER NORMALIZATION ---
     "ABDOMEN": "abdomen"
-    "PELV": "pelvis"
+    "ABDO": "abdomen"
+    "TUMMY": "abdomen"
+    "BRAIN": "brain"
+    "CRANIUM": "head"
     "CHED": "head"
+    "THORAX": "chest"
     "CCHT": "chest"
+    "LUNGS": "chest"
+    "PELV": "pelvis"
+    "KIDNEYS": "kidney"
+    "RENAL": "kidney"
     "CCSP": "cervical spine"
     "MLSP": "lumbar spine"
+    "LSPINE": "lumbar spine"
+    "CSPINE": "cervical spine"
+    "TSPINE": "thoracic spine"
+    "MAMMARY": "breast"
+    
+  anatomy_vocabulary:
+    head: head
+    brain: brain
+    skull: head
+    cranium: head
+    sinus: sinuses
+    sinuses: sinuses
+    orbit: orbit
+    orbits: orbit
+    face: face
+    neck: neck
+    chest: chest
+    thorax: chest
+    lung: chest
+    lungs: chest
+    heart: heart
+    cardiac: heart
+    mediastinum: mediastinum
+    pulmonary: chest
+    abdomen: abdomen
+    abdo: abdomen
+    tummy: abdomen
+    pelvis: pelvis
+    pelvic: pelvis
+    liver: liver
+    kidney: kidney
+    kidneys: kidney
+    renal: kidney
+    pancreas: pancreas
+    spleen: spleen
+    bladder: bladder
+    ureter: ureters
+    ureters: ureters
+    uterus: uterus
+    ovary: ovary
+    ovaries: ovary
+    prostate: prostate
+    spine: spine
+    spinal: spine
+    'cervical spine': 'cervical spine'
+    'thoracic spine': 'thoracic spine'
+    'lumbar spine': 'lumbar spine'
+    sacrum: sacrum
+    coccyx: coccyx
+    shoulder: shoulder
+    shoulders: shoulder
+    arm: arm
+    arms: arm
+    elbow: elbow
+    elbows: elbow
+    wrist: wrist
+    wrists: wrist
+    hand: hand
+    hands: hand
+    finger: finger
+    fingers: finger
+    thumb: thumb
+    thumbs: thumb
+    hip: hip
+    hips: hip
+    thigh: thigh
+    thighs: thigh
+    knee: knee
+    knees: knee
+    leg: leg
+    legs: leg
+    ankle: ankle
+    ankles: ankle
+    foot: foot
+    feet: foot
+    toe: toe
+    toes: toe
+    breast: breast
+    breasts: breast
+    mammary: breast
+    mammogram: breast
+    mammography: breast
+    thyroid: thyroid
+    bone: bone
+    bones: bone
+    joint: joint
+    joints: joint
+    'soft tissue': 'soft tissue'
+    muscle: muscle
+    muscles: muscle
+    adrenal: adrenal
+    adrenals: adrenal
+    biliary: biliary
+    gallbladder: gallbladder
+    'lymph node': 'lymph node'
+    'lymph nodes': 'lymph node'
+    parotid: parotid
+    submandibular: submandibular
+    'salivary gland': 'salivary gland'
+    'salivary glands': 'salivary gland'
+    'aortic arch': 'aortic arch'
+    carotid: carotid
+    'carotid arteries': carotid
+    eye: eye
+    eyes: eye
+    ear: ear
+    ears: ear
+    scrotum: scrotum
+    testes: testes
+    testis: testes
+    'whole body': 'whole body'

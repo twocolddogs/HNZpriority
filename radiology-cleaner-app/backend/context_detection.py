@@ -77,9 +77,14 @@ class ContextDetector:
         # Clinical context patterns for general classification
         self.clinical_patterns = {
             'screening': [r'\b(screening|surveillance)\b'],
-            'emergency': [r'\b(emergency|urgent|stat|trauma)\b'],
-            'follow-up': [r'\b(follow.?up|post.?op)\b'],
-            'intervention': [r'\b(biopsy|drainage|injection|aspiration|fna|guided|insertion|line|picc)\b']
+            'emergency': [r'\b(emergency|urgent|stat|trauma|acute)\b'], # Added 'acute'
+            'follow-up': [r'\b(follow.?up|post.?op|fu)\b'], # Added 'fu'
+            
+            # NEW CATEGORY: Explicitly identify routine diagnostic scans. This is a very strong signal.
+            'diagnostic': [r'\b(standard|routine|plain|simple|diagnostic|baseline|non-contrast)\b'],
+            
+            # Keep intervention, but it's now balanced by the 'diagnostic' category
+            'intervention': [r'\b(biopsy|drainage|injection|aspiration|fna|guided|guidance|insertion|placement|line|picc)\b']
         }
     
     def detect_gender_context(self, exam_name: str, anatomy: List[str] = None) -> Optional[str]:
@@ -135,29 +140,6 @@ class ContextDetector:
                     break # Avoid adding the same context type multiple times
         return sorted(list(set(contexts)))
     
-    def detect_interventional_procedure_terms(self, exam_name: str) -> List[str]:
-        """
-        Detects specific interventional terms.
-        This list is crucial for differentiating diagnostic from therapeutic/interventional exams
-        and provides a strong signal for the scoring engine.
-        """
-        exam_lower = exam_name.lower()
-        interventional_keywords = [
-            'stent', 'angioplasty', 'atherectomy', 'thrombectomy', 'thrombolysis',
-            'embolisation', 'embolization', 'ablation', 'biopsy', 'bx', 'fna', 'drainage', 
-            'aspiration', 'injection', 'nephrostomy', 'gastrostomy', 'jejunostomy', 
-            'cholecystostomy', 'vertebroplasty', 'kyphoplasty', 'dilatation', 
-            'valvuloplasty', 'septostomy', 'picc', 'line', 'catheter', 'port',
-            'guided', 'guidance', 'localisation', 'localization', 'insertion', 'insert',
-            'percutaneous'
-        ]
-        
-        found_terms = [
-            term for term in interventional_keywords 
-            if re.search(r'\b' + re.escape(term) + r'\b', exam_lower)
-        ]
-        
-        return sorted(list(set(found_terms)))
     
     def detect_all_contexts(self, exam_name: str, anatomy: List[str] = None) -> dict:
         """Detect all types of context in a single call for efficiency."""

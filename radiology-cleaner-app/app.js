@@ -26,7 +26,7 @@ class StatusManager {
                 background: 'var(--color-warning-light, #fff8e1)',
                 border: '1px solid var(--color-warning, #ff9800)',
                 color: 'var(--color-warning, #ff9800)',
-                icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
+                icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">/path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
             },
             error: {
                 background: 'var(--color-danger-light, #ffebee)',
@@ -269,7 +269,18 @@ class StatusManager {
 
 const statusManager = new StatusManager();
 
-// Utility functions for formatting
+// --- GLOBAL VARIABLES & STATE ---
+let currentModel = 'default';
+let availableModels = {};
+let allMappings = [];
+let summaryData = null;
+let sortedMappings = [];
+let currentPage = 1;
+let pageSize = 100;
+let sortBy = 'default';
+
+
+// --- UTILITY & HELPER FUNCTIONS ---
 function formatProcessingTime(ms) {
     return statusManager.formatTime(ms);
 }
@@ -294,18 +305,10 @@ function preventDefaults(e) {
     e.stopPropagation();
 }
 
-// --- GLOBAL VARIABLES ---
-// --- FIX: Declare these variables in the global scope so all functions share the same state. ---
-let currentModel = 'default';
-let availableModels = {};
-
 function formatModelName(modelKey) {
-    // Use dynamic model names from the API if available
     if (availableModels && availableModels[modelKey] && availableModels[modelKey].name) {
         return availableModels[modelKey].name;
     }
-    
-    // Fallback to static mapping if API data not available
     const nameMap = {
         'default': 'BioLORD (Default)',
         'pubmed': 'PubMed',
@@ -321,17 +324,15 @@ function switchModel(modelKey) {
         console.warn(`Model ${modelKey} is not available.`);
         return;
     }
-    
     currentModel = modelKey;
-    
     document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`${modelKey}ModelBtn`)?.classList.add('active');
-    
-    const displayName = formatModelName(modelKey);
-    statusManager.show(`Switched to ${displayName} model`, 'success', 3000);
+    statusManager.show(`Switched to ${formatModelName(modelKey)} model`, 'success', 3000);
 }
 
+
 window.addEventListener('DOMContentLoaded', function() {
+    // --- API & CONFIGURATION ---
     function detectApiUrls() {
         const hostname = window.location.hostname;
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
@@ -346,15 +347,21 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     const apiConfig = detectApiUrls();
-    const API_URL = `${apiConfig.baseUrl}/parse_enhanced`;
     const BATCH_API_URL = `${apiConfig.baseUrl}/parse_batch`;
     const MODELS_URL = `${apiConfig.baseUrl}/models`;
     const HEALTH_URL = `${apiConfig.baseUrl}/health`;
-    // --- FIX: The sanity test will now use the batch API, so this dedicated URL is no longer needed. ---
-    // const SANITY_TEST_URL = `${apiConfig.baseUrl}/process_sanity_test`;
     
     console.log(`Frontend running in ${apiConfig.mode} mode. API base: ${apiConfig.baseUrl}`);
 
+    // --- DOM ELEMENTS ---
+    const uploadSection = document.getElementById('uploadSection');
+    const demosSection = document.getElementById('demosSection');
+    const fileInput = document.getElementById('fileInput');
+    const resultsSection = document.getElementById('resultsSection');
+    const resultsBody = document.getElementById('resultsBody');
+    const sanityButton = document.getElementById('sanityTestBtn');
+
+    // --- CORE INITIALIZATION ---
     async function testApiConnectivity() {
         try {
             const response = await fetch(HEALTH_URL, { method: 'GET' });
@@ -364,17 +371,14 @@ window.addEventListener('DOMContentLoaded', function() {
             console.error('✗ API connectivity test failed:', error);
         }
     }
-    testApiConnectivity();
 
     async function loadAvailableModels() {
         try {
-            console.log('🔍 Fetching available models from backend...');
             const response = await fetch(MODELS_URL, { method: 'GET' });
             if (response.ok) {
                 const modelsData = await response.json();
                 availableModels = modelsData.models || {};
                 currentModel = modelsData.default_model || 'default';
-                
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
                 buildModelSelectionUI();
             } else {
@@ -397,27 +401,15 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function buildModelSelectionUI() {
-        console.log('🔧 Building model selection UI...');
-        console.log('Available models:', availableModels);
-        
         const modelContainer = document.querySelector('.model-selection-container');
         if (!modelContainer) {
             console.error('❌ Model selection container not found in HTML');
             return;
         }
         
-        console.log('✓ Found model container:', modelContainer);
-        
-        // Clear existing buttons
         modelContainer.innerHTML = '';
         
-        // Create model selection buttons dynamically
-        console.log(`🔄 Creating ${Object.keys(availableModels).length} model buttons...`);
-        
         Object.entries(availableModels).forEach(([modelKey, modelInfo]) => {
-            console.log(`Creating button for ${modelKey}:`, modelInfo);
-            
-            // Create a wrapper div for button + description layout
             const modelWrapper = document.createElement('div');
             modelWrapper.className = 'model-wrapper';
             modelWrapper.style.cssText = 'display: flex; align-items: center; gap: 15px; margin-bottom: 10px;';
@@ -428,20 +420,14 @@ window.addEventListener('DOMContentLoaded', function() {
             button.dataset.model = modelKey;
             button.style.cssText = 'min-width: 150px; flex-shrink: 0;';
             
-            // Remove emoji status icons, just use text
             const statusText = modelInfo.status === 'available' ? '' : ' (Unavailable)';
+            button.innerHTML = `<span class="model-name">${formatModelName(modelKey)}${statusText}</span>`;
             
-            button.innerHTML = `
-                <span class="model-name">${formatModelName(modelKey)}${statusText}</span>
-            `;
-            
-            // Create description element
             const description = document.createElement('span');
             description.className = 'model-description';
             description.style.cssText = 'font-size: 0.85em; color: #666; flex: 1;';
             description.textContent = modelInfo.description || '';
             
-            // Set disabled state for unavailable models
             if (modelInfo.status !== 'available') {
                 button.disabled = true;
                 button.title = `${modelInfo.name} is currently unavailable`;
@@ -453,400 +439,63 @@ window.addEventListener('DOMContentLoaded', function() {
             modelWrapper.appendChild(button);
             modelWrapper.appendChild(description);
             modelContainer.appendChild(modelWrapper);
-            console.log(`✓ Added ${modelKey} button with description to container`);
         });
-        
-        console.log(`✅ Model UI built with ${modelContainer.children.length} buttons`);
     }
     
-    loadAvailableModels();
-
-    // --- STATE ---
-    // --- FIX: Removed redundant declarations. Global variables are used instead. ---
-    let allMappings = [];
-    let summaryData = null;
-    let sortedMappings = [];
-    let currentPage = 1;
-    let pageSize = 100;
-    let sortBy = 'default';
-
-    // Pagination state
-    
-    // --- DOM ELEMENTS ---
-    const uploadSection = document.getElementById('uploadSection');
-    const demosSection = document.getElementById('demosSection');
-    const fileInput = document.getElementById('fileInput');
-    const fileInfo = document.getElementById('fileInfo');
-    const resultsSection = document.getElementById('resultsSection');
-    const resultsBody = document.getElementById('resultsBody');
-
     // --- EVENT LISTENERS ---
-    uploadSection.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => e.target.files[0] && processFile(e.target.files[0]));
-    ['dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadSection.addEventListener(eventName, preventDefaults, false);
-        document.body.addEventListener(eventName, preventDefaults, false);
-    });
-    ['dragenter', 'dragover'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.add('dragover'), false));
-    ['dragleave', 'drop'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('dragover'), false));
-    uploadSection.addEventListener('drop', (e) => e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]), false);
+    function setupEventListeners() {
+        uploadSection.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => e.target.files[0] && processFile(e.target.files[0]));
+        ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadSection.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.add('dragover'), false));
+        ['dragleave', 'drop'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('dragover'), false));
+        uploadSection.addEventListener('drop', (e) => e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]), false);
 
-    document.getElementById('newUploadBtn').addEventListener('click', startNewUpload);
-    document.getElementById('exportMappingsBtn').addEventListener('click', exportResults);
-    
-    // Sanity test button with debug verification
-    const sanityButton = document.getElementById('sanityTestBtn');
-    if (sanityButton) {
-        console.log('✓ Sanity test button found, attaching event listener');
-        sanityButton.addEventListener('click', runSanityTest);
-        sanityButton.addEventListener('click', () => console.log('Sanity test button clicked event fired'));
-    } else {
-        console.error('❌ Sanity test button not found!');
-    }
-    
-    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
-    document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
-    
-    // View toggle event listener
-    document.getElementById('viewToggleBtn').addEventListener('click', toggleView);
-    document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
-    document.getElementById('consolidatedSort').addEventListener('change', sortConsolidatedResults);
-    
-    // Pagination event listeners
-    document.getElementById('prevPageBtn').addEventListener('click', async () => {
-        if (currentPage > 1) {
-            currentPage--;
-            if (window.currentBatchFilename) {
-                const offset = (currentPage - 1) * pageSize;
-                await loadBatchChunk(window.currentBatchFilename, offset, pageSize, sortBy);
-            } else {
-                displayCurrentPage();
-            }
-        }
-    });
-    
-    document.getElementById('nextPageBtn').addEventListener('click', async () => {
-        const totalPages = window.paginationInfo ? 
-            window.paginationInfo.total_pages : 
-            Math.ceil(sortedMappings.length / pageSize);
+        document.getElementById('newUploadBtn').addEventListener('click', startNewUpload);
+        document.getElementById('exportMappingsBtn').addEventListener('click', exportResults);
         
-        if (currentPage < totalPages) {
-            currentPage++;
-            if (window.currentBatchFilename) {
-                const offset = (currentPage - 1) * pageSize;
-                await loadBatchChunk(window.currentBatchFilename, offset, pageSize, sortBy);
-            } else {
-                displayCurrentPage();
-            }
-        }
-    });
-    
-    document.getElementById('pageSizeSelector').addEventListener('change', async (e) => {
-        pageSize = parseInt(e.target.value);
-        currentPage = 1; // Reset to first page when changing page size
-        
-        if (window.currentBatchFilename) {
-            await loadBatchChunk(window.currentBatchFilename, 0, pageSize, sortBy);
+        if (sanityButton) {
+            sanityButton.addEventListener('click', runSanityTest);
         } else {
-            displayCurrentPage();
+            console.error('❌ Sanity test button not found!');
         }
-    });
-    
-    document.getElementById('tableSortBy').addEventListener('change', (e) => {
-        sortBy = e.target.value;
-        currentPage = 1; // Reset to first page when changing sort
-        sortAndDisplayResults();
-    });
-    
-    // Help button event listener
-    document.getElementById('hamburgerToggle').addEventListener('click', () => {
-        document.getElementById('hamburgerDropdown').classList.toggle('hidden');
-    });
-
-    // Close hamburger menu when clicking outside
-    document.addEventListener('click', (event) => {
-        const hamburgerMenu = document.getElementById('hamburgerDropdown');
-        const hamburgerToggle = document.getElementById('hamburgerToggle');
         
-        if (hamburgerMenu && hamburgerToggle) {
-            // Check if the click was outside both the toggle button and the dropdown menu
-            if (!hamburgerToggle.contains(event.target) && !hamburgerMenu.contains(event.target)) {
-                hamburgerMenu.classList.add('hidden');
+        document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+        document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
+        
+        document.getElementById('viewToggleBtn').addEventListener('click', toggleView);
+        document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
+        document.getElementById('consolidatedSort').addEventListener('change', sortConsolidatedResults);
+        
+        document.getElementById('prevPageBtn').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayCurrentPage();
             }
-        }
-    });
-    
-    // Prevent hamburger dropdown from closing when clicking inside it
-    const hamburgerDropdown = document.getElementById('hamburgerDropdown');
-    if (hamburgerDropdown) {
-        hamburgerDropdown.addEventListener('click', (event) => {
-            event.stopPropagation();
         });
-    }
-
-    // Help and Architecture button event listeners with debug verification
-    const helpButton = document.getElementById('helpButton');
-    const architectureButton = document.getElementById('architectureButton');
-    
-    if (helpButton) {
-        console.log('✓ Help button found, attaching event listener');
-        helpButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            showHelpModal();
-        });
-    } else {
-        console.error('❌ Help button not found!');
-    }
-    
-    if (architectureButton) {
-        console.log('✓ Architecture button found, attaching event listener');
-        architectureButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            showArchitectureModal();
-        });
-    } else {
-        console.error('❌ Architecture button not found!');
-    }
-    
-    // Modal close button event listeners with error checking
-    const closeHelpModal1 = document.getElementById('closeHelpModal');
-    const closeHelpBtn = document.getElementById('closeHelpBtn');
-    const closeArchitectureModal1 = document.getElementById('closeArchitectureModal');
-    const closeArchitectureBtn = document.getElementById('closeArchitectureBtn');
-    
-    if (closeHelpModal1) closeHelpModal1.addEventListener('click', closeHelpModal);
-    if (closeHelpBtn) closeHelpBtn.addEventListener('click', closeHelpModal);
-    if (closeArchitectureModal1) closeArchitectureModal1.addEventListener('click', closeArchitectureModal);
-    if (closeArchitectureBtn) closeArchitectureBtn.addEventListener('click', closeArchitectureModal);
-    
-    // Modal click-outside to close functionality with error checking
-    const helpModal = document.getElementById('helpModal');
-    const architectureModal = document.getElementById('architectureModal');
-    
-    if (helpModal) {
-        helpModal.addEventListener('click', (e) => {
-            if (e.target.id === 'helpModal') closeHelpModal();
-        });
-    }
-    
-    if (architectureModal) {
-        architectureModal.addEventListener('click', (e) => {
-            if (e.target.id === 'architectureModal') closeArchitectureModal();
-        });
-    }
-    
-    function showHelpModal() {
         
-        // Populate modal with system architecture content
-        const helpContent = document.getElementById('helpContent');
-        helpContent.innerHTML = `
-            <h2>Radiology Code Semantic Cleaner</h2>
-            <p><strong>What it does:</strong> This application transforms messy, inconsistent radiology exam names from different hospital systems into standardised, clinically meaningful names with structured components.</p>
-            
-            <h3>How to Use This App</h3>
-            
-            <div style="background: var(--color-gray-50); padding: 1rem; border-radius: var(--radius-base); margin: 1rem 0;">
-                <h4>Step 1: Prepare Your Data</h4>
-                <p>Create a JSON file with your radiology exam data. Each exam record needs:</p>
-                <ul>
-                    <li><code>EXAM_NAME</code> - The exam description (e.g., "CT CHEST C+")</li>
-                    <li><code>MODALITY_CODE</code> - Imaging type (CT, MR, XR, US, etc.)</li>
-                    <li><code>DATA_SOURCE</code> - Hospital/system identifier</li>
-                    <li><code>EXAM_CODE</code> - Internal exam code</li>
-                </ul>
-                <p><strong>Example:</strong> <code>{"EXAM_NAME": "CT CHEST C+", "MODALITY_CODE": "CT", "DATA_SOURCE": "HospitalA", "EXAM_CODE": "Q18"}</code></p>
-            </div>
-
-            <div style="background: var(--color-info-light); padding: 1rem; border-radius: var(--radius-base); margin: 1rem 0;">
-                <h4>Step 2: Upload & Process</h4>
-                <p>• <strong>Upload File:</strong> Click the upload area or drag your JSON file</p>
-                <p>• <strong>Run Sanity Test:</strong> Use the test button to try with sample data</p>
-                <p>• <strong>Automatic Processing:</strong> The app sends your data to AI processing engines</p>
-            </div>
-
-            <h3>What Happens During Processing</h3>
-            
-            <div style="background: var(--color-primary-light); padding: 1rem; border-radius: var(--radius-base); margin: 1rem 0;">
-                <h4>1. Intelligent Parsing</h4>
-                <p>The AI analyzes each exam name and extracts:</p>
-                <ul>
-                    <li><strong>Anatomy:</strong> Body parts (chest, abdomen, knee, etc.)</li>
-                    <li><strong>Laterality:</strong> Left, right, or bilateral</li>
-                    <li><strong>Contrast:</strong> With/without contrast agent</li>
-                    <li><strong>Technique:</strong> Special imaging techniques</li>
-                    <li><strong>Gender Context:</strong> Male, female, or pregnancy-related</li>
-                    <li><strong>Clinical Context:</strong> Emergency, screening, follow-up, etc.</li>
-                </ul>
-            </div>
-
-            <div style="background: var(--color-success-light); padding: 1rem; border-radius: var(--radius-base); margin: 1rem 0;">
-                <h4>2. Standardisation</h4>
-                <p>• <strong>Clean Name Generation:</strong> Creates consistent exam names</p>
-                <p>• <strong>SNOMED Mapping:</strong> Links to medical terminology standards</p>
-                <p>• <strong>Confidence Scoring:</strong> Shows how certain the AI is about each result</p>
-                <p>• <strong>Component Validation:</strong> Ensures all extracted parts make clinical sense</p>
-            </div>
-
-            <h3>Understanding Your Results</h3>
-            
-            <p><strong>Full View:</strong> See every individual exam with its clean name, components, and confidence score</p>
-            <p><strong>Consolidated View:</strong> Groups identical clean names together to show consolidation patterns</p>
-            
-            <h4>📈 Key Metrics</h4>
-            <ul>
-                <li><strong>Consolidation Ratio:</strong> How many original names were simplified (e.g., 500 → 200 = 2.5:1)</li>
-                <li><strong>Confidence:</strong> AI certainty level (Green: >80%, Yellow: 60-80%, Red: <60%)</li>
-                <li><strong>Gender Context:</strong> Number of exams with gender-specific components</li>
-                <li><strong>Processing Stats:</strong> Speed, cache hits, and success rates</li>
-            </ul>
-
-            <h3>Export Options</h3>
-            <p>• <strong>Export Mappings:</strong> Download cleaned data as JSON for your systems</p>
-            <p>• <strong>Full Results:</strong> Complete dataset with all components and confidence scores</p>
-            <p>• <strong>Analytics:</strong> Summary reports showing consolidation patterns</p>
-
-            <h3>🎯 Example Transformation</h3>
-            <div style="background: var(--color-warning-light); padding: 1rem; border-radius: var(--radius-base); margin: 1rem 0; font-family: monospace;">
-                <p><strong>Input:</strong> "CT CHEST C+", "CTCHEST", "Chest CT w/contrast"</p>
-                <p><strong>↓ AI Processing ↓</strong></p>
-                <p><strong>Output:</strong> "CT Chest with Contrast"</p>
-                <p><strong>Components:</strong> Anatomy: [chest], Contrast: [with], Confidence: 95%</p>
-            </div>
-
-            <div style="margin-top: 2rem; padding: 1rem; background: var(--color-gray-100); border-radius: var(--radius-base); border-left: 4px solid var(--color-primary);">
-                <p><strong>💡 Pro Tip:</strong> Start with the sanity test to see how the system works, then upload your own data. The AI learns from medical patterns and gets better results with more context.</p>
-            </div>
-        `;
+        document.getElementById('nextPageBtn').addEventListener('click', () => {
+            const totalPages = Math.ceil(sortedMappings.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayCurrentPage();
+            }
+        });
         
-        // Show modal
-        document.getElementById('helpModal').classList.remove('hidden');
-    }
-    
-    function closeHelpModal() {
-        document.getElementById('helpModal').classList.add('hidden');
-    }
-    
-    function showArchitectureModal() {
-        // Close hamburger menu
-        document.getElementById('hamburgerDropdown').classList.add('hidden');
+        document.getElementById('pageSizeSelector').addEventListener('change', (e) => {
+            pageSize = parseInt(e.target.value);
+            currentPage = 1; 
+            displayCurrentPage();
+        });
         
-        // Populate modal with system architecture content
-        document.getElementById('architectureContent').innerHTML = getSystemArchitectureContent();
-        
-        // Show modal
-        document.getElementById('architectureModal').classList.remove('hidden');
-    }
-    
-    function closeArchitectureModal() {
-        document.getElementById('architectureModal').classList.add('hidden');
-    }
-    
-    function getSystemArchitectureContent() {
-        return `
-            <h1>Radiology Cleaner Application - System Architecture</h1>
-            
-            <h2>1. Overview</h2>
-            <p>The Radiology Cleaner application is a web-based tool designed to standardise and process radiology exam names. It leverages a Flask backend for API services, a Python-based natural language processing (NLP) engine for semantic parsing, and a simple HTML/JavaScript frontend for user interaction. The system aims to provide clean, standardised exam names, SNOMED codes, and extracted clinical components (anatomy, laterality, contrast, etc.) for improved data quality and interoperability.</p>
-            
-            <h2>2. Architecture Overview</h2>
-            <p>The system follows a modern web application architecture with the following key components:</p>
-            <ul>
-                <li><strong>Frontend</strong>: HTML/CSS/JavaScript interface for user interaction</li>
-                <li><strong>Backend API</strong>: Flask application with REST endpoints</li>
-                <li><strong>NLP Engine</strong>: Semantic parsing and text processing</li>
-                <li><strong>NHS Lookup</strong>: Standardisation against NHS reference data</li>
-                <li><strong>Database</strong>: SQLite for performance metrics and feedback</li>
-                <li><strong>Cache System</strong>: In-memory caching with dynamic versioning</li>
-            </ul>
-            
-            <h2>3. Core Components</h2>
-            
-            <h3>3.1. Frontend</h3>
-            <ul>
-                <li><strong>index.html</strong>: Main entry point providing HTML structure</li>
-                <li><strong>app.js</strong>: JavaScript logic for UI interaction and API communication</li>
-                <li><strong>unified-styles.css</strong>: Professional healthcare-focused styling</li>
-            </ul>
-            
-            <h3>3.2. Backend Services</h3>
-            <ul>
-                <li><strong>RadiologySemanticParser</strong>: Core rule-based semantic parsing
-                    <ul>
-                        <li>Modality detection (XR, CT, MRI, XA, Fluoroscopy, DEXA)</li>
-                        <li>Technique classification (Angiography, Interventional, Barium Study)</li>
-                        <li>Component extraction (anatomy, laterality, contrast)</li>
-                    </ul>
-                </li>
-                <li><strong>NLPProcessor</strong>: Multi-model NLP support
-                    <ul>
-                        <li>PubMed embeddings (medical terminology optimized)</li>
-                        <li>BioLORD-2023 (advanced biomedical language model)</li>
-                        <li>General-purpose models for broad understanding</li>
-                    </ul>
-                </li>
-                <li><strong>NHSLookupEngine</strong>: NHS reference data standardisation
-                    <ul>
-                        <li>Unified preprocessing pipeline</li>
-                        <li>Dynamic cache invalidation</li>
-                        <li>Dual lookup strategy (Clean Name + SNOMED FSN)</li>
-                        <li>Interventional procedure weighting</li>
-                    </ul>
-                </li>
-            </ul>
-            
-            <h2>4. Recent Improvements</h2>
-            
-            
-            <h3>4.1. Multi-Model NLP Support</h3>
-            <ul>
-                <li><strong>BioLORD Integration</strong>: FremyCompany/BioLORD-2023 for enhanced medical terminology</li>
-                <li><strong>Model Selection API</strong>: Users can specify model via request parameters</li>
-                <li><strong>Model Discovery</strong>: <code>/models</code> endpoint lists available models with status</li>
-            </ul>
-            
-            <h2>5. API Endpoints</h2>
-            <ul>
-                <li><code>/health</code>: Basic health check</li>
-                <li><code>/models</code>: Lists available NLP models with status and descriptions</li>
-                <li><code>/parse_enhanced</code>: Enhanced parsing with model selection support</li>
-                <li><code>/parse_batch</code>: Optimized batch processing</li>
-                <li><code>/validate</code>: Quality validation and scoring</li>
-                <li><code>/feedback</code>: User feedback submission</li>
-            </ul>
-            
-            <h2>6. Data Flow</h2>
-            <ol>
-                <li><strong>Input Processing</strong>: User uploads exam data or uses sanity test</li>
-                <li><strong>Preprocessing</strong>: Abbreviation expansion and normalization</li>
-                <li><strong>Semantic Parsing</strong>: Component extraction using rule-based methods</li>
-                <li><strong>NLP Enhancement</strong>: Semantic embeddings for similarity matching</li>
-                <li><strong>NHS Standardisation</strong>: Match against NHS reference data</li>
-                <li><strong>SNOMED Mapping</strong>: Medical coding standards integration</li>
-                <li><strong>Output Generation</strong>: Structured results with confidence scores</li>
-            </ol>
-            
-            <h2>7. Key Technologies</h2>
-            <ul>
-                <li><strong>Frontend</strong>: HTML5, CSS3, ES6+ JavaScript</li>
-                <li><strong>Backend</strong>: Python 3.9+, Flask, Flask-CORS</li>
-                <li><strong>NLP</strong>: Hugging Face Inference API, NumPy</li>
-                <li><strong>Data Storage</strong>: SQLite, JSON, CSV</li>
-                <li><strong>Concurrency</strong>: ThreadPoolExecutor for batch processing</li>
-                <li><strong>Caching</strong>: Dynamic versioning with automatic invalidation</li>
-            </ul>
-            
-            <h2>8. Deployment Considerations</h2>
-            <ul>
-                <li><strong>Environment Variables</strong>: HUGGING_FACE_TOKEN required for NLP functionality</li>
-                <li><strong>Scalability</strong>: Batch processing and API-based NLP for performance</li>
-                <li><strong>Monitoring</strong>: Performance metrics recorded for optimization</li>
-                <li><strong>Graceful Shutdown</strong>: Ensures data integrity during restarts</li>
-            </ul>
-            
-            <div style="margin-top: 2rem; padding: 1rem; background: var(--color-primary-light); border-radius: var(--radius-base); border-left: 4px solid var(--color-primary);">
-                <p><strong>🏥 Healthcare Focus:</strong> This system is specifically designed for healthcare data processing with medical accuracy as the top priority. All improvements are validated against NHS reference standards.</p>
-            </div>
-        `;
+        document.getElementById('tableSortBy').addEventListener('change', (e) => {
+            sortBy = e.target.value;
+            currentPage = 1; 
+            sortAndDisplayResults();
+        });
     }
 
     // --- UPLOAD INTERFACE CONTROL ---
@@ -863,202 +512,21 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function startNewUpload() {
-        // Reset UI to initial state
         showUploadInterface();
         resultsSection.style.display = 'none';
         statusManager.clearAll();
-        
-        // Reset file input
         fileInput.value = '';
-        
-        // Clear global state
         allMappings = [];
         summaryData = null;
         sortedMappings = [];
-        
-        // Reset pagination state
         currentPage = 1;
         pageSize = 100;
         sortBy = 'default';
-        window.currentBatchFilename = null;
-        window.paginationInfo = null;
-        
-        // Hide pagination controls
         document.getElementById('paginationControls').style.display = 'none';
-        
-        // Clear any status messages
-        statusManager.clearAll();
-        
-        // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // --- CORE PROCESSING FUNCTIONS ---
-    // Process files individually (for small files)
-    async function processIndividually(codes) {
-    // Inform the user this is a slower fallback method
-    statusManager.show('Batch processing failed. Using slower individual processing...', 'warning', 6000);
-    
-    // This function will now update a single progress message in real-time
-    try {
-        for (let i = 0; i < codes.length; i++) {
-            const code = codes[i];
-            
-            // Update the progress bar before each API call for a responsive feel
-            // The showProgress method is designed to be updated repeatedly
-            statusManager.showProgress('Processing record', i + 1, codes.length);
-            
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ exam_name: code.EXAM_NAME, modality_code: code.MODALITY_CODE, model: currentModel })
-                });
-                if (!response.ok) throw new Error(`API returned status ${response.status}`);
-                
-                const parsed = await response.json();
-                allMappings.push({
-                    data_source: code.DATA_SOURCE,
-                    modality_code: code.MODALITY_CODE,
-                    exam_code: code.EXAM_CODE,
-                    exam_name: code.EXAM_NAME,
-                    clean_name: parsed.clean_name,
-                    snomed: parsed.snomed || {},
-                    components: { 
-                        anatomy: parsed.components.anatomy, 
-                        laterality: parsed.components.laterality, 
-                        contrast: parsed.components.contrast, 
-                        technique: parsed.components.technique,
-                        gender_context: parsed.components.gender_context,
-                        age_context: parsed.components.age_context,
-                        clinical_context: parsed.components.clinical_context,
-                        confidence: parsed.components.confidence,
-                        clinical_equivalents: parsed.clinical_equivalents
-                    }
-                });
-            } catch (error) {
-                console.error(`Failed to parse code: ${code.EXAM_NAME}`, error);
-                allMappings.push({ ...code, clean_name: 'ERROR - PARSING FAILED', components: {} });
-            }
-        }
-        
-        statusManager.show(`Individual processing complete! ${allMappings.length} records processed.`, 'success', 8000);
-
-    } finally {
-        // Use the dedicated method to clean up the progress, stage, and stats messages
-        statusManager.clearPersistentMessages();
-    }
-}
-    
-    // Process files in batches (for large files)
-    async function processBatch(codes) {
-        console.log(`Using batch processing for ${codes.length} records...`);
-        
-        // Update status message
-        statusManager.show(`Preparing ${codes.length} exam records for processing...`, 'info', 4000);
-        
-        try {
-            // Transform codes to the expected format for batch API
-            const exams = codes.map(code => ({
-                exam_name: code.EXAM_NAME,
-                modality_code: code.MODALITY_CODE,
-                data_source: code.DATA_SOURCE,
-                exam_code: code.EXAM_CODE
-            }));
-            
-            statusManager.show(`Sending ${codes.length} exam records to AI processing engine...`, 'progress', 6000);
-            
-            const response = await fetch(BATCH_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    exams: exams,
-                    chunk_size: getBatchSize(), // Use configured batch size
-                    model: currentModel
-                })
-            });
-            
-            if (!response.ok) throw new Error(`Batch API returned status ${response.status}`);
-            
-            statusManager.show(`🧠 AI engine processing exam names using biomedical BERT model...`, 'progress', 7000);
-            
-            const batchResult = await response.json();
-            
-            // Handle both in-memory results (small batches) and file-based results (large batches)
-            if (batchResult.results) {
-                // In-memory results format (for small batches <= 50 items)
-                allMappings = batchResult.results.map(item => {
-                    if (item.status === 'success') {
-                        return {
-                            data_source: item.input.data_source,
-                            modality_code: item.input.modality_code,
-                            exam_code: item.input.exam_code,
-                            exam_name: item.input.exam_name,
-                            clean_name: item.output.clean_name,
-                            snomed: item.output.snomed || {},
-                            components: { 
-                                ...item.output.components,
-                                clinical_equivalents: item.output.clinical_equivalents || []
-                            }
-                        };
-                    } else {
-                        // Handle error entries
-                        return {
-                            data_source: item.input.data_source,
-                            modality_code: item.input.modality_code,
-                            exam_code: item.input.exam_code,
-                            exam_name: item.input.exam_name,
-                            clean_name: `ERROR: ${item.error}`,
-                            components: {}
-                        };
-                    }
-                });
-            } else if (batchResult.results_file) {
-                // File-based results format (for large batches > 50 items)
-                // Implement chunked loading for large datasets
-                statusManager.show(`Large batch complete! Loading results with pagination...`, 'info', 3000);
-                
-                // Store filename for chunked loading
-                window.currentBatchFilename = batchResult.results_filename;
-                
-                // Load first chunk
-                await loadBatchChunk(batchResult.results_filename, 0, pageSize, sortBy);
-            }
-            
-            // Log batch processing stats and update user
-            if (batchResult.processing_stats) {
-                const stats = batchResult.processing_stats;
-                const formattedTime = formatProcessingTime(stats.processing_time_ms);
-                
-                // Handle optional cache statistics
-                if (stats.cache_hits !== undefined && stats.cache_hit_ratio !== undefined) {
-                    const hitRate = (stats.cache_hit_ratio * 100).toFixed(1);
-                    statusManager.show(`Processing complete! ${stats.successful} successful, ${stats.cache_hits} from cache (${hitRate}% hit rate), ${formattedTime} total`, 'success', 8000);
-                    console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${stats.cache_hits} cache hits (${hitRate}% hit rate), ${formattedTime} total`);
-                } else {
-                    statusManager.show(`Processing complete! ${stats.successful} successful, ${formattedTime} total`, 'success', 8000);
-                    console.log(`Batch processing completed: ${stats.successful} successful, ${stats.errors} errors, ${formattedTime} total`);
-                }
-            } else {
-                statusManager.show(`Processing complete! ${allMappings.length} exam records processed successfully.`, 'success', 8000);
-            }
-            
-        } catch (error) {
-            console.error('Batch processing failed:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack,
-                name: error.name
-            });
-            statusManager.show(`Batch processing failed: ${error.message}. Falling back to individual processing...`, 'warning', 6000);
-            // Fall back to individual processing if batch fails
-            console.log('Falling back to individual processing...');
-            await processIndividually(codes);
-        }
-        
-    }
-
-    // --- FILE PROCESSING ---
     async function processFile(file) {
         if (!file.name.endsWith('.json')) {
             statusManager.show('Please upload a valid JSON file.', 'error', 5000);
@@ -1068,90 +536,54 @@ window.addEventListener('DOMContentLoaded', function() {
         statusManager.clearAll();
         statusManager.showFileInfo(file.name, file.size);
         resultsSection.style.display = 'none';
-        allMappings = [];
-        summaryData = null;
         
-
         const reader = new FileReader();
         reader.onload = async function(e) {
             try {
                 const codes = JSON.parse(e.target.result);
                 if (!Array.isArray(codes) || codes.length === 0) {
-                    alert('JSON file is empty or not in the correct array format.');
-                    showUploadInterface();
-                    return;
+                    throw new Error('JSON file is empty or not in the correct array format.');
                 }
-
                 console.log(`Processing ${codes.length} exam records...`);
-                statusManager.show(`📁 Loaded ${codes.length} exam records from ${file.name}. Starting processing...`, 'info', 5000);
-        
-                
-                await processBatch(codes);
-        
-                runAnalysis(allMappings);
-
-             } catch (error) {
-                alert('Error processing file: ' + error.message);
+                await processBatch(codes, `File: ${file.name}`);
+            } catch (error) {
+                statusManager.show(`Error processing file: ${error.message}`, 'error', 0);
                 showUploadInterface();
-             }
-};
-        
+            }
+        };
         reader.readAsText(file);
     }
-
-    // --- FIX: New, refactored sanity test function ---
+    
     async function runSanityTest() {
-        console.log('🧪 Sanity test button clicked - starting test...');
-        const button = document.getElementById('sanityTestBtn');
-        let statusId = null; // To hold the ID of the "in-progress" message
+        if (sanityButton) sanityButton.disabled = true;
+        let statusId = null; 
 
         try {
-            // UI updates for processing
             hideUploadInterface();
-            button.disabled = true;
-            button.innerHTML = 'Processing Test Cases...';
             statusManager.clearAll();
             statusManager.showTestInfo('Sanity Test', 'Verifying engine performance...');
-
-            // Show a "progress" message that we can remove later
             statusId = statusManager.show(`Running 100-exam test suite with model: '${currentModel}'...`, 'progress');
 
-            // Fetch the sanity test data from a local file
             const response = await fetch('./core/sanity_test.json');
             if (!response.ok) throw new Error(`Could not load test file: ${response.statusText}`);
             const codes = await response.json();
             
-            // Now, run the batch processing with this data
-            await runBatchProcessing(codes, "Sanity Test");
+            await processBatch(codes, "100 Exam Test Suite");
 
         } catch (error) {
             console.error('Sanity test failed:', error);
-            statusManager.show(`❌ Sanity Test Failed: ${error.message}`, 'error');
-            
-            // Show a persistent error message so the user can read it
-            statusManager.show(`<strong>Sanity Test Failed:</strong> ${error.message}`, 'error', 0);
-            showUploadInterface(); // Let the user try again or upload a file
-            
+            statusManager.show(`❌ Sanity Test Failed: ${error.message}`, 'error', 0);
+            showUploadInterface(); 
         } finally {
-            // This 'finally' block ensures the UI is always restored correctly
-            
-            // If an error occurred before the success message, the progress status might still be visible.
-            // This ensures it's always removed.
-            if (statusId) {
-                statusManager.remove(statusId);
+            if (statusId) statusManager.remove(statusId);
+            if (sanityButton) {
+                 sanityButton.disabled = false;
+                 sanityButton.innerHTML = '100 Exam Test Suite';
             }
-            
-            // Restore button state
-            button.disabled = false;
-            button.innerHTML = '100 Exam Test Suite';
         }
     }
 
-    // --- FIX: New, universal batch processing function with granular feedback ---
-    async function runBatchProcessing(codes, jobName) {
-        const button = document.getElementById('sanityTestBtn');
-        if (button) button.disabled = true;
-
+    async function processBatch(codes, jobName) {
         allMappings = [];
         const totalCodes = codes.length;
         const batchSize = getBatchSize();
@@ -1159,11 +591,8 @@ window.addEventListener('DOMContentLoaded', function() {
         let progressId = null;
 
         try {
-            // Loop through the data in chunks
             for (let i = 0; i < totalCodes; i += batchSize) {
                 const chunk = codes.slice(i, i + batchSize);
-                
-                // Update progress before sending the batch
                 progressId = statusManager.showProgress(`Processing ${jobName}`, processedCount, totalCodes);
 
                 const exams = chunk.map(code => ({
@@ -1186,7 +615,6 @@ window.addEventListener('DOMContentLoaded', function() {
 
                 const batchResult = await response.json();
                 
-                // Process results from the chunk
                 if (batchResult.results) {
                     const chunkMappings = batchResult.results.map(item => {
                         return item.status === 'success' ? {
@@ -1209,161 +637,34 @@ window.addEventListener('DOMContentLoaded', function() {
                 processedCount += chunk.length;
                 statusManager.showProgress(`Processing ${jobName}`, processedCount, totalCodes);
             }
-
+            
+            if (progressId) statusManager.remove(progressId);
             statusManager.show(`Successfully processed ${allMappings.length} records from ${jobName}.`, 'success', 5000);
             runAnalysis(allMappings);
 
         } catch (error) {
+            if (progressId) statusManager.remove(progressId);
             statusManager.show(`Processing failed: ${error.message}`, 'error', 0);
             console.error('Batch processing error:', error);
             showUploadInterface();
-        } finally {
-            if (button) button.disabled = false;
-            // Clear progress bar on completion or error
-            if (progressId) statusManager.remove(progressId);
-        }
-    }
-
-    // --- CHUNKED LOADING FUNCTIONS ---
-    async function loadBatchChunk(filename, offset, limit, sortBy) {
-        try {
-            const sortParams = parseSortBy(sortBy);
-            const url = `${apiConfig.baseUrl}/load_batch_chunk/${filename}?offset=${offset}&limit=${limit}&sort_by=${sortParams.by}&sort_order=${sortParams.order}`;
-            
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`Failed to load chunk: ${response.status}`);
-            
-            const chunkData = await response.json();
-            
-            // Convert chunk results to frontend format
-            allMappings = chunkData.results.map(item => {
-                if (item.status === 'success') {
-                    return {
-                        data_source: item.input.data_source,
-                        modality_code: item.input.modality_code,
-                        exam_code: item.input.exam_code,
-                        exam_name: item.input.exam_name,
-                        clean_name: item.output.clean_name,
-                        snomed: item.output.snomed || {},
-                        components: { 
-                            ...item.output.components,
-                            clinical_equivalents: item.output.clinical_equivalents || []
-                        }
-                    };
-                } else {
-                    return {
-                        data_source: item.input.data_source,
-                        modality_code: item.input.modality_code,
-                        exam_code: item.input.exam_code,
-                        exam_name: item.input.exam_name,
-                        clean_name: `ERROR: ${item.error}`,
-                        components: {}
-                    };
-                }
-            });
-            
-            // Store pagination info globally
-            window.paginationInfo = chunkData.pagination;
-            
-            // Enable pagination mode
-            enablePaginationMode(true);
-            
-            // Display results
-            runAnalysis(allMappings);
-            
-        } catch (error) {
-            console.error('Failed to load batch chunk:', error);
-            statusManager.show(`Failed to load results: ${error.message}`, 'error');
-        }
-    }
-    
-    function parseSortBy(sortBy) {
-        switch (sortBy) {
-            case 'confidence-desc': return { by: 'confidence', order: 'desc' };
-            case 'confidence-asc': return { by: 'confidence', order: 'asc' };
-            case 'name-asc': return { by: 'name', order: 'asc' };
-            case 'name-desc': return { by: 'name', order: 'desc' };
-            default: return { by: 'default', order: 'asc' };
-        }
-    }
-    
-    function enablePaginationMode(enable) {
-        const paginationControls = document.getElementById('paginationControls');
-        const tableInfo = document.getElementById('tableInfo');
-        
-        if (enable && window.paginationInfo) {
-            // Show pagination controls
-            paginationControls.style.display = 'flex';
-            
-            // Update pagination info
-            updatePaginationInfo();
-            
-            // Update table info
-            const info = window.paginationInfo;
-            tableInfo.textContent = `Showing ${info.offset + 1}-${Math.min(info.offset + info.limit, info.total_items)} of ${info.total_items} results`;
-        } else {
-            // Hide pagination controls for small datasets
-            paginationControls.style.display = 'none';
-            
-            if (allMappings.length > 0) {
-                tableInfo.textContent = `Showing all ${allMappings.length} results`;
-            }
-        }
-    }
-    
-    function updatePaginationInfo() {
-        const pageInfo = document.getElementById('pageInfo');
-        const prevBtn = document.getElementById('prevPageBtn');
-        const nextBtn = document.getElementById('nextPageBtn');
-        const info = window.paginationInfo;
-        
-        if (info) {
-            pageInfo.textContent = `Page ${info.current_page} of ${info.total_pages}`;
-            
-            // Update button states
-            prevBtn.disabled = info.current_page <= 1;
-            nextBtn.disabled = info.current_page >= info.total_pages;
-        }
-    }
-    
-    async function sortAndDisplayResults() {
-        if (window.currentBatchFilename) {
-            // For paginated data, reload from server with new sort
-            const info = window.paginationInfo || {};
-            const offset = (currentPage - 1) * pageSize;
-            await loadBatchChunk(window.currentBatchFilename, offset, pageSize, sortBy);
-        } else {
-            // For in-memory data, sort locally
-            applySortToMappings();
-            displayCurrentPage();
         }
     }
     
     function runAnalysis(mappings) {
-        // Clear all status messages before showing results
         statusManager.clearAll();
-        
         summaryData = generateAnalyticsSummary(mappings);
         updateStatsUI(summaryData);
         updateResultsTitle();
         
-        // For in-memory data, set up sorting and pagination
-        if (!window.currentBatchFilename) {
-            sortedMappings = [...mappings];
-            applySortToMappings();
-            enablePaginationMode(mappings.length > pageSize);
-            displayCurrentPage();
-        } else {
-            // For chunked data, display as-is (already sorted server-side)
-            displayResults(mappings);
-        }
+        sortedMappings = [...mappings];
+        sortAndDisplayResults();
         
         generateConsolidatedResults(mappings);
         generateSourceLegend(mappings);
         resultsSection.style.display = 'block';
-        // NOTE: Upload interface stays hidden - only restored via "New Upload" button
     }
 
+    // --- UI & DISPLAY FUNCTIONS ---
     function updateResultsTitle() {
         const titleElement = document.getElementById('resultsTitle');
         const modelDisplayName = formatModelName(currentModel);
@@ -1371,61 +672,30 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     function generateSourceLegend(mappings) {
-        // Get unique sources from the data
         const uniqueSources = [...new Set(mappings.map(item => item.data_source))];
+        const sourceNames = { 'C': 'Central', 'CO': 'SIRS (Canterbury)', 'K': 'Southern', 'TestData': 'Test Data' };
         
-        // Source display names
-        const sourceNames = {
-            'C': 'Central',
-            'CO': 'SIRS (Canterbury)',
-            'K': 'Southern',
-            'NL': 'Northland',
-            'TMT': 'Te Manawa Taki',  // Placeholder code
-            'AM': 'Auckland Metro',   // Placeholder code
-            'TestData': 'Test Data',
-            'SanityTest': 'Sanity Test',
-            'Demo': 'Demo',
-            'Sample': 'Sample'
-        };
-        
-        // Create legend container if it doesn't exist
         let legendContainer = document.getElementById('sourceLegend');
         if (!legendContainer) {
             legendContainer = document.createElement('div');
             legendContainer.id = 'sourceLegend';
             legendContainer.className = 'source-legend';
-            
-            // Insert after the "Cleaning Results" title
             const resultsTitle = document.getElementById('resultsTitle');
             if (resultsTitle && resultsTitle.parentNode) {
                 resultsTitle.parentNode.insertBefore(legendContainer, resultsTitle.nextSibling);
-            } else {
-                // Fallback: insert at the end of results section if resultsTitle not found
-                const resultsSection = document.getElementById('resultsSection');
-                if (resultsSection) {
-                    resultsSection.appendChild(legendContainer);
-                }
             }
         }
         
-        // Generate legend content without title
         let legendHTML = '<div class="source-legend-grid">';
         uniqueSources.forEach(source => {
             const color = getSourceColor(source);
             const displayName = sourceNames[source] || source;
-            legendHTML += `
-                <div class="source-legend-item">
-                    <div class="source-legend-color" style="background-color: ${color};"></div>
-                    <span>${displayName}</span>
-                </div>
-            `;
+            legendHTML += `<div class="source-legend-item"><div class="source-legend-color" style="background-color: ${color};"></div><span>${displayName}</span></div>`;
         });
         legendHTML += '</div>';
-        
         legendContainer.innerHTML = legendHTML;
     }
 
-    // --- UI & DISPLAY FUNCTIONS ---
     function updateStatsUI(summary) {
         document.getElementById('originalCount').textContent = summary.totalOriginalCodes;
         document.getElementById('cleanCount').textContent = summary.uniqueCleanNames;
@@ -1435,20 +705,14 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('genderContext').textContent = summary.genderContextCount;
     }
 
-    // Source color mapping
-    const sourceColors = {
-        'C': '#1f77b4',            // Blue - Central
-        'CO': '#2ca02c',           // Green - SIRS (Canterbury)
-        'K': '#9467bd',            // Purple - Southern (changed from red to avoid error implication)
-        'TestData': '#ff1493',     // Deep Pink
-        'SanityTest': '#00ced1',   // Dark Turquoise
-        'Demo': '#ffd700',         // Gold
-        'Sample': '#ff6347',       // Tomato
-        'Default': '#6c757d'       // Bootstrap secondary gray
-    };
-
+    const sourceColors = { 'C': '#1f77b4', 'CO': '#2ca02c', 'K': '#9467bd', 'TestData': '#ff1493', 'Default': '#6c757d' };
     function getSourceColor(source) {
         return sourceColors[source] || sourceColors['Default'];
+    }
+
+    function sortAndDisplayResults() {
+        applySortToMappings();
+        displayCurrentPage();
     }
 
     function displayCurrentPage() {
@@ -1457,16 +721,16 @@ window.addEventListener('DOMContentLoaded', function() {
         const pageData = sortedMappings.slice(startIndex, endIndex);
         displayResults(pageData);
         
-        // Update pagination controls for in-memory data
+        document.getElementById('paginationControls').style.display = sortedMappings.length > pageSize ? 'flex' : 'none';
         const totalPages = Math.ceil(sortedMappings.length / pageSize);
         document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
         document.getElementById('prevPageBtn').disabled = currentPage <= 1;
         document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+        const tableInfo = document.getElementById('tableInfo');
+        tableInfo.textContent = `Showing ${startIndex + 1}-${Math.min(endIndex, sortedMappings.length)} of ${sortedMappings.length} results`;
     }
     
     function applySortToMappings() {
-        sortedMappings = [...allMappings];
-        
         switch (sortBy) {
             case 'confidence-desc':
                 sortedMappings.sort((a, b) => (b.components?.confidence || 0) - (a.components?.confidence || 0));
@@ -1481,7 +745,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 sortedMappings.sort((a, b) => (b.clean_name || '').localeCompare(a.clean_name || ''));
                 break;
             default:
-                sortedMappings = [...allMappings]; // Default order
+                sortedMappings = [...allMappings];
         }
     }
 
@@ -1490,75 +754,41 @@ window.addEventListener('DOMContentLoaded', function() {
         results.forEach(item => {
             const row = resultsBody.insertRow();
             
-            // Add source indicator cell
             const sourceCell = row.insertCell();
-            sourceCell.style.cssText = `
-                width: 12px;
-                padding: 0;
-                background-color: ${getSourceColor(item.data_source)};
-                border-right: none;
-                position: relative;
-            `;
-            
-            // Set tooltip with full source name
-            const sourceNames = {
-                'C': 'Central',
-                'CO': 'SIRS (Canterbury)', 
-                'K': 'Southern'
-            };
+            sourceCell.style.cssText = `width: 12px; padding: 0; background-color: ${getSourceColor(item.data_source)}; border-right: none; position: relative;`;
+            const sourceNames = { 'C': 'Central', 'CO': 'SIRS (Canterbury)', 'K': 'Southern' };
             sourceCell.title = sourceNames[item.data_source] || item.data_source;
+            
             row.insertCell().textContent = item.exam_code;
             row.insertCell().textContent = item.exam_name;
+
             const cleanNameCell = row.insertCell();
-            if (item.clean_name && item.clean_name.startsWith('ERROR')) {
-                cleanNameCell.innerHTML = `<span class="error-message">${item.clean_name}</span>`;
-            } else {
-                cleanNameCell.innerHTML = `<strong>${item.clean_name}</strong>`;
-            }
+            cleanNameCell.innerHTML = item.clean_name.startsWith('ERROR') ? `<span class="error-message">${item.clean_name}</span>` : `<strong>${item.clean_name}</strong>`;
 
-            // Add SNOMED FSN cell with code underneath
             const snomedFsnCell = row.insertCell();
-            if (item.snomed && item.snomed.fsn) {
-                let snomedContent = `<div>${item.snomed.fsn}</div>`;
-                if (item.snomed.id) {
-                    snomedContent += `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.id}</div>`;
-                }
-                snomedFsnCell.innerHTML = snomedContent;
-            } else {
-                snomedFsnCell.innerHTML = '<span style="color: #999;">-</span>';
-            }
+            snomedFsnCell.innerHTML = item.snomed?.fsn ? `<div>${item.snomed.fsn}</div>` + (item.snomed.id ? `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.id}</div>` : '') : '<span style="color: #999;">-</span>';
 
-            // Add combined Tags cell (components + context)
             const tagsCell = row.insertCell();
+            let tagsHTML = '';
             const { anatomy, laterality, contrast, technique, gender_context, age_context, clinical_context, clinical_equivalents } = item.components || {};
-            
-            // Add component tags
-            if(anatomy && anatomy.length > 0) anatomy.forEach(a => { if (a && a.trim()) tagsCell.innerHTML += `<span class="tag anatomy">${a}</span>`});
-            if(laterality && Array.isArray(laterality)) laterality.forEach(l => { if (l && l.trim()) tagsCell.innerHTML += `<span class="tag laterality">${l}</span>`});
-            else if(laterality && typeof laterality === 'string' && laterality.trim()) tagsCell.innerHTML += `<span class="tag laterality">${laterality}</span>`;
-            if(contrast && Array.isArray(contrast)) contrast.forEach(c => { if (c && c.trim()) tagsCell.innerHTML += `<span class="tag contrast">${c}</span>`});
-            else if(contrast && typeof contrast === 'string' && contrast.trim()) tagsCell.innerHTML += `<span class="tag contrast">${contrast}</span>`;
-            if(technique && technique.length > 0) technique.forEach(t => { if (t && t.trim()) tagsCell.innerHTML += `<span class="tag technique">${t}</span>`});
-            
-            // Add context tags
-            if(gender_context && gender_context.trim()) tagsCell.innerHTML += `<span class="tag gender">${gender_context}</span>`;
-            if(age_context && age_context.trim()) tagsCell.innerHTML += `<span class="tag age">${age_context}</span>`;
-            if(clinical_context && clinical_context.length > 0) clinical_context.forEach(c => { if (c && c.trim()) tagsCell.innerHTML += `<span class="tag clinical">${c}</span>`});
-            if(clinical_equivalents && clinical_equivalents.length > 0) {
-                clinical_equivalents.slice(0, 2).forEach(e => { if (e && e.trim()) tagsCell.innerHTML += `<span class="tag equivalent">${e}</span>`});
-            }
-            
-            // Add confidence cell
+            const addTag = (value, className) => (value && value.trim()) ? `<span class="tag ${className}">${value}</span>` : '';
+            const addTags = (arr, className) => Array.isArray(arr) ? arr.map(v => addTag(v, className)).join('') : addTag(arr, className);
+
+            tagsHTML += addTags(anatomy, 'anatomy');
+            tagsHTML += addTags(laterality, 'laterality');
+            tagsHTML += addTags(contrast, 'contrast');
+            tagsHTML += addTags(technique, 'technique');
+            tagsHTML += addTag(gender_context, 'gender');
+            tagsHTML += addTag(age_context, 'age');
+            tagsHTML += addTags(clinical_context, 'clinical');
+            if (clinical_equivalents) tagsHTML += addTags(clinical_equivalents.slice(0, 2), 'equivalent');
+            tagsCell.innerHTML = tagsHTML;
+
             const confidenceCell = row.insertCell();
-            const confidence = (item.components && item.components.confidence) ? item.components.confidence : 0;
+            const confidence = item.components?.confidence || 0;
             const confidencePercent = Math.round(confidence * 100);
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
-            confidenceCell.innerHTML = `
-                <div class="confidence-bar">
-                    <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
-                </div>
-                <small>${confidencePercent}%</small>
-            `;
+            confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>`;
         });
     }
 
@@ -1568,69 +798,24 @@ window.addEventListener('DOMContentLoaded', function() {
             totalOriginalCodes: mappings.length,
             uniqueCleanNames: new Set(mappings.map(m => m.clean_name).filter(n => n && !n.startsWith('ERROR'))).size,
             modalityBreakdown: {}, 
-            contrastUsage: { with: 0, without: 0, 'with and without': 0, none: 0 },
-            lateralityDistribution: { left: 0, right: 0, bilateral: 0, none: 0 },
-            genderContextBreakdown: { male: 0, female: 0, pregnancy: 0, none: 0 },
-            clinicalContextBreakdown: { emergency: 0, screening: 0, follow_up: 0, intervention: 0, none: 0 },
             avgConfidence: 0,
-            genderContextCount: 0
+            genderContextCount: 0,
         };
         summary.consolidationRatio = summary.uniqueCleanNames > 0 ? (summary.totalOriginalCodes / summary.uniqueCleanNames).toFixed(2) : "0.00";
         
-        const cleanNameGroups = {};
-        let totalConfidence = 0;
-        let confidenceCount = 0;
-        
+        let totalConfidence = 0, confidenceCount = 0;
         mappings.forEach(m => {
-            if (!m.components || (m.clean_name && m.clean_name.startsWith('ERROR'))) return;
-            const { modality_code, components } = m || {};
-            const modality = m.components.modality || modality_code;
+            if (!m.components || m.clean_name.startsWith('ERROR')) return;
+            const modality = m.components.modality || m.modality_code;
             if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
-            
-            const contrastType = (Array.isArray(components.contrast) 
-                ? (components.contrast.length > 0 ? components.contrast[0] : 'none')
-                : String(components.contrast || 'none')).replace(' ', '_');
-            if(summary.contrastUsage.hasOwnProperty(contrastType)) summary.contrastUsage[contrastType]++;
-            
-            const laterality = (Array.isArray(components.laterality) 
-                ? (components.laterality.length > 0 ? components.laterality[0] : 'none')
-                : (components.laterality || 'none')).toLowerCase();
-            if(summary.lateralityDistribution.hasOwnProperty(laterality)) summary.lateralityDistribution[laterality]++;
-            
-            // Enhanced analytics
-            const genderContext = components.gender_context || 'none';
-            if(summary.genderContextBreakdown.hasOwnProperty(genderContext)) {
-                summary.genderContextBreakdown[genderContext]++;
-                if(genderContext !== 'none') summary.genderContextCount++;
-            }
-            
-            const clinicalContexts = components.clinical_context || [];
-            if(clinicalContexts.length > 0) {
-                clinicalContexts.forEach(context => {
-                    if(summary.clinicalContextBreakdown.hasOwnProperty(context)) {
-                        summary.clinicalContextBreakdown[context]++;
-                    }
-                });
-            } else {
-                summary.clinicalContextBreakdown.none++;
-            }
-            
-            if(components.confidence !== undefined) {
-                totalConfidence += components.confidence;
+            if (m.components.gender_context) summary.genderContextCount++;
+            if (m.components.confidence !== undefined) {
+                totalConfidence += m.components.confidence;
                 confidenceCount++;
             }
-
-            if (!cleanNameGroups[m.clean_name]) cleanNameGroups[m.clean_name] = [];
-            cleanNameGroups[m.clean_name].push(m);
         });
         
         summary.avgConfidence = confidenceCount > 0 ? Math.round((totalConfidence / confidenceCount) * 100) : 0;
-        summary.topConsolidatedExams = Object.entries(cleanNameGroups)
-            .filter(([, group]) => group.length > 1).sort((a, b) => b[1].length - a[1].length).slice(0, 10)
-            .map(([cleanName, group]) => ({
-                cleanName, originalCount: group.length,
-                examples: group.slice(0, 3).map(m => ({ source: m.data_source, code: m.exam_code, name: m.exam_name }))
-            }));
         return summary;
     }
 
@@ -1638,51 +823,7 @@ window.addEventListener('DOMContentLoaded', function() {
         if (!allMappings.length) return alert('No data to export.');
         downloadJSON(allMappings, 'radiology_codes_cleaned.json');
     }
-
-    function exportSummary() {
-        if (!summaryData) return alert('No summary to export.');
-        let report = `ENHANCED RADIOLOGY CODE CLEANING SUMMARY\n========================================\n`;
-        report += `Total Original Codes: ${summaryData.totalOriginalCodes}\n`;
-        report += `Unique Clean Names: ${summaryData.uniqueCleanNames}\n`;
-        report += `Consolidation Ratio: ${summaryData.consolidationRatio}:1\n`;
-        report += `Average Confidence: ${summaryData.avgConfidence}%\n`;
-        report += `Gender Context Detected: ${summaryData.genderContextCount} codes\n\n`;
-        
-        report += `GENDER CONTEXT BREAKDOWN\n-----------------------\n`;
-        Object.entries(summaryData.genderContextBreakdown).forEach(([context, count]) => {
-            if(count > 0) report += `${context}: ${count}\n`;
-        });
-        
-        report += `\nCLINICAL CONTEXT BREAKDOWN\n-------------------------\n`;
-        Object.entries(summaryData.clinicalContextBreakdown).forEach(([context, count]) => {
-            if(count > 0) report += `${context}: ${count}\n`;
-        });
-        
-        report += `\nTOP CONSOLIDATED EXAMS\n----------------------\n`;
-        summaryData.topConsolidatedExams.forEach(exam => {
-            report += `\n"${exam.cleanName}" (${exam.originalCount} codes)\n`;
-            exam.examples.forEach(ex => report += `   - [${ex.source}] ${ex.code}: ${ex.name}\n`);
-        });
-        downloadText(report, 'enhanced_radiology_cleaning_summary.txt');
-    }
     
-    function showConsolidationExamples() {
-        if (!summaryData || !summaryData.topConsolidatedExams.length) return alert('No consolidation data available.');
-        const examplesDiv = document.getElementById('consolidationExamples');
-        examplesDiv.innerHTML = '';
-        summaryData.topConsolidatedExams.forEach(exam => {
-            const card = document.createElement('div');
-            card.className = 'example-card';
-            card.innerHTML = `<h4>${exam.cleanName} (${exam.originalCount} original codes)</h4>
-                              <div class="original-codes">
-                                  ${exam.examples.map(ex => `• [${ex.source}] ${ex.code}: "${ex.name}"`).join('<br>')}
-                                  ${exam.originalCount > 3 ? `<br>• ... and ${exam.originalCount - 3} more` : ''}
-                              </div>`;
-            examplesDiv.appendChild(card);
-        });
-        document.getElementById('consolidationModal').style.display = 'flex';
-    }
-
     function closeModal() { document.getElementById('consolidationModal').style.display = 'none'; }
     
     // --- CONSOLIDATED VIEW FUNCTIONS ---
@@ -1691,83 +832,47 @@ window.addEventListener('DOMContentLoaded', function() {
     
     function generateConsolidatedResults(mappings) {
         const consolidatedGroups = {};
-        
-        // Group mappings by clean name
-        mappings.forEach(mapping => {
-            if (!mapping.clean_name || mapping.clean_name.startsWith('ERROR')) return;
-            
-            const cleanName = mapping.clean_name;
-            if (!consolidatedGroups[cleanName]) {
-                consolidatedGroups[cleanName] = {
-                    cleanName: cleanName,
-                    sourceCodes: [],
-                    totalCount: 0,
-                    avgConfidence: 0,
-                    components: mapping.components,
-                    dataSources: new Set(),
-                    modalities: new Set()
-                };
-            }
-            
-            consolidatedGroups[cleanName].sourceCodes.push({
-                dataSource: mapping.data_source,
-                examCode: mapping.exam_code,
-                examName: mapping.exam_name,
-                confidence: mapping.components.confidence || 0,
-                snomedId: mapping.snomed_id || '',
-                source: mapping.source || 'UNKNOWN',
-                components: mapping.components || {}
-            });
-            
-            consolidatedGroups[cleanName].totalCount++;
-            consolidatedGroups[cleanName].dataSources.add(mapping.data_source);
-            consolidatedGroups[cleanName].modalities.add(mapping.modality_code);
+        mappings.forEach(m => {
+            if (!m.clean_name || m.clean_name.startsWith('ERROR')) return;
+            const group = consolidatedGroups[m.clean_name] || {
+                cleanName: m.clean_name,
+                sourceCodes: [],
+                totalCount: 0,
+                components: m.components,
+                dataSources: new Set(),
+                modalities: new Set()
+            };
+            group.sourceCodes.push(m);
+            group.totalCount++;
+            group.dataSources.add(m.data_source);
+            group.modalities.add(m.modality_code);
+            consolidatedGroups[m.clean_name] = group;
         });
         
-        // Calculate average confidence and collect additional metadata for each group
-        Object.values(consolidatedGroups).forEach(group => {
-            const totalConfidence = group.sourceCodes.reduce((sum, code) => sum + code.confidence, 0);
+        consolidatedData = Object.values(consolidatedGroups).map(group => {
+            const totalConfidence = group.sourceCodes.reduce((sum, code) => sum + (code.components?.confidence || 0), 0);
             group.avgConfidence = totalConfidence / group.sourceCodes.length;
-            
-            // Extract SNOMED ID from the first available source code that has one
-            group.snomedId = group.sourceCodes.find(code => code.snomedId)?.snomedId || '';
-            
-            // Set the components to the first available component set (they should be similar within a group)
-            group.components = group.sourceCodes.find(code => code.components)?.components || {};
+            return group;
         });
-        
-        consolidatedData = Object.values(consolidatedGroups);
+
         filteredConsolidatedData = [...consolidatedData];
         sortConsolidatedResults();
     }
     
-    
-    
-    // Track current view state
     let isFullView = true;
-    
     function toggleView() {
+        isFullView = !isFullView;
+        document.getElementById('fullView').style.display = isFullView ? 'block' : 'none';
+        document.getElementById('consolidatedView').style.display = isFullView ? 'none' : 'block';
         const toggleBtn = document.getElementById('viewToggleBtn');
-        const fullView = document.getElementById('fullView');
-        const consolidatedView = document.getElementById('consolidatedView');
-        
+        toggleBtn.textContent = isFullView ? 'Switch to Consolidated View' : 'Switch to Full View';
         if (isFullView) {
-            // Switch to consolidated view
-            fullView.style.display = 'none';
-            consolidatedView.style.display = 'block';
-            toggleBtn.textContent = 'Switch to Full View';
+            toggleBtn.classList.remove('secondary');
+            toggleBtn.classList.add('active');
+        } else {
             toggleBtn.classList.remove('active');
             toggleBtn.classList.add('secondary');
             displayConsolidatedResults();
-            isFullView = false;
-        } else {
-            // Switch to full view
-            fullView.style.display = 'block';
-            consolidatedView.style.display = 'none';
-            toggleBtn.textContent = 'Switch to Consolidated View';
-            toggleBtn.classList.remove('secondary');
-            toggleBtn.classList.add('active');
-            isFullView = true;
         }
     }
     
@@ -1778,243 +883,64 @@ window.addEventListener('DOMContentLoaded', function() {
         filteredConsolidatedData.forEach(group => {
             const groupElement = document.createElement('div');
             groupElement.className = 'consolidated-group';
-            
             const confidencePercent = Math.round(group.avgConfidence * 100);
-            const confidenceClass = group.avgConfidence >= 0.8 ? 'confidence-high' : 
-                                   group.avgConfidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
-            
-            // Group source codes by data source for better organization
-            const sourceGroups = groupSourceCodesByDataSource(group.sourceCodes);
-            const matchingMethodology = getGroupMatchingMethodology(group.sourceCodes);
+            const confidenceClass = group.avgConfidence >= 0.8 ? 'confidence-high' : group.avgConfidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             
             groupElement.innerHTML = `
                 <div class="consolidated-header">
-                    <div class="consolidated-title-section">
-                        <div class="consolidated-title">${group.cleanName}</div>
-                        <div class="consolidated-snomed">
-                            ${group.snomedId ? `<span class="snomed-badge">SNOMED: ${group.snomedId}</span>` : ''}
-                        </div>
-                    </div>
+                    <div class="consolidated-title">${group.cleanName}</div>
                     <div class="consolidated-count">${group.totalCount} codes</div>
                 </div>
                 <div class="consolidated-body">
                     <div class="consolidated-meta">
-                        <div class="meta-item">
-                            <strong>Data Sources</strong>
-                            <div class="source-indicators">
-                                ${Array.from(group.dataSources).map(source => 
-                                    `<div class="source-item" title="${getSourceDisplayName(source)}">
-                                        <span class="source-color-dot" style="background-color: ${getSourceColor(source)}"></span>
-                                        ${getSourceDisplayName(source)}
-                                    </div>`
-                                ).join('')}
-                            </div>
-                        </div>
-                        <div class="meta-item">
-                            <strong>Modalities</strong>
-                            <div class="modality-list">${Array.from(group.modalities).join(', ')}</div>
-                        </div>
-                        <div class="meta-item">
-                            <strong>Matching Engine</strong>
-                            <div class="methodology-badge">${matchingMethodology}</div>
-                        </div>
-                        <div class="meta-item">
-                            <strong>Avg Confidence</strong>
-                            <div class="confidence-display">
-                                <div class="confidence-bar">
-                                    <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
-                                </div>
-                                <div class="confidence-text">${confidencePercent}%</div>
-                            </div>
-                        </div>
-                        <div class="meta-item">
-                            <strong>Parsed Components</strong>
-                            <div class="component-tags">${generateComponentTags(group.components)}</div>
-                        </div>
+                        <div class="meta-item"><strong>Data Sources</strong><div class="source-indicators">${Array.from(group.dataSources).map(source => `<div class="source-item" title="${getSourceDisplayName(source)}"><span class="source-color-dot" style="background-color: ${getSourceColor(source)}"></span>${getSourceDisplayName(source)}</div>`).join('')}</div></div>
+                        <div class="meta-item"><strong>Modalities</strong><div class="modality-list">${Array.from(group.modalities).join(', ')}</div></div>
+                        <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div></div>
+                        <div class="meta-item"><strong>Parsed Components</strong><div class="component-tags">${generateComponentTags(group.components)}</div></div>
                     </div>
-                    <div class="source-codes">
-                        <div class="source-codes-label"><strong>Source Exam Codes:</strong></div>
-                        ${generateGroupedSourceCodes(sourceGroups)}
-                    </div>
-                </div>
-            `;
-            
+                </div>`;
             container.appendChild(groupElement);
         });
     }
     
     function generateComponentTags(components) {
         let tags = '';
-        
-        // Anatomy tags
-        if (components.anatomy && components.anatomy.length > 0) {
-            components.anatomy.forEach(a => tags += `<span class="tag anatomy" title="Anatomy">${a}</span>`);
-        }
-        
-        // Modality tag (from the main component)
-        if (components.modality) {
-            tags += `<span class="tag modality" title="Modality">${components.modality}</span>`;
-        }
-        
-        // Laterality tags
-        if (components.laterality && components.laterality.length > 0) {
-            const lateralityValue = Array.isArray(components.laterality) 
-                ? components.laterality.join(', ') 
-                : components.laterality;
-            tags += `<span class="tag laterality" title="Laterality">${lateralityValue}</span>`;
-        }
-        
-        // Contrast tags
-        if (components.contrast && components.contrast.length > 0) {
-            const contrastValue = Array.isArray(components.contrast) 
-                ? components.contrast.join(', ') 
-                : components.contrast;
-            tags += `<span class="tag contrast" title="Contrast">${contrastValue}</span>`;
-        }
-        
-        // Technique tags
-        if (components.technique && components.technique.length > 0) {
-            components.technique.forEach(t => tags += `<span class="tag technique" title="Technique">${t}</span>`);
-        }
-        
-        // Gender context
-        if (components.gender_context) {
-            tags += `<span class="tag gender" title="Gender Context">${components.gender_context}</span>`;
-        }
-        
-        // Clinical context
-        if (components.clinical_context && components.clinical_context.length > 0) {
-            components.clinical_context.forEach(c => tags += `<span class="tag clinical" title="Clinical Context">${c}</span>`);
-        }
+        const addTag = (value, className) => value ? `<span class="tag ${className}">${value}</span>` : '';
+        const addTags = (arr, className) => Array.isArray(arr) ? arr.map(v => addTag(v, className)).join('') : addTag(arr, className);
+
+        tags += addTags(components.anatomy, 'anatomy');
+        tags += addTag(components.modality, 'modality');
+        tags += addTags(components.laterality, 'laterality');
+        tags += addTags(components.contrast, 'contrast');
+        tags += addTags(components.technique, 'technique');
+        tags += addTag(components.gender_context, 'gender');
+        tags += addTags(components.clinical_context, 'clinical');
         
         return tags || '<span class="no-components">No parsed components</span>';
     }
     
-    // Group source codes by data source for better organization
-    function groupSourceCodesByDataSource(sourceCodes) {
-        const groups = {};
-        sourceCodes.forEach(code => {
-            if (!groups[code.dataSource]) {
-                groups[code.dataSource] = [];
-            }
-            groups[code.dataSource].push(code);
-        });
-        return groups;
-    }
-    
-    // Get the matching methodology for a group of source codes
-    function getGroupMatchingMethodology(sourceCodes) {
-        const sources = new Set(sourceCodes.map(code => code.source));
-        if (sources.size === 1) {
-            const source = Array.from(sources)[0];
-            if (source && source.includes('UNIFIED_MATCH')) {
-                return 'NLP Semantic Matching';
-            } else if (source && source.includes('EXACT_MATCH')) {
-                return 'Exact Match';
-            } else if (source && source.includes('FUZZY_MATCH')) {
-                return 'Fuzzy String Matching';
-            } else if (source && source.includes('NO_MATCH')) {
-                return 'No Match';
-            }
-        }
-        
-        // Check if we have any valid sources at all
-        const validSources = Array.from(sources).filter(s => s && s.trim() !== '');
-        if (validSources.length === 0) {
-            return 'NLP Semantic Matching'; // Default for new backend results
-        }
-        
-        return sources.size > 1 ? 'Mixed Methods' : 'NLP Semantic Matching';
-    }
-    
-    // Get display name for data source
     function getSourceDisplayName(source) {
-        const sourceNames = {
-            'C': 'Central',
-            'CO': 'SIRS (Canterbury)', 
-            'K': 'Southern',
-            'NL': 'Northland',
-            'TMT': 'Te Manawa Taki',  // Placeholder code
-            'AM': 'Auckland Metro',   // Placeholder code
-            'TestData': 'Test Data',
-            'SanityTest': 'Sanity Test',
-            'Demo': 'Demo',
-            'Upload': 'User Upload'
-        };
+        const sourceNames = { 'C': 'Central', 'CO': 'SIRS (Canterbury)', 'K': 'Southern', 'TestData': 'Test Data', 'Upload': 'User Upload' };
         return sourceNames[source] || source;
-    }
-    
-    // Generate grouped source codes display
-    function generateGroupedSourceCodes(sourceGroups) {
-        // Flatten all codes with source information
-        let allCodes = [];
-        Object.entries(sourceGroups).forEach(([dataSource, codes]) => {
-            const sourceColor = getSourceColor(dataSource);
-            const sourceDisplayName = getSourceDisplayName(dataSource);
-            codes.forEach(code => {
-                allCodes.push({
-                    ...code,
-                    dataSource,
-                    sourceColor,
-                    sourceDisplayName
-                });
-            });
-        });
-        
-        // Generate compact grid layout
-        const html = `
-            <div class="source-codes-grid">
-                ${allCodes.map(code => `
-                    <div class="source-code-compact">
-                        <div class="source-code-header">
-                            <span class="source-color-dot" style="background-color: ${code.sourceColor}"></span>
-                            <span class="exam-code">${code.examCode}</span>
-                            <span class="confidence-mini">${Math.round(code.confidence * 100)}%</span>
-                        </div>
-                        <div class="source-code-name">${code.examName}</div>
-                        <div class="source-code-source">${code.sourceDisplayName}</div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-        
-        return html;
     }
     
     function filterConsolidatedResults() {
         const searchTerm = document.getElementById('consolidatedSearch').value.toLowerCase();
-        
-        if (searchTerm === '') {
-            filteredConsolidatedData = [...consolidatedData];
-        } else {
-            filteredConsolidatedData = consolidatedData.filter(group => 
-                group.cleanName.toLowerCase().includes(searchTerm) ||
-                group.sourceCodes.some(code => 
-                    code.examName.toLowerCase().includes(searchTerm) ||
-                    code.examCode.toLowerCase().includes(searchTerm)
-                )
-            );
-        }
-        
+        filteredConsolidatedData = consolidatedData.filter(group => 
+            group.cleanName.toLowerCase().includes(searchTerm) ||
+            group.sourceCodes.some(code => code.examName.toLowerCase().includes(searchTerm) || code.examCode.toLowerCase().includes(searchTerm))
+        );
         sortConsolidatedResults();
     }
     
     function sortConsolidatedResults() {
-        const sortBy = document.getElementById('consolidatedSort').value;
-        
+        const sortByValue = document.getElementById('consolidatedSort').value;
         filteredConsolidatedData.sort((a, b) => {
-            switch (sortBy) {
-                case 'count':
-                    return b.totalCount - a.totalCount;
-                case 'name':
-                    return a.cleanName.localeCompare(b.cleanName);
-                case 'confidence':
-                    return b.avgConfidence - a.avgConfidence;
-                default:
-                    return b.totalCount - a.totalCount;
-            }
+            if (sortByValue === 'count') return b.totalCount - a.totalCount;
+            if (sortByValue === 'name') return a.cleanName.localeCompare(b.cleanName);
+            if (sortByValue === 'confidence') return b.avgConfidence - a.avgConfidence;
+            return b.totalCount - a.totalCount;
         });
-        
         displayConsolidatedResults();
     }
     
@@ -2029,19 +955,9 @@ window.addEventListener('DOMContentLoaded', function() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
-    function downloadText(text, filename) {
-        const blob = new Blob([text], { type: 'text/plain' });
-        triggerDownload(blob, filename);
-    }
-    function triggerDownload(blob, filename) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-    
+
+    // --- INITIALIZE APP ---
+    testApiConnectivity();
+    loadAvailableModels();
+    setupEventListeners();
 });
