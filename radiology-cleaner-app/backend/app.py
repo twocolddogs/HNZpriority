@@ -382,7 +382,7 @@ def parse_batch():
         error_count = 0
         
         cpu_cnt = os.cpu_count() or 1
-        max_workers = min(8, max(2, cpu_cnt))
+        max_workers = min(2, max(1, cpu_cnt // 2))
         logger.info(f"ThreadPoolExecutor starting with max_workers={max_workers}")
 
         with open(results_filepath, 'w', encoding='utf-8') as f_out:
