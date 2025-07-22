@@ -337,8 +337,11 @@ window.addEventListener('DOMContentLoaded', function() {
         const hostname = window.location.hostname;
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
         const isRender = hostname.endsWith('.onrender.com');
-        const apiBase = isLocalhost ? 'http://localhost:10000' : (isRender ? 'https://radiology-api-staging.onrender.com' : '/api');
-        const mode = isLocalhost ? 'LOCAL' : (isRender ? 'STAGING' : 'PROD');
+        const isPagesDev = hostname.endsWith('.pages.dev');
+        const apiBase = isLocalhost ? 'http://localhost:10000' : 
+                       (isRender ? 'https://radiology-api-staging.onrender.com' : 
+                       (isPagesDev ? 'https://radiology-api-staging.onrender.com' : '/api'));
+        const mode = isLocalhost ? 'LOCAL' : (isRender ? 'STAGING' : (isPagesDev ? 'PAGES.DEV' : 'PROD'));
         
         return {
             baseUrl: apiBase,
@@ -564,7 +567,7 @@ window.addEventListener('DOMContentLoaded', function() {
             statusManager.showTestInfo('Sanity Test', 'Verifying engine performance...');
             statusId = statusManager.show(`Running 100-exam test suite with model: '${currentModel}'...`, 'progress');
 
-            const response = await fetch('./core/sanity_test.json');
+            const response = await fetch('./backend/core/sanity_test.json');
             if (!response.ok) throw new Error(`Could not load test file: ${response.statusText}`);
             const codes = await response.json();
             
