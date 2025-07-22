@@ -349,9 +349,9 @@ window.addEventListener('DOMContentLoaded', function() {
         } else if (isRender) {
             apiBase = 'https://radiology-api-staging.onrender.com';
             mode = 'RENDER_STAGING';
-        } else if (isPagesDev) {
+        } else if (isPagesDev || isHNZDomain) {
             apiBase = 'https://radiology-api-staging.onrender.com';  
-            mode = 'PAGES_DEV';
+            mode = isHNZDomain ? 'HNZ_DOMAIN' : 'PAGES_DEV';
         } else {
             apiBase = '/api';  // Default fallback
             mode = 'PROD';
