@@ -190,7 +190,7 @@ scoring:
       "ct colonography": { required_indicators: ["colonography", "virtual colonoscopy"] }
       "ct angiography": { required_indicators: ["angiography", "angio", "cta"] }
       "hrct": { required_indicators: ["high resolution", "hrct"] }
-      "with contrast": { required_indicators: ["with contrast", "c\+", "iv"] }
+      "with contrast": { required_indicators: ["with contrast", "c+", "iv"] }
       "spect": { required_indicators: ["spect", "single photon"] }
 
   # --- WORD LISTS FOR SPECIFICITY SCORING ---
