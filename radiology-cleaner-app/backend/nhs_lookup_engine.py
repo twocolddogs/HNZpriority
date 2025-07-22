@@ -355,40 +355,44 @@ class NHSLookupEngine:
 
     def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
         specific_components = specific_entry.get('_parsed_components')
-        if not specific_components: return None
+        if not specific_components:
+                return None
         target_modalities = set(specific_components.get('modality', []))
-	target_anatomy = set(specific_components.get('anatomy', []))
-	target_contrasts = set(specific_components.get('contrast', []))
-	target_techniques = set(specific_components.get('technique', []))
-        
+        target_anatomy = set(specific_components.get('anatomy', []))
+        target_contrasts = set(specific_components.get('contrast', []))
+        target_techniques = set(specific_components.get('technique', []))
+
         for entry in self.nhs_data:
-            entry_components = entry.get('_parsed_components')
-            if not entry_components: continue
-            entry_laterality = (entry_components.get('laterality') or [None])[0]
-            if entry_laterality not in [None, 'bilateral']: continue
-            
-            if (set(entry_components.get('modality', [])) == target_modalities and
-		set(entry_components.get('anatomy', [])) == target_anatomy and
-		set(entry_components.get('contrast', [])) == target_contrasts and
-		set(entry_components.get('technique', [])) == target_techniques):
-		return entry
+                entry_components = entry.get('_parsed_components')
+                if not entry_components:
+                        continue
+                entry_laterality = (entry_components.get('laterality') or [None])[0]
+                if entry_laterality not in [None, 'bilateral']:
+                        continue
+
+                if (set(entry_components.get('modality', [])) == target_modalities and
+                        set(entry_components.get('anatomy', [])) == target_anatomy and
+                        set(entry_components.get('contrast', [])) == target_contrasts and
+                        set(entry_components.get('technique', [])) == target_techniques):
+                        return entry
+
         return None
     
     def _calculate_set_score(self, list1: List[str], list2: List[str]) -> float:
-	"""
- 	Calculates a Jaccard similarity score between two lists of strings.
-  	(Intersection over Union)
-   	"""
-	set1, set2 = set(list1), set(list2)
-	if not set1 and not set2:
-		return 1.0  # Both empty is a perfect match.
-	
-	union = set1.union(set2)
-	if not union:
-		return 0.0 # Should be covered by the above, but for safety.
-		
-	intersection = set1.intersection(set2)
-	return len(intersection) / len(union)
+        """
+        Calculates a Jaccard similarity score between two lists of strings.
+        (Intersection over Union)
+        """
+        set1, set2 = set(list1), set(list2)
+        if not set1 and not set2:
+                return 1.0  # Both empty is a perfect match.
+
+        union = set1.union(set2)
+        if not union:
+                return 0.0  # Should be covered by the above, but for safety.
+
+        intersection = set1.intersection(set2)
+        return len(intersection) / len(union)
     
     def _calculate_modality_score(self, input_modality: Optional[str], nhs_modality: Optional[str]) -> float:
         if input_modality == nhs_modality: return 1.0
