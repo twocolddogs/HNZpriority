@@ -736,41 +736,46 @@ class NHSLookupEngine:
     def _calculate_biopsy_modality_preference(self, input_exam: str, nhs_entry: dict) -> float:
         """Calculate preference bonus/penalty for biopsy procedures based on modality."""
         if not self.config.get('biopsy_modality_preference', False):
-            return 0.0
-            
+                return 0.0
+
         input_lower = input_exam.lower()
         nhs_name_lower = nhs_entry.get('primary_source_name', '').lower()
-        
+
         # Check if this is a biopsy procedure without explicit modality in input
         has_biopsy = 'biopsy' in input_lower or 'bx' in input_lower
         if not has_biopsy:
-            return 0.0
-            
+                return 0.0
+
         # Check if input already specifies a modality (if so, don't apply preference)
         explicit_modalities = ['ct', 'us', 'ultrasound', 'fluoroscop', 'mri', 'mr']
         if any(mod in input_lower for mod in explicit_modalities):
-            return 0.0
-            
+                return 0.0
+
         # Get organ-specific biopsy preferences from config
         organ_preferences = self.config.get('biopsy_organ_modality_preferences', {})
         default_preferences = self.config.get('biopsy_default_preferences', {})
-        
+
         # Determine NHS entry modality
         nhs_components = nhs_entry.get('_parsed_components', {})
         nhs_modalities = [m.lower() for m in nhs_components.get('modality', [])]
-	    
-	modality_key = ''
-	if 'ct' in nhs_modalities: modality_key = 'ct'
-	elif 'us' in nhs_modalities: modality_key = 'us'
-	elif 'mri' in nhs_modalities: modality_key = 'mri'
-	elif 'fluoroscopy' in nhs_modalities: modality_key = 'fluoroscopy'
-	else: return 0.0
-            
+
+        modality_key = ''
+        if 'ct' in nhs_modalities:
+                modality_key = 'ct'
+        elif 'us' in nhs_modalities:
+                modality_key = 'us'
+        elif 'mri' in nhs_modalities:
+                modality_key = 'mri'
+        elif 'fluoroscopy' in nhs_modalities:
+                modality_key = 'fluoroscopy'
+        else:
+                return 0.0
+
         # Find matching organ in input and apply specific preferences
         for organ, preferences in organ_preferences.items():
-            if organ in input_lower:
-                return preferences.get(modality_key, 0.0)
-        
+                if organ in input_lower:
+                        return preferences.get(modality_key, 0.0)
+
         # Fall back to default preferences if no organ match
         return default_preferences.get(modality_key, 0.0)
     
