@@ -165,7 +165,21 @@ def detect_clinical_context(exam_name: str, anatomy: List[str] = None) -> List[s
     return _detector.detect_clinical_context(exam_name, anatomy)
 
 def detect_interventional_procedure_terms(exam_name: str) -> List[str]:
-    return _detector.detect_interventional_procedure_terms(exam_name)
+    """Detect interventional procedure terms from exam name based on config.yaml intervention_keywords."""
+    if not exam_name:
+        return []
+    
+    exam_lower = exam_name.lower()
+    
+    # These are the intervention keywords from config.yaml context_scoring.intervention_keywords
+    intervention_keywords = ["biopsy", "drainage", "injection", "aspiration", "guided", "picc", "line"]
+    
+    found_terms = []
+    for keyword in intervention_keywords:
+        if keyword in exam_lower:
+            found_terms.append(keyword)
+    
+    return found_terms
 
 def detect_all_contexts(exam_name: str, anatomy: List[str] = None) -> dict:
     return _detector.detect_all_contexts(exam_name, anatomy)
