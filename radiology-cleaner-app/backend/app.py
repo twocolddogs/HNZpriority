@@ -24,6 +24,7 @@ from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDete
 from context_detection import detect_all_contexts
 from preprocessing import initialize_preprocessor, preprocess_exam_name, get_preprocessor
 from cache_version import get_current_cache_version, format_cache_key
+from r2_cache_manager import R2CacheManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -41,6 +42,7 @@ _app_initialized = False
 # DB/Cache managers would be initialized here in a full app
 db_manager = None
 cache_manager = None
+r2_manager = R2CacheManager()
 
 def _initialize_model_processors() -> Dict[str, NLPProcessor]:
     """Initialize available NLP processors for different models"""
@@ -454,6 +456,49 @@ def parse_batch():
         processing_time_ms = int((time.time() - start_time) * 1000)
         logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
 
+        # Upload consolidated results to R2 for permanent storage and frontend access
+        r2_upload_success = False
+        r2_url = None
+        if r2_manager.is_available():
+            try:
+                # Read and consolidate all results into a single JSON array
+                consolidated_results = []
+                with open(results_filepath, 'r', encoding='utf-8') as f_in:
+                    for line in f_in:
+                        if line.strip():
+                            consolidated_results.append(json.loads(line.strip()))
+                
+                # Create consolidated JSON with metadata
+                consolidated_data = {
+                    "metadata": {
+                        "timestamp": datetime.now().isoformat(),
+                        "total_processed": len(exams_to_process),
+                        "successful": success_count,
+                        "errors": error_count,
+                        "processing_time_ms": processing_time_ms,
+                        "model_used": model_key,
+                        "results_count": len(consolidated_results)
+                    },
+                    "results": consolidated_results
+                }
+                
+                # Upload to R2 with JSON format for easy frontend consumption
+                r2_key = f"batch-results/{results_filename.replace('.jsonl', '.json')}"
+                consolidated_json = json.dumps(consolidated_data, indent=None, separators=(',', ':')).encode('utf-8')
+                
+                if r2_manager.upload_object(r2_key, consolidated_json):
+                    # Generate public URL (adjust domain as needed)
+                    r2_url = f"https://pub-cd3fcaf47b7941b4bd26dfb29d28a4a7.r2.dev/{r2_key}"
+                    r2_upload_success = True
+                    logger.info(f"Successfully uploaded consolidated results to R2: {r2_key}")
+                else:
+                    logger.warning(f"Failed to upload results to R2: {r2_key}")
+                    
+            except Exception as e:
+                logger.error(f"Error uploading to R2: {e}", exc_info=True)
+        else:
+            logger.warning("R2 not available - results only stored locally")
+
         # V3 Fix: Use lighter approach to avoid I/O storm restarts
         # For small batches, provide results but avoid heavy disk I/O
         MAX_INMEMORY_RESULTS = 10  # Reduced from 50 to minimize I/O
@@ -473,6 +518,8 @@ def parse_batch():
                     "results": results,
                     "results_file": results_filepath,
                     "results_filename": results_filename,
+                    "r2_url": r2_url,
+                    "r2_uploaded": r2_upload_success,
                     "processing_stats": {
                         "total_processed": len(exams_to_process),
                         "successful": success_count,
@@ -492,6 +539,8 @@ def parse_batch():
             "message": "Batch processing complete. Results streamed to disk.",
             "results_file": results_filepath,
             "results_filename": results_filename,
+            "r2_url": r2_url,
+            "r2_uploaded": r2_upload_success,
             "processing_stats": {
                 "total_processed": len(exams_to_process),
                 "successful": success_count,

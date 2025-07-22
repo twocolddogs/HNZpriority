@@ -649,10 +649,40 @@ window.addEventListener('DOMContentLoaded', function() {
                         };
                     });
                     allMappings.push(...chunkMappings);
+                } else if (batchResult.r2_url && batchResult.r2_uploaded) {
+                    // R2 URL available - fetch directly from R2 (preferred method)
+                    console.log('Fetching results from R2:', batchResult.r2_url);
+                    
+                    const r2Response = await fetch(batchResult.r2_url);
+                    if (r2Response.ok) {
+                        const r2Data = await r2Response.json();
+                        if (r2Data.results && r2Data.results.length > 0) {
+                            const chunkMappings = r2Data.results.map(item => {
+                                return item.status === 'success' ? {
+                                    data_source: item.input.data_source,
+                                    modality_code: item.input.modality_code,
+                                    exam_code: item.input.exam_code,
+                                    exam_name: item.input.exam_name,
+                                    clean_name: item.output.clean_name,
+                                    snomed: item.output.snomed || {},
+                                    components: item.output.components || {}
+                                } : {
+                                    ...item.input,
+                                    clean_name: `ERROR: ${item.error}`,
+                                    components: {}
+                                };
+                            });
+                            allMappings.push(...chunkMappings);
+                            console.log(`Successfully loaded ${r2Data.results.length} results from R2`);
+                        }
+                    } else {
+                        console.error('Failed to fetch from R2:', r2Response.statusText);
+                        throw new Error(`Failed to fetch from R2: ${r2Response.statusText}`);
+                    }
                 } else if (batchResult.file_reference || batchResult.results_file || batchResult.message?.includes('batch_results_')) {
-                    // New format - file reference
+                    // Fallback: Local file reference (legacy method)
                     const fileReference = batchResult.file_reference || batchResult.results_file || batchResult.message;
-                    console.log('Fetching results from file reference:', fileReference);
+                    console.log('Fetching results from file reference (fallback):', fileReference);
                     
                     // Extract filename from path if needed (results_file includes path)
                     const filename = fileReference.includes('/') ? fileReference.split('/').pop() : fileReference;
