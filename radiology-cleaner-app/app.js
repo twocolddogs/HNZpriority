@@ -628,8 +628,11 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const batchResult = await response.json();
+                console.log('Backend response:', batchResult);
                 
+                // Handle both old format (inline results) and new format (file references)
                 if (batchResult.results) {
+                    // Old format - inline results
                     const chunkMappings = batchResult.results.map(item => {
                         return item.status === 'success' ? {
                             data_source: item.input.data_source,
@@ -646,6 +649,43 @@ window.addEventListener('DOMContentLoaded', function() {
                         };
                     });
                     allMappings.push(...chunkMappings);
+                } else if (batchResult.file_reference || batchResult.message?.includes('batch_results_')) {
+                    // New format - file reference
+                    const fileReference = batchResult.file_reference || batchResult.message;
+                    console.log('Fetching results from file reference:', fileReference);
+                    
+                    // Fetch the results file
+                    const fileResponse = await fetch(`${apiConfig.baseUrl}/get_results/${fileReference}`, {
+                        method: 'GET'
+                    });
+                    
+                    if (fileResponse.ok) {
+                        const fileResults = await fileResponse.json();
+                        if (fileResults && fileResults.length > 0) {
+                            const chunkMappings = fileResults.map(item => {
+                                return item.status === 'success' ? {
+                                    data_source: item.input.data_source,
+                                    modality_code: item.input.modality_code,
+                                    exam_code: item.input.exam_code,
+                                    exam_name: item.input.exam_name,
+                                    clean_name: item.output.clean_name,
+                                    snomed: item.output.snomed || {},
+                                    components: item.output.components || {}
+                                } : {
+                                    ...item.input,
+                                    clean_name: `ERROR: ${item.error}`,
+                                    components: {}
+                                };
+                            });
+                            allMappings.push(...chunkMappings);
+                        }
+                    } else {
+                        console.error('Failed to fetch results file:', fileResponse.statusText);
+                        throw new Error(`Failed to fetch results file: ${fileResponse.statusText}`);
+                    }
+                } else {
+                    console.error('Unexpected response format:', batchResult);
+                    throw new Error('Unexpected response format from server');
                 }
                 
                 processedCount += chunk.length;
