@@ -338,6 +338,8 @@ window.addEventListener('DOMContentLoaded', function() {
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
         const isRender = hostname.endsWith('.onrender.com');
         const isPagesDev = hostname.endsWith('.pages.dev');
+        const isHNZDomain = hostname.endsWith('.hnzradtools.nz');
+
         
         let apiBase, mode;
         
