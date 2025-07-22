@@ -234,14 +234,14 @@ class NLPProcessor:
     def _make_rerank_api_call(self, query: str, documents: List[str]) -> Optional[list]:
         """
         Specialized API call for cross-encoder reranking using sentence-similarity pipeline.
-        Based on HuggingFace cross-encoder format: pairs of [query, document].
+        HuggingFace sentence-similarity expects: {"source_sentence": query, "sentences": [docs]}
         """
-        # Prepare query-document pairs for cross-encoder
-        pairs = [[query, doc] for doc in documents]
-        
-        # Use sentence-similarity pipeline format for cross-encoder
+        # Use correct HuggingFace sentence-similarity API format
         payload = {
-            "inputs": pairs,
+            "inputs": {
+                "source_sentence": query,
+                "sentences": documents
+            },
             "options": {"wait_for_model": True}
         }
         
