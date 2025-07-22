@@ -516,10 +516,10 @@ preprocessing:
     parotid: parotid
     submandibular: submandibular
     'salivary gland': 'salivary gland'
-    'salivary glands: 'salivary gland'
+    'salivary glands': 'salivary gland'
     'aortic arch': 'aortic arch'
     carotid: carotid
-    'carotid arteries: carotid
+    'carotid arteries': carotid
     eye: eye
     eyes: eye
     ear: ear
