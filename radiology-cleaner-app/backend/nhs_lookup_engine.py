@@ -183,6 +183,8 @@ class NHSLookupEngine:
             elif is_input_interventional and not is_nhs_interventional:
                 interventional_score = self.config['interventional_penalty']
             
+            # Calculate anatomical specificity score
+            anatomical_specificity_score = self._calculate_anatomical_specificity_score(input_exam, entry)
             
             current_score = self._calculate_match_score(input_exam, extracted_input_components, entry, semantic_score, interventional_score, anatomical_specificity_score)
 
