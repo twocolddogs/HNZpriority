@@ -468,42 +468,22 @@ def parse_batch():
         processing_time_ms = int((time.time() - start_time) * 1000)
         logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
 
-        MAX_INMEMORY_RESULTS = 50
+        # Always return file reference to avoid I/O storm that causes restarts
+        # V3 Fix: Skip file re-reading that was triggering app restarts
+        logger.info(f"Returning file reference to avoid post-processing I/O issues: {results_filename}")
         
-        if len(exams_to_process) <= MAX_INMEMORY_RESULTS:
-            results = []
-            with open(results_filepath, 'r', encoding='utf-8') as f_in:
-                for line in f_in:
-                    if line.strip():
-                        results.append(json.loads(line.strip()))
-            try:
-                os.remove(results_filepath)
-            except Exception as e:
-                logger.warning(f"Could not remove temporary file {results_filepath}: {e}")
-            return jsonify({
-                "message": "Batch processing complete.",
-                "results": results,
-                "processing_stats": {
-                    "total_processed": len(exams_to_process),
-                    "successful": success_count,
-                    "errors": error_count,
-                    "processing_time_ms": processing_time_ms,
-                    "model_used": model_key
-                }
-            })
-        else:
-            return jsonify({
-                "message": "Batch processing complete. Results streamed to disk.",
-                "results_file": results_filepath,
-                "results_filename": results_filename,
-                "processing_stats": {
-                    "total_processed": len(exams_to_process),
-                    "successful": success_count,
-                    "errors": error_count,
-                    "processing_time_ms": processing_time_ms,
-                    "model_used": model_key
-                }
-            })
+        return jsonify({
+            "message": "Batch processing complete. Results streamed to disk.",
+            "results_file": results_filepath,
+            "results_filename": results_filename,
+            "processing_stats": {
+                "total_processed": len(exams_to_process),
+                "successful": success_count,
+                "errors": error_count,
+                "processing_time_ms": processing_time_ms,
+                "model_used": model_key
+            }
+        })
         
     except Exception as e:
         logger.error(f"Batch endpoint failed with a critical error: {e}", exc_info=True)
