@@ -181,7 +181,19 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     cleaned_exam_name = preprocess_exam_name(exam_name)
     parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
     
-    nhs_result = nhs_lookup_engine.standardize_exam(cleaned_exam_name, parsed_input_components, custom_nlp_processor=nlp_processor)
+    # FIX: For thread safety in batch processing, create model-specific lookup engine if needed
+    lookup_engine_to_use = nhs_lookup_engine
+    if nlp_processor.model_key != nhs_lookup_engine.nlp_processor.model_key:
+        # Create a separate lookup engine instance for this model to avoid race conditions
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
+        lookup_engine_to_use = NHSLookupEngine(
+            nhs_json_path=nhs_json_path,
+            nlp_processor=nlp_processor,
+            semantic_parser=semantic_parser
+        )
+    
+    nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, custom_nlp_processor=nlp_processor)
     
     ### FIX: The context (gender, age, etc.) is a property of the INPUT request, not the matched NHS entry.
     ### We must calculate context here from the cleaned input string to ensure it's always correct.
