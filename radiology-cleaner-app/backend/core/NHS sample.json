@@ -1,4 +1,5 @@
-{
+[
+  {
     "snomed_concept_id": 169070004,
     "snomed_fsn": "Computed tomography of abdomen (procedure)",
     "snomed_laterality_concept_id": "",
@@ -124,3 +125,4 @@
     "is_interventional": "N",
     "primary_source_name": "CT Chest"
   }
+]
