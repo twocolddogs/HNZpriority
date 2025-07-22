@@ -512,7 +512,7 @@ preprocessing:
     biliary: biliary
     gallbladder: gallbladder
     'lymph node': 'lymph node'
-    'lymph nodes': lymph node'
+    'lymph nodes': 'lymph node'
     parotid: parotid
     submandibular: submandibular
     'salivary gland': 'salivary gland'
