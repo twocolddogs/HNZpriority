@@ -649,9 +649,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         };
                     });
                     allMappings.push(...chunkMappings);
-                } else if (batchResult.file_reference || batchResult.message?.includes('batch_results_')) {
+                } else if (batchResult.file_reference || batchResult.results_file || batchResult.message?.includes('batch_results_')) {
                     // New format - file reference
-                    const fileReference = batchResult.file_reference || batchResult.message;
+                    const fileReference = batchResult.file_reference || batchResult.results_file || batchResult.message;
                     console.log('Fetching results from file reference:', fileReference);
                     
                     // Fetch the results file
