@@ -35,7 +35,8 @@ def sync_cache_from_r2():
             logging.warning(f"No cache objects found in R2 for model '{model_key}'.")
             continue
         
-        r2_objects.sort(key=lambda x: x['Key'], reverse=True)
+        # Sort by LastModified timestamp to get truly newest file
+        r2_objects.sort(key=lambda x: x.get('LastModified', ''), reverse=True)
         latest_r2_object_key = r2_objects[0]['Key']
         latest_r2_filename = os.path.basename(latest_r2_object_key)
         logging.info(f"Latest R2 version identified: {latest_r2_filename}")
