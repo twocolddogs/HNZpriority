@@ -39,7 +39,7 @@ class NHSLookupEngine:
         
         self.nhs_json_path = nhs_json_path
         self.retriever_processor = retriever_processor
-        self.reranker_processor = reranker_processor
+        self.reranker_processor = reranker_processor  # Can be None during cache building
         self.nlp_processor = retriever_processor  # Backward compatibility
         self.semantic_parser = semantic_parser
         

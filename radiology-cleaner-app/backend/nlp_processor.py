@@ -231,6 +231,50 @@ class NLPProcessor:
             # Handle extreme negative values
             return 0.0 if logit < 0 else 1.0
 
+    def _make_rerank_api_call(self, query: str, documents: List[str]) -> Optional[list]:
+        """
+        Specialized API call for cross-encoder reranking using sentence-similarity pipeline.
+        Based on HuggingFace cross-encoder format: pairs of [query, document].
+        """
+        # Prepare query-document pairs for cross-encoder
+        pairs = [[query, doc] for doc in documents]
+        
+        # Use sentence-similarity pipeline format for cross-encoder
+        payload = {
+            "inputs": pairs,
+            "options": {"wait_for_model": True}
+        }
+        
+        max_retries = 3
+        delay = 2.0
+        
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = requests.post(
+                    self.api_url,
+                    headers=self.headers,
+                    json=payload,
+                    timeout=120
+                )
+                response.raise_for_status()
+                return response.json()
+                
+            except requests.exceptions.HTTPError as e:
+                logger.error(f"[V3-RERANK] HTTP error (attempt {attempt}): {e} - Response: {response.text[:200]}")
+                if attempt == max_retries:
+                    return None
+                time.sleep(delay)
+                delay *= 2
+                
+            except Exception as e:
+                logger.error(f"[V3-RERANK] API call error (attempt {attempt}): {e}")
+                if attempt == max_retries:
+                    return None
+                time.sleep(delay)
+                delay *= 2
+        
+        return None
+
     def get_rerank_scores(self, query: str, documents: List[str]) -> List[float]:
         """
         Get reranking scores for query-document pairs using cross-encoder model.
@@ -253,19 +297,11 @@ class NLPProcessor:
             logger.error(f"[V3-RERANK] Wrong pipeline '{self.pipeline}' for reranking. Expected 'sentence-similarity'.")
             return [0.0] * len(documents)
         
-        # Prepare input pairs for cross-encoder
-        query_doc_pairs = []
-        for doc in documents:
-            if doc and doc.strip():
-                query_doc_pairs.append([query.strip(), doc.strip()])
-            else:
-                query_doc_pairs.append([query.strip(), ""])
-        
         try:
-            # Make API call with query-document pairs
-            logger.debug(f"[V3-RERANK] Sending {len(query_doc_pairs)} query-document pairs to {self.hf_model_name}")
+            # Make specialized API call for cross-encoder
+            logger.debug(f"[V3-RERANK] Sending query-document pairs to {self.hf_model_name}")
             start_time = time.time()
-            result = self._make_api_call(query_doc_pairs)
+            result = self._make_rerank_api_call(query.strip(), [doc.strip() for doc in documents])
             api_time = time.time() - start_time
             
             if result is None:

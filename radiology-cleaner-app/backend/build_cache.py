@@ -98,13 +98,11 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
 
     # 5. Initialize the NHSLookupEngine for cache building (V3 architecture)
     # For cache building, we only need the retriever processor since we're building the FAISS index
-    # We can use a dummy reranker processor since it won't be used during cache generation
-    dummy_reranker = NLPProcessor(model_key='experimental')  # Won't be used for cache building
-    
+    # We pass None for reranker to avoid initializing the cross-encoder during cache building
     engine = NHSLookupEngine(
         nhs_json_path=nhs_json_path,
         retriever_processor=nlp_processor,  # This is the processor we're building cache for
-        reranker_processor=dummy_reranker,  # Required by v3 constructor but not used here
+        reranker_processor=None,  # None during cache building to avoid cross-encoder initialization
         semantic_parser=semantic_parser,
         config_path=config_path # Pass the config path to the engine as well
     )
@@ -184,15 +182,21 @@ def main_build():
         sys.exit(1)
         
     available_models = NLPProcessor.get_available_models()
+    
+    # Only build caches for embedding models (feature-extraction), not cross-encoders (sentence-similarity)
+    embedding_models = {k: v for k, v in available_models.items() if v.get('pipeline') == 'feature-extraction'}
+    logger.info(f"Building caches for embedding models: {list(embedding_models.keys())}")
+    logger.info(f"Skipping cross-encoder models: {[k for k, v in available_models.items() if v.get('pipeline') != 'feature-extraction']}")
+    
     success_count = 0
-    for model_key in available_models.keys():
+    for model_key in embedding_models.keys():
         nlp_processor = NLPProcessor(model_key=model_key)
         if build_and_upload_cache_for_model(model_key, nlp_processor, r2_manager):
             success_count += 1
     
-    logger.info(f"\n=== Build Summary: {success_count}/{len(available_models)} caches built and uploaded. ===")
-    if success_count < len(available_models):
-        logger.error("Build failed: Not all caches were created.")
+    logger.info(f"\n=== Build Summary: {success_count}/{len(embedding_models)} caches built and uploaded. ===")
+    if success_count < len(embedding_models):
+        logger.error("Build failed: Not all embedding model caches were created.")
         sys.exit(1)
 
 if __name__ == '__main__':
