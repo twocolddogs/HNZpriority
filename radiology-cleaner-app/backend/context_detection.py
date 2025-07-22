@@ -164,6 +164,9 @@ def detect_age_context(exam_name: str) -> Optional[str]:
 def detect_clinical_context(exam_name: str, anatomy: List[str] = None) -> List[str]:
     return _detector.detect_clinical_context(exam_name, anatomy)
 
+def detect_interventional_procedure_terms(exam_name: str) -> List[str]:
+    return _detector.detect_interventional_procedure_terms(exam_name)
+
 def detect_all_contexts(exam_name: str, anatomy: List[str] = None) -> dict:
     return _detector.detect_all_contexts(exam_name, anatomy)
 
