@@ -487,8 +487,8 @@ def parse_batch():
                 consolidated_json = json.dumps(consolidated_data, indent=None, separators=(',', ':')).encode('utf-8')
                 
                 if r2_manager.upload_object(r2_key, consolidated_json):
-                    # Generate public URL (adjust domain as needed)
-                    r2_url = f"https://pub-cd3fcaf47b7941b4bd26dfb29d28a4a7.r2.dev/{r2_key}"
+                    # Generate public URL
+                    r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{r2_key}"
                     r2_upload_success = True
                     logger.info(f"Successfully uploaded consolidated results to R2: {r2_key}")
                 else:
