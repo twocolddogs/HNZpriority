@@ -777,7 +777,7 @@ window.addEventListener('DOMContentLoaded', function() {
             row.insertCell().textContent = item.exam_name;
 
             const cleanNameCell = row.insertCell();
-            cleanNameCell.innerHTML = item.clean_name.startsWith('ERROR') ? `<span class="error-message">${item.clean_name}</span>` : `<strong>${item.clean_name}</strong>`;
+            cleanNameCell.innerHTML = (item.clean_name && item.clean_name.startsWith('ERROR')) ? `<span class="error-message">${item.clean_name}</span>` : `<strong>${item.clean_name || 'Unknown'}</strong>`;
 
             const snomedFsnCell = row.insertCell();
             snomedFsnCell.innerHTML = item.snomed?.fsn ? `<div>${item.snomed.fsn}</div>` + (item.snomed.id ? `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.id}</div>` : '') : '<span style="color: #999;">-</span>';
@@ -819,7 +819,7 @@ window.addEventListener('DOMContentLoaded', function() {
         
         let totalConfidence = 0, confidenceCount = 0;
         mappings.forEach(m => {
-            if (!m.components || m.clean_name.startsWith('ERROR')) return;
+            if (!m.components || !m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const modality = m.components.modality || m.modality_code;
             if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
             if (m.components.gender_context) summary.genderContextCount++;
