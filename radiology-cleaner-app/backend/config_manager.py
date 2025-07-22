@@ -12,6 +12,8 @@ It serves as a single point of access for all configuration needs across the app
 import os
 import yaml
 import logging
+import time
+import requests
 from typing import Any, Dict, Optional, Union, List, cast
 from pathlib import Path
 
@@ -38,6 +40,12 @@ class ConfigManager:
             
         # Initialize configuration dictionary
         self.config: Dict[str, Any] = {}
+        
+        # R2 config caching
+        self._r2_config_cache: Optional[Dict[str, Any]] = None
+        self._r2_config_cache_time: float = 0
+        self._r2_config_ttl: int = 300  # 5 minutes cache TTL
+        self._r2_config_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/config/config.yaml"
         
         # Default configuration values
         self.defaults = {
@@ -125,8 +133,8 @@ class ConfigManager:
             }
         }
         
-        # Load configuration from file
-        self._load_config_file()
+        # Load configuration from R2 first, then fallback to local file
+        self._load_config()
         
         # Override with environment variables
         self._load_env_variables()
@@ -265,11 +273,82 @@ class ConfigManager:
             return self.defaults[section]
         return result
     
+    def _load_r2_config(self) -> Optional[Dict[str, Any]]:
+        """Load configuration from R2 with caching."""
+        try:
+            # Check if cached config is still valid
+            current_time = time.time()
+            if (self._r2_config_cache is not None and 
+                current_time - self._r2_config_cache_time < self._r2_config_ttl):
+                logger.debug("Using cached R2 config")
+                return self._r2_config_cache
+            
+            # Fetch config from R2
+            logger.info(f"Fetching config from R2: {self._r2_config_url}")
+            response = requests.get(self._r2_config_url, timeout=10)
+            response.raise_for_status()
+            
+            # Parse YAML
+            r2_config = yaml.safe_load(response.text)
+            if r2_config:
+                # Cache the config
+                self._r2_config_cache = r2_config
+                self._r2_config_cache_time = current_time
+                logger.info("Successfully loaded config from R2")
+                return r2_config
+            else:
+                logger.warning("R2 config file is empty")
+                return None
+                
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Failed to fetch config from R2: {e}")
+            return None
+        except yaml.YAMLError as e:
+            logger.error(f"Failed to parse R2 config YAML: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error loading R2 config: {e}")
+            return None
+    
+    def _load_config(self) -> None:
+        """Load configuration from R2 only - no local fallback to ensure consistency."""
+        # Try R2 - this is now required
+        r2_config = self._load_r2_config()
+        if r2_config:
+            self.config = r2_config
+            logger.info("Using config from R2")
+            return
+        
+        # No fallback - fail fast to ensure cache/runtime consistency
+        logger.error("R2 config is required but unavailable - using defaults only")
+        logger.error("This may cause inconsistencies between build-time and runtime processing")
+        self.config = self.defaults
+    
     def reload(self) -> None:
-        """Reload configuration from file and environment variables."""
-        self._load_config_file()
+        """Reload configuration from R2 sources only."""
+        # Clear R2 cache to force fresh fetch
+        self._r2_config_cache = None
+        self._r2_config_cache_time = 0
+        
+        # Load config (R2 only, no fallback)
+        self._load_config()
         self._load_env_variables()
         logger.info("Configuration reloaded")
+    
+    def force_r2_reload(self) -> bool:
+        """Force reload config from R2, bypassing cache."""
+        self._r2_config_cache = None
+        self._r2_config_cache_time = 0
+        
+        r2_config = self._load_r2_config()
+        if r2_config:
+            self.config = r2_config
+            self._load_env_variables()  # Re-apply env overrides
+            logger.info("Configuration force-reloaded from R2")
+            return True
+        else:
+            logger.warning("Force reload from R2 failed, keeping current config")
+            return False
     
     def __getitem__(self, key: str) -> Any:
         """Allow dictionary-style access to configuration values."""

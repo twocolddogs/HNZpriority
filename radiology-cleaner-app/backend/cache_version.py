@@ -9,6 +9,7 @@ effectively invalidating all previous cache entries.
 import hashlib
 import os
 import logging
+import requests
 from pathlib import Path
 from typing import List, Optional
 
@@ -32,6 +33,30 @@ CRITICAL_FILES = [
     'core/NHS.json',
  
 ]
+
+def get_r2_config_hash() -> Optional[str]:
+    """
+    Get SHA-256 hash of the R2 config.yaml file.
+    
+    Returns:
+        Hex digest of config hash or None if fetch fails
+    """
+    try:
+        r2_config_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/config/config.yaml"
+        response = requests.get(r2_config_url, timeout=10)
+        response.raise_for_status()
+        
+        hasher = hashlib.sha256()
+        hasher.update(response.content)
+        
+        config_hash = hasher.hexdigest()
+        logger.debug(f"R2 config hash: {config_hash[:12]}...")
+        return config_hash
+        
+    except Exception as e:
+        logger.error(f"Error fetching R2 config for hash calculation: {e}")
+        # This is critical - cache version must be consistent
+        raise RuntimeError(f"Cannot calculate cache version without R2 config: {e}")
 
 def get_file_hash(file_path: str) -> Optional[str]:
     """
@@ -77,16 +102,27 @@ def get_cache_version(base_dir: Optional[str] = None) -> str:
     files_missing = 0
     
     for file_path in CRITICAL_FILES:
-        full_path = os.path.join(base_dir, file_path)
-        file_hash = get_file_hash(full_path)
-        
-        if file_hash:
-            version_components.append(f"{file_path}:{file_hash}")
-            files_found += 1
+        if file_path == 'config.yaml':
+            # Special handling for config.yaml - always fetch from R2
+            try:
+                config_hash = get_r2_config_hash()
+                version_components.append(f"{file_path}:{config_hash}")
+                files_found += 1
+            except Exception as e:
+                logger.error(f"Failed to get R2 config hash: {e}")
+                # Fail fast - this is critical for cache consistency
+                raise RuntimeError(f"Cache version calculation failed due to R2 config unavailability: {e}")
         else:
-            # Include file path even if missing to detect when files are added/removed
-            version_components.append(f"{file_path}:MISSING")
-            files_missing += 1
+            full_path = os.path.join(base_dir, file_path)
+            file_hash = get_file_hash(full_path)
+            
+            if file_hash:
+                version_components.append(f"{file_path}:{file_hash}")
+                files_found += 1
+            else:
+                # Include file path even if missing to detect when files are added/removed
+                version_components.append(f"{file_path}:MISSING")
+                files_missing += 1
     
     # Sort to ensure consistent ordering
     version_components.sort()
@@ -121,29 +157,56 @@ def get_cache_version_info(base_dir: Optional[str] = None) -> dict:
     files_missing = 0
     
     for file_path in CRITICAL_FILES:
-        full_path = os.path.join(base_dir, file_path)
-        file_hash = get_file_hash(full_path)
-        
-        if file_hash:
-            file_size = os.path.getsize(full_path)
-            modified_time = os.path.getmtime(full_path)
-            file_details.append({
-                'path': file_path,
-                'hash': file_hash[:12] + '...',  # Truncate for display
-                'size': file_size,
-                'modified': modified_time,
-                'exists': True
-            })
-            files_found += 1
+        if file_path == 'config.yaml':
+            # Special handling for config.yaml - always fetch from R2
+            try:
+                config_hash = get_r2_config_hash()
+                file_details.append({
+                    'path': file_path,
+                    'hash': config_hash[:12] + '...',  # Truncate for display
+                    'size': 'R2',
+                    'modified': 'R2',
+                    'exists': True,
+                    'source': 'R2'
+                })
+                files_found += 1
+            except Exception as e:
+                file_details.append({
+                    'path': file_path,
+                    'hash': None,
+                    'size': None,
+                    'modified': None,
+                    'exists': False,
+                    'source': 'R2',
+                    'error': str(e)
+                })
+                files_missing += 1
         else:
-            file_details.append({
-                'path': file_path,
-                'hash': None,
-                'size': None,
-                'modified': None,
-                'exists': False
-            })
-            files_missing += 1
+            full_path = os.path.join(base_dir, file_path)
+            file_hash = get_file_hash(full_path)
+            
+            if file_hash:
+                file_size = os.path.getsize(full_path)
+                modified_time = os.path.getmtime(full_path)
+                file_details.append({
+                    'path': file_path,
+                    'hash': file_hash[:12] + '...',  # Truncate for display
+                    'size': file_size,
+                    'modified': modified_time,
+                    'exists': True,
+                    'source': 'local'
+                })
+                files_found += 1
+            else:
+                file_details.append({
+                    'path': file_path,
+                    'hash': None,
+                    'size': None,
+                    'modified': None,
+                    'exists': False,
+                    'source': 'local'
+                })
+                files_missing += 1
     
     return {
         'cache_version': get_cache_version(base_dir),

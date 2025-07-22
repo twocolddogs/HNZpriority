@@ -12,6 +12,7 @@ from flask_cors import CORS
 from typing import List, Dict, Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
+from pathlib import Path
 
 # Core processing components
 from parser import RadiologySemanticParser
@@ -303,6 +304,62 @@ def list_available_models():
         logger.error(f"Models endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Failed to list models"}), 500
 
+@app.route('/config/reload', methods=['POST'])
+def reload_config():
+    """Reload configuration from R2, enabling real-time config updates."""
+    try:
+        from config_manager import get_config
+        config_manager = get_config()
+        
+        # Force reload from R2
+        success = config_manager.force_r2_reload()
+        
+        if success:
+            return jsonify({
+                'message': 'Configuration reloaded successfully from R2',
+                'timestamp': datetime.now().isoformat(),
+                'source': 'R2'
+            })
+        else:
+            # Try regular reload (will use cache or fallback)
+            config_manager.reload()
+            return jsonify({
+                'message': 'Configuration reloaded from fallback sources',
+                'timestamp': datetime.now().isoformat(),
+                'source': 'local/cache',
+                'warning': 'R2 config fetch failed'
+            })
+            
+    except Exception as e:
+        logger.error(f"Config reload endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Failed to reload configuration"}), 500
+
+@app.route('/config/status', methods=['GET'])
+def config_status():
+    """Get configuration source and cache status."""
+    try:
+        from config_manager import get_config
+        config_manager = get_config()
+        
+        # Check if R2 config is cached
+        r2_cached = config_manager._r2_config_cache is not None
+        cache_age = 0
+        if r2_cached:
+            cache_age = time.time() - config_manager._r2_config_cache_time
+            
+        return jsonify({
+            'r2_url': config_manager._r2_config_url,
+            'r2_cached': r2_cached,
+            'cache_age_seconds': int(cache_age),
+            'cache_ttl_seconds': config_manager._r2_config_ttl,
+            'cache_valid': cache_age < config_manager._r2_config_ttl if r2_cached else False,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Config status endpoint error: {e}", exc_info=True)
+        return jsonify({"error": "Failed to get config status"}), 500
+
 def _medical_title_case(text: str) -> str:
     """
     Convert text to proper medical title case with special rules.
@@ -468,6 +525,12 @@ def parse_batch():
                         if line.strip():
                             consolidated_results.append(json.loads(line.strip()))
                 
+                # Get current config for versioning
+                from config_manager import get_config
+                config_manager = get_config()
+                config_source = "R2" if config_manager._r2_config_cache else "local"
+                config_timestamp = datetime.fromtimestamp(config_manager._r2_config_cache_time).isoformat() if config_manager._r2_config_cache else "unknown"
+                
                 # Create consolidated JSON with metadata
                 consolidated_data = {
                     "metadata": {
@@ -477,7 +540,9 @@ def parse_batch():
                         "errors": error_count,
                         "processing_time_ms": processing_time_ms,
                         "model_used": model_key,
-                        "results_count": len(consolidated_results)
+                        "results_count": len(consolidated_results),
+                        "config_source": config_source,
+                        "config_timestamp": config_timestamp
                     },
                     "results": consolidated_results
                 }
@@ -491,6 +556,31 @@ def parse_batch():
                     r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{r2_key}"
                     r2_upload_success = True
                     logger.info(f"Successfully uploaded consolidated results to R2: {r2_key}")
+                    
+                    # Save versioned config copy for this run
+                    try:
+                        config_key = f"batch-configs/{results_filename.replace('.jsonl', '')}_config.yaml"
+                        if config_manager._r2_config_cache:
+                            # Save the R2 config version that was used
+                            import yaml
+                            config_yaml = yaml.dump(config_manager.config, default_flow_style=False).encode('utf-8')
+                            if r2_manager.upload_object(config_key, config_yaml):
+                                logger.info(f"Saved versioned config to R2: {config_key}")
+                            else:
+                                logger.warning(f"Failed to save config version: {config_key}")
+                        else:
+                            # Save local config file
+                            config_path = Path(__file__).parent / 'config.yaml'
+                            if config_path.exists():
+                                with open(config_path, 'rb') as f:
+                                    config_data = f.read()
+                                if r2_manager.upload_object(config_key, config_data):
+                                    logger.info(f"Saved versioned local config to R2: {config_key}")
+                                else:
+                                    logger.warning(f"Failed to save local config version: {config_key}")
+                    except Exception as config_save_error:
+                        logger.warning(f"Failed to save config version: {config_save_error}")
+                        
                 else:
                     logger.warning(f"Failed to upload results to R2: {r2_key}")
                     
