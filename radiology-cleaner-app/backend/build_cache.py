@@ -17,7 +17,7 @@ from r2_cache_manager import R2CacheManager
 from nhs_lookup_engine import NHSLookupEngine
 from parser import RadiologySemanticParser
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
-from preprocessing import initialize_preprocessor
+from preprocessing import initialize_preprocessor, get_preprocessor
 from cache_version import get_current_cache_version
 
 def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
@@ -50,14 +50,45 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
     with open(nhs_json_path, 'r', encoding='utf-8') as f:
         nhs_authority_data = json.load(f)
     nhs_authority = {item.get('primary_source_name'): item for item in nhs_authority_data}
+    try:
+        config_path = os.path.join(base_dir, 'config.yaml')
+        with open(config_path, 'r') as f:
+            full_config = yaml.safe_load(f)
+            preprocessing_config = full_config.get('preprocessing', {})
+    except Exception as e:
+        logger.error(f"Could not load config.yaml in build_cache: {e}. Aborting.")
+        return False
+
+    # 2. Initialize the preprocessor and its dependencies
     abbreviation_expander = AbbreviationExpander()
-    initialize_preprocessor(abbreviation_expander)
-    anatomy_extractor = AnatomyExtractor(nhs_authority)
+    initialize_preprocessor(abbreviation_expander, config=preprocessing_config)
+    
+    # 3. Initialize the parsing utils using the config, NOT nhs_authority
+    anatomy_vocab_from_config = preprocessing_config.get('anatomy_vocabulary', {})
+    if not anatomy_vocab_from_config:
+        logger.error("Anatomy vocabulary not found in config.yaml. Cannot build cache.")
+        return False
+        
+    anatomy_extractor = AnatomyExtractor(anatomy_vocabulary=anatomy_vocab_from_config)
     laterality_detector = LateralityDetector()
     contrast_mapper = ContrastMapper()
-    semantic_parser = RadiologySemanticParser(nlp_processor, anatomy_extractor, laterality_detector, contrast_mapper)
-    engine = NHSLookupEngine(nhs_json_path, nlp_processor, semantic_parser)
 
+    # 4. Initialize the Semantic Parser with the corrected components
+    semantic_parser = RadiologySemanticParser(
+        nlp_processor=nlp_processor,
+        anatomy_extractor=anatomy_extractor,
+        laterality_detector=laterality_detector,
+        contrast_mapper=contrast_mapper
+    )
+
+    # 5. Initialize the NHSLookupEngine, which will now parse the data correctly
+    engine = NHSLookupEngine(
+        nhs_json_path=nhs_json_path,
+        nlp_processor=nlp_processor,
+        semantic_parser=semantic_parser,
+        config_path=config_path # Pass the config path to the engine as well
+    )
+    
     # 2. Compute the ensemble embeddings and FAISS index
     logger.info("Computing ensemble embeddings...")
     primary_names = [e["_clean_primary_name_for_embedding"] for e in engine.nhs_data]
