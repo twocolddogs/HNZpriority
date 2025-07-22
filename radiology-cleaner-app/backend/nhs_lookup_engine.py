@@ -12,6 +12,7 @@ import logging
 import re
 import os
 import pickle
+import time
 import yaml
 import numpy as np
 import faiss
