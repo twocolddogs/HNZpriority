@@ -399,26 +399,48 @@ class NHSLookupEngine:
         intersection = set1.intersection(set2)
         return len(intersection) / len(union)
     
-    def _calculate_modality_score(self, input_modality: Optional[str], nhs_modality: Optional[str]) -> float:
-        if input_modality == nhs_modality: return 1.0
-        if not input_modality or not nhs_modality: return 0.5
-        return self.modality_similarity.get(input_modality, {}).get(nhs_modality, 0.0)
+    def _calculate_modality_score(self, input_modality: List[str], nhs_modality: List[str]) -> float:
+        # Handle empty lists
+        if not input_modality or not nhs_modality: 
+            return 0.5
+        
+        # For single modality lists, use direct comparison and similarity
+        if len(input_modality) == 1 and len(nhs_modality) == 1:
+            input_mod = input_modality[0]
+            nhs_mod = nhs_modality[0]
+            if input_mod == nhs_mod: 
+                return 1.0
+            return self.modality_similarity.get(input_mod, {}).get(nhs_mod, 0.0)
+        
+        # For multiple modalities, use set-based scoring
+        return self._calculate_set_score(input_modality, nhs_modality)
     
-    def _calculate_contrast_score(self, input_contrast: Optional[str], nhs_contrast: Optional[str]) -> float:
-        # Perfect match (both same, including both None)
-        if input_contrast == nhs_contrast: 
-            # Bonus for both being None when preference is enabled
-            if (not input_contrast and not nhs_contrast and 
-                self.config.get('prefer_no_contrast_when_unspecified', False)):
+    def _calculate_contrast_score(self, input_contrast: List[str], nhs_contrast: List[str]) -> float:
+        # Handle empty lists (no contrast specified)
+        if not input_contrast and not nhs_contrast:
+            # Both unspecified - perfect match with potential bonus
+            if self.config.get('prefer_no_contrast_when_unspecified', False):
                 return 1.0 + self.config.get('no_contrast_preference_bonus', 0.15)
             return 1.0
         
-        # One has contrast, one doesn't
-        if not input_contrast or not nhs_contrast: 
+        # One has contrast info, one doesn't
+        if not input_contrast or not nhs_contrast:
             return self.config.get('contrast_null_score', 0.7)
         
-        # Both have contrast but different types (with vs without)    
-        return self.config.get('contrast_mismatch_score', 0.3)
+        # Both have contrast info - check for matches
+        input_set = set(input_contrast)
+        nhs_set = set(nhs_contrast)
+        
+        # Perfect match
+        if input_set == nhs_set:
+            return 1.0
+        
+        # Partial match (some overlap)
+        if input_set.intersection(nhs_set):
+            return 0.8
+        
+        # No match (e.g., 'with' vs 'without') - severe penalty
+        return self.config.get('contrast_mismatch_score', 0.05)
     
     def _calculate_anatomy_score_with_constraints(self, input_components: dict, nhs_components: dict) -> float:
         """
