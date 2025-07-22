@@ -563,7 +563,7 @@ def parse_batch():
                 r2_key = f"batch-results/{results_filename.replace('.jsonl', '.json')}"
                 consolidated_json = json.dumps(consolidated_data, indent=None, separators=(',', ':')).encode('utf-8')
                 
-                if r2_manager.upload_object(r2_key, consolidated_json):
+                if r2_manager.upload_object(r2_key, consolidated_json, content_type="application/json"):
                     # Generate public URL
                     r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{r2_key}"
                     r2_upload_success = True
@@ -576,7 +576,7 @@ def parse_batch():
                             # Save the R2 config version that was used
                             import yaml
                             config_yaml = yaml.dump(config_manager.config, default_flow_style=False).encode('utf-8')
-                            if r2_manager.upload_object(config_key, config_yaml):
+                            if r2_manager.upload_object(config_key, config_yaml, content_type="text/yaml"):
                                 logger.info(f"Saved versioned config to R2: {config_key}")
                             else:
                                 logger.warning(f"Failed to save config version: {config_key}")
@@ -586,7 +586,7 @@ def parse_batch():
                             if config_path.exists():
                                 with open(config_path, 'rb') as f:
                                     config_data = f.read()
-                                if r2_manager.upload_object(config_key, config_data):
+                                if r2_manager.upload_object(config_key, config_data, content_type="text/yaml"):
                                     logger.info(f"Saved versioned local config to R2: {config_key}")
                                 else:
                                     logger.warning(f"Failed to save local config version: {config_key}")

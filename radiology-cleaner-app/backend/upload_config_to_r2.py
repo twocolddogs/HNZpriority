@@ -38,9 +38,9 @@ def upload_config():
         with open(config_path, 'rb') as f:
             config_data = f.read()
         
-        # Upload to R2
+        # Upload to R2 with proper content type
         r2_key = "config/config.yaml"
-        success = r2_manager.upload_object(r2_key, config_data)
+        success = r2_manager.upload_object(r2_key, config_data, content_type="text/yaml")
         
         if success:
             print(f"✓ Successfully uploaded config to R2: {r2_key}")

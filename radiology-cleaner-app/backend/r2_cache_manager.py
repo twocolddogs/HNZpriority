@@ -37,12 +37,20 @@ class R2CacheManager:
         return self.client is not None
     
     # --- NEW GENERIC UPLOAD METHOD ---
-    def upload_object(self, object_key: str, data: bytes) -> bool:
-        """Uploads a raw bytes object to R2 with a specific key."""
+    def upload_object(self, object_key: str, data: bytes, content_type: str = None) -> bool:
+        """Uploads a raw bytes object to R2 with a specific key and optional content type."""
         if not self.is_available(): return False
         try:
-            self.client.put_object(Bucket=self.bucket_name, Key=object_key, Body=data)
-            logger.info(f"Successfully uploaded object to R2: {object_key}")
+            put_kwargs = {
+                'Bucket': self.bucket_name, 
+                'Key': object_key, 
+                'Body': data
+            }
+            if content_type:
+                put_kwargs['ContentType'] = content_type
+                
+            self.client.put_object(**put_kwargs)
+            logger.info(f"Successfully uploaded object to R2: {object_key}" + (f" (content-type: {content_type})" if content_type else ""))
             return True
         except ClientError as e:
             logger.error(f"AWS/R2 error uploading object {object_key}: {e}")
