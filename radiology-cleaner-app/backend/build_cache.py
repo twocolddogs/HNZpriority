@@ -21,7 +21,9 @@ from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDete
 from preprocessing import initialize_preprocessor, get_preprocessor
 from cache_version import get_current_cache_version
 
-def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
+from config_manager import get_config
+
+def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager, config):
     """
     Computes the FAISS index for a given model and uploads it to R2 with a timestamped filename.
     Skips building if a cache with the current version already exists in R2.
@@ -64,15 +66,8 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
     nhs_json_path = os.path.join(base_dir, 'core', 'NHS.json')
     with open(nhs_json_path, 'r', encoding='utf-8') as f:
         nhs_authority_data = json.load(f)
-    nhs_authority = {item.get('primary_source_name'): item for item in nhs_authority_data}
-    try:
-        config_path = os.path.join(base_dir, 'config.yaml')
-        with open(config_path, 'r') as f:
-            full_config = yaml.safe_load(f)
-            preprocessing_config = full_config.get('preprocessing', {})
-    except Exception as e:
-        logger.error(f"Could not load config.yaml in build_cache: {e}. Aborting.")
-        return False
+    
+    preprocessing_config = config.get_section('preprocessing')
 
     # 2. Initialize the preprocessor and its dependencies
     abbreviation_expander = AbbreviationExpander()
@@ -104,11 +99,12 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
         retriever_processor=nlp_processor,  # This is the processor we're building cache for
         reranker_processor=None,  # None during cache building to avoid cross-encoder initialization
         semantic_parser=semantic_parser,
-        config_path=config_path # Pass the config path to the engine as well
+        config_path=None # Config is now passed directly to the engine
     )
     
     # 2. Compute the ensemble embeddings and FAISS index
     logger.info("Computing ensemble embeddings...")
+
     primary_names = [e["_clean_primary_name_for_embedding"] for e in engine.nhs_data]
     fsn_names = [e["_clean_fsn_for_embedding"] for e in engine.nhs_data]
     
@@ -176,6 +172,13 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager):
 
 def main_build():
     logger.info("--- Starting Build and Upload Process ---")
+    
+    try:
+        config = get_config()
+    except RuntimeError as e:
+        logger.critical(f"Failed to initialize config manager: {e}")
+        sys.exit(1)
+
     r2_manager = R2CacheManager()
     if not r2_manager.is_available():
         logger.error("R2 manager not available. Aborting build.")
@@ -191,7 +194,7 @@ def main_build():
     success_count = 0
     for model_key in embedding_models.keys():
         nlp_processor = NLPProcessor(model_key=model_key)
-        if build_and_upload_cache_for_model(model_key, nlp_processor, r2_manager):
+        if build_and_upload_cache_for_model(model_key, nlp_processor, r2_manager, config):
             success_count += 1
     
     logger.info(f"\n=== Build Summary: {success_count}/{len(embedding_models)} caches built and uploaded. ===")
