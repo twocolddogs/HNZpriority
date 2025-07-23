@@ -600,35 +600,33 @@ window.addEventListener('DOMContentLoaded', function() {
     async function processBatch(codes, jobName) {
         allMappings = [];
         const totalCodes = codes.length;
-        const batchSize = getBatchSize();
-        let processedCount = 0;
+        // Note: getBatchSize() no longer used since we send everything at once
         let progressId = null;
 
         try {
-            for (let i = 0; i < totalCodes; i += batchSize) {
-                const chunk = codes.slice(i, i + batchSize);
-                progressId = statusManager.showProgress(`Processing ${jobName}`, processedCount, totalCodes);
+            // Send all exams in one request - let backend handle chunking internally
+            const allExams = codes.map(code => ({
+                exam_name: code.EXAM_NAME,
+                modality_code: code.MODALITY_CODE,
+                data_source: code.DATA_SOURCE,
+                exam_code: code.EXAM_CODE
+            }));
+            
+            progressId = statusManager.showProgress(`Processing ${jobName}`, 0, totalCodes);
 
-                const exams = chunk.map(code => ({
-                    exam_name: code.EXAM_NAME,
-                    modality_code: code.MODALITY_CODE,
-                    data_source: code.DATA_SOURCE,
-                    exam_code: code.EXAM_CODE
-                }));
+            const response = await fetch(BATCH_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ exams: allExams, model: currentModel })
+            });
 
-                const response = await fetch(BATCH_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ exams: exams, model: currentModel })
-                });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Batch API failed: ${errorText}`);
+            }
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Batch API failed (Chunk ${i / batchSize + 1}): ${errorText}`);
-                }
-
-                const batchResult = await response.json();
-                console.log('Backend response:', batchResult);
+            const batchResult = await response.json();
+            console.log('Backend response:', batchResult);
                 
                 // Handle both old format (inline results) and new format (file references)
                 if (batchResult.results) {
@@ -721,11 +719,6 @@ window.addEventListener('DOMContentLoaded', function() {
                     throw new Error('Unexpected response format from server');
                 }
                 
-                processedCount += chunk.length;
-                statusManager.showProgress(`Processing ${jobName}`, processedCount, totalCodes);
-            }
-            
-            if (progressId) statusManager.remove(progressId);
             statusManager.show(`Successfully processed ${allMappings.length} records from ${jobName}.`, 'success', 5000);
             runAnalysis(allMappings);
 
