@@ -677,21 +677,22 @@ window.addEventListener('DOMContentLoaded', function() {
                         console.error('Failed to fetch from R2:', r2Response.statusText);
                         throw new Error(`Failed to fetch from R2: ${r2Response.statusText}`);
                     }
-                } else if (batchResult.file_reference || batchResult.results_file || batchResult.message?.includes('batch_results_')) {
-                    // Fallback: Local file reference (legacy method)
-                    const fileReference = batchResult.file_reference || batchResult.results_file || batchResult.message;
-                    console.log('Fetching results from file reference (fallback):', fileReference);
+                } else if (batchResult.results_filename || batchResult.file_reference || batchResult.results_file || batchResult.message?.includes('batch_results_')) {
+                    // Local file reference for large datasets (>50 exams)
+                    const fileReference = batchResult.results_filename || batchResult.file_reference || batchResult.results_file || batchResult.message;
+                    console.log('Fetching results from local file reference:', fileReference);
                     
                     // Extract filename from path if needed (results_file includes path)
                     const filename = fileReference.includes('/') ? fileReference.split('/').pop() : fileReference;
                     
-                    // Fetch the results file
-                    const fileResponse = await fetch(`${apiConfig.baseUrl}/get_results/${filename}`, {
+                    // Fetch the results file using the new endpoint
+                    const fileResponse = await fetch(`${apiConfig.baseUrl}/get_batch_results/${filename}`, {
                         method: 'GET'
                     });
                     
                     if (fileResponse.ok) {
-                        const fileResults = await fileResponse.json();
+                        const fileData = await fileResponse.json();
+                        const fileResults = fileData.results || fileData;
                         if (fileResults && fileResults.length > 0) {
                             const chunkMappings = fileResults.map(item => {
                                 return item.status === 'success' ? {

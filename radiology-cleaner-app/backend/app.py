@@ -798,6 +798,35 @@ def load_batch_chunk(filename):
         logger.error(f"Error loading batch chunk: {e}", exc_info=True)
         return jsonify({"error": "Failed to load batch chunk"}), 500
 
+@app.route('/get_batch_results/<filename>', methods=['GET'])
+def get_batch_results(filename):
+    """
+    Get batch processing results as JSON array for frontend consumption.
+    """
+    try:
+        if not filename.startswith('batch_results_') or not filename.endswith('.jsonl'):
+            return jsonify({"error": "Invalid filename format"}), 400
+        
+        output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
+        file_path = os.path.join(output_dir, filename)
+        
+        if not os.path.exists(file_path):
+            return jsonify({"error": "File not found"}), 404
+        
+        # Read and parse JSONL file
+        results = []
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    results.append(json.loads(line.strip()))
+        
+        logger.info(f"Serving {len(results)} results from local file: {filename}")
+        return jsonify({"results": results})
+        
+    except Exception as e:
+        logger.error(f"Error serving batch results: {e}", exc_info=True)
+        return jsonify({"error": "Failed to load results"}), 500
+
 @app.route('/download_batch_results/<filename>', methods=['GET'])
 def download_batch_results(filename):
     """
