@@ -7,7 +7,7 @@
 # radiology exam names against NHS reference data using NLP and semantic matching.
 
 import time, json, logging, threading, os, sys, re, math
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, make_response
 from flask_cors import CORS
 from typing import List, Dict, Optional
 from datetime import datetime
@@ -42,6 +42,16 @@ CORS(app,
      methods=['GET', 'POST', 'OPTIONS'],
      allow_headers=['Content-Type', 'Authorization'],
      supports_credentials=False)
+
+@app.before_request
+def handle_preflight():
+    """Handle preflight OPTIONS requests"""
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
 
 @app.after_request
 def after_request(response):
