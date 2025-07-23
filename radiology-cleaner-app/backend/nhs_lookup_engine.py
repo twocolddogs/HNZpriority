@@ -300,6 +300,96 @@ class NHSLookupEngine:
         if strip_laterality_from_name:
             clean_name = re.sub(r'\s+(lt|rt|left|right|both|bilateral)
 
+        input_contrast = (extracted_input_components.get('contrast') or [None])[0]
+        if input_contrast == 'with' and 'with contrast' not in clean_name.lower():
+            clean_name += " with contrast"
+
+        # --- CRITICAL FIX IS HERE ---
+        # Create the nested 'components' dictionary that app.py expects.
+        # This dictionary includes all parsed components, confidence score, AND context information.
+        
+        # PIPELINE STEP: Detect context information that was previously calculated post-scoring
+        # Now calculated here so it can influence the final result structure
+        from context_detection import detect_gender_context, detect_age_context, detect_clinical_context
+        
+        input_anatomy = extracted_input_components.get('anatomy', [])
+        gender_context = detect_gender_context(input_exam_text, input_anatomy)
+        age_context = detect_age_context(input_exam_text) 
+        clinical_context = detect_clinical_context(input_exam_text, input_anatomy)
+        
+        final_components = {
+            **extracted_input_components,  # Unpack anatomy, laterality, contrast, technique
+            'confidence': confidence,
+            # Add context information that was previously calculated in app.py
+            'gender_context': gender_context,
+            'age_context': age_context, 
+            'clinical_context': clinical_context
+        }
+        
+        # Check for biopsy ambiguity
+        biopsy_ambiguous = self._is_biopsy_ambiguous(input_exam_text, best_match)
+        
+        # Determine if this match is ambiguous (laterality, biopsy, or forced)
+        is_ambiguous = force_ambiguous or strip_laterality_from_name or biopsy_ambiguous
+        
+        return {
+            'clean_name': clean_name.strip(),
+            'snomed_id': best_match.get('snomed_concept_id', ''),
+            'snomed_fsn': best_match.get('snomed_fsn', ''),
+            'snomed_laterality_concept_id': best_match.get('snomed_laterality_concept_id', ''),
+            'snomed_laterality_fsn': best_match.get('snomed_laterality_fsn', ''),
+            'is_diagnostic': not is_interventional,
+            'is_interventional': is_interventional,
+            'source': source_name,
+            'ambiguous': is_ambiguous,  # Track laterality, biopsy, or forced ambiguity
+            'components': final_components # Return the components nested under one key
+        }
+
+    def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
+        specific_components = specific_entry.get('_parsed_components')
+        if not specific_components:
+                return None
+        target_modalities = set(specific_components.get('modality', []))
+        target_anatomy = set(specific_components.get('anatomy', []))
+        target_contrasts = set(specific_components.get('contrast', []))
+        target_techniques = set(specific_components.get('technique', []))
+
+        for entry in self.nhs_data:
+                entry_components = entry.get('_parsed_components')
+                if not entry_components:
+                        continue
+                entry_laterality = (entry_components.get('laterality') or [None])[0]
+                if entry_laterality not in [None, 'bilateral']:
+                        continue
+
+                if (set(entry_components.get('modality', [])) == target_modalities and
+                        set(entry_components.get('anatomy', [])) == target_anatomy and
+                        set(entry_components.get('contrast', [])) == target_contrasts and
+                        set(entry_components.get('technique', [])) == target_techniques):
+                        return entry
+
+        return None
+    
+    def _is_biopsy_ambiguous(self, input_exam: str, nhs_entry: dict) -> bool:
+        """Check if this is an ambiguous biopsy case where modality preference was applied."""
+        if not self.config.get('biopsy_modality_preference', False):
+            return False
+            
+        input_lower = input_exam.lower()
+        
+        # Check if this is a biopsy procedure without explicit modality in input
+        has_biopsy = 'biopsy' in input_lower or 'bx' in input_lower
+        if not has_biopsy:
+            return False
+            
+        # Check if input already specifies a modality (if so, not ambiguous)
+        explicit_modalities = ['ct', 'us', 'ultrasound', 'fluoroscop', 'mri', 'mr']
+        if any(mod in input_lower for mod in explicit_modalities):
+            return False
+            
+        # If we get here, it's a biopsy without explicit modality - this is ambiguous
+        return True
+
     def validate_consistency(self):
         snomed_to_names = defaultdict(set)
         for entry in self.nhs_data:
