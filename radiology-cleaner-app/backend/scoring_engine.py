@@ -47,7 +47,8 @@ class ScoringEngine:
         rerank_score: float
     ) -> Tuple[float, Dict]:
         """
-        Calculate final weighted score including component, reranker, and complexity appropriateness.
+        Calculate final weighted score with complexity applied ONLY to the reranker step.
+        This prevents over-selection of complex FSNs for simple inputs.
         
         Returns:
             Tuple of (final_score, score_breakdown)
@@ -55,35 +56,37 @@ class ScoringEngine:
         # 1. Component score
         component_score, component_breakdown = self.calculate_component_score(input_exam, input_components, nhs_entry)
         
-        # 2. Complexity appropriateness score
+        # 2. Apply complexity appropriateness ONLY to the reranker score
         fsn = nhs_entry.get('snomed_fsn', '')
         primary_name = nhs_entry.get('primary_source_name', '')
         complexity_score = self.calculate_complexity_appropriateness(input_exam, fsn, primary_name)
         
-        # 3. Get weights from config
-        weights = self.config.get('weights_final', {})
-        reranker_weight = weights.get('reranker', 0.50)
-        component_weight = weights.get('component', 0.35)
-        complexity_weight = weights.get('complexity', 0.15)
+        # Adjust reranker score based on complexity appropriateness
+        complexity_adjusted_rerank_score = rerank_score * complexity_score
         
-        # 4. Calculate final weighted score
+        # 3. Get weights from config (remove complexity weight, return to pre-refactor balance)
+        weights = self.config.get('weights_final', {})
+        # Use pre-refactor weights: component=55%, semantic=35%, frequency=10% (ignore frequency for now)
+        component_weight = weights.get('component', 0.55)
+        reranker_weight = weights.get('reranker', 0.35)
+        
+        # 4. Calculate final weighted score (2-component: component + complexity-adjusted reranker)
         final_score = (
-            (reranker_weight * rerank_score) +
             (component_weight * component_score) +
-            (complexity_weight * complexity_score)
+            (reranker_weight * complexity_adjusted_rerank_score)
         )
         
         # 5. Create detailed breakdown for debugging
         score_breakdown = {
             'rerank_score': rerank_score,
+            'complexity_adjusted_rerank_score': complexity_adjusted_rerank_score,
             'component_score': component_score,
             'component_breakdown': component_breakdown,
             'complexity_score': complexity_score,
             'final_score': final_score,
             'weights': {
                 'reranker': reranker_weight,
-                'component': component_weight,
-                'complexity': complexity_weight
+                'component': component_weight
             }
         }
         
