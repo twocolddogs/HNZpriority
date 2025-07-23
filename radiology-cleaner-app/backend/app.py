@@ -182,21 +182,16 @@ def _initialize_app():
 
     abbreviation_expander = AbbreviationExpander()
     
-    import yaml
-    try:
-        config_path = os.path.join(base_dir, 'config.yaml')
-        with open(config_path, 'r') as f:
-            full_config = yaml.safe_load(f)
-            preprocessing_config = full_config.get('preprocessing', {})
-    except Exception as e:
-        logger.warning(f"Could not load config.yaml: {e}")
-        preprocessing_config = {}
+    # Use ConfigManager to get preprocessing configuration from R2
+    from config_manager import get_config
+    config_manager = get_config()
+    preprocessing_config = config_manager.get_section('preprocessing')
     
     initialize_preprocessor(abbreviation_expander, config=preprocessing_config)
     
     anatomy_vocab_from_config = preprocessing_config.get('anatomy_vocabulary', {})
     if not anatomy_vocab_from_config:
-        logger.warning("Anatomy vocabulary not found in config.yaml. AnatomyExtractor will be empty.")
+        logger.warning("Anatomy vocabulary not found in R2 config. AnatomyExtractor will be empty.")
 
     anatomy_extractor = AnatomyExtractor(anatomy_vocabulary=anatomy_vocab_from_config)
     laterality_detector = LateralityDetector()
@@ -674,24 +669,13 @@ def parse_batch():
                     # Save versioned config copy for this run
                     try:
                         config_key = f"batch-configs/{results_filename.replace('.jsonl', '')}_config.yaml"
-                        if config_manager._r2_config_cache:
-                            # Save the R2 config version that was used
-                            import yaml
-                            config_yaml = yaml.dump(config_manager.config, default_flow_style=False).encode('utf-8')
-                            if r2_manager.upload_object(config_key, config_yaml, content_type="text/yaml"):
-                                logger.info(f"Saved versioned config to R2: {config_key}")
-                            else:
-                                logger.warning(f"Failed to save config version: {config_key}")
+                        # Save the R2 config version that was used (R2 is now the only source)
+                        import yaml
+                        config_yaml = yaml.dump(config_manager.config, default_flow_style=False).encode('utf-8')
+                        if r2_manager.upload_object(config_key, config_yaml, content_type="text/yaml"):
+                            logger.info(f"Saved versioned config to R2: {config_key}")
                         else:
-                            # Save local config file
-                            config_path = Path(__file__).parent / 'config.yaml'
-                            if config_path.exists():
-                                with open(config_path, 'rb') as f:
-                                    config_data = f.read()
-                                if r2_manager.upload_object(config_key, config_data, content_type="text/yaml"):
-                                    logger.info(f"Saved versioned local config to R2: {config_key}")
-                                else:
-                                    logger.warning(f"Failed to save local config version: {config_key}")
+                            logger.warning(f"Failed to save config version: {config_key}")
                     except Exception as config_save_error:
                         logger.warning(f"Failed to save config version: {config_save_error}")
                         

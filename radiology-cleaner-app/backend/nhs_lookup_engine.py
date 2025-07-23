@@ -44,9 +44,7 @@ class NHSLookupEngine:
         self.nlp_processor = retriever_processor
         self.semantic_parser = semantic_parser
         
-        if config_path is None:
-            config_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
-        self._load_config(config_path)
+        self._load_config_from_manager()
         
         # --- REFACTOR: INSTANTIATE SCORING ENGINE ---
         self.scoring_engine = ScoringEngine(
@@ -64,18 +62,19 @@ class NHSLookupEngine:
         self._embeddings_loaded = False
         logger.info("NHSLookupEngine initialized with Scoring Engine architecture (v2.5).")
 
-    def _load_config(self, config_path):
-        """Loads configuration from a YAML file."""
+    def _load_config_from_manager(self):
+        """Loads configuration from R2 via ConfigManager."""
         try:
-            with open(config_path, 'r') as f:
-                self.config_data = yaml.safe_load(f)
-                self.config = self.config_data.get('scoring', {}) # for backward compatibility
-                self.modality_similarity = self.config_data.get('modality_similarity', {})
-                self.context_scoring = self.config_data.get('context_scoring', {})
-                self.preprocessing_config = self.config_data.get('preprocessing', {})
-                logger.info(f"Loaded configuration from {config_path}")
+            from config_manager import get_config
+            config_manager = get_config()
+            self.config_data = config_manager.config
+            self.config = self.config_data.get('scoring', {})  # for backward compatibility
+            self.modality_similarity = self.config_data.get('modality_similarity', {})
+            self.context_scoring = self.config_data.get('context_scoring', {})
+            self.preprocessing_config = self.config_data.get('preprocessing', {})
+            logger.info("Loaded configuration from R2 via ConfigManager")
         except Exception as e:
-            logger.critical(f"Could not load or parse {config_path}. Error: {e}", exc_info=True)
+            logger.critical(f"Could not load configuration from R2. Error: {e}", exc_info=True)
             raise
 
     def _load_nhs_data(self):

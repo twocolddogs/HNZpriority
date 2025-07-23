@@ -45,15 +45,14 @@ class ExamPreprocessor:
         # The abbreviation_expander is now only used for ordinal normalization.
         self.abbreviation_expander = abbreviation_expander
         
-        # Load configuration for enhanced preprocessing from config.yaml
+        # Load configuration for enhanced preprocessing from R2 via ConfigManager
         if config is None:
             try:
-                config_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
-                with open(config_path, 'r') as f:
-                    full_config = yaml.safe_load(f)
-                    config = full_config.get('preprocessing', {})
+                from config_manager import get_config
+                config_manager = get_config()
+                config = config_manager.get_section('preprocessing')
             except Exception as e:
-                logger.warning(f"Could not load config.yaml for preprocessing: {e}. Falling back to empty config.")
+                logger.warning(f"Could not load preprocessing config from R2: {e}. Falling back to empty config.")
                 config = {}
         
         self.config = config or {}
