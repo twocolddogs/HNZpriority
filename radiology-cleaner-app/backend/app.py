@@ -480,47 +480,56 @@ def parse_batch():
         success_count = 0
         error_count = 0
         
+        # Process in chunks of 25 to manage memory and provide progress updates
+        chunk_size = 25
+        total_exams = len(exams_to_process)
+        chunks = [exams_to_process[i:i + chunk_size] for i in range(0, total_exams, chunk_size)]
+        
         cpu_cnt = os.cpu_count() or 1
         max_workers = min(4, max(2, cpu_cnt))
-        logger.info(f"ThreadPoolExecutor starting with max_workers={max_workers}")
+        logger.info(f"Processing {total_exams} exams in {len(chunks)} chunks of {chunk_size}")
+        logger.info(f"ThreadPoolExecutor using max_workers={max_workers}")
 
         with open(results_filepath, 'w', encoding='utf-8') as f_out:
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                future_to_exam = {
-                    executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor): exam 
-                    for exam in exams_to_process
-                }
+            for chunk_idx, chunk in enumerate(chunks):
+                logger.info(f"Processing chunk {chunk_idx + 1}/{len(chunks)} ({len(chunk)} exams)")
                 
-                completed = 0
-                total = len(exams_to_process)
-                per_future_timeout = 60
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    future_to_exam = {
+                        executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor): exam 
+                        for exam in chunk
+                    }
+                    
+                    chunk_completed = 0
+                    per_future_timeout = 60
 
-                for future in as_completed(future_to_exam):
-                    original_exam = future_to_exam[future]
-                    try:
-                        processed_result = future.result(timeout=per_future_timeout)
-                        result_entry = {
-                            "input": original_exam,
-                            "output": processed_result,
-                            "status": "success"
-                        }
-                        f_out.write(json.dumps(result_entry) + '\n')
-                        f_out.flush()
-                        success_count += 1
-                    except Exception as e:
-                        logger.error(f"Error processing exam '{original_exam.get('exam_name')}': {e}", exc_info=True)
-                        error_entry = {
-                            "input": original_exam,
-                            "error": str(e),
-                            "status": "error"
-                        }
-                        f_out.write(json.dumps(error_entry) + '\n')
-                        f_out.flush()
-                        error_count += 1
-                    finally:
-                        completed += 1
-                        if completed % 25 == 0 or completed == total:
-                            logger.info(f"Batch progress: {completed}/{total} exams processed")
+                    for future in as_completed(future_to_exam):
+                        original_exam = future_to_exam[future]
+                        try:
+                            processed_result = future.result(timeout=per_future_timeout)
+                            result_entry = {
+                                "input": original_exam,
+                                "output": processed_result,
+                                "status": "success"
+                            }
+                            f_out.write(json.dumps(result_entry) + '\n')
+                            f_out.flush()
+                            success_count += 1
+                        except Exception as e:
+                            logger.error(f"Error processing exam '{original_exam.get('exam_name')}': {e}", exc_info=True)
+                            error_entry = {
+                                "input": original_exam,
+                                "error": str(e),
+                                "status": "error"
+                            }
+                            f_out.write(json.dumps(error_entry) + '\n')
+                            f_out.flush()
+                            error_count += 1
+                        finally:
+                            chunk_completed += 1
+                    
+                    logger.info(f"Completed chunk {chunk_idx + 1}/{len(chunks)}: {chunk_completed} exams processed")
+                    logger.info(f"Overall progress: {success_count + error_count}/{total_exams} exams processed")
 
         processing_time_ms = int((time.time() - start_time) * 1000)
         logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
