@@ -453,11 +453,15 @@ def parse_enhanced():
         logger.error(f"Parse enhanced endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route('/parse_batch', methods=['POST'])
+@app.route('/parse_batch', methods=['POST', 'OPTIONS'])
 def parse_batch():
     """
     Processes a batch of exam names concurrently with streaming output to disk.
     """
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        return '', 200
+    
     _ensure_app_is_initialized()
     start_time = time.time()
     
