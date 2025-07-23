@@ -101,6 +101,13 @@ def _initialize_app():
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
     
+    try:
+        from config_manager import get_config
+        config = get_config()
+    except RuntimeError as e:
+        logger.critical(f"Failed to initialize config manager: {e}")
+        sys.exit(1)
+    
     class SimpleCache:
         def __init__(self):
             self.cache = {}

@@ -311,18 +311,15 @@ class ConfigManager:
             return None
     
     def _load_config(self) -> None:
-        """Load configuration from R2 only - no local fallback to ensure consistency."""
-        # Try R2 - this is now required
+        """Load configuration from R2 only. If it fails, raise an exception."""
         r2_config = self._load_r2_config()
         if r2_config:
             self.config = r2_config
             logger.info("Using config from R2")
             return
-        
-        # No fallback - fail fast to ensure cache/runtime consistency
-        logger.error("R2 config is required but unavailable - using defaults only")
-        logger.error("This may cause inconsistencies between build-time and runtime processing")
-        self.config = self.defaults
+
+        # If R2 config is not available, raise a critical error.
+        raise RuntimeError("CRITICAL: R2 config is required but unavailable. Application cannot start.")
     
     def reload(self) -> None:
         """Reload configuration from R2 sources only."""
