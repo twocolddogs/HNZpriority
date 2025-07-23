@@ -389,6 +389,23 @@ def config_status():
         logger.error(f"Config status endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Failed to get config status"}), 500
 
+@app.route('/config_rebuild_status', methods=['GET'])
+def get_config_rebuild_status():
+    """Get the current status of config upload and cache rebuild."""
+    try:
+        from config_status_manager import status_manager
+        status = status_manager.get_status()
+        return jsonify(status)
+    except Exception as e:
+        logger.error(f"Config rebuild status endpoint error: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": "Failed to get rebuild status",
+            "progress": 0,
+            "timestamp": datetime.utcnow().isoformat(),
+            "details": {"error": str(e)}
+        }), 500
+
 @app.route('/upload_config', methods=['POST'])
 def upload_config():
     """Upload a new config.yaml file, save it temporarily, and trigger the upload/rebuild script."""
