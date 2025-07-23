@@ -174,10 +174,9 @@ class ScoringEngine:
         # --- Penalties (check for blocking violations first) ---
         diagnostic_penalty = self.calculate_diagnostic_penalty(input_exam, nhs_entry)
         hybrid_modality_penalty = self.calculate_hybrid_modality_penalty(input_exam, nhs_entry)
-        technique_specialization_penalty = self.calculate_technique_specialization_penalty(input_exam, nhs_entry)
         anatomy_score = self.calculate_anatomy_score_with_constraints(input_components, nhs_components)
 
-        if any(p < -1.0 for p in [diagnostic_penalty, hybrid_modality_penalty, technique_specialization_penalty, anatomy_score]):
+        if any(p < -1.0 for p in [diagnostic_penalty, hybrid_modality_penalty, anatomy_score]):
             return 0.0, {"violation": "blocking"}
 
         # --- Component Scores ---
@@ -208,7 +207,7 @@ class ScoringEngine:
 
         total_bonus_penalty = (
             interventional_score + anatomical_specificity_score + context_bonus + synonym_bonus + biopsy_preference + anatomy_preference + exact_match_bonus +
-            diagnostic_penalty + hybrid_modality_penalty + technique_specialization_penalty
+            diagnostic_penalty + hybrid_modality_penalty
         )
         
         final_component_score = base_component_score + total_bonus_penalty
@@ -304,11 +303,6 @@ class ScoringEngine:
         if contrast_score < threshold_config.get('contrast_min', 0.3): return "contrast"
         return None
     
-    def calculate_technique_specialization_penalty(self, input_exam_text: str, nhs_entry: dict) -> float:
-        # DEPRECATED: This is now handled more nuance by complexity scoring.
-        # This prevents simple inputs ("MRI Brain") from mapping to complex FSNs 
-        # ("MRI brain with diffusion tensor imaging") naturally.
-        return 0.0
         
     def calculate_interventional_score(self, input_components: Dict, nhs_components: Dict) -> float:
         is_input_interventional = any('Interventional' in t for t in input_components.get('technique', []))
