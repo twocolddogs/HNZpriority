@@ -143,34 +143,6 @@ class ConfigManager:
         self._initialized = True
         logger.info("Configuration manager initialized successfully")
     
-    def _load_config_file(self) -> None:
-        """Load configuration from config.yaml file."""
-        try:
-            # Find config.yaml in the current directory or parent directories
-            base_dir = Path(__file__).parent
-            config_path = base_dir / 'config.yaml'
-            
-            if not config_path.exists():
-                # Try one level up
-                config_path = base_dir.parent / 'config.yaml'
-            
-            if config_path.exists():
-                with open(config_path, 'r') as f:
-                    loaded_config = yaml.safe_load(f)
-                    if loaded_config:
-                        logger.info(f"Loaded configuration from {config_path}")
-                        self.config = loaded_config
-                    else:
-                        logger.warning(f"Config file {config_path} is empty, using defaults")
-                        self.config = self.defaults
-            else:
-                logger.warning(f"Config file not found at {config_path}, using defaults")
-                self.config = self.defaults
-        except Exception as e:
-            logger.error(f"Error loading configuration file: {e}", exc_info=True)
-            logger.warning("Using default configuration values")
-            self.config = self.defaults
-    
     def _load_env_variables(self) -> None:
         """Override configuration with environment variables."""
         # API configuration
