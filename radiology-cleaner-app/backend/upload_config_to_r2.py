@@ -16,8 +16,7 @@ from r2_cache_manager import R2CacheManager
 
 def trigger_cache_rebuild():
     """Triggers the build_cache.py script."""
-    print("
-Triggering cache rebuild...")
+    print("Triggering cache rebuild...")
     try:
         script_path = Path(__file__).parent / 'build_cache.py'
         result = subprocess.run(
