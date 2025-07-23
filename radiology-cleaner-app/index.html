@@ -58,13 +58,26 @@
 
             <!-- Demos Section -->
             <div id="demosSection" class="demos-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
-                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Demos</h3>
-                <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white; border: none;">
-                    100 Exam Test Suite
-                </button>
-                <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
-                    Load and process the built-in test dataset to verify engine performance
-                </p>
+                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Demos & Configuration</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white; border: none;">
+                            100 Exam Test Suite
+                        </button>
+                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
+                            Load and process the built-in test dataset to verify engine performance
+                        </p>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <button class="button secondary" id="uploadConfigBtn" style="background-color: #2196F3; color: white; border: none;">
+                            Upload New Config
+                        </button>
+                        <input type="file" id="configFileInput" accept=".yaml,.yml" style="display: none;" />
+                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
+                            Upload config.yaml to update system configuration and rebuild cache
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <!-- Model Settings Section -->

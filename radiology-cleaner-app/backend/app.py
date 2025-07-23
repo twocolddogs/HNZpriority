@@ -387,6 +387,101 @@ def config_status():
         logger.error(f"Config status endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Failed to get config status"}), 500
 
+@app.route('/upload_config', methods=['POST'])
+def upload_config():
+    """Upload a new config.yaml file to R2 and trigger cache rebuild."""
+    try:
+        # Check if file was uploaded
+        if 'config' not in request.files:
+            return jsonify({"error": "No config file provided"}), 400
+        
+        config_file = request.files['config']
+        if config_file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        # Validate file extension
+        if not config_file.filename.lower().endswith(('.yaml', '.yml')):
+            return jsonify({"error": "File must be a YAML file (.yaml or .yml)"}), 400
+        
+        # Read and validate YAML content
+        try:
+            config_content = config_file.read()
+            config_file.seek(0)  # Reset file pointer
+            
+            # Parse YAML to validate it's valid
+            import yaml
+            yaml.safe_load(config_content)
+            logger.info("Config file validated successfully")
+            
+        except yaml.YAMLError as e:
+            logger.error(f"Invalid YAML file: {e}")
+            return jsonify({"error": f"Invalid YAML file: {str(e)}"}), 400
+        except Exception as e:
+            logger.error(f"Error reading config file: {e}")
+            return jsonify({"error": "Error reading config file"}), 400
+        
+        # Initialize R2 manager
+        r2_manager = R2CacheManager()
+        if not r2_manager.is_available():
+            logger.error("R2 manager not available for config upload")
+            return jsonify({"error": "R2 storage not available"}), 500
+        
+        # Upload to R2 with proper content type
+        r2_key = "config/config.yaml"
+        upload_success = r2_manager.upload_object(r2_key, config_content, content_type="text/yaml")
+        
+        if not upload_success:
+            logger.error("Failed to upload config to R2")
+            return jsonify({"error": "Failed to upload config to R2"}), 500
+        
+        logger.info(f"Successfully uploaded config to R2: {r2_key}")
+        
+        # Also save locally for immediate use
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            local_config_path = os.path.join(base_dir, 'config.yaml')
+            
+            with open(local_config_path, 'wb') as f:
+                f.write(config_content)
+            logger.info(f"Config also saved locally: {local_config_path}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to save config locally: {e}")
+        
+        # Trigger cache rebuild in background thread
+        def rebuild_cache():
+            try:
+                logger.info("Starting cache rebuild after config upload...")
+                import subprocess
+                result = subprocess.run([
+                    sys.executable, 'build_cache.py'
+                ], capture_output=True, text=True, timeout=1800)  # 30 minute timeout
+                
+                if result.returncode == 0:
+                    logger.info("Cache rebuild completed successfully")
+                else:
+                    logger.error(f"Cache rebuild failed: {result.stderr}")
+                    
+            except subprocess.TimeoutExpired:
+                logger.error("Cache rebuild timed out after 30 minutes")
+            except Exception as e:
+                logger.error(f"Cache rebuild error: {e}")
+        
+        # Start cache rebuild in background
+        cache_thread = threading.Thread(target=rebuild_cache, daemon=True)
+        cache_thread.start()
+        
+        return jsonify({
+            "message": "Config uploaded successfully and cache rebuild initiated",
+            "r2_key": r2_key,
+            "timestamp": datetime.now().isoformat(),
+            "cache_rebuild": "in_progress"
+        })
+        
+    except Exception as e:
+        logger.error(f"Config upload endpoint error: {e}", exc_info=True)
+        return jsonify({"error": f"Failed to upload config: {str(e)}"}), 500
+
 def _medical_title_case(text: str) -> str:
     """
     Convert text to proper medical title case with special rules.

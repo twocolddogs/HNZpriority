@@ -374,6 +374,8 @@ window.addEventListener('DOMContentLoaded', function() {
     const resultsSection = document.getElementById('resultsSection');
     const resultsBody = document.getElementById('resultsBody');
     const sanityButton = document.getElementById('sanityTestBtn');
+    const uploadConfigButton = document.getElementById('uploadConfigBtn');
+    const configFileInput = document.getElementById('configFileInput');
 
     // --- CORE INITIALIZATION ---
     async function testApiConnectivity() {
@@ -475,6 +477,13 @@ window.addEventListener('DOMContentLoaded', function() {
             sanityButton.addEventListener('click', runSanityTest);
         } else {
             console.error('❌ Sanity test button not found!');
+        }
+        
+        if (uploadConfigButton && configFileInput) {
+            uploadConfigButton.addEventListener('click', () => configFileInput.click());
+            configFileInput.addEventListener('change', handleConfigUpload);
+        } else {
+            console.error('❌ Config upload elements not found!');
         }
         
         document.getElementById('closeModalBtn').addEventListener('click', closeModal);
@@ -593,6 +602,78 @@ window.addEventListener('DOMContentLoaded', function() {
             if (sanityButton) {
                  sanityButton.disabled = false;
                  sanityButton.innerHTML = '100 Exam Test Suite';
+            }
+        }
+    }
+
+    async function handleConfigUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.name.match(/\.(yaml|yml)$/i)) {
+            statusManager.show('Please select a valid YAML file (.yaml or .yml)', 'error', 5000);
+            return;
+        }
+
+        // Show confirmation dialog
+        const confirmed = confirm(
+            'WARNING: Uploading a new config.yaml will:\n\n' +
+            '• Replace the current system configuration\n' +
+            '• Trigger a complete cache rebuild (takes several minutes)\n' +
+            '• Temporarily affect system performance during rebuild\n\n' +
+            'Are you sure you want to continue?'
+        );
+
+        if (!confirmed) {
+            // Reset file input
+            configFileInput.value = '';
+            return;
+        }
+
+        try {
+            // Disable the upload button during process
+            if (uploadConfigButton) {
+                uploadConfigButton.disabled = true;
+                uploadConfigButton.innerHTML = 'Uploading...';
+            }
+
+            // Show status
+            let statusId = statusManager.show('Uploading config.yaml...', 'progress');
+
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('config', file);
+
+            // Upload config
+            const response = await fetch(`${apiConfig.baseUrl}/upload_config`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            statusManager.remove(statusId);
+            
+            // Show success message
+            statusManager.show('✓ Config uploaded successfully! Cache rebuild in progress...', 'success', 5000);
+            
+            // Reset file input
+            configFileInput.value = '';
+
+        } catch (error) {
+            console.error('Config upload failed:', error);
+            statusManager.show(`❌ Config Upload Failed: ${error.message}`, 'error', 10000);
+            configFileInput.value = '';
+        } finally {
+            // Re-enable button
+            if (uploadConfigButton) {
+                uploadConfigButton.disabled = false;
+                uploadConfigButton.innerHTML = 'Upload New Config';
             }
         }
     }

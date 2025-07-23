@@ -1,0 +1,7 @@
+[
+  { "DATA_SOURCE": "CO", "MODALITY_CODE": "XR", "EXAM_CODE": "D06", "EXAM_NAME": "Chest (single projection)" },
+  { "DATA_SOURCE": "K", "MODALITY_CODE": "XR", "EXAM_CODE": "XRCHEST", "EXAM_NAME": "Xray Chest" },
+  { "DATA_SOURCE": "C", "MODALITY_CODE": "CT", "EXAM_CODE": "CHED", "EXAM_NAME": "CT Head" },
+  { "DATA_SOURCE": "CO", "MODALITY_CODE": "CT", "EXAM_CODE": "Q01", "EXAM_NAME": "CT HEAD C-" },
+  { "DATA_SOURCE": "C", "MODALITY_CODE": "XR", "EXAM_CODE": "XRKN", "EXAM_NAME": "XR Right Knee" }
+]

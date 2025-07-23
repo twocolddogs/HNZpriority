@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 # Core application components
 from nlp_processor import NLPProcessor
 from context_detection import detect_interventional_procedure_terms
+from scoring_engine import ScoringEngine
 from preprocessing import get_preprocessor
 
 if TYPE_CHECKING:
@@ -48,6 +49,14 @@ class NHSLookupEngine:
         if config_path is None:
             config_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
         self._load_config(config_path)
+        
+        # Initialize scoring engine with loaded config
+        self.scoring_engine = ScoringEngine(
+            config=self.config,
+            modality_similarity=self.modality_similarity,
+            context_scoring=self.context_scoring,
+            preprocessing_config=self.preprocessing_config
+        )
         
         self._load_nhs_data()
         self._build_lookup_tables()
@@ -143,93 +152,13 @@ class NHSLookupEngine:
 
     def _calculate_component_score(self, input_exam_text: str, input_components: Dict, nhs_entry: Dict) -> float:
         """
-        Calculate component-based score for a candidate NHS entry.
-        This is the core of the rule-based matching logic extracted from v2 architecture.
+        Calculate component-based score for a candidate NHS entry using the new ScoringEngine.
         
         Returns:
             float: Component score (0.0-1.0), or 0.0 if blocking violations detected
         """
-        # 1. Check for any "blocking" level violations that should immediately reject the candidate
-        diagnostic_penalty = self._check_diagnostic_protection(input_exam_text, nhs_entry)
-        hybrid_modality_penalty = self._check_hybrid_modality_constraints(input_exam_text, nhs_entry)
-        technique_specialization_penalty = self._check_technique_specialization_constraints(input_exam_text, nhs_entry)
-        
-        # Check for blocking penalties (< -1.0)
-        if diagnostic_penalty < -1.0 or hybrid_modality_penalty < -1.0 or technique_specialization_penalty < -1.0:
-            logger.debug(f"Blocking violation detected for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
-            return 0.0
-        
-        nhs_components = nhs_entry.get('_parsed_components', {})
-        
-        # 2. Calculate all component scores
-        anatomy_score = self._calculate_anatomy_score_with_constraints(input_components, nhs_components)
-        
-        # Check for anatomy blocking penalty after the fact
-        if anatomy_score < -1.0:
-            logger.debug(f"Anatomical blocking violation for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
-            return 0.0
-        
-        modality_score = self._calculate_modality_score(
-            input_components.get('modality', []),
-            nhs_components.get('modality', [])
-        )
-        contrast_score = self._calculate_contrast_score(
-            input_components.get('contrast', []),
-            nhs_components.get('contrast', [])
-        )
-        technique_score = self._calculate_set_score(
-            input_components.get('technique', []),
-            nhs_components.get('technique', [])
-        )
-        
-        input_lat = (input_components.get('laterality') or [None])[0]
-        nhs_lat = (nhs_components.get('laterality') or [None])[0]
-        laterality_score = self._calculate_laterality_score(input_lat, nhs_lat)
-        
-        # 3. Check component thresholds to gate low-quality matches
-        if (violation := self._check_component_thresholds(anatomy_score, modality_score, laterality_score, contrast_score, technique_score)):
-            logger.debug(f"Component threshold violation for '{nhs_entry.get('primary_source_name')}': {violation}")
-            return 0.0
-        
-        # 4. Combine the component scores using weights from the config
-        w = self.config['weights_component']
-        component_score = (
-            w.get('anatomy', 0.25) * anatomy_score +
-            w.get('modality', 0.30) * modality_score +
-            w.get('laterality', 0.15) * laterality_score +
-            w.get('contrast', 0.20) * contrast_score +
-            w.get('technique', 0.10) * technique_score
-        )
-        
-        # 5. Add interventional scoring
-        input_techniques = set(input_components.get('technique', []))
-        is_input_interventional = any('Interventional' in t for t in input_techniques)
-        nhs_techniques = set(nhs_components.get('technique', []))
-        is_nhs_interventional = any('Interventional' in t for t in nhs_techniques)
-        
-        interventional_score = 0
-        if is_input_interventional and is_nhs_interventional:
-            interventional_score = self.config['interventional_bonus']
-        elif is_input_interventional and not is_nhs_interventional:
-            interventional_score = self.config['interventional_penalty']
-        
-        # 6. Add anatomical specificity score
-        anatomical_specificity_score = self._calculate_anatomical_specificity_score(input_exam_text, nhs_entry)
-        
-        # 7. Add all bonuses and non-blocking penalties
-        bonus_score = interventional_score + anatomical_specificity_score
-        bonus_score += diagnostic_penalty + hybrid_modality_penalty + technique_specialization_penalty
-        bonus_score += self._calculate_context_bonus(input_exam_text, nhs_entry, input_components.get('anatomy', []))
-        bonus_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
-        bonus_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
-        bonus_score += self._calculate_anatomy_specificity_preference(input_components, nhs_entry)
-        
-        # Exact match bonus
-        if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
-            bonus_score += self.config.get('exact_match_bonus', 0.25)
-        
-        final_component_score = component_score + bonus_score
-        return max(0.0, min(1.0, final_component_score))
+        # Use the new scoring engine to calculate component score
+        return self.scoring_engine.calculate_component_score(input_exam_text, input_components, nhs_entry)
 
     def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
         """
@@ -302,38 +231,37 @@ class NHSLookupEngine:
             logger.warning(f"[V3-PIPELINE] Reranker failed (got {len(rerank_scores) if rerank_scores else 0} scores for {len(candidate_entries)} candidates) - using neutral fallback")
             rerank_scores = [0.5] * len(candidate_entries)  # Neutral fallback
         
-        # Find best match by combining reranking + component scores
+        # Find best match by combining reranking + component + complexity scores
         best_match = None
         highest_confidence = -1.0
         
         wf = self.config['weights_final']
-        reranker_weight = wf.get('reranker', 0.60)  # Updated from 'semantic' to 'reranker'
-        component_weight = wf.get('component', 0.40)
+        logger.debug(f"[V3-PIPELINE] Processing {len(candidate_entries)} candidates with weights: {wf}")
         
         component_scores = []
         final_scores = []
-        
-        logger.debug(f"[V3-PIPELINE] Processing {len(candidate_entries)} candidates with weights: reranker={reranker_weight}, component={component_weight}")
+        score_breakdowns = []
         
         for i, (entry, rerank_score) in enumerate(zip(candidate_entries, rerank_scores)):
             candidate_name = entry.get('primary_source_name', 'Unknown')
             
-            # Calculate component score using extracted logic
-            component_start = time.time()
-            component_score = self._calculate_component_score(input_exam, extracted_input_components, entry)
-            component_time = time.time() - component_start
-            component_scores.append(component_score)
+            # Calculate final score using the new ScoringEngine (includes complexity scoring)
+            scoring_start = time.time()
+            final_score, score_breakdown = self.scoring_engine.calculate_final_score(
+                input_exam, extracted_input_components, entry, rerank_score
+            )
+            scoring_time = time.time() - scoring_start
             
-            # Combine reranker score and component score
-            final_score = (reranker_weight * rerank_score) + (component_weight * component_score)
+            component_scores.append(score_breakdown['component_score'])
             final_scores.append(final_score)
+            score_breakdowns.append(score_breakdown)
             
             if final_score > highest_confidence:
                 highest_confidence = final_score
                 best_match = entry
                 logger.info(f"[V3-PIPELINE] New best match: '{candidate_name[:40]}' (final_score={final_score:.3f})")
             
-            logger.debug(f"[V3-PIPELINE] Candidate {i+1}: '{candidate_name[:30]}' - rerank={rerank_score:.3f}, component={component_score:.3f}, final={final_score:.3f} (component_time={component_time:.3f}s)")
+            logger.debug(f"[V3-PIPELINE] Candidate {i+1}: '{candidate_name[:30]}' - rerank={rerank_score:.3f}, component={score_breakdown['component_score']:.3f}, complexity={score_breakdown['complexity_score']:.3f}, final={final_score:.3f} (scoring_time={scoring_time:.3f}s)")
         
         stage2_time = time.time() - stage2_start
         
