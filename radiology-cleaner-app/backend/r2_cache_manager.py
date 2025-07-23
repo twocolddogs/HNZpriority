@@ -108,7 +108,7 @@ class R2CacheManager:
         if len(objects) <= keep_latest:
             return
         
-        objects.sort(key=lambda x: x['Key'], reverse=True)
+        objects.sort(key=lambda x: x['LastModified'], reverse=True)
         to_delete = objects[keep_latest:]
         
         for obj in to_delete:
