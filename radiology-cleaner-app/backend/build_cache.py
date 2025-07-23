@@ -98,8 +98,7 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager, 
         nhs_json_path=nhs_json_path,
         retriever_processor=nlp_processor,  # This is the processor we're building cache for
         reranker_processor=None,  # None during cache building to avoid cross-encoder initialization
-        semantic_parser=semantic_parser,
-        config_path=None # Config is now passed directly to the engine
+        semantic_parser=semantic_parser
     )
     
     # 2. Compute the ensemble embeddings and FAISS index
