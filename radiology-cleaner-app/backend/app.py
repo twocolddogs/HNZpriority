@@ -505,7 +505,7 @@ def parse_batch():
         chunks = [exams_to_process[i:i + chunk_size] for i in range(0, total_exams, chunk_size)]
         
         cpu_cnt = os.cpu_count() or 1
-        max_workers = min(4, max(2, cpu_cnt))
+        max_workers = min(2, max(1, cpu_cnt))  # Reduced workers to prevent OOM
         logger.info(f"Processing {total_exams} exams in {len(chunks)} chunks of {chunk_size}")
         logger.info(f"ThreadPoolExecutor using max_workers={max_workers}")
 
@@ -556,7 +556,10 @@ def parse_batch():
         # Upload consolidated results to R2 for permanent storage and frontend access
         r2_upload_success = False
         r2_url = None
-        if r2_manager.is_available():
+        
+        # Skip R2 upload for very large datasets to prevent OOM
+        MAX_RESULTS_FOR_R2 = 50  # Limit R2 upload to prevent memory issues
+        if r2_manager.is_available() and total_exams <= MAX_RESULTS_FOR_R2:
             try:
                 # Read and consolidate all results into a single JSON array
                 consolidated_results = []
@@ -626,6 +629,9 @@ def parse_batch():
                     
             except Exception as e:
                 logger.error(f"Error uploading to R2: {e}", exc_info=True)
+        elif r2_manager.is_available():
+            logger.warning(f"Skipping R2 upload for large dataset ({total_exams} exams > {MAX_RESULTS_FOR_R2} limit)")
+            logger.info("Results stored locally only - use pagination for viewing")
         else:
             logger.warning("R2 not available - results only stored locally")
 
