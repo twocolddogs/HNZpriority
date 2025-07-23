@@ -610,42 +610,22 @@ window.addEventListener('DOMContentLoaded', function() {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Validate file type
         if (!file.name.match(/\.(yaml|yml)$/i)) {
             statusManager.show('Please select a valid YAML file (.yaml or .yml)', 'error', 5000);
             return;
         }
 
-        // Show confirmation dialog
-        const confirmed = confirm(
-            'WARNING: Uploading a new config.yaml will:\n\n' +
-            '• Replace the current system configuration\n' +
-            '• Trigger a complete cache rebuild (takes several minutes)\n' +
-            '• Temporarily affect system performance during rebuild\n\n' +
-            'Are you sure you want to continue?'
-        );
-
-        if (!confirmed) {
-            // Reset file input
-            configFileInput.value = '';
-            return;
-        }
-
         try {
-            // Disable the upload button during process
             if (uploadConfigButton) {
                 uploadConfigButton.disabled = true;
                 uploadConfigButton.innerHTML = 'Uploading...';
             }
 
-            // Show status
             let statusId = statusManager.show('Uploading config.yaml...', 'progress');
 
-            // Prepare form data
             const formData = new FormData();
             formData.append('config', file);
 
-            // Upload config
             const response = await fetch(`${apiConfig.baseUrl}/upload_config`, {
                 method: 'POST',
                 body: formData
@@ -659,10 +639,8 @@ window.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             statusManager.remove(statusId);
             
-            // Show success message
-            statusManager.show('✓ Config uploaded successfully! Cache rebuild in progress...', 'success', 5000);
+            statusManager.show('✓ Config uploaded. Cache rebuild initiated in the background.', 'success', 8000);
             
-            // Reset file input
             configFileInput.value = '';
 
         } catch (error) {
@@ -670,7 +648,6 @@ window.addEventListener('DOMContentLoaded', function() {
             statusManager.show(`❌ Config Upload Failed: ${error.message}`, 'error', 10000);
             configFileInput.value = '';
         } finally {
-            // Re-enable button
             if (uploadConfigButton) {
                 uploadConfigButton.disabled = false;
                 uploadConfigButton.innerHTML = 'Upload New Config';
