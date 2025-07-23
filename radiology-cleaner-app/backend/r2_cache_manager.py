@@ -37,8 +37,8 @@ class R2CacheManager:
         return self.client is not None
     
     # --- NEW GENERIC UPLOAD METHOD ---
-    def upload_object(self, object_key: str, data: bytes, content_type: str = None) -> bool:
-        """Uploads a raw bytes object to R2 with a specific key and optional content type."""
+    def upload_object(self, object_key: str, data: bytes, content_type: str = None, cors_headers: bool = True) -> bool:
+        """Uploads a raw bytes object to R2 with a specific key, optional content type, and CORS headers."""
         if not self.is_available(): return False
         try:
             put_kwargs = {
@@ -46,11 +46,27 @@ class R2CacheManager:
                 'Key': object_key, 
                 'Body': data
             }
+            
+            # Set content type if provided
             if content_type:
                 put_kwargs['ContentType'] = content_type
+            
+            # Add headers for frontend access
+            if cors_headers:
+                # Set cache control for better performance
+                put_kwargs['CacheControl'] = 'public, max-age=3600'
+                put_kwargs['ContentDisposition'] = 'inline'
                 
+                # Add metadata to indicate this is a public file
+                put_kwargs['Metadata'] = {
+                    'access-type': 'public',
+                    'cors-enabled': 'true'
+                }
+            
             self.client.put_object(**put_kwargs)
-            logger.info(f"Successfully uploaded object to R2: {object_key}" + (f" (content-type: {content_type})" if content_type else ""))
+            logger.info(f"Successfully uploaded object to R2: {object_key}" + 
+                       (f" (content-type: {content_type})" if content_type else "") +
+                       (" with CORS headers" if cors_headers else ""))
             return True
         except ClientError as e:
             logger.error(f"AWS/R2 error uploading object {object_key}: {e}")
