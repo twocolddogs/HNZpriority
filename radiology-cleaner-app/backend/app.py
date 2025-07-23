@@ -33,7 +33,12 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, 
-     origins=['*'], 
+     origins=[
+         'https://develop.radiology-cleaner-app.pages.dev',
+         'https://develop.hnzradtools.nz',
+         'https://hnzradtools.nz',
+         'https://*.pages.dev'
+     ], 
      methods=['GET', 'POST', 'OPTIONS'],
      allow_headers=['Content-Type', 'Authorization'],
      supports_credentials=False)
