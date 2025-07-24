@@ -207,10 +207,11 @@ class ScoringEngine:
         biopsy_preference = self.calculate_biopsy_modality_preference(input_exam, nhs_entry)
         anatomy_preference = self.calculate_anatomy_specificity_preference(input_components, nhs_entry)
         vessel_preference = self.calculate_vessel_type_preference(input_exam, nhs_entry)
+        clinical_specificity_score = self.calculate_clinical_specificity_score(input_exam, nhs_entry)
         exact_match_bonus = self.config.get('exact_match_bonus', 0.25) if input_exam.strip().lower() == nhs_entry.get('primary_source_name', '').lower() else 0.0
 
         total_bonus_penalty = (
-            interventional_score + anatomical_specificity_score + context_bonus + synonym_bonus + biopsy_preference + anatomy_preference + vessel_preference + exact_match_bonus +
+            interventional_score + anatomical_specificity_score + context_bonus + synonym_bonus + biopsy_preference + anatomy_preference + vessel_preference + clinical_specificity_score + exact_match_bonus +
             diagnostic_penalty + hybrid_modality_penalty
         )
         
@@ -438,6 +439,62 @@ class ScoringEngine:
             elif any(term in nhs_fsn_lower for term in ['vein', 'venous', 'veins', 'venography']):
                 # Penalty for venous studies when input is generic angiography  
                 return vessel_config.get('venous_penalty', -0.15)
+                
+        return 0.0
+    
+    def calculate_clinical_specificity_score(self, input_exam: str, nhs_entry: dict) -> float:
+        """
+        Rewards NHS entries that match the clinical specificity level of the input.
+        
+        For example:
+        - Input: "3rd trimester" (specific) + NHS: "third trimester" (specific match) → bonus
+        - Input: "3rd trimester" (specific) + NHS: "multiple pregnancy" (generic) → penalty
+        """
+        specificity_config = self.config.get('clinical_specificity_scoring', {})
+        if not specificity_config.get('enable', False):
+            return 0.0
+            
+        input_lower = input_exam.lower()
+        nhs_fsn_lower = nhs_entry.get('snomed_fsn', '').lower()
+        nhs_name_lower = nhs_entry.get('primary_source_name', '').lower()
+        
+        patterns = specificity_config.get('clinical_specificity_patterns', {})
+        
+        # Check each specificity category
+        for category_base, pattern_groups in patterns.items():
+            if not isinstance(pattern_groups, dict):
+                continue
+                
+            # Find input specificity level
+            input_specificity_level = None
+            for level, terms in pattern_groups.items():
+                if any(term in input_lower for term in terms):
+                    input_specificity_level = level
+                    break
+            
+            if not input_specificity_level:
+                continue
+                
+            # Find NHS specificity level
+            nhs_specificity_level = None
+            for level, terms in pattern_groups.items():
+                if any(term in nhs_fsn_lower or term in nhs_name_lower for term in terms):
+                    nhs_specificity_level = level
+                    break
+                    
+            if not nhs_specificity_level:
+                continue
+                
+            # Apply scoring based on specificity match
+            if input_specificity_level == nhs_specificity_level:
+                # Perfect specificity match
+                return specificity_config.get('specificity_match_bonus', 0.15)
+            elif 'specific' in input_specificity_level and 'generic' in nhs_specificity_level:
+                # Input is specific but NHS is generic - penalty
+                return specificity_config.get('generic_over_specific_penalty', -0.10)
+            elif 'generic' in input_specificity_level and 'specific' in nhs_specificity_level:
+                # Input is generic but NHS is specific - neutral (no penalty for adding detail)
+                return 0.0
                 
         return 0.0
         

@@ -242,6 +242,37 @@ scoring:
     - "imaging"
     - "view"
     - "projection"
+  
+  # --- CLINICAL SPECIFICITY SCORING ---
+  # Rewards NHS entries that match the clinical specificity level of the input
+  clinical_specificity_scoring:
+    enable: true
+    specificity_match_bonus: 0.15      # Bonus when clinical specificity levels match
+    generic_over_specific_penalty: -0.10  # Penalty when NHS is generic but input is specific
+    
+    # Clinical specificity patterns (specific → generic hierarchy)
+    clinical_specificity_patterns:
+      # Pregnancy/Obstetric specificity
+      pregnancy_specific:
+        - "first trimester"
+        - "second trimester" 
+        - "third trimester"
+        - "1st trimester"
+        - "2nd trimester"
+        - "3rd trimester"
+      pregnancy_generic:
+        - "pregnancy"
+        - "obstetric"
+        - "multiple pregnancy"
+        - "prenatal"
+        
+      # Anatomical specificity (can be extended for other cases)
+      anatomical_specific:
+        - "lumbar spine"
+        - "cervical spine"
+        - "thoracic spine"
+      anatomical_generic:
+        - "spine"
 
 # ====================================================================================
 # MODALITY SIMILARITY
