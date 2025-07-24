@@ -206,10 +206,11 @@ class ScoringEngine:
         synonym_bonus = self.calculate_synonym_bonus(input_exam, nhs_entry)
         biopsy_preference = self.calculate_biopsy_modality_preference(input_exam, nhs_entry)
         anatomy_preference = self.calculate_anatomy_specificity_preference(input_components, nhs_entry)
+        vessel_preference = self.calculate_vessel_type_preference(input_exam, nhs_entry)
         exact_match_bonus = self.config.get('exact_match_bonus', 0.25) if input_exam.strip().lower() == nhs_entry.get('primary_source_name', '').lower() else 0.0
 
         total_bonus_penalty = (
-            interventional_score + anatomical_specificity_score + context_bonus + synonym_bonus + biopsy_preference + anatomy_preference + exact_match_bonus +
+            interventional_score + anatomical_specificity_score + context_bonus + synonym_bonus + biopsy_preference + anatomy_preference + vessel_preference + exact_match_bonus +
             diagnostic_penalty + hybrid_modality_penalty
         )
         
@@ -379,6 +380,44 @@ class ScoringEngine:
         for organ, prefs in organ_prefs.items():
             if organ in input_lower: return prefs.get(mod_key, 0.0)
         return default_prefs.get(mod_key, 0.0)
+    
+    def calculate_vessel_type_preference(self, input_exam: str, nhs_entry: dict) -> float:
+        """
+        Applies vessel type preference logic to favor arterial studies when input is generic angiography.
+        
+        Clinical rationale: "angiography" typically refers to arterial imaging. When users order 
+        "CT angiography" without specifying vessel type, they usually mean arterial studies.
+        """
+        vessel_config = self.config.get('vessel_type_preference', {})
+        if not vessel_config.get('enable', False):
+            return 0.0
+            
+        input_lower = input_exam.lower()
+        nhs_fsn_lower = nhs_entry.get('snomed_fsn', '').lower()
+        
+        # Check if input contains generic angiography terms
+        generic_angio_indicators = vessel_config.get('generic_angiography_indicators', [])
+        has_generic_angio = any(indicator in input_lower for indicator in generic_angio_indicators)
+        
+        # Check if input specifically mentions venous intent
+        venous_indicators = vessel_config.get('specific_venous_indicators', [])
+        has_venous_intent = any(indicator in input_lower for indicator in venous_indicators)
+        
+        # If input has specific venous intent, don't apply arterial preference
+        if has_venous_intent:
+            return 0.0
+            
+        # If input has generic angiography terms, apply vessel preference
+        if has_generic_angio:
+            # Check if NHS entry is arterial or venous
+            if any(term in nhs_fsn_lower for term in ['artery', 'arterial', 'arteries']):
+                # Bonus for arterial studies when input is generic angiography
+                return vessel_config.get('arterial_preference_bonus', 0.20)
+            elif any(term in nhs_fsn_lower for term in ['vein', 'venous', 'veins', 'venography']):
+                # Penalty for venous studies when input is generic angiography  
+                return vessel_config.get('venous_penalty', -0.15)
+                
+        return 0.0
         
     def calculate_anatomy_specificity_preference(self, input_components: dict, nhs_entry: dict) -> float:
         if not self.config.get('anatomy_specificity_preference', False): return 0.0

@@ -119,6 +119,33 @@ scoring:
   anatomy_specificity_preference: true
   generic_anatomy_preference_bonus: 0.15
 
+  # --- VESSEL TYPE PREFERENCE ---
+  # CRITICAL: When input says "angiography" (generic), prefer arterial over venous studies
+  # This ensures clinical accuracy as angiography typically refers to arterial imaging
+  vessel_type_preference:
+    enable: true
+    arterial_preference_bonus: 0.20   # Bonus for arterial studies when input is generic "angiography"
+    venous_penalty: -0.15             # Penalty for venous studies when input says "angiography" 
+    generic_angiography_indicators:   # Terms that indicate generic angiography (should prefer arteries)
+      - "angiography"
+      - "angiogram" 
+      - "angio"
+      - "cta"
+      - "ct angiography"
+      - "ct angiogram"
+      - "mr angiography"
+      - "mr angiogram"
+      - "mra"
+    specific_venous_indicators:        # Terms that specifically indicate venous intent
+      - "venography"
+      - "venogram"
+      - "vein"
+      - "venous"
+      - "ctv"
+      - "ct venography"
+      - "mr venography"
+      - "mrv"
+
   # --- ANATOMICAL COMPATIBILITY CONSTRAINTS ---
   # CRITICAL: Blocks anatomically impossible mappings to ensure patient safety.
   anatomical_compatibility_constraints:
