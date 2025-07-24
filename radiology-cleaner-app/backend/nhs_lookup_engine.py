@@ -414,27 +414,51 @@ class NHSLookupEngine:
                     # Add debug information for bilateral peer case
                     if debug:
                         try:
+                            def json_safe(value):
+                                """Ensure value is JSON serializable."""
+                                if value is None:
+                                    return None
+                                elif isinstance(value, (bool, int, str)):
+                                    return value
+                                elif isinstance(value, float):
+                                    # Handle NaN, infinity
+                                    if not (value == value):  # NaN check
+                                        return 0.0
+                                    elif value == float('inf'):
+                                        return 999999.0
+                                    elif value == float('-inf'):
+                                        return -999999.0
+                                    else:
+                                        return float(value)
+                                elif isinstance(value, (list, tuple)):
+                                    return [json_safe(item) for item in value]
+                                elif isinstance(value, dict):
+                                    return {str(k): json_safe(v) for k, v in value.items()}
+                                else:
+                                    return str(value)
+                            
                             debug_candidates = []
                             for i, entry in enumerate(candidate_entries[:25]):
-                                debug_candidates.append({
+                                candidate_data = {
                                     'rank': i + 1,
-                                    'snomed_id': entry.get('snomed_concept_id'),
-                                    'primary_name': entry.get('primary_source_name'),
-                                    'fsn': entry.get('snomed_fsn'),
-                                    'is_complex_fsn': entry.get('_is_complex_fsn', False),
-                                    'final_score': final_scores[i] if i < len(final_scores) else 0.0,
-                                    'rerank_score': rerank_scores[i] if i < len(rerank_scores) else 0.0,
-                                    'component_score': component_scores[i] if i < len(component_scores) else 0.0
-                                })
+                                    'snomed_id': json_safe(entry.get('snomed_concept_id')),
+                                    'primary_name': json_safe(entry.get('primary_source_name')),
+                                    'fsn': json_safe(entry.get('snomed_fsn')),
+                                    'is_complex_fsn': json_safe(entry.get('_is_complex_fsn', False)),
+                                    'final_score': json_safe(final_scores[i] if i < len(final_scores) else 0.0),
+                                    'rerank_score': json_safe(rerank_scores[i] if i < len(rerank_scores) else 0.0),
+                                    'component_score': json_safe(component_scores[i] if i < len(component_scores) else 0.0)
+                                }
+                                debug_candidates.append(candidate_data)
                             
                             result['debug'] = {
-                                'input_simple': is_input_simple,
-                                'complexity_filtering_applied': is_input_simple,
-                                'total_candidates': len(candidate_entries),
+                                'input_simple': json_safe(is_input_simple),
+                                'complexity_filtering_applied': json_safe(is_input_simple),
+                                'total_candidates': json_safe(len(candidate_entries)),
                                 'candidates': debug_candidates,
                                 'note': 'Used bilateral peer for laterality adjustment'
                             }
-                            logger.info(f"[DEBUG] Added bilateral peer debug info with {len(debug_candidates)} candidates")
+                            logger.info(f"[DEBUG] Added JSON-safe bilateral peer debug info with {len(debug_candidates)} candidates")
                         except Exception as e:
                             logger.error(f"[DEBUG] Error creating bilateral peer debug info: {e}")
                             result['debug'] = {'error': f'Debug error: {str(e)}'}
@@ -446,26 +470,50 @@ class NHSLookupEngine:
             # Add debug information if requested
             if debug:
                 try:
+                    def json_safe(value):
+                        """Ensure value is JSON serializable."""
+                        if value is None:
+                            return None
+                        elif isinstance(value, (bool, int, str)):
+                            return value
+                        elif isinstance(value, float):
+                            # Handle NaN, infinity
+                            if not (value == value):  # NaN check
+                                return 0.0
+                            elif value == float('inf'):
+                                return 999999.0
+                            elif value == float('-inf'):
+                                return -999999.0
+                            else:
+                                return float(value)
+                        elif isinstance(value, (list, tuple)):
+                            return [json_safe(item) for item in value]
+                        elif isinstance(value, dict):
+                            return {str(k): json_safe(v) for k, v in value.items()}
+                        else:
+                            return str(value)
+                    
                     debug_candidates = []
                     for i, entry in enumerate(candidate_entries[:25]):  # Top 25 candidates
-                        debug_candidates.append({
+                        candidate_data = {
                             'rank': i + 1,
-                            'snomed_id': entry.get('snomed_concept_id'),
-                            'primary_name': entry.get('primary_source_name'),
-                            'fsn': entry.get('snomed_fsn'),
-                            'is_complex_fsn': entry.get('_is_complex_fsn', False),
-                            'final_score': final_scores[i] if i < len(final_scores) else 0.0,
-                            'rerank_score': rerank_scores[i] if i < len(rerank_scores) else 0.0,
-                            'component_score': component_scores[i] if i < len(component_scores) else 0.0
-                        })
+                            'snomed_id': json_safe(entry.get('snomed_concept_id')),
+                            'primary_name': json_safe(entry.get('primary_source_name')),
+                            'fsn': json_safe(entry.get('snomed_fsn')),
+                            'is_complex_fsn': json_safe(entry.get('_is_complex_fsn', False)),
+                            'final_score': json_safe(final_scores[i] if i < len(final_scores) else 0.0),
+                            'rerank_score': json_safe(rerank_scores[i] if i < len(rerank_scores) else 0.0),
+                            'component_score': json_safe(component_scores[i] if i < len(component_scores) else 0.0)
+                        }
+                        debug_candidates.append(candidate_data)
                     
                     result['debug'] = {
-                        'input_simple': is_input_simple,
-                        'complexity_filtering_applied': is_input_simple,
-                        'total_candidates': len(candidate_entries),
+                        'input_simple': json_safe(is_input_simple),
+                        'complexity_filtering_applied': json_safe(is_input_simple),
+                        'total_candidates': json_safe(len(candidate_entries)),
                         'candidates': debug_candidates
                     }
-                    logger.info(f"[DEBUG] Added debug info with {len(debug_candidates)} candidates")
+                    logger.info(f"[DEBUG] Added JSON-safe debug info with {len(debug_candidates)} candidates")
                 except Exception as e:
                     logger.error(f"[DEBUG] Error creating debug info: {e}")
                     result['debug'] = {'error': f'Debug error: {str(e)}'}
