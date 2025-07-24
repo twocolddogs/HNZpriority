@@ -420,14 +420,12 @@ class NHSLookupEngine:
                 if bilateral_peer := self.find_bilateral_peer(best_match):
                     result = self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=True, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
                     
-                    # Test debug parameter by modifying clean_name for bilateral peer
+                    # Add debug information for bilateral peer case (MUST be after _format_match_result)
                     if debug:
+                        # Test debug parameter by modifying clean_name for bilateral peer
                         result['clean_name'] = result.get('clean_name', '') + ' [DEBUG MODE ACTIVE - BILATERAL]'
                         result['debug_simple'] = 'Debug parameter received successfully (bilateral peer)!'
                         logger.info("[DEBUG] Modified bilateral clean_name and added debug flag")
-                    
-                    # Add debug information for bilateral peer case
-                    if debug:
                         try:
                             def json_safe(value):
                                 """Ensure value is JSON serializable."""
@@ -482,14 +480,12 @@ class NHSLookupEngine:
             
             result = self._format_match_result(best_match, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
             
-            # Test debug parameter by modifying clean_name 
+            # Add debug information if requested (MUST be after _format_match_result)
             if debug:
+                # Test debug parameter by modifying clean_name 
                 result['clean_name'] = result.get('clean_name', '') + ' [DEBUG MODE ACTIVE]'
                 result['debug_simple'] = 'Debug parameter received successfully!'
                 logger.info("[DEBUG] Modified clean_name and added debug flag")
-            
-            # Add debug information if requested
-            if debug:
                 try:
                     def json_safe(value):
                         """Ensure value is JSON serializable."""
