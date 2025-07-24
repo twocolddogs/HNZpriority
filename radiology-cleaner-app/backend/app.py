@@ -925,6 +925,50 @@ def download_batch_results(filename):
         logger.error(f"Error downloading batch results: {e}", exc_info=True)
         return jsonify({"error": "Failed to download file"}), 500
 
+@app.route('/list_batch_results', methods=['GET'])
+def list_batch_results():
+    """
+    List all available batch results files, sorted by modification time (newest first).
+    Returns metadata including filename, creation time, and file size.
+    """
+    try:
+        output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
+        
+        if not os.path.exists(output_dir):
+            return jsonify({"files": []})
+        
+        batch_files = []
+        for filename in os.listdir(output_dir):
+            if filename.startswith('batch_results_') and filename.endswith('.jsonl'):
+                file_path = os.path.join(output_dir, filename)
+                if os.path.isfile(file_path):
+                    try:
+                        stat = os.stat(file_path)
+                        batch_files.append({
+                            "filename": filename,
+                            "modified_time": stat.st_mtime,
+                            "created_time": stat.st_ctime,
+                            "size_bytes": stat.st_size,
+                            "modified_iso": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                            "created_iso": datetime.fromtimestamp(stat.st_ctime).isoformat()
+                        })
+                    except OSError as e:
+                        logger.warning(f"Could not get stats for file {filename}: {e}")
+                        continue
+        
+        # Sort by modification time, newest first
+        batch_files.sort(key=lambda x: x['modified_time'], reverse=True)
+        
+        return jsonify({
+            "files": batch_files,
+            "total_count": len(batch_files),
+            "most_recent": batch_files[0]["filename"] if batch_files else None
+        })
+        
+    except Exception as e:
+        logger.error(f"Error listing batch results: {e}", exc_info=True)
+        return jsonify({"error": "Failed to list batch results"}), 500
+
 if __name__ == '__main__':
     logger.info("Running in local development mode, initializing app immediately.")
     _ensure_app_is_initialized()
