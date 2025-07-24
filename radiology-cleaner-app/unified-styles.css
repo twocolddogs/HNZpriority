@@ -2078,3 +2078,69 @@ a:focus-visible {
   color: var(--color-primary); 
 }
 
+/* ==========================================================================
+   23. Tooltip Styles for Candidates Display
+   ========================================================================== */
+
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+}
+
+.clean-name-hover {
+  cursor: help;
+  border-bottom: 1px dotted var(--color-gray-400);
+}
+
+.tooltip-content {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-gray-900);
+  color: var(--color-white);
+  padding: var(--space-3);
+  border-radius: var(--radius-base);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  min-width: 300px;
+  max-width: 400px;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+
+.tooltip-content::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--color-gray-900);
+}
+
+.tooltip-container:hover .tooltip-content {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-header {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-gray-600);
+  padding-bottom: var(--space-1);
+}
+
+.candidate-item {
+  padding: var(--space-1) 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+.candidate-item .confidence {
+  color: var(--color-gray-300);
+  font-weight: var(--font-weight-medium);
+}
+

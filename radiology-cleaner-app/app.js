@@ -913,18 +913,24 @@ window.addEventListener('DOMContentLoaded', function() {
             const cleanNameCell = row.insertCell();
             
             // Create tooltip content from all_candidates
-            let tooltipContent = '';
-            if (item.all_candidates && item.all_candidates.length > 1) {
-                tooltipContent = 'All Candidates:\n' + 
-                    item.all_candidates.map((candidate, index) => 
-                        `${index + 1}. ${candidate.primary_name} (${candidate.confidence.toFixed(2)})`
-                    ).join('\n');
-            }
-            
             if (item.clean_name && item.clean_name.startsWith('ERROR')) {
                 cleanNameCell.innerHTML = `<span class="error-message">${item.clean_name}</span>`;
+            } else if (item.all_candidates && item.all_candidates.length > 1) {
+                const tooltipHTML = item.all_candidates.map((candidate, index) => 
+                    `<div class="candidate-item">${index + 1}. ${candidate.primary_name} <span class="confidence">(${candidate.confidence.toFixed(2)})</span></div>`
+                ).join('');
+                
+                cleanNameCell.innerHTML = `
+                    <div class="tooltip-container">
+                        <strong class="clean-name-hover">${item.clean_name || 'Unknown'}</strong>
+                        <div class="tooltip-content">
+                            <div class="tooltip-header">All Candidates:</div>
+                            ${tooltipHTML}
+                        </div>
+                    </div>
+                `;
             } else {
-                cleanNameCell.innerHTML = `<strong title="${tooltipContent}" style="cursor: help;">${item.clean_name || 'Unknown'}</strong>`;
+                cleanNameCell.innerHTML = `<strong>${item.clean_name || 'Unknown'}</strong>`;
             }
 
             const snomedFsnCell = row.insertCell();
