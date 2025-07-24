@@ -134,14 +134,11 @@ class ExamPreprocessor:
         """
         
         cleaned = text
-		
-		sorted_abbrevs = sorted(self.medical_abbreviations.items(), key=lambda item: len(item[0]), reverse=True)
-
-        for abbrev, expansion in sorted_abbrevs:
         
-        # Apply all medical abbreviations from config.
+        # Apply all medical abbreviations from config, sorted by length (longest first)
         # It includes special handling for patterns with symbols like '+' or '/'.
-        for abbrev, expansion in self.medical_abbreviations.items():
+        sorted_abbrevs = sorted(self.medical_abbreviations.items(), key=lambda item: len(item[0]), reverse=True)
+        for abbrev, expansion in sorted_abbrevs:
             if any(char in abbrev for char in ['+', '-']):
                 # For abbreviations with + or -, use a flexible pattern that doesn't require word boundaries after the symbol
                 escaped_abbrev = re.escape(abbrev)
@@ -245,7 +242,7 @@ class ExamPreprocessor:
         cleaned = re.sub(r'[\[\]()/]', ' ', cleaned)
         cleaned = cleaned.replace('&', ' and ')
         cleaned = cleaned.replace(',', ' ')
-		cleaned = re.sub(r'\s+and\s+', ' ', cleaned)
+        cleaned = re.sub(r'\s+and\s+', ' ', cleaned)
         
         # Clean up leftover hyphens and dashes more robustly
         cleaned = re.sub(r'\s*-\s*$', '', cleaned)  # Remove trailing dash and whitespace
