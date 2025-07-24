@@ -320,29 +320,32 @@ class NHSLookupEngine:
             
             # Separate candidates by complexity and semantic similarity
             prioritized_candidates = []
-            regular_candidates = []
+            simple_candidates = []
+            complex_candidates = []
             
             for entry in candidate_entries:
                 clean_name = entry.get('_clean_primary_name_for_embedding', '')
                 is_complex_fsn = entry.get('_is_complex_fsn', False)
                 
-                # Check for high semantic similarity (>0.85) to preserve accurate matches
+                # Check for high semantic similarity (>0.70) to preserve accurate matches
                 semantic_similarity = self._calculate_semantic_similarity(input_exam, clean_name)
                 
-                if semantic_similarity > 0.85:
+                if semantic_similarity > 0.70:
                     # High semantic match - preserve regardless of complexity
                     prioritized_candidates.append(entry)
                     logger.debug(f"[COMPLEXITY-FILTER] Preserving high-similarity match: '{clean_name[:30]}' (similarity={semantic_similarity:.3f})")
                 elif not is_complex_fsn:
                     # Simple FSN for simple input - prefer these
-                    regular_candidates.append(entry)
+                    simple_candidates.append(entry)
+                    logger.debug(f"[COMPLEXITY-FILTER] Prioritizing simple FSN: '{clean_name[:30]}'")
                 else:
                     # Complex FSN for simple input - deprioritize but keep available
-                    regular_candidates.append(entry)
+                    complex_candidates.append(entry)
+                    logger.debug(f"[COMPLEXITY-FILTER] Deprioritizing complex FSN: '{clean_name[:30]}'")
             
             # Reorder: high-similarity matches first, then simple FSNs, then complex FSNs
-            candidate_entries = prioritized_candidates + regular_candidates
-            logger.info(f"[COMPLEXITY-FILTER] Reordered candidates: {len(prioritized_candidates)} high-similarity + {len(regular_candidates)} others")
+            candidate_entries = prioritized_candidates + simple_candidates + complex_candidates
+            logger.info(f"[COMPLEXITY-FILTER] Reordered candidates: {len(prioritized_candidates)} high-similarity + {len(simple_candidates)} simple + {len(complex_candidates)} complex")
 
         # === STAGE 2: RERANKING & SCORING ===
         logger.info(f"[V3-PIPELINE] Starting reranking stage with {self.reranker_processor.model_key} ({self.reranker_processor.hf_model_name})")
