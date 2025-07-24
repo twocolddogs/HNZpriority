@@ -372,6 +372,7 @@ class NHSLookupEngine:
         
         component_scores = []
         final_scores = []
+        position_bonuses = []
         
         logger.debug(f"[V3-PIPELINE] Processing {len(candidate_entries)} candidates with weights: reranker={reranker_weight}, component={component_weight}")
         
@@ -386,12 +387,22 @@ class NHSLookupEngine:
             
             # Combine reranker score and component score
             final_score = (reranker_weight * rerank_score) + (component_weight * component_score)
+            
+            # Apply position bonus if complexity filtering was used (respects reordering)
+            position_bonus = 0.0
+            if is_input_simple and len(candidate_entries) > 1:
+                # Earlier positions get higher bonus (0.03 max, decays by 0.003 per position)
+                position_bonus = max(0.0, 0.03 - (i * 0.003))
+                final_score += position_bonus
+                
             final_scores.append(final_score)
+            position_bonuses.append(position_bonus)
             
             if final_score > highest_confidence:
                 highest_confidence = final_score
                 best_match = entry
-                logger.info(f"[V3-PIPELINE] New best match: '{candidate_name[:40]}' (final_score={final_score:.3f})")
+                bonus_info = f" (pos_bonus={position_bonus:.3f})" if position_bonus > 0 else ""
+                logger.info(f"[V3-PIPELINE] New best match: '{candidate_name[:40]}' (final_score={final_score:.3f}{bonus_info})")
             
             logger.debug(f"[V3-PIPELINE] Candidate {i+1}: '{candidate_name[:30]}' - rerank={rerank_score:.3f}, component={component_score:.3f}, final={final_score:.3f} (component_time={component_time:.3f}s)")
         
@@ -463,7 +474,8 @@ class NHSLookupEngine:
                                     'is_complex_fsn': json_safe(entry.get('_is_complex_fsn', False)),
                                     'final_score': json_safe(final_scores[i] if i < len(final_scores) else 0.0),
                                     'rerank_score': json_safe(rerank_scores[i] if i < len(rerank_scores) else 0.0),
-                                    'component_score': json_safe(component_scores[i] if i < len(component_scores) else 0.0)
+                                    'component_score': json_safe(component_scores[i] if i < len(component_scores) else 0.0),
+                                    'position_bonus': json_safe(position_bonuses[i] if i < len(position_bonuses) else 0.0)
                                 }
                                 debug_candidates.append(candidate_data)
                             
@@ -521,7 +533,8 @@ class NHSLookupEngine:
                             'is_complex_fsn': json_safe(entry.get('_is_complex_fsn', False)),
                             'final_score': json_safe(final_scores[i] if i < len(final_scores) else 0.0),
                             'rerank_score': json_safe(rerank_scores[i] if i < len(rerank_scores) else 0.0),
-                            'component_score': json_safe(component_scores[i] if i < len(component_scores) else 0.0)
+                            'component_score': json_safe(component_scores[i] if i < len(component_scores) else 0.0),
+                            'position_bonus': json_safe(position_bonuses[i] if i < len(position_bonuses) else 0.0)
                         }
                         debug_candidates.append(candidate_data)
                     
