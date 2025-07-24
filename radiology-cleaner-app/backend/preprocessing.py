@@ -175,13 +175,13 @@ class ExamPreprocessor:
             str: The exam name with redundant modality mentions removed.
         """
         modality_groups = {
-            'MRI': [r'mr\b', r'mri\b', r'magnetic resonance\b'],
-            'CT': [r'ct\b', r'computed tomography\b'],
-            'US': [r'us\b', r'ultrasound\b', r'sonogram\b'],
-            'XR': [r'xr\b', r'x-ray\b', r'xray\b', r'radiograph\b'],
-            'NM': [r'nm\b', r'nuclear medicine\b', r'spect\b'],
-            'FL': [r'fl\b', r'fluoroscopy\b', r'fluoro\b'],
-            'MG': [r'mg\b', r'mamm\b', r'mammography\b', r'mammogram\b']
+            'MRI': [r'\bmr\b', r'\bmri\b', r'\bmagnetic resonance imaging\b'],
+            'CT': [r'\bct\b', r'\bcomputed tomography\b'],
+            'US': [r'\bus\b', r'\bultrasound\b', r'\bsonogram\b'],
+            'XR': [r'\bxr\b', r'\bx-ray\b', r'\bxray\b', r'\bradiograph\b'],
+            'NM': [r'\bnm\b', r'\bnuclear medicine\b', r'\bspect\b'],
+            'FL': [r'\bfl\b', r'\bfluoroscopy\b', r'\bfluoro\b'],
+            'MG': [r'\bmg\b', r'\bmamm\b', r'\bmammography\b', r'\bmammogram\b']
         }
     
         # Use a copy to modify while iterating
