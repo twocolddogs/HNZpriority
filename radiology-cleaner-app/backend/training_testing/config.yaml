@@ -19,7 +19,7 @@ scoring:
 
   # Number of initial candidates to retrieve from the fast vector search (FAISS).
   # A larger number might find a better match but increases processing time for the scoring stage.
-  retriever_top_k: 20
+  retriever_top_k: 15
 
   # --- COMPONENT WEIGHTS ---
   # These weights determine the importance of each structured part of the exam name when

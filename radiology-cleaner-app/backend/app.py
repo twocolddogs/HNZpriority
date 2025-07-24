@@ -299,6 +299,10 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
         }
     }
     
+    # Always include all candidates for hover functionality
+    if 'all_candidates' in nhs_result:
+        final_result['all_candidates'] = nhs_result['all_candidates']
+    
     # Preserve debug information if it exists in nhs_result
     if debug and 'debug' in nhs_result:
         final_result['debug'] = nhs_result['debug']

@@ -911,7 +911,21 @@ window.addEventListener('DOMContentLoaded', function() {
             row.insertCell().textContent = item.exam_name;
 
             const cleanNameCell = row.insertCell();
-            cleanNameCell.innerHTML = (item.clean_name && item.clean_name.startsWith('ERROR')) ? `<span class="error-message">${item.clean_name}</span>` : `<strong>${item.clean_name || 'Unknown'}</strong>`;
+            
+            // Create tooltip content from all_candidates
+            let tooltipContent = '';
+            if (item.all_candidates && item.all_candidates.length > 1) {
+                tooltipContent = 'All Candidates:\n' + 
+                    item.all_candidates.map((candidate, index) => 
+                        `${index + 1}. ${candidate.primary_name} (${candidate.confidence.toFixed(2)})`
+                    ).join('\n');
+            }
+            
+            if (item.clean_name && item.clean_name.startsWith('ERROR')) {
+                cleanNameCell.innerHTML = `<span class="error-message">${item.clean_name}</span>`;
+            } else {
+                cleanNameCell.innerHTML = `<strong title="${tooltipContent}" style="cursor: help;">${item.clean_name || 'Unknown'}</strong>`;
+            }
 
             const snomedFsnCell = row.insertCell();
             snomedFsnCell.innerHTML = item.snomed?.fsn ? `<div>${item.snomed.fsn}</div>` + (item.snomed.id ? `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.id}</div>` : '') : '<span style="color: #999;">-</span>';

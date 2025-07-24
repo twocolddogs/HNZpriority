@@ -416,6 +416,22 @@ class NHSLookupEngine:
             logger.info(f"  Component scores - Min: {min(component_scores):.3f}, Max: {max(component_scores):.3f}, Avg: {sum(component_scores)/len(component_scores):.3f}")
             logger.info(f"  Final scores - Min: {min(final_scores):.3f}, Max: {max(final_scores):.3f}, Avg: {sum(final_scores)/len(final_scores):.3f}")
 
+        # === PREPARE ALL CANDIDATES FOR OUTPUT ===
+        all_candidates_list = []
+        if candidate_entries and final_scores:
+            scored_candidates_with_details = list(zip(candidate_entries, final_scores))
+            # Sort by final_score (descending)
+            scored_candidates_with_details.sort(key=lambda x: x[1], reverse=True)
+            
+            # Format all 15 candidates for the 'all_candidates' field
+            for entry, final_score in scored_candidates_with_details:
+                all_candidates_list.append({
+                    'snomed_id': entry.get('snomed_concept_id', ''),
+                    'primary_name': entry.get('primary_source_name', ''),
+                    'snomed_fsn': entry.get('snomed_fsn', ''),
+                    'confidence': round(final_score, 2)
+                })
+
         # === RESULT FORMATTING ===
         total_time = time.time() - stage1_start
         
@@ -491,6 +507,7 @@ class NHSLookupEngine:
                             logger.error(f"[DEBUG] Error creating bilateral peer debug info: {e}")
                             result['debug'] = {'error': f'Debug error: {str(e)}'}
                     
+                    result['all_candidates'] = all_candidates_list
                     return result
             
             result = self._format_match_result(best_match, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
@@ -549,10 +566,11 @@ class NHSLookupEngine:
                     logger.error(f"[DEBUG] Error creating debug info: {e}")
                     result['debug'] = {'error': f'Debug error: {str(e)}'}
             
+            result['all_candidates'] = all_candidates_list
             return result
         
         logger.warning(f"[V3-PIPELINE] ❌ No suitable match found in {total_time:.2f}s total")
-        return {'error': 'No suitable match found.', 'confidence': 0.0}
+        return {'error': 'No suitable match found.', 'confidence': 0.0, 'all_candidates': all_candidates_list}
 
     def _calculate_laterality_score(self, input_lat: Optional[str], nhs_lat: Optional[str]) -> float:
         """Calculates a more punitive score for laterality mismatches."""
