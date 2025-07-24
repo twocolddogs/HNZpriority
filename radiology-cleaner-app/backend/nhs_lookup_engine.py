@@ -411,6 +411,11 @@ class NHSLookupEngine:
                 if bilateral_peer := self.find_bilateral_peer(best_match):
                     result = self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=True, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
                     
+                    # Simple debug test for bilateral peer
+                    if debug:
+                        result['debug_simple'] = 'Debug parameter received successfully (bilateral peer)!'
+                        logger.info("[DEBUG] Added simple debug flag to bilateral peer result")
+                    
                     # Add debug information for bilateral peer case
                     if debug:
                         try:
@@ -466,6 +471,11 @@ class NHSLookupEngine:
                     return result
             
             result = self._format_match_result(best_match, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
+            
+            # Simple debug test
+            if debug:
+                result['debug_simple'] = 'Debug parameter received successfully!'
+                logger.info("[DEBUG] Added simple debug flag to result")
             
             # Add debug information if requested
             if debug:
