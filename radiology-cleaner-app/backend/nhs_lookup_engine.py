@@ -485,6 +485,7 @@ class NHSLookupEngine:
                 # Test debug parameter by modifying clean_name 
                 result['clean_name'] = result.get('clean_name', '') + ' [DEBUG MODE ACTIVE]'
                 result['debug_simple'] = 'Debug parameter received successfully!'
+                result['debug_test'] = 'About to create candidates debug info'
                 logger.info("[DEBUG] Modified clean_name and added debug flag")
                 try:
                     def json_safe(value):
