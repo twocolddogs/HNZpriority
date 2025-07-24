@@ -121,7 +121,7 @@ class NHSLookupEngine:
             
             # Calculate binary complexity flag for FSNs at buildtime
             fsn_complexity_score = self.complexity_scorer.calculate_fsn_total_complexity(snomed_fsn_clean)
-            entry["_is_complex_fsn"] = fsn_complexity_score > 0.4  # Binary threshold for complexity
+            entry["_is_complex_fsn"] = fsn_complexity_score > 0.6  # Binary threshold (raised from 0.4 to correctly classify basic procedures)
 
     def _find_local_cache_file(self) -> Optional[str]:
         cache_dir = os.environ.get('RENDER_DISK_PATH', 'embedding-caches')
@@ -482,11 +482,8 @@ class NHSLookupEngine:
             
             # Add debug information if requested (MUST be after _format_match_result)
             if debug:
-                # Test debug parameter by modifying clean_name 
-                result['clean_name'] = result.get('clean_name', '') + ' [DEBUG MODE ACTIVE]'
                 result['debug_simple'] = 'Debug parameter received successfully!'
-                result['debug_test'] = 'About to create candidates debug info'
-                logger.info("[DEBUG] Modified clean_name and added debug flag")
+                logger.info("[DEBUG] Debug mode active - adding candidate analysis")
                 try:
                     def json_safe(value):
                         """Ensure value is JSON serializable."""
