@@ -268,7 +268,7 @@ preprocessing:
     "L spine": "lumbar spine"              
     "T spine": "thoracic spine"            
     "Bone density": "dexa"
-	"Bone density scan": "dexa" 	
+    "Bone density scan": "dexa"
     "Renogram": "renogram"                
     "Xray": "x-ray"                        
 
