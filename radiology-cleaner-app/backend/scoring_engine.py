@@ -373,6 +373,7 @@ class ScoringEngine:
         if 'ct' in nhs_modalities: mod_key = 'ct'
         elif 'us' in nhs_modalities: mod_key = 'us'
         elif 'mri' in nhs_modalities: mod_key = 'mri'
+        elif 'fluoroscopy' in nhs_modalities or 'ir' in nhs_modalities or 'interventional' in nhs_modalities: mod_key = 'fluoroscopy'
         else: return 0.0
         
         for organ, prefs in organ_prefs.items():

@@ -951,7 +951,7 @@ class NHSLookupEngine:
                 modality_key = 'us'
         elif 'mri' in nhs_modalities:
                 modality_key = 'mri'
-        elif 'fluoroscopy' in nhs_modalities:
+        elif 'fluoroscopy' in nhs_modalities or 'ir' in nhs_modalities or 'interventional' in nhs_modalities:
                 modality_key = 'fluoroscopy'
         else:
                 return 0.0
