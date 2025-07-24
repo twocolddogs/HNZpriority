@@ -132,7 +132,12 @@ class ExamPreprocessor:
         Returns:
             str: The exam name with abbreviations expanded.
         """
+        
         cleaned = text
+		
+		sorted_abbrevs = sorted(self.medical_abbreviations.items(), key=lambda item: len(item[0]), reverse=True)
+
+        for abbrev, expansion in sorted_abbrevs:
         
         # Apply all medical abbreviations from config.
         # It includes special handling for patterns with symbols like '+' or '/'.
@@ -240,6 +245,7 @@ class ExamPreprocessor:
         cleaned = re.sub(r'[\[\]()/]', ' ', cleaned)
         cleaned = cleaned.replace('&', ' and ')
         cleaned = cleaned.replace(',', ' ')
+		cleaned = re.sub(r'\s+and\s+', ' ', cleaned)
         
         # Clean up leftover hyphens and dashes more robustly
         cleaned = re.sub(r'\s*-\s*$', '', cleaned)  # Remove trailing dash and whitespace
