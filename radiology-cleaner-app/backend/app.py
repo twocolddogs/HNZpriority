@@ -298,6 +298,15 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             'clinical_context': context_from_input['clinical_context'],
         }
     }
+    
+    # Preserve debug information if it exists in nhs_result
+    if debug and 'debug' in nhs_result:
+        final_result['debug'] = nhs_result['debug']
+    if debug and 'debug_simple' in nhs_result:
+        final_result['debug_simple'] = nhs_result['debug_simple']
+    if debug and 'debug_test' in nhs_result:
+        final_result['debug_test'] = nhs_result['debug_test']
+    
     return final_result
 
 @app.route('/health', methods=['GET'])
