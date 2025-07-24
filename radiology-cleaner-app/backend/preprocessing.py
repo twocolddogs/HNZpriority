@@ -56,8 +56,14 @@ class ExamPreprocessor:
                 config = {}
         
         self.config = config or {}
-        self.medical_abbreviations = self.config.get('medical_abbreviations', {})
-        self.anatomy_synonyms = self.config.get('anatomy_synonyms', {})
+        # Handle both full config and preprocessing-only config
+        if 'preprocessing' in self.config:
+            preprocessing_config = self.config['preprocessing']
+        else:
+            preprocessing_config = self.config
+        
+        self.medical_abbreviations = preprocessing_config.get('medical_abbreviations', {})
+        self.anatomy_synonyms = preprocessing_config.get('anatomy_synonyms', {})
         
         self._init_patterns()
     
