@@ -227,6 +227,9 @@ def _ensure_app_is_initialized():
 
 def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False) -> Dict:
     """Central processing logic for a single exam."""
+    if debug:
+        logger.info(f"[DEBUG-FLOW] process_exam_request received debug=True for exam: {exam_name}")
+    
     _ensure_app_is_initialized()
     if not nhs_lookup_engine or not semantic_parser:
         return {'error': 'Core components not initialized'}
@@ -254,6 +257,8 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
         logger.info(f"🔄 [V3-API] Pipeline: {nhs_lookup_engine.retriever_processor.model_key} → {nhs_lookup_engine.reranker_processor.model_key}")
     
     # V3 Architecture: Use dual-processor pipeline with complexity filtering
+    if debug:
+        logger.info(f"[DEBUG-FLOW] About to call standardize_exam with debug=True, is_input_simple={is_input_simple}")
     nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug)
     
     ### FIX: The context (gender, age, etc.) is a property of the INPUT request, not the matched NHS entry.
