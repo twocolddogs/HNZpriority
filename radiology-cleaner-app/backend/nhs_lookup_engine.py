@@ -431,7 +431,7 @@ class NHSLookupEngine:
             laterally_ambiguous = (not input_laterality and match_laterality in ['left', 'right', 'bilateral'])
             
             if strip_laterality:
-                if bilateral_peer := self.find_bilateral_peer(best_match):
+                if bilateral_peer := self.find_bilateral_peer_in_candidates(best_match, candidate_entries):
                     result = self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=True, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
                     
                     # Add debug information for bilateral peer case (MUST be after _format_match_result)
@@ -729,6 +729,35 @@ class NHSLookupEngine:
                         return entry
 
         return None
+
+    def find_bilateral_peer_in_candidates(self, specific_entry: Dict, candidate_entries: List[Dict]) -> Optional[Dict]:
+        """Find bilateral peer within the filtered candidate entries (respects complexity filtering)."""
+        specific_components = specific_entry.get('_parsed_components')
+        if not specific_components:
+            return None
+        
+        target_modalities = set(specific_components.get('modality', []))
+        target_anatomy = set(specific_components.get('anatomy', []))
+        target_contrasts = set(specific_components.get('contrast', []))
+        target_techniques = set(specific_components.get('technique', []))
+
+        # Search within our filtered candidates first (respects complexity filtering)
+        for entry in candidate_entries:
+            entry_components = entry.get('_parsed_components')
+            if not entry_components:
+                continue
+            entry_laterality = (entry_components.get('laterality') or [None])[0]
+            if entry_laterality not in [None, 'bilateral']:
+                continue
+
+            if (set(entry_components.get('modality', [])) == target_modalities and
+                    set(entry_components.get('anatomy', [])) == target_anatomy and
+                    set(entry_components.get('contrast', [])) == target_contrasts and
+                    set(entry_components.get('technique', [])) == target_techniques):
+                return entry
+
+        # Fallback to original find_bilateral_peer if not found in candidates
+        return self.find_bilateral_peer(specific_entry)
     
     def _calculate_set_score(self, list1: List[str], list2: List[str]) -> float:
         """
