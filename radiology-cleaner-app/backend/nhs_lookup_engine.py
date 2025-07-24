@@ -256,11 +256,16 @@ class NHSLookupEngine:
         """
         if debug:
             logger.info(f"[DEBUG] Debug mode enabled for input: {input_exam}, is_input_simple: {is_input_simple}")
+        
         # === VALIDATION ===
         if not self.retriever_processor or not self.retriever_processor.is_available():
-            return {'error': 'Retriever processor not available', 'confidence': 0.0}
+            result = {'error': 'Retriever processor not available', 'confidence': 0.0}
+            if debug: result['debug_early_exit'] = 'Early exit: Retriever not available'
+            return result
         if not self.reranker_processor or not self.reranker_processor.is_available():
-            return {'error': 'Reranker processor not available', 'confidence': 0.0}
+            result = {'error': 'Reranker processor not available', 'confidence': 0.0}
+            if debug: result['debug_early_exit'] = 'Early exit: Reranker not available'
+            return result
 
         # === STAGE 1: RETRIEVAL (using retriever_processor) ===
         logger.info(f"[V3-PIPELINE] Starting retrieval stage with {self.retriever_processor.model_key} ({self.retriever_processor.hf_model_name})")
@@ -274,12 +279,16 @@ class NHSLookupEngine:
             self._embeddings_loaded = True
         
         if not self.vector_index:
-            return {'error': 'Vector index not loaded.', 'confidence': 0.0}
+            result = {'error': 'Vector index not loaded.', 'confidence': 0.0}
+            if debug: result['debug_early_exit'] = 'Early exit: Vector index not loaded'
+            return result
         
         # Generate embedding for input using retriever
         input_embedding = self.retriever_processor.get_text_embedding(input_exam)
         if input_embedding is None:
-            return {'error': 'Failed to generate embedding for input.', 'confidence': 0.0}
+            result = {'error': 'Failed to generate embedding for input.', 'confidence': 0.0}
+            if debug: result['debug_early_exit'] = 'Early exit: Failed to generate embedding'
+            return result
         
         # Prepare ensemble embedding and search FAISS index
         input_ensemble_embedding = np.concatenate([input_embedding, input_embedding]).astype('float32')
