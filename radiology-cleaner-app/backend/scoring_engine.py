@@ -245,8 +245,30 @@ class ScoringEngine:
         return self.calculate_set_score(input_modality, nhs_modality)
 
     def calculate_contrast_score(self, input_contrast: List[str], nhs_contrast: List[str]) -> float:
-        if not input_contrast and not nhs_contrast: return 1.0
-        if not input_contrast or not nhs_contrast: return self.config.get('contrast_null_score', 0.7)
+        # Both unspecified - perfect match
+        if not input_contrast and not nhs_contrast: 
+            return 1.0
+        
+        # CRITICAL SAFETY: Handle unspecified input contrast preferences
+        if not input_contrast:
+            # Input has no contrast specified
+            if not nhs_contrast:
+                # NHS also has no contrast - perfect match with potential bonus
+                if self.config.get('prefer_no_contrast_when_unspecified', False):
+                    return 1.0 + self.config.get('no_contrast_preference_bonus', 0.25)
+                return 1.0
+            else:
+                # NHS has contrast but input doesn't specify - this is dangerous!
+                # Apply safety penalty to prevent adding contrast when not requested
+                if self.config.get('prefer_no_contrast_when_unspecified', False):
+                    return 0.1  # Heavy penalty for adding contrast when unspecified
+                return self.config.get('contrast_null_score', 0.7)
+        
+        # Input has contrast specified but NHS doesn't
+        if not nhs_contrast:
+            return self.config.get('contrast_null_score', 0.7)
+            
+        # Both have contrast info - check for matches
         input_set, nhs_set = set(input_contrast), set(nhs_contrast)
         if input_set == nhs_set: return 1.0
         if input_set.intersection(nhs_set): return 0.8

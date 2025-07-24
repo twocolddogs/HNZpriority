@@ -581,8 +581,21 @@ class NHSLookupEngine:
                 return 1.0 + self.config.get('no_contrast_preference_bonus', 0.15)
             return 1.0
         
-        # One has contrast info, one doesn't
-        if not input_contrast or not nhs_contrast:
+        # CRITICAL SAFETY: Handle unspecified input contrast
+        if not input_contrast:
+            # Input has no contrast specified
+            if not nhs_contrast:
+                # This case is already handled above
+                return 1.0
+            else:
+                # NHS has contrast but input doesn't specify - this is dangerous!
+                # Apply safety penalty to prevent adding contrast when not requested
+                if self.config.get('prefer_no_contrast_when_unspecified', False):
+                    return 0.1  # Heavy penalty for adding contrast when unspecified
+                return self.config.get('contrast_null_score', 0.7)
+        
+        # Input has contrast specified but NHS doesn't
+        if not nhs_contrast:
             return self.config.get('contrast_null_score', 0.7)
         
         # Both have contrast info - check for matches
