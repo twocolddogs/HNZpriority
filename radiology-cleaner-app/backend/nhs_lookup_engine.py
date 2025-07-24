@@ -121,7 +121,7 @@ class NHSLookupEngine:
             
             # Calculate binary complexity flag for FSNs at buildtime
             fsn_complexity_score = self.complexity_scorer.calculate_fsn_total_complexity(snomed_fsn_clean)
-            entry["_is_complex_fsn"] = fsn_complexity_score > 0.6  # Binary threshold (raised from 0.4 to correctly classify basic procedures)
+            entry["_is_complex_fsn"] = fsn_complexity_score > 0.67  # Binary threshold (0.67 to allow basic anatomy while catching specialized procedures)
 
     def _find_local_cache_file(self) -> Optional[str]:
         cache_dir = os.environ.get('RENDER_DISK_PATH', 'embedding-caches')

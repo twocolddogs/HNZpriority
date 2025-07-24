@@ -506,7 +506,7 @@ def _medical_title_case(text: str) -> str:
     result_words = []
     
     for i, word in enumerate(words):
-        clean_word = re.sub(r'[^\]w]', '', word.lower())
+        clean_word = re.sub(r'[^\w]', '', word.lower())
         
         if clean_word in modalities:
             result_words.append(word.upper())
