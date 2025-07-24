@@ -241,7 +241,8 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             'excluded': True
         }
     
-    cleaned_exam_name = preprocess_exam_name(exam_name)
+    # Use complexity-aware preprocessing
+    cleaned_exam_name, is_input_simple = _preprocessor.preprocess_with_complexity(exam_name)
     parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
     
     # V3 Architecture: Always use the main dual-processor lookup engine
@@ -252,8 +253,8 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
         logger.warning(f"🔄 [V3-API] Model parameter '{nlp_processor.model_key}' ignored - using V3 dual-processor pipeline")
         logger.info(f"🔄 [V3-API] Pipeline: {nhs_lookup_engine.retriever_processor.model_key} → {nhs_lookup_engine.reranker_processor.model_key}")
     
-    # V3 Architecture: Use dual-processor pipeline (custom_nlp_processor parameter deprecated)
-    nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components)
+    # V3 Architecture: Use dual-processor pipeline with complexity filtering
+    nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple)
     
     ### FIX: The context (gender, age, etc.) is a property of the INPUT request, not the matched NHS entry.
     ### We must calculate context here from the cleaned input string to ensure it's always correct.

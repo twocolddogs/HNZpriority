@@ -35,9 +35,9 @@ scoring:
   # V3 Architecture: These weights combine the 'component_score' (rules-based), 'reranker_score' (cross-encoder),
   # and 'complexity_score' (appropriateness matching) to produce the final confidence score.
   weights_final:
-    component: 0.55    # How much to trust the structured component match (rules-based).
-    reranker: 0.45     # How much to trust the MedCPT cross-encoder reranking score.
-    #complexity: 0.15   # How much to trust complexity appropriateness (simple inputs prefer simple FSNs).
+    component: 0.65    # How much to trust the structured component match (rules-based). Increased to counteract reranker dominance.
+    reranker: 0.35     # How much to trust the MedCPT cross-encoder reranking score. Reduced to give component scoring more influence.
+    # complexity: 0.15   # How much to trust complexity appropriateness (simple inputs prefer simple FSNs).
     # frequency: 0.10  # This appears to be a planned or deprecated feature for popularity-based scoring.
 
   # ----------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ scoring:
     enable: true
     # Individual component scores (0.0 to 1.0) must meet these minimums to be considered.
     anatomy_min: 0.1
-    modality_min: 0.6
+    modality_min: 0.35  # Lowered from 0.6 to allow more candidates through for component scoring
     laterality_min: 0.0
     contrast_min: 0.3
     technique_min: 0.0

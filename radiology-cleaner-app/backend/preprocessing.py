@@ -13,7 +13,8 @@ import re
 import logging
 import yaml
 import os
-from typing import Optional
+from typing import Optional, Tuple
+from complexity import ComplexityScorer
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class ExamPreprocessor:
         """
         # The abbreviation_expander is now only used for ordinal normalization.
         self.abbreviation_expander = abbreviation_expander
+        self.complexity_scorer = ComplexityScorer()
         
         # Load configuration for enhanced preprocessing from R2 via ConfigManager
         if config is None:
@@ -356,6 +358,43 @@ class ExamPreprocessor:
         cleaned = self._normalize_whitespace(cleaned) # Final cleanup
         
         return cleaned
+    
+    def preprocess_with_complexity(self, exam_name: str) -> Tuple[str, bool]:
+        """
+        Applies preprocessing and calculates input complexity after abbreviation expansion.
+        
+        This method calculates complexity on the expanded text (after abbreviations are resolved)
+        but before other normalization steps, providing a better assessment of the user's 
+        intended complexity level.
+        
+        Args:
+            exam_name (str): The raw exam name from the source system.
+            
+        Returns:
+            Tuple[str, bool]: (fully_processed_name, is_input_simple)
+                - fully_processed_name: The complete preprocessed exam name
+                - is_input_simple: True if input complexity is low (< 0.3), False otherwise
+        """
+        if not exam_name:
+            return "", True
+        
+        # Apply initial preprocessing steps
+        cleaned = exam_name
+        cleaned = self._remove_no_report_suffix(cleaned)
+        cleaned = self._remove_admin_qualifiers(cleaned)
+        expanded_text = self._expand_abbreviations(cleaned)
+        
+        # Calculate complexity on expanded text (key requirement)
+        input_complexity = self.complexity_scorer.calculate_input_qualifier_complexity(expanded_text)
+        is_input_simple = input_complexity < 0.3
+        
+        # Complete the preprocessing pipeline
+        cleaned = self._deduplicate_modalities(expanded_text)
+        cleaned = self._handle_special_characters(cleaned)
+        cleaned = self._normalize_ordinals(cleaned)
+        cleaned = self._normalize_whitespace(cleaned)
+        
+        return cleaned, is_input_simple
     
     def preprocess_batch(self, exam_names: list) -> list:
         """

@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 from nlp_processor import NLPProcessor
 from context_detection import detect_interventional_procedure_terms
 from preprocessing import get_preprocessor
+from complexity import ComplexityScorer
 
 if TYPE_CHECKING:
     from parser import RadiologySemanticParser
@@ -43,6 +44,7 @@ class NHSLookupEngine:
         self.reranker_processor = reranker_processor  # Can be None during cache building
         self.nlp_processor = retriever_processor  # Backward compatibility
         self.semantic_parser = semantic_parser
+        self.complexity_scorer = ComplexityScorer()
         
         self._load_config_from_manager()
         
@@ -116,6 +118,10 @@ class NHSLookupEngine:
             # These subsequent calls now have the clean names they need to function correctly.
             entry["_interventional_terms"] = detect_interventional_procedure_terms(entry["_clean_primary_name_for_embedding"])
             entry['_parsed_components'] = self.semantic_parser.parse_exam_name(entry["_clean_primary_name_for_embedding"], 'Other')
+            
+            # Calculate binary complexity flag for FSNs at buildtime
+            fsn_complexity_score = self.complexity_scorer.calculate_fsn_total_complexity(snomed_fsn_clean)
+            entry["_is_complex_fsn"] = fsn_complexity_score > 0.4  # Binary threshold for complexity
 
     def _find_local_cache_file(self) -> Optional[str]:
         cache_dir = os.environ.get('RENDER_DISK_PATH', 'embedding-caches')
@@ -137,6 +143,19 @@ class NHSLookupEngine:
                 logger.critical(f"CRITICAL: Failed to load FAISS index from '{local_cache_path}': {e}.")
         else:
             logger.critical(f"CRITICAL: Cache not found on local disk for model '{self.retriever_processor.model_key}'.")
+
+    def _calculate_semantic_similarity(self, text1: str, text2: str) -> float:
+        """Calculate semantic similarity between two texts using fuzzy string matching."""
+        if not text1 or not text2:
+            return 0.0
+        
+        # Normalize texts for comparison
+        norm_text1 = text1.lower().strip()
+        norm_text2 = text2.lower().strip()
+        
+        # Use fuzzy ratio for semantic similarity approximation
+        similarity = fuzz.ratio(norm_text1, norm_text2) / 100.0
+        return similarity
 
     def _calculate_component_score(self, input_exam_text: str, input_components: Dict, nhs_entry: Dict) -> float:
         """
@@ -228,7 +247,7 @@ class NHSLookupEngine:
         final_component_score = component_score + bonus_score
         return max(0.0, min(1.0, final_component_score))
 
-    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None) -> Dict:
+    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None, is_input_simple: bool = False) -> Dict:
         """
         V3 Two-Stage Pipeline: Retrieve candidates with BioLORD, then rerank with MedCPT + component scoring.
         
@@ -284,6 +303,36 @@ class NHSLookupEngine:
         retrieval_scores = [float(distances[0][i]) for i in range(min(len(distances[0]), len(candidate_entries)))]
         logger.debug(f"[V3-PIPELINE] Retrieval scores - Min: {min(retrieval_scores):.3f}, Max: {max(retrieval_scores):.3f}, Avg: {sum(retrieval_scores)/len(retrieval_scores):.3f}")
 
+        # === COMPLEXITY FILTERING (Between Stage 1 and 2) ===
+        if is_input_simple and len(candidate_entries) > 1:
+            logger.info(f"[COMPLEXITY-FILTER] Input is simple - applying complexity-based filtering to {len(candidate_entries)} candidates")
+            
+            # Separate candidates by complexity and semantic similarity
+            prioritized_candidates = []
+            regular_candidates = []
+            
+            for entry in candidate_entries:
+                clean_name = entry.get('_clean_primary_name_for_embedding', '')
+                is_complex_fsn = entry.get('_is_complex_fsn', False)
+                
+                # Check for high semantic similarity (>0.85) to preserve accurate matches
+                semantic_similarity = self._calculate_semantic_similarity(input_exam, clean_name)
+                
+                if semantic_similarity > 0.85:
+                    # High semantic match - preserve regardless of complexity
+                    prioritized_candidates.append(entry)
+                    logger.debug(f"[COMPLEXITY-FILTER] Preserving high-similarity match: '{clean_name[:30]}' (similarity={semantic_similarity:.3f})")
+                elif not is_complex_fsn:
+                    # Simple FSN for simple input - prefer these
+                    regular_candidates.append(entry)
+                else:
+                    # Complex FSN for simple input - deprioritize but keep available
+                    regular_candidates.append(entry)
+            
+            # Reorder: high-similarity matches first, then simple FSNs, then complex FSNs
+            candidate_entries = prioritized_candidates + regular_candidates
+            logger.info(f"[COMPLEXITY-FILTER] Reordered candidates: {len(prioritized_candidates)} high-similarity + {len(regular_candidates)} others")
+
         # === STAGE 2: RERANKING & SCORING ===
         logger.info(f"[V3-PIPELINE] Starting reranking stage with {self.reranker_processor.model_key} ({self.reranker_processor.hf_model_name})")
         stage2_start = time.time()
@@ -304,8 +353,8 @@ class NHSLookupEngine:
         highest_confidence = -1.0
         
         wf = self.config['weights_final']
-        reranker_weight = wf.get('reranker', 0.60)  # Updated from 'semantic' to 'reranker'
-        component_weight = wf.get('component', 0.40)
+        reranker_weight = wf.get('reranker', 0.45)  # Read from config, default matches config.yaml
+        component_weight = wf.get('component', 0.55)  # Read from config, default matches config.yaml
         
         component_scores = []
         final_scores = []
