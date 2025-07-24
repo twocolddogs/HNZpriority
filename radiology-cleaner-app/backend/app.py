@@ -225,7 +225,7 @@ def _ensure_app_is_initialized():
             _initialize_app()
             _app_initialized = True
 
-def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor) -> Dict:
+def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False) -> Dict:
     """Central processing logic for a single exam."""
     _ensure_app_is_initialized()
     if not nhs_lookup_engine or not semantic_parser:
@@ -254,7 +254,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
         logger.info(f"🔄 [V3-API] Pipeline: {nhs_lookup_engine.retriever_processor.model_key} → {nhs_lookup_engine.reranker_processor.model_key}")
     
     # V3 Architecture: Use dual-processor pipeline with complexity filtering
-    nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple)
+    nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug)
     
     ### FIX: The context (gender, age, etc.) is a property of the INPUT request, not the matched NHS entry.
     ### We must calculate context here from the cleaned input string to ensure it's always correct.
@@ -527,6 +527,7 @@ def parse_enhanced():
         exam_name = data['exam_name']
         modality_code = data.get('modality_code')
         model = data.get('model', 'default')
+        debug = data.get('debug', False)  # Add debug parameter
         
         selected_nlp_processor = _get_nlp_processor(model)
         if not selected_nlp_processor:
@@ -534,7 +535,7 @@ def parse_enhanced():
         
         logger.info(f"Using model '{model}' for exam: {exam_name}")
         
-        result = process_exam_request(exam_name, modality_code, selected_nlp_processor)
+        result = process_exam_request(exam_name, modality_code, selected_nlp_processor, debug=debug)
         
         result['metadata'] = {
             'processing_time_ms': int((time.time() - start_time) * 1000),

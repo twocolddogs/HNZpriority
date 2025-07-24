@@ -247,7 +247,7 @@ class NHSLookupEngine:
         final_component_score = component_score + bonus_score
         return max(0.0, min(1.0, final_component_score))
 
-    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None, is_input_simple: bool = False) -> Dict:
+    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None, is_input_simple: bool = False, debug: bool = False) -> Dict:
         """
         V3 Two-Stage Pipeline: Retrieve candidates with BioLORD, then rerank with MedCPT + component scoring.
         
@@ -407,9 +407,58 @@ class NHSLookupEngine:
             
             if strip_laterality:
                 if bilateral_peer := self.find_bilateral_peer(best_match):
-                    return self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=True, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
+                    result = self._format_match_result(bilateral_peer, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=True, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
+                    
+                    # Add debug information for bilateral peer case
+                    if debug:
+                        debug_candidates = []
+                        for i, entry in enumerate(candidate_entries[:25]):
+                            debug_candidates.append({
+                                'rank': i + 1,
+                                'snomed_id': entry.get('snomed_concept_id'),
+                                'primary_name': entry.get('primary_source_name'),
+                                'fsn': entry.get('snomed_fsn'),
+                                'is_complex_fsn': entry.get('_is_complex_fsn', False),
+                                'final_score': final_scores[i] if i < len(final_scores) else 0.0,
+                                'rerank_score': rerank_scores[i] if i < len(rerank_scores) else 0.0,
+                                'component_score': component_scores[i] if i < len(component_scores) else 0.0
+                            })
+                        
+                        result['debug'] = {
+                            'input_simple': is_input_simple,
+                            'complexity_filtering_applied': is_input_simple,
+                            'total_candidates': len(candidate_entries),
+                            'candidates': debug_candidates,
+                            'note': 'Used bilateral peer for laterality adjustment'
+                        }
+                    
+                    return result
             
-            return self._format_match_result(best_match, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
+            result = self._format_match_result(best_match, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
+            
+            # Add debug information if requested
+            if debug:
+                debug_candidates = []
+                for i, entry in enumerate(candidate_entries[:25]):  # Top 25 candidates
+                    debug_candidates.append({
+                        'rank': i + 1,
+                        'snomed_id': entry.get('snomed_concept_id'),
+                        'primary_name': entry.get('primary_source_name'),
+                        'fsn': entry.get('snomed_fsn'),
+                        'is_complex_fsn': entry.get('_is_complex_fsn', False),
+                        'final_score': final_scores[i] if i < len(final_scores) else 0.0,
+                        'rerank_score': rerank_scores[i] if i < len(rerank_scores) else 0.0,
+                        'component_score': component_scores[i] if i < len(component_scores) else 0.0
+                    })
+                
+                result['debug'] = {
+                    'input_simple': is_input_simple,
+                    'complexity_filtering_applied': is_input_simple,
+                    'total_candidates': len(candidate_entries),
+                    'candidates': debug_candidates
+                }
+            
+            return result
         
         logger.warning(f"[V3-PIPELINE] ❌ No suitable match found in {total_time:.2f}s total")
         return {'error': 'No suitable match found.', 'confidence': 0.0}
