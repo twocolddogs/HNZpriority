@@ -254,6 +254,8 @@ class NHSLookupEngine:
         Stage 1 (Retrieval): Use retriever_processor (BioLORD) to get top-k candidates via FAISS
         Stage 2 (Reranking): Use reranker_processor (MedCPT) + component scoring to find best match
         """
+        if debug:
+            logger.info(f"[DEBUG] Debug mode enabled for input: {input_exam}, is_input_simple: {is_input_simple}")
         # === VALIDATION ===
         if not self.retriever_processor or not self.retriever_processor.is_available():
             return {'error': 'Retriever processor not available', 'confidence': 0.0}
@@ -411,26 +413,31 @@ class NHSLookupEngine:
                     
                     # Add debug information for bilateral peer case
                     if debug:
-                        debug_candidates = []
-                        for i, entry in enumerate(candidate_entries[:25]):
-                            debug_candidates.append({
-                                'rank': i + 1,
-                                'snomed_id': entry.get('snomed_concept_id'),
-                                'primary_name': entry.get('primary_source_name'),
-                                'fsn': entry.get('snomed_fsn'),
-                                'is_complex_fsn': entry.get('_is_complex_fsn', False),
-                                'final_score': final_scores[i] if i < len(final_scores) else 0.0,
-                                'rerank_score': rerank_scores[i] if i < len(rerank_scores) else 0.0,
-                                'component_score': component_scores[i] if i < len(component_scores) else 0.0
-                            })
-                        
-                        result['debug'] = {
-                            'input_simple': is_input_simple,
-                            'complexity_filtering_applied': is_input_simple,
-                            'total_candidates': len(candidate_entries),
-                            'candidates': debug_candidates,
-                            'note': 'Used bilateral peer for laterality adjustment'
-                        }
+                        try:
+                            debug_candidates = []
+                            for i, entry in enumerate(candidate_entries[:25]):
+                                debug_candidates.append({
+                                    'rank': i + 1,
+                                    'snomed_id': entry.get('snomed_concept_id'),
+                                    'primary_name': entry.get('primary_source_name'),
+                                    'fsn': entry.get('snomed_fsn'),
+                                    'is_complex_fsn': entry.get('_is_complex_fsn', False),
+                                    'final_score': final_scores[i] if i < len(final_scores) else 0.0,
+                                    'rerank_score': rerank_scores[i] if i < len(rerank_scores) else 0.0,
+                                    'component_score': component_scores[i] if i < len(component_scores) else 0.0
+                                })
+                            
+                            result['debug'] = {
+                                'input_simple': is_input_simple,
+                                'complexity_filtering_applied': is_input_simple,
+                                'total_candidates': len(candidate_entries),
+                                'candidates': debug_candidates,
+                                'note': 'Used bilateral peer for laterality adjustment'
+                            }
+                            logger.info(f"[DEBUG] Added bilateral peer debug info with {len(debug_candidates)} candidates")
+                        except Exception as e:
+                            logger.error(f"[DEBUG] Error creating bilateral peer debug info: {e}")
+                            result['debug'] = {'error': f'Debug error: {str(e)}'}
                     
                     return result
             
@@ -438,25 +445,30 @@ class NHSLookupEngine:
             
             # Add debug information if requested
             if debug:
-                debug_candidates = []
-                for i, entry in enumerate(candidate_entries[:25]):  # Top 25 candidates
-                    debug_candidates.append({
-                        'rank': i + 1,
-                        'snomed_id': entry.get('snomed_concept_id'),
-                        'primary_name': entry.get('primary_source_name'),
-                        'fsn': entry.get('snomed_fsn'),
-                        'is_complex_fsn': entry.get('_is_complex_fsn', False),
-                        'final_score': final_scores[i] if i < len(final_scores) else 0.0,
-                        'rerank_score': rerank_scores[i] if i < len(rerank_scores) else 0.0,
-                        'component_score': component_scores[i] if i < len(component_scores) else 0.0
-                    })
-                
-                result['debug'] = {
-                    'input_simple': is_input_simple,
-                    'complexity_filtering_applied': is_input_simple,
-                    'total_candidates': len(candidate_entries),
-                    'candidates': debug_candidates
-                }
+                try:
+                    debug_candidates = []
+                    for i, entry in enumerate(candidate_entries[:25]):  # Top 25 candidates
+                        debug_candidates.append({
+                            'rank': i + 1,
+                            'snomed_id': entry.get('snomed_concept_id'),
+                            'primary_name': entry.get('primary_source_name'),
+                            'fsn': entry.get('snomed_fsn'),
+                            'is_complex_fsn': entry.get('_is_complex_fsn', False),
+                            'final_score': final_scores[i] if i < len(final_scores) else 0.0,
+                            'rerank_score': rerank_scores[i] if i < len(rerank_scores) else 0.0,
+                            'component_score': component_scores[i] if i < len(component_scores) else 0.0
+                        })
+                    
+                    result['debug'] = {
+                        'input_simple': is_input_simple,
+                        'complexity_filtering_applied': is_input_simple,
+                        'total_candidates': len(candidate_entries),
+                        'candidates': debug_candidates
+                    }
+                    logger.info(f"[DEBUG] Added debug info with {len(debug_candidates)} candidates")
+                except Exception as e:
+                    logger.error(f"[DEBUG] Error creating debug info: {e}")
+                    result['debug'] = {'error': f'Debug error: {str(e)}'}
             
             return result
         
