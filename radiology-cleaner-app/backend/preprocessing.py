@@ -181,9 +181,24 @@ class ExamPreprocessor:
             'XR': [r'\bxr\b', r'\bx-ray\b', r'\bxray\b', r'\bradiograph\b'],
             'NM': [r'\bnm\b', r'\bnuclear medicine\b', r'\bspect\b'],
             'FL': [r'\bfl\b', r'\bfluoroscopy\b', r'\bfluoro\b'],
-            'MG': [r'\bmg\b', r'\bmamm\b', r'\bmammography\b', r'\bmammogram\b']
+            'MG': [r'\bmg\b', r'\bmamm\b', r'\bmammography\b', r'\bmammogram\b'],
+            'PET': [r'\bpet\b', r'\bpositron emission tomography\b']
         }
     
+        # CRITICAL: Preserve hybrid modalities (PET/CT, PET/MRI, etc.)
+        # Check for hybrid patterns first and skip deduplication if found
+        hybrid_patterns = [
+            r'\bpet/ct\b', r'\bpet-ct\b', r'\bpet ct\b',
+            r'\bpet/mri\b', r'\bpet-mri\b', r'\bpet mri\b',
+            r'\bspect/ct\b', r'\bspect-ct\b', r'\bspect ct\b'
+        ]
+        
+        text_lower = text.lower()
+        for hybrid_pattern in hybrid_patterns:
+            if re.search(hybrid_pattern, text_lower):
+                # Don't apply modality deduplication to hybrid scans
+                return self._normalize_whitespace(text)
+        
         # Use a copy to modify while iterating
         cleaned_text = text
         for primary_modality, patterns in modality_groups.items():
