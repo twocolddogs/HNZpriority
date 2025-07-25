@@ -250,17 +250,17 @@ class ScalableTrainingFramework:
         start_time = time.time()
         
         # Initialize processing components for this chunk
-        # V3 Architecture: Initialize dual processors for training
+        # V4 Architecture: Initialize retriever and reranker manager for training
         retriever_processor = NLPProcessor(model_key='default')  # BioLORD for retrieval
-        reranker_processor = NLPProcessor(model_key='experimental')  # MedCPT for reranking
+        from reranker_manager import RerankerManager
+        reranker_manager = RerankerManager()  # Manage multiple rerankers
         semantic_parser = RadiologySemanticParser(nlp_processor=retriever_processor)  # Use retriever for parsing
         
         nhs_engine = NHSLookupEngine(
             nhs_json_path='core/NHS.json',
             retriever_processor=retriever_processor,
-            reranker_processor=reranker_processor,
-            semantic_parser=semantic_parser,
-            config_path=self.config_path
+            reranker_manager=reranker_manager,
+            semantic_parser=semantic_parser
         )
         
         logger.info(f"Processing chunk {chunk_number} with {len(chunk)} cases")

@@ -91,13 +91,13 @@ def build_and_upload_cache_for_model(model_key: str, nlp_processor, r2_manager, 
         contrast_mapper=contrast_mapper
     )
 
-    # 5. Initialize the NHSLookupEngine for cache building (V3 architecture)
+    # 5. Initialize the NHSLookupEngine for cache building (V4 architecture)
     # For cache building, we only need the retriever processor since we're building the FAISS index
-    # We pass None for reranker to avoid initializing the cross-encoder during cache building
+    # We pass None for reranker_manager to avoid initializing rerankers during cache building
     engine = NHSLookupEngine(
         nhs_json_path=nhs_json_path,
         retriever_processor=nlp_processor,  # This is the processor we're building cache for
-        reranker_processor=None,  # None during cache building to avoid cross-encoder initialization
+        reranker_manager=None,  # None during cache building to avoid reranker initialization
         semantic_parser=semantic_parser
     )
     
