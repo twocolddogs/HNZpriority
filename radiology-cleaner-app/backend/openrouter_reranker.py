@@ -143,25 +143,41 @@ class OpenRouterReranker:
         for i, doc in enumerate(documents, 1):
             candidates_text += f"{i}. {doc}\n"
         
-        prompt = f"""You are a medical imaging specialist tasked with ranking radiology exam names by semantic similarity.
+        prompt = f"""You are a medical imaging specialist helping standardize radiology exam names to NHS codes.
 
-Given this input exam name: "{query}"
+TASK: Rank these candidate NHS exams from most to least appropriate for the input exam.
 
-Rank these NHS standard exam names by how well they match the input exam (1 = best match):
+INPUT EXAM: "{query}"
 
+CANDIDATES:
 {candidates_text}
 
-IMPORTANT: 
-- Consider medical terminology, anatomy, imaging modality, and clinical context
-- "CT" = "CAT" = Computed Tomography 
-- "MR" = "MRI" = Magnetic Resonance Imaging
-- Consider anatomical synonyms (e.g., "brain" = "head", "cardiac" = "heart")
-- Prioritize exact clinical matches over partial matches
+RANKING CRITERIA:
+1. **Anatomical match** - exact anatomy > broader anatomy > related anatomy
+2. **Modality match** - CT/MRI/US/X-ray must match exactly 
+3. **Contrast match** - with/without contrast must align
+4. **Laterality match** - left/right/bilateral specificity
+5. **Clinical appropriateness** - diagnostic vs interventional context
+6. **Complexity match** - simple exams should map to simple codes
 
-Respond with ONLY a JSON array of scores from 0.0 to 1.0, where 1.0 is perfect match:
-[score1, score2, score3, ...]
+RESPONSE FORMAT:
+Return ONLY a JSON array of the candidate numbers in ranked order (best first):
+[candidate_number, candidate_number, ...]
 
-Example response: [0.95, 0.3, 0.8, 0.1, 0.6]"""
+EXAMPLES:
+Input: "CT chest with contrast"
+Candidates: 
+1. CT Chest with IV Contrast
+2. CT Thorax without Contrast  
+3. MRI Chest with Contrast
+Response: [1, 3, 2]
+
+Input: "Left knee MRI" 
+Candidates:
+1. MRI Knee Bilateral
+2. MRI Left Knee
+3. MRI Right Knee
+Response: [2, 1, 3]"""
 
         return prompt
     
@@ -230,57 +246,63 @@ Example response: [0.95, 0.3, 0.8, 0.1, 0.6]"""
     
     def _parse_scores_from_response(self, response: str, expected_count: int) -> List[float]:
         """
-        Parse similarity scores from LLM response.
+        Parse ranking from LLM response and convert to similarity scores.
         
         Args:
-            response: Raw LLM response text
+            response: Raw LLM response text containing ranked candidate numbers
             expected_count: Expected number of scores
             
         Returns:
-            List of normalized scores (0.0-1.0)
+            List of normalized scores (0.0-1.0) based on ranking
         """
         try:
             # Try to find JSON array in response
             import re
             
-            # Look for JSON array pattern
-            json_match = re.search(r'\[[\d\.,\s]+\]', response)
+            # Look for JSON array pattern with candidate numbers
+            json_match = re.search(r'\[[^\]]+\]', response)
             if json_match:
                 json_str = json_match.group(0)
-                scores = json.loads(json_str)
+                ranking = json.loads(json_str)
                 
-                if isinstance(scores, list) and len(scores) == expected_count:
-                    # Normalize scores to 0.0-1.0 range
-                    normalized_scores = []
-                    for score in scores:
+                if isinstance(ranking, list) and len(ranking) == expected_count:
+                    # Convert ranking to scores (1st place = highest score)
+                    scores = [0.0] * expected_count
+                    for rank_position, candidate_num in enumerate(ranking):
                         try:
-                            normalized_score = max(0.0, min(1.0, float(score)))
-                            normalized_scores.append(normalized_score)
-                        except (ValueError, TypeError):
-                            normalized_scores.append(0.5)  # Default fallback
+                            candidate_index = int(candidate_num) - 1  # Convert to 0-based index
+                            if 0 <= candidate_index < expected_count:
+                                # Linear scoring: 1st place = 1.0, last place = 0.1
+                                score = 1.0 - (rank_position * 0.9 / (expected_count - 1)) if expected_count > 1 else 1.0
+                                scores[candidate_index] = max(0.1, score)
+                        except (ValueError, TypeError, IndexError):
+                            logger.warning(f"[OPENROUTER] Invalid candidate number in ranking: {candidate_num}")
                     
-                    logger.debug(f"[OPENROUTER] Parsed {len(normalized_scores)} scores successfully")
-                    return normalized_scores
+                    logger.debug(f"[OPENROUTER] Converted ranking {ranking} to scores successfully")
+                    return scores
             
-            # Fallback: try to extract numbers from response
-            numbers = re.findall(r'0?\.\d+|\d+\.?\d*', response)
+            # Fallback: try to extract ranking numbers from response
+            numbers = re.findall(r'\b\d+\b', response)
             if len(numbers) == expected_count:
-                normalized_scores = []
-                for num_str in numbers:
+                scores = [0.0] * expected_count
+                for rank_position, num_str in enumerate(numbers):
                     try:
-                        score = max(0.0, min(1.0, float(num_str)))
-                        normalized_scores.append(score)
-                    except (ValueError, TypeError):
-                        normalized_scores.append(0.5)
+                        candidate_index = int(num_str) - 1  # Convert to 0-based index
+                        if 0 <= candidate_index < expected_count:
+                            # Linear scoring: 1st place = 1.0, last place = 0.1
+                            score = 1.0 - (rank_position * 0.9 / (expected_count - 1)) if expected_count > 1 else 1.0
+                            scores[candidate_index] = max(0.1, score)
+                    except (ValueError, TypeError, IndexError):
+                        logger.warning(f"[OPENROUTER] Invalid candidate number: {num_str}")
                 
-                logger.debug(f"[OPENROUTER] Extracted {len(normalized_scores)} scores from text")
-                return normalized_scores
+                logger.debug(f"[OPENROUTER] Extracted ranking from text and converted to scores")
+                return scores
             
-            logger.warning(f"[OPENROUTER] Could not parse scores from response: {response[:200]}...")
+            logger.warning(f"[OPENROUTER] Could not parse ranking from response: {response[:200]}...")
             return [0.5] * expected_count
             
         except Exception as e:
-            logger.error(f"[OPENROUTER] Score parsing error: {e}")
+            logger.error(f"[OPENROUTER] Ranking parsing error: {e}")
             return [0.5] * expected_count
     
     def test_connection(self) -> bool:

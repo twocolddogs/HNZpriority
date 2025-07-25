@@ -398,9 +398,14 @@ class NHSLookupEngine:
             final_score = (reranker_weight * rerank_score) + (component_weight * component_score)
             
             # Apply position bonus if complexity filtering was used (respects reordering)
+            # Only apply for non-prompt based models (HuggingFace), not for LLM rerankers
             position_bonus = 0.0
-            if is_input_simple and len(candidate_entries) > 1:
+            reranker_info = self.reranker_manager.get_available_rerankers().get(reranker_key, {})
+            is_openrouter_model = reranker_info.get('type') == 'openrouter'
+            
+            if is_input_simple and len(candidate_entries) > 1 and not is_openrouter_model:
                 # Earlier positions get higher bonus (0.03 max, decays by 0.003 per position)
+                # Skip for OpenRouter LLMs as they handle complexity in their own scoring
                 position_bonus = max(0.0, 0.03 - (i * 0.003))
                 final_score += position_bonus
                 

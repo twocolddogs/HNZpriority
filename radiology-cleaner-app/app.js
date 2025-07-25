@@ -483,7 +483,7 @@ window.addEventListener('DOMContentLoaded', function() {
             rerankerWrapper.style.cssText = 'display: flex; align-items: center; gap: 15px; margin-bottom: 10px;';
             
             const button = document.createElement('button');
-            button.className = `button secondary reranker-toggle ${rerankerKey === currentReranker ? 'active' : ''}`;
+            button.className = `button reranker-toggle ${rerankerKey === currentReranker ? 'active' : ''}`;
             button.id = `${rerankerKey}RerankerBtn`;
             button.dataset.reranker = rerankerKey;
             button.style.cssText = 'min-width: 180px; flex-shrink: 0;';
@@ -1073,13 +1073,14 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- CONSOLIDATED VIEW FUNCTIONS ---
     let consolidatedData = [];
     let filteredConsolidatedData = [];
-    
+
     function generateConsolidatedResults(mappings) {
         const consolidatedGroups = {};
         mappings.forEach(m => {
             if (!m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const group = consolidatedGroups[m.clean_name] || {
                 cleanName: m.clean_name,
+                snomed: m.snomed, // Add snomed info
                 sourceCodes: [],
                 totalCount: 0,
                 components: m.components,
@@ -1095,7 +1096,7 @@ window.addEventListener('DOMContentLoaded', function() {
         
         consolidatedData = Object.values(consolidatedGroups).map(group => {
             const totalConfidence = group.sourceCodes.reduce((sum, code) => sum + (code.components?.confidence || 0), 0);
-            group.avgConfidence = totalConfidence / group.sourceCodes.length;
+            group.avgConfidence = group.sourceCodes.length > 0 ? totalConfidence / group.sourceCodes.length : 0;
             return group;
         });
 
@@ -1119,7 +1120,17 @@ window.addEventListener('DOMContentLoaded', function() {
             displayConsolidatedResults();
         }
     }
-    
+
+    function toggleOriginalCodes(headerElement) {
+        const groupElement = headerElement.closest('.consolidated-group');
+        const codesContainer = groupElement.querySelector('.original-codes-container');
+        if (codesContainer) {
+            const isHidden = codesContainer.style.display === 'none';
+            codesContainer.style.display = isHidden ? 'block' : 'none';
+            headerElement.classList.toggle('expanded', isHidden);
+        }
+    }
+
     function displayConsolidatedResults() {
         const container = document.getElementById('consolidatedResults');
         container.innerHTML = '';
@@ -1130,10 +1141,26 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidencePercent = Math.round(group.avgConfidence * 100);
             const confidenceClass = group.avgConfidence >= 0.8 ? 'confidence-high' : group.avgConfidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             
+            const snomedId = group.snomed && group.snomed.id ? `(${group.snomed.id})` : '';
+            
+            const originalCodesList = group.sourceCodes.map(code =>
+                `<li class="original-code-item">
+                    <span class="original-code-source" style="background-color: ${getSourceColor(code.data_source)}" title="${getSourceDisplayName(code.data_source)}"></span>
+                    <span class="original-code-name">${code.exam_name}</span>
+                    <span class="original-code-details">(${code.exam_code})</span>
+                </li>`
+            ).join('');
+
             groupElement.innerHTML = `
-                <div class="consolidated-header">
-                    <div class="consolidated-title">${group.cleanName}</div>
-                    <div class="consolidated-count">${group.totalCount} codes</div>
+                <div class="consolidated-header" onclick="toggleOriginalCodes(this)">
+                    <div class="consolidated-title-container">
+                        <div class="consolidated-title">${group.cleanName}</div>
+                        ${snomedId ? `<div class="snomed-code">${snomedId}</div>` : ''}
+                    </div>
+                    <div class="consolidated-count-container">
+                        <span class="consolidated-count">${group.totalCount} codes</span>
+                        <span class="expand-icon"></span>
+                    </div>
                 </div>
                 <div class="consolidated-body">
                     <div class="consolidated-meta">
@@ -1141,6 +1168,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div class="meta-item"><strong>Modalities</strong><div class="modality-list">${Array.from(group.modalities).join(', ')}</div></div>
                         <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div></div>
                         <div class="meta-item"><strong>Parsed Components</strong><div class="component-tags">${generateComponentTags(group.components)}</div></div>
+                    </div>
+                    <div class="original-codes-container" style="display: none;">
+                        <ul class="original-codes-list">${originalCodesList}</ul>
                     </div>
                 </div>`;
             container.appendChild(groupElement);
