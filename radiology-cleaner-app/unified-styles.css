@@ -2176,19 +2176,17 @@ a:focus-visible {
 .tooltip-content {
   visibility: hidden;
   opacity: 0;
-  position: absolute;
-  top: 50%;
-  left: calc(100% + 10px);
-  transform: translateY(-50%);
+  position: fixed;
   background-color: var(--color-gray-900);
   color: var(--color-white);
   padding: var(--space-3);
   border-radius: var(--radius-base);
   box-shadow: var(--shadow-lg);
-  z-index: 1000;
+  z-index: var(--z-tooltip);
   min-width: 300px;
   max-width: 400px;
   transition: opacity 0.3s, visibility 0.3s;
+  pointer-events: none;
 }
 
 .tooltip-content::after {

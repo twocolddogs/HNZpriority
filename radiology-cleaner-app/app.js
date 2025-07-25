@@ -390,9 +390,10 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function loadAvailableModels() {
+    async function loadAvailableModels(retryCount = 0) {
         try {
-            const response = await fetch(MODELS_URL, { method: 'GET' });
+            console.log(`Loading available models (attempt ${retryCount + 1})`);
+            const response = await fetch(MODELS_URL, { method: 'GET', timeout: 10000 });
             if (response.ok) {
                 const modelsData = await response.json();
                 availableModels = modelsData.models || {};
@@ -404,12 +405,17 @@ window.addEventListener('DOMContentLoaded', function() {
                 buildModelSelectionUI();
                 buildRerankerSelectionUI();
             } else {
-                console.warn('⚠ Models API unavailable, using fallback models');
-                useFallbackModels();
+                throw new Error(`API responded with ${response.status}`);
             }
         } catch (error) {
-            console.error('✗ Failed to load models:', error);
-            useFallbackModels();
+            console.error(`✗ Failed to load models (attempt ${retryCount + 1}):`, error);
+            if (retryCount < 2) {
+                console.log(`Retrying in ${(retryCount + 1) * 2} seconds...`);
+                setTimeout(() => loadAvailableModels(retryCount + 1), (retryCount + 1) * 2000);
+            } else {
+                console.warn('⚠ All retry attempts failed, using fallback models');
+                useFallbackModels();
+            }
         }
     }
     
@@ -418,10 +424,14 @@ window.addEventListener('DOMContentLoaded', function() {
             'retriever': { name: 'BioLORD', status: 'available', description: 'Advanced biomedical language model for retrieval' }
         };
         availableRerankers = {
-            'medcpt': { name: 'MedCPT (HuggingFace)', status: 'available', description: 'NCBI Medical Clinical Practice Text cross-encoder for reranking', type: 'huggingface' }
+            'medcpt': { name: 'MedCPT (HuggingFace)', status: 'available', description: 'NCBI Medical Clinical Practice Text cross-encoder for reranking', type: 'huggingface' },
+            'gpt-4o-mini': { name: 'GPT-4o Mini', status: 'unknown', description: 'Fast and cost-effective OpenAI model', type: 'openrouter' },
+            'claude-3-haiku': { name: 'Claude 3 Haiku', status: 'unknown', description: 'Fast Anthropic model optimized for speed', type: 'openrouter' },
+            'gemini-2.5-flash-lite': { name: 'Gemini 2.5 Flash Lite', status: 'unknown', description: 'Google\'s lightweight Gemini model', type: 'openrouter' }
         };
         currentModel = 'retriever';
         currentReranker = 'medcpt';
+        console.log('Using fallback models with all reranker options');
         buildModelSelectionUI();
         buildRerankerSelectionUI();
     }
@@ -863,6 +873,13 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
                 
             statusManager.show(`Successfully processed ${allMappings.length} records from ${jobName}.`, 'success', 5000);
+            
+            // Try to reload models after first successful processing (API is now warmed up)
+            if (Object.keys(availableRerankers).length <= 4) {
+                console.log('API warmed up, attempting to reload models...');
+                loadAvailableModels();
+            }
+            
             runAnalysis(allMappings);
 
         } catch (error) {
@@ -1005,6 +1022,33 @@ window.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 `;
+                
+                // Add dynamic positioning for fixed tooltip
+                const tooltipContainer = cleanNameCell.querySelector('.tooltip-container');
+                const tooltipContent = cleanNameCell.querySelector('.tooltip-content');
+                
+                tooltipContainer.addEventListener('mouseenter', function(e) {
+                    const rect = this.getBoundingClientRect();
+                    const tooltipRect = tooltipContent.getBoundingClientRect();
+                    
+                    // Position to the right of the element
+                    let left = rect.right + 10;
+                    let top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+                    
+                    // Adjust if tooltip would go off-screen
+                    if (left + tooltipRect.width > window.innerWidth) {
+                        left = rect.left - tooltipRect.width - 10; // Position to the left instead
+                    }
+                    if (top < 0) {
+                        top = 10;
+                    }
+                    if (top + tooltipRect.height > window.innerHeight) {
+                        top = window.innerHeight - tooltipRect.height - 10;
+                    }
+                    
+                    tooltipContent.style.left = left + 'px';
+                    tooltipContent.style.top = top + 'px';
+                });
             } else {
                 cleanNameCell.innerHTML = `<strong>${item.clean_name || 'Unknown'}</strong>`;
             }
