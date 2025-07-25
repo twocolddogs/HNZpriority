@@ -19,7 +19,8 @@ python -c "from nlp_processor import NLPProcessor; print('    Attempting to init
 # --- Step 4: Pre-compute and Cache NLP Embeddings (NEW STEP) ---
 if [[ "$1" == "--no-cache" ]]; then
     echo "--> Skipping cache build as per user request."
-else
+elif [[ -t 0 ]]; then
+    # Interactive terminal - ask user
     read -p "--> Do you want to pre-compute and cache NLP embeddings? (y/n) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -29,6 +30,10 @@ else
     else
         echo "--> Skipping cache build as per user request."
     fi
+else
+    # Non-interactive environment (like Render) - skip cache building
+    echo "--> Non-interactive environment detected. Skipping cache build for faster deployment."
+    echo "    ℹ️  Cache will be built on first API request if needed."
 fi
 
 
