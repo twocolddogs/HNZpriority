@@ -318,6 +318,45 @@ def health_check():
         'app_initialized': _app_initialized
     })
 
+@app.route('/warmup', methods=['POST', 'GET'])
+def warmup_api():
+    """Warm up the API by initializing all components without processing data"""
+    try:
+        logger.info("🔥 API warmup requested - initializing components...")
+        start_time = time.time()
+        
+        # Trigger initialization
+        _ensure_app_is_initialized()
+        
+        # Test that key components are ready
+        warmup_status = {
+            'initialized': _app_initialized,
+            'model_processors': len(model_processors) if model_processors else 0,
+            'nhs_lookup_engine': nhs_lookup_engine is not None,
+            'semantic_parser': semantic_parser is not None,
+            'reranker_manager': reranker_manager is not None
+        }
+        
+        if reranker_manager:
+            warmup_status['available_rerankers'] = len(reranker_manager.get_available_rerankers())
+        
+        elapsed_time = time.time() - start_time
+        logger.info(f"✅ API warmup completed in {elapsed_time:.2f}s")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'API warmed up successfully',
+            'warmup_time': elapsed_time,
+            'components': warmup_status
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ API warmup failed: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Warmup failed: {str(e)}'
+        }), 500
+
 @app.route('/models', methods=['GET'])
 def list_available_models():
     """List available NLP models and their status (lightweight, no initialization required)"""

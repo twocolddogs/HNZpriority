@@ -390,6 +390,32 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    async function warmupAPI() {
+        try {
+            console.log('🔥 Warming up API...');
+            const warmupStart = performance.now();
+            statusManager.show('🔥 Warming up processing engine...', 'info');
+            
+            const response = await fetch(`${apiConfig.baseUrl}/warmup`, { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                const warmupTime = performance.now() - warmupStart;
+                console.log(`✅ API warmed up successfully in ${warmupTime.toFixed(0)}ms`);
+                console.log('Warmup details:', result.components);
+                statusManager.show(`✅ Processing engine ready (${warmupTime.toFixed(0)}ms)`, 'success', 3000);
+            } else {
+                throw new Error(`Warmup failed with status ${response.status}`);
+            }
+        } catch (error) {
+            console.warn('⚠️ API warmup failed (processing will still work, but first request may be slower):', error);
+            statusManager.show('⚠️ Engine warmup incomplete - first processing may take longer', 'warning', 5000);
+        }
+    }
+
     async function loadAvailableModels(retryCount = 0) {
         try {
             console.log(`Loading available models (attempt ${retryCount + 1})`);
@@ -404,6 +430,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 console.log('✓ Available rerankers loaded:', Object.keys(availableRerankers));
                 buildModelSelectionUI();
                 buildRerankerSelectionUI();
+                
+                // Warm up the API after models are loaded
+                warmupAPI();
             } else {
                 throw new Error(`API responded with ${response.status}`);
             }
