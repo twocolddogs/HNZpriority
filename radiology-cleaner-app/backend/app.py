@@ -87,13 +87,13 @@ def _initialize_model_processors() -> Dict[str, NLPProcessor]:
             logger.error(f"Failed to initialize model processor for '{model_key}': {e}")
     return processors
 
-def _get_nlp_processor(model: str = 'default') -> Optional[NLPProcessor]:
+def _get_nlp_processor(model: str = 'retriever') -> Optional[NLPProcessor]:
     """Get the appropriate NLP processor for the specified model"""
     global model_processors
     processor = model_processors.get(model)
     if not processor:
-        logger.warning(f"Model '{model}' not available, falling back to default")
-        processor = model_processors.get('default')
+        logger.warning(f"Model '{model}' not available, falling back to retriever")
+        processor = model_processors.get('retriever')
     return processor
 
 def _initialize_app():
@@ -137,11 +137,11 @@ def _initialize_app():
     model_processors = _initialize_model_processors()
     
     # V4 Architecture: Initialize retriever and reranker manager for flexible reranking
-    retriever_processor = model_processors.get('default')  # BioLORD for retrieval
+    retriever_processor = model_processors.get('retriever')  # BioLORD for retrieval
     
     # Ensure retriever processor is available
     if not retriever_processor:
-        logger.critical("Required retriever processor ('default' - BioLORD) could not be initialized.")
+        logger.critical("Required retriever processor ('retriever' - BioLORD) could not be initialized.")
         sys.exit(1)
     
     # Initialize the reranker manager with multiple backend support
@@ -348,7 +348,7 @@ def list_available_models():
         
         return jsonify({
             'models': model_info,
-            'default_model': 'default',
+            'default_model': 'retriever',
             'rerankers': reranker_info,
             'default_reranker': default_reranker,
             'usage': 'Add "model": "model_key" and "reranker": "reranker_key" to your request',
@@ -550,7 +550,7 @@ def parse_enhanced():
         
         exam_name = data['exam_name']
         modality_code = data.get('modality_code')
-        model = data.get('model', 'default')
+        model = data.get('model', 'retriever')
         reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
         debug = data.get('debug', False)  # Add debug parameter
         
@@ -592,7 +592,7 @@ def parse_batch():
             return jsonify({"error": "Missing 'exams' list in request data"}), 400
         
         exams_to_process = data['exams']
-        model_key = data.get('model', 'default')
+        model_key = data.get('model', 'retriever')
         reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
         
         import uuid
@@ -801,7 +801,7 @@ def process_sanity_test_endpoint():
     
     try:
         data = request.json or {}
-        model_key = data.get('model', 'default')
+        model_key = data.get('model', 'retriever')
         reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
         
         logger.info(f"Processing sanity_test.json using model: '{model_key}', reranker: '{reranker_key}'")

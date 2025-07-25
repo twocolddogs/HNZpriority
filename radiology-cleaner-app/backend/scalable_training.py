@@ -251,7 +251,7 @@ class ScalableTrainingFramework:
         
         # Initialize processing components for this chunk
         # V4 Architecture: Initialize retriever and reranker manager for training
-        retriever_processor = NLPProcessor(model_key='default')  # BioLORD for retrieval
+        retriever_processor = NLPProcessor(model_key='retriever')  # BioLORD for retrieval
         from reranker_manager import RerankerManager
         reranker_manager = RerankerManager()  # Manage multiple rerankers
         semantic_parser = RadiologySemanticParser(nlp_processor=retriever_processor)  # Use retriever for parsing

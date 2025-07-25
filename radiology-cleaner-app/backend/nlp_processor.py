@@ -21,23 +21,16 @@ class NLPProcessor:
 
     # Available model configurations
     MODELS = {
-        'default': {
+        'retriever': {
             'hf_name': 'FremyCompany/BioLORD-2023',
-            'name': 'BioLORD (Default)',
-            'description': 'BioLORD - Advanced biomedical language model (default)',
+            'name': 'BioLORD',
+            'description': 'BioLORD - Advanced biomedical language model for retrieval',
             'pipeline': 'feature-extraction',
-            'status': 'available'
-        },
-        'experimental': {
-            'hf_name': 'ncbi/MedCPT-Cross-Encoder',
-            'name': 'MedCPT Cross-Encoder (Experimental)',
-            'description': 'NCBI Medical Clinical Practice Text cross-encoder for reranking (experimental)',
-            'pipeline': 'sentence-similarity',
             'status': 'available'
         }
     }
 
-    def __init__(self, model_key: str = 'default'):
+    def __init__(self, model_key: str = 'retriever'):
         self.api_token = os.environ.get('HUGGING_FACE_TOKEN')
         
         model_info = self.MODELS.get(model_key)

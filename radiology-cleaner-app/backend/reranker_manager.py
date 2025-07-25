@@ -32,29 +32,19 @@ class RerankerManager:
     def _init_huggingface_rerankers(self):
         """Initialize HuggingFace-based rerankers."""
         try:
-            # Load the existing MedCPT processor - avoid circular import by initializing directly
-            from nlp_processor import NLPProcessor
-            medcpt_processor = NLPProcessor(model_key='experimental')
+            # Create MedCPT reranker directly for reranking (not available in retriever pipeline)
+            # We'll initialize it directly with the HuggingFace model since it's not in NLPProcessor anymore
+            self.available_rerankers['medcpt'] = {
+                'name': 'MedCPT (HuggingFace)',
+                'description': 'NCBI Medical Clinical Practice Text cross-encoder for reranking',
+                'type': 'huggingface',
+                'model_id': 'ncbi/MedCPT-Cross-Encoder',
+                'status': 'available'  # Will be available if HF token is set
+            }
             
-            if medcpt_processor and medcpt_processor.is_available():
-                self.rerankers['medcpt'] = medcpt_processor
-                self.available_rerankers['medcpt'] = {
-                    'name': 'MedCPT (HuggingFace)',
-                    'description': 'NCBI Medical Clinical Practice Text cross-encoder',
-                    'type': 'huggingface',
-                    'model_id': medcpt_processor.hf_model_name,
-                    'status': 'available'
-                }
-                logger.info("✅ [RERANKER-MGR] MedCPT reranker available")
-            else:
-                self.available_rerankers['medcpt'] = {
-                    'name': 'MedCPT (HuggingFace)',
-                    'description': 'NCBI Medical Clinical Practice Text cross-encoder',
-                    'type': 'huggingface',
-                    'model_id': 'ncbi/MedCPT-Cross-Encoder',
-                    'status': 'unavailable'
-                }
-                logger.warning("⚠️ [RERANKER-MGR] MedCPT reranker unavailable (missing HF token)")
+            # Note: We don't initialize the actual processor here since MedCPT is removed from NLPProcessor
+            # The reranking will be handled by a dedicated MedCPT implementation if needed
+            logger.info("✅ [RERANKER-MGR] MedCPT reranker registered (HuggingFace)")
                 
         except Exception as e:
             logger.error(f"[RERANKER-MGR] Error initializing HuggingFace rerankers: {e}")
@@ -122,21 +112,25 @@ class RerankerManager:
     def get_default_reranker_key(self) -> str:
         """
         Get the default reranker key to use.
-        Prefers MedCPT if available, otherwise falls back to first available OpenRouter model.
+        Prefers MedCPT for medical accuracy, falls back to OpenRouter models.
         
         Returns:
             Default reranker key
         """
-        # Prefer MedCPT if available
-        if 'medcpt' in self.rerankers:
+        # Prefer MedCPT for medical domain accuracy
+        if 'medcpt' in self.available_rerankers:
             return 'medcpt'
+        
+        # Fall back to GPT-4o Mini if available
+        if 'gpt-4o-mini' in self.rerankers:
+            return 'gpt-4o-mini'
         
         # Fall back to first available OpenRouter model
         for key, info in self.available_rerankers.items():
             if info['status'] == 'available' and key in self.rerankers:
                 return key
         
-        # Last resort - return medcpt even if unavailable (for compatibility)
+        # Last resort - return medcpt for compatibility
         return 'medcpt'
     
     def get_rerank_scores(self, query: str, documents: List[str], reranker_key: Optional[str] = None) -> List[float]:
@@ -154,17 +148,75 @@ class RerankerManager:
         if not reranker_key:
             reranker_key = self.get_default_reranker_key()
         
+        logger.info(f"[RERANKER-MGR] Using {self.available_rerankers.get(reranker_key, {}).get('name', reranker_key)} for reranking")
+        
+        # Handle MedCPT specially since it's no longer in NLPProcessor
+        if reranker_key == 'medcpt':
+            return self._get_medcpt_scores(query, documents)
+        
+        # Handle OpenRouter rerankers
         reranker = self.get_reranker(reranker_key)
         if not reranker:
             logger.warning(f"[RERANKER-MGR] Reranker '{reranker_key}' not available, using neutral scores")
             return [0.5] * len(documents)
         
-        logger.info(f"[RERANKER-MGR] Using {self.available_rerankers.get(reranker_key, {}).get('name', reranker_key)} for reranking")
-        
         try:
             return reranker.get_rerank_scores(query, documents)
         except Exception as e:
             logger.error(f"[RERANKER-MGR] Error getting rerank scores with {reranker_key}: {e}")
+            return [0.5] * len(documents)
+    
+    def _get_medcpt_scores(self, query: str, documents: List[str]) -> List[float]:
+        """
+        Get MedCPT reranking scores using direct HuggingFace API.
+        
+        Args:
+            query: Input query/exam name
+            documents: List of candidate documents to rank
+            
+        Returns:
+            List of similarity scores (0.0-1.0)
+        """
+        try:
+            import os
+            import requests
+            import json
+            
+            api_token = os.environ.get('HUGGING_FACE_TOKEN')
+            if not api_token:
+                logger.warning("[RERANKER-MGR] MedCPT requires HUGGING_FACE_TOKEN, using neutral scores")
+                return [0.5] * len(documents)
+            
+            # Prepare query-document pairs for MedCPT cross-encoder
+            pairs = [[query, doc] for doc in documents]
+            
+            headers = {"Authorization": f"Bearer {api_token}"}
+            api_url = "https://api-inference.huggingface.co/models/ncbi/MedCPT-Cross-Encoder"
+            
+            response = requests.post(
+                api_url,
+                headers=headers,
+                json={"inputs": pairs, "options": {"wait_for_model": True}},
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if isinstance(result, list) and len(result) == len(documents):
+                    # Convert logits to probabilities using sigmoid
+                    import math
+                    scores = [1.0 / (1.0 + math.exp(-float(logit))) for logit in result]
+                    logger.info(f"[RERANKER-MGR] MedCPT scored {len(scores)} candidates")
+                    return scores
+                else:
+                    logger.error(f"[RERANKER-MGR] MedCPT unexpected response format: {result}")
+                    return [0.5] * len(documents)
+            else:
+                logger.error(f"[RERANKER-MGR] MedCPT API error {response.status_code}: {response.text}")
+                return [0.5] * len(documents)
+                
+        except Exception as e:
+            logger.error(f"[RERANKER-MGR] MedCPT scoring error: {e}")
             return [0.5] * len(documents)
     
     def test_reranker(self, reranker_key: str) -> bool:

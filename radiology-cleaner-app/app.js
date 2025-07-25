@@ -270,7 +270,7 @@ class StatusManager {
 const statusManager = new StatusManager();
 
 // --- GLOBAL VARIABLES & STATE ---
-let currentModel = 'default';
+let currentModel = 'retriever';
 let availableModels = {};
 let currentReranker = 'medcpt';
 let availableRerankers = {};
@@ -396,7 +396,7 @@ window.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 const modelsData = await response.json();
                 availableModels = modelsData.models || {};
-                currentModel = modelsData.default_model || 'default';
+                currentModel = modelsData.default_model || 'retriever';
                 availableRerankers = modelsData.rerankers || {};
                 currentReranker = modelsData.default_reranker || 'medcpt';
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
@@ -415,13 +415,12 @@ window.addEventListener('DOMContentLoaded', function() {
     
     function useFallbackModels() {
         availableModels = {
-            'default': { name: 'BioLORD (Default)', status: 'available', description: 'Advanced biomedical language model (default)' },
-            'experimental': { name: 'MedCPT (Experimental)', status: 'available', description: 'NCBI Clinical Practice Text encoder' }
+            'retriever': { name: 'BioLORD', status: 'available', description: 'Advanced biomedical language model for retrieval' }
         };
         availableRerankers = {
-            'medcpt': { name: 'MedCPT (HuggingFace)', status: 'available', description: 'NCBI Medical Clinical Practice Text cross-encoder', type: 'huggingface' }
+            'medcpt': { name: 'MedCPT (HuggingFace)', status: 'available', description: 'NCBI Medical Clinical Practice Text cross-encoder for reranking', type: 'huggingface' }
         };
-        currentModel = 'default';
+        currentModel = 'retriever';
         currentReranker = 'medcpt';
         buildModelSelectionUI();
         buildRerankerSelectionUI();
