@@ -187,8 +187,8 @@ class RerankerManager:
                 logger.warning("[RERANKER-MGR] MedCPT requires HUGGING_FACE_TOKEN, using neutral scores")
                 return [0.5] * len(documents)
             
-            # Prepare query-document pairs for MedCPT cross-encoder
-            pairs = [[query, doc] for doc in documents]
+            # Prepare query-document pairs for MedCPT cross-encoder in correct format
+            pairs = [{"text": query, "text_pair": doc} for doc in documents]
             
             headers = {"Authorization": f"Bearer {api_token}"}
             api_url = "https://api-inference.huggingface.co/models/ncbi/MedCPT-Cross-Encoder"

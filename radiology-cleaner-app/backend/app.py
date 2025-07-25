@@ -534,6 +534,108 @@ def upload_config():
         logger.error(f"Config upload endpoint error: {e}", exc_info=True)
         return jsonify({"error": f"Failed to upload config: {str(e)}"}), 500
 
+@app.route('/config/current', methods=['GET'])
+def get_current_config():
+    """Fetch the current config.yaml file from R2."""
+    try:
+        import requests
+        
+        # Use the same R2 URL as config manager
+        r2_config_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/config/config.yaml"
+        
+        logger.info(f"Fetching current config from R2: {r2_config_url}")
+        response = requests.get(r2_config_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the raw YAML content
+        return jsonify({
+            "config_yaml": response.text,
+            "timestamp": datetime.now().isoformat(),
+            "message": "Config fetched successfully from R2"
+        })
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to fetch config from R2: {e}")
+        return jsonify({"error": f"Failed to fetch config from R2: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Config fetch endpoint error: {e}", exc_info=True)
+        return jsonify({"error": f"Failed to fetch config: {str(e)}"}), 500
+
+@app.route('/config/update', methods=['POST'])
+def update_config():
+    """Update the config.yaml file by saving new content to R2."""
+    try:
+        # Get the YAML content from request body
+        data = request.get_json()
+        if not data or 'config_yaml' not in data:
+            return jsonify({"error": "Missing 'config_yaml' in request body"}), 400
+        
+        config_yaml_content = data['config_yaml']
+        
+        # Validate YAML syntax
+        try:
+            import yaml
+            yaml.safe_load(config_yaml_content)
+            logger.info("YAML validation passed")
+        except yaml.YAMLError as e:
+            logger.error(f"YAML validation failed: {e}")
+            return jsonify({"error": f"Invalid YAML syntax: {str(e)}"}), 400
+        
+        # Save to a temporary file and trigger the upload script (reuse existing logic)
+        import tempfile
+        import uuid
+        import subprocess
+        import threading
+        
+        temp_dir = tempfile.gettempdir()
+        temp_filename = f"config_editor_{uuid.uuid4().hex}.yaml"
+        temp_filepath = os.path.join(temp_dir, temp_filename)
+        
+        # Write the YAML content to temp file
+        with open(temp_filepath, 'w', encoding='utf-8') as f:
+            f.write(config_yaml_content)
+        
+        logger.info(f"Config editor content saved temporarily to: {temp_filepath}")
+
+        # Trigger the upload and rebuild script in a background thread (same as upload_config)
+        def run_upload_script():
+            try:
+                logger.info(f"Starting config update and cache rebuild for {temp_filepath}...")
+                script_path = os.path.join(os.path.dirname(__file__), 'upload_config_to_r2.py')
+                
+                # Run the upload script with the temporary file
+                result = subprocess.run([
+                    'python3', script_path, temp_filepath
+                ], capture_output=True, text=True, timeout=300)
+                
+                if result.returncode == 0:
+                    logger.info("✅ Config update and cache rebuild completed successfully")
+                else:
+                    logger.error(f"❌ Config update script failed: {result.stderr}")
+
+            except subprocess.TimeoutExpired:
+                logger.error("⏰ Config update script timed out after 5 minutes")
+            except Exception as e:
+                logger.error(f"💥 Config update script error: {e}")
+            finally:
+                # Clean up temporary file
+                if os.path.exists(temp_filepath):
+                    os.remove(temp_filepath)
+                    logger.info(f"Cleaned up temporary config file: {temp_filepath}")
+
+        # Start the script in a background thread
+        script_thread = threading.Thread(target=run_upload_script, daemon=True)
+        script_thread.start()
+
+        return jsonify({
+            "message": "Config update process initiated. The cache will be rebuilt in the background.",
+            "timestamp": datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        logger.error(f"Config update endpoint error: {e}", exc_info=True)
+        return jsonify({"error": f"Failed to update config: {str(e)}"}), 500
+
 def _medical_title_case(text: str) -> str:
     """
     Convert text to proper medical title case with special rules.

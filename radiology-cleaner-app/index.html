@@ -77,6 +77,14 @@
                             Upload config.yaml to update system configuration and rebuild cache
                         </p>
                     </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <button class="button secondary" id="editConfigBtn" style="background-color: #4CAF50; color: white; border: none;">
+                            Edit Config
+                        </button>
+                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
+                            View and edit the current config.yaml file directly
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -202,6 +210,45 @@
             </div>
             <div class="modal-footer">
                 <button id="closeArchitectureBtn" class="button primary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Config Editor Modal -->
+    <div class="modal" id="configEditorModal">
+        <div class="modal-content" style="max-width: 90vw; width: 1200px; max-height: 90vh;">
+            <div class="modal-header">
+                <h2>⚙️ Configuration Editor</h2>
+                <button id="closeConfigEditorModal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0; height: 70vh;">
+                <div style="display: flex; height: 100%;">
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="background: #f5f5f5; padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>config.yaml</strong>
+                                <span id="configStatus" style="margin-left: 10px; color: #666; font-size: 0.9em;"></span>
+                            </div>
+                            <div>
+                                <button id="reloadConfigBtn" class="button secondary" style="margin-right: 10px; padding: 5px 10px; font-size: 0.9em;">
+                                    🔄 Reload
+                                </button>
+                                <button id="saveConfigBtn" class="button primary" style="padding: 5px 15px; font-size: 0.9em;">
+                                    💾 Save
+                                </button>
+                            </div>
+                        </div>
+                        <textarea id="configEditor" style="flex: 1; font-family: 'Courier New', monospace; font-size: 14px; border: none; outline: none; padding: 15px; resize: none; background: #fafafa;" placeholder="Loading configuration..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div style="font-size: 0.9em; color: #666;">
+                        <strong>Note:</strong> Changes will trigger cache rebuild and may take a few minutes to apply.
+                    </div>
+                    <button id="closeConfigEditorBtn" class="button secondary">Close</button>
+                </div>
             </div>
         </div>
     </div>

@@ -378,6 +378,16 @@ window.addEventListener('DOMContentLoaded', function() {
     const sanityButton = document.getElementById('sanityTestBtn');
     const uploadConfigButton = document.getElementById('uploadConfigBtn');
     const configFileInput = document.getElementById('configFileInput');
+    
+    // Config editor elements
+    const editConfigButton = document.getElementById('editConfigBtn');
+    const configEditorModal = document.getElementById('configEditorModal');
+    const configEditor = document.getElementById('configEditor');
+    const configStatus = document.getElementById('configStatus');
+    const reloadConfigBtn = document.getElementById('reloadConfigBtn');
+    const saveConfigBtn = document.getElementById('saveConfigBtn');
+    const closeConfigEditorModal = document.getElementById('closeConfigEditorModal');
+    const closeConfigEditorBtn = document.getElementById('closeConfigEditorBtn');
 
     // --- CORE INITIALIZATION ---
     async function testApiConnectivity() {
@@ -609,6 +619,35 @@ window.addEventListener('DOMContentLoaded', function() {
             console.error('❌ Config upload elements not found!');
         }
         
+        // Config editor event listeners
+        if (editConfigButton) {
+            editConfigButton.addEventListener('click', openConfigEditor);
+        } else {
+            console.error('❌ Config edit button not found!');
+        }
+        
+        if (closeConfigEditorModal) {
+            closeConfigEditorModal.addEventListener('click', closeConfigEditor);
+        }
+        if (closeConfigEditorBtn) {
+            closeConfigEditorBtn.addEventListener('click', closeConfigEditor);
+        }
+        if (reloadConfigBtn) {
+            reloadConfigBtn.addEventListener('click', loadCurrentConfig);
+        }
+        if (saveConfigBtn) {
+            saveConfigBtn.addEventListener('click', saveConfig);
+        }
+        
+        // Close modal when clicking outside
+        if (configEditorModal) {
+            configEditorModal.addEventListener('click', (e) => {
+                if (e.target === configEditorModal) {
+                    closeConfigEditor();
+                }
+            });
+        }
+        
         document.getElementById('closeModalBtn').addEventListener('click', closeModal);
         document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
         
@@ -776,6 +815,107 @@ window.addEventListener('DOMContentLoaded', function() {
             if (uploadConfigButton) {
                 uploadConfigButton.disabled = false;
                 uploadConfigButton.innerHTML = 'Upload New Config';
+            }
+        }
+    }
+
+    // --- CONFIG EDITOR FUNCTIONS ---
+    
+    async function openConfigEditor() {
+        if (configEditorModal) {
+            configEditorModal.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            await loadCurrentConfig();
+        }
+    }
+    
+    function closeConfigEditor() {
+        if (configEditorModal) {
+            configEditorModal.style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scrolling
+        }
+    }
+    
+    async function loadCurrentConfig() {
+        try {
+            if (reloadConfigBtn) {
+                reloadConfigBtn.disabled = true;
+                reloadConfigBtn.innerHTML = '🔄 Loading...';
+            }
+            
+            configStatus.textContent = 'Loading...';
+            configEditor.value = 'Loading configuration from R2...';
+            
+            const response = await fetch(`${apiConfig.baseUrl}/config/current`, {
+                method: 'GET'
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Failed to load config: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            configEditor.value = result.config_yaml;
+            configStatus.textContent = `Loaded at ${new Date(result.timestamp).toLocaleTimeString()}`;
+            
+        } catch (error) {
+            console.error('Failed to load config:', error);
+            configEditor.value = `# Error loading configuration:\n# ${error.message}\n\n# Please try reloading or check the server logs.`;
+            configStatus.textContent = 'Error loading config';
+            statusManager.show(`❌ Failed to load config: ${error.message}`, 'error', 5000);
+        } finally {
+            if (reloadConfigBtn) {
+                reloadConfigBtn.disabled = false;
+                reloadConfigBtn.innerHTML = '🔄 Reload';
+            }
+        }
+    }
+    
+    async function saveConfig() {
+        try {
+            if (saveConfigBtn) {
+                saveConfigBtn.disabled = true;
+                saveConfigBtn.innerHTML = '💾 Saving...';
+            }
+            
+            const configYamlContent = configEditor.value;
+            
+            if (!configYamlContent.trim()) {
+                statusManager.show('Configuration cannot be empty', 'error', 5000);
+                return;
+            }
+            
+            configStatus.textContent = 'Saving...';
+            
+            const response = await fetch(`${apiConfig.baseUrl}/config/update`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    config_yaml: configYamlContent
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Save failed: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            configStatus.textContent = `Saved at ${new Date(result.timestamp).toLocaleTimeString()}`;
+            
+            statusManager.show('✓ Config saved successfully. Cache rebuild initiated in the background.', 'success', 8000);
+            
+        } catch (error) {
+            console.error('Failed to save config:', error);
+            configStatus.textContent = 'Error saving config';
+            statusManager.show(`❌ Failed to save config: ${error.message}`, 'error', 10000);
+        } finally {
+            if (saveConfigBtn) {
+                saveConfigBtn.disabled = false;
+                saveConfigBtn.innerHTML = '💾 Save';
             }
         }
     }

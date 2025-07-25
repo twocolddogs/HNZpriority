@@ -282,30 +282,45 @@ Evaluate each candidate against the pre-processed input exam using extractable r
             List of normalized scores (0.0-1.0) based on ranking
         """
         try:
-            # Try to find JSON array in response
+            # Try to find JSON in response (handle markdown code blocks)
             import re
             
-            # Look for JSON array pattern with candidate numbers
-            json_match = re.search(r'\[[^\]]+\]', response)
-            if json_match:
-                json_str = json_match.group(0)
-                ranking = json.loads(json_str)
+            # First try to extract JSON from markdown code blocks
+            json_block_match = re.search(r'```(?:json)?\s*(\{[^}]*"ranking"[^}]*\})\s*```', response, re.DOTALL)
+            if json_block_match:
+                json_str = json_block_match.group(1)
+                try:
+                    json_obj = json.loads(json_str)
+                    if "ranking" in json_obj:
+                        ranking = json_obj["ranking"]
+                    else:
+                        ranking = None
+                except json.JSONDecodeError:
+                    ranking = None
+            else:
+                # Fallback: Look for JSON array pattern with candidate numbers
+                json_match = re.search(r'\[[^\]]+\]', response)
+                if json_match:
+                    json_str = json_match.group(0)
+                    ranking = json.loads(json_str)
+                else:
+                    ranking = None
+            
+            if ranking and isinstance(ranking, list) and len(ranking) == expected_count:
+                # Convert ranking to scores (1st place = highest score)
+                scores = [0.0] * expected_count
+                for rank_position, candidate_num in enumerate(ranking):
+                    try:
+                        candidate_index = int(candidate_num) - 1  # Convert to 0-based index
+                        if 0 <= candidate_index < expected_count:
+                            # Linear scoring: 1st place = 1.0, last place = 0.1
+                            score = 1.0 - (rank_position * 0.9 / (expected_count - 1)) if expected_count > 1 else 1.0
+                            scores[candidate_index] = max(0.1, score)
+                    except (ValueError, TypeError, IndexError):
+                        logger.warning(f"[OPENROUTER] Invalid candidate number in ranking: {candidate_num}")
                 
-                if isinstance(ranking, list) and len(ranking) == expected_count:
-                    # Convert ranking to scores (1st place = highest score)
-                    scores = [0.0] * expected_count
-                    for rank_position, candidate_num in enumerate(ranking):
-                        try:
-                            candidate_index = int(candidate_num) - 1  # Convert to 0-based index
-                            if 0 <= candidate_index < expected_count:
-                                # Linear scoring: 1st place = 1.0, last place = 0.1
-                                score = 1.0 - (rank_position * 0.9 / (expected_count - 1)) if expected_count > 1 else 1.0
-                                scores[candidate_index] = max(0.1, score)
-                        except (ValueError, TypeError, IndexError):
-                            logger.warning(f"[OPENROUTER] Invalid candidate number in ranking: {candidate_num}")
-                    
-                    logger.debug(f"[OPENROUTER] Converted ranking {ranking} to scores successfully")
-                    return scores
+                logger.debug(f"[OPENROUTER] Converted ranking {ranking} to scores successfully")
+                return scores
             
             # Fallback: try to extract ranking numbers from response
             numbers = re.findall(r'\b\d+\b', response)
