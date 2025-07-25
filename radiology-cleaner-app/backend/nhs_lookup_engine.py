@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 class NHSLookupEngine:
-    def __init__(self, nhs_json_path: str, retriever_processor: NLPProcessor, reranker_processor: NLPProcessor, semantic_parser: 'RadiologySemanticParser'):
+    def __init__(self, nhs_json_path: str, retriever_processor: NLPProcessor, reranker_manager, semantic_parser: 'RadiologySemanticParser'):
         self.nhs_data = []
         self.snomed_lookup = {}
         self.index_to_snomed_id: List[str] = []
@@ -41,7 +41,7 @@ class NHSLookupEngine:
         
         self.nhs_json_path = nhs_json_path
         self.retriever_processor = retriever_processor
-        self.reranker_processor = reranker_processor  # Can be None during cache building
+        self.reranker_manager = reranker_manager  # New: manages multiple rerankers
         self.nlp_processor = retriever_processor  # Backward compatibility
         self.semantic_parser = semantic_parser
         self.complexity_scorer = ComplexityScorer()
@@ -247,12 +247,12 @@ class NHSLookupEngine:
         final_component_score = component_score + bonus_score
         return max(0.0, min(1.0, final_component_score))
 
-    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None, is_input_simple: bool = False, debug: bool = False) -> Dict:
+    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None, is_input_simple: bool = False, debug: bool = False, reranker_key: Optional[str] = None) -> Dict:
         """
-        V3 Two-Stage Pipeline: Retrieve candidates with BioLORD, then rerank with MedCPT + component scoring.
+        V4 Two-Stage Pipeline: Retrieve candidates with BioLORD, then rerank with flexible rerankers + component scoring.
         
         Stage 1 (Retrieval): Use retriever_processor (BioLORD) to get top-k candidates via FAISS
-        Stage 2 (Reranking): Use reranker_processor (MedCPT) + component scoring to find best match
+        Stage 2 (Reranking): Use selected reranker (MedCPT/GPT/Claude/Gemini) + component scoring to find best match
         """
         if debug:
             logger.info(f"[DEBUG] Debug mode enabled for input: {input_exam}, is_input_simple: {is_input_simple}")
@@ -262,9 +262,14 @@ class NHSLookupEngine:
             result = {'error': 'Retriever processor not available', 'confidence': 0.0}
             if debug: result['debug_early_exit'] = 'Early exit: Retriever not available'
             return result
-        if not self.reranker_processor or not self.reranker_processor.is_available():
-            result = {'error': 'Reranker processor not available', 'confidence': 0.0}
-            if debug: result['debug_early_exit'] = 'Early exit: Reranker not available'
+        
+        # Get the selected reranker (defaults to default if not specified)
+        if not reranker_key:
+            reranker_key = self.reranker_manager.get_default_reranker_key() if self.reranker_manager else 'medcpt'
+        
+        if not self.reranker_manager:
+            result = {'error': 'Reranker manager not available', 'confidence': 0.0}
+            if debug: result['debug_early_exit'] = 'Early exit: Reranker manager not available'
             return result
 
         # === STAGE 1: RETRIEVAL (using retriever_processor) ===
@@ -348,18 +353,22 @@ class NHSLookupEngine:
             logger.info(f"[COMPLEXITY-FILTER] Reordered candidates: {len(prioritized_candidates)} high-similarity + {len(simple_candidates)} simple + {len(complex_candidates)} complex")
 
         # === STAGE 2: RERANKING & SCORING ===
-        logger.info(f"[V3-PIPELINE] Starting reranking stage with {self.reranker_processor.model_key} ({self.reranker_processor.hf_model_name})")
+        # Get reranker info for logging
+        reranker_info = self.reranker_manager.get_available_rerankers().get(reranker_key, {})
+        reranker_name = reranker_info.get('name', reranker_key)
+        
+        logger.info(f"[V4-PIPELINE] Starting reranking stage with {reranker_name} (key: {reranker_key})")
         stage2_start = time.time()
         
-        # Prepare candidate texts for cross-encoder reranking
+        # Prepare candidate texts for reranking
         candidate_texts = [entry.get('_clean_primary_name_for_embedding', '') for entry in candidate_entries]
-        logger.debug(f"[V3-PIPELINE] Prepared {len(candidate_texts)} candidate texts for reranking")
+        logger.debug(f"[V4-PIPELINE] Prepared {len(candidate_texts)} candidate texts for reranking")
         
-        # Get reranker scores using cross-encoder (MedCPT)
-        rerank_scores = self.reranker_processor.get_rerank_scores(input_exam, candidate_texts)
+        # Get reranker scores using selected reranker
+        rerank_scores = self.reranker_manager.get_rerank_scores(input_exam, candidate_texts, reranker_key)
         
         if not rerank_scores or len(rerank_scores) != len(candidate_entries):
-            logger.warning(f"[V3-PIPELINE] Reranker failed (got {len(rerank_scores) if rerank_scores else 0} scores for {len(candidate_entries)} candidates) - using neutral fallback")
+            logger.warning(f"[V4-PIPELINE] Reranker {reranker_name} failed (got {len(rerank_scores) if rerank_scores else 0} scores for {len(candidate_entries)} candidates) - using neutral fallback")
             rerank_scores = [0.5] * len(candidate_entries)  # Neutral fallback
         
         # Find best match by combining reranking + component scores

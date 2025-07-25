@@ -18,6 +18,7 @@ from pathlib import Path
 from parser import RadiologySemanticParser
 from nlp_processor import NLPProcessor
 from nhs_lookup_engine import NHSLookupEngine
+from reranker_manager import RerankerManager
 from database_models import DatabaseManager, CacheManager
 from feedback_training import FeedbackTrainingManager
 from parsing_utils import AbbreviationExpander, AnatomyExtractor, LateralityDetector, ContrastMapper
@@ -135,32 +136,27 @@ def _initialize_app():
 
     model_processors = _initialize_model_processors()
     
-    # V3 Architecture: Initialize dual processors for retriever-reranker pipeline
+    # V4 Architecture: Initialize retriever and reranker manager for flexible reranking
     retriever_processor = model_processors.get('default')  # BioLORD for retrieval
-    reranker_processor = model_processors.get('experimental')  # MedCPT for reranking
     
-    # Ensure both required processors are available
+    # Ensure retriever processor is available
     if not retriever_processor:
         logger.critical("Required retriever processor ('default' - BioLORD) could not be initialized.")
         sys.exit(1)
-    if not reranker_processor:
-        logger.critical("Required reranker processor ('experimental' - MedCPT) could not be initialized.")
-        sys.exit(1)
     
-    logger.info("🚀 [V3-INIT] Initializing V3 dual-processor architecture")
-    logger.info(f"📥 [V3-INIT] Retriever: {retriever_processor.hf_model_name} ({retriever_processor.pipeline})")
-    logger.info(f"🔄 [V3-INIT] Reranker: {reranker_processor.hf_model_name} ({reranker_processor.pipeline})")
+    # Initialize the reranker manager with multiple backend support
+    reranker_manager = RerankerManager()
     
-    # Test processor availability
+    logger.info("🚀 [V4-INIT] Initializing V4 architecture with flexible reranking")
+    logger.info(f"📥 [V4-INIT] Retriever: {retriever_processor.hf_model_name} ({retriever_processor.pipeline})")
+    logger.info(f"🔄 [V4-INIT] Available rerankers: {list(reranker_manager.get_available_rerankers().keys())}")
+    logger.info(f"🎯 [V4-INIT] Default reranker: {reranker_manager.get_default_reranker_key()}")
+    
+    # Test retriever availability
     if retriever_processor.is_available():
-        logger.info("✅ [V3-INIT] Retriever processor ready")
+        logger.info("✅ [V4-INIT] Retriever processor ready")
     else:
-        logger.warning("⚠️ [V3-INIT] Retriever processor not available (missing HF token)")
-        
-    if reranker_processor.is_available():
-        logger.info("✅ [V3-INIT] Reranker processor ready") 
-    else:
-        logger.warning("⚠️ [V3-INIT] Reranker processor not available (missing HF token)")
+        logger.warning("⚠️ [V4-INIT] Retriever processor not available (missing HF token)")
     
     # Backward compatibility - some parts of the code still expect nlp_processor
     nlp_processor = retriever_processor
@@ -209,7 +205,7 @@ def _initialize_app():
     nhs_lookup_engine = NHSLookupEngine(
         nhs_json_path=nhs_json_path,
         retriever_processor=retriever_processor,
-        reranker_processor=reranker_processor,
+        reranker_manager=reranker_manager,
         semantic_parser=semantic_parser
     )
     
@@ -225,7 +221,7 @@ def _ensure_app_is_initialized():
             _initialize_app()
             _app_initialized = True
 
-def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False) -> Dict:
+def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None) -> Dict:
     """Central processing logic for a single exam."""
     if debug:
         logger.info(f"[DEBUG-FLOW] process_exam_request received debug=True for exam: {exam_name}")
@@ -253,13 +249,13 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     lookup_engine_to_use = nhs_lookup_engine
     
     if nlp_processor.model_key != nhs_lookup_engine.retriever_processor.model_key:
-        logger.warning(f"🔄 [V3-API] Model parameter '{nlp_processor.model_key}' ignored - using V3 dual-processor pipeline")
-        logger.info(f"🔄 [V3-API] Pipeline: {nhs_lookup_engine.retriever_processor.model_key} → {nhs_lookup_engine.reranker_processor.model_key}")
+        logger.warning(f"🔄 [V4-API] Model parameter '{nlp_processor.model_key}' ignored - using V4 dual-processor pipeline")
+        logger.info(f"🔄 [V4-API] Pipeline: {nhs_lookup_engine.retriever_processor.model_key} → {reranker_key or 'default'}")
     
-    # V3 Architecture: Use dual-processor pipeline with complexity filtering
+    # V4 Architecture: Use dual-processor pipeline with flexible rerankers
     if debug:
         logger.info(f"[DEBUG-FLOW] About to call standardize_exam with debug=True, is_input_simple={is_input_simple}")
-    nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug)
+    nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key)
     
     ### FIX: The context (gender, age, etc.) is a property of the INPUT request, not the matched NHS entry.
     ### We must calculate context here from the cleaned input string to ensure it's always correct.
@@ -342,10 +338,20 @@ def list_available_models():
                 'embeddings_loaded': embeddings_loaded
             }
         
+        # Get reranker information
+        reranker_info = {}
+        default_reranker = 'medcpt'
+        
+        if reranker_manager:
+            reranker_info = reranker_manager.get_available_rerankers()
+            default_reranker = reranker_manager.get_default_reranker_key()
+        
         return jsonify({
             'models': model_info,
             'default_model': 'default',
-            'usage': 'Add "model": "model_key" to your request to use a specific model',
+            'rerankers': reranker_info,
+            'default_reranker': default_reranker,
+            'usage': 'Add "model": "model_key" and "reranker": "reranker_key" to your request',
             'app_initialized': _app_initialized
         })
     except Exception as e:
@@ -545,6 +551,7 @@ def parse_enhanced():
         exam_name = data['exam_name']
         modality_code = data.get('modality_code')
         model = data.get('model', 'default')
+        reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
         debug = data.get('debug', False)  # Add debug parameter
         
         selected_nlp_processor = _get_nlp_processor(model)
@@ -553,11 +560,12 @@ def parse_enhanced():
         
         logger.info(f"Using model '{model}' for exam: {exam_name}")
         
-        result = process_exam_request(exam_name, modality_code, selected_nlp_processor, debug=debug)
+        result = process_exam_request(exam_name, modality_code, selected_nlp_processor, debug=debug, reranker_key=reranker_key)
         
         result['metadata'] = {
             'processing_time_ms': int((time.time() - start_time) * 1000),
-            'model_used': model
+            'model_used': model,
+            'reranker_used': reranker_key
         }
         
         return jsonify(result)
@@ -585,6 +593,7 @@ def parse_batch():
         
         exams_to_process = data['exams']
         model_key = data.get('model', 'default')
+        reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
         
         import uuid
         output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
@@ -592,7 +601,7 @@ def parse_batch():
         results_filename = f"batch_results_{uuid.uuid4().hex}.jsonl"
         results_filepath = os.path.join(output_dir, results_filename)
         
-        logger.info(f"Starting batch processing for {len(exams_to_process)} exams using model: '{model_key}'")
+        logger.info(f"Starting batch processing for {len(exams_to_process)} exams using model: '{model_key}', reranker: '{reranker_key}'")
         logger.info(f"Results will be streamed to: {results_filepath}")
 
         selected_nlp_processor = _get_nlp_processor(model_key)
@@ -618,7 +627,7 @@ def parse_batch():
                 
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
                     future_to_exam = {
-                        executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor): exam 
+                        executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor, False, reranker_key): exam 
                         for exam in chunk
                     }
                     
@@ -793,8 +802,9 @@ def process_sanity_test_endpoint():
     try:
         data = request.json or {}
         model_key = data.get('model', 'default')
+        reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
         
-        logger.info(f"Processing sanity_test.json using model: '{model_key}'")
+        logger.info(f"Processing sanity_test.json using model: '{model_key}', reranker: '{reranker_key}'")
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
             return jsonify({"error": f"Model '{model_key}' not available"}), 400
@@ -815,7 +825,7 @@ def process_sanity_test_endpoint():
             modality_code = exam.get("MODALITY_CODE")
             
             if exam_name:
-                processed_result = process_exam_request(exam_name, modality_code, selected_nlp_processor)
+                processed_result = process_exam_request(exam_name, modality_code, selected_nlp_processor, False, reranker_key)
                 processed_result['data_source'] = exam.get("DATA_SOURCE")
                 processed_result['exam_code'] = exam.get("EXAM_CODE")
                 results.append(processed_result)

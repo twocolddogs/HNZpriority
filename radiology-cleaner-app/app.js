@@ -272,6 +272,8 @@ const statusManager = new StatusManager();
 // --- GLOBAL VARIABLES & STATE ---
 let currentModel = 'default';
 let availableModels = {};
+let currentReranker = 'medcpt';
+let availableRerankers = {};
 let allMappings = [];
 let summaryData = null;
 let sortedMappings = [];
@@ -395,8 +397,12 @@ window.addEventListener('DOMContentLoaded', function() {
                 const modelsData = await response.json();
                 availableModels = modelsData.models || {};
                 currentModel = modelsData.default_model || 'default';
+                availableRerankers = modelsData.rerankers || {};
+                currentReranker = modelsData.default_reranker || 'medcpt';
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
+                console.log('✓ Available rerankers loaded:', Object.keys(availableRerankers));
                 buildModelSelectionUI();
+                buildRerankerSelectionUI();
             } else {
                 console.warn('⚠ Models API unavailable, using fallback models');
                 useFallbackModels();
@@ -412,8 +418,13 @@ window.addEventListener('DOMContentLoaded', function() {
             'default': { name: 'BioLORD (Default)', status: 'available', description: 'Advanced biomedical language model (default)' },
             'experimental': { name: 'MedCPT (Experimental)', status: 'available', description: 'NCBI Clinical Practice Text encoder' }
         };
+        availableRerankers = {
+            'medcpt': { name: 'MedCPT (HuggingFace)', status: 'available', description: 'NCBI Medical Clinical Practice Text cross-encoder', type: 'huggingface' }
+        };
         currentModel = 'default';
+        currentReranker = 'medcpt';
         buildModelSelectionUI();
+        buildRerankerSelectionUI();
     }
     
     function buildModelSelectionUI() {
@@ -456,6 +467,73 @@ window.addEventListener('DOMContentLoaded', function() {
             modelWrapper.appendChild(description);
             modelContainer.appendChild(modelWrapper);
         });
+    }
+    
+    function buildRerankerSelectionUI() {
+        const rerankerContainer = document.querySelector('.reranker-selection-container');
+        if (!rerankerContainer) {
+            console.error('❌ Reranker selection container not found in HTML');
+            return;
+        }
+        
+        rerankerContainer.innerHTML = '';
+        
+        Object.entries(availableRerankers).forEach(([rerankerKey, rerankerInfo]) => {
+            const rerankerWrapper = document.createElement('div');
+            rerankerWrapper.className = 'reranker-wrapper';
+            rerankerWrapper.style.cssText = 'display: flex; align-items: center; gap: 15px; margin-bottom: 10px;';
+            
+            const button = document.createElement('button');
+            button.className = `button secondary reranker-toggle ${rerankerKey === currentReranker ? 'active' : ''}`;
+            button.id = `${rerankerKey}RerankerBtn`;
+            button.dataset.reranker = rerankerKey;
+            button.style.cssText = 'min-width: 180px; flex-shrink: 0;';
+            
+            const statusText = rerankerInfo.status === 'available' ? '' : ' (Unavailable)';
+            const typeInfo = rerankerInfo.type === 'openrouter' ? ' 🌐' : ' 🤗';
+            button.innerHTML = `<span class="reranker-name">${formatRerankerName(rerankerKey)}${typeInfo}${statusText}</span>`;
+            
+            const description = document.createElement('span');
+            description.className = 'reranker-description';
+            description.style.cssText = 'font-size: 0.85em; color: #666; flex: 1;';
+            description.textContent = rerankerInfo.description || '';
+            
+            if (rerankerInfo.status !== 'available') {
+                button.disabled = true;
+                button.title = `${rerankerInfo.name} is currently unavailable`;
+                description.style.color = '#999';
+            } else {
+                button.addEventListener('click', () => switchReranker(rerankerKey));
+            }
+            
+            rerankerWrapper.appendChild(button);
+            rerankerWrapper.appendChild(description);
+            rerankerContainer.appendChild(rerankerWrapper);
+        });
+    }
+    
+    function formatRerankerName(rerankerKey) {
+        if (availableRerankers && availableRerankers[rerankerKey] && availableRerankers[rerankerKey].name) {
+            return availableRerankers[rerankerKey].name;
+        }
+        const nameMap = {
+            'medcpt': 'MedCPT (HuggingFace)',
+            'gpt-4o-mini': 'GPT-4o Mini',
+            'claude-3-haiku': 'Claude 3 Haiku', 
+            'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite'
+        };
+        return nameMap[rerankerKey] || rerankerKey.charAt(0).toUpperCase() + rerankerKey.slice(1);
+    }
+    
+    function switchReranker(rerankerKey) {
+        if (!availableRerankers[rerankerKey] || availableRerankers[rerankerKey].status !== 'available') {
+            console.warn(`Reranker ${rerankerKey} is not available.`);
+            return;
+        }
+        currentReranker = rerankerKey;
+        document.querySelectorAll('.reranker-toggle').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`${rerankerKey}RerankerBtn`)?.classList.add('active');
+        statusManager.show(`Switched to ${formatRerankerName(rerankerKey)} reranker`, 'success', 3000);
     }
     
     // --- EVENT LISTENERS ---
@@ -676,7 +754,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(BATCH_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ exams: allExams, model: currentModel })
+                body: JSON.stringify({ exams: allExams, model: currentModel, reranker: currentReranker })
             });
 
             if (!response.ok) {
@@ -814,7 +892,8 @@ window.addEventListener('DOMContentLoaded', function() {
     function updateResultsTitle() {
         const titleElement = document.getElementById('resultsTitle');
         const modelDisplayName = formatModelName(currentModel);
-        titleElement.textContent = `Cleaning Results with ${modelDisplayName}`;
+        const rerankerDisplayName = formatRerankerName(currentReranker);
+        titleElement.textContent = `Cleaning Results with ${modelDisplayName} → ${rerankerDisplayName}`;
     }
 
     function generateSourceLegend(mappings) {
