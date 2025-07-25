@@ -9,6 +9,26 @@ python sync_cache.py
 
 # --- Step 2: Start the main application ---
 echo "--- Starting Gunicorn ---"
-# Use exec to replace the shell process with the Gunicorn process.
-# This is more efficient and ensures Gunicorn receives signals correctly.
-exec gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 900 --preload app:app
+# Start Gunicorn in the background so we can warm up the API
+gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 900 --preload app:app &
+GUNICORN_PID=$!
+
+# --- Step 3: Wait for server to be ready and warm up API ---
+echo "--- Waiting for server to be ready ---"
+sleep 10
+
+echo "--- Warming up API components ---"
+# Make warmup request to initialize all model processors
+for i in {1..5}; do
+    if curl -s -f -X POST http://localhost:$PORT/warmup > /dev/null; then
+        echo "✅ API warmup successful"
+        break
+    else
+        echo "⏳ Attempt $i/5: API not ready yet, waiting..."
+        sleep 5
+    fi
+done
+
+# --- Step 4: Keep Gunicorn running in foreground ---
+echo "--- API initialized and ready to serve requests ---"
+wait $GUNICORN_PID
