@@ -650,8 +650,8 @@ def parse_batch():
         success_count = 0
         error_count = 0
         
-        # Process in chunks of 25 to manage memory and provide progress updates
-        chunk_size = 25
+        # Process in chunks of 10 to manage memory and provide more frequent progress updates
+        chunk_size = 10
         total_exams = len(exams_to_process)
         chunks = [exams_to_process[i:i + chunk_size] for i in range(0, total_exams, chunk_size)]
         

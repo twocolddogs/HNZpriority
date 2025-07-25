@@ -398,7 +398,8 @@ window.addEventListener('DOMContentLoaded', function() {
             
             const response = await fetch(`${apiConfig.baseUrl}/warmup`, { 
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                signal: AbortSignal.timeout(15000)
             });
             
             if (response.ok) {
@@ -701,8 +702,9 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
             hideUploadInterface();
             statusManager.clearAll();
-            statusManager.showTestInfo('Sanity Test', 'Verifying engine performance...');
-            statusId = statusManager.show(`Running 100-exam test suite with model: '${currentModel}'...`, 'progress');
+            const modelDisplayName = formatModelName(currentModel);
+            const rerankerDisplayName = formatRerankerName(currentReranker);
+            statusId = statusManager.show(`Running test suite with ${modelDisplayName} → ${rerankerDisplayName} (processing in batches)...`, 'progress');
 
             const response = await fetch('./sanity_test.json');
             if (!response.ok) throw new Error(`Could not load test file: ${response.statusText}`);
