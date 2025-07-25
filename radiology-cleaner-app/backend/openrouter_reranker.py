@@ -143,41 +143,61 @@ class OpenRouterReranker:
         for i, doc in enumerate(documents, 1):
             candidates_text += f"{i}. {doc}\n"
         
-        prompt = f"""You are a medical imaging specialist helping standardize radiology exam names to NHS codes.
+        prompt = f"""You are an expert medical terminologist specializing in radiology procedure codes. Your primary goal is to facilitate a **many-to-one mapping** of diverse, messy, real-world exam names to a single, canonical NHS procedure name. You are creating a single source of truth.
 
-TASK: Rank these candidate NHS exams from most to least appropriate for the input exam.
+**TASK:**
+Analyze the **Input Exam** and rank the **Canonical Candidates** to find the most semantically equivalent match. The ranking should reflect which canonical name best represents the core clinical procedure described in the input.
 
-INPUT EXAM: "{query}"
+**CORE INSTRUCTIONS:**
+- **Focus on Clinical Meaning:** Ignore logistical or administrative terms in the input (e.g., "portable", "ward", "stat", "single view", "department of").
+- **Embrace Many-to-One Mapping:** Different input names that describe the same procedure should map to the same canonical candidate. For example, "X-ray Chest", "CXR Portable", and "Chest 1 View" should all strongly match the canonical name "X-ray of Chest".
+- **Handle Ambiguity:** If the input is less specific than the candidates (e.g., Input: "Knee MRI", Candidates: "MRI Left Knee", "MRI Right Knee"), the specific candidates are both good matches. Rank them closely.
 
-CANDIDATES:
-{candidates_text}
+**INPUT EXAM:**
+"{{query}}"
 
-RANKING CRITERIA:
-1. **Anatomical match** - exact anatomy > broader anatomy > related anatomy
-2. **Modality match** - CT/MRI/US/X-ray must match exactly 
-3. **Contrast match** - with/without contrast must align
-4. **Laterality match** - left/right/bilateral specificity
-5. **Clinical appropriateness** - diagnostic vs interventional context
-6. **Complexity match** - simple exams should map to simple codes
+**CANONICAL CANDIDATES (from the standard NHS list):**
+{{candidates_text}}
 
-RESPONSE FORMAT:
+**RANKING CRITERIA (in order of importance):**
+1.  **Anatomical & Modality Core:** The fundamental anatomy and imaging modality (e.g., CT of the Head, Ultrasound of the Abdomen) must be a strong match.
+    -   Major modality mismatches (e.g., CT vs. MRI) are critical failures.
+    -   Minor variations (e.g., CT vs. CTA, MR vs. MRA) are very close matches and should be ranked highly.
+2.  **Key Clinical Concepts:** Match critical clinical details precisely. This includes:
+    -   **Laterality:** (left, right, bilateral). If the input is non-specific, a bilateral or non-specific candidate is preferred over a specific one (e.g., for input "MRI Knee", the candidate "MRI Knee" is better than "MRI Left Knee").
+    -   **Contrast:** (with/without contrast, C+/C-). This must align.
+    -   **Procedure Type:** (e.g., angiogram, biopsy, screening, guidance, interventional). These terms are clinically significant.
+3.  **Specificity:** The ideal match has a similar level of detail.
+    -   Do not penalize a match for lacking non-clinical details found in the input (e.g., "portable").
+    -   Slightly prefer candidates that don't introduce significant new clinical details not mentioned in the input.
+
+**RESPONSE FORMAT:**
 Return ONLY a JSON array of the candidate numbers in ranked order (best first):
 [candidate_number, candidate_number, ...]
 
-EXAMPLES:
+**EXAMPLE 1:**
 Input: "CT chest with contrast"
-Candidates: 
+Candidates:
 1. CT Chest with IV Contrast
-2. CT Thorax without Contrast  
+2. CT Thorax without Contrast
 3. MRI Chest with Contrast
+Response: [1, 2, 3]
+
+**EXAMPLE 2:**
+Input: "Portable CXR"
+Candidates:
+1. X-ray of Chest
+2. CT of Chest
+3. X-ray of Ribs
 Response: [1, 3, 2]
 
-Input: "Left knee MRI" 
+**EXAMPLE 3:**
+Input: "US guided biopsy of liver"
 Candidates:
-1. MRI Knee Bilateral
-2. MRI Left Knee
-3. MRI Right Knee
-Response: [2, 1, 3]"""
+1. Ultrasound guided biopsy of liver
+2. CT guided biopsy of liver
+3. Ultrasound of liver
+Response: [1, 3, 2]"""
 
         return prompt
     
