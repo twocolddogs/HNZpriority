@@ -201,9 +201,9 @@ Evaluate each candidate against the pre-processed input exam using extractable r
 
 **Example Response Structure:**
 ```json
-{
+{{
   "ranking": [1, 3, 2]
-}"""
+}}"""
 
         return prompt
     

@@ -391,10 +391,11 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     async function warmupAPI() {
+        let warmupMessageId = null;
         try {
             console.log('🔥 Warming up API...');
             const warmupStart = performance.now();
-            statusManager.show('🔥 Warming up processing engine...', 'info');
+            warmupMessageId = statusManager.show('🔥 Warming up processing engine...', 'info');
             
             const response = await fetch(`${apiConfig.baseUrl}/warmup`, { 
                 method: 'POST',
@@ -407,12 +408,17 @@ window.addEventListener('DOMContentLoaded', function() {
                 const warmupTime = performance.now() - warmupStart;
                 console.log(`✅ API warmed up successfully in ${warmupTime.toFixed(0)}ms`);
                 console.log('Warmup details:', result.components);
+                
+                // Clear the warming up message and show success
+                if (warmupMessageId) statusManager.remove(warmupMessageId);
                 statusManager.show(`✅ Processing engine ready (${warmupTime.toFixed(0)}ms)`, 'success', 3000);
             } else {
                 throw new Error(`Warmup failed with status ${response.status}`);
             }
         } catch (error) {
             console.warn('⚠️ API warmup failed (processing will still work, but first request may be slower):', error);
+            // Clear the warming up message and show warning
+            if (warmupMessageId) statusManager.remove(warmupMessageId);
             statusManager.show('⚠️ Engine warmup incomplete - first processing may take longer', 'warning', 5000);
         }
     }
