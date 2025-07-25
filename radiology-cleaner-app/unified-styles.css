@@ -2096,9 +2096,9 @@ a:focus-visible {
   visibility: hidden;
   opacity: 0;
   position: absolute;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  left: calc(100% + 10px);
+  transform: translateY(-50%);
   background-color: var(--color-gray-900);
   color: var(--color-white);
   padding: var(--space-3);
@@ -2113,11 +2113,11 @@ a:focus-visible {
 .tooltip-content::after {
   content: "";
   position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  left: -5px;
+  transform: translateY(-50%);
   border: 5px solid transparent;
-  border-top-color: var(--color-gray-900);
+  border-right-color: var(--color-gray-900);
 }
 
 .tooltip-container:hover .tooltip-content {

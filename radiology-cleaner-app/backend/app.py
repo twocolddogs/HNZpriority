@@ -98,7 +98,7 @@ def _get_nlp_processor(model: str = 'default') -> Optional[NLPProcessor]:
 
 def _initialize_app():
     """Initializes all application components in the correct dependency order."""
-    global semantic_parser, nlp_processor, model_processors, nhs_lookup_engine, cache_manager
+    global semantic_parser, nlp_processor, model_processors, nhs_lookup_engine, cache_manager, reranker_manager
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
     
