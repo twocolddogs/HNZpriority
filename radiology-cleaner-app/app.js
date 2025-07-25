@@ -489,14 +489,6 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('closeModalBtn').addEventListener('click', closeModal);
         document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
         
-        // Previous results event listeners
-        document.getElementById('loadPreviousBtn').addEventListener('click', populateResultsFileSelect);
-        document.getElementById('autoLoadLatestBtn').addEventListener('click', autoLoadLatestResults);
-        document.getElementById('resultsFileSelect').addEventListener('change', (e) => {
-            if (e.target.value) {
-                loadSelectedBatchResults(e.target.value);
-            }
-        });
         
         document.getElementById('viewToggleBtn').addEventListener('click', toggleView);
         document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
@@ -706,11 +698,13 @@ window.addEventListener('DOMContentLoaded', function() {
                             exam_name: item.input.exam_name,
                             clean_name: item.output.clean_name,
                             snomed: item.output.snomed || {},
-                            components: item.output.components || {}
+                            components: item.output.components || {},
+                            all_candidates: item.output.all_candidates || []
                         } : {
                             ...item.input,
                             clean_name: `ERROR: ${item.error}`,
-                            components: {}
+                            components: {},
+                            all_candidates: []
                         };
                     });
                     allMappings.push(...chunkMappings);
@@ -730,11 +724,13 @@ window.addEventListener('DOMContentLoaded', function() {
                                     exam_name: item.input.exam_name,
                                     clean_name: item.output.clean_name,
                                     snomed: item.output.snomed || {},
-                                    components: item.output.components || {}
+                                    components: item.output.components || {},
+                                    all_candidates: item.output.all_candidates || []
                                 } : {
                                     ...item.input,
                                     clean_name: `ERROR: ${item.error}`,
-                                    components: {}
+                                    components: {},
+                                    all_candidates: []
                                 };
                             });
                             allMappings.push(...chunkMappings);
@@ -769,11 +765,13 @@ window.addEventListener('DOMContentLoaded', function() {
                                     exam_name: item.input.exam_name,
                                     clean_name: item.output.clean_name,
                                     snomed: item.output.snomed || {},
-                                    components: item.output.components || {}
+                                    components: item.output.components || {},
+                                    all_candidates: item.output.all_candidates || []
                                 } : {
                                     ...item.input,
                                     clean_name: `ERROR: ${item.error}`,
-                                    components: {}
+                                    components: {},
+                                    all_candidates: []
                                 };
                             });
                             allMappings.push(...chunkMappings);
@@ -1124,113 +1122,9 @@ window.addEventListener('DOMContentLoaded', function() {
         URL.revokeObjectURL(url);
     }
 
-    // --- PREVIOUS RESULTS MANAGEMENT ---
-    async function loadAvailableBatchResults() {
-        try {
-            const response = await fetch(`${apiConfig.baseUrl}/list_batch_results`);
-            if (!response.ok) {
-                console.error(`Error loading batch results list: ${response.status}`);
-                return null;
-            }
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching batch results list:', error);
-            return null;
-        }
-    }
-
-    async function populateResultsFileSelect() {
-        const resultsData = await loadAvailableBatchResults();
-        const selectElement = document.getElementById('resultsFileSelect');
-        const infoElement = document.getElementById('resultsFileInfo');
-        
-        if (!resultsData || !resultsData.files || resultsData.files.length === 0) {
-            infoElement.textContent = 'No previous results files found.';
-            infoElement.style.display = 'block';
-            return;
-        }
-
-        // Clear existing options
-        selectElement.innerHTML = '<option value="">Select a results file...</option>';
-        
-        // Add options for each file
-        resultsData.files.forEach(file => {
-            const option = document.createElement('option');
-            option.value = file.filename;
-            const date = new Date(file.modified_iso);
-            const sizeKB = Math.round(file.size_bytes / 1024);
-            option.textContent = `${file.filename} (${date.toLocaleDateString()} ${date.toLocaleTimeString()}, ${sizeKB}KB)`;
-            selectElement.appendChild(option);
-        });
-
-        selectElement.style.display = 'inline-block';
-        infoElement.textContent = `Found ${resultsData.files.length} results file(s). Most recent: ${resultsData.most_recent || 'None'}`;
-        infoElement.style.display = 'block';
-    }
-
-    async function loadSelectedBatchResults(filename) {
-        if (!filename) {
-            alert('Please select a results file first.');
-            return;
-        }
-
-        try {
-            showLoading('Loading batch results...');
-            
-            const response = await fetch(`${apiConfig.baseUrl}/get_batch_results/${filename}`);
-            if (!response.ok) {
-                throw new Error(`Error loading results: ${response.status}`);
-            }
-            
-            const results = await response.json();
-            
-            // Clear any existing data
-            allExams = [];
-            
-            // Process the loaded results
-            if (Array.isArray(results)) {
-                allExams = results;
-                runAnalysis();
-                showSuccess(`Loaded ${results.length} results from ${filename}`);
-            } else {
-                throw new Error('Invalid results format');
-            }
-            
-        } catch (error) {
-            console.error('Error loading batch results:', error);
-            showError(`Failed to load results: ${error.message}`);
-        } finally {
-            hideLoading();
-        }
-    }
-
-    async function autoLoadLatestResults() {
-        try {
-            showLoading('Loading latest results...');
-            
-            const resultsData = await loadAvailableBatchResults();
-            if (!resultsData || !resultsData.most_recent) {
-                showError('No previous results found to load.');
-                return;
-            }
-            
-            await loadSelectedBatchResults(resultsData.most_recent);
-            
-        } catch (error) {
-            console.error('Error auto-loading latest results:', error);
-            showError(`Failed to load latest results: ${error.message}`);
-        } finally {
-            hideLoading();
-        }
-    }
 
     // --- INITIALIZE APP ---
     testApiConnectivity();
     loadAvailableModels();
     setupEventListeners();
-    
-    // Auto-load latest results on page load
-    setTimeout(() => {
-        autoLoadLatestResults();
-    }, 1000); // Wait 1 second for API connectivity test to complete
 });
