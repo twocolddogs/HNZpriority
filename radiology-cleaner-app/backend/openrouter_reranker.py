@@ -138,66 +138,72 @@ class OpenRouterReranker:
         Returns:
             Formatted prompt string
         """
-        # Format candidates with indices
-        candidates_text = ""
+        # Format candidates as JSON object
+        candidates_json = {}
         for i, doc in enumerate(documents, 1):
-            candidates_text += f"{i}. {doc}\n"
+            candidates_json[str(i)] = doc
         
-        prompt = f"""You are an expert medical terminologist specializing in radiology procedure codes. Your primary goal is to facilitate a **many-to-one mapping** of diverse, messy, real-world exam names to a single, canonical NHS procedure name. You are creating a single source of truth.
+        candidates_json_str = json.dumps(candidates_json, indent=2)
+        
+        prompt = f"""You are a systematic and highly precise clinical coding engine. The app you have created is designed to assess up to 6 pipelines of radiology exam codes + radiology exam names and map them to a predetermined and authoraitative "ground truth". This is a game-changing endeavour but because the use case is health we need to keep in mind that accuuracy trumps speed.
 
-**TASK:**
-Analyze the **Input Exam** and rank the **Canonical Candidates** to find the most semantically equivalent match. The ranking should reflect which canonical name best represents the core clinical procedure described in the input.
+**Primary Objective:**
+Analyze the core clinical intent of the Input Exam and rank the provided candidates from most to least semantically equivalent. Your output will strongly determine the final mapping. You **MUST** only present candidates that exist in the reference data set. 
 
-**CORE INSTRUCTIONS:**
-- **Focus on Clinical Meaning:** Ignore logistical or administrative terms in the input (e.g., "portable", "ward", "stat", "single view", "department of").
-- **Embrace Many-to-One Mapping:** Different input names that describe the same procedure should map to the same canonical candidate. For example, "X-ray Chest", "CXR Portable", and "Chest 1 View" should all strongly match the canonical name "X-ray of Chest".
-- **Handle Ambiguity:** If the input is less specific than the candidates (e.g., Input: "Knee MRI", Candidates: "MRI Left Knee", "MRI Right Knee"), the specific candidates are both good matches. Rank them closely.
+---
+**INPUTS:**
 
-**INPUT EXAM:**
-"{{query}}"
+1.  **`input_exam`**: The real-world exam name to be matched.
+    - `{query}`
 
-**CANONICAL CANDIDATES (from the standard NHS list):**
-{{candidates_text}}
+2.  **`candidate_procedures`**: A JSON object of potential matches from the NHS list.
+    - `{candidates_json_str}`
 
-**RANKING CRITERIA (in order of importance):**
-1.  **Anatomical & Modality Core:** The fundamental anatomy and imaging modality (e.g., CT of the Head, Ultrasound of the Abdomen) must be a strong match.
-    -   Major modality mismatches (e.g., CT vs. MRI) are critical failures.
-    -   Minor variations (e.g., CT vs. CTA, MR vs. MRA) are very close matches and should be ranked highly.
-2.  **Key Clinical Concepts:** Match critical clinical details precisely. This includes:
-    -   **Laterality:** (left, right, bilateral). If the input is non-specific, a bilateral or non-specific candidate is preferred over a specific one (e.g., for input "MRI Knee", the candidate "MRI Knee" is better than "MRI Left Knee").
-    -   **Contrast:** (with/without contrast, C+/C-). This must align.
-    -   **Procedure Type:** (e.g., angiogram, biopsy, screening, guidance, interventional). These terms are clinically significant.
-3.  **Specificity:** The ideal match has a similar level of detail.
-    -   Do not penalize a match for lacking non-clinical details found in the input (e.g., "portable").
-    -   Slightly prefer candidates that don't introduce significant new clinical details not mentioned in the input.
+---
+**SCORING RUBRIC & THOUGHT PROCESS:**
 
-**RESPONSE FORMAT:**
-Return ONLY a JSON array of the candidate numbers in ranked order (best first):
-[candidate_number, candidate_number, ...]
+For all input exam names, due to the legacy character constraints of the Radiology Information systmes they exist in, assume that even post abbreviaton expansion more information would have been encoded if possible.
 
-**EXAMPLE 1:**
-Input: "CT chest with contrast"
-Candidates:
-1. CT Chest with IV Contrast
-2. CT Thorax without Contrast
-3. MRI Chest with Contrast
-Response: [1, 2, 3]
 
-**EXAMPLE 2:**
-Input: "Portable CXR"
-Candidates:
-1. X-ray of Chest
-2. CT of Chest
-3. X-ray of Ribs
-Response: [1, 3, 2]
+Evaluate each candidate against the pre-processed input exam using extractable relevent component/context data following the following prioritised steps.
 
-**EXAMPLE 3:**
-Input: "US guided biopsy of liver"
-Candidates:
-1. Ultrasound guided biopsy of liver
-2. CT guided biopsy of liver
-3. Ultrasound of liver
-Response: [1, 3, 2]"""
+**Step 1: Critical Modality & Anatomy Match (Pass/Fail)**
+- Does the candidate's core modality and primary anatomy match the input?
+  - **Perfect Match:** (e.g., Input "CT Head" -> Candidate "CT of Head"). This is the ideal.
+  - **Acceptable Variant:** (e.g., Input "CTA Chest" -> Candidate "CT Angiography of Chest"). This is also a very strong match.
+  - **CRITICAL FAILURE:** (e.g., Input "CT Head" -> Candidate "MRI of Head"). A mismatch in the primary modality (CT vs. MRI vs. US) means the candidate is fundamentally incorrect and must be ranked last.
+  - **Edge Case:** (e.g., Input "PET/CT" -> Candidate "NM PET/CT". International convention refers to PET CT as a modality despite these actually being a NM i.e. Nuclear Medicine study
+
+**Step 2: Clinical Specifiers Match (Score High/Medium/Low)**
+- Assess how well the candidate matches key clinical details.
+  - **Procedure Type:** Does the candidate correctly capture procedural terms like `biopsy`, `angiography`, `guidance`, `interventional`, `screening`? A mismatch here is a significant penalty. (e.g., "US Liver" is a poor match for "US Guided Biopsy of Liver").
+  - **Contrast:** Does the contrast status (`with contrast`, `without contrast`) align? Binary explicit mismatches must be heavily penalized.
+  - **Laterality (Left/Right/Bilateral):** Apply this specific logic:
+    - If the **input** specifies a side (e.g., "Right Knee"), the **candidate must** match that side.
+    - If the **input** is non-specific (e.g., "Knee"), a non-specific or bilateral candidate (e.g., "X-ray of Knee" or "X-ray of Both Knees") is **strongly preferred** over a single-sided one (e.g., "X-ray of Left Knee").
+
+**Step 3: Specificity Alignment (Apply Penalty)**
+- The ideal candidate has a similar level of clinical detail.
+  - **IGNORE** logistical/administrative details in the input (e.g., "portable", "ward", "stat", "single view"). These do not affect the match score.
+  - **APPLY A PENALTY** if the candidate introduces significant clinical information that is *not* in the input. (e.g., For input "MRI Brain", the candidate "MRI Brain with Spectroscopy" is a worse match than "MRI of Brain").
+  - **FAVOUR SIMPLE OVER COMPLEX** Don't force a match of a common exam to a rare study because of a specific anatomial term. (e.g., For input "MRI Brain", the candidate "MRI Brain with Spectroscopy" is a worse match than "MRI Head").
+
+**Step 4: Input Specificity Alignment (Apply Bonus)**
+- Noting the inherant limiations on character couunt in core Radiology systems, the presence of additional information in the input name is strongly relevant.
+  - **FAVOUR COMPLEX OVER SIMPLE** If the Input has unusual terms, even if abbreviated, then favour candidates that have the same terms. (e.g. "MRI Bran Diff" should strongly favour candidates with "Diffusion" vs the more generic "MRI Brain" or "MRI Head".
+
+---
+**RESPONSE FORMAT & CONSTRAINTS:**
+
+- You **MUST** respond with **ONLY** a single, valid JSON object.
+- The JSON object must contain a single key, "ranking", with a value being an array of the candidate numbers (as integers) in ranked order from best to worst.
+- Do not add any explanation, commentary, or markdown formatting before or after the JSON object.
+
+**Example Response Structure:**
+```json
+{
+  "ranking": [1, 3, 2]
+}"""
 
         return prompt
     
@@ -330,7 +336,7 @@ Response: [1, 3, 2]"""
         Test the OpenRouter connection with a simple query.
         
         Returns:
-            True if connection successful, False otherwise
+            True if connection successful, False otherwiseb
         """
         if not self.is_available():
             return False
