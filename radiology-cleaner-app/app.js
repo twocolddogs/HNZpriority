@@ -622,6 +622,28 @@ window.addEventListener('DOMContentLoaded', function() {
     
     // --- EVENT LISTENERS ---
     function setupEventListeners() {
+        // Hamburger menu functionality
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const hamburgerDropdown = document.getElementById('hamburgerDropdown');
+        
+        if (hamburgerToggle && hamburgerDropdown) {
+            hamburgerToggle.addEventListener('click', function() {
+                const isHidden = hamburgerDropdown.classList.contains('hidden');
+                if (isHidden) {
+                    hamburgerDropdown.classList.remove('hidden');
+                } else {
+                    hamburgerDropdown.classList.add('hidden');
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!hamburgerToggle.contains(event.target) && !hamburgerDropdown.contains(event.target)) {
+                    hamburgerDropdown.classList.add('hidden');
+                }
+            });
+        }
+        
         uploadSection.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => e.target.files[0] && processFile(e.target.files[0]));
         ['dragover', 'dragleave', 'drop'].forEach(eventName => {
