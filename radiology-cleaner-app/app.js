@@ -952,68 +952,25 @@ window.addEventListener('DOMContentLoaded', function() {
             
             progressId = statusManager.showProgress(`Processing ${jobName}`, 0, totalCodes);
 
-            // Start batch processing (non-blocking)
-            const processingPromise = fetch(BATCH_API_URL, {
+            const response = await fetch(BATCH_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ exams: allExams, model: currentModel, reranker: currentReranker })
             });
 
-            // Start progress polling if we get a batch_id from the initial response
-            let progressInterval = null;
-            let batchResult = null;
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Batch API failed: ${errorText}`);
+            }
 
-            try {
-                const response = await processingPromise;
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Batch API failed: ${errorText}`);
-                }
+            const batchResult = await response.json();
+            console.log('Backend response:', batchResult);
 
-                batchResult = await response.json();
-                console.log('Backend response:', batchResult);
-
-                // If we have a batch_id, we can poll for progress
-                if (batchResult.batch_id) {
-                    console.log('Starting progress polling for batch:', batchResult.batch_id);
-                    
-                    progressInterval = setInterval(async () => {
-                        try {
-                            const progressResponse = await fetch(`${BASE_API_URL}/batch_progress/${batchResult.batch_id}`);
-                            if (progressResponse.ok) {
-                                const progressData = await progressResponse.json();
-                                console.log('Progress update:', progressData);
-                                
-                                // Update progress display
-                                if (progressId) {
-                                    statusManager.updateProgress(progressId, progressData.processed, progressData.total, 
-                                        `Processing ${jobName} - ${progressData.processed}/${progressData.total} (${progressData.percentage}%)`);
-                                }
-                            } else if (progressResponse.status === 404) {
-                                // Progress file not found - processing is complete
-                                clearInterval(progressInterval);
-                                console.log('Progress polling completed - batch finished');
-                            }
-                        } catch (progressError) {
-                            console.error('Progress polling error:', progressError);
-                            // Don't clear interval on temporary errors, just log them
-                        }
-                    }, 1000); // Poll every second
-                    
-                    // Set a timeout to stop polling after reasonable time
-                    setTimeout(() => {
-                        if (progressInterval) {
-                            clearInterval(progressInterval);
-                            console.log('Progress polling timeout - stopping');
-                        }
-                    }, 300000); // 5 minutes timeout
-                }
-            } finally {
-                // Clean up progress polling when processing completes
-                if (progressInterval) {
-                    clearInterval(progressInterval);
-                }
+            // Note: Progress polling was implemented but since batch processing is synchronous,
+            // it only starts after processing completes. For now, show completed status.
+            if (progressId) {
+                statusManager.updateProgress(progressId, totalCodes, totalCodes, 
+                    `Completed processing ${jobName} - ${totalCodes}/${totalCodes} (100%)`);
             }
                 
                 // Handle both old format (inline results) and new format (file references)
@@ -1116,11 +1073,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 
             statusManager.show(`Successfully processed ${allMappings.length} records from ${jobName}.`, 'success', 5000);
             
-            // Try to reload models after first successful processing (API is now warmed up)
-            if (Object.keys(availableRerankers).length <= 4) {
-                console.log('API warmed up, attempting to reload models...');
-                loadAvailableModels();
-            }
+            // Models are already loaded - no need to reload after processing
             
             runAnalysis(allMappings);
 
@@ -1460,7 +1413,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div></div>
                         <div class="meta-item"><strong>Parsed Components</strong><div class="component-tags">${generateComponentTags(group.components)}</div></div>
                     </div>
-                    <div class="original-codes-container" style="display: block;">
+                    <div class="original-codes-container" style="display: none;">
                         <ul class="original-codes-list">${originalCodesList}</ul>
                     </div>
                 </div>`;
