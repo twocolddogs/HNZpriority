@@ -19,7 +19,7 @@ scoring:
 
   # Number of initial candidates to retrieve from the fast vector search (FAISS).
   # A larger number might find a better match but increases processing time for the scoring stage.
-  retriever_top_k: 30
+  retriever_top_k: 20
 
   # --- COMPONENT WEIGHTS ---
   # These weights determine the importance of each structured part of the exam name when
@@ -32,13 +32,35 @@ scoring:
     technique: 0.10    # Importance of matching specific techniques (e.g., 'MRCP', 'SPECT').
 
   # --- FINAL SCORE WEIGHTS ---
-  # V3 Architecture: These weights combine the 'component_score' (rules-based), 'reranker_score' (cross-encoder),
-  # and 'complexity_score' (appropriateness matching) to produce the final confidence score.
+  # V4 Architecture: Reranker-specific weights optimize each model types strengths
   weights_final:
-    component: 0.35    # How much to trust the structured component match (rules-based).
-    reranker: 0.50     # How much to trust the MedCPT cross-encoder reranking score.
-    complexity: 0.15   # How much to trust complexity appropriateness (simple inputs prefer simple FSNs).
-    # frequency: 0.10  # This appears to be a planned or deprecated feature for popularity-based scoring.
+    # Default weights (fallback for any unlisted rerankers)
+    component: 0.55    # Rules-based component matching
+    reranker: 0.45     # Cross-encoder/LLM reranking score
+
+    # Reranker-specific weights (optimal tuning per model type)
+    reranker_specific:
+      # NLP Models - Need more component scoring help due to limited clinical reasoning
+      medcpt:
+        component: 0.65   
+        reranker: 0.35
+      biolord:
+        component: 0.60   # Slightly more trust in BioLORD than MedCPT
+        reranker: 0.40
+      default:  # BioLORD fallback
+        component: 0.60
+        reranker: 0.40
+
+      # OpenRouter Models - Trust their advanced medical reasoning more
+      gpt-4o-mini:
+        component: 0.45   # Let GPTs medical logic shine
+        reranker: 0.55
+      claude-3-haiku:
+        component: 0.50   # Balanced approach for Claude
+        reranker: 0.50
+      gemini-2.5-flash-lite:
+        component: 0.48   # Slightly favor Geminis reasoning
+        reranker: 0.52
 
   # ----------------------------------------------------------------------------------
   # BONUSES & PENALTIES
@@ -77,7 +99,7 @@ scoring:
     enable: true
     # Individual component scores (0.0 to 1.0) must meet these minimums to be considered.
     anatomy_min: 0.1
-    modality_min: 0.4
+    modality_min: 0.35  # Lowered from 0.6 to allow more candidates through for component scoring
     laterality_min: 0.0
     contrast_min: 0.3
     technique_min: 0.0
@@ -118,6 +140,53 @@ scoring:
   # For a generic input (e.g., "CT"), this gives a bonus to a generic candidate (e.g., "CT without contrast").
   anatomy_specificity_preference: true
   generic_anatomy_preference_bonus: 0.15
+
+  # --- DEXA GENERIC PREFERENCE ---
+  # CRITICAL: When input is generic "DEXA" without anatomical qualifiers, strongly prefer generic bone densitometry
+  dexa_generic_preference:
+    enable: true
+    generic_preference_bonus: 0.50   # Strong bonus for generic "CT Bone densitometry" when input lacks anatomy
+    specific_penalty: -0.25          # Penalty for specific anatomical DEXA entries when input is generic
+    generic_dexa_indicators:         # Terms that indicate generic DEXA intent
+      - "dexa"
+      - "bone density"
+      - "bone densitometry"
+      - "dual energy"
+      - "dxa"
+    generic_nhs_entries:             # NHS entries that should get the generic bonus
+      - "CT Bone densitometry"
+      - "Bone densitometry"
+    specific_nhs_patterns:           # NHS patterns that should get penalized when input is generic
+      - "DEXA Scan of.*"
+      - "Dual energy.*absorptiometry.*of.*"
+      - "Bone mineral densitometry.*"
+
+  # --- VESSEL TYPE PREFERENCE ---
+  # CRITICAL: When input says "angiography" (generic), prefer arterial over venous studies
+  # This ensures clinical accuracy as angiography typically refers to arterial imaging
+  vessel_type_preference:
+    enable: true
+    arterial_preference_bonus: 0.20   # Bonus for arterial studies when input is generic "angiography"
+    venous_penalty: -0.15             # Penalty for venous studies when input says "angiography" 
+    generic_angiography_indicators:   # Terms that indicate generic angiography (should prefer arteries)
+      - "angiography"
+      - "angiogram" 
+      - "angio"
+      - "cta"
+      - "ct angiography"
+      - "ct angiogram"
+      - "mr angiography"
+      - "mr angiogram"
+      - "mra"
+    specific_venous_indicators:        # Terms that specifically indicate venous intent
+      - "venography"
+      - "venogram"
+      - "vein"
+      - "venous"
+      - "ctv"
+      - "ct venography"
+      - "mr venography"
+      - "mrv"
 
   # --- ANATOMICAL COMPATIBILITY CONSTRAINTS ---
   # CRITICAL: Blocks anatomically impossible mappings to ensure patient safety.
@@ -215,21 +284,52 @@ scoring:
     - "imaging"
     - "view"
     - "projection"
+  
+  # --- CLINICAL SPECIFICITY SCORING ---
+  # Rewards NHS entries that match the clinical specificity level of the input
+  clinical_specificity_scoring:
+    enable: true
+    specificity_match_bonus: 0.15      # Bonus when clinical specificity levels match
+    generic_over_specific_penalty: -0.10  # Penalty when NHS is generic but input is specific
+    
+    # Clinical specificity patterns (specific â†’ generic hierarchy)
+    clinical_specificity_patterns:
+      # Pregnancy/Obstetric specificity
+      pregnancy_specific:
+        - "first trimester"
+        - "second trimester" 
+        - "third trimester"
+        - "1st trimester"
+        - "2nd trimester"
+        - "3rd trimester"
+      pregnancy_generic:
+        - "pregnancy"
+        - "obstetric"
+        - "multiple pregnancy"
+        - "prenatal"
+        
+      # Anatomical specificity (can be extended for other cases)
+      anatomical_specific:
+        - "lumbar spine"
+        - "cervical spine"
+        - "thoracic spine"
+      anatomical_generic:
+        - "spine"
 
 # ====================================================================================
 # MODALITY SIMILARITY
 # Defines a "partial credit" score for related but different modalities.
 # ====================================================================================
 modality_similarity:
-  CT: { CECT: 0.9, DECT: 0.8, HRCT: 0.9, PET: 0.7, XR: 0.2, Fluoroscopy: 0.1 }
+  CT: { CECT: 0.9, DECT: 0.8, HRCT: 0.9, PET: 0.7, DEXA: 0.85, DXA: 0.85, XR: 0.2, Fluoroscopy: 0.1 }
   MR: { MRI: 1.0, MRA: 0.95, FMRI: 0.8, CT: 0.1 }
   XR: { "X-ray": 1.0, Xray: 1.0, MG: 0.5, FL: 0.6, DEXA: 0.9 }
   US: { Ultrasound: 1.0, USS: 0.9, MRI: 0.1 }
   MG: { Mammography: 1.0, Mammogram: 1.0, Tomosynthesis: 0.9, XR: 0.5 }
   NM: { "Nuclear Medicine": 1.0, Scintigraphy: 0.8, SPECT: 0.9, PET: 0.4 }
   PET: { "PET/CT": 0.95, CT: 0.7 }
-  DEXA: { DXA: 1.0, "Bone Densitometry": 1.0, XR: 0.9 }
-  DXA: { DEXA: 1.0, "Bone Densitometry": 1.0, XR: 0.9 }
+  DEXA: { DXA: 1.0, "Bone Densitometry": 1.0, CT: 0.95, XR: 0.2 }
+  DXA: { DEXA: 1.0, "Bone Densitometry": 1.0, CT: 0.95, XR: 0.2 }
   IR: { Fluoroscopy: 0.6, CT: 0.2, US: 0.2 }
   FL: { Fluoroscopy: 1.0, XR: 0.6, IR: 0.6 } # Assuming FL is Fluoroscopy
 
@@ -258,18 +358,19 @@ context_scoring:
 preprocessing:
   # The primary dictionary for expanding medical abbreviations.
   # The key is the abbreviation, and the value is the full term.
+  
   medical_abbreviations:
-    # --- AUGMENTED ABBREVIATIONS FROM SANITY TEST ANALYSIS ---
-    "II": "image intensifier fluoroscopy"   # For "II Operative Cholangiogram" to ensure modality is parsed
-    "RF": "radiofrequency fluoroscopy"     # For "RF Videofluoroscopy Swallow"
-    "USS": "ultrasound scan"               # Normalize common alternative
-    "Videofluoroscopy": "videofluoroscopy swallow" # Helps group swallow studies for technique parsing
-    "C spine": "cervical spine"            # Handle common variant
-    "L spine": "lumbar spine"              # Handle common variant
-    "T spine": "thoracic spine"            # Handle common variant
-    "Bone density": "dexa"                 # Normalize "Bone density Scan" to DEXA modality
-    "Renogram": "renogram"                 # Ensure renogram is a standalone term for parser
-    "Xray": "x-ray"                        # Standardize "Xray" to "x-ray"
+    "II": "image intensifier fluoroscopy"    
+    "RF": "radiofrequency fluoroscopy"     
+    "USS": "ultrasound scan"               
+    "Videofluoroscopy": "videofluoroscopy swallow"  
+    "C spine": "cervical spine"            
+    "L spine": "lumbar spine"              
+    "T spine": "thoracic spine"            
+    "Bone density": "dexa bone densitometry"
+    "Bone density scan": "dexa bone densitometry"
+    "Renogram": "renogram"                
+    "Xray": "x-ray"                        
 
     # --- CRITICAL: CONTRAST ---
     "C+": "with contrast"
@@ -336,9 +437,9 @@ preprocessing:
     "REN": "renal"
     
     # --- MODALITY & TECHNIQUE ---
-    "MRCP": "magnetic resonance cholangiopancreatography"
-    "DEXA": "dual-energy x-ray absorptiometry"
-    "DXA": "dexa" # Normalize DXA to DEXA
+    "MRCP": "magnetic resonance cholangiopancreatography biliary pancreas liver"
+    "DEXA": "dexa bone densitometry"
+    "DXA": "dexa bone densitometry" # Normalize DXA to DEXA
     "NM": "nuclear medicine"
     "IR": "interventional radiology"
     "FL": "fluoroscopy"
@@ -406,7 +507,7 @@ preprocessing:
     "ABDOMEN": "abdomen"
     "ABDO": "abdomen"
     "TUMMY": "abdomen"
-    "BRAIN": "brain"
+    "BRAIN": "head"
     "CRANIUM": "head"
     "CHED": "head"
     "THORAX": "chest"
@@ -424,7 +525,7 @@ preprocessing:
     
   anatomy_vocabulary:
     head: head
-    brain: brain
+    brain: head
     skull: head
     cranium: head
     sinus: sinuses
@@ -462,8 +563,11 @@ preprocessing:
     spine: spine
     spinal: spine
     'cervical spine': 'cervical spine'
+    'spine cervical': 'cervical spine'
     'thoracic spine': 'thoracic spine'
+    'spine thoracic': 'thoracic spine'
     'lumbar spine': 'lumbar spine'
+    'spine lumbar': 'lumbar spine'
     sacrum: sacrum
     coccyx: coccyx
     shoulder: shoulder
@@ -502,6 +606,7 @@ preprocessing:
     thyroid: thyroid
     bone: bone
     bones: bone
+    densitometry: bone
     joint: joint
     joints: joint
     'soft tissue': 'soft tissue'
@@ -511,6 +616,7 @@ preprocessing:
     adrenals: adrenal
     biliary: biliary
     gallbladder: gallbladder
+    cholangiopancreatography: biliary
     'lymph node': 'lymph node'
     'lymph nodes': 'lymph node'
     parotid: parotid
