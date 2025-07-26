@@ -48,15 +48,33 @@
             </div>
         </div>
 
+        <!-- Status Message Container - Moved to top -->
+        <div id="statusMessageContainer" class="status-message-container" style="margin-bottom: 20px;"></div>
+
         <div class="main-card">
-            <div id="uploadSection" class="upload-section">
+            <!-- Reduced height drop zone -->
+            <div id="uploadSection" class="upload-section" style="padding: 30px 20px; min-height: auto;">
                 <div class="upload-icon"></div>
-                <h2>Upload Radiology Codes JSON</h2>
-                <p>Drop your codes.json file here or click to browse.</p>
+                <h2 style="margin: 10px 0;">Upload Radiology Codes JSON</h2>
+                <p style="margin: 5px 0 15px 0;">Drop your codes.json file here or click to browse.</p>
                 <input type="file" id="fileInput" accept=".json" />
             </div>
 
-            <!-- Demos Section -->
+            <!-- Model Settings Section - Moved up -->
+            <div id="modelSettingsSection" class="model-settings-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f8f9fa;">
+                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">AI Model Settings</h3>
+                <div class="model-selection-container">
+                    <!-- Dynamic model buttons will be inserted here by JavaScript -->
+                </div>
+                
+                <h4 style="margin: 20px 0 10px 0; font-size: 1em; color: #555;">Reranker Selection</h4>
+                <p style="font-size: 0.9em; color: #666; margin: 0 0 15px 0;">Choose the AI model used for reranking and scoring candidates. Compare HuggingFace models vs OpenRouter LLMs.</p>
+                <div class="reranker-selection-container">
+                    <!-- Dynamic reranker buttons will be inserted here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Demos & Configuration Section - Moved down -->
             <div id="demosSection" class="demos-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
                 <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Demos & Configuration</h3>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start;">
@@ -88,24 +106,7 @@
                 </div>
             </div>
 
-
-            <!-- Model Settings Section -->
-            <div id="modelSettingsSection" class="model-settings-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f8f9fa;">
-                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">AI Model Settings</h3>
-                <div class="model-selection-container">
-                    <!-- Dynamic model buttons will be inserted here by JavaScript -->
-                </div>
-                
-                <h4 style="margin: 20px 0 10px 0; font-size: 1em; color: #555;">Reranker Selection</h4>
-                <p style="font-size: 0.9em; color: #666; margin: 0 0 15px 0;">Choose the AI model used for reranking and scoring candidates. Compare HuggingFace models vs OpenRouter LLMs.</p>
-                <div class="reranker-selection-container">
-                    <!-- Dynamic reranker buttons will be inserted here by JavaScript -->
-                </div>
-            </div>
-
             <div class="file-info" id="fileInfo"></div>
-            <!-- Status Message Container for live processing updates -->
-            <div id="statusMessageContainer" class="status-message-container"></div>
 
             <div class="results-section" id="resultsSection">
                 <h2 id="resultsTitle">Cleaning Results</h2>
