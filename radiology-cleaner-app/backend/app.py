@@ -66,6 +66,7 @@ def after_request(response):
 semantic_parser: Optional[RadiologySemanticParser] = None
 nhs_lookup_engine: Optional[NHSLookupEngine] = None
 model_processors: Dict[str, NLPProcessor] = {}
+reranker_manager: Optional[RerankerManager] = None
 _init_lock = threading.Lock()
 _app_initialized = False
 # DB/Cache managers would be initialized here in a full app
