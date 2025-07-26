@@ -285,9 +285,9 @@ class StatusManager {
 const statusManager = new StatusManager();
 
 // --- GLOBAL VARIABLES & STATE ---
-let currentModel = 'retriever';
+let currentModel = localStorage.getItem('selectedModel') || 'retriever';
 let availableModels = {};
-let currentReranker = 'medcpt';
+let currentReranker = localStorage.getItem('selectedReranker') || 'medcpt';
 let availableRerankers = {};
 let allMappings = [];
 let summaryData = null;
@@ -342,6 +342,7 @@ function switchModel(modelKey) {
         return;
     }
     currentModel = modelKey;
+    localStorage.setItem('selectedModel', modelKey);
     document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`${modelKey}ModelBtn`)?.classList.add('active');
     statusManager.show(`Switched to ${formatModelName(modelKey)} model`, 'success', 3000);
@@ -391,8 +392,6 @@ window.addEventListener('DOMContentLoaded', function() {
     const resultsSection = document.getElementById('resultsSection');
     const resultsBody = document.getElementById('resultsBody');
     const sanityButton = document.getElementById('sanityTestBtn');
-    const uploadConfigButton = document.getElementById('uploadConfigBtn');
-    const configFileInput = document.getElementById('configFileInput');
     
     // Config editor elements
     const editConfigButton = document.getElementById('editConfigBtn');
@@ -455,9 +454,22 @@ window.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 const modelsData = await response.json();
                 availableModels = modelsData.models || {};
-                currentModel = modelsData.default_model || 'retriever';
+                // Use saved selection if available, otherwise fallback to default
+                const savedModel = localStorage.getItem('selectedModel');
+                if (savedModel && availableModels[savedModel]) {
+                    currentModel = savedModel;
+                } else {
+                    currentModel = modelsData.default_model || 'retriever';
+                }
+                
                 availableRerankers = modelsData.rerankers || {};
-                currentReranker = modelsData.default_reranker || 'medcpt';
+                // Use saved selection if available, otherwise fallback to default
+                const savedReranker = localStorage.getItem('selectedReranker');
+                if (savedReranker && availableRerankers[savedReranker]) {
+                    currentReranker = savedReranker;
+                } else {
+                    currentReranker = modelsData.default_reranker || 'medcpt';
+                }
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
                 console.log('✓ Available rerankers loaded:', Object.keys(availableRerankers));
                 buildModelSelectionUI();
@@ -601,6 +613,7 @@ window.addEventListener('DOMContentLoaded', function() {
             return;
         }
         currentReranker = rerankerKey;
+        localStorage.setItem('selectedReranker', rerankerKey);
         document.querySelectorAll('.reranker-toggle').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`${rerankerKey}RerankerBtn`)?.classList.add('active');
         statusManager.show(`Switched to ${formatRerankerName(rerankerKey)} reranker`, 'success', 3000);
@@ -627,12 +640,7 @@ window.addEventListener('DOMContentLoaded', function() {
             console.error('❌ Sanity test button not found!');
         }
         
-        if (uploadConfigButton && configFileInput) {
-            uploadConfigButton.addEventListener('click', () => configFileInput.click());
-            configFileInput.addEventListener('change', handleConfigUpload);
-        } else {
-            console.error('❌ Config upload elements not found!');
-        }
+        // Upload config functionality removed - Edit Config handles all config management
         
         // Config editor event listeners
         if (editConfigButton) {
@@ -785,54 +793,7 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function handleConfigUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        if (!file.name.match(/\.(yaml|yml)$/i)) {
-            statusManager.show('Please select a valid YAML file (.yaml or .yml)', 'error', 5000);
-            return;
-        }
-
-        try {
-            if (uploadConfigButton) {
-                uploadConfigButton.disabled = true;
-                uploadConfigButton.innerHTML = 'Uploading...';
-            }
-
-            let statusId = statusManager.show('Uploading config.yaml...', 'progress');
-
-            const formData = new FormData();
-            formData.append('config', file);
-
-            const response = await fetch(`${apiConfig.baseUrl}/upload_config`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            statusManager.remove(statusId);
-            
-            statusManager.show('✓ Config uploaded. Cache rebuild initiated in the background.', 'success', 8000);
-            
-            configFileInput.value = '';
-
-        } catch (error) {
-            console.error('Config upload failed:', error);
-            statusManager.show(`❌ Config Upload Failed: ${error.message}`, 'error', 10000);
-            configFileInput.value = '';
-        } finally {
-            if (uploadConfigButton) {
-                uploadConfigButton.disabled = false;
-                uploadConfigButton.innerHTML = 'Upload New Config';
-            }
-        }
-    }
+    // Config upload functionality removed - Edit Config handles all config management
 
     // --- CONFIG EDITOR FUNCTIONS ---
     
