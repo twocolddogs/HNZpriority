@@ -34,14 +34,14 @@
                     
                     <div id="hamburgerDropdown" class="hamburger-dropdown hidden">
                         <div class="dropdown-section">
-                            <button id="helpButton" class="dropdown-item">
+                            <a href="help.html" class="dropdown-item">
                                 <span class="dropdown-icon nerd-icon">󰋖</span>
                                 Help
-                            </button>
-                            <button id="architectureButton" class="dropdown-item">
+                            </a>
+                            <a href="about.html" class="dropdown-item">
                                 <span class="dropdown-icon nerd-icon">󰘦</span>
                                 How this works
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -173,45 +173,7 @@
 
     </div>
 
-    <!-- Help Modal -->
-    <div id="helpModal" class="modal-overlay hidden">
-        <div class="modal-container help-modal">
-            <div class="modal-header">
-                <h2>System Documentation</h2>
-                <button id="closeHelpModal" class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="help-content">
-                    <div id="helpContent" class="help-text">
-                        <!-- Help content will be populated by JavaScript -->
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="closeHelpBtn" class="button primary">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- System Architecture Modal -->
-    <div id="architectureModal" class="modal-overlay hidden">
-        <div class="modal-container architecture-modal">
-            <div class="modal-header">
-                <h2>🏗️ System Architecture</h2>
-                <button id="closeArchitectureModal" class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="architecture-content">
-                    <div id="architectureContent" class="architecture-text">
-                        <!-- Architecture content will be populated by JavaScript -->
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="closeArchitectureBtn" class="button primary">Close</button>
-            </div>
-        </div>
-    </div>
+    <!-- Help and Architecture content moved to dedicated pages: help.html and about.html -->
 
     <!-- Config Editor Modal -->
     <div class="modal" id="configEditorModal">

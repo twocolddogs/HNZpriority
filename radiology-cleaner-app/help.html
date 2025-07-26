@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help - Radiology Code Semantic Cleaner</title>
+    <!-- Fonts -->
+    <link href="./fonts/poppins.css" rel="stylesheet" type="text/css">
+    <link href="./fonts/publicsans.css" rel="stylesheet" type="text/css">
+    <!-- Unified Design System -->
+    <link href="./unified-styles.css" rel="stylesheet" type="text/css">
+    <style>
+        .help-page {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .help-content {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .help-nav {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+        .help-nav a {
+            color: #3f51b5;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .help-nav a:hover {
+            text-decoration: underline;
+        }
+        .help-section {
+            margin-bottom: 40px;
+        }
+        .help-section h2 {
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .help-section h3 {
+            color: #555;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .help-section p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .help-section ul, .help-section ol {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            padding-left: 25px;
+        }
+        .help-section li {
+            margin-bottom: 8px;
+        }
+        .code-sample {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="app-header">
+            <div class="brand-bar">
+                <div class="brand-content">
+                    <img src="./images/HealthNZ_logo_v2.svg" alt="Health New Zealand Logo" class="app-logo">
+                    <div class="header-divider"></div>
+                    <div class="brand-text">
+                        <h1 class="brand-title">Help & Documentation</h1>
+                        <p class="brand-subtitle">Radiology Code Semantic Cleaner</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="help-page">
+            <div class="help-nav">
+                <a href="index.html">← Back to Main Application</a> | 
+                <a href="about.html">System Architecture</a>
+            </div>
+
+            <div class="help-content">
+                <div class="help-section">
+                    <h2>📚 Getting Started</h2>
+                    <p>The Radiology Code Semantic Cleaner is an AI-powered tool that standardizes radiology exam names against NHS reference data using advanced natural language processing and semantic matching.</p>
+                    
+                    <h3>Quick Start Guide</h3>
+                    <ol>
+                        <li><strong>Select AI Models:</strong> Choose your preferred retriever and reranker models from the AI Model Settings section</li>
+                        <li><strong>Upload Data:</strong> Drop your JSON file containing radiology codes in the upload area</li>
+                        <li><strong>Review Results:</strong> Examine the cleaned names, confidence scores, and mappings</li>
+                        <li><strong>Export Data:</strong> Download the processed results for use in your systems</li>
+                    </ol>
+                </div>
+
+                <div class="help-section">
+                    <h2>🔧 AI Model Settings</h2>
+                    
+                    <h3>Retriever Selection</h3>
+                    <p>The retriever model performs semantic search to find candidate matches from the NHS reference database:</p>
+                    <ul>
+                        <li><strong>BioLORD:</strong> Biomedical language model optimized for medical terminology</li>
+                        <li><strong>Default:</strong> Standard embedding model for general medical text</li>
+                    </ul>
+
+                    <h3>Reranker Selection</h3>
+                    <p>The reranker model scores and ranks the candidates found by the retriever:</p>
+                    <ul>
+                        <li><strong>MedCPT (HuggingFace):</strong> Medical cross-encoder for high-accuracy reranking</li>
+                        <li><strong>OpenRouter LLMs:</strong> GPT-4, Claude, and Gemini models for contextual understanding</li>
+                    </ul>
+
+                    <div class="info-box">
+                        <strong>💡 Tip:</strong> Your model selections are automatically saved and will be remembered for future sessions.
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h2>📁 Data Format</h2>
+                    
+                    <h3>Input Format</h3>
+                    <p>Upload a JSON file containing an array of radiology codes with the following structure:</p>
+                    
+                    <div class="code-sample">[
+  {
+    "EXAM_NAME": "CT CHEST WITH CONTRAST",
+    "MODALITY_CODE": "CT",
+    "DATA_SOURCE": "Hospital_A",
+    "EXAM_CODE": "CTX001"
+  },
+  {
+    "EXAM_NAME": "MRI BRAIN",
+    "MODALITY_CODE": "MR",
+    "DATA_SOURCE": "Hospital_B", 
+    "EXAM_CODE": "MRI123"
+  }
+]</div>
+
+                    <h3>Required Fields</h3>
+                    <ul>
+                        <li><strong>EXAM_NAME:</strong> The original radiology exam name to be cleaned</li>
+                        <li><strong>MODALITY_CODE:</strong> Imaging modality (CT, MR, US, XR, etc.)</li>
+                        <li><strong>DATA_SOURCE:</strong> Source system or hospital identifier</li>
+                        <li><strong>EXAM_CODE:</strong> Unique identifier for the exam</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h2>📊 Understanding Results</h2>
+                    
+                    <h3>Confidence Scores</h3>
+                    <p>Each cleaned name includes a confidence score (0-100%) indicating the system's certainty in the match:</p>
+                    <ul>
+                        <li><strong>90-100%:</strong> High confidence - likely accurate match</li>
+                        <li><strong>70-89%:</strong> Good confidence - review recommended</li>
+                        <li><strong>50-69%:</strong> Moderate confidence - manual review needed</li>
+                        <li><strong>Below 50%:</strong> Low confidence - likely requires correction</li>
+                    </ul>
+
+                    <h3>View Modes</h3>
+                    <ul>
+                        <li><strong>Full View:</strong> Complete table with all individual mappings</li>
+                        <li><strong>Consolidated View:</strong> Groups similar results showing consolidation opportunities</li>
+                    </ul>
+
+                    <h3>SNOMED Integration</h3>
+                    <p>Results include SNOMED CT codes where available, providing standardized medical terminology for interoperability.</p>
+                </div>
+
+                <div class="help-section">
+                    <h2>🧪 Testing & Quality Assurance</h2>
+                    
+                    <h3>100 Exam Test Suite</h3>
+                    <p>Use the built-in test suite to evaluate different model combinations:</p>
+                    <ol>
+                        <li>Select your preferred models</li>
+                        <li>Click "100 Exam Test Suite"</li>
+                        <li>Review performance metrics and accuracy</li>
+                        <li>Compare results across different model configurations</li>
+                    </ol>
+
+                    <div class="warning-box">
+                        <strong>⚠️ Note:</strong> Test suite processing may take several minutes depending on selected models and system load.
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h2>⚙️ Configuration Management</h2>
+                    
+                    <h3>Edit Config</h3>
+                    <p>Advanced users can modify system configuration including:</p>
+                    <ul>
+                        <li>Model weights and scoring parameters</li>
+                        <li>Threshold settings for confidence levels</li>
+                        <li>NHS reference data sources</li>
+                        <li>Processing pipeline settings</li>
+                    </ul>
+
+                    <div class="warning-box">
+                        <strong>⚠️ Warning:</strong> Configuration changes affect system behavior and may require cache rebuilding. Changes should be tested thoroughly.
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h2>🚨 Troubleshooting</h2>
+                    
+                    <h3>Common Issues</h3>
+                    <ul>
+                        <li><strong>Upload fails:</strong> Ensure JSON format is valid and contains required fields</li>
+                        <li><strong>Processing stalls:</strong> Large files may take time; check status messages</li>
+                        <li><strong>Low confidence scores:</strong> Try different model combinations or review input data quality</li>
+                        <li><strong>Missing results:</strong> Verify internet connection for API access to reranker models</li>
+                    </ul>
+
+                    <h3>Performance Tips</h3>
+                    <ul>
+                        <li>For best accuracy, use MedCPT reranker with BioLORD retriever</li>
+                        <li>Process files in batches of 100-500 records for optimal performance</li>
+                        <li>Review and clean input data before processing</li>
+                        <li>Use the test suite to evaluate model performance before large batches</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h2>📞 Support</h2>
+                    <p>For additional support, technical issues, or feature requests, please contact the development team or refer to the system documentation.</p>
+                    
+                    <div class="info-box">
+                        <strong>🔗 Quick Links:</strong><br>
+                        <a href="about.html">System Architecture</a> | 
+                        <a href="index.html">Main Application</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
