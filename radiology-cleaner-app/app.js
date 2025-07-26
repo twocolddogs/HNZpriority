@@ -380,8 +380,12 @@ window.addEventListener('DOMContentLoaded', function() {
     
     const apiConfig = detectApiUrls();
     const BATCH_API_URL = `${apiConfig.baseUrl}/parse_batch`;
+    const INDIVIDUAL_API_URL = `${apiConfig.baseUrl}/parse_enhanced`;
     const MODELS_URL = `${apiConfig.baseUrl}/models`;
     const HEALTH_URL = `${apiConfig.baseUrl}/health`;
+    
+    // Processing threshold: use individual API for datasets under 500 items
+    const BATCH_THRESHOLD = 500;
     
     console.log(`Frontend running in ${apiConfig.mode} mode. API base: ${apiConfig.baseUrl}`);
 
@@ -776,6 +780,20 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- CORE PROCESSING FUNCTIONS ---
+    async function processExams(codes, jobName) {
+        const totalCodes = codes.length;
+        
+        if (totalCodes >= BATCH_THRESHOLD) {
+            // Use batch processing for large datasets
+            statusManager.show(`Large dataset detected (${totalCodes} items). Using batch processing for optimal performance.`, 'info', 3000);
+            await processBatch(codes, jobName);
+        } else {
+            // Use individual processing for smaller datasets
+            statusManager.show(`Small dataset detected (${totalCodes} items). Using individual processing for faster results.`, 'info', 3000);
+            await processIndividual(codes, jobName);
+        }
+    }
+
     async function processFile(file) {
         if (!file.name.endsWith('.json')) {
             statusManager.show('Please upload a valid JSON file.', 'error', 5000);
@@ -794,7 +812,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     throw new Error('JSON file is empty or not in the correct array format.');
                 }
                 console.log(`Processing ${codes.length} exam records...`);
-                await processBatch(codes, `File: ${file.name}`);
+                await processExams(codes, `File: ${file.name}`);
             } catch (error) {
                 statusManager.show(`Error processing file: ${error.message}`, 'error', 0);
                 showUploadInterface();
@@ -818,7 +836,7 @@ window.addEventListener('DOMContentLoaded', function() {
             if (!response.ok) throw new Error(`Could not load test file: ${response.statusText}`);
             const codes = await response.json();
             
-            await processBatch(codes, "100 Exam Test Suite");
+            await processExams(codes, "100 Exam Test Suite");
 
         } catch (error) {
             console.error('Sanity test failed:', error);
@@ -1082,6 +1100,109 @@ window.addEventListener('DOMContentLoaded', function() {
             if (progressId) statusManager.remove(progressId);
             statusManager.show(`Processing failed: ${error.message}`, 'error', 0);
             console.error('Batch processing error:', error);
+            showUploadInterface();
+        }
+    }
+
+    async function processIndividual(codes, jobName) {
+        allMappings = [];
+        const totalCodes = codes.length;
+        let progressId = null;
+        let processedCount = 0;
+        let errorCount = 0;
+
+        try {
+            progressId = statusManager.showProgress(`Processing ${jobName}`, 0, totalCodes);
+
+            // Process codes individually with concurrency limit
+            const concurrencyLimit = 3; // Process 3 at a time to avoid overwhelming the API
+            const results = [];
+
+            for (let i = 0; i < codes.length; i += concurrencyLimit) {
+                const batch = codes.slice(i, i + concurrencyLimit);
+                const batchPromises = batch.map(async (code) => {
+                    try {
+                        const examData = {
+                            exam_name: code.EXAM_NAME,
+                            modality_code: code.MODALITY_CODE,
+                            model: currentModel,
+                            reranker: currentReranker
+                        };
+
+                        const response = await fetch(INDIVIDUAL_API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(examData)
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`API failed: ${errorText}`);
+                        }
+
+                        const result = await response.json();
+                        return {
+                            status: 'success',
+                            input: code,
+                            output: result
+                        };
+                    } catch (error) {
+                        console.error(`Error processing ${code.EXAM_NAME}:`, error);
+                        return {
+                            status: 'error',
+                            input: code,
+                            error: error.message
+                        };
+                    }
+                });
+
+                // Wait for this batch to complete
+                const batchResults = await Promise.all(batchPromises);
+                results.push(...batchResults);
+
+                // Update progress
+                processedCount = results.filter(r => r.status === 'success').length;
+                errorCount = results.filter(r => r.status === 'error').length;
+                
+                if (progressId) {
+                    statusManager.updateProgress(progressId, processedCount + errorCount, totalCodes, 
+                        `Processing ${jobName} - ${processedCount + errorCount}/${totalCodes} (${Math.round(((processedCount + errorCount) / totalCodes) * 100)}%)`);
+                }
+            }
+
+            // Convert results to the same format as batch processing
+            const chunkMappings = results.map(item => {
+                return item.status === 'success' ? {
+                    data_source: item.input.DATA_SOURCE,
+                    modality_code: item.input.MODALITY_CODE,
+                    exam_code: item.input.EXAM_CODE,
+                    exam_name: item.input.EXAM_NAME,
+                    clean_name: item.output.clean_name,
+                    snomed: item.output.snomed || {},
+                    components: item.output.components || {},
+                    all_candidates: item.output.all_candidates || []
+                } : {
+                    data_source: item.input.DATA_SOURCE,
+                    modality_code: item.input.MODALITY_CODE,
+                    exam_code: item.input.EXAM_CODE,
+                    exam_name: item.input.EXAM_NAME,
+                    clean_name: `ERROR: ${item.error}`,
+                    components: {},
+                    all_candidates: []
+                };
+            });
+
+            allMappings.push(...chunkMappings);
+
+            statusManager.show(`Successfully processed ${processedCount} records from ${jobName}. ${errorCount > 0 ? `${errorCount} errors encountered.` : ''}`, 
+                errorCount > 0 ? 'warning' : 'success', 5000);
+
+            runAnalysis(allMappings);
+
+        } catch (error) {
+            if (progressId) statusManager.remove(progressId);
+            statusManager.show(`Individual processing failed: ${error.message}`, 'error', 0);
+            console.error('Individual processing error:', error);
             showUploadInterface();
         }
     }
@@ -1523,11 +1644,11 @@ window.addEventListener('DOMContentLoaded', function() {
         });
         
         // Run processing button
-        runProcessingBtn?.addEventListener('click', () => {
+        runProcessingBtn?.addEventListener('click', async () => {
             if (currentDataSource === 'demo') {
-                runSanityTest();
-            } else if (currentDataSource === 'upload') {
-                processFile(fileInput.files[0]);
+                await runSanityTest();
+            } else if (currentDataSource === 'upload' && fileInput.files[0]) {
+                await processFile(fileInput.files[0]);
             }
         });
         
