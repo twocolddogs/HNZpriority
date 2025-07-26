@@ -386,6 +386,7 @@ window.addEventListener('DOMContentLoaded', function() {
     console.log(`Frontend running in ${apiConfig.mode} mode. API base: ${apiConfig.baseUrl}`);
 
     // --- DOM ELEMENTS ---
+    const mainCard = document.querySelector('.main-card');
     const uploadSection = document.getElementById('uploadSection');
     const demosSection = document.getElementById('demosSection');
     const fileInput = document.getElementById('fileInput');
@@ -712,12 +713,16 @@ window.addEventListener('DOMContentLoaded', function() {
         uploadSection.style.display = 'none';
         demosSection.style.display = 'none';
         document.getElementById('modelSettingsSection').style.display = 'none';
+        // Hide main card entirely during processing to avoid empty white box
+        mainCard.style.display = 'none';
     }
     
     function showUploadInterface() {
         uploadSection.style.display = 'block';
         demosSection.style.display = 'block';
         document.getElementById('modelSettingsSection').style.display = 'block';
+        // Show main card when displaying upload interface
+        mainCard.style.display = 'block';
     }
     
     function startNewUpload() {
@@ -1058,6 +1063,8 @@ window.addEventListener('DOMContentLoaded', function() {
         generateConsolidatedResults(mappings);
         generateSourceLegend(mappings);
         resultsSection.style.display = 'block';
+        // Show main card when displaying results
+        mainCard.style.display = 'block';
     }
 
     // --- UI & DISPLAY FUNCTIONS ---
