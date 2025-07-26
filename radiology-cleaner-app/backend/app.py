@@ -765,11 +765,31 @@ def parse_batch():
         import uuid
         output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
         os.makedirs(output_dir, exist_ok=True)
-        results_filename = f"batch_results_{uuid.uuid4().hex}.jsonl"
+        batch_id = uuid.uuid4().hex
+        results_filename = f"batch_results_{batch_id}.jsonl"
         results_filepath = os.path.join(output_dir, results_filename)
+        progress_filename = f"batch_progress_{batch_id}.json"
+        progress_filepath = os.path.join(output_dir, progress_filename)
         
         logger.info(f"Starting batch processing for {len(exams_to_process)} exams using model: '{model_key}', reranker: '{reranker_key}'")
         logger.info(f"Results will be streamed to: {results_filepath}")
+        logger.info(f"Progress will be tracked at: {progress_filepath}")
+        
+        def update_progress(processed, total, success, errors):
+            """Update progress file with current status"""
+            progress_data = {
+                "processed": processed,
+                "total": total,
+                "success": success,
+                "errors": errors,
+                "percentage": round((processed / total) * 100, 1) if total > 0 else 0,
+                "timestamp": datetime.now().isoformat()
+            }
+            try:
+                with open(progress_filepath, 'w') as pf:
+                    json.dump(progress_data, pf)
+            except Exception as e:
+                logger.error(f"Failed to update progress file: {e}")
 
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
@@ -782,6 +802,9 @@ def parse_batch():
         chunk_size = 10
         total_exams = len(exams_to_process)
         chunks = [exams_to_process[i:i + chunk_size] for i in range(0, total_exams, chunk_size)]
+        
+        # Initialize progress file
+        update_progress(0, total_exams, 0, 0)
         
         cpu_cnt = os.cpu_count() or 1
         max_workers = min(2, max(1, cpu_cnt))  # Reduced workers to prevent OOM
@@ -825,12 +848,22 @@ def parse_batch():
                             error_count += 1
                         finally:
                             chunk_completed += 1
+                            # Update progress after each exam
+                            update_progress(success_count + error_count, total_exams, success_count, error_count)
                     
                     logger.info(f"Completed chunk {chunk_idx + 1}/{len(chunks)}: {chunk_completed} exams processed")
                     logger.info(f"Overall progress: {success_count + error_count}/{total_exams} exams processed")
 
         processing_time_ms = int((time.time() - start_time) * 1000)
         logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
+        
+        # Clean up progress file
+        try:
+            if os.path.exists(progress_filepath):
+                os.remove(progress_filepath)
+                logger.info(f"Cleaned up progress file: {progress_filename}")
+        except Exception as e:
+            logger.warning(f"Failed to clean up progress file: {e}")
 
         # Upload consolidated results to R2 for permanent storage and frontend access
         r2_upload_success = False
@@ -919,6 +952,7 @@ def parse_batch():
                 
                 return jsonify({
                     "message": "Batch processing complete.",
+                    "batch_id": batch_id,
                     "results": results,
                     "results_file": results_filepath,
                     "results_filename": results_filename,
@@ -941,6 +975,7 @@ def parse_batch():
         logger.info(f"Returning file reference to avoid I/O issues: {results_filename}")
         return jsonify({
             "message": "Batch processing complete. Results streamed to disk.",
+            "batch_id": batch_id,
             "results_file": results_filepath,
             "results_filename": results_filename,
             "r2_url": r2_url,
@@ -957,6 +992,29 @@ def parse_batch():
     except Exception as e:
         logger.error(f"Batch endpoint failed with a critical error: {e}", exc_info=True)
         return jsonify({"error": "An internal server error occurred during batch processing"}), 500
+
+@app.route('/batch_progress/<batch_id>', methods=['GET'])
+def get_batch_progress(batch_id):
+    """
+    Get progress for a specific batch processing job.
+    Returns progress information from the progress file.
+    """
+    try:
+        output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
+        progress_filename = f"batch_progress_{batch_id}.json"
+        progress_filepath = os.path.join(output_dir, progress_filename)
+        
+        if not os.path.exists(progress_filepath):
+            return jsonify({"error": "Progress not found or batch completed"}), 404
+        
+        with open(progress_filepath, 'r') as pf:
+            progress_data = json.load(pf)
+        
+        return jsonify(progress_data)
+        
+    except Exception as e:
+        logger.error(f"Error fetching batch progress: {e}")
+        return jsonify({"error": "Failed to fetch progress"}), 500
 
 @app.route('/process_sanity_test', methods=['POST'])
 def process_sanity_test_endpoint():

@@ -165,13 +165,28 @@ class StatusManager {
                 <div class="progress-bar"><div class="progress-fill" style="width: ${percentage}%"></div></div>
             </div>`;
 
-        if (!this.progressMessage) {
-            this.progressMessage = this.show(progressContent, type);
-        } else {
-            this.update(this.progressMessage, progressContent);
-        }
+        // Return a unique ID so progress can be updated
+        return this.show(progressContent, type, 0);
+    }
+    
+    updateProgress(id, current, total, message = null) {
+        const messageElement = document.getElementById(id);
+        if (!messageElement) return false;
         
-        return this.progressMessage;
+        const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+        const progressMessage = message || messageElement.querySelector('.progress-message')?.textContent || 'Processing';
+        
+        const progressContent = `
+            <div class="progress-container">
+                <div class="progress-header">
+                    <span class="progress-message">${progressMessage}</span>
+                    <span class="progress-counter">${current}/${total} (${percentage}%)</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" style="width: ${percentage}%"></div></div>
+            </div>`;
+        
+        messageElement.innerHTML = progressContent;
+        return true;
     }
     
     showStage(stage, description) {
@@ -937,19 +952,69 @@ window.addEventListener('DOMContentLoaded', function() {
             
             progressId = statusManager.showProgress(`Processing ${jobName}`, 0, totalCodes);
 
-            const response = await fetch(BATCH_API_URL, {
+            // Start batch processing (non-blocking)
+            const processingPromise = fetch(BATCH_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ exams: allExams, model: currentModel, reranker: currentReranker })
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Batch API failed: ${errorText}`);
-            }
+            // Start progress polling if we get a batch_id from the initial response
+            let progressInterval = null;
+            let batchResult = null;
 
-            const batchResult = await response.json();
-            console.log('Backend response:', batchResult);
+            try {
+                const response = await processingPromise;
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Batch API failed: ${errorText}`);
+                }
+
+                batchResult = await response.json();
+                console.log('Backend response:', batchResult);
+
+                // If we have a batch_id, we can poll for progress
+                if (batchResult.batch_id) {
+                    console.log('Starting progress polling for batch:', batchResult.batch_id);
+                    
+                    progressInterval = setInterval(async () => {
+                        try {
+                            const progressResponse = await fetch(`${BASE_API_URL}/batch_progress/${batchResult.batch_id}`);
+                            if (progressResponse.ok) {
+                                const progressData = await progressResponse.json();
+                                console.log('Progress update:', progressData);
+                                
+                                // Update progress display
+                                if (progressId) {
+                                    statusManager.updateProgress(progressId, progressData.processed, progressData.total, 
+                                        `Processing ${jobName} - ${progressData.processed}/${progressData.total} (${progressData.percentage}%)`);
+                                }
+                            } else if (progressResponse.status === 404) {
+                                // Progress file not found - processing is complete
+                                clearInterval(progressInterval);
+                                console.log('Progress polling completed - batch finished');
+                            }
+                        } catch (progressError) {
+                            console.error('Progress polling error:', progressError);
+                            // Don't clear interval on temporary errors, just log them
+                        }
+                    }, 1000); // Poll every second
+                    
+                    // Set a timeout to stop polling after reasonable time
+                    setTimeout(() => {
+                        if (progressInterval) {
+                            clearInterval(progressInterval);
+                            console.log('Progress polling timeout - stopping');
+                        }
+                    }, 300000); // 5 minutes timeout
+                }
+            } finally {
+                // Clean up progress polling when processing completes
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                }
+            }
                 
                 // Handle both old format (inline results) and new format (file references)
                 if (batchResult.results) {
