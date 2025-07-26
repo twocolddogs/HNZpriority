@@ -561,7 +561,14 @@ window.addEventListener('DOMContentLoaded', function() {
         
         rerankerContainer.innerHTML = '';
         
-        Object.entries(availableRerankers).forEach(([rerankerKey, rerankerInfo]) => {
+        // Sort rerankers to put MedCPT first, then others alphabetically
+        const sortedRerankers = Object.entries(availableRerankers).sort(([keyA], [keyB]) => {
+            if (keyA === 'medcpt') return -1;  // MedCPT goes first
+            if (keyB === 'medcpt') return 1;   // MedCPT goes first
+            return keyA.localeCompare(keyB);   // Others alphabetically
+        });
+        
+        sortedRerankers.forEach(([rerankerKey, rerankerInfo]) => {
             const rerankerWrapper = document.createElement('div');
             rerankerWrapper.className = 'reranker-wrapper';
             rerankerWrapper.style.cssText = 'display: flex; align-items: center; gap: 15px; margin-bottom: 10px;';
