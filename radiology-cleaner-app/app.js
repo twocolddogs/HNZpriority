@@ -437,6 +437,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 // Clear the warming up message and show success
                 if (warmupMessageId) statusManager.remove(warmupMessageId);
                 statusManager.show(`✅ Processing engine ready (${warmupTime.toFixed(0)}ms)`, 'success', 6000);
+                
+                // Wait 2 seconds to let users see the success message before other status updates
+                await new Promise(resolve => setTimeout(resolve, 2000));
             } else {
                 throw new Error(`Warmup failed with status ${response.status}`);
             }
