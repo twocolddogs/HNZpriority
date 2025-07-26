@@ -436,7 +436,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 // Clear the warming up message and show success
                 if (warmupMessageId) statusManager.remove(warmupMessageId);
-                statusManager.show(`✅ Processing engine ready (${warmupTime.toFixed(0)}ms)`, 'success', 3000);
+                statusManager.show(`✅ Processing engine ready (${warmupTime.toFixed(0)}ms)`, 'success', 6000);
             } else {
                 throw new Error(`Warmup failed with status ${response.status}`);
             }
@@ -498,7 +498,7 @@ window.addEventListener('DOMContentLoaded', function() {
             'retriever': { name: 'BioLORD', status: 'available', description: 'Advanced biomedical language model for retrieval' }
         };
         availableRerankers = {
-            'medcpt': { name: 'MedCPT (HuggingFace)', status: 'available', description: 'NCBI Medical Clinical Practice Text cross-encoder for reranking', type: 'huggingface' },
+            'medcpt': { name: 'MedCPT (HuggingFace)', status: 'available', description: 'NCBI Medical Clinical Practice Text cross-encoder', type: 'huggingface' },
             'gpt-4o-mini': { name: 'GPT-4o Mini', status: 'unknown', description: 'Fast and cost-effective OpenAI model', type: 'openrouter' },
             'claude-3-haiku': { name: 'Claude 3 Haiku', status: 'unknown', description: 'Fast Anthropic model optimized for speed', type: 'openrouter' },
             'gemini-2.5-flash-lite': { name: 'Gemini 2.5 Flash Lite', status: 'unknown', description: 'Google\'s lightweight Gemini model', type: 'openrouter' }
