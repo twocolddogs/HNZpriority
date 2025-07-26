@@ -572,11 +572,33 @@ def update_config():
         
         config_yaml_content = data['config_yaml']
         
-        # Validate YAML syntax
+        # Validate YAML syntax and check for problematic characters
         try:
             import yaml
+            
+            # Check for problematic Unicode characters
+            problematic_chars = []
+            for i, char in enumerate(config_yaml_content):
+                char_code = ord(char)
+                # Check for common problematic Unicode characters
+                if char_code in [0x0086, 0x0087, 0x0088, 0x0089, 0x008A, 0x008B, 0x008C, 0x008D, 0x008E, 0x008F]:
+                    problematic_chars.append((i, char, hex(char_code)))
+                # Check for smart quotes and other common issues
+                elif char_code in [0x201C, 0x201D, 0x2018, 0x2019, 0x2013, 0x2014]:
+                    problematic_chars.append((i, char, f"smart quote/dash {hex(char_code)}"))
+            
+            if problematic_chars:
+                error_msg = f"Found {len(problematic_chars)} problematic characters: "
+                for pos, char, desc in problematic_chars[:3]:  # Show first 3
+                    error_msg += f"position {pos} ('{char}' - {desc}), "
+                error_msg = error_msg.rstrip(", ")
+                logger.error(f"Character validation failed: {error_msg}")
+                return jsonify({"error": f"Invalid characters found: {error_msg}"}), 400
+            
+            # Validate YAML structure
             yaml.safe_load(config_yaml_content)
             logger.info("YAML validation passed")
+            
         except yaml.YAMLError as e:
             logger.error(f"YAML validation failed: {e}")
             return jsonify({"error": f"Invalid YAML syntax: {str(e)}"}), 400
