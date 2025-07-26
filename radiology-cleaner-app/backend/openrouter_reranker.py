@@ -156,13 +156,20 @@ Rank the {len(documents)} candidate procedures from BEST to WORST match for the 
 1.  **`input_exam`**: The real-world exam name to be matched.
     - `{query}`
 
-2.  **`candidate_procedures`**: A JSON object of potential matches from the NHS list.
-    - `{candidates_json_str}`
+2.  **`candidate_procedures`**: A JSON object where keys are the candidate numbers and values are the procedure descriptions.
+    ```json
+    {candidates_json_str}
+    ```
 
 ---
 **EVALUATION FRAMEWORK:**
 
 Input exams come from legacy radiology systems with character limits, so assume they contain maximum relevant information despite abbreviations.
+
+**Guiding Principle: Sufficient Specificity**
+The ideal candidate has the **same level of clinical detail** as the input. Your goal is to find the match that is "just right"—not too generic, not too specific.
+- **Generic Input → Generic Candidate:** If the input is simple (e.g., "XR Chest"), the best match is the simplest canonical name ("XR Chest"), not a more detailed one ("XR Chest PA View").
+- **Specific Input → Specific Candidate:** If the input contains details (e.g., "XR Chest PA View"), those details **must** be present in the best match.
 
 **RANKING METHODOLOGY - Apply in priority order:**
 
@@ -170,10 +177,11 @@ Input exams come from legacy radiology systems with character limits, so assume 
 - **PERFECT**: Input "CT Head" → Candidate "CT of Head"
 - **ACCEPTABLE**: Input "CTA Chest" → Candidate "CT Angiography of Chest"  
 - **BLOCKING FAILURE**: Input "CT Head" → Candidate "MRI of Head" (Wrong equipment/procedure)
-- **Special Case**: PET/CT studies may be labeled as "NM PET/CT" (Nuclear Medicine)
+- **Hybrid Modality Handling**: An input like "NM PET/CT" is a **PERFECT** match for a candidate like "PET/CT of Chest". Treat 'NM' (Nuclear Medicine) in this context as a correct high-level category for a PET scan.
 
 **Priority 2: Clinical Specifiers (HIGH impact on procedure accuracy)**
-- **Procedure Type**: Match critical terms (biopsy, angiography, guidance, interventional, screening)
+- **Procedure Type**: Match critical terms (biopsy, angiography, guidance, interventional, screening).
+  - **CRITICAL**: If the input contains diagnostic terms like "standard", "routine", or "plain film", it **must not** be matched to a candidate that is clearly interventional (e.g., contains "biopsy", "guided", "insertion"). This is a **BLOCKING FAILURE**.
   - GOOD: Input "US Guided Biopsy Liver" → Candidate "US Guided Biopsy of Liver"
   - BAD: Input "US Guided Biopsy Liver" → Candidate "US Liver" (Missing intervention)
 - **Contrast Status**: Match contrast requirements exactly
@@ -181,15 +189,17 @@ Input exams come from legacy radiology systems with character limits, so assume 
 - **Laterality Logic**:
   - Input specifies side → Candidate MUST match that side
   - Input non-specific → Prefer bilateral/non-specific over single-sided candidates
+- **Angiography Logic**:
+  - If the input uses a generic term like "Angiography", "Angio", "CTA", or "MRA", you **must** prioritize candidates that specify **arteries** (e.g., "CT Angiography of Aorta").
+  - Penalize or rank lower any candidates that specify **veins** (e.g., "CT Venography").
 
-**Priority 3: Complexity Matching (Avoid over/under-specification)**
+**Priority 3: Complexity & Specificity Matching (Final Tie-breaker)**
+- **Apply the Guiding Principle:** Use the "Sufficient Specificity" principle to rank candidates that have passed the above checks.
 - **IGNORE administrative terms**: "portable", "ward", "stat", "single view" (not clinically relevant)
-- **PENALIZE over-specification**: Don't add clinical details not in input
-  - BAD: Input "MRI Brain" → Candidate "MRI Brain with Spectroscopy" (adds technique)
-  - GOOD: Input "MRI Brain" → Candidate "MRI of Brain" (equivalent)
-- **REWARD specific matches**: When input has specific terms, match them
-  - EXCELLENT: Input "MRI Brain Diff" → Candidate "MRI Brain with Diffusion"
-  - POOR: Input "MRI Brain Diff" → Candidate "MRI Brain" (ignores specificity)
+- **PENALIZE over-specification**: Don't add clinical details not in input.
+  - BAD: Input "MRI Brain" → Candidate "MRI Brain with Spectroscopy" (adds a new technique).
+- **REWARD specific matches**: When input has specific terms, find the candidate that also has them.
+  - EXCELLENT: Input "MRI Brain with Diffusion" → Candidate "MRI Brain with Diffusion".
 
 ---
 **FINAL INSTRUCTIONS:**
@@ -203,7 +213,7 @@ Input exams come from legacy radiology systems with character limits, so assume 
 
 - You **MUST** respond with **ONLY** a single, valid JSON object.
 - The JSON object must contain a single key, "ranking", with a value being an array of ALL candidate numbers (as integers) in ranked order from best to worst.
-- **CRITICAL**: You MUST include ALL {len(documents)} candidate numbers in your ranking. Every candidate from 1 to {len(documents)} must appear exactly once in the ranking array.
+- **CRITICAL**: The final "ranking" array **must** be a permutation of the numbers from 1 to {len(documents)}. Every candidate number must appear exactly once.
 - Do not add any explanation, commentary, or markdown formatting before or after the JSON object.
 
 **Example Response Structure for {len(documents)} candidates:**
