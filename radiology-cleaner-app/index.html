@@ -52,41 +52,108 @@
         <div id="statusMessageContainer" class="status-message-container" style="margin-bottom: 20px;"></div>
 
         <div class="main-card">
-            <!-- Minimal height drop zone -->
-            <div id="uploadSection" class="upload-section" style="padding: 20px 15px; min-height: auto;">
+            <!-- Hero Section with Three Clear Paths -->
+            <div class="hero-section" style="text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; margin-bottom: 30px;">
+                <h1 style="margin: 0 0 10px 0; font-size: 2.2em; font-weight: 600;">Radiology Code Cleaner</h1>
+                <p style="margin: 0 0 30px 0; font-size: 1.1em; opacity: 0.9;">AI-powered standardisation for radiology exam codes and names</p>
+                
+                <div class="action-paths" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto;">
+                    <!-- Path 1: Quick Demo -->
+                    <div class="action-card demo-path" style="background: rgba(255,255,255,0.95); color: #333; padding: 25px; border-radius: 12px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 3px solid transparent;">
+                        <div class="action-icon" style="font-size: 3em; margin-bottom: 15px;">🚀</div>
+                        <h3 style="margin: 0 0 10px 0; color: #2c3e50;">Try It Now</h3>
+                        <p style="margin: 0 0 15px 0; font-size: 0.9em; color: #666;">See it in action with sample data. No upload required.</p>
+                        <button class="button primary" id="quickDemoBtn" style="width: 100%; padding: 12px; font-weight: 600;">Start Demo →</button>
+                    </div>
+                    
+                    <!-- Path 2: Upload Own Data -->
+                    <div class="action-card upload-path" style="background: rgba(255,255,255,0.95); color: #333; padding: 25px; border-radius: 12px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 3px solid transparent;">
+                        <div class="action-icon" style="font-size: 3em; margin-bottom: 15px;">📁</div>
+                        <h3 style="margin: 0 0 10px 0; color: #2c3e50;">Upload Your Data</h3>
+                        <p style="margin: 0 0 15px 0; font-size: 0.9em; color: #666;">Process your own radiology codes securely.</p>
+                        <button class="button primary" id="uploadDataBtn" style="width: 100%; padding: 12px; font-weight: 600;">Choose File →</button>
+                    </div>
+                    
+                    <!-- Path 3: Advanced Setup -->
+                    <div class="action-card advanced-path" style="background: rgba(255,255,255,0.95); color: #333; padding: 25px; border-radius: 12px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 3px solid transparent;">
+                        <div class="action-icon" style="font-size: 3em; margin-bottom: 15px;">⚙️</div>
+                        <h3 style="margin: 0 0 10px 0; color: #2c3e50;">Advanced Setup</h3>
+                        <p style="margin: 0 0 15px 0; font-size: 0.9em; color: #666;">Configure models and batch processing.</p>
+                        <button class="button primary" id="advancedSetupBtn" style="width: 100%; padding: 12px; font-weight: 600;">Configure →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Streamlined Workflow Section -->
+            <div id="workflowSection" class="workflow-section" style="display: none;">
+                <div class="workflow-steps" style="display: flex; align-items: center; justify-content: center; margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                    <div class="step active" id="step1" style="display: flex; align-items: center; padding: 10px 20px; background: #4CAF50; color: white; border-radius: 20px; margin-right: 15px;">
+                        <span style="margin-right: 8px;">1</span> Pick Retriever
+                    </div>
+                    <div class="step-arrow" style="margin-right: 15px; color: #ccc;">→</div>
+                    <div class="step" id="step2" style="display: flex; align-items: center; padding: 10px 20px; background: #e0e0e0; color: #666; border-radius: 20px; margin-right: 15px;">
+                        <span style="margin-right: 8px;">2</span> Pick Reranker
+                    </div>
+                    <div class="step-arrow" style="margin-right: 15px; color: #ccc;">→</div>
+                    <div class="step" id="step3" style="display: flex; align-items: center; padding: 10px 20px; background: #e0e0e0; color: #666; border-radius: 20px;">
+                        <span style="margin-right: 8px;">3</span> Run
+                    </div>
+                </div>
+
+                <!-- Step 1: Retriever Selection -->
+                <div id="retrieverStep" class="workflow-step active" style="margin-bottom: 25px; padding: 25px; border: 2px solid #4CAF50; border-radius: 12px; background: #f9fff9;">
+                    <h3 style="margin: 0 0 15px 0; color: #4CAF50; display: flex; align-items: center;">
+                        <span style="background: #4CAF50; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 14px;">1</span>
+                        Choose Retriever Model
+                    </h3>
+                    <p style="margin: 0 0 20px 0; color: #666;">Select the embedding model for semantic search and candidate retrieval.</p>
+                    <div class="model-selection-container">
+                        <!-- Dynamic model buttons will be inserted here by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Step 2: Reranker Selection -->
+                <div id="rerankerStep" class="workflow-step" style="margin-bottom: 25px; padding: 25px; border: 2px solid #e0e0e0; border-radius: 12px; background: #fafafa; opacity: 0.6;">
+                    <h3 style="margin: 0 0 15px 0; color: #999; display: flex; align-items: center;">
+                        <span style="background: #e0e0e0; color: #999; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 14px;">2</span>
+                        Choose Reranker Model
+                    </h3>
+                    <p style="margin: 0 0 20px 0; color: #999;">Select the AI model for reranking and scoring candidates.</p>
+                    <div class="reranker-selection-container">
+                        <!-- Dynamic reranker buttons will be inserted here by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Step 3: Run Processing -->
+                <div id="runStep" class="workflow-step" style="margin-bottom: 25px; padding: 25px; border: 2px solid #e0e0e0; border-radius: 12px; background: #fafafa; opacity: 0.6;">
+                    <h3 style="margin: 0 0 15px 0; color: #999; display: flex; align-items: center;">
+                        <span style="background: #e0e0e0; color: #999; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 14px;">3</span>
+                        Process Data
+                    </h3>
+                    <div id="dataSourceDisplay" style="margin-bottom: 20px; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 8px; display: none;">
+                        <strong>Data Source:</strong> <span id="dataSourceText"></span>
+                    </div>
+                    <button class="button primary large" id="runProcessingBtn" style="padding: 15px 40px; font-size: 1.1em; font-weight: 600; disabled: true;" disabled>
+                        🚀 Start Processing
+                    </button>
+                    <p style="margin: 10px 0 0 0; font-size: 0.9em; color: #666;">Processing typically takes 30-60 seconds for 100 records</p>
+                </div>
+            </div>
+
+            <!-- Hidden Upload Section -->
+            <div id="uploadSection" class="upload-section" style="display: none; padding: 20px 15px; min-height: auto;">
                 <div class="upload-icon"></div>
                 <h2 style="margin: 8px 0;">Upload Radiology Codes</h2>
                 <p style="margin: 3px 0 10px 0;">Drop your codes.json file here or click to browse.</p>
                 <input type="file" id="fileInput" accept=".json" />
             </div>
 
-            <!-- Model Settings Section - Moved up -->
-            <div id="modelSettingsSection" class="model-settings-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f8f9fa;">
-                <h3 style="margin: 0 0 20px 0; font-size: 1.1em; color: #333;">AI Model Settings</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: start;">
-                    <div>
-                        <h4 style="margin: 0 0 10px 0; font-size: 1em; color: #555;">Retriever Selection</h4>
-                        <p style="font-size: 0.9em; color: #666; margin: 0 0 15px 0;">Choose the embedding model for semantic search and candidate retrieval.</p>
-                        <div class="model-selection-container">
-                            <!-- Dynamic model buttons will be inserted here by JavaScript -->
-                        </div>
-                    </div>
-                    <div>
-                        <h4 style="margin: 0 0 10px 0; font-size: 1em; color: #555;">Reranker Selection</h4>
-                        <p style="font-size: 0.9em; color: #666; margin: 0 0 15px 0;">Choose the AI model for reranking and scoring candidates.</p>
-                        <div class="reranker-selection-container">
-                            <!-- Dynamic reranker buttons will be inserted here by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Demos & Configuration Section - Moved down -->
-            <div id="demosSection" class="demos-section" style="margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
-                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Demos & Configuration</h3>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start;">
+            <!-- Advanced Configuration Section -->
+            <div id="advancedSection" class="advanced-section" style="display: none; margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
+                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Advanced Configuration</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-start;">
                     <div style="flex: 1; min-width: 200px;">
-                        <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white; border: none;">
+                        <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white; border: none; width: 100%;">
                             100 Exam Test Suite
                         </button>
                         <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
@@ -94,7 +161,7 @@
                         </p>
                     </div>
                     <div style="flex: 1; min-width: 200px;">
-                        <button class="button secondary" id="editConfigBtn" style="background-color: #4CAF50; color: white; border: none;">
+                        <button class="button secondary" id="editConfigBtn" style="background-color: #4CAF50; color: white; border: none; width: 100%;">
                             Edit Config
                         </button>
                         <p style="font-size: 0.9em; color: #666; margin-top: 8px;">

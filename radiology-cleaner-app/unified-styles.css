@@ -5,6 +5,87 @@
    ========================================================================== */
 
 /* ==========================================================================
+   Homepage Action Cards & Hero Section
+   ========================================================================== */
+
+.action-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--color-primary) !important;
+}
+
+.action-card.selected {
+  border-color: var(--color-primary) !important;
+  background: rgba(255,255,255,1) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 90, 156, 0.2);
+}
+
+.workflow-steps {
+  position: sticky;
+  top: 20px;
+  z-index: 10;
+}
+
+.workflow-step {
+  transition: all 0.3s ease;
+}
+
+.workflow-step.active {
+  opacity: 1 !important;
+  border-color: var(--color-primary) !important;
+  background: var(--color-primary-light) !important;
+}
+
+.workflow-step.active h3 {
+  color: var(--color-primary) !important;
+}
+
+.workflow-step.active h3 span {
+  background: var(--color-primary) !important;
+  color: white !important;
+}
+
+.step.active {
+  background: var(--color-primary) !important;
+  color: white !important;
+}
+
+.step {
+  transition: all 0.3s ease;
+}
+
+.button.large {
+  transition: all 0.2s ease;
+}
+
+.button.large:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 90, 156, 0.3);
+}
+
+.button.large:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+  .action-paths {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .workflow-steps {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .step-arrow {
+    display: none;
+  }
+}
+
+/* ==========================================================================
    1. Design System: CSS Custom Properties (Variables)
    ========================================================================== */
 

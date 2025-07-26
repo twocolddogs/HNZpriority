@@ -673,6 +673,9 @@ window.addEventListener('DOMContentLoaded', function() {
             console.error('❌ Sanity test button not found!');
         }
         
+        // New homepage workflow event listeners
+        setupHomepageWorkflow();
+        
         // Upload config functionality removed - Edit Config handles all config management
         
         // Config editor event listeners
@@ -1474,6 +1477,154 @@ window.addEventListener('DOMContentLoaded', function() {
         URL.revokeObjectURL(url);
     }
 
+
+    // --- HOMEPAGE WORKFLOW FUNCTIONALITY ---
+    function setupHomepageWorkflow() {
+        const quickDemoBtn = document.getElementById('quickDemoBtn');
+        const uploadDataBtn = document.getElementById('uploadDataBtn');
+        const advancedSetupBtn = document.getElementById('advancedSetupBtn');
+        const workflowSection = document.getElementById('workflowSection');
+        const uploadSection = document.getElementById('uploadSection');
+        const advancedSection = document.getElementById('advancedSection');
+        const runProcessingBtn = document.getElementById('runProcessingBtn');
+        const dataSourceDisplay = document.getElementById('dataSourceDisplay');
+        const dataSourceText = document.getElementById('dataSourceText');
+        
+        let currentDataSource = null;
+        let selectedRetriever = null;
+        let selectedReranker = null;
+        
+        // Action card click handlers
+        quickDemoBtn?.addEventListener('click', () => {
+            selectPath('demo');
+            currentDataSource = 'demo';
+            dataSourceText.textContent = '100 Exam Test Suite (Sample Data)';
+            dataSourceDisplay.style.display = 'block';
+            checkWorkflowCompletion();
+        });
+        
+        uploadDataBtn?.addEventListener('click', () => {
+            selectPath('upload');
+            fileInput.click();
+        });
+        
+        advancedSetupBtn?.addEventListener('click', () => {
+            selectPath('advanced');
+        });
+        
+        // File input handler for upload path
+        fileInput?.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                currentDataSource = 'upload';
+                dataSourceText.textContent = `Uploaded File: ${e.target.files[0].name}`;
+                dataSourceDisplay.style.display = 'block';
+                checkWorkflowCompletion();
+            }
+        });
+        
+        // Run processing button
+        runProcessingBtn?.addEventListener('click', () => {
+            if (currentDataSource === 'demo') {
+                runSanityTest();
+            } else if (currentDataSource === 'upload') {
+                processFile(fileInput.files[0]);
+            }
+        });
+        
+        function selectPath(path) {
+            // Remove all previous selections
+            document.querySelectorAll('.action-card').forEach(card => card.classList.remove('selected'));
+            
+            // Hide all sections
+            workflowSection.style.display = 'none';
+            uploadSection.style.display = 'none';
+            advancedSection.style.display = 'none';
+            
+            if (path === 'demo' || path === 'upload') {
+                // Show workflow for demo and upload paths
+                workflowSection.style.display = 'block';
+                
+                // Select the appropriate card
+                const selectedCard = path === 'demo' ? 
+                    document.querySelector('.demo-path') : 
+                    document.querySelector('.upload-path');
+                selectedCard?.classList.add('selected');
+                
+                // Reset workflow state
+                resetWorkflowSteps();
+                
+            } else if (path === 'advanced') {
+                // Show advanced configuration
+                advancedSection.style.display = 'block';
+                document.querySelector('.advanced-path')?.classList.add('selected');
+            }
+        }
+        
+        function resetWorkflowSteps() {
+            // Reset step indicators
+            document.getElementById('step1')?.classList.add('active');
+            document.getElementById('step2')?.classList.remove('active');
+            document.getElementById('step3')?.classList.remove('active');
+            
+            // Reset step sections
+            document.getElementById('retrieverStep')?.classList.add('active');
+            document.getElementById('rerankerStep')?.classList.remove('active');
+            document.getElementById('runStep')?.classList.remove('active');
+            
+            selectedRetriever = null;
+            selectedReranker = null;
+            runProcessingBtn.disabled = true;
+        }
+        
+        function activateStep(stepNumber) {
+            // Update step indicators
+            for (let i = 1; i <= 3; i++) {
+                const step = document.getElementById(`step${i}`);
+                if (i <= stepNumber) {
+                    step?.classList.add('active');
+                } else {
+                    step?.classList.remove('active');
+                }
+            }
+            
+            // Update step sections
+            const steps = ['retrieverStep', 'rerankerStep', 'runStep'];
+            steps.forEach((stepId, index) => {
+                const stepElement = document.getElementById(stepId);
+                if (index < stepNumber) {
+                    stepElement?.classList.add('active');
+                } else {
+                    stepElement?.classList.remove('active');
+                }
+            });
+        }
+        
+        function checkWorkflowCompletion() {
+            if (selectedRetriever && selectedReranker && currentDataSource) {
+                runProcessingBtn.disabled = false;
+                activateStep(3);
+            } else if (selectedRetriever && currentDataSource) {
+                activateStep(2);
+            } else if (currentDataSource) {
+                activateStep(1);
+            }
+        }
+        
+        // Hook into existing model selection functions
+        const originalSwitchModel = window.switchModel;
+        window.switchModel = function(modelKey) {
+            selectedRetriever = modelKey;
+            if (originalSwitchModel) originalSwitchModel(modelKey);
+            checkWorkflowCompletion();
+        };
+        
+        const originalSwitchReranker = window.switchReranker;
+        window.switchReranker = function(rerankerKey) {
+            selectedReranker = rerankerKey;
+            if (originalSwitchReranker) originalSwitchReranker(rerankerKey);
+            checkWorkflowCompletion();
+        };
+    }
 
     // --- INITIALIZE APP ---
     testApiConnectivity();
