@@ -610,8 +610,11 @@ def update_config():
                 
                 if result.returncode == 0:
                     logger.info("✅ Config update and cache rebuild completed successfully")
+                    logger.info(f"Script output: {result.stdout}")
                 else:
-                    logger.error(f"❌ Config update script failed: {result.stderr}")
+                    logger.error(f"❌ Config update script failed with return code {result.returncode}")
+                    logger.error(f"STDOUT: {result.stdout}")
+                    logger.error(f"STDERR: {result.stderr}")
 
             except subprocess.TimeoutExpired:
                 logger.error("⏰ Config update script timed out after 5 minutes")

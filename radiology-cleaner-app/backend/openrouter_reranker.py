@@ -145,10 +145,10 @@ class OpenRouterReranker:
         
         candidates_json_str = json.dumps(candidates_json, indent=2)
         
-        prompt = f"""You are a systematic and highly precise clinical coding engine. The app you have created is designed to assess up to 6 pipelines of radiology exam codes + radiology exam names and map them to a predetermined and authoraitative "ground truth". This is a game-changing endeavour but because the use case is health we need to keep in mind that accuuracy trumps speed.
+        prompt = f"""You are a precision medical coding specialist responsible for mapping real-world radiology exam names to standardized NHS procedures. This is a healthcare-critical system where accuracy is paramount.
 
 **Primary Objective:**
-Analyze the core clinical intent of the Input Exam and rank the provided candidates from most to least semantically equivalent. Your output will strongly determine the final mapping. You **MUST** only present candidates that exist in the reference data set. 
+Rank the {len(documents)} candidate procedures from BEST to WORST match for the input exam. Your ranking directly impacts patient care by determining which standardized procedure code is selected. 
 
 ---
 **INPUTS:**
@@ -160,49 +160,56 @@ Analyze the core clinical intent of the Input Exam and rank the provided candida
     - `{candidates_json_str}`
 
 ---
-**SCORING RUBRIC & THOUGHT PROCESS:**
+**EVALUATION FRAMEWORK:**
 
-For all input exam names, due to the legacy character constraints of the Radiology Information systmes they exist in, assume that even post abbreviaton expansion more information would have been encoded if possible.
+Input exams come from legacy radiology systems with character limits, so assume they contain maximum relevant information despite abbreviations.
 
+**RANKING METHODOLOGY - Apply in priority order:**
 
-Evaluate each candidate against the pre-processed input exam using extractable relevent component/context data following the following prioritised steps.
+**Priority 1: Modality Match (BLOCKING - Critical for patient safety)**
+- **PERFECT**: Input "CT Head" → Candidate "CT of Head"
+- **ACCEPTABLE**: Input "CTA Chest" → Candidate "CT Angiography of Chest"  
+- **BLOCKING FAILURE**: Input "CT Head" → Candidate "MRI of Head" (Wrong equipment/procedure)
+- **Special Case**: PET/CT studies may be labeled as "NM PET/CT" (Nuclear Medicine)
 
-**Step 1: Critical Modality & Anatomy Match (Pass/Fail)**
-- Does the candidate's core modality and primary anatomy match the input?
-  - **Perfect Match:** (e.g., Input "CT Head" -> Candidate "CT of Head"). This is the ideal.
-  - **Acceptable Variant:** (e.g., Input "CTA Chest" -> Candidate "CT Angiography of Chest"). This is also a very strong match.
-  - **CRITICAL FAILURE:** (e.g., Input "CT Head" -> Candidate "MRI of Head"). A mismatch in the primary modality (CT vs. MRI vs. US) means the candidate is fundamentally incorrect and must be ranked last.
-  - **Edge Case:** (e.g., Input "PET/CT" -> Candidate "NM PET/CT". International convention refers to PET CT as a modality despite these actually being a NM i.e. Nuclear Medicine study
+**Priority 2: Clinical Specifiers (HIGH impact on procedure accuracy)**
+- **Procedure Type**: Match critical terms (biopsy, angiography, guidance, interventional, screening)
+  - GOOD: Input "US Guided Biopsy Liver" → Candidate "US Guided Biopsy of Liver"
+  - BAD: Input "US Guided Biopsy Liver" → Candidate "US Liver" (Missing intervention)
+- **Contrast Status**: Match contrast requirements exactly
+  - CRITICAL: "with contrast" ≠ "without contrast" (Different clinical information)
+- **Laterality Logic**:
+  - Input specifies side → Candidate MUST match that side
+  - Input non-specific → Prefer bilateral/non-specific over single-sided candidates
 
-**Step 2: Clinical Specifiers Match (Score High/Medium/Low)**
-- Assess how well the candidate matches key clinical details.
-  - **Procedure Type:** Does the candidate correctly capture procedural terms like `biopsy`, `angiography`, `guidance`, `interventional`, `screening`? A mismatch here is a significant penalty. (e.g., "US Liver" is a poor match for "US Guided Biopsy of Liver").
-  - **Contrast:** Does the contrast status (`with contrast`, `without contrast`) align? Binary explicit mismatches must be heavily penalized.
-  - **Laterality (Left/Right/Bilateral):** Apply this specific logic:
-    - If the **input** specifies a side (e.g., "Right Knee"), the **candidate must** match that side.
-    - If the **input** is non-specific (e.g., "Knee"), a non-specific or bilateral candidate (e.g., "X-ray of Knee" or "X-ray of Both Knees") is **strongly preferred** over a single-sided one (e.g., "X-ray of Left Knee").
-
-**Step 3: Specificity Alignment (Apply Penalty)**
-- The ideal candidate has a similar level of clinical detail.
-  - **IGNORE** logistical/administrative details in the input (e.g., "portable", "ward", "stat", "single view"). These do not affect the match score.
-  - **APPLY A PENALTY** if the candidate introduces significant clinical information that is *not* in the input. (e.g., For input "MRI Brain", the candidate "MRI Brain with Spectroscopy" is a worse match than "MRI of Brain").
-  - **FAVOUR SIMPLE OVER COMPLEX** Don't force a match of a common exam to a rare study because of a specific anatomial term. (e.g., For input "MRI Brain", the candidate "MRI Brain with Spectroscopy" is a worse match than "MRI Head").
-
-**Step 4: Input Specificity Alignment (Apply Bonus)**
-- Noting the inherant limiations on character couunt in core Radiology systems, the presence of additional information in the input name is strongly relevant.
-  - **FAVOUR COMPLEX OVER SIMPLE** If the Input has unusual terms, even if abbreviated, then favour candidates that have the same terms. (e.g. "MRI Bran Diff" should strongly favour candidates with "Diffusion" vs the more generic "MRI Brain" or "MRI Head".
+**Priority 3: Complexity Matching (Avoid over/under-specification)**
+- **IGNORE administrative terms**: "portable", "ward", "stat", "single view" (not clinically relevant)
+- **PENALIZE over-specification**: Don't add clinical details not in input
+  - BAD: Input "MRI Brain" → Candidate "MRI Brain with Spectroscopy" (adds technique)
+  - GOOD: Input "MRI Brain" → Candidate "MRI of Brain" (equivalent)
+- **REWARD specific matches**: When input has specific terms, match them
+  - EXCELLENT: Input "MRI Brain Diff" → Candidate "MRI Brain with Diffusion"
+  - POOR: Input "MRI Brain Diff" → Candidate "MRI Brain" (ignores specificity)
 
 ---
+**FINAL INSTRUCTIONS:**
+
+1. **Apply priorities in order**: Modality match first, then clinical specifiers, then complexity matching
+2. **Rank ALL {len(documents)} candidates**: Even poor matches must be ranked (worst matches go last)
+3. **Consider patient safety**: Modality mismatches are dangerous and should rank last
+4. **Preserve clinical intent**: The best match captures the same clinical procedure as the input
+
 **RESPONSE FORMAT & CONSTRAINTS:**
 
 - You **MUST** respond with **ONLY** a single, valid JSON object.
-- The JSON object must contain a single key, "ranking", with a value being an array of the candidate numbers (as integers) in ranked order from best to worst.
+- The JSON object must contain a single key, "ranking", with a value being an array of ALL candidate numbers (as integers) in ranked order from best to worst.
+- **CRITICAL**: You MUST include ALL {len(documents)} candidate numbers in your ranking. Every candidate from 1 to {len(documents)} must appear exactly once in the ranking array.
 - Do not add any explanation, commentary, or markdown formatting before or after the JSON object.
 
-**Example Response Structure:**
+**Example Response Structure for {len(documents)} candidates:**
 ```json
 {{
-  "ranking": [1, 3, 2]
+  "ranking": [{', '.join(map(str, range(1, len(documents) + 1)))}]
 }}"""
 
         return prompt
@@ -306,18 +313,27 @@ Evaluate each candidate against the pre-processed input exam using extractable r
                 else:
                     ranking = None
             
-            if ranking and isinstance(ranking, list) and len(ranking) == expected_count:
+            if ranking and isinstance(ranking, list) and len(ranking) <= expected_count:
                 # Convert ranking to scores (1st place = highest score)
-                scores = [0.0] * expected_count
+                scores = [0.3] * expected_count  # Default score for unranked items
+                ranked_indices = set()
+                
                 for rank_position, candidate_num in enumerate(ranking):
                     try:
                         candidate_index = int(candidate_num) - 1  # Convert to 0-based index
                         if 0 <= candidate_index < expected_count:
                             # Linear scoring: 1st place = 1.0, last place = 0.1
-                            score = 1.0 - (rank_position * 0.9 / (expected_count - 1)) if expected_count > 1 else 1.0
+                            # Use actual ranking length for scoring, not expected count
+                            score = 1.0 - (rank_position * 0.9 / (len(ranking) - 1)) if len(ranking) > 1 else 1.0
                             scores[candidate_index] = max(0.1, score)
+                            ranked_indices.add(candidate_index)
                     except (ValueError, TypeError, IndexError):
                         logger.warning(f"[OPENROUTER] Invalid candidate number in ranking: {candidate_num}")
+                
+                # Log info about partial ranking
+                if len(ranking) < expected_count:
+                    missing_count = expected_count - len(ranking)
+                    logger.info(f"[OPENROUTER] Partial ranking received: {len(ranking)}/{expected_count} candidates ranked, {missing_count} given default score (0.3)")
                 
                 logger.debug(f"[OPENROUTER] Converted ranking {ranking} to scores successfully")
                 return scores

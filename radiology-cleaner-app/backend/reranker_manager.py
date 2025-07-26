@@ -202,15 +202,38 @@ class RerankerManager:
             
             if response.status_code == 200:
                 result = response.json()
-                if isinstance(result, list) and len(result) == len(documents):
-                    # Convert logits to probabilities using sigmoid
-                    import math
-                    scores = [1.0 / (1.0 + math.exp(-float(logit))) for logit in result]
-                    logger.info(f"[RERANKER-MGR] MedCPT scored {len(scores)} candidates")
+                
+                # Handle new API format: nested array with label/score objects
+                if (isinstance(result, list) and len(result) == 1 and 
+                    isinstance(result[0], list) and len(result[0]) == len(documents)):
+                    # New format: [[{'label': 'LABEL_0', 'score': 0.123}, ...]]
+                    scores_data = result[0]
+                    scores = []
+                    for item in scores_data:
+                        if isinstance(item, dict) and 'score' in item:
+                            scores.append(float(item['score']))
+                        else:
+                            logger.warning(f"[RERANKER-MGR] Unexpected item format: {item}")
+                            scores.append(0.5)
+                    logger.info(f"[RERANKER-MGR] MedCPT scored {len(scores)} candidates (new format)")
                     return scores
-                else:
-                    logger.error(f"[RERANKER-MGR] MedCPT unexpected response format: {result}")
-                    return [0.5] * len(documents)
+                
+                # Handle old API format: direct list of logits/scores
+                elif isinstance(result, list) and len(result) == len(documents):
+                    # Check if these are logits (need sigmoid) or probabilities (0-1 range)
+                    if all(isinstance(x, (int, float)) for x in result):
+                        # If values are mostly outside 0-1 range, treat as logits
+                        if any(abs(x) > 2 for x in result):
+                            import math
+                            scores = [1.0 / (1.0 + math.exp(-float(logit))) for logit in result]
+                        else:
+                            # Treat as direct probabilities
+                            scores = [float(x) for x in result]
+                        logger.info(f"[RERANKER-MGR] MedCPT scored {len(scores)} candidates (old format)")
+                        return scores
+                
+                logger.error(f"[RERANKER-MGR] MedCPT unexpected response format: {result}")
+                return [0.5] * len(documents)
             else:
                 logger.error(f"[RERANKER-MGR] MedCPT API error {response.status_code}: {response.text}")
                 return [0.5] * len(documents)

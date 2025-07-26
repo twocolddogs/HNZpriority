@@ -376,8 +376,20 @@ class NHSLookupEngine:
         highest_confidence = -1.0
         
         wf = self.config['weights_final']
-        reranker_weight = wf.get('reranker', 0.45)  # Read from config, default matches config.yaml
-        component_weight = wf.get('component', 0.55)  # Read from config, default matches config.yaml
+        
+        # Check for reranker-specific weights
+        reranker_specific_weights = wf.get('reranker_specific', {})
+        if reranker_key in reranker_specific_weights:
+            # Use reranker-specific weights
+            specific_weights = reranker_specific_weights[reranker_key]
+            reranker_weight = specific_weights.get('reranker', 0.45)
+            component_weight = specific_weights.get('component', 0.55)
+            logger.info(f"[V3-PIPELINE] Using {reranker_key}-specific weights: reranker={reranker_weight}, component={component_weight}")
+        else:
+            # Use default weights
+            reranker_weight = wf.get('reranker', 0.45)
+            component_weight = wf.get('component', 0.55)
+            logger.debug(f"[V3-PIPELINE] Using default weights: reranker={reranker_weight}, component={component_weight}")
         
         component_scores = []
         final_scores = []
