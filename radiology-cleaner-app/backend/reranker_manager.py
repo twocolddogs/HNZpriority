@@ -208,28 +208,57 @@ class RerankerManager:
                     isinstance(result[0], list) and len(result[0]) == len(documents)):
                     # New format: [[{'label': 'LABEL_0', 'score': 0.123}, ...]]
                     scores_data = result[0]
-                    scores = []
+                    raw_scores = []
                     for item in scores_data:
                         if isinstance(item, dict) and 'score' in item:
-                            scores.append(float(item['score']))
+                            raw_scores.append(float(item['score']))
                         else:
                             logger.warning(f"[RERANKER-MGR] Unexpected item format: {item}")
-                            scores.append(0.5)
-                    logger.info(f"[RERANKER-MGR] MedCPT scored {len(scores)} candidates (new format)")
+                            raw_scores.append(0.5)
+                    
+                    # Normalize scores to 0-1 range to prevent confidence > 100%
+                    if raw_scores:
+                        max_score = max(raw_scores)
+                        min_score = min(raw_scores)
+                        if max_score > min_score:
+                            # Min-max normalization
+                            scores = [(score - min_score) / (max_score - min_score) for score in raw_scores]
+                        else:
+                            # All scores are the same, normalize to 0.5
+                            scores = [0.5] * len(raw_scores)
+                        logger.info(f"[RERANKER-MGR] MedCPT normalized {len(scores)} candidates: {min(raw_scores):.3f}-{max(raw_scores):.3f} → {min(scores):.3f}-{max(scores):.3f}")
+                    else:
+                        scores = [0.5] * len(documents)
+                    
                     return scores
                 
                 # Handle old API format: direct list of logits/scores
                 elif isinstance(result, list) and len(result) == len(documents):
                     # Check if these are logits (need sigmoid) or probabilities (0-1 range)
                     if all(isinstance(x, (int, float)) for x in result):
+                        raw_scores = []
                         # If values are mostly outside 0-1 range, treat as logits
                         if any(abs(x) > 2 for x in result):
                             import math
-                            scores = [1.0 / (1.0 + math.exp(-float(logit))) for logit in result]
+                            raw_scores = [1.0 / (1.0 + math.exp(-float(logit))) for logit in result]
                         else:
                             # Treat as direct probabilities
-                            scores = [float(x) for x in result]
-                        logger.info(f"[RERANKER-MGR] MedCPT scored {len(scores)} candidates (old format)")
+                            raw_scores = [float(x) for x in result]
+                        
+                        # Apply same normalization to prevent confidence > 100%
+                        if raw_scores:
+                            max_score = max(raw_scores)
+                            min_score = min(raw_scores)
+                            if max_score > min_score:
+                                # Min-max normalization
+                                scores = [(score - min_score) / (max_score - min_score) for score in raw_scores]
+                            else:
+                                # All scores are the same, normalize to 0.5
+                                scores = [0.5] * len(raw_scores)
+                            logger.info(f"[RERANKER-MGR] MedCPT normalized {len(scores)} candidates (old format): {min(raw_scores):.3f}-{max(raw_scores):.3f} → {min(scores):.3f}-{max(scores):.3f}")
+                        else:
+                            scores = [0.5] * len(documents)
+                        
                         return scores
                 
                 logger.error(f"[RERANKER-MGR] MedCPT unexpected response format: {result}")
