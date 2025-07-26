@@ -346,6 +346,11 @@ function switchModel(modelKey) {
     document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`${modelKey}ModelBtn`)?.classList.add('active');
     statusManager.show(`Switched to ${formatModelName(modelKey)} model`, 'success', 3000);
+    
+    // Trigger workflow check if it exists
+    if (window.workflowCheckFunction) {
+        window.workflowCheckFunction();
+    }
 }
 
 
@@ -632,6 +637,11 @@ window.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.reranker-toggle').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`${rerankerKey}RerankerBtn`)?.classList.add('active');
         statusManager.show(`Switched to ${formatRerankerName(rerankerKey)} reranker`, 'success', 3000);
+        
+        // Trigger workflow check if it exists
+        if (window.workflowCheckFunction) {
+            window.workflowCheckFunction();
+        }
     }
     
     // --- EVENT LISTENERS ---
@@ -1721,6 +1731,10 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         
         function checkWorkflowCompletion() {
+            // Update selected models based on current state
+            selectedRetriever = currentModel;
+            selectedReranker = currentReranker;
+            
             if (selectedRetriever && selectedReranker && currentDataSource) {
                 runProcessingBtn.disabled = false;
                 activateStep(3);
@@ -1731,20 +1745,8 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Hook into existing model selection functions
-        const originalSwitchModel = window.switchModel;
-        window.switchModel = function(modelKey) {
-            selectedRetriever = modelKey;
-            if (originalSwitchModel) originalSwitchModel(modelKey);
-            checkWorkflowCompletion();
-        };
-        
-        const originalSwitchReranker = window.switchReranker;
-        window.switchReranker = function(rerankerKey) {
-            selectedReranker = rerankerKey;
-            if (originalSwitchReranker) originalSwitchReranker(rerankerKey);
-            checkWorkflowCompletion();
-        };
+        // Expose workflow check function globally
+        window.workflowCheckFunction = checkWorkflowCompletion;
     }
 
     // --- INITIALIZE APP ---
