@@ -1371,9 +1371,14 @@ window.addEventListener('DOMContentLoaded', function() {
                     <span class="original-code-details">(${code.exam_code})</span>
                 </li>`
             ).join('');
+            
+            // Debug: Log if no codes found
+            if (group.sourceCodes.length === 0) {
+                console.warn('No source codes found for group:', group.cleanName);
+            }
 
             groupElement.innerHTML = `
-                <div class="consolidated-header" onclick="toggleOriginalCodes(this)">
+                <div class="consolidated-header expanded" onclick="toggleOriginalCodes(this)">
                     <div class="consolidated-title-container">
                         <div class="consolidated-title">${group.cleanName}</div>
                         ${snomedId ? `<div class="snomed-code">${snomedId}</div>` : ''}
@@ -1390,7 +1395,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div></div>
                         <div class="meta-item"><strong>Parsed Components</strong><div class="component-tags">${generateComponentTags(group.components)}</div></div>
                     </div>
-                    <div class="original-codes-container" style="display: none;">
+                    <div class="original-codes-container" style="display: block;">
                         <ul class="original-codes-list">${originalCodesList}</ul>
                     </div>
                 </div>`;
