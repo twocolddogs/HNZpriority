@@ -760,7 +760,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- UPLOAD INTERFACE CONTROL ---
     function hideUploadInterface() {
         uploadSection.style.display = 'none';
-        demosSection.style.display = 'none';
+        if (demosSection) demosSection.style.display = 'none';
         document.getElementById('modelSettingsSection').style.display = 'none';
         // Hide main card entirely during processing to avoid empty white box
         mainCard.style.display = 'none';
@@ -768,7 +768,7 @@ window.addEventListener('DOMContentLoaded', function() {
     
     function showUploadInterface() {
         uploadSection.style.display = 'block';
-        demosSection.style.display = 'block';
+        if (demosSection) demosSection.style.display = 'block';
         document.getElementById('modelSettingsSection').style.display = 'block';
         // Show main card when displaying upload interface
         mainCard.style.display = 'block';
