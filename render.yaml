@@ -16,7 +16,7 @@ services:
       value: 23.2.1
     - key: PIP_CACHE_DIR
       value: /opt/render/.cache/pip
-	  
+
   autoDeploy: false
   healthCheckPath: /health
 
@@ -37,9 +37,7 @@ services:
       value: 23.2.1
     - key: PIP_CACHE_DIR
       value: /opt/render/.cache/pip
-  buildCommand: "chmod +x build.sh && ./build.sh"
- 
-  startCommand: "chmod +x start.sh && ./start.sh"
+
   autoDeploy: false
   healthCheckPath: /health
 
