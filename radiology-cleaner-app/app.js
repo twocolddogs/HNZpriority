@@ -678,8 +678,8 @@ window.addEventListener('DOMContentLoaded', function() {
         ['dragleave', 'drop'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('dragover'), false));
         uploadSection.addEventListener('drop', (e) => e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]), false);
 
-        document.getElementById('newUploadBtn').addEventListener('click', startNewUpload);
-        document.getElementById('exportMappingsBtn').addEventListener('click', exportResults);
+        document.getElementById('newUploadBtn')?.addEventListener('click', startNewUpload);
+        document.getElementById('exportMappingsBtn')?.addEventListener('click', exportResults);
         
         if (sanityButton) {
             sanityButton.addEventListener('click', runSanityTest);
@@ -721,22 +721,22 @@ window.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        document.getElementById('closeModalBtn').addEventListener('click', closeModal);
-        document.getElementById('consolidationModal').addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
+        document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
+        document.getElementById('consolidationModal')?.addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
         
         
-        document.getElementById('viewToggleBtn').addEventListener('click', toggleView);
-        document.getElementById('consolidatedSearch').addEventListener('input', filterConsolidatedResults);
-        document.getElementById('consolidatedSort').addEventListener('change', sortConsolidatedResults);
+        document.getElementById('viewToggleBtn')?.addEventListener('click', toggleView);
+        document.getElementById('consolidatedSearch')?.addEventListener('input', filterConsolidatedResults);
+        document.getElementById('consolidatedSort')?.addEventListener('change', sortConsolidatedResults);
         
-        document.getElementById('prevPageBtn').addEventListener('click', () => {
+        document.getElementById('prevPageBtn')?.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
                 displayCurrentPage();
             }
         });
         
-        document.getElementById('nextPageBtn').addEventListener('click', () => {
+        document.getElementById('nextPageBtn')?.addEventListener('click', () => {
             const totalPages = Math.ceil(sortedMappings.length / pageSize);
             if (currentPage < totalPages) {
                 currentPage++;
@@ -744,13 +744,13 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        document.getElementById('pageSizeSelector').addEventListener('change', (e) => {
+        document.getElementById('pageSizeSelector')?.addEventListener('change', (e) => {
             pageSize = parseInt(e.target.value);
             currentPage = 1; 
             displayCurrentPage();
         });
         
-        document.getElementById('tableSortBy').addEventListener('change', (e) => {
+        document.getElementById('tableSortBy')?.addEventListener('change', (e) => {
             sortBy = e.target.value;
             currentPage = 1; 
             sortAndDisplayResults();
@@ -761,7 +761,8 @@ window.addEventListener('DOMContentLoaded', function() {
     function hideUploadInterface() {
         uploadSection.style.display = 'none';
         if (demosSection) demosSection.style.display = 'none';
-        document.getElementById('modelSettingsSection').style.display = 'none';
+        const modelSettingsSection = document.getElementById('modelSettingsSection');
+        if (modelSettingsSection) modelSettingsSection.style.display = 'none';
         // Hide main card entirely during processing to avoid empty white box
         mainCard.style.display = 'none';
     }
@@ -769,7 +770,8 @@ window.addEventListener('DOMContentLoaded', function() {
     function showUploadInterface() {
         uploadSection.style.display = 'block';
         if (demosSection) demosSection.style.display = 'block';
-        document.getElementById('modelSettingsSection').style.display = 'block';
+        const modelSettingsSection = document.getElementById('modelSettingsSection');
+        if (modelSettingsSection) modelSettingsSection.style.display = 'block';
         // Show main card when displaying upload interface
         mainCard.style.display = 'block';
     }
@@ -1441,7 +1443,13 @@ window.addEventListener('DOMContentLoaded', function() {
         downloadJSON(allMappings, 'radiology_codes_cleaned.json');
     }
     
-    function closeModal() { document.getElementById('consolidationModal').style.display = 'none'; }
+    function closeModal() { 
+        const modal = document.getElementById('consolidationModal');
+        if (modal) modal.style.display = 'none'; 
+    }
+    
+    // Make functions globally accessible
+    window.closeModal = closeModal;
     
     // --- CONSOLIDATED VIEW FUNCTIONS ---
     let consolidatedData = [];
@@ -1503,6 +1511,9 @@ window.addEventListener('DOMContentLoaded', function() {
             headerElement.classList.toggle('expanded', isHidden);
         }
     }
+    
+    // Make functions globally accessible
+    window.toggleOriginalCodes = toggleOriginalCodes;
 
     function displayConsolidatedResults() {
         const container = document.getElementById('consolidatedResults');
@@ -1580,7 +1591,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const searchTerm = document.getElementById('consolidatedSearch').value.toLowerCase();
         filteredConsolidatedData = consolidatedData.filter(group => 
             group.cleanName.toLowerCase().includes(searchTerm) ||
-            group.sourceCodes.some(code => code.examName.toLowerCase().includes(searchTerm) || code.examCode.toLowerCase().includes(searchTerm))
+            group.sourceCodes.some(code => code.exam_name.toLowerCase().includes(searchTerm) || code.exam_code.toLowerCase().includes(searchTerm))
         );
         sortConsolidatedResults();
     }
