@@ -1254,7 +1254,7 @@ def demo_random_sample():
         import random
         import uuid
         
-        input_r2_key = "hnz_hdp_json.json"
+        input_r2_key = "hnz_hdp.json"
         temp_dir = tempfile.gettempdir()
         temp_input_file = os.path.join(temp_dir, f"input_{uuid.uuid4().hex}.json")
         
