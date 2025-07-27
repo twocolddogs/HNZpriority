@@ -1315,6 +1315,7 @@ a:focus-visible {
   flex-grow: 1;
 }
 
+/* Updated 2025-01-27: Mobile confidence badges */
 .result-card-confidence {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-full);
@@ -1328,18 +1329,18 @@ a:focus-visible {
 }
 
 .result-card-confidence.confidence-high {
-  background: var(--color-success-light);
-  color: var(--color-success);
+  background: var(--color-success-light) !important;
+  color: var(--color-success) !important;
 }
 
 .result-card-confidence.confidence-medium {
-  background: var(--color-warning-light);
-  color: var(--color-warning-dark);
+  background: var(--color-warning-light) !important;
+  color: var(--color-warning-dark) !important;
 }
 
 .result-card-confidence.confidence-low {
-  background: var(--color-danger-light);
-  color: var(--color-danger);
+  background: var(--color-danger-light) !important;
+  color: var(--color-danger) !important;
 }
 
 .result-card-body {
