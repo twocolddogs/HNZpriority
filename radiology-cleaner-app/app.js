@@ -356,6 +356,17 @@ function switchModel(modelKey) {
 
 
 window.addEventListener('DOMContentLoaded', function() {
+    // --- CENTRALIZED SOURCE NAMES ---
+    function getSourceNames() {
+        return {
+            'C': 'Central',
+            'CO': 'SIRS (Canterbury)', 
+            'K': 'Southern',
+            'TestData': 'Test Data',
+            'Upload': 'User Upload'
+        };
+    }
+
     // --- API & CONFIGURATION ---
     function detectApiUrls() {
         const hostname = window.location.hostname;
@@ -1437,7 +1448,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function generateSourceLegend(mappings) {
         const uniqueSources = [...new Set(mappings.map(item => item.data_source))];
-        const sourceNames = { 'C': 'Central', 'CO': 'SIRS (Canterbury)', 'K': 'Southern', 'TestData': 'Test Data' };
+        const sourceNames = getSourceNames();
         
         let legendContainer = document.getElementById('sourceLegend');
         if (!legendContainer) {
@@ -1523,7 +1534,7 @@ window.addEventListener('DOMContentLoaded', function() {
             
             const sourceCell = row.insertCell();
             sourceCell.style.cssText = `width: 12px; padding: 0; background-color: ${getSourceColor(item.data_source)}; border-right: none; position: relative;`;
-            const sourceNames = { 'C': 'Central', 'CO': 'SIRS (Canterbury)', 'K': 'Southern' };
+            const sourceNames = getSourceNames();
             sourceCell.title = sourceNames[item.data_source] || item.data_source;
             
             row.insertCell().textContent = item.exam_code;
@@ -1609,7 +1620,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 const card = document.createElement('div');
                 card.className = 'result-card';
                 
-                const sourceNames = { 'C': 'Central', 'CO': 'SIRS (Canterbury)', 'K': 'Southern' };
+                const sourceNames = getSourceNames();
                 const sourceName = sourceNames[item.data_source] || item.data_source;
                 
                 // Build tags HTML (reuse from above)
@@ -1835,7 +1846,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function getSourceDisplayName(source) {
-        const sourceNames = { 'C': 'Central', 'CO': 'SIRS (Canterbury)', 'K': 'Southern', 'TestData': 'Test Data', 'Upload': 'User Upload' };
+        const sourceNames = getSourceNames();
         return sourceNames[source] || source;
     }
     
