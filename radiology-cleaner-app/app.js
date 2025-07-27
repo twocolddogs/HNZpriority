@@ -460,7 +460,7 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function loadAvailableModels(retryCount = 0) {
+    async function loadAvailableModels(retryCount = 0, skipWarmupMessages = false) {
         try {
             console.log(`Loading available models (attempt ${retryCount + 1})`);
             const response = await fetch(MODELS_URL, { method: 'GET', timeout: 10000 });
@@ -489,7 +489,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 buildRerankerSelectionUI();
                 
                 // Warm up the API after models are loaded
-                warmupAPI();
+                if (!skipWarmupMessages) {
+                    warmupAPI();
+                }
             } else {
                 throw new Error(`API responded with ${response.status}`);
             }
@@ -497,7 +499,7 @@ window.addEventListener('DOMContentLoaded', function() {
             console.error(`✗ Failed to load models (attempt ${retryCount + 1}):`, error);
             if (retryCount < 2) {
                 console.log(`Retrying in ${(retryCount + 1) * 2} seconds...`);
-                setTimeout(() => loadAvailableModels(retryCount + 1), (retryCount + 1) * 2000);
+                setTimeout(() => loadAvailableModels(retryCount + 1, skipWarmupMessages), (retryCount + 1) * 2000);
             } else {
                 console.warn('⚠ All retry attempts failed, using fallback models');
                 useFallbackModels();
@@ -1801,8 +1803,24 @@ window.addEventListener('DOMContentLoaded', function() {
         window.workflowCheckFunction = checkWorkflowCompletion;
     }
 
+    // Make loadAvailableModels globally accessible for navigation handling
+    window.loadAvailableModels = loadAvailableModels;
+    
     // --- INITIALIZE APP ---
     testApiConnectivity();
     loadAvailableModels();
     setupEventListeners();
+});
+
+// Handle page navigation (back/forward) to ensure models reload
+window.addEventListener('pageshow', function(event) {
+    // If the page is loaded from cache (like when using back button)
+    if (event.persisted) {
+        // Check if models are loaded, if not reload them
+        const modelButtons = document.querySelectorAll('.model-toggle');
+        if (modelButtons.length === 0) {
+            // Skip warmup messages when navigating back - API is likely already warm
+            window.loadAvailableModels(0, true);
+        }
+    }
 });
