@@ -1,0 +1,20 @@
+[
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CHED",
+    "EXAM_NAME": "CT Head"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "UPEL",
+    "EXAM_NAME": "US Pelvis"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "USPELVFM",
+    "EXAM_NAME": "US Pelvis - Female"
+  }
+]

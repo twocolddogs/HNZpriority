@@ -1,0 +1,123 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2860
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Of course. Here is a clear, point-by-point implementation plan designed for a mid-level developer.\
+\
+---\
+\
+### **Implementation Plan: Upgrading to a Retriever-Reranker Pipeline**\
+\
+**Objective:** To transition the existing radiology exam standardization service to a more accurate two-stage architecture using separate models for retrieving candidates (BioLORD) and reranking them (MedCPT), while preserving our powerful rule-based component scoring.\
+\
+#### **Phase 1: Update the Offline Cache Generation (`build_cache.py`)**\
+\
+**Goal:** Ensure the script correctly builds the vector index for the **Retriever model (BioLORD)**. This script's role is now simplified and focused.\
+\
+*   **Task 1.1: Verify Model Configuration.**\
+    *   In your model configuration (where `NLPProcessor.get_available_models()` gets its data), ensure the model designated as `'default'` is **BioLORD**. This is our retriever.\
+*   **Task 1.2: No Code Changes Required.**\
+    *   The existing `build_cache.py` script is already fit for purpose. It iterates through available models and builds a FAISS index for each. When you run it, it will correctly create a cache file for the `'default'` (BioLORD) model, which is exactly what we need for the retrieval stage.\
+    *   **Action:** Run `python build_cache.py` to ensure the retriever's FAISS index is generated and uploaded to R2.\
+\
+#### **Phase 2: Adapt the Core NLP Abstraction (`NLPProcessor` class)**\
+\
+**Goal:** Modify the `NLPProcessor` class to support two different types of model interactions: generating embeddings (for retrieval) and scoring pairs of text (for reranking).\
+\
+*   **Task 2.1: Implement a Reranking Method.**\
+    *   In the `NLPProcessor` class, add a new method: `get_rerank_scores(self, query: str, documents: list[str]) -> list[float]`.\
+    *   This method should:\
+        1.  Accept a single `query` string and a `list` of `documents`.\
+        2.  Use the loaded Hugging Face `tokenizer` to prepare input pairs in the format `[query, document]` for every document in the list.\
+        3.  Pass the tokenized batch to the loaded Hugging Face `model` to get logits.\
+        4.  Apply a Sigmoid function to the logits to convert them into similarity scores between 0.0 and 1.0.\
+        5.  Return a `list` of these scores, corresponding to the input documents.\
+    *   **Note:** This method is for a **cross-encoder** model like MedCPT. The existing `.get_text_embedding()` method is for a **bi-encoder** like BioLORD.\
+\
+#### **Phase 3: Re-architect the Main Matching Logic (`nhs_lookup_engine.py`)**\
+\
+**Goal:** Rewrite the engine to orchestrate the new two-stage "retrieve-then-rerank" process. This is the most significant change.\
+\
+*   **Task 3.1: Update the Constructor (`__init__`).**\
+    *   Change the `__init__` method signature to accept two model processors:\
+        ```python\
+        def __init__(self, retriever_processor: NLPProcessor, reranker_processor: NLPProcessor, ...):\
+            self.retriever_processor = retriever_processor\
+            self.reranker_processor = reranker_processor\
+            # ... rest of init\
+        ```\
+*   **Task 3.2: Focus Index Loading on the Retriever.**\
+    *   In the method that loads the FAISS index from disk (`_load_index_from_local_disk` or similar), ensure it uses `self.retriever_processor.model_key` to construct the cache filename. This guarantees it loads the BioLORD index.\
+*   **Task 3.3: Rewrite the Main `standardize_exam` Method.**\
+    *   Replace the existing logic in this method with the following two-stage pipeline:\
+\
+    ```python\
+    def standardize_exam(self, input_exam_text: str, extracted_input_components: Dict) -> Dict:\
+        # === STAGE 1: RETRIEVAL (using self.retriever_processor) ===\
+        # 1. Generate an embedding for the input_exam_text using the retriever (BioLORD).\
+        # 2. Use the FAISS index to search for the top_k most similar NHS entries.\
+        # 3. If no candidates are found, return an empty match.\
+        # 4. Store the retrieved candidates in a list, e.g., `candidate_entries`.\
+\
+        # === STAGE 2: RERANKING & SCORING ===\
+        # 1. Prepare a list of the clean names from the candidates: \
+        #    `candidate_texts = [c['_clean_primary_name'] for c in candidate_entries]`.\
+        #\
+        # 2. Get reranker scores using the reranker model (MedCPT):\
+        #    `rerank_scores = self.reranker_processor.get_rerank_scores(input_exam_text, candidate_texts)`.\
+        #\
+        # 3. Initialize `best_match = None` and `highest_confidence = -1.0`.\
+        #\
+        # 4. Loop through each `candidate_entry` and its corresponding `rerank_score` from the lists above.\
+        #    Inside the loop:\
+        #    a. Calculate the `component_score` by calling a helper function (see Task 3.4) that re-uses your existing, powerful component-matching logic.\
+        #    b. Combine the scores: `final_score = (W_rerank * rerank_score) + (W_component * component_score)`. Get weights from `config.yaml`.\
+        #    c. If `final_score > highest_confidence`, update `highest_confidence` and set `best_match = candidate_entry`.\
+        #\
+        # 5. After the loop, return the `best_match` formatted as a result dictionary.\
+    ```\
+\
+*   **Task 3.4: Consolidate Component Scoring Logic.**\
+    *   Create a new private helper method, `_calculate_component_score(self, input_components, nhs_entry) -> float`.\
+    *   **Move** all the existing logic for comparing anatomy, modality, laterality, contrast, and technique, as well as the safety checks (`_check_diagnostic_protection`, `_check_anatomical_compatibility_constraints`, etc.), into this single function.\
+    *   This function's only job is to return the final rule-based score (a float from 0.0 to 1.0) for a given input/candidate pair.\
+\
+#### **Phase 4: Update the Application Entry Point (`app.py`)**\
+\
+**Goal:** Wire the new, two-processor `NHSLookupEngine` into the Flask application at startup.\
+\
+*   **Task 4.1: Update `_initialize_app`.**\
+    *   In the `_initialize_app` function:\
+        1.  Create an `NLPProcessor` instance for the **Retriever**. Use the model key for BioLORD (e.g., `'default'`).\
+            `retriever_proc = NLPProcessor(model_key='default')`\
+        2.  Create an `NLPProcessor` instance for the **Reranker**. Use the model key for MedCPT (e.g., `'experimental'`).\
+            `reranker_proc = NLPProcessor(model_key='experimental')`\
+        3.  When creating the `NHSLookupEngine` instance, pass both objects to the updated constructor:\
+            ```python\
+            nhs_lookup_engine = NHSLookupEngine(\
+                retriever_processor=retriever_proc,\
+                reranker_processor=reranker_proc,\
+                semantic_parser=semantic_parser,\
+                # ... other arguments\
+            )\
+            ```\
+\
+#### **Phase 5: Update the Configuration (`config.yaml`)**\
+\
+**Goal:** Adjust the configuration file to control the new scoring weights.\
+\
+*   **Task 5.1: Update Final Weights.**\
+    *   In `config.yaml`, find the `scoring.weights_final` section.\
+    *   Change the keys from `semantic` and `component` to `reranker` and `component`.\
+    *   Set initial values. A good starting point is `reranker: 0.6` and `component: 0.4`.\
+    ```yaml\
+    scoring:\
+      weights_final:\
+        reranker: 0.60\
+        component: 0.40\
+    ```\
+*   **Task 5.2: No Other Changes Needed.**\
+    *   All other detailed configuration rules (`weights_component`, `minimum_component_thresholds`, etc.) will be automatically used by the `_calculate_component_score` helper function and do not need to be changed.}

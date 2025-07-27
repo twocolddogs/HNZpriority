@@ -1,0 +1,566 @@
+[
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "D06",
+    "EXAM_NAME": "Chest (single projection)"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XRCHEST",
+    "EXAM_NAME": "Xray Chest"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "MXRCHEST",
+    "EXAM_NAME": "Chest (Mobile)"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "D20",
+    "EXAM_NAME": "Ward Chest"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CHED",
+    "EXAM_NAME": "CT Head"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "Q01",
+    "EXAM_NAME": "CT HEAD C-"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CTHEAD",
+    "EXAM_NAME": "CT Head Non Contrast"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "Q02",
+    "EXAM_NAME": "CT HEAD C+"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CAAP",
+    "EXAM_NAME": "CT Abdomen and Pelvis"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CTABDPELV",
+    "EXAM_NAME": "CT Abdomen and Pelvis"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "Q22",
+    "EXAM_NAME": "CT ABDOMEN C+"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CCAP",
+    "EXAM_NAME": "CT Chest and Abdomen and Pelvis"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CTCAP",
+    "EXAM_NAME": "CT Chest, Abdomen and Pelvis"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CPAN",
+    "EXAM_NAME": "CT Pulmonary Angiogram"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CTANGPULM",
+    "EXAM_NAME": "CT Pulmonary Angiography"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CCHT",
+    "EXAM_NAME": "CT Chest"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "Q17",
+    "EXAM_NAME": "CT CHEST C-"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CKUB",
+    "EXAM_NAME": "CT KUB"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CTKUB",
+    "EXAM_NAME": "CT Kidneys, Ureters and Bladder"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "CCSP",
+    "EXAM_NAME": "CT Cervical Spine"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "CT",
+    "EXAM_CODE": "Q79",
+    "EXAM_NAME": "CT SPINE CERVICAL"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "MHED",
+    "EXAM_NAME": "MR Head"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "E01",
+    "EXAM_NAME": "MRI HEAD C-"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "MRBRAIN",
+    "EXAM_NAME": "MRI Brain"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "MLSP",
+    "EXAM_NAME": "MR Lumbar Spine"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "E61",
+    "EXAM_NAME": "MRI SPINE LUMBAR C-"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "MRLSPINE",
+    "EXAM_NAME": "MRI Lumbar Spine"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "MCSP",
+    "EXAM_NAME": "MR Cervical Spine"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "MRCP",
+    "EXAM_NAME": "MR MRCP"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "E36",
+    "EXAM_NAME": "MRI ABDOMEN MRCP C-"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "MPRO",
+    "EXAM_NAME": "MR Prostate"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "MRKNEER",
+    "EXAM_NAME": "MRI Knee - Right"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "MR",
+    "EXAM_CODE": "E77",
+    "EXAM_NAME": "MRI KNEE"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "UABD",
+    "EXAM_NAME": "US Abdomen"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "USABDO",
+    "EXAM_NAME": "US Abdomen"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "UPEL",
+    "EXAM_NAME": "US Pelvis"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "USPELVFM",
+    "EXAM_NAME": "US Pelvis - Female"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "U42",
+    "EXAM_NAME": "US Transvaginal/Transabdominal Pelvis"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "UPRT",
+    "EXAM_NAME": "US 3rd Trimester scan (GR)"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "USPREG3RD",
+    "EXAM_NAME": "US Pregnancy - 3rd Trimester"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "UREN",
+    "EXAM_NAME": "US Renal Tract"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "U03",
+    "EXAM_NAME": "US Renal Tract"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "UCDO",
+    "EXAM_NAME": "US Carotid Doppler"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "ULDV",
+    "EXAM_NAME": "US Left Venous DVT lower limb"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "USVENDOPLL",
+    "EXAM_NAME": "US Venous Doppler Lower Limb"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "USST",
+    "EXAM_NAME": "US Scrotum and Testes"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "USSCROTEST",
+    "EXAM_NAME": "US Scrotum and Testes"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "UTHY",
+    "EXAM_NAME": "US Thyroid"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "U22",
+    "EXAM_NAME": "US Paed Hips (CDH screening)"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "USINFHIPS",
+    "EXAM_NAME": "US Infant Hips"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "Mamm",
+    "EXAM_CODE": "BBMA",
+    "EXAM_NAME": "BR Bilateral Mammogram"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "Mamm",
+    "EXAM_CODE": "BRMAMBIL",
+    "EXAM_NAME": "Mammogram Bilateral"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "Mamm",
+    "EXAM_CODE": "BTBB",
+    "EXAM_NAME": "BR Bilateral Breast Tomosynthesis"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "Mamm",
+    "EXAM_CODE": "BRMA",
+    "EXAM_NAME": "BR Right Mammogram"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "US",
+    "EXAM_CODE": "BRUS",
+    "EXAM_NAME": "US Breast - Standard"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "DEXA",
+    "EXAM_CODE": "BD01",
+    "EXAM_NAME": "Bone density Scan"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "DEXA",
+    "EXAM_CODE": "DEXA",
+    "EXAM_NAME": "Dexa"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "DEXA",
+    "EXAM_CODE": "DEXA",
+    "EXAM_NAME": "DEXA Imaging"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "PET",
+    "EXAM_CODE": "PFDG",
+    "EXAM_NAME": "PET/CT 18F-FDG WB Scan"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "PET",
+    "EXAM_CODE": "PMSA",
+    "EXAM_NAME": "PT PET/CT 18F PSMA WB Scan"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "NM",
+    "EXAM_CODE": "NWBO",
+    "EXAM_NAME": "NM Whole body bone scan"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "NM",
+    "EXAM_CODE": "NMBONEWBSP",
+    "EXAM_NAME": "NM Bone Whole Body SPECT CT"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "NM",
+    "EXAM_CODE": "NLVQ",
+    "EXAM_NAME": "NM Lung V/Q"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "NM",
+    "EXAM_CODE": "NRSM",
+    "EXAM_NAME": "NM Renogram MAG3"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "IR",
+    "EXAM_CODE": "V99",
+    "EXAM_NAME": "PICC Line Insertion"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "IR",
+    "EXAM_CODE": "RPICC",
+    "EXAM_NAME": "XA PICC Line Insertion"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "IR",
+    "EXAM_CODE": "I26",
+    "EXAM_NAME": "Lung Biopsy"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "FL",
+    "EXAM_CODE": "RSLS",
+    "EXAM_NAME": "RF Videofluoroscopy Swallow"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "FL",
+    "EXAM_CODE": "F10",
+    "EXAM_NAME": "Barium Swallow (Upper G/I series)"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "Other",
+    "EXAM_CODE": "ROPC",
+    "EXAM_NAME": "II Operative Cholangiogram"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "Other",
+    "EXAM_CODE": "Z10",
+    "EXAM_NAME": "Radiology Conferences"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XABD",
+    "EXAM_NAME": "XR Abdomen"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "F08",
+    "EXAM_NAME": "Abdomen (single projection)"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XPEL",
+    "EXAM_NAME": "XR Pelvis"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XRPELVIS",
+    "EXAM_NAME": "Xray Pelvis"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XLSP",
+    "EXAM_NAME": "XR Lumbar Spine"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XRLSPINE",
+    "EXAM_NAME": "Xray Lumbar Spine"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XCSP",
+    "EXAM_NAME": "XR Cervical Spine"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XRCSPINE",
+    "EXAM_NAME": "Xray Cervical Spine"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XRKN",
+    "EXAM_NAME": "XR Right Knee"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XLKN",
+    "EXAM_NAME": "XR Left Knee"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XBKN",
+    "EXAM_NAME": "XR Bilateral Knee"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XRAN",
+    "EXAM_NAME": "XR Right Ankle"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XLAN",
+    "EXAM_NAME": "XR Left Ankle"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XRANKLEB",
+    "EXAM_NAME": "Xray Ankle - Bilateral"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "A10",
+    "EXAM_NAME": "Hand and/or wrist joint"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XLWR",
+    "EXAM_NAME": "XR Left Wrist"
+  },
+  {
+    "DATA_SOURCE": "K",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XRWRISTR",
+    "EXAM_NAME": "Xray Wrist - Right"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "A06",
+    "EXAM_NAME": "Shoulder"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XRSH",
+    "EXAM_NAME": "XR Right Shoulder"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XLSH",
+    "EXAM_NAME": "XR Left Shoulder"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XRFO",
+    "EXAM_NAME": "XR Right Foot"
+  },
+  {
+    "DATA_SOURCE": "C",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "XLFO",
+    "EXAM_NAME": "XR Left Foot"
+  },
+  {
+    "DATA_SOURCE": "CO",
+    "MODALITY_CODE": "XR",
+    "EXAM_CODE": "P16",
+    "EXAM_NAME": "WRIST (non-acute) - NO REPORT"
+  }
+]

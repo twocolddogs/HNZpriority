@@ -65,9 +65,23 @@ The `priority_data_set.json` follows this structure:
 
 Both applications are static web applications with no build process. They run directly in the browser.
 
+### Python Command Policy
+**CRITICAL: Always use `python3` instead of `python` for all Python commands.**
+- The system requires Python 3 and `python` may not be available or may point to Python 2
+- Use `python3` for all scripts, testing, and development commands
+- Examples: `python3 -m http.server`, `python3 script.py`, `python3 -c "..."`
+
+### Radiology Cleaner App Commands
+
+#### buildit
+Triggers deployment of the radiology cleaner app backend to Render.com:
+```bash
+curl -X POST "https://api.render.com/deploy/srv-d1mss0ripnbc7398djh0?key=AY2l21TBDdU"
+```
+
 ### HNZ Radiology Triage Tool
 Since there's no package.json, this project doesn't use npm/node build tools. To develop locally:
-- Serve files from root directory using a local web server (e.g., `python -m http.server` or VS Code Live Server)
+- Serve files from root directory using a local web server (e.g., `python3 -m http.server` or VS Code Live Server)
 - The app uses CDN imports for React from esm.sh
 - Deployed via Cloudflare Workers using the wrangler configuration (`wrangler.jsonc`)
 
@@ -75,6 +89,34 @@ Since there's no package.json, this project doesn't use npm/node build tools. To
 - Serve files from the `lora/` directory using a local web server
 - Standalone HTML/CSS/JavaScript application
 - No external dependencies or build process required
+
+## Session Startup Protocol
+
+**CRITICAL: At the start of every session, automatically sync with remote repository:**
+
+### Automatic Git Sync Process:
+1. **Always run `git fetch origin`** immediately upon session start
+2. **Check for remote changes** with `git status` after fetch
+3. **If behind remote**: Ask user for confirmation before pulling changes
+4. **If confirmed**: Run `git pull origin develop` to sync local with remote
+5. **If declined**: Proceed with current local state but warn about potential conflicts
+
+### Example Startup Sequence:
+```bash
+# Automatic on session start
+git fetch origin
+git status
+
+# If behind remote, ask: "Remote has X new commits. Pull changes? (y/n)"
+# If yes:
+git pull origin develop
+```
+
+**Benefits:**
+- Prevents merge conflicts from working on outdated code
+- Ensures latest changes are available immediately
+- Maintains awareness of team collaboration
+- Reduces surprise conflicts during development
 
 ## Critical Branch Management Rules
 
@@ -177,6 +219,61 @@ This ensures Gemini maintains comprehensive understanding of:
 - Maintains accurate understanding of current code state
 - Enables better suggestions and problem-solving
 - Reduces debugging time and improves code quality
+
+## Testing Policy
+
+### Local Development Setup (Recommended)
+
+**The radiology cleaner backend supports local development:**
+
+```bash
+# Run Flask server locally (from project root)
+python3 backend/app.py
+
+# Server runs on http://localhost:10000
+# Available endpoints:
+# - GET /health - Health check
+# - GET /models - List available NLP models  
+# - POST /parse_enhanced - Single exam processing
+# - POST /parse_batch - Batch exam processing
+```
+
+**Test endpoints:**
+```bash
+# Health check
+curl http://localhost:10000/health
+
+# Test parsing (requires working NLP models)
+curl -X POST http://localhost:10000/parse_enhanced \
+  -H "Content-Type: application/json" \
+  -d '{"exam_name": "CT CHEST"}'
+```
+
+**Notes:**
+- Dependencies available system-wide (Flask, numpy, requests, fuzzywuzzy)
+- Server initialization takes ~1 second
+- Use for development, debugging, and testing API changes
+
+**For NLP Model Support:**
+```bash
+# Set Hugging Face token (required for model endpoints)
+export HUGGING_FACE_TOKEN="your_hf_token_here"
+
+# Available models: default, biolord, experimental
+# Test with model parameter:
+curl -X POST http://localhost:10000/parse_enhanced \
+  -H "Content-Type: application/json" \
+  -d '{"exam_name": "CT CHEST", "model": "default"}'
+```
+
+**Model Troubleshooting:**
+- Without HF token: Basic NHS matching works, but no semantic similarity
+- With HF token: Full NLP processing with embedding-based matching
+- Check `/models` endpoint to see available models
+
+### Production Deployment
+- Production deployment still uses `buildit` command for Render.com
+- Local development complements but doesn't replace production testing
 
 ## Code Patterns
 

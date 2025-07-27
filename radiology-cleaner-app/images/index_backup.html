@@ -1,0 +1,40 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HNZ Radiology Triage Helper</title>
+<style>
+    /* default: logo and title side-by-side */
+    .header-wrapper {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1em;
+    }
+    .header-wrapper .logo-inline {
+      margin-right: 10px;
+      margin-bottom: 0;    /* reset */
+      height: 40px;
+      display: inline-block;
+    }
+
+    /* mobile only: stack vertically */
+    @media (max-width: 600px) {
+      .header-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .header-wrapper .logo-inline {
+        margin-right: 0;
+        margin-bottom: 0.25em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

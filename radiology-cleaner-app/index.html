@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radiology Code Semantic Cleaner</title>
+    <!-- Fonts -->
+    <link href="./fonts/poppins.css" rel="stylesheet" type="text/css">
+    <link href="./fonts/publicsans.css" rel="stylesheet" type="text/css">
+    <!-- Unified Design System -->
+    <link href="./unified-styles.css" rel="stylesheet" type="text/css">
+    <style>
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+            border-color: #4CAF50 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Enhanced Header with Modern Design -->
+        <div class="app-header">
+            <div class="brand-bar">
+                <div class="brand-content">
+                    <img src="./images/HealthNZ_logo_v2.svg" alt="Health New Zealand Logo" class="app-logo">
+                    <div class="header-divider"></div>
+                    <div class="brand-text">
+                        <h1 class="brand-title">Radiology Code Semantic Cleaner</h1>
+                        <p class="brand-subtitle">AI-powered Standardisation for Radiology Exam Codes and Names</p>
+                    </div>
+                </div>
+                
+                <!-- Hamburger Menu -->
+                <div class="hamburger-menu">
+                    <button id="hamburgerToggle" class="hamburger-button">
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                        <span class="hamburger-line"></span>
+                    </button>
+                    
+                    <div id="hamburgerDropdown" class="hamburger-dropdown hidden">
+                        <div class="dropdown-section">
+                            <a href="help.html" class="dropdown-item">
+                                <span class="dropdown-icon nerd-icon">󰋖</span>
+                                Help
+                            </a>
+                            <a href="about.html" class="dropdown-item">
+                                <span class="dropdown-icon nerd-icon">󰘦</span>
+                                How this works
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Message Container - Moved to top -->
+        <div id="statusMessageContainer" class="status-message-container" style="margin-bottom: 20px;"></div>
+
+        <div class="main-card">
+            <!-- Hero Section with Three Clear Paths -->
+            <div class="hero-section" style="text-align: center; padding: 30px 20px; margin-bottom: 30px;">
+                <div class="action-paths" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto;">
+                    <!-- Path 1: Quick Demo -->
+                    <div class="action-card demo-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px;">🚀</div>
+                        <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Try It Now</h3>
+                        <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">See it in action with sample data. No upload required.</p>
+                        <button class="button primary" id="quickDemoBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Start Demo →</button>
+                    </div>
+                    
+                    <!-- Path 2: Upload Own Data -->
+                    <div class="action-card upload-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px;">📁</div>
+                        <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Upload Your Data</h3>
+                        <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">Process your own radiology codes securely.</p>
+                        <button class="button primary" id="uploadDataBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Choose File →</button>
+                    </div>
+                    
+                    <!-- Path 3: Advanced Setup -->
+                    <div class="action-card advanced-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px;">⚙️</div>
+                        <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Advanced Setup</h3>
+                        <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">Configure preprocessing and parsing rules.</p>
+                        <button class="button primary" id="advancedSetupBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Configure →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Streamlined Workflow Section -->
+            <div id="workflowSection" class="workflow-section" style="display: none;">
+
+                <!-- Step 1: Retriever Selection -->
+                <div id="retrieverStep" class="workflow-step active" style="margin-bottom: 25px; padding: 25px; border: 2px solid #4CAF50; border-radius: 12px; background: #f9fff9;">
+                    <h3 style="margin: 0 0 15px 0; color: #4CAF50; display: flex; align-items: center;">
+                        <span style="background: #4CAF50; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 14px;">1</span>
+                        Choose Retriever Model
+                    </h3>
+                    <p style="margin: 0 0 20px 0; color: #666;">Select the embedding model for semantic search and candidate retrieval.</p>
+                    <div class="model-selection-container">
+                        <!-- Dynamic model buttons will be inserted here by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Step 2: Reranker Selection -->
+                <div id="rerankerStep" class="workflow-step" style="margin-bottom: 25px; padding: 25px; border: 2px solid #e0e0e0; border-radius: 12px; background: #fafafa; opacity: 0.6;">
+                    <h3 style="margin: 0 0 15px 0; color: #999; display: flex; align-items: center;">
+                        <span style="background: #e0e0e0; color: #999; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 14px;">2</span>
+                        Choose Reranker Model
+                    </h3>
+                    <p style="margin: 0 0 20px 0; color: #999;">Select the AI model for reranking and scoring candidates.</p>
+                    <div class="reranker-selection-container">
+                        <!-- Dynamic reranker buttons will be inserted here by JavaScript -->
+                    </div>
+                    <div id="rerankerStatusMessage" style="margin-top: 15px; padding: 10px; border-radius: 6px; font-size: 0.9em; display: none;"></div>
+                </div>
+
+                <!-- Step 3: Run Processing -->
+                <div id="runStep" class="workflow-step" style="margin-bottom: 25px; padding: 25px; border: 2px solid #e0e0e0; border-radius: 12px; background: #fafafa; opacity: 0.6;">
+                    <h3 style="margin: 0 0 15px 0; color: #999; display: flex; align-items: center;">
+                        <span style="background: #e0e0e0; color: #999; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 14px;">3</span>
+                        Process Data
+                    </h3>
+                    <div id="dataSourceDisplay" style="margin-bottom: 20px; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 8px; display: none;">
+                        <strong>Data Source:</strong> <span id="dataSourceText"></span>
+                    </div>
+                    <button class="button primary large" id="runProcessingBtn" style="padding: 15px 40px; font-size: 1.1em; font-weight: 600; disabled: true;" disabled>
+                        🚀 Start Processing
+                    </button>
+                    <p style="margin: 10px 0 0 0; font-size: 0.9em; color: #666;">Processing typically takes 30-60 seconds for 100 records</p>
+                </div>
+            </div>
+
+            <!-- Hidden Upload Section -->
+            <div id="uploadSection" class="upload-section" style="display: none; padding: 20px 15px; min-height: auto;">
+                <div class="upload-icon"></div>
+                <h2 style="margin: 8px 0;">Upload Radiology Codes</h2>
+                <p style="margin: 3px 0 10px 0;">Drop your codes.json file here or click to browse.</p>
+                <input type="file" id="fileInput" accept=".json" />
+            </div>
+
+            <!-- Model Settings Section -->
+            <div id="modelSettingsSection" class="model-settings-section" style="display: none; margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
+                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Model Settings</h3>
+                <p style="color: #666; margin-bottom: 15px;">Additional model configuration options will appear here.</p>
+            </div>
+
+            <!-- Advanced Configuration Section -->
+            <div id="advancedSection" class="advanced-section" style="display: none; margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
+                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Advanced Configuration</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-start;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white; border: none; width: 100%;">
+                            100 Exam Test Suite
+                        </button>
+                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
+                            Load and process the built-in test dataset to verify engine performance
+                        </p>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <button class="button secondary" id="editConfigBtn" style="background-color: #4CAF50; color: white; border: none; width: 100%;">
+                            Edit Config
+                        </button>
+                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
+                            View and edit the system configuration file
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="file-info" id="fileInfo"></div>
+
+            <div class="results-section" id="resultsSection">
+                <h2 id="resultsTitle" style="font-size: 1.3em;">Cleaning Results</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value" id="originalCount">0</div><div class="stat-label">Original Codes</div></div>
+                    <div class="stat-card"><div class="stat-value" id="cleanCount">0</div><div class="stat-label">Clean Names</div></div>
+                    <div class="stat-card"><div class="stat-value" id="consolidationRatio">0</div><div class="stat-label">Consolidation Ratio</div></div>
+                    <div class="stat-card"><div class="stat-value" id="modalityCount">0</div><div class="stat-label">Modalities</div></div>
+                    <div class="stat-card"><div class="stat-value" id="avgConfidence">0</div><div class="stat-label">Avg Confidence</div></div>
+                    <div class="stat-card"><div class="stat-value" id="genderContext">0</div><div class="stat-label">Gender Context</div></div>
+                </div>
+                
+                <!-- Combined Action Buttons - Reorganized Order -->
+                <div class="action-buttons view-toggle">
+                    <button class="button active" id="viewToggleBtn">Switch to Consolidated View</button>
+                    <button class="button primary new-upload" id="newUploadBtn">Start Over</button>
+                    <button class="button success" id="exportMappingsBtn">Export Mappings</button>
+                </div>
+                
+                <!-- Full View -->
+                <div id="fullView">
+                    <h3>Mappings</h3>
+                    <div class="table-controls">
+                        <select id="tableSortBy" style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
+                            <option value="default">Default Order</option>
+                            <option value="confidence-desc">Confidence: High to Low</option>
+                            <option value="confidence-asc">Confidence: Low to High</option>
+                            <option value="name-asc">Clean Name: A to Z</option>
+                            <option value="name-desc">Clean Name: Z to A</option>
+                        </select>
+                        <span id="tableInfo" class="table-info"></span>
+                    </div>
+                    <div class="table-container">
+                        <table class="results-table" id="resultsTable">
+                            <thead><tr><th style="width: 12px; padding: 0;"></th><th>Original Code</th><th>Original Name</th><th>Clean Name</th><th>SNOMED FSN</th><th>Tags</th><th>Confidence</th></tr></thead>
+                            <tbody id="resultsBody"></tbody>
+                        </table>
+                    </div>
+                    <!-- Mobile card layout -->
+                    <div class="results-table-mobile" id="resultsMobile"></div>
+                    <div class="pagination-controls" id="paginationControls" style="display: none;">
+                        <button id="prevPageBtn" class="button secondary">← Previous</button>
+                        <span id="pageInfo" class="page-info"></span>
+                        <button id="nextPageBtn" class="button secondary">Next →</button>
+                        <select id="pageSizeSelector" class="page-size-selector">
+                            <option value="50">50 per page</option>
+                            <option value="100" selected>100 per page</option>
+                            <option value="200">200 per page</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Consolidated View -->
+                <div id="consolidatedView" style="display: none;">
+                    <h3>Consolidated Results</h3>
+                    <div class="consolidated-controls" style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+                        <input type="text" id="consolidatedSearch" placeholder="Search consolidated names..." style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; width: 300px; max-width: 100%;">
+                        <select id="consolidatedSort" style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
+                            <option value="count">Sort by Count</option>
+                            <option value="name">Sort by Name</option>
+                            <option value="confidence">Sort by Confidence</option>
+                        </select>
+                    </div>
+                    <div id="consolidatedResults"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Help and Architecture content moved to dedicated pages: help.html and about.html -->
+
+    <!-- Config Editor Modal -->
+    <div class="modal" id="configEditorModal">
+        <div class="modal-content" style="max-width: 90vw; width: 1200px; max-height: 90vh;">
+            <div class="modal-header">
+                <h2>⚙️ Configuration Editor</h2>
+                <button id="closeConfigEditorModal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0; height: 70vh;">
+                <div style="display: flex; height: 100%;">
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="background: #f5f5f5; padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>config.yaml</strong>
+                                <span id="configStatus" style="margin-left: 10px; color: #666; font-size: 0.9em;"></span>
+                            </div>
+                            <div>
+                                <button id="reloadConfigBtn" class="button secondary" style="margin-right: 10px; padding: 5px 10px; font-size: 0.9em;">
+                                    🔄 Reload
+                                </button>
+                                <button id="saveConfigBtn" class="button primary" style="padding: 5px 15px; font-size: 0.9em;">
+                                    💾 Save
+                                </button>
+                            </div>
+                        </div>
+                        <textarea id="configEditor" style="flex: 1; font-family: 'Courier New', monospace; font-size: 14px; border: none; outline: none; padding: 15px; resize: none; background: #fafafa;" placeholder="Loading configuration..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div style="font-size: 0.9em; color: #666;">
+                        <strong>Note:</strong> Changes will trigger cache rebuild and may take a few minutes to apply.
+                    </div>
+                    <button id="closeConfigEditorBtn" class="button secondary">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="consolidationModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModalBtn">×</span>
+            <h2>Top Consolidation Examples</h2>
+            <div id="consolidationExamples" class="consolidation-examples"></div>
+        </div>
+    </div>
+
+
+    <script type="module" src="./app.js"></script>
+</body>
+</html>

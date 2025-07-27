@@ -1,186 +1,283 @@
+# --- START OF FILE parser.py ---
+
+# =============================================================================
+# RADIOLOGY SEMANTIC PARSER (V2.9 - HYBRID & GRANULAR DETECTION)
+# =============================================================================
+# This module is responsible for breaking down a cleaned radiology exam name
+# into its constituent semantic components. This enhanced version features:
+# - Detection of multiple modalities for hybrid imaging (e.g., PET/CT).
+# - More granular technique detection to differentiate diagnostic from
+#   interventional procedures and identify specific NM/Fluoro studies.
+
 import re
+from typing import Dict, List, Optional
+from parsing_utils import AnatomyExtractor, LateralityDetector, ContrastMapper
 
 class RadiologySemanticParser:
     """
-    A Python port of the radiology semantic parser, designed to standardize
-    radiology exam names by extracting key components like modality, anatomy,
-    laterality, contrast, and technique.
-    It can be enhanced by providing pre-extracted entities from an NLP model like ScispaCy.
+    Parses a cleaned radiology exam name into a structured dictionary of components.
+    
+    It leverages utility classes to extract specific features and uses regex patterns
+    to identify modality and specialized techniques. The output of this parser is a
+    key input for the NHSLookupEngine's scoring algorithm, providing a rich,
+    structured representation of the exam's clinical intent.
     """
-    def __init__(self):
-        # Anatomical hierarchy with detailed mappings
-        self.anatomy_mappings = {
-            # Head and Neck
-            'head': {'terms': ['head', 'brain', 'skull', 'cranial', 'cerebral', 'cranium'], 'standardName': 'Head', 'category': 'neurological'},
-            'neck': {'terms': ['neck', 'cervical soft tissue', 'pharynx', 'larynx'], 'standardName': 'Neck', 'category': 'head_neck'},
-            'sinuses': {'terms': ['sinus', 'sinuses', 'paranasal'], 'standardName': 'Sinuses', 'category': 'head_neck'},
-            'temporal_bones': {'terms': ['temporal bone', 'petrous', 'iam', 'internal auditory'], 'standardName': 'Temporal Bones', 'category': 'head_neck'},
-            'orbit': {'terms': ['orbit', 'orbital', 'eye'], 'standardName': 'Orbits', 'category': 'head_neck'},
-            'facial': {'terms': ['facial bone', 'face', 'maxilla', 'mandible', 'tmj', 'opg'], 'standardName': 'Facial Bones', 'category': 'head_neck'},
-            'pituitary': {'terms': ['pituitary', 'sella', 'pituitary fossa'], 'standardName': 'Pituitary', 'category': 'neurological'},
-            # Spine
-            'c_spine': {'terms': ['cervical spine', 'c spine', 'cspine', 'c-spine'], 'standardName': 'Cervical Spine', 'category': 'spine'},
-            't_spine': {'terms': ['thoracic spine', 't spine', 'tspine', 'dorsal spine'], 'standardName': 'Thoracic Spine', 'category': 'spine'},
-            'l_spine': {'terms': ['lumbar spine', 'l spine', 'lspine', 'lumbosacral'], 'standardName': 'Lumbar Spine', 'category': 'spine'},
-            'sacrum': {'terms': ['sacrum', 'sacral', 'sacrococcygeal', 'coccyx', 'sacroiliac', 'si joint'], 'standardName': 'Sacrum/Coccyx', 'category': 'spine'},
-            'whole_spine': {'terms': ['whole spine', 'full spine', 'entire spine'], 'standardName': 'Whole Spine', 'category': 'spine'},
-            # Chest
-            'chest': {'terms': ['chest', 'thorax', 'thoracic', 'lung'], 'standardName': 'Chest', 'category': 'chest'},
-            'ribs': {'terms': ['rib', 'ribs', 'thoracic cage'], 'standardName': 'Ribs', 'category': 'chest'},
-            'sternum': {'terms': ['sternum', 'sternal'], 'standardName': 'Sternum', 'category': 'chest'},
-            'clavicle': {'terms': ['clavicle', 'clavicular', 'acromioclavicular', 'ac joint'], 'standardName': 'Clavicle', 'category': 'chest'},
-            # Abdomen and Pelvis
-            'abdomen': {'terms': ['abdomen', 'abdominal', 'abdo'], 'standardName': 'Abdomen', 'category': 'abdomen'},
-            'pelvis': {'terms': ['pelvis', 'pelvic'], 'standardName': 'Pelvis', 'category': 'pelvis'},
-            'liver': {'terms': ['liver', 'hepatic'], 'standardName': 'Liver', 'category': 'abdomen'},
-            'pancreas': {'terms': ['pancreas', 'pancreatic'], 'standardName': 'Pancreas', 'category': 'abdomen'},
-            'kidneys': {'terms': ['kidney', 'renal', 'nephro', 'kub'], 'standardName': 'Kidneys', 'category': 'abdomen'},
-            'urinary': {'terms': ['bladder', 'ureter', 'urethra', 'urinary', 'urography', 'ctu', 'ivu'], 'standardName': 'Urinary Tract', 'category': 'genitourinary'},
-            'bowel': {'terms': ['bowel', 'intestine', 'small bowel', 'enterography', 'enteroclysis'], 'standardName': 'Small Bowel', 'category': 'abdomen'},
-            'colon': {'terms': ['colon', 'colonography', 'large bowel'], 'standardName': 'Colon', 'category': 'abdomen'},
-            'prostate': {'terms': ['prostate', 'prostatic'], 'standardName': 'Prostate', 'category': 'pelvis'},
-            'gynecological': {'terms': ['uterus', 'ovary', 'ovarian', 'endometrial', 'female pelvis', 'gynaecology'], 'standardName': 'Female Pelvis', 'category': 'pelvis'},
-            # Upper Extremity
-            'shoulder': {'terms': ['shoulder'], 'standardName': 'Shoulder', 'category': 'musculoskeletal'},
-            'humerus': {'terms': ['humerus', 'humeral'], 'standardName': 'Humerus', 'category': 'musculoskeletal'},
-            'elbow': {'terms': ['elbow'], 'standardName': 'Elbow', 'category': 'musculoskeletal'},
-            'forearm': {'terms': ['forearm', 'radius', 'ulna', 'radial', 'ulnar'], 'standardName': 'Forearm', 'category': 'musculoskeletal'},
-            'wrist': {'terms': ['wrist', 'carpal', 'scaphoid'], 'standardName': 'Wrist', 'category': 'musculoskeletal'},
-            'hand': {'terms': ['hand', 'metacarpal'], 'standardName': 'Hand', 'category': 'musculoskeletal'},
-            'finger': {'terms': ['finger', 'thumb', 'phalanx', 'phalangeal'], 'standardName': 'Finger', 'category': 'musculoskeletal'},
-            # Lower Extremity
-            'hip': {'terms': ['hip', 'acetabulum'], 'standardName': 'Hip', 'category': 'musculoskeletal'},
-            'femur': {'terms': ['femur', 'femoral', 'thigh'], 'standardName': 'Femur', 'category': 'musculoskeletal'},
-            'knee': {'terms': ['knee', 'patella', 'patellar'], 'standardName': 'Knee', 'category': 'musculoskeletal'},
-            'tibia_fibula': {'terms': ['tibia', 'fibula', 'tibial', 'fibular', 'tib fib', 'leg'], 'standardName': 'Tibia/Fibula', 'category': 'musculoskeletal'},
-            'ankle': {'terms': ['ankle', 'talar', 'talus'], 'standardName': 'Ankle', 'category': 'musculoskeletal'},
-            'foot': {'terms': ['foot', 'feet', 'metatarsal', 'tarsal'], 'standardName': 'Foot', 'category': 'musculoskeletal'},
-            'toe': {'terms': ['toe', 'phalanges'], 'standardName': 'Toe', 'category': 'musculoskeletal'},
-            'calcaneus': {'terms': ['calcaneus', 'calcaneum', 'os calcis', 'heel'], 'standardName': 'Calcaneus', 'category': 'musculoskeletal'},
-            # Vascular
-            'aorta': {'terms': ['aorta', 'aortic'], 'standardName': 'Aorta', 'category': 'vascular'},
-            'carotid': {'terms': ['carotid'], 'standardName': 'Carotid', 'category': 'vascular'},
-            'cerebral_vessels': {'terms': ['cerebral', 'circle of willis', 'cow', 'intracranial'], 'standardName': 'Cerebral Vessels', 'category': 'vascular'},
-            'coronary': {'terms': ['coronary', 'cardiac vessel'], 'standardName': 'Coronary', 'category': 'vascular'},
-            'pulmonary_vessels': {'terms': ['pulmonary artery', 'pulmonary angiogram', 'ctpa', 'pe protocol'], 'standardName': 'Pulmonary Vessels', 'category': 'vascular'},
-            'peripheral_vessels': {'terms': ['peripheral', 'extremity vessel', 'runoff'], 'standardName': 'Peripheral Vessels', 'category': 'vascular'},
-        }
+    def __init__(self, nlp_processor=None, anatomy_extractor=None, laterality_detector=None, contrast_mapper=None):
+        """
+        Initializes the parser with necessary utility components and pre-compiled regex patterns.
 
-        self.modality_map = {'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM', 'PET': 'PET', 'Mamm': 'Mammography', 'DEXA': 'DEXA', 'FL': 'Fluoroscopy', 'IR': 'IR', 'Other': 'Other'}
+        Why: Pre-compiling regex patterns in the constructor is a performance optimization.
+             This method sets up all the rules and definitions the parser will use for its analysis.
+
+        Args:
+            nlp_processor: An NLP model processor (optional, currently not used directly in parsing).
+            anatomy_extractor: Utility to extract anatomical parts.
+            laterality_detector: Utility to detect left, right, or bilateral.
+            contrast_mapper: Utility to map contrast terms.
+        """
+        self.nlp_processor = nlp_processor
+        self.anatomy_extractor = anatomy_extractor
+        self.laterality_detector = laterality_detector
+        self.contrast_mapper = contrast_mapper
+
+        # A map to normalize modality codes and terms found in exam names.
+        self.modality_map = {
+            'CT': 'CT', 'MR': 'MRI', 'MRI': 'MRI', 'XR': 'XR', 'US': 'US', 'NM': 'NM',
+            'PET': 'NM', 'MG': 'MG', 'MAMM': 'MG', 'MAMMO': 'MG', 'DEXA': 'DEXA', 
+            'FL': 'Fluoroscopy', 
+            'IR': 'IR',
+            'XA': 'IR',
+            'Other': 'Other', 'BR': 'MG'
+        }
         
+        # MODIFICATION: Expanded and split patterns for better granularity. This allows
+        # the scoring engine to differentiate between various procedure types with
+        # much higher precision.
         self.technique_patterns = {
-            'Angiography': [re.compile(p, re.I) for p in [r'angiogram', r'angiography', r'cta', r'mra', r'venogram']],
-            'HRCT': [re.compile(p, re.I) for p in [r'hrct', r'high resolution']],
-            'Colonography': [re.compile(p, re.I) for p in [r'colonography', r'virtual colonoscopy']],
-            'Doppler': [re.compile(p, re.I) for p in [r'doppler', r'duplex']],
-            'Intervention': [re.compile(p, re.I) for p in [r'biopsy', r'drainage', r'injection']],
+            # Core Modality-Specific Techniques
+            'MRCP': [re.compile(p, re.I) for p in [r'\b(mrcp|magnetic resonance cholangiopancreatography|cholangiopancreatography)\b']],
+            'HRCT': [re.compile(p, re.I) for p in [r'\b(hrct|high resolution)\b']],
+            'Colonography': [re.compile(p, re.I) for p in [r'\b(colonography|virtual colonoscopy)\b']],
+            'Doppler': [re.compile(p, re.I) for p in [r'\b(doppler|duplex)\b']],
+            'Tomosynthesis': [re.compile(p, re.I) for p in [r'\b(tomosynthesis|tomo)\b']],
+            
+            # ENHANCED: Fluoroscopy and GI studies are now more inclusive.
+            'Fluoroscopic GI/Swallow Study': [re.compile(p, re.I) for p in [
+                r'\b(barium|upper gi|lower gi|swallow|meal|enema|videofluoroscopy)\b'
+            ]],
+            
+            # NEW: Specific Nuclear Medicine techniques for better differentiation.
+            'SPECT': [re.compile(p, re.I) for p in [r'\b(spect|single photon)\b']],
+            'V/Q Scan': [re.compile(p, re.I) for p in [r'\b(v/q|ventilation perfusion)\b']],
+            
+            # NEW: Differentiating diagnostic vascular from therapeutic interventional.
+            'Diagnostic Angiography': [re.compile(p, re.I) for p in [
+                r'\b(angiogram|angiography|arteriogram|arteriography|angio|dsa)\b'
+            ]],
+            
+            # Interventional Categories (now more focused on therapeutic/procedural actions).
+            'Arterial Interventional': [re.compile(p, re.I) for p in [
+                r'\b(stent|angioplasty|emboli[sz]ation|thrombolysis|thrombectomy|atherectomy)\b',
+                r'\b(arterial|artery|aortic|aorta|carotid|femoral artery|renal artery)\b'
+            ]],
+            'Venous Interventional': [re.compile(p, re.I) for p in [
+                r'\b(venography|venogram|phlebography)\b',
+                r'\b(picc|line|catheter|port|hickman|tunneled)\b',
+                r'\b(venous|vein|vena cava|jugular|subclavian|femoral vein)\b',
+                r'\b(ivc filter|vena cava filter|thrombolysis venous)\b'
+            ]],
+            'Non-Vascular Interventional': [re.compile(p, re.I) for p in [
+                r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation)\b',
+                r'\b(?!.*\b(?:picc|line|catheter)\b)(insertion|insert)\b'
+            ]],
+
+            # Specific PET Tracers (for advanced NM classification).
+            '18F-FDG PET': [re.compile(p, re.I) for p in [
+                r'\b(fdg|18f.?fdg|f.?18.?fdg|fluorodeoxyglucose|18f.?fluorodeoxyglucose|fludeoxyglucose)\b'
+            ]],
+            '18F-PSMA PET': [re.compile(p, re.I) for p in [
+                r'\b(psma|18f.?psma|f.?18.?psma|prostate.?specific.?membrane.?antigen)\b',
+                r'\b(18f.?dcfpyl|dcfpyl|18f.?pyl|pyl)\b'
+            ]],
+            'Gallium-68 PET': [re.compile(p, re.I) for p in [
+                r'\b(ga.?68|gallium.?68|68.?ga|68.?gallium)\b',
+                r'\b(ga.?68.?dotatate|dotatate|ga.?68.?dotanoc|dotanoc|ga.?68.?dotatoc|dotatoc)\b',
+                r'\b(ga.?68.?psma|68.?ga.?psma)\b'
+            ]]
         }
 
-        self.contrast_patterns = {
-            'with': [re.compile(p, re.I) for p in [r'\bC\+', r'with contrast', r'post contrast', r'enhanced', r'post gad']],
-            'without': [re.compile(p, re.I) for p in [r'\bC-', r'without contrast', r'no contrast', r'non-?contrast', r'unenhanced']],
-            'with and without': [re.compile(p, re.I) for p in [r'C\+\/?-', r'\+\/?-', r'with and without', r'pre and post', r'pre & post']],
-        }
+    def parse_exam_name(self, exam_name: str, modality_code: str) -> Dict:
+        """
+        Executes the full parsing pipeline on a single cleaned exam name.
 
-        self.laterality_patterns = {
-            'Bilateral': re.compile(r'\b(bilateral|bilat|both|b/l)\b', re.I),
-            'Left': re.compile(r'\b(left|lt)\b', re.I),
-            'Right': re.compile(r'\b(right|rt)\b', re.I),
-        }
+        Why: This is the main entry point for the parser. It orchestrates the calls to
+             the various private parsing methods in the correct sequence and assembles
+             the final structured output.
 
-        # Build a reverse lookup for fast searching
-        self.anatomy_lookup = {}
-        for key, config in self.anatomy_mappings.items():
-            for term in config['terms']:
-                self.anatomy_lookup[term.lower()] = {'key': key, **config}
-        
-        # Sort terms by length (desc) to match longer phrases first (e.g., "cervical spine" before "spine")
-        self.sorted_anatomy_terms = sorted(self.anatomy_lookup.keys(), key=len, reverse=True)
-
-
-    def parse_exam_name(self, exam_name, modality_code, scispacy_entities=None):
-        if scispacy_entities is None:
-            scispacy_entities = {}
-
-        result = {
-            'modality': self.modality_map.get(modality_code, modality_code),
-            'anatomy': [],
-            'laterality': None,
-            'contrast': None,
-            'technique': []
-        }
-        
+        Args:
+            exam_name: The preprocessed exam name string.
+            modality_code: The original modality code from the source data (used as a fallback).
+            
+        Returns:
+            A dictionary containing the parsed components and a generated clean name.
+        """
         lower_name = exam_name.lower()
-
-        # 1. Use NLP entities as the primary source of truth
-        result['anatomy'] = sorted(list(set(scispacy_entities.get('ANATOMY', []))))
-        result['laterality'] = scispacy_entities.get('DIRECTION', [None])[0]
-
-        # 2. Fallback to regex/keyword rules for confirmation or if NLP fails
-        if not result['laterality']:
-            for lat, pattern in self.laterality_patterns.items():
-                if pattern.search(lower_name):
-                    result['laterality'] = lat
-                    break
+        anatomy = self.anatomy_extractor.extract(lower_name) if self.anatomy_extractor else []
         
-        for con, patterns in self.contrast_patterns.items():
-            if any(p.search(lower_name) for p in patterns):
-                result['contrast'] = con
-                break
+        # The parsed dictionary holds the structured output of each component.
+        parsed = {
+            'modality': self._parse_modality(lower_name, modality_code),
+            'anatomy': anatomy,
+            'laterality': self._parse_laterality(lower_name),
+            'contrast': self._parse_contrast(lower_name),
+            'technique': self._parse_technique(lower_name),
+        }
+        
+        # The final output includes both the parsed components and a constructed
+        # standardized name for display or logging purposes.
+        return {
+            'clean_name': self._build_clean_name(parsed),
+            **parsed
+        }
 
-        for tech, patterns in self.technique_patterns.items():
-            if any(p.search(lower_name) for p in patterns) and tech not in result['technique']:
-                result['technique'].append(tech)
+    def _parse_modality(self, lower_name: str, modality_code: str) -> List[str]:
+        """
+        Determines all modalities from text, ordered by priority, returning a list.
 
-        # Use rule-based anatomy if NLP found nothing
-        if not result['anatomy']:
-            found_anatomy_keys = set()
-            for term in self.sorted_anatomy_terms:
-                if term in lower_name:
-                    info = self.anatomy_lookup[term]
-                    if info['key'] not in found_anatomy_keys:
-                        result['anatomy'].append(info['standardName'])
-                        found_anatomy_keys.add(info['key'])
-            result['anatomy'] = sorted(list(set(result['anatomy'])))
+        Why: This function is critical for correctly identifying the imaging type.
+             Returning a list is essential for handling hybrid imaging (e.g., PET/CT),
+             where both 'NM' and 'CT' are correct. The patterns are ordered from most
+             to least specific to ensure accurate detection.
 
-        # 3. Post-processing and refinement
-        # Remove general terms if a specific sub-part is already present
-        if 'Cerebral Vessels' in result['anatomy'] and 'Head' in result['anatomy']:
-            result['anatomy'].remove('Head')
-        if 'Pulmonary Vessels' in result['anatomy'] and 'Chest' in result['anatomy']:
-            result['anatomy'].remove('Chest')
-        if 'Pituitary' in result['anatomy'] and 'Head' in result['anatomy']:
-            result['anatomy'].remove('Head')
+        Args:
+            lower_name: The lowercased, cleaned exam name.
+            modality_code: The original modality code for fallback.
+
+        Returns:
+            A list of identified modality strings (e.g., ['NM', 'CT']).
+        """
+        # A single, prioritized list of patterns to detect modalities.
+        # Hybrid patterns are first to ensure both components are captured.
+        MODALITY_PATTERNS = [
+            # Hybrid Imaging (Highest Priority) - These patterns match both modalities.
+            ('NM', re.compile(r'\b(pet[/\- ]?ct|spect[/\- ]?ct)\b', re.I)),
+            ('CT', re.compile(r'\b(pet[/\- ]?ct|spect[/\- ]?ct)\b', re.I)),
+            ('NM', re.compile(r'\b(pet[/\- ]?mr|spect[/\- ]?mr)\b', re.I)),
+            ('MRI', re.compile(r'\b(pet[/\- ]?mr|spect[/\- ]?mr)\b', re.I)),
             
-        # Handle special combined scan names
-        if 'chest' in lower_name and 'abdomen' in lower_name and 'pelvis' in lower_name:
-            result['anatomy'] = ['Abdomen', 'Chest', 'Pelvis']
-        elif 'head' in lower_name and 'neck' in lower_name:
-            result['anatomy'] = ['Head', 'Neck']
+            # Interventional/Fluoroscopy
+            ('IR', re.compile(r'\b(x-ray angiography|biopsy|drainage|stent|intervention|picc|insert)\b', re.I)),
+            ('Fluoroscopy', re.compile(r'\b(fl|fluoroscopy|barium|swallow|meal|enema|videofluoroscopy|image intensifier)\b', re.I)),
 
-        result['cleanName'] = self._build_clean_name(result)
-        return result
+            # Primary Modalities (Ordered from more to less specific to avoid conflicts)
+            ('DEXA', re.compile(r'\b(dexa|dxa|bone densitometry)\b', re.I)),
+            ('MRI', re.compile(r'\b(mr|mri|mra|magnetic resonance)\b', re.I)),
+            ('MG', re.compile(r'\b(mg|mammo|mamm|mammography|tomosynthesis)\b', re.I)),
+            ('US', re.compile(r'\b(us|ultrasound|sonogram|doppler|duplex)\b', re.I)),
+            ('NM', re.compile(r'\b(nm|nuclear medicine|spect|scintigraphy|pet|v/q|mag3|renogram)\b', re.I)),
+            ('CT', re.compile(r'\b(ct|computed tomography)\b', re.I)),
+            ('XR', re.compile(r'\b(xr|x-ray|xray|radiograph|plain film)\b', re.I)),
+        ]
 
-    def _build_clean_name(self, parsed):
-        parts = [parsed['modality']]
+        found_modalities = []
+        for modality, pattern in MODALITY_PATTERNS:
+            if pattern.search(lower_name):
+                if modality not in found_modalities:  # Avoid adding duplicates
+                    found_modalities.append(modality)
+
+        # If text parsing found any modalities, return them.
+        if found_modalities:
+            return sorted(list(set(found_modalities)))
+
+        # Final fallback to the provided modality code if no text match was found.
+        fallback_modality = self.modality_map.get(str(modality_code).upper())
+        return [fallback_modality] if fallback_modality else []
+
+
+    def _parse_laterality(self, lower_name: str) -> List[str]:
+        """
+        Extracts laterality information using the LateralityDetector utility.
+
+        Why: Laterality (left, right, bilateral) is a critical component for patient safety
+             and accurate procedure mapping. This delegates the task to a specialized class.
+
+        Args:
+            lower_name: The lowercased, cleaned exam name.
+
+        Returns:
+            A list containing the detected laterality string, or an empty list if none found.
+        """
+        detected = self.laterality_detector.detect(lower_name) if self.laterality_detector else None
+        return [detected] if detected else []
+
+    def _parse_contrast(self, lower_name: str) -> List[str]:
+        """
+        Extracts contrast information using the ContrastMapper utility.
+
+        Why: Contrast usage is a key differentiator between exam types and has significant
+             clinical and billing implications. This delegates the task to a specialized class.
+
+        Args:
+            lower_name: The lowercased, cleaned exam name.
+
+        Returns:
+            A list containing the detected contrast status, or an empty list if none found.
+        """
+        if self.contrast_mapper:
+            return self.contrast_mapper.detect_contrast(lower_name)
+        return []
+
+    def _parse_technique(self, lower_name: str) -> List[str]:
+        """
+        Identifies specific techniques based on predefined regex patterns.
+
+        Why: This provides a deeper level of clinical specificity beyond just modality and
+             anatomy (e.g., differentiating a standard 'MRI Brain' from an 'MRCP'). This
+             granularity is vital for accurate matching of complex procedures.
+
+        Args:
+            lower_name: The lowercased, cleaned exam name.
+
+        Returns:
+            A sorted list of unique technique names found in the text.
+        """
+        techniques = {
+            tech for tech, patterns in self.technique_patterns.items()
+            if any(p.search(lower_name) for p in patterns)
+        }
+        return sorted(list(techniques))
+
+    def _build_clean_name(self, parsed: Dict) -> str:
+        """
+        Constructs a simple, standardized name from the parsed components.
+
+        Why: This creates a consistent, human-readable representation of the parsed exam,
+             which is useful for logging, debugging, and final output.
+
+        Args:
+            parsed: The dictionary of parsed components.
+
+        Returns:
+            A standardized, space-separated string.
+        """
+        # Join multiple modalities with a '+' for clarity in hybrid scans (e.g., "NM+CT").
+        modality_str = "+".join(sorted(list(set(parsed.get('modality', []))))) or 'Unknown'
+        parts = [modality_str]
         
-        if parsed['anatomy']:
-            parts.append(" ".join(sorted(parsed['anatomy'])))
+        techniques = parsed.get('technique', [])
+        # Add "Angiogram" to the clean name if it's a vascular procedure for clarity
+        if 'Diagnostic Angiography' in techniques:
+            parts.append("Angiogram")
         
-        # Add primary technique
-        if 'Angiography' in parsed['technique']:
-            parts.append('Angiography')
-        elif 'HRCT' in parsed['technique']:
-            parts.append('HRCT')
+        if parsed.get('anatomy'):
+            parts.append(" ".join(sorted(list(set(parsed['anatomy'])))))
         
-        # Add laterality for relevant body parts
-        relevant_anatomy_for_laterality = {'Shoulder', 'Knee', 'Hip', 'Elbow', 'Wrist', 'Hand', 'Ankle', 'Foot'}
-        if parsed['laterality'] and any(a in relevant_anatomy_for_laterality for a in parsed['anatomy']):
-            parts.append(parsed['laterality'])
-        
-        clean_name = " ".join(parts)
-        
-        if parsed['contrast']:
-            clean_name += f" ({parsed['contrast']} contrast)"
-            
-        return clean_name.strip()
+        if parsed.get('laterality'):
+            # Abbreviate laterality for a cleaner name
+            lat_map = {'left': 'Lt', 'right': 'Rt', 'bilateral': 'Both'}
+            lat = parsed['laterality'][0]
+            parts.append(lat_map.get(lat, lat.capitalize()))
+
+        return " ".join(part for part in parts if part).strip()
+
+# --- END OF FILE parser.py ---
