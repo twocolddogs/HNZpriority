@@ -636,7 +636,22 @@ window.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('selectedReranker', rerankerKey);
         document.querySelectorAll('.reranker-toggle').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`${rerankerKey}RerankerBtn`)?.classList.add('active');
-        statusManager.show(`Switched to ${formatRerankerName(rerankerKey)} reranker`, 'success', 3000);
+        // Show reranker status message in local area instead of global status
+        const rerankerStatusEl = document.getElementById('rerankerStatusMessage');
+        if (rerankerStatusEl) {
+            rerankerStatusEl.style.display = 'block';
+            rerankerStatusEl.style.background = '#d4edda';
+            rerankerStatusEl.style.color = '#155724';
+            rerankerStatusEl.style.border = '1px solid #c3e6cb';
+            rerankerStatusEl.textContent = `✓ Switched to ${formatRerankerName(rerankerKey)} reranker`;
+            
+            // Hide the message after 3 seconds
+            setTimeout(() => {
+                if (rerankerStatusEl) {
+                    rerankerStatusEl.style.display = 'none';
+                }
+            }, 3000);
+        }
         
         // Trigger workflow check if it exists
         if (window.workflowCheckFunction) {
@@ -669,14 +684,20 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         
         uploadSection.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => e.target.files[0] && processFile(e.target.files[0]));
         ['dragover', 'dragleave', 'drop'].forEach(eventName => {
             uploadSection.addEventListener(eventName, preventDefaults, false);
             document.body.addEventListener(eventName, preventDefaults, false);
         });
         ['dragenter', 'dragover'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.add('dragover'), false));
         ['dragleave', 'drop'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('dragover'), false));
-        uploadSection.addEventListener('drop', (e) => e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]), false);
+        uploadSection.addEventListener('drop', (e) => {
+            if (e.dataTransfer.files[0]) {
+                fileInput.files = e.dataTransfer.files;
+                // Trigger the change event to use the workflow handler
+                const event = new Event('change', { bubbles: true });
+                fileInput.dispatchEvent(event);
+            }
+        }, false);
 
         document.getElementById('newUploadBtn')?.addEventListener('click', startNewUpload);
         document.getElementById('exportMappingsBtn')?.addEventListener('click', exportResults);
@@ -777,13 +798,22 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function startNewUpload() {
-        showUploadInterface();
+        // Hide all sections and return to initial view
         resultsSection.style.display = 'none';
-        // Show hero and workflow sections when starting new upload
+        uploadSection.style.display = 'none';
+        const advancedSection = document.getElementById('advancedSection');
+        if (advancedSection) advancedSection.style.display = 'none';
+        const modelSettingsSection = document.getElementById('modelSettingsSection');
+        if (modelSettingsSection) modelSettingsSection.style.display = 'none';
+        
+        // Show hero section with action cards
         const heroSection = document.querySelector('.hero-section');
         const workflowSection = document.getElementById('workflowSection');
         if (heroSection) heroSection.style.display = 'block';
         if (workflowSection) workflowSection.style.display = 'none'; // Will be shown when path is selected
+        
+        // Show main card
+        mainCard.style.display = 'block';
         statusManager.clearAll();
         fileInput.value = '';
         allMappings = [];
@@ -1006,7 +1036,7 @@ window.addEventListener('DOMContentLoaded', function() {
             // it only starts after processing completes. For now, show completed status.
             if (progressId) {
                 statusManager.updateProgress(progressId, totalCodes, totalCodes, 
-                    `Completed processing ${jobName} - ${totalCodes}/${totalCodes} (100%)`);
+                    `Completed processing ${jobName}`);
             }
                 
                 // Handle both old format (inline results) and new format (file references)
@@ -1183,7 +1213,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 if (progressId) {
                     statusManager.updateProgress(progressId, processedCount + errorCount, totalCodes, 
-                        `Processing ${jobName} - ${processedCount + errorCount}/${totalCodes} (${Math.round(((processedCount + errorCount) / totalCodes) * 100)}%)`);
+                        `Processing ${jobName}`);
                 }
             }
 
@@ -1646,8 +1676,8 @@ window.addEventListener('DOMContentLoaded', function() {
         let selectedRetriever = null;
         let selectedReranker = null;
         
-        // Action card click handlers
-        quickDemoBtn?.addEventListener('click', () => {
+        // Action card click handlers - make entire cards clickable
+        document.querySelector('.demo-path')?.addEventListener('click', () => {
             selectPath('demo');
             currentDataSource = 'demo';
             dataSourceText.textContent = '100 Exam Test Suite (Sample Data)';
@@ -1655,13 +1685,14 @@ window.addEventListener('DOMContentLoaded', function() {
             checkWorkflowCompletion();
         });
         
-        uploadDataBtn?.addEventListener('click', () => {
+        document.querySelector('.upload-path')?.addEventListener('click', () => {
             selectPath('upload');
             fileInput.click();
         });
         
-        advancedSetupBtn?.addEventListener('click', () => {
-            selectPath('advanced');
+        document.querySelector('.advanced-path')?.addEventListener('click', () => {
+            // Open config editor instead of advanced section
+            openConfigEditor();
         });
         
         // File input handler for upload path

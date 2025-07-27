@@ -9,6 +9,13 @@
     <link href="./fonts/publicsans.css" rel="stylesheet" type="text/css">
     <!-- Unified Design System -->
     <link href="./unified-styles.css" rel="stylesheet" type="text/css">
+    <style>
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+            border-color: #4CAF50 !important;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -56,27 +63,27 @@
             <div class="hero-section" style="text-align: center; padding: 30px 20px; margin-bottom: 30px;">
                 <div class="action-paths" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto;">
                     <!-- Path 1: Quick Demo -->
-                    <div class="action-card demo-path" style="background: rgba(255,255,255,0.95); color: #333; padding: 25px; border-radius: 12px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 3px solid transparent;">
-                        <div class="action-icon" style="font-size: 3em; margin-bottom: 15px;">🚀</div>
-                        <h3 style="margin: 0 0 10px 0; color: #2c3e50;">Try It Now</h3>
-                        <p style="margin: 0 0 15px 0; font-size: 0.9em; color: #666;">See it in action with sample data. No upload required.</p>
-                        <button class="button primary" id="quickDemoBtn" style="width: 100%; padding: 12px; font-weight: 600;">Start Demo →</button>
+                    <div class="action-card demo-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px;">🚀</div>
+                        <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Try It Now</h3>
+                        <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">See it in action with sample data. No upload required.</p>
+                        <button class="button primary" id="quickDemoBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Start Demo →</button>
                     </div>
                     
                     <!-- Path 2: Upload Own Data -->
-                    <div class="action-card upload-path" style="background: rgba(255,255,255,0.95); color: #333; padding: 25px; border-radius: 12px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 3px solid transparent;">
-                        <div class="action-icon" style="font-size: 3em; margin-bottom: 15px;">📁</div>
-                        <h3 style="margin: 0 0 10px 0; color: #2c3e50;">Upload Your Data</h3>
-                        <p style="margin: 0 0 15px 0; font-size: 0.9em; color: #666;">Process your own radiology codes securely.</p>
-                        <button class="button primary" id="uploadDataBtn" style="width: 100%; padding: 12px; font-weight: 600;">Choose File →</button>
+                    <div class="action-card upload-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px;">📁</div>
+                        <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Upload Your Data</h3>
+                        <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">Process your own radiology codes securely.</p>
+                        <button class="button primary" id="uploadDataBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Choose File →</button>
                     </div>
                     
                     <!-- Path 3: Advanced Setup -->
-                    <div class="action-card advanced-path" style="background: rgba(255,255,255,0.95); color: #333; padding: 25px; border-radius: 12px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 3px solid transparent;">
-                        <div class="action-icon" style="font-size: 3em; margin-bottom: 15px;">⚙️</div>
-                        <h3 style="margin: 0 0 10px 0; color: #2c3e50;">Advanced Setup</h3>
-                        <p style="margin: 0 0 15px 0; font-size: 0.9em; color: #666;">Configure models and batch processing.</p>
-                        <button class="button primary" id="advancedSetupBtn" style="width: 100%; padding: 12px; font-weight: 600;">Configure →</button>
+                    <div class="action-card advanced-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px;">⚙️</div>
+                        <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Advanced Setup</h3>
+                        <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">Configure preprocessing and parsing rules.</p>
+                        <button class="button primary" id="advancedSetupBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Configure →</button>
                     </div>
                 </div>
             </div>
@@ -106,6 +113,7 @@
                     <div class="reranker-selection-container">
                         <!-- Dynamic reranker buttons will be inserted here by JavaScript -->
                     </div>
+                    <div id="rerankerStatusMessage" style="margin-top: 15px; padding: 10px; border-radius: 6px; font-size: 0.9em; display: none;"></div>
                 </div>
 
                 <!-- Step 3: Run Processing -->
@@ -177,7 +185,7 @@
                 <!-- Combined Action Buttons - Reorganized Order -->
                 <div class="action-buttons view-toggle">
                     <button class="button active" id="viewToggleBtn">Switch to Consolidated View</button>
-                    <button class="button primary new-upload" id="newUploadBtn">New Upload</button>
+                    <button class="button primary new-upload" id="newUploadBtn">Start Over</button>
                     <button class="button success" id="exportMappingsBtn">Export Mappings</button>
                 </div>
                 
