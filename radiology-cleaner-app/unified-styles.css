@@ -647,29 +647,104 @@
     padding: 0.8em 1.2em;
   }
   
-  .app-logo {
-    width: 100px;
-    margin-right: 0.5em;
-  }
-  
   .brand-content {
     gap: var(--space-2);
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
   }
   
   .app-logo {
+    width: 100px;
     height: 32px;
+    flex-shrink: 0;
+  }
+  
+  .brand-text {
+    min-width: 0; /* Allow shrinking */
+    overflow: hidden;
   }
   
   .brand-title {
     font-size: var(--font-size-lg);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   
   .brand-subtitle {
     font-size: var(--font-size-xs);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   
   .header-divider {
     height: 24px;
+    display: none; /* Hide divider on mobile to save space */
+  }
+}
+
+/* Extra small mobile screens */
+@media (max-width: 480px) {
+  .brand-bar {
+    padding: 0.6em 1em;
+  }
+  
+  .brand-content {
+    gap: var(--space-1);
+  }
+  
+  .app-logo {
+    width: 80px;
+    height: 26px;
+  }
+  
+  .brand-title {
+    font-size: var(--font-size-base);
+    line-height: 1.2;
+  }
+  
+  .brand-subtitle {
+    font-size: var(--font-size-xs);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Portrait orientation adjustments */
+@media (max-width: 390px) {
+  .brand-bar {
+    padding: 0.5em 0.8em;
+  }
+  
+  .brand-content {
+    gap: var(--space-1);
+  }
+  
+  .app-logo {
+    width: 70px;
+    height: 22px;
+  }
+  
+  .brand-title {
+    font-size: var(--font-size-sm);
+    line-height: 1.1;
+  }
+  
+  .brand-subtitle {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+  
+  /* Hamburger menu adjustments for very small screens */
+  .hamburger-button {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .hamburger-line {
+    width: 20px;
   }
   
   .help-modal {
