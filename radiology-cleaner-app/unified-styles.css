@@ -120,6 +120,7 @@
   --color-success-hover: #0EA972;   /* Subtle success hover */
   --color-warning: #F59E0B;         /* Amber */
   --color-warning-light: #FEF3C7;   
+  --color-warning-dark: #D97706;    /* Darker amber */
   --color-warning-hover: #E9940A;   /* Subtle warning hover */
   --color-danger: #EF4444;          /* Red */
   --color-danger-light: #FEE2E2;    
@@ -1315,13 +1316,30 @@ a:focus-visible {
 }
 
 .result-card-confidence {
-  background: var(--color-success-light);
-  color: var(--color-success);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  min-width: 48px;
+  text-align: center;
+}
+
+.result-card-confidence.confidence-high {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.result-card-confidence.confidence-medium {
+  background: var(--color-warning-light);
+  color: var(--color-warning-dark);
+}
+
+.result-card-confidence.confidence-low {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
 }
 
 .result-card-body {

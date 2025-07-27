@@ -1570,7 +1570,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 card.innerHTML = `
                     <div class="result-card-header">
                         <div class="result-card-title">${item.clean_name || 'Unknown'}</div>
-                        <div class="result-card-confidence ${confidenceClass}">${confidencePercent}%</div>
+                        <div class="result-card-confidence ${confidenceClass}">${confidence >= 0.8 ? 'HIGH' : confidence >= 0.6 ? 'MEDIUM' : 'LOW'}</div>
                     </div>
                     <div class="result-card-body">
                         <div class="result-card-row">
