@@ -461,12 +461,34 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     async function loadAvailableModels(retryCount = 0, skipWarmupMessages = false) {
+        let loadingMessageId = null;
         try {
             console.log(`Loading available models (attempt ${retryCount + 1})`);
-            const response = await fetch(MODELS_URL, { method: 'GET', timeout: 10000 });
+            
+            // Show loading message on first attempt
+            if (retryCount === 0) {
+                loadingMessageId = statusManager.show('Loading available models...', 'info');
+            }
+            
+            // Use AbortSignal for timeout instead of timeout property
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            const response = await fetch(MODELS_URL, { 
+                method: 'GET', 
+                signal: controller.signal 
+            });
+            
+            clearTimeout(timeoutId);
             if (response.ok) {
                 const modelsData = await response.json();
                 availableModels = modelsData.models || {};
+                
+                // Validate that models were actually loaded
+                if (Object.keys(availableModels).length === 0) {
+                    throw new Error('No models received from API');
+                }
+                
                 // Use saved selection if available, otherwise fallback to default
                 const savedModel = localStorage.getItem('selectedModel');
                 if (savedModel && availableModels[savedModel]) {
@@ -485,23 +507,46 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
                 console.log('✓ Available rerankers loaded:', Object.keys(availableRerankers));
+                
+                // Clear loading message before building UI
+                if (loadingMessageId) {
+                    statusManager.remove(loadingMessageId);
+                    loadingMessageId = null;
+                }
+                
                 buildModelSelectionUI();
                 buildRerankerSelectionUI();
+                
+                // Show success message
+                statusManager.show('✓ Models loaded successfully', 'success', 3000);
                 
                 // Warm up the API after models are loaded
                 if (!skipWarmupMessages) {
                     warmupAPI();
                 }
             } else {
-                throw new Error(`API responded with ${response.status}`);
+                throw new Error(`API responded with ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
-            console.error(`✗ Failed to load models (attempt ${retryCount + 1}):`, error);
+            // Clear loading message on error
+            if (loadingMessageId) {
+                statusManager.remove(loadingMessageId);
+                loadingMessageId = null;
+            }
+            
+            const isAbortError = error.name === 'AbortError';
+            const errorType = isAbortError ? 'timeout' : 'network error';
+            
+            console.error(`✗ Failed to load models (attempt ${retryCount + 1}) - ${errorType}:`, error);
+            
             if (retryCount < 2) {
-                console.log(`Retrying in ${(retryCount + 1) * 2} seconds...`);
-                setTimeout(() => loadAvailableModels(retryCount + 1, skipWarmupMessages), (retryCount + 1) * 2000);
+                const retryDelay = (retryCount + 1) * 2;
+                console.log(`Retrying in ${retryDelay} seconds...`);
+                statusManager.show(`⚠️ Model loading failed (${errorType}), retrying in ${retryDelay}s...`, 'warning', retryDelay * 1000);
+                setTimeout(() => loadAvailableModels(retryCount + 1, skipWarmupMessages), retryDelay * 1000);
             } else {
                 console.warn('⚠ All retry attempts failed, using fallback models');
+                statusManager.show('⚠️ Could not load models from server, using fallback models', 'warning', 5000);
                 useFallbackModels();
             }
         }
@@ -520,8 +565,12 @@ window.addEventListener('DOMContentLoaded', function() {
         currentModel = 'retriever';
         currentReranker = 'medcpt';
         console.log('Using fallback models with all reranker options');
+        
         buildModelSelectionUI();
         buildRerankerSelectionUI();
+        
+        // Show that fallback models are being used
+        statusManager.show('ℹ️ Using offline fallback models - some features may be limited', 'info', 5000);
     }
     
     function buildModelSelectionUI() {
@@ -532,6 +581,24 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         
         modelContainer.innerHTML = '';
+        
+        // Add reload button if using fallback models
+        if (Object.keys(availableModels).length === 1 && availableModels['retriever']) {
+            const reloadWrapper = document.createElement('div');
+            reloadWrapper.style.cssText = 'margin-bottom: 15px; text-align: center;';
+            
+            const reloadBtn = document.createElement('button');
+            reloadBtn.className = 'button secondary';
+            reloadBtn.innerHTML = '🔄 Retry Loading Models';
+            reloadBtn.style.cssText = 'font-size: 14px; padding: 8px 16px;';
+            reloadBtn.onclick = () => {
+                statusManager.clearAll();
+                loadAvailableModels(0, true);
+            };
+            
+            reloadWrapper.appendChild(reloadBtn);
+            modelContainer.appendChild(reloadWrapper);
+        }
         
         Object.entries(availableModels).forEach(([modelKey, modelInfo]) => {
             const modelWrapper = document.createElement('div');
@@ -658,6 +725,22 @@ window.addEventListener('DOMContentLoaded', function() {
         // Trigger workflow check if it exists
         if (window.workflowCheckFunction) {
             window.workflowCheckFunction();
+        }
+    }
+    
+    // --- MOBILE UX HELPERS ---
+    function scrollToModelSelection() {
+        // Only auto-scroll on mobile devices
+        if (window.innerWidth <= 768) {
+            setTimeout(() => {
+                const modelStep = document.getElementById('retrieverStep');
+                if (modelStep) {
+                    modelStep.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start'
+                    });
+                }
+            }, 300); // Small delay to let the workflow section animate in
         }
     }
     
@@ -1365,6 +1448,9 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function displayResults(results) {
         resultsBody.innerHTML = '';
+        const resultsMobile = document.getElementById('resultsMobile');
+        if (resultsMobile) resultsMobile.innerHTML = '';
+        
         results.forEach(item => {
             const row = resultsBody.insertRow();
             
@@ -1450,6 +1536,63 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidencePercent = Math.round(confidence * 100);
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>`;
+            
+            // Create mobile card
+            if (resultsMobile) {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                
+                const sourceNames = { 'C': 'Central', 'CO': 'SIRS (Canterbury)', 'K': 'Southern' };
+                const sourceName = sourceNames[item.data_source] || item.data_source;
+                
+                // Build tags HTML (reuse from above)
+                const { anatomy, laterality, contrast, technique, gender_context, age_context, clinical_context, clinical_equivalents } = item.components || {};
+                const addTag = (value, className) => (value && value.trim()) ? `<span class="tag ${className}">${value}</span>` : '';
+                const addTags = (arr, className) => Array.isArray(arr) ? arr.map(v => addTag(v, className)).join('') : addTag(arr, className);
+                let tagsHTML = '';
+                tagsHTML += addTags(anatomy, 'anatomy');
+                tagsHTML += addTags(laterality, 'laterality');
+                tagsHTML += addTags(contrast, 'contrast');
+                tagsHTML += addTags(technique, 'technique');
+                tagsHTML += addTag(gender_context, 'gender');
+                tagsHTML += addTag(age_context, 'age');
+                tagsHTML += addTags(clinical_context, 'clinical');
+                if (clinical_equivalents) tagsHTML += addTags(clinical_equivalents.slice(0, 2), 'equivalent');
+                
+                const snomedInfo = item.snomed?.fsn ? 
+                    `${item.snomed.fsn}${item.snomed.id ? ` (${item.snomed.id})` : ''}` : '-';
+                
+                card.innerHTML = `
+                    <div class="result-card-header">
+                        <div class="result-card-title">${item.clean_name || 'Unknown'}</div>
+                        <div class="result-card-confidence ${confidenceClass}">${confidencePercent}%</div>
+                    </div>
+                    <div class="result-card-body">
+                        <div class="result-card-row">
+                            <span class="result-card-label">Code:</span>
+                            <span class="result-card-value">${item.exam_code}</span>
+                        </div>
+                        <div class="result-card-row">
+                            <span class="result-card-label">Original:</span>
+                            <span class="result-card-value">${item.exam_name}</span>
+                        </div>
+                        <div class="result-card-row">
+                            <span class="result-card-label">Source:</span>
+                            <span class="result-card-value">${sourceName}</span>
+                        </div>
+                        <div class="result-card-row">
+                            <span class="result-card-label">SNOMED:</span>
+                            <span class="result-card-value">${snomedInfo}</span>
+                        </div>
+                        ${tagsHTML ? `<div class="result-card-row">
+                            <span class="result-card-label">Tags:</span>
+                            <span class="result-card-value">${tagsHTML}</span>
+                        </div>` : ''}
+                    </div>
+                `;
+                
+                resultsMobile.appendChild(card);
+            }
         });
     }
 
@@ -1685,6 +1828,9 @@ window.addEventListener('DOMContentLoaded', function() {
             dataSourceText.textContent = '100 Exam Test Suite (Sample Data)';
             dataSourceDisplay.style.display = 'block';
             checkWorkflowCompletion();
+            
+            // Auto-scroll to model selection on mobile
+            scrollToModelSelection();
         });
         
         document.querySelector('.upload-path')?.addEventListener('click', () => {
@@ -1704,6 +1850,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 dataSourceText.textContent = `Uploaded File: ${e.target.files[0].name}`;
                 dataSourceDisplay.style.display = 'block';
                 checkWorkflowCompletion();
+                
+                // Auto-scroll to model selection on mobile
+                scrollToModelSelection();
             }
         });
         

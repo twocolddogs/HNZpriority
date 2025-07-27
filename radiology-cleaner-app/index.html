@@ -208,6 +208,8 @@
                             <tbody id="resultsBody"></tbody>
                         </table>
                     </div>
+                    <!-- Mobile card layout -->
+                    <div class="results-table-mobile" id="resultsMobile"></div>
                     <div class="pagination-controls" id="paginationControls" style="display: none;">
                         <button id="prevPageBtn" class="button secondary">← Previous</button>
                         <span id="pageInfo" class="page-info"></span>
@@ -223,9 +225,9 @@
                 <!-- Consolidated View -->
                 <div id="consolidatedView" style="display: none;">
                     <h3>Consolidated Results</h3>
-                    <div class="consolidated-controls" style="margin-bottom: 1rem;">
-                        <input type="text" id="consolidatedSearch" placeholder="Search consolidated names..." style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; width: 300px;">
-                        <select id="consolidatedSort" style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; margin-left: 1rem;">
+                    <div class="consolidated-controls" style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+                        <input type="text" id="consolidatedSearch" placeholder="Search consolidated names..." style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; width: 300px; max-width: 100%;">
+                        <select id="consolidatedSort" style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
                             <option value="count">Sort by Count</option>
                             <option value="name">Sort by Name</option>
                             <option value="confidence">Sort by Confidence</option>

@@ -1210,6 +1210,78 @@ a:focus-visible {
   border-radius: var(--radius-base);
 }
 
+/* Mobile card-based table layout */
+.results-table-mobile {
+  display: none; /* Hidden by default, shown on mobile */
+}
+
+.result-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-base);
+  margin-bottom: var(--space-3);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-base);
+}
+
+.result-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+  gap: var(--space-2);
+}
+
+.result-card-title {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  color: var(--color-primary);
+  flex-grow: 1;
+}
+
+.result-card-confidence {
+  background: var(--color-success-light);
+  color: var(--color-success);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  flex-shrink: 0;
+}
+
+.result-card-body {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.result-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-gray-100);
+  gap: var(--space-2);
+}
+
+.result-card-row:last-child {
+  border-bottom: none;
+}
+
+.result-card-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  font-weight: var(--font-weight-medium);
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.result-card-value {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-800);
+  text-align: right;
+  word-break: break-word;
+}
+
 /* Add extra padding under the mapping title */
 #fullView h3 {
   margin-bottom: var(--space-6);
@@ -2159,6 +2231,84 @@ a:focus-visible {
    20. Responsive Design
    ========================================================================== */
 
+/* Model Selection Mobile Styles */
+@media (max-width: 768px) {
+  .model-wrapper, .reranker-wrapper {
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .model-toggle, .reranker-toggle {
+    min-width: unset !important;
+    width: 100% !important;
+    flex-shrink: unset !important;
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+  }
+  
+  .model-description, .reranker-description {
+    width: 100% !important;
+    margin-top: 5px !important;
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Mobile-friendly table controls */
+  .table-controls {
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: stretch;
+  }
+  
+  .table-controls select {
+    width: 100%;
+  }
+  
+  .table-info {
+    text-align: center;
+  }
+  
+  /* Hide table on mobile, show card layout instead */
+  .table-container {
+    display: none;
+  }
+  
+  .results-table-mobile {
+    display: block;
+  }
+  
+  /* Consolidated view mobile improvements */
+  .consolidated-controls {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .consolidated-controls input,
+  .consolidated-controls select {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .model-wrapper, .reranker-wrapper {
+    margin-bottom: 12px !important;
+  }
+  
+  .model-toggle, .reranker-toggle {
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+  }
+  
+  .model-description, .reranker-description {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+  }
+}
+
 @media (max-width: 768px) {
   .container {
     padding: var(--space-4);
@@ -2194,6 +2344,49 @@ a:focus-visible {
     flex-direction: column;
     gap: var(--space-2);
     text-align: center;
+  }
+  
+  .consolidated-title-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-2);
+  }
+  
+  .consolidated-count-container {
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: center;
+  }
+  
+  .consolidated-meta {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+  
+  .consolidated-body {
+    padding: var(--space-3);
+  }
+  
+  /* Pagination controls mobile improvements */
+  .pagination-controls {
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: center;
+  }
+  
+  .page-info {
+    order: -1; /* Show page info first on mobile */
+    text-align: center;
+  }
+  
+  .pagination-controls button {
+    min-width: 120px;
+  }
+  
+  .page-size-selector {
+    width: 100%;
+    max-width: 200px;
   }
 }
 
