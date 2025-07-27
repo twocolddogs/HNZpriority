@@ -779,6 +779,11 @@ window.addEventListener('DOMContentLoaded', function() {
     function startNewUpload() {
         showUploadInterface();
         resultsSection.style.display = 'none';
+        // Show hero and workflow sections when starting new upload
+        const heroSection = document.querySelector('.hero-section');
+        const workflowSection = document.getElementById('workflowSection');
+        if (heroSection) heroSection.style.display = 'block';
+        if (workflowSection) workflowSection.style.display = 'none'; // Will be shown when path is selected
         statusManager.clearAll();
         fileInput.value = '';
         allMappings = [];
@@ -1231,6 +1236,11 @@ window.addEventListener('DOMContentLoaded', function() {
         generateConsolidatedResults(mappings);
         generateSourceLegend(mappings);
         resultsSection.style.display = 'block';
+        // Hide hero and workflow sections when showing results
+        const heroSection = document.querySelector('.hero-section');
+        const workflowSection = document.getElementById('workflowSection');
+        if (heroSection) heroSection.style.display = 'none';
+        if (workflowSection) workflowSection.style.display = 'none';
         // Show main card when displaying results
         mainCard.style.display = 'block';
     }

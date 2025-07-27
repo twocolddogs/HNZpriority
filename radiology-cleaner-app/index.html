@@ -53,10 +53,7 @@
 
         <div class="main-card">
             <!-- Hero Section with Three Clear Paths -->
-            <div class="hero-section" style="text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; margin-bottom: 30px;">
-                <h1 style="margin: 0 0 10px 0; font-size: 2.2em; font-weight: 600;">Radiology Code Cleaner</h1>
-                <p style="margin: 0 0 30px 0; font-size: 1.1em; opacity: 0.9;">AI-powered standardisation for radiology exam codes and names</p>
-                
+            <div class="hero-section" style="text-align: center; padding: 30px 20px; margin-bottom: 30px;">
                 <div class="action-paths" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto;">
                     <!-- Path 1: Quick Demo -->
                     <div class="action-card demo-path" style="background: rgba(255,255,255,0.95); color: #333; padding: 25px; border-radius: 12px; text-align: center; cursor: pointer; transition: transform 0.2s; border: 3px solid transparent;">
@@ -86,19 +83,6 @@
 
             <!-- Streamlined Workflow Section -->
             <div id="workflowSection" class="workflow-section" style="display: none;">
-                <div class="workflow-steps" style="display: flex; align-items: center; justify-content: center; margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-                    <div class="step active" id="step1" style="display: flex; align-items: center; padding: 10px 20px; background: #4CAF50; color: white; border-radius: 20px; margin-right: 15px;">
-                        <span style="margin-right: 8px;">1</span> Pick Retriever
-                    </div>
-                    <div class="step-arrow" style="margin-right: 15px; color: #ccc;">→</div>
-                    <div class="step" id="step2" style="display: flex; align-items: center; padding: 10px 20px; background: #e0e0e0; color: #666; border-radius: 20px; margin-right: 15px;">
-                        <span style="margin-right: 8px;">2</span> Pick Reranker
-                    </div>
-                    <div class="step-arrow" style="margin-right: 15px; color: #ccc;">→</div>
-                    <div class="step" id="step3" style="display: flex; align-items: center; padding: 10px 20px; background: #e0e0e0; color: #666; border-radius: 20px;">
-                        <span style="margin-right: 8px;">3</span> Run
-                    </div>
-                </div>
 
                 <!-- Step 1: Retriever Selection -->
                 <div id="retrieverStep" class="workflow-step active" style="margin-bottom: 25px; padding: 25px; border: 2px solid #4CAF50; border-radius: 12px; background: #f9fff9;">
@@ -180,7 +164,7 @@
             <div class="file-info" id="fileInfo"></div>
 
             <div class="results-section" id="resultsSection">
-                <h2 id="resultsTitle">Cleaning Results</h2>
+                <h2 id="resultsTitle" style="font-size: 1.3em;">Cleaning Results</h2>
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-value" id="originalCount">0</div><div class="stat-label">Original Codes</div></div>
                     <div class="stat-card"><div class="stat-value" id="cleanCount">0</div><div class="stat-label">Clean Names</div></div>
