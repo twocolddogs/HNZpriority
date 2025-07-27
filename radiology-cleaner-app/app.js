@@ -362,7 +362,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
         const isRender = hostname.endsWith('.onrender.com');
         const isPagesDev = hostname.endsWith('.pages.dev');
-        const isHNZDomain = hostname.endsWith('.hnzradtools.nz');
+        const isHNZDomain = hostname === 'hnzradtools.nz' || hostname.endsWith('.hnzradtools.nz');
 
         
         let apiBase, mode;
@@ -377,7 +377,7 @@ window.addEventListener('DOMContentLoaded', function() {
             apiBase = 'https://radiology-api-staging.onrender.com';  
             mode = isHNZDomain ? 'HNZ_DOMAIN' : 'PAGES_DEV';
         } else {
-            apiBase = '/api';  // Default fallback
+            apiBase = 'https://radiology-api-staging.onrender.com';  // Default fallback
             mode = 'PROD';
         }
         
