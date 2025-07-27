@@ -403,6 +403,7 @@ window.addEventListener('DOMContentLoaded', function() {
     const resultsSection = document.getElementById('resultsSection');
     const resultsBody = document.getElementById('resultsBody');
     const sanityButton = document.getElementById('sanityTestBtn');
+    const randomSampleButton = document.getElementById('randomSampleDemoBtn');
     
     // Config editor elements
     const editConfigButton = document.getElementById('editConfigBtn');
@@ -798,6 +799,12 @@ window.addEventListener('DOMContentLoaded', function() {
             console.error('❌ Sanity test button not found!');
         }
         
+        if (randomSampleButton) {
+            randomSampleButton.addEventListener('click', runRandomSampleDemo);
+        } else {
+            console.error('❌ Random sample demo button not found!');
+        }
+        
         // New homepage workflow event listeners
         setupHomepageWorkflow();
         
@@ -984,6 +991,61 @@ window.addEventListener('DOMContentLoaded', function() {
             if (sanityButton) {
                  sanityButton.disabled = false;
                  sanityButton.innerHTML = '100 Exam Test Suite';
+            }
+        }
+    }
+
+    async function runRandomSampleDemo() {
+        if (randomSampleButton) randomSampleButton.disabled = true;
+        let statusId = null;
+
+        try {
+            hideUploadInterface();
+            statusManager.clearAll();
+            const modelDisplayName = formatModelName(currentModel);
+            const rerankerDisplayName = formatRerankerName(currentReranker);
+            statusId = statusManager.show(`Running random sample demo with ${modelDisplayName} → ${rerankerDisplayName}...`, 'progress');
+
+            const response = await fetch(`${API_BASE_URL}/demo_random_sample`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: currentModel,
+                    reranker: currentReranker
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Random sample demo failed: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.error) {
+                throw new Error(result.error);
+            }
+
+            // Update status with completion message and URL
+            if (statusId) statusManager.remove(statusId);
+            const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
+            const urlMessage = result.output?.url ? `<br><a href="${result.output.url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>` : '';
+            statusManager.show(successMessage + urlMessage, 'success', 10000);
+
+            // Optionally show some basic stats
+            const statsMessage = `Processing Stats: ${result.processing_stats.input_items} total items, ${result.processing_stats.sample_size} sampled, ${result.processing_stats.processed_successfully} processed successfully in ${result.processing_stats.processing_time_ms}ms`;
+            console.log(statsMessage);
+
+        } catch (error) {
+            console.error('Random sample demo failed:', error);
+            if (statusId) statusManager.remove(statusId);
+            statusManager.show(`❌ Random Sample Demo Failed: ${error.message}`, 'error', 0);
+            showUploadInterface();
+        } finally {
+            if (randomSampleButton) {
+                randomSampleButton.disabled = false;
+                randomSampleButton.innerHTML = 'Random Sample Demo';
             }
         }
     }
