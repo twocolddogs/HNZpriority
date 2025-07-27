@@ -290,6 +290,7 @@ let availableModels = {};
 let currentReranker = localStorage.getItem('selectedReranker') || 'medcpt';
 let availableRerankers = {};
 let allMappings = [];
+let isUsingFallbackModels = false;
 let summaryData = null;
 let sortedMappings = [];
 let currentPage = 1;
@@ -508,6 +509,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
                 console.log('✓ Available rerankers loaded:', Object.keys(availableRerankers));
                 
+                // Mark that we're not using fallback models
+                isUsingFallbackModels = false;
+                
                 // Clear loading message before building UI
                 if (loadingMessageId) {
                     statusManager.remove(loadingMessageId);
@@ -564,6 +568,7 @@ window.addEventListener('DOMContentLoaded', function() {
         };
         currentModel = 'retriever';
         currentReranker = 'medcpt';
+        isUsingFallbackModels = true; // Mark that we're using fallback models
         console.log('Using fallback models with all reranker options');
         
         buildModelSelectionUI();
@@ -583,7 +588,7 @@ window.addEventListener('DOMContentLoaded', function() {
         modelContainer.innerHTML = '';
         
         // Add reload button if using fallback models
-        if (Object.keys(availableModels).length === 1 && availableModels['retriever']) {
+        if (isUsingFallbackModels) {
             const reloadWrapper = document.createElement('div');
             reloadWrapper.style.cssText = 'margin-bottom: 15px; text-align: center;';
             
