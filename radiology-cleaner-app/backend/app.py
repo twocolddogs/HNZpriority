@@ -1224,6 +1224,184 @@ def list_batch_results():
         logger.error(f"Error listing batch results: {e}", exc_info=True)
         return jsonify({"error": "Failed to list batch results"}), 500
 
+@app.route('/demo_random_sample', methods=['POST'])
+def demo_random_sample():
+    """
+    Demo endpoint that downloads hnz_hdp_json from R2, takes a random sample of 100 codes,
+    processes them, and uploads results to R2 with reranker model in filename.
+    """
+    _ensure_app_is_initialized()
+    start_time = time.time()
+    
+    try:
+        data = request.json or {}
+        model_key = data.get('model', 'retriever')
+        reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
+        
+        logger.info(f"Starting demo random sample with model: '{model_key}', reranker: '{reranker_key}'")
+        
+        # Validate model
+        selected_nlp_processor = _get_nlp_processor(model_key)
+        if not selected_nlp_processor:
+            return jsonify({"error": f"Model '{model_key}' not available"}), 400
+        
+        # Check R2 availability
+        if not r2_manager.is_available():
+            return jsonify({"error": "R2 storage not available"}), 500
+        
+        # Download input file from R2
+        import tempfile
+        import random
+        import uuid
+        
+        input_r2_key = "hnz_hdp.json"
+        temp_dir = tempfile.gettempdir()
+        temp_input_file = os.path.join(temp_dir, f"input_{uuid.uuid4().hex}.json")
+        
+        logger.info(f"Downloading {input_r2_key} from R2...")
+        
+        # Try to download from R2
+        try:
+            import requests
+            r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{input_r2_key}"
+            response = requests.get(r2_url, timeout=30)
+            response.raise_for_status()
+            
+            with open(temp_input_file, 'w', encoding='utf-8') as f:
+                f.write(response.text)
+            logger.info(f"Successfully downloaded input file from R2")
+        except Exception as e:
+            logger.error(f"Failed to download input file from R2: {e}")
+            return jsonify({"error": f"Failed to download input file: {str(e)}"}), 500
+        
+        # Load and validate JSON
+        try:
+            with open(temp_input_file, 'r', encoding='utf-8') as f:
+                input_data = json.load(f)
+        except Exception as e:
+            os.remove(temp_input_file)
+            return jsonify({"error": f"Invalid JSON in input file: {str(e)}"}), 400
+        
+        # Validate input data structure
+        if not isinstance(input_data, list):
+            os.remove(temp_input_file)
+            return jsonify({"error": "Input file must contain a JSON array"}), 400
+        
+        if len(input_data) < 100:
+            logger.warning(f"Input file contains only {len(input_data)} items, using all")
+            sample_size = len(input_data)
+        else:
+            sample_size = 100
+        
+        # Take random sample
+        random_sample = random.sample(input_data, sample_size)
+        logger.info(f"Selected random sample of {len(random_sample)} items from {len(input_data)} total")
+        
+        # Process each item in the sample
+        results = []
+        processed_count = 0
+        
+        for i, item in enumerate(random_sample):
+            try:
+                # Extract exam name from the JSON structure
+                # Adapt this based on the actual structure of hnz_hdp_json
+                exam_name = None
+                if isinstance(item, dict):
+                    # Try common field names for exam name
+                    exam_name = (item.get('exam_name') or 
+                               item.get('EXAM_NAME') or 
+                               item.get('name') or 
+                               item.get('description') or 
+                               item.get('title'))
+                elif isinstance(item, str):
+                    exam_name = item
+                
+                if not exam_name:
+                    logger.warning(f"Could not extract exam name from item {i}: {item}")
+                    continue
+                
+                # Process the exam
+                processed_result = process_exam_request(
+                    exam_name, 
+                    item.get('modality_code') if isinstance(item, dict) else None,
+                    selected_nlp_processor, 
+                    False, 
+                    reranker_key
+                )
+                
+                # Add original item data for reference
+                result_entry = {
+                    "original_item": item,
+                    "processed_result": processed_result,
+                    "sample_index": i + 1
+                }
+                
+                results.append(result_entry)
+                processed_count += 1
+                
+                if (i + 1) % 10 == 0:
+                    logger.info(f"Demo progress: {i + 1}/{len(random_sample)} samples processed")
+                    
+            except Exception as e:
+                logger.error(f"Error processing sample item {i}: {e}")
+                continue
+        
+        # Clean up temp input file
+        os.remove(temp_input_file)
+        
+        processing_time_ms = int((time.time() - start_time) * 1000)
+        
+        # Create output filename with timestamp and reranker model
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"demo_sample_{timestamp}_{reranker_key}_{processed_count}items.json"
+        
+        # Prepare output data
+        output_data = {
+            "metadata": {
+                "demo_type": "random_sample",
+                "timestamp": datetime.now().isoformat(),
+                "input_file": input_r2_key,
+                "total_input_items": len(input_data),
+                "sample_size": len(random_sample),
+                "processed_successfully": processed_count,
+                "processing_time_ms": processing_time_ms,
+                "model_used": model_key,
+                "reranker_used": reranker_key
+            },
+            "results": results
+        }
+        
+        # Upload results to R2
+        output_r2_key = f"demo-results/{output_filename}"
+        output_json = json.dumps(output_data, indent=2).encode('utf-8')
+        
+        if r2_manager.upload_object(output_r2_key, output_json, content_type="application/json"):
+            output_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{output_r2_key}"
+            logger.info(f"Successfully uploaded demo results to R2: {output_r2_key}")
+            
+            return jsonify({
+                "message": "Demo random sample completed successfully",
+                "processing_stats": {
+                    "input_items": len(input_data),
+                    "sample_size": len(random_sample),
+                    "processed_successfully": processed_count,
+                    "processing_time_ms": processing_time_ms,
+                    "model_used": model_key,
+                    "reranker_used": reranker_key
+                },
+                "output": {
+                    "filename": output_filename,
+                    "r2_key": output_r2_key,
+                    "url": output_url
+                }
+            })
+        else:
+            return jsonify({"error": "Failed to upload results to R2"}), 500
+            
+    except Exception as e:
+        logger.error(f"Demo random sample endpoint error: {e}", exc_info=True)
+        return jsonify({"error": f"Demo failed: {str(e)}"}), 500
+
 if __name__ == '__main__':
     logger.info("Running in local development mode, initializing app immediately.")
     _ensure_app_is_initialized()
