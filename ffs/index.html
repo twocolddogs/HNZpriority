@@ -222,12 +222,7 @@
             }
             
             .table-wrapper { display: none !important; }
-            .mobile-friendly-view { 
-                display: block !important; 
-                background: rgba(255, 0, 0, 0.1);
-                min-height: 100px;
-                border: 2px solid red;
-            }
+            .mobile-friendly-view { display: block !important; }
         }
         
         /* Very Small Mobile */
@@ -442,10 +437,8 @@
         }
 
         function renderData(data) {
-            console.log('renderData called with:', data);
             const tableBody = document.getElementById('rateTableBody');
             const mobileView = document.getElementById('mobileView');
-            console.log('Elements found - tableBody:', tableBody, 'mobileView:', mobileView);
             let tableHtml = '';
             let mobileHtml = '';
             
@@ -507,33 +500,11 @@
                 mobileHtml += '</div>';
             });
 
-            console.log('Generated tableHtml length:', tableHtml.length);
-            console.log('Generated mobileHtml length:', mobileHtml.length);
-            console.log('First 200 chars of tableHtml:', tableHtml.substring(0, 200));
-            console.log('First 200 chars of mobileHtml:', mobileHtml.substring(0, 200));
-            
             if (tableBody) tableBody.innerHTML = tableHtml;
             if (mobileView) mobileView.innerHTML = mobileHtml;
-            
-            // Add fallback test content for mobile debugging
-            if (mobileView && mobileHtml.length === 0) {
-                mobileView.innerHTML = '<div style="padding: 1rem; border: 2px red solid;">DEBUG: Mobile view found but no content generated</div>';
-            }
-            
-            console.log('Content set. Table body children:', tableBody.children.length);
-            console.log('Mobile view children:', mobileView.children.length);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, jsonData:', jsonData);
-            console.log('Table body element:', document.getElementById('rateTableBody'));
-            console.log('Mobile view element:', document.getElementById('mobileView'));
-            
-            // Check viewport width and mobile view visibility
-            console.log('Window width:', window.innerWidth);
-            console.log('Is mobile view visible?', window.getComputedStyle(document.getElementById('mobileView')).display);
-            console.log('Is table wrapper visible?', window.getComputedStyle(document.querySelector('.table-wrapper')).display);
-            
             renderData(jsonData);
         });
     </script>
