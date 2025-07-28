@@ -467,9 +467,18 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // --- DOM ELEMENTS ---
     const mainCard = document.querySelector('.main-card');
-    const uploadSection = document.getElementById('uploadSection');
     const demosSection = document.getElementById('demosSection');
-    const fileInput = document.getElementById('fileInput');
+    
+    // Create file input element if it doesn't exist
+    let fileInput = document.getElementById('fileInput');
+    if (!fileInput) {
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'fileInput';
+        fileInput.accept = '.json';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+    }
     const resultsSection = document.getElementById('resultsSection');
     const resultsBody = document.getElementById('resultsBody');
     const sanityButton = document.getElementById('sanityTestBtn');
@@ -861,27 +870,7 @@ window.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Upload section and file input elements
-        const uploadSection = document.getElementById('uploadSection');
-        const fileInput = document.getElementById('csvFile');
-        
-        if (uploadSection && fileInput) {
-            uploadSection.addEventListener('click', () => fileInput.click());
-            ['dragover', 'dragleave', 'drop'].forEach(eventName => {
-                uploadSection.addEventListener(eventName, preventDefaults, false);
-                document.body.addEventListener(eventName, preventDefaults, false);
-            });
-            ['dragenter', 'dragover'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.add('dragover'), false));
-            ['dragleave', 'drop'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('dragover'), false));
-            uploadSection.addEventListener('drop', (e) => {
-                if (e.dataTransfer.files[0]) {
-                    fileInput.files = e.dataTransfer.files;
-                    // Trigger the change event to use the workflow handler
-                    const event = new Event('change', { bubbles: true });
-                    fileInput.dispatchEvent(event);
-                }
-            }, false);
-        }
+        // Upload section drag-and-drop functionality removed - HTML elements no longer exist
 
         document.getElementById('newUploadBtn')?.addEventListener('click', startNewUpload);
         document.getElementById('exportMappingsBtn')?.addEventListener('click', exportResults);
@@ -969,7 +958,6 @@ window.addEventListener('DOMContentLoaded', function() {
     function startNewUpload() {
         // Hide all sections and return to initial view
         resultsSection.style.display = 'none';
-        uploadSection.style.display = 'none';
         const advancedSection = document.getElementById('advancedSection');
         if (advancedSection) advancedSection.style.display = 'none';
         const modelSettingsSection = document.getElementById('modelSettingsSection');
@@ -1040,6 +1028,9 @@ window.addEventListener('DOMContentLoaded', function() {
         let statusId = null; 
 
         try {
+            // Hide main content during processing
+            if (mainCard) mainCard.style.display = 'none';
+            
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
@@ -1054,6 +1045,8 @@ window.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Sanity test failed:', error);
             statusManager.show(`❌ Sanity Test Failed: ${error.message}`, 'error', 0);
+            // Show main card again on error
+            if (mainCard) mainCard.style.display = 'block';
         } finally {
             if (statusId) statusManager.remove(statusId);
             if (sanityButton) {
@@ -1068,6 +1061,9 @@ window.addEventListener('DOMContentLoaded', function() {
         let statusId = null;
 
         try {
+            // Hide main content during processing
+            if (mainCard) mainCard.style.display = 'none';
+            
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
@@ -1094,6 +1090,13 @@ window.addEventListener('DOMContentLoaded', function() {
                 throw new Error(result.error);
             }
 
+            // Show processing completion
+            if (statusId) statusManager.remove(statusId);
+            statusId = statusManager.show(`✅ Processing completed! ${result.processing_stats.processed_successfully} items processed`, 'success', 2000);
+            
+            // Small delay to show completion message
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
             // Fetch and display the results from R2
             if (statusId) statusManager.remove(statusId);
             statusId = statusManager.show('Fetching results for display...', 'progress');
@@ -1107,13 +1110,17 @@ window.addEventListener('DOMContentLoaded', function() {
                         // Display the results using the standard display functions
                         if (resultsData.results && resultsData.results.length > 0) {
                             if (statusId) statusManager.remove(statusId);
+                            statusId = statusManager.show('Analyzing results and generating display...', 'progress');
                             
                             // Set global variables to display the results
-                            mappings = resultsData.results;
+                            allMappings = resultsData.results;
                             updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size} items)`);
                             
                             // Use runAnalysis to properly display results UI
-                            runAnalysis(mappings);
+                            runAnalysis(allMappings);
+                            
+                            // Clear analysis status since runAnalysis calls statusManager.clearAll()
+                            if (statusId) statusManager.remove(statusId);
                             
                             const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
                             statusManager.show(successMessage, 'success', 5000);
@@ -1139,6 +1146,8 @@ window.addEventListener('DOMContentLoaded', function() {
             console.error('Random sample demo failed:', error);
             if (statusId) statusManager.remove(statusId);
             statusManager.show(`❌ Random Sample Demo Failed: ${error.message}`, 'error', 0);
+            // Show main card again on error
+            if (mainCard) mainCard.style.display = 'block';
         } finally {
             if (randomSampleButton) {
                 randomSampleButton.disabled = false;
@@ -1988,6 +1997,10 @@ window.addEventListener('DOMContentLoaded', function() {
         
         // Action card click handlers - make entire cards clickable
         document.querySelector('.demo-path')?.addEventListener('click', () => {
+            // Don't allow demo selection if models are still loading
+            if (buttonsDisabledForLoading) {
+                return;
+            }
             selectPath('demo');
             currentDataSource = 'demo';
             checkWorkflowCompletion();
@@ -1997,6 +2010,10 @@ window.addEventListener('DOMContentLoaded', function() {
         });
         
         document.querySelector('.upload-path')?.addEventListener('click', () => {
+            // Don't allow upload if models are still loading
+            if (buttonsDisabledForLoading) {
+                return;
+            }
             selectPath('upload');
             fileInput.click();
         });
