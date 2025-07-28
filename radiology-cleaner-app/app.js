@@ -804,11 +804,7 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('newUploadBtn')?.addEventListener('click', startNewUpload);
         document.getElementById('exportMappingsBtn')?.addEventListener('click', exportResults);
         
-        if (sanityButton) {
-            sanityButton.addEventListener('click', runSanityTest);
-        } else {
-            console.error('❌ Sanity test button not found!');
-        }
+        // Note: Demo buttons are now handled in the workflow section
         
         if (randomSampleButton) {
             randomSampleButton.addEventListener('click', runRandomSampleDemo);
@@ -1038,15 +1034,46 @@ window.addEventListener('DOMContentLoaded', function() {
                 throw new Error(result.error);
             }
 
-            // Update status with completion message and URL
+            // Fetch and display the results from R2
             if (statusId) statusManager.remove(statusId);
-            const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
-            const urlMessage = result.output?.url ? `<br><a href="${result.output.url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>` : '';
-            statusManager.show(successMessage + urlMessage, 'success', 10000);
-
-            // Optionally show some basic stats
-            const statsMessage = `Processing Stats: ${result.processing_stats.input_items} total items, ${result.processing_stats.sample_size} sampled, ${result.processing_stats.processed_successfully} processed successfully in ${result.processing_stats.processing_time_ms}ms`;
-            console.log(statsMessage);
+            statusId = statusManager.show('Fetching results for display...', 'progress');
+            
+            if (result.output?.url) {
+                try {
+                    const resultsResponse = await fetch(result.output.url);
+                    if (resultsResponse.ok) {
+                        const resultsData = await resultsResponse.json();
+                        
+                        // Display the results using the standard display functions
+                        if (resultsData.results && resultsData.results.length > 0) {
+                            if (statusId) statusManager.remove(statusId);
+                            
+                            // Set global variables to display the results
+                            mappings = resultsData.results;
+                            showUploadInterface(); // Show the results interface
+                            updateResults();
+                            generateAnalyticsSummary();
+                            updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size} items)`);
+                            
+                            const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
+                            statusManager.show(successMessage, 'success', 5000);
+                        } else {
+                            throw new Error('No results found in R2 data');
+                        }
+                    } else {
+                        throw new Error(`Failed to fetch results: ${resultsResponse.statusText}`);
+                    }
+                } catch (fetchError) {
+                    console.error('Failed to fetch results from R2:', fetchError);
+                    if (statusId) statusManager.remove(statusId);
+                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
+                    const urlMessage = `<br><a href="${result.output.url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
+                    statusManager.show(successMessage + urlMessage, 'success', 10000);
+                }
+            } else {
+                if (statusId) statusManager.remove(statusId);
+                statusManager.show('✅ Demo completed but no results URL available', 'warning', 5000);
+            }
 
         } catch (error) {
             console.error('Random sample demo failed:', error);
@@ -1892,6 +1919,9 @@ window.addEventListener('DOMContentLoaded', function() {
         const uploadSection = document.getElementById('uploadSection');
         const advancedSection = document.getElementById('advancedSection');
         const runProcessingBtn = document.getElementById('runProcessingBtn');
+        const runRandomDemoBtn = document.getElementById('runRandomDemoBtn');
+        const runFixedTestBtn = document.getElementById('runFixedTestBtn');
+        const demoOptions = document.getElementById('demoOptions');
         const dataSourceDisplay = document.getElementById('dataSourceDisplay');
         const dataSourceText = document.getElementById('dataSourceText');
         
@@ -1934,11 +1964,18 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Run processing button
+        // Demo buttons
+        runRandomDemoBtn?.addEventListener('click', async () => {
+            await runRandomSampleDemo();
+        });
+        
+        runFixedTestBtn?.addEventListener('click', async () => {
+            await runSanityTest();
+        });
+
+        // File upload processing button
         runProcessingBtn?.addEventListener('click', async () => {
-            if (currentDataSource === 'demo') {
-                await runRandomSampleDemo();
-            } else if (currentDataSource === 'upload' && fileInput.files[0]) {
+            if (currentDataSource === 'upload' && fileInput.files[0]) {
                 await processFile(fileInput.files[0]);
             }
         });
@@ -1986,6 +2023,8 @@ window.addEventListener('DOMContentLoaded', function() {
             selectedRetriever = null;
             selectedReranker = null;
             runProcessingBtn.disabled = true;
+            if (runRandomDemoBtn) runRandomDemoBtn.disabled = true;
+            if (runFixedTestBtn) runFixedTestBtn.disabled = true;
         }
         
         function activateStep(stepNumber) {
@@ -2017,7 +2056,17 @@ window.addEventListener('DOMContentLoaded', function() {
             selectedReranker = currentReranker;
             
             if (selectedRetriever && selectedReranker && currentDataSource) {
-                runProcessingBtn.disabled = false;
+                // Show appropriate buttons based on data source
+                if (currentDataSource === 'demo') {
+                    demoOptions.style.display = 'block';
+                    runProcessingBtn.style.display = 'none';
+                    runRandomDemoBtn.disabled = false;
+                    runFixedTestBtn.disabled = false;
+                } else if (currentDataSource === 'upload') {
+                    demoOptions.style.display = 'none';
+                    runProcessingBtn.style.display = 'block';
+                    runProcessingBtn.disabled = false;
+                }
                 activateStep(3);
             } else if (selectedRetriever && currentDataSource) {
                 activateStep(2);

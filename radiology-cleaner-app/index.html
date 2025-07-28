@@ -127,9 +127,27 @@
                     <div id="dataSourceDisplay" style="margin-bottom: 20px; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 8px; display: none;">
                         <strong>Data Source:</strong> <span id="dataSourceText"></span>
                     </div>
-                    <button class="button primary large" id="runProcessingBtn" style="padding: 15px 40px; font-size: 1.1em; font-weight: 600; disabled: true;" disabled>
+                    
+                    <!-- Demo Options -->
+                    <div id="demoOptions" style="display: none; margin-bottom: 20px;">
+                        <p style="margin: 0 0 15px 0; font-size: 0.95em; color: #555;">Choose your demo type:</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <button class="button primary large" id="runRandomDemoBtn" style="padding: 15px 20px; font-size: 1.0em; font-weight: 600;" disabled>
+                                <i class="fas fa-dice"></i> Random Sample
+                                <small style="display: block; font-size: 0.8em; font-weight: normal; margin-top: 4px; opacity: 0.9;">100 random codes from live dataset</small>
+                            </button>
+                            <button class="button secondary large" id="runFixedTestBtn" style="padding: 15px 20px; font-size: 1.0em; font-weight: 600;" disabled>
+                                <i class="fas fa-vial"></i> Fixed Test Suite
+                                <small style="display: block; font-size: 0.8em; font-weight: normal; margin-top: 4px; opacity: 0.9;">94 curated test cases</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Upload Processing Button (for file uploads) -->
+                    <button class="button primary large" id="runProcessingBtn" style="padding: 15px 40px; font-size: 1.1em; font-weight: 600; display: none;" disabled>
                         <i class="fas fa-rocket"></i> Start Processing
                     </button>
+                    
                     <p style="margin: 10px 0 0 0; font-size: 0.9em; color: #666;">Processing typically takes 30-60 seconds for 100 records</p>
                 </div>
             </div>
@@ -153,22 +171,6 @@
                 <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Advanced Configuration</h3>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-start;">
                     <div style="flex: 1; min-width: 200px;">
-                        <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white; border: none; width: 100%;">
-                            100 Exam Test Suite
-                        </button>
-                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
-                            Load and process the built-in test dataset to verify engine performance
-                        </p>
-                    </div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <button class="button secondary" id="randomSampleDemoBtn" style="background-color: #9C27B0; color: white; border: none; width: 100%;">
-                            Random Sample Demo
-                        </button>
-                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
-                            Process 100 random codes from HNZ dataset and upload results to R2
-                        </p>
-                    </div>
-                    <div style="flex: 1; min-width: 200px;">
                         <button class="button secondary" id="editConfigBtn" style="background-color: #4CAF50; color: white; border: none; width: 100%;">
                             Edit Config
                         </button>
@@ -177,6 +179,9 @@
                         </p>
                     </div>
                 </div>
+                <p style="font-size: 0.9em; color: #666; margin-top: 15px;">
+                    <strong>Note:</strong> Demo options (Random Sample and Fixed Test Suite) are now available in the main workflow above.
+                </p>
             </div>
 
             <div class="file-info" id="fileInfo"></div>
