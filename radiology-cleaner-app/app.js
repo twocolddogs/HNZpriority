@@ -1134,6 +1134,35 @@ window.addEventListener('DOMContentLoaded', function() {
                 } catch (fetchError) {
                     console.error('Failed to fetch results from R2:', fetchError);
                     if (statusId) statusManager.remove(statusId);
+                    
+                    // Try to download and process the data despite the fetch error
+                    try {
+                        statusId = statusManager.show('Retrying results download...', 'progress');
+                        const retryResponse = await fetch(result.output.url);
+                        
+                        if (retryResponse.ok) {
+                            const retryData = await retryResponse.json();
+                            if (retryData.results && retryData.results.length > 0) {
+                                if (statusId) statusManager.remove(statusId);
+                                statusId = statusManager.show('Processing downloaded results...', 'progress');
+                                
+                                // Process the data locally
+                                allMappings = retryData.results;
+                                updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size} items)`);
+                                runAnalysis(allMappings);
+                                
+                                if (statusId) statusManager.remove(statusId);
+                                const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
+                                statusManager.show(successMessage, 'success', 5000);
+                                return; // Exit successfully
+                            }
+                        }
+                    } catch (retryError) {
+                        console.error('Retry also failed:', retryError);
+                    }
+                    
+                    // If all attempts fail, show the download link as fallback
+                    if (statusId) statusManager.remove(statusId);
                     const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
                     const urlMessage = `<br><a href="${result.output.url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
                     statusManager.show(successMessage + urlMessage, 'success', 10000);
