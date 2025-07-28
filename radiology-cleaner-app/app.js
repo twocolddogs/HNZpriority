@@ -58,9 +58,10 @@ class StatusManager {
                 this.container = document.createElement('div');
                 this.container.id = 'statusMessageContainer';
                 this.container.className = 'status-message-container';
-                const fileInfo = document.getElementById('fileInfo');
-                if (fileInfo && fileInfo.parentNode) {
-                    fileInfo.parentNode.insertBefore(this.container, fileInfo.nextSibling);
+                // Position after the app header, at the same level as main-card
+                const appHeader = document.querySelector('.app-header');
+                if (appHeader && appHeader.parentNode) {
+                    appHeader.parentNode.insertBefore(this.container, appHeader.nextSibling);
                 } else {
                     document.body.insertBefore(this.container, document.body.firstChild);
                 }
@@ -252,7 +253,7 @@ class StatusManager {
             .spinner { width: 16px; height: 16px; border: 2px solid var(--color-primary, #3f51b5); border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; }
             @keyframes statusFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
             @keyframes statusFadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
-            .status-message-container { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 1000; width: calc(100% - 20px); max-width: 1200px; padding: 0 10px; box-sizing: border-box; }
+            .status-message-container { display: flex; flex-direction: column; gap: 8px; margin: 0 0 20px 0; position: static; width: 100%; max-width: 1200px; margin-left: auto; margin-right: auto; padding: 0; box-sizing: border-box; }
             .processing-stage { display: flex; flex-direction: column; gap: 4px; }
             .stage-name { font-weight: 600; font-size: 15px; }
             .stage-description { font-size: 13px; opacity: 0.9; }
@@ -1625,9 +1626,10 @@ window.addEventListener('DOMContentLoaded', function() {
             legendContainer = document.createElement('div');
             legendContainer.id = 'sourceLegend';
             legendContainer.className = 'source-legend';
-            const resultsTitle = document.getElementById('resultsTitle');
-            if (resultsTitle && resultsTitle.parentNode) {
-                resultsTitle.parentNode.insertBefore(legendContainer, resultsTitle.nextSibling);
+            const fullView = document.getElementById('fullView');
+            if (fullView) {
+                const firstChild = fullView.firstChild;
+                fullView.insertBefore(legendContainer, firstChild);
             }
         }
         
@@ -1650,9 +1652,19 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('genderContext').textContent = summary.genderContextCount;
     }
 
-    const sourceColors = { 'C': '#1f77b4', 'CO': '#2ca02c', 'K': '#9467bd', 'TestData': '#ff1493', 'Default': '#6c757d' };
+    const sourceColorPalette = [
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
+        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+        '#ff1493', '#00ced1', '#ff4500', '#32cd32', '#ba55d3'
+    ];
+    
+    const sourceColors = {};
     function getSourceColor(source) {
-        return sourceColors[source] || sourceColors['Default'];
+        if (!sourceColors[source]) {
+            const colorIndex = Object.keys(sourceColors).length % sourceColorPalette.length;
+            sourceColors[source] = sourceColorPalette[colorIndex];
+        }
+        return sourceColors[source];
     }
 
     function sortAndDisplayResults() {
