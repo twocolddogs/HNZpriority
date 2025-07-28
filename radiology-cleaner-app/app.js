@@ -888,22 +888,21 @@ window.addEventListener('DOMContentLoaded', function() {
         
         // Note: Demo buttons are now handled in the workflow section
         
-        if (randomSampleButton) {
-            randomSampleButton.addEventListener('click', runRandomSampleDemo);
-        } else {
-            console.error('❌ Random sample demo button not found!');
-        }
-        
         // New homepage workflow event listeners
         setupHomepageWorkflow();
         
         // Upload config functionality removed - Edit Config handles all config management
         
         // Config editor event listeners
+        const editConfigButton = document.getElementById('editConfigBtn');
+        const closeConfigEditorModal = document.getElementById('closeConfigEditorModal');
+        const closeConfigEditorBtn = document.getElementById('closeConfigEditorBtn');
+        const reloadConfigBtn = document.getElementById('reloadConfigBtn');
+        const saveConfigBtn = document.getElementById('saveConfigBtn');
+        const configEditorModal = document.getElementById('configEditorModal');
+        
         if (editConfigButton) {
             editConfigButton.addEventListener('click', openConfigEditor);
-        } else {
-            console.error('❌ Config edit button not found!');
         }
         
         if (closeConfigEditorModal) {
@@ -2064,14 +2063,14 @@ window.addEventListener('DOMContentLoaded', function() {
             // Remove all previous selections
             document.querySelectorAll('.action-card').forEach(card => card.classList.remove('selected'));
             
-            // Hide all sections
-            workflowSection.style.display = 'none';
-            uploadSection.style.display = 'none';
-            advancedSection.style.display = 'none';
+            // Hide all sections (with null checks)
+            if (workflowSection) workflowSection.style.display = 'none';
+            if (uploadSection) uploadSection.style.display = 'none';
+            if (advancedSection) advancedSection.style.display = 'none';
             
             if (path === 'demo' || path === 'upload') {
                 // Show workflow for demo and upload paths
-                workflowSection.style.display = 'block';
+                if (workflowSection) workflowSection.style.display = 'block';
                 
                 // Select the appropriate card
                 const selectedCard = path === 'demo' ? 
@@ -2084,7 +2083,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 
             } else if (path === 'advanced') {
                 // Show advanced configuration
-                advancedSection.style.display = 'block';
+                if (advancedSection) advancedSection.style.display = 'block';
                 document.querySelector('.advanced-path')?.classList.add('selected');
             }
         }
