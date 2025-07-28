@@ -359,7 +359,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- CENTRALIZED SOURCE NAMES ---
     function getSourceNames() {
         return {
-            'C': 'Central',
+            'Central-Philips': 'Central',
             'CO': 'SIRS (Canterbury)', 
             'K': 'Southern',
             'TestData': 'Test Data',
@@ -1922,6 +1922,8 @@ window.addEventListener('DOMContentLoaded', function() {
         const runRandomDemoBtn = document.getElementById('runRandomDemoBtn');
         const runFixedTestBtn = document.getElementById('runFixedTestBtn');
         const demoOptions = document.getElementById('demoOptions');
+        const dataSourceDisplay = document.getElementById('dataSourceDisplay');
+        const dataSourceText = document.getElementById('dataSourceText');
         
         let currentDataSource = null;
         let selectedRetriever = null;
@@ -1951,6 +1953,8 @@ window.addEventListener('DOMContentLoaded', function() {
         fileInput?.addEventListener('change', (e) => {
             if (e.target.files[0]) {
                 currentDataSource = 'upload';
+                dataSourceText.textContent = `Uploaded File: ${e.target.files[0].name}`;
+                dataSourceDisplay.style.display = 'block';
                 checkWorkflowCompletion();
                 
                 // Auto-scroll to model selection on mobile
