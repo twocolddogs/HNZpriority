@@ -221,8 +221,13 @@
                 justify-content: flex-start;
             }
             
-            .table-wrapper { display: none; }
-            .mobile-friendly-view { display: block; }
+            .table-wrapper { display: none !important; }
+            .mobile-friendly-view { 
+                display: block !important; 
+                background: rgba(255, 0, 0, 0.1);
+                min-height: 100px;
+                border: 2px solid red;
+            }
         }
         
         /* Very Small Mobile */
@@ -251,7 +256,9 @@
         }
         
         .mobile-friendly-view { 
-            display: none; 
+            display: none;
+            width: 100%;
+            position: relative;
         }
         
         .mobile-card {
