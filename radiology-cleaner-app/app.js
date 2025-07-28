@@ -592,12 +592,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 // Mark that we're not using fallback models
                 isUsingFallbackModels = false;
                 
-                // Clear loading message before building UI
-                if (loadingMessageId) {
-                    statusManager.remove(loadingMessageId);
-                    loadingMessageId = null;
-                }
-                
+                // Build UI immediately after data loads (before status messages)
                 buildModelSelectionUI();
                 buildRerankerSelectionUI();
                 
@@ -607,6 +602,12 @@ window.addEventListener('DOMContentLoaded', function() {
                 // Refresh workflow completion check
                 if (window.workflowCheckFunction) {
                     window.workflowCheckFunction();
+                }
+                
+                // Clear loading message after UI is built
+                if (loadingMessageId) {
+                    statusManager.remove(loadingMessageId);
+                    loadingMessageId = null;
                 }
                 
                 // Show success message
