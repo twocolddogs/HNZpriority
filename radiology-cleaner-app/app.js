@@ -1557,7 +1557,6 @@ window.addEventListener('DOMContentLoaded', function() {
                     }
                 };
             });
-            });
 
             allMappings.push(...chunkMappings);
 
