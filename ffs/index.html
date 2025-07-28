@@ -441,6 +441,16 @@
             let mobileHtml = '';
             
             const regionsInOrder = ["Northern", "Taranaki", "Bay of Plenty", "Tairawhiti", "Central", "Nelson Marlborough", "Canterbury", "Southern"];
+            const regionDisplayNames = {
+                "Northern": "Northern",
+                "Taranaki": "Taranaki", 
+                "Bay of Plenty": "BOP",
+                "Tairawhiti": "Tairawhiti",
+                "Central": "Central",
+                "Nelson Marlborough": "Nelson Marlborough",
+                "Canterbury": "Canterbury",
+                "Southern": "Southern"
+            };
 
             data.rowData.forEach(row => {
                 const nationalRate = parseCurrency(row["National Rates"]);
@@ -476,7 +486,7 @@
                     </td>`;
 
                     mobileHtml += `<div class="mobile-card-row">
-                        <span class="mobile-card-label">${regionKey.replace('<br>', ' ')}</span>
+                        <span class="mobile-card-label">${regionDisplayNames[regionKey] || regionKey}</span>
                         <div class="mobile-card-value">
                             <div class="impact-badge ${impact.class}">${impact.icon} ${impact.text}</div>
                             ${currentRateHtml}
