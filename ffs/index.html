@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radiology Rate Impact Analysis</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        :root {
+            --font-header: 'Poppins', sans-serif;
+            --font-body: 'Public Sans', sans-serif;
+            
+            --color-bg: #f7f9fc;
+            --color-card-bg: #ffffff;
+            --color-header-bg: #2d3748;
+            --color-text-primary: #1a202c;
+            --color-text-secondary: #718096;
+            --color-border: #e2e8f0;
+
+            /* Impact Colors */
+            --color-positive-strong: #2f855a;
+            --color-positive-slight: #48bb78; /* Lighter tint of green */
+            --color-neutral: #a0aec0;
+            --color-negative-slight: #dd6b20;
+            --color-negative-strong: #c53030;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-bg);
+            margin: 0;
+            color: var(--color-text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .page-header {
+            background-color: var(--color-header-bg);
+            color: white;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: var(--font-header);
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: #a0aec0;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: -2rem auto 2rem auto;
+            background: var(--color-card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: #fdfdff;
+            border-radius: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            border: 1px solid var(--color-border);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .impact-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.8rem; /* Increased horizontal padding */
+            border-radius: 999px;
+            font-weight: 600;
+            color: white;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .current-rate {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .bg-positive-strong { background-color: var(--color-positive-strong); }
+        .bg-positive-slight { background-color: var(--color-positive-slight); }
+        .bg-neutral { background-color: var(--color-neutral); }
+        .bg-negative-slight { background-color: var(--color-negative-slight); }
+        .bg-negative-strong { background-color: var(--color-negative-strong); }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+        
+        th {
+            font-family: var(--font-header);
+            background-color: #f7fafc;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 2px solid var(--color-border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+        th.text-center { text-align: center; }
+        
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--color-border);
+            vertical-align: middle;
+        }
+        
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #fcfdff; }
+
+        td.modality { font-weight: 600; color: var(--color-text-primary); }
+        td.exam-type { color: var(--color-text-secondary); }
+        td.standard-rate { font-weight: 600; text-align: center; }
+        td.impact { text-align: center; }
+        
+        @media (max-width: 1200px) {
+            .container { margin: -2rem 1rem 1rem 1rem; padding: 1.5rem; }
+            h1 { font-size: 1.75rem; }
+            .subtitle { font-size: 1rem; }
+            .legend { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+        }
+        
+        @media (max-width: 768px) {
+            .table-wrapper { display: none; }
+            .mobile-friendly-view { display: block; }
+        }
+        
+        .mobile-friendly-view { display: none; }
+        .mobile-card {
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background-color: var(--color-card-bg);
+        }
+        .mobile-card-header {
+            font-family: var(--font-header);
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-text-primary);
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .mobile-card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            font-size: 0.875rem;
+        }
+        .mobile-card-label { color: var(--color-text-secondary); }
+        .mobile-card-value { font-weight: 500; text-align: right; }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <h1>Radiology Rate Impact Analysis</h1>
+        <p class="subtitle">Comparison of Current Regional Rates vs Proposed National Rates</p>
+    </header>
+
+    <main class="container">
+        <div class="legend">
+            <div class="legend-item"><div class="legend-box bg-positive-strong"></div><span>Strong Positive (+$50)</span></div>
+            <div class="legend-item"><div class="legend-box bg-positive-slight"></div><span>Slight Positive</span></div>
+            <div class="legend-item"><div class="legend-box bg-neutral"></div><span>Neutral</span></div>
+            <div class="legend-item"><div class="legend-box bg-negative-slight"></div><span>Slight Negative</span></div>
+            <div class="legend-item"><div class="legend-box bg-negative-strong"></div><span>Strong Negative (-$50)</span></div>
+        </div>
+        
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Modality</th>
+                        <th>Exam Type</th>
+                        <th class="text-center">National Rate</th>
+                        <th class="text-center">Northern</th>
+                        <th class="text-center">Taranaki</th>
+                        <th class="text-center">Bay of Plenty</th>
+                        <th class="text-center">Tairawhiti</th>
+                        <th class="text-center">Central</th>
+                        <th class="text-center">Nelson Marlborough</th>
+                        <th class="text-center">Canterbury</th>
+                        <th class="text-center">Southern</th>
+                    </tr>
+                </thead>
+                <tbody id="rateTableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="mobile-friendly-view" id="mobileView"></div>
+    </main>
+
+    <script>
+        const jsonData = {
+             "rowData": [
+                {"Modality": "MRI", "Body Parts": "1 region/part", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$95.00", "Central": "$112.00", "Nelson Marlborough": "$105.00", "Canterbury": "$75.00", "Southern": "$75.00", "National Rates": "$125.00"},
+                {"Modality": "MRI", "Body Parts": "2 region/parts", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$190.00", "Central": "$224.00", "Nelson Marlborough": "$205.00", "Canterbury": "$75.00", "Southern": "$150.00", "National Rates": "$200.00"},
+                {"Modality": "MRI", "Body Parts": "3 region/parts", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$190.00", "Central": "$336.00", "Nelson Marlborough": "$295.00", "Canterbury": "$75.00", "Southern": "$225.00", "National Rates": "$260.00"},
+                {"Modality": "MRI", "Body Parts": "MRA/MRV 1", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$190.00", "Central": "$112.00", "Nelson Marlborough": "$155.00", "Canterbury": "$75.00", "Southern": "$75.00", "National Rates": "$200.00"},
+                {"Modality": "MRI", "Body Parts": "MRA/MRV 2", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$190.00", "Central": "$224.00", "Nelson Marlborough": "$290.00", "Canterbury": "$75.00", "Southern": "$150.00", "National Rates": "$260.00"},
+                {"Modality": "CT Scan", "Body Parts": "1 region/part", "Northern": "$100.00", "Taranaki": "$75.00", "Bay of Plenty": "$60.00", "Tairawhiti": "$60.00", "Central": "$84.00", "Nelson Marlborough": "$75.00", "Canterbury": "$60.00", "Southern": "$50.00", "National Rates": "$90.00"},
+                {"Modality": "CT Scan", "Body Parts": "2 region/parts", "Northern": "$150.00", "Taranaki": "$145.00", "Bay of Plenty": "$120.00", "Tairawhiti": "$120.00", "Central": "$168.00", "Nelson Marlborough": "$155.00", "Canterbury": "$135.00", "Southern": "$100.00", "National Rates": "$170.00"},
+                {"Modality": "CT Scan", "Body Parts": "3 region/parts", "Northern": "$180.00", "Taranaki": "$145.00", "Bay of Plenty": "$180.00", "Tairawhiti": "$180.00", "Central": "$252.00", "Nelson Marlborough": "$215.00", "Canterbury": "$160.00", "Southern": "$150.00", "National Rates": "$255.00"},
+                {"Modality": "CT Scan", "Body Parts": "4 region/parts", "Northern": "$180.00", "Taranaki": "$145.00", "Bay of Plenty": "$240.00", "Tairawhiti": "$240.00", "Central": "$252.00", "Nelson Marlborough": "-", "Canterbury": "$200.00", "Southern": "$200.00", "National Rates": "$300.00"},
+                {"Modality": "CT Scan", "Body Parts": "CTA/CTV 1", "Northern": "$100.00", "Taranaki": "$145.00", "Bay of Plenty": "$120.00", "Tairawhiti": "$120.00", "Central": "$84.00", "Nelson Marlborough": "$145.00", "Canterbury": "$60.00", "Southern": "$50.00", "National Rates": "$170.00"},
+                {"Modality": "CT Scan", "Body Parts": "CTA/CTV 2", "Northern": "$150.00", "Taranaki": "$145.00", "Bay of Plenty": "$120.00", "Tairawhiti": "$120.00", "Central": "$168.00", "Nelson Marlborough": "$245.00", "Canterbury": "$135.00", "Southern": "$100.00", "National Rates": "$255.00"},
+                {"Modality": "Ultrasound", "Body Parts": "1 region/part", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$30.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$40.00"},
+                {"Modality": "Ultrasound", "Body Parts": "2 region/parts", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$65.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$45.00"},
+                {"Modality": "Ultrasound", "Body Parts": "3 region/parts", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$90.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$45.00"},
+                {"Modality": "Ultrasound", "Body Parts": "MSK/Vasc", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$55.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$45.00"},
+                {"Modality": "X-Ray", "Body Parts": "1 region/part", "Northern": "$15.00", "Taranaki": "$14.00", "Bay of Plenty": "$14.00", "Tairawhiti": "$10.00", "Central": "$14.00", "Nelson Marlborough": "$25.00", "Canterbury": "$12.00", "Southern": "$10.00", "National Rates": "$15.00"},
+                {"Modality": "X-Ray", "Body Parts": "2 region/parts", "Northern": "$30.00", "Taranaki": "-", "Bay of Plenty": "-", "Tairawhiti": "-", "Central": "$28.00", "Nelson Marlborough": "$50.00", "Canterbury": "$20.00", "Southern": "$10.00", "National Rates": "$30.00"},
+                {"Modality": "X-Ray", "Body Parts": "3 region/parts", "Northern": "$45.00", "Taranaki": "-", "Bay of Plenty": "-", "Tairawhiti": "-", "Central": "$36.00", "Nelson Marlborough": "$75.00", "Canterbury": "$35.00", "Southern": "$10.00", "National Rates": "$45.00"}
+            ]
+        };
+
+        function parseCurrency(currencyString) {
+            if (currencyString === '-' || !currencyString) return null;
+            return parseFloat(currencyString.replace(/[^0-9.-]+/g, ""));
+        }
+
+        function getImpactDetails(change) {
+            if (change === null || isNaN(change)) {
+                return { text: '-', class: 'bg-neutral', icon: '' };
+            }
+
+            let text = '';
+            let impactClass = 'bg-neutral';
+            let icon = '<i class="fa-solid fa-minus"></i>';
+            const absChange = Math.abs(change).toFixed(0);
+
+            if (change > 0) {
+                text = `+$${absChange}`;
+                impactClass = change >= 50 ? 'bg-positive-strong' : 'bg-positive-slight';
+                icon = '<i class="fa-solid fa-arrow-up"></i>';
+            } else if (change < 0) {
+                text = `$${absChange}`; // No negative sign, as requested
+                impactClass = change <= -50 ? 'bg-negative-strong' : 'bg-negative-slight';
+                icon = '<i class="fa-solid fa-arrow-down"></i>';
+            } else { // change is 0
+                text = '$0';
+            }
+            
+            return { text: text, class: impactClass, icon: icon };
+        }
+
+        function renderData(data) {
+            const tableBody = document.getElementById('rateTableBody');
+            const mobileView = document.getElementById('mobileView');
+            let tableHtml = '';
+            let mobileHtml = '';
+            
+            const regionsInOrder = ["Northern", "Taranaki", "Bay of Plenty", "Tairawhiti", "Central", "Nelson Marlborough", "Canterbury", "Southern"];
+
+            data.rowData.forEach(row => {
+                const nationalRate = parseCurrency(row["National Rates"]);
+                const nationalRateDisplay = nationalRate !== null ? `$${nationalRate.toFixed(0)}` : '-';
+                
+                tableHtml += `<tr>
+                    <td class="modality">${row.Modality}</td>
+                    <td class="exam-type">${row["Body Parts"]}</td>
+                    <td class="standard-rate">${nationalRateDisplay}</td>`;
+
+                mobileHtml += `<div class="mobile-card">
+                    <div class="mobile-card-header">${row.Modality} - ${row["Body Parts"]}</div>
+                    <div class="mobile-card-row">
+                        <span class="mobile-card-label">National Rate</span>
+                        <span class="mobile-card-value">${nationalRateDisplay}</span>
+                    </div>`;
+
+                regionsInOrder.forEach(regionKey => {
+                    const bespokeRateStr = row[regionKey];
+                    const bespokeRate = parseCurrency(bespokeRateStr);
+                    
+                    let difference = null;
+                    if (bespokeRate !== null && nationalRate !== null) {
+                        difference = nationalRate - bespokeRate;
+                    }
+
+                    const impact = getImpactDetails(difference);
+                    const currentRateHtml = (bespokeRate !== null) ? `<div class="current-rate">was ${bespokeRateStr}</div>` : '';
+
+                    tableHtml += `<td class="impact">
+                        <div class="impact-badge ${impact.class}">${impact.icon} ${impact.text}</div>
+                        ${currentRateHtml}
+                    </td>`;
+
+                    mobileHtml += `<div class="mobile-card-row">
+                        <span class="mobile-card-label">${regionKey.replace('<br>', ' ')}</span>
+                        <div class="mobile-card-value">
+                            <div class="impact-badge ${impact.class}">${impact.icon} ${impact.text}</div>
+                            ${currentRateHtml}
+                        </div>
+                    </div>`;
+                });
+
+                tableHtml += '</tr>';
+                mobileHtml += '</div>';
+            });
+
+            tableBody.innerHTML = tableHtml;
+            mobileView.innerHTML = mobileHtml;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderData(jsonData);
+        });
+    </script>
+</body>
+</html>
