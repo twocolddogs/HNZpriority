@@ -54,17 +54,9 @@ class StatusManager {
     ensureContainer() {
         if (!this.container) {
             this.container = document.getElementById('statusMessageContainer');
+            // The container already exists in HTML, so we don't need to create it
             if (!this.container) {
-                this.container = document.createElement('div');
-                this.container.id = 'statusMessageContainer';
-                this.container.className = 'status-message-container';
-                // Position after the app header, at the same level as main-card
-                const appHeader = document.querySelector('.app-header');
-                if (appHeader && appHeader.parentNode) {
-                    appHeader.parentNode.insertBefore(this.container, appHeader.nextSibling);
-                } else {
-                    document.body.insertBefore(this.container, document.body.firstChild);
-                }
+                console.warn('Status message container not found in HTML');
             }
         }
         return this.container;
@@ -253,7 +245,7 @@ class StatusManager {
             .spinner { width: 16px; height: 16px; border: 2px solid var(--color-primary, #3f51b5); border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; }
             @keyframes statusFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
             @keyframes statusFadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
-            .status-message-container { display: flex; flex-direction: column; gap: 8px; margin: 0 0 20px 0; position: static; width: 100%; max-width: 1200px; margin-left: auto; margin-right: auto; padding: 0; box-sizing: border-box; }
+            .status-message-container { display: flex; flex-direction: column; gap: 8px; margin: 0 auto 20px auto; position: static; width: 100%; max-width: 1200px; padding: 0 var(--space-8, 32px); box-sizing: border-box; }
             .processing-stage { display: flex; flex-direction: column; gap: 4px; }
             .stage-name { font-weight: 600; font-size: 15px; }
             .stage-description { font-size: 13px; opacity: 0.9; }
