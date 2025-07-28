@@ -1118,13 +1118,16 @@ window.addEventListener('DOMContentLoaded', function() {
                             updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size} items)`);
                             
                             // Use runAnalysis to properly display results UI
-                            runAnalysis(allMappings);
-                            
-                            // Clear analysis status since runAnalysis calls statusManager.clearAll()
-                            if (statusId) statusManager.remove(statusId);
-                            
-                            const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
-                            statusManager.show(successMessage, 'success', 5000);
+                            try {
+                                runAnalysis(allMappings);
+                                
+                                const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || 'Unknown'} items processed`;
+                                statusManager.show(successMessage, 'success', 5000);
+                            } catch (analysisError) {
+                                console.error('Error during results analysis:', analysisError);
+                                statusManager.show('❌ Error displaying results', 'error', 5000);
+                                if (mainCard) mainCard.style.display = 'block';
+                            }
                         } else {
                             throw new Error('No results found in R2 data');
                         }
@@ -1148,13 +1151,19 @@ window.addEventListener('DOMContentLoaded', function() {
                                 
                                 // Process the data locally
                                 allMappings = retryData.results;
-                                updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size} items)`);
-                                runAnalysis(allMappings);
+                                updatePageTitle(`Random Sample Demo (${result.processing_stats?.sample_size || 'Unknown'} items)`);
                                 
-                                if (statusId) statusManager.remove(statusId);
-                                const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
-                                statusManager.show(successMessage, 'success', 5000);
-                                return; // Exit successfully
+                                try {
+                                    runAnalysis(allMappings);
+                                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || 'Unknown'} items processed`;
+                                    statusManager.show(successMessage, 'success', 5000);
+                                    return; // Exit successfully
+                                } catch (analysisError) {
+                                    console.error('Error during retry results analysis:', analysisError);
+                                    statusManager.show('❌ Error displaying retry results', 'error', 5000);
+                                    if (mainCard) mainCard.style.display = 'block';
+                                    return;
+                                }
                             }
                         }
                     } catch (retryError) {
@@ -1567,6 +1576,17 @@ window.addEventListener('DOMContentLoaded', function() {
         const modelDisplayName = formatModelName(currentModel);
         const rerankerDisplayName = formatRerankerName(currentReranker);
         titleElement.textContent = `Cleaning Results with ${modelDisplayName} → ${rerankerDisplayName}`;
+    }
+    
+    function updatePageTitle(title) {
+        // Update browser tab title
+        document.title = `${title} - Radiology Cleaner`;
+        
+        // Update results title element if it exists
+        const titleElement = document.getElementById('resultsTitle');
+        if (titleElement) {
+            titleElement.textContent = title;
+        }
     }
 
     function generateSourceLegend(mappings) {
