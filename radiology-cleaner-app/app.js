@@ -1017,7 +1017,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const rerankerDisplayName = formatRerankerName(currentReranker);
             statusId = statusManager.show(`Running random sample demo with ${modelDisplayName} → ${rerankerDisplayName}...`, 'progress');
 
-            const response = await fetch(`${API_BASE_URL}/demo_random_sample`, {
+            const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1937,7 +1937,7 @@ window.addEventListener('DOMContentLoaded', function() {
         // Run processing button
         runProcessingBtn?.addEventListener('click', async () => {
             if (currentDataSource === 'demo') {
-                await runSanityTest();
+                await runRandomSampleDemo();
             } else if (currentDataSource === 'upload' && fileInput.files[0]) {
                 await processFile(fileInput.files[0]);
             }
