@@ -530,6 +530,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 // Wait 2 seconds to let users see the success message before other status updates
                 await new Promise(resolve => setTimeout(resolve, 2000));
+                enableActionButtons(); // Enable buttons after successful warmup
             } else {
                 throw new Error(`Warmup failed with status ${response.status}`);
             }
@@ -596,8 +597,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 buildModelSelectionUI();
                 buildRerankerSelectionUI();
                 
-                // Enable action buttons now that models are loaded
-                enableActionButtons();
+                
                 
                 // Refresh workflow completion check
                 if (window.workflowCheckFunction) {
@@ -1000,8 +1000,10 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     async function processFile(file) {
+        disableActionButtons('Processing uploaded file...');
         if (!file.name.endsWith('.json')) {
             statusManager.show('Please upload a valid JSON file.', 'error', 5000);
+            enableActionButtons(); // Re-enable if file type is wrong
             return;
         }
         statusManager.clearAll();
@@ -1019,14 +1021,16 @@ window.addEventListener('DOMContentLoaded', function() {
                 await processExams(codes, `File: ${file.name}`);
             } catch (error) {
                 statusManager.show(`Error processing file: ${error.message}`, 'error', 0);
+            } finally {
+                enableActionButtons(); // Re-enable buttons after file processing
             }
         };
         reader.readAsText(file);
     }
     
     async function runSanityTest() {
-        if (sanityButton) sanityButton.disabled = true;
-        let statusId = null; 
+        disableActionButtons('Running sanity test...');
+        let statusId = null;
 
         try {
             // Hide main content during processing
@@ -1035,7 +1039,7 @@ window.addEventListener('DOMContentLoaded', function() {
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
-            statusId = statusManager.show(`Running test suite with ${modelDisplayName} → ${rerankerDisplayName} (processing in batches)...`, 'progress');
+            statusId = statusManager.show(`Running 100-exam sanity test with ${modelDisplayName} → ${rerankerDisplayName}...`, 'progress');
 
             const response = await fetch('./backend/core/hundred_test.json');
             if (!response.ok) throw new Error(`Could not load test file: ${response.statusText}`);
@@ -1054,11 +1058,12 @@ window.addEventListener('DOMContentLoaded', function() {
                  sanityButton.disabled = false;
                  sanityButton.innerHTML = '100 Exam Test Suite';
             }
+            enableActionButtons(); // Re-enable buttons after processing
         }
     }
 
     async function runRandomSampleDemo() {
-        if (randomSampleButton) randomSampleButton.disabled = true;
+        disableActionButtons('Processing random sample demo...');
         let statusId = null;
 
         try {
@@ -1124,6 +1129,7 @@ window.addEventListener('DOMContentLoaded', function() {
                                 
                                 const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || 'Unknown'} items processed`;
                                 statusManager.show(successMessage, 'success', 5000);
+                                if (mainCard) mainCard.style.display = 'block'; // Ensure main content is visible after successful analysis
                             } catch (analysisError) {
                                 console.error('Error during results analysis:', analysisError);
                                 statusManager.show('❌ Error displaying results', 'error', 5000);
