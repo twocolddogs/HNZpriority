@@ -1292,7 +1292,7 @@ def demo_random_sample():
             logger.warning(f"Input file contains only {len(input_data)} items, using all")
             sample_size = len(input_data)
         else:
-            sample_size = 10
+            sample_size = 100
         
         # Take random sample
         random_sample = random.sample(input_data, sample_size)
