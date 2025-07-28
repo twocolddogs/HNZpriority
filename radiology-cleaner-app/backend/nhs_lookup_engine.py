@@ -305,9 +305,33 @@ class NHSLookupEngine:
         candidate_snomed_ids = [self.index_to_snomed_id[i] for i in indices[0] if i < len(self.index_to_snomed_id)]
         candidate_entries = [self.snomed_lookup[str(sid)] for sid in candidate_snomed_ids if str(sid) in self.snomed_lookup]
         
+        # HARD MODALITY FILTERING: Block candidates with mismatched modalities if input modality is provided
+        input_modality = extracted_input_components.get('modality')
+        if input_modality and len(input_modality) > 0:
+            input_modality_upper = input_modality[0].upper()
+            original_count = len(candidate_entries)
+            
+            filtered_candidates = []
+            for entry in candidate_entries:
+                entry_components = entry.get('_parsed_components', {})
+                entry_modalities = entry_components.get('modality', [])
+                
+                if entry_modalities:
+                    entry_modalities_upper = [m.upper() for m in entry_modalities]
+                    if input_modality_upper in entry_modalities_upper:
+                        filtered_candidates.append(entry)
+                    else:
+                        logger.debug(f"[MODALITY-FILTER] Blocked '{entry.get('primary_source_name', '')}' - modality mismatch: input '{input_modality_upper}' not in {entry_modalities_upper}")
+                else:
+                    # If NHS entry has no modality info, allow it through
+                    filtered_candidates.append(entry)
+            
+            candidate_entries = filtered_candidates
+            logger.info(f"[MODALITY-FILTER] Hard modality filtering: {original_count} → {len(candidate_entries)} candidates (input modality: {input_modality_upper})")
+        
         if not candidate_entries:
-            logger.warning("[V3-PIPELINE] Stage 1 failed - no candidates found during retrieval")
-            return {'error': 'No candidates found during retrieval stage.', 'confidence': 0.0}
+            logger.warning("[V3-PIPELINE] Stage 1 failed - no candidates found after modality filtering")
+            return {'error': 'No candidates found after modality filtering.', 'confidence': 0.0}
         
         stage1_time = time.time() - stage1_start
         logger.info(f"[V3-PIPELINE] Stage 1 completed in {stage1_time:.2f}s - retrieved {len(candidate_entries)} candidates")
@@ -449,7 +473,7 @@ class NHSLookupEngine:
             # Sort by final_score (descending)
             scored_candidates_with_details.sort(key=lambda x: x[1], reverse=True)
             
-            # Format all 15 candidates for the 'all_candidates' field
+            # Format all candidates for the 'all_candidates' field
             for entry, final_score in scored_candidates_with_details:
                 all_candidates_list.append({
                     'snomed_id': entry.get('snomed_concept_id', ''),
@@ -721,10 +745,18 @@ class NHSLookupEngine:
         age_context = detect_age_context(input_exam_text) 
         clinical_context = detect_clinical_context(input_exam_text, input_anatomy)
         
+        # Get components from the matched NHS entry (not input)
+        matched_components = best_match.get('_parsed_components', {})
+        
         final_components = {
-            **extracted_input_components,  # Unpack anatomy, laterality, contrast, technique
+            # Use components from the matched NHS entry
+            'anatomy': matched_components.get('anatomy', []),
+            'laterality': matched_components.get('laterality', []),
+            'contrast': matched_components.get('contrast', []),
+            'technique': matched_components.get('technique', []),
+            'modality': matched_components.get('modality', []),
             'confidence': confidence,
-            # Add context information that was previously calculated in app.py
+            # Add context information from the input (these are input-specific)
             'gender_context': gender_context,
             'age_context': age_context, 
             'clinical_context': clinical_context

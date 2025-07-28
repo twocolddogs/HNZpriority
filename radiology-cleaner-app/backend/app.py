@@ -222,7 +222,7 @@ def _ensure_app_is_initialized():
             _initialize_app()
             _app_initialized = True
 
-def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None) -> Dict:
+def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None, data_source: Optional[str] = None, exam_code: Optional[str] = None) -> Dict:
     """Central processing logic for a single exam."""
     if debug:
         logger.info(f"[DEBUG-FLOW] process_exam_request received debug=True for exam: {exam_name}")
@@ -267,9 +267,9 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     primary_modality_code = matched_modalities[0] if matched_modalities else (modality_code or 'Other')
 
     final_result = {
-        'data_source': 'N/A',
-        'modality_code': components_from_engine.get('modality'),
-        'exam_code': 'N/A',
+        'data_source': data_source or 'N/A',
+        'modality_code': [modality_code] if modality_code else [],
+        'exam_code': exam_code or 'N/A',
         'exam_name': exam_name,
         'clean_name': _medical_title_case(nhs_result.get('clean_name', cleaned_exam_name)),
         'ambiguous': nhs_result.get('ambiguous', False),
@@ -718,6 +718,8 @@ def parse_enhanced():
         
         exam_name = data['exam_name']
         modality_code = data.get('modality_code')
+        data_source = data.get('data_source')
+        exam_code = data.get('exam_code')
         model = data.get('model', 'retriever')
         reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
         debug = data.get('debug', False)  # Add debug parameter
@@ -728,7 +730,7 @@ def parse_enhanced():
         
         logger.info(f"Using model '{model}' for exam: {exam_name}")
         
-        result = process_exam_request(exam_name, modality_code, selected_nlp_processor, debug=debug, reranker_key=reranker_key)
+        result = process_exam_request(exam_name, modality_code, selected_nlp_processor, debug=debug, reranker_key=reranker_key, data_source=data_source, exam_code=exam_code)
         
         result['metadata'] = {
             'processing_time_ms': int((time.time() - start_time) * 1000),
@@ -818,7 +820,7 @@ def parse_batch():
                 
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
                     future_to_exam = {
-                        executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor, False, reranker_key): exam 
+                        executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor, False, reranker_key, exam.get("data_source"), exam.get("exam_code")): exam 
                         for exam in chunk
                     }
                     
@@ -1051,9 +1053,9 @@ def process_sanity_test_endpoint():
             modality_code = exam.get("MODALITY_CODE")
             
             if exam_name:
-                processed_result = process_exam_request(exam_name, modality_code, selected_nlp_processor, False, reranker_key)
-                processed_result['data_source'] = exam.get("DATA_SOURCE")
-                processed_result['exam_code'] = exam.get("EXAM_CODE")
+                data_source = exam.get("DATA_SOURCE")
+                exam_code = exam.get("EXAM_CODE")
+                processed_result = process_exam_request(exam_name, modality_code, selected_nlp_processor, False, reranker_key, data_source, exam_code)
                 results.append(processed_result)
                 processed_count += 1
                 
@@ -1322,12 +1324,18 @@ def demo_random_sample():
                     continue
                 
                 # Process the exam
+                modality_code = item.get('modality_code') if isinstance(item, dict) else None
+                data_source = item.get('data_source') if isinstance(item, dict) else None
+                exam_code = item.get('exam_code') if isinstance(item, dict) else None
+                
                 processed_result = process_exam_request(
                     exam_name, 
-                    item.get('modality_code') if isinstance(item, dict) else None,
+                    modality_code,
                     selected_nlp_processor, 
                     False, 
-                    reranker_key
+                    reranker_key,
+                    data_source,
+                    exam_code
                 )
                 
                 # Add original item data for reference

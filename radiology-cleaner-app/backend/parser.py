@@ -142,19 +142,18 @@ class RadiologySemanticParser:
 
     def _parse_modality(self, lower_name: str, modality_code: str) -> List[str]:
         """
-        Determines all modalities from text, ordered by priority, returning a list.
+        Determines modalities, prioritizing input modality_code over text parsing.
 
-        Why: This function is critical for correctly identifying the imaging type.
-             Returning a list is essential for handling hybrid imaging (e.g., PET/CT),
-             where both 'NM' and 'CT' are correct. The patterns are ordered from most
-             to least specific to ensure accurate detection.
+        Why: The input modality_code is the authoritative source from the data system,
+             and should take priority over text parsing which may be ambiguous.
+             Text parsing is used as fallback for missing or 'OTHER' modality codes.
 
         Args:
             lower_name: The lowercased, cleaned exam name.
-            modality_code: The original modality code for fallback.
+            modality_code: The original modality code from source data (priority source).
 
         Returns:
-            A list of identified modality strings (e.g., ['NM', 'CT']).
+            A list of identified modality strings (e.g., ['XR']).
         """
         # A single, prioritized list of patterns to detect modalities.
         # Hybrid patterns are first to ensure both components are captured.
@@ -179,6 +178,13 @@ class RadiologySemanticParser:
             ('XR', re.compile(r'\b(xr|x-ray|xray|radiograph|plain film)\b', re.I)),
         ]
 
+        # FIRST: Check input modality_code (highest priority)
+        if modality_code and modality_code.upper() != 'OTHER':
+            input_modality = self.modality_map.get(str(modality_code).upper())
+            if input_modality:
+                return [input_modality]
+
+        # SECOND: Parse from exam name text if input modality unavailable
         found_modalities = []
         for modality, pattern in MODALITY_PATTERNS:
             if pattern.search(lower_name):
@@ -189,9 +195,8 @@ class RadiologySemanticParser:
         if found_modalities:
             return sorted(list(set(found_modalities)))
 
-        # Final fallback to the provided modality code if no text match was found.
-        fallback_modality = self.modality_map.get(str(modality_code).upper())
-        return [fallback_modality] if fallback_modality else []
+        # Final fallback if both input modality and text parsing failed
+        return []
 
 
     def _parse_laterality(self, lower_name: str) -> List[str]:
