@@ -297,6 +297,65 @@ let currentPage = 1;
 let pageSize = 100;
 let sortBy = 'default';
 
+// Track button state during model loading
+let buttonsDisabledForLoading = true;
+
+// --- BUTTON STATE MANAGEMENT ---
+function disableActionButtons(reason = 'Models are loading...') {
+    const buttons = [
+        'runRandomDemoBtn', 
+        'runFixedTestBtn', 
+        'runProcessingBtn'
+    ];
+    
+    buttons.forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.disabled = true;
+            button.dataset.originalTitle = button.title || '';
+            button.title = reason;
+            button.classList.add('loading-disabled');
+        }
+    });
+    
+    // Also disable action cards
+    const actionCards = document.querySelectorAll('.action-card');
+    actionCards.forEach(card => {
+        card.classList.add('loading-disabled');
+        card.style.pointerEvents = 'none';
+        card.dataset.originalTitle = card.title || '';
+        card.title = reason;
+    });
+    
+    buttonsDisabledForLoading = true;
+}
+
+function enableActionButtons() {
+    const buttons = [
+        'runRandomDemoBtn', 
+        'runFixedTestBtn', 
+        'runProcessingBtn'
+    ];
+    
+    buttons.forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.disabled = false;
+            button.title = button.dataset.originalTitle || '';
+            button.classList.remove('loading-disabled');
+        }
+    });
+    
+    // Re-enable action cards
+    const actionCards = document.querySelectorAll('.action-card');
+    actionCards.forEach(card => {
+        card.classList.remove('loading-disabled');
+        card.style.pointerEvents = '';
+        card.title = card.dataset.originalTitle || '';
+    });
+    
+    buttonsDisabledForLoading = false;
+}
 
 // --- UTILITY & HELPER FUNCTIONS ---
 function formatProcessingTime(ms) {
@@ -533,6 +592,14 @@ window.addEventListener('DOMContentLoaded', function() {
                 buildModelSelectionUI();
                 buildRerankerSelectionUI();
                 
+                // Enable action buttons now that models are loaded
+                enableActionButtons();
+                
+                // Refresh workflow completion check
+                if (window.workflowCheckFunction) {
+                    window.workflowCheckFunction();
+                }
+                
                 // Show success message
                 statusManager.show('✓ Models loaded successfully', 'success', 3000);
                 
@@ -586,6 +653,14 @@ window.addEventListener('DOMContentLoaded', function() {
         buildModelSelectionUI();
         buildRerankerSelectionUI();
         
+        // Update button states for fallback models - keep limited functionality
+        disableActionButtons('Limited functionality with fallback models');
+        
+        // Refresh workflow completion check
+        if (window.workflowCheckFunction) {
+            window.workflowCheckFunction();
+        }
+        
         // Show that fallback models are being used
         statusManager.show('ℹ️ Using offline fallback models - some features may be limited', 'info', 5000);
     }
@@ -610,6 +685,7 @@ window.addEventListener('DOMContentLoaded', function() {
             reloadBtn.style.cssText = 'font-size: 14px; padding: 8px 16px;';
             reloadBtn.onclick = () => {
                 statusManager.clearAll();
+                disableActionButtons('Retrying model loading...');
                 loadAvailableModels(0, true);
             };
             
@@ -785,21 +861,27 @@ window.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        uploadSection.addEventListener('click', () => fileInput.click());
-        ['dragover', 'dragleave', 'drop'].forEach(eventName => {
-            uploadSection.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-        ['dragenter', 'dragover'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.add('dragover'), false));
-        ['dragleave', 'drop'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('dragover'), false));
-        uploadSection.addEventListener('drop', (e) => {
-            if (e.dataTransfer.files[0]) {
-                fileInput.files = e.dataTransfer.files;
-                // Trigger the change event to use the workflow handler
-                const event = new Event('change', { bubbles: true });
-                fileInput.dispatchEvent(event);
-            }
-        }, false);
+        // Upload section and file input elements
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('csvFile');
+        
+        if (uploadSection && fileInput) {
+            uploadSection.addEventListener('click', () => fileInput.click());
+            ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadSection.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            ['dragenter', 'dragover'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.add('dragover'), false));
+            ['dragleave', 'drop'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('dragover'), false));
+            uploadSection.addEventListener('drop', (e) => {
+                if (e.dataTransfer.files[0]) {
+                    fileInput.files = e.dataTransfer.files;
+                    // Trigger the change event to use the workflow handler
+                    const event = new Event('change', { bubbles: true });
+                    fileInput.dispatchEvent(event);
+                }
+            }, false);
+        }
 
         document.getElementById('newUploadBtn')?.addEventListener('click', startNewUpload);
         document.getElementById('exportMappingsBtn')?.addEventListener('click', exportResults);
@@ -2058,12 +2140,16 @@ window.addEventListener('DOMContentLoaded', function() {
                 if (currentDataSource === 'demo') {
                     demoOptions.style.display = 'block';
                     runProcessingBtn.style.display = 'none';
-                    runRandomDemoBtn.disabled = false;
-                    runFixedTestBtn.disabled = false;
+                    // Only enable if models are loaded and not using fallbacks
+                    const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
+                    runRandomDemoBtn.disabled = !canEnable;
+                    runFixedTestBtn.disabled = !canEnable;
                 } else if (currentDataSource === 'upload') {
                     demoOptions.style.display = 'none';
                     runProcessingBtn.style.display = 'block';
-                    runProcessingBtn.disabled = false;
+                    // Only enable if models are loaded and not using fallbacks
+                    const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
+                    runProcessingBtn.disabled = !canEnable;
                 }
                 activateStep(3);
             } else if (selectedRetriever && currentDataSource) {
@@ -2081,6 +2167,9 @@ window.addEventListener('DOMContentLoaded', function() {
     window.loadAvailableModels = loadAvailableModels;
     
     // --- INITIALIZE APP ---
+    // Disable action buttons initially until models load
+    disableActionButtons('Models are loading...');
+    
     testApiConnectivity();
     loadAvailableModels();
     setupEventListeners();

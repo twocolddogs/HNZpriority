@@ -931,6 +931,40 @@ a:focus-visible {
   pointer-events: none;
 }
 
+/* Loading disabled state for buttons and action cards */
+.loading-disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  position: relative;
+}
+
+.loading-disabled::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: inherit;
+  backdrop-filter: blur(1px);
+  z-index: 1;
+}
+
+.action-card.loading-disabled {
+  background-color: var(--color-gray-50) !important;
+  border-color: var(--color-gray-200) !important;
+  box-shadow: none !important;
+}
+
+.action-card.loading-disabled .card-title {
+  color: var(--color-gray-400) !important;
+}
+
+.action-card.loading-disabled .card-description {
+  color: var(--color-gray-400) !important;
+}
+
 .btn:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring-primary);
