@@ -1112,6 +1112,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     const resultsResponse = await fetch(result.output.url);
                     if (resultsResponse.ok) {
                         const resultsData = await resultsResponse.json();
+                        console.log('R2 fetched resultsData:', resultsData); // Added for debugging
                         
                         // Handle multiple possible data structures from R2
                         const results = resultsData.results || resultsData;
