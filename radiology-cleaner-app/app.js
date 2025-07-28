@@ -1557,13 +1557,6 @@ window.addEventListener('DOMContentLoaded', function() {
                     }
                 };
             });
-                    modality_code: item.input.MODALITY_CODE,
-                    exam_code: item.input.EXAM_CODE,
-                    exam_name: item.input.EXAM_NAME,
-                    clean_name: `ERROR: ${item.error}`,
-                    components: {},
-                    all_candidates: []
-                };
             });
 
             allMappings.push(...chunkMappings);
