@@ -359,11 +359,11 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- CENTRALIZED SOURCE NAMES ---
     function getSourceNames() {
         return {
-            'Central-Philips': 'Central',
-            'CO': 'SIRS (Canterbury)', 
-            'K': 'Southern',
-            'TestData': 'Test Data',
-            'Upload': 'User Upload'
+            'SouthIsland-SIRS COMRAD': 'SIRS (Mid-Upper Sth Island)',
+            'Central-Phillips': 'Central',
+            'Southern-Karisma': 'Southern District',
+            'Auckland Metro-Agfa': 'Auckland Metro',
+            'Central-Philips': 'Central'
         };
     }
 
@@ -983,11 +983,11 @@ window.addEventListener('DOMContentLoaded', function() {
             const rerankerDisplayName = formatRerankerName(currentReranker);
             statusId = statusManager.show(`Running test suite with ${modelDisplayName} → ${rerankerDisplayName} (processing in batches)...`, 'progress');
 
-            const response = await fetch('./sanity_test.json');
+            const response = await fetch('./backend/core/hundred_test.json');
             if (!response.ok) throw new Error(`Could not load test file: ${response.statusText}`);
             const codes = await response.json();
             
-            await processExams(codes, "100 Exam Test Suite");
+            await processExams(codes, "94 Exam Test Suite");
 
         } catch (error) {
             console.error('Sanity test failed:', error);
