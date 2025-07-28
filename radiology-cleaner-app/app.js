@@ -2006,10 +2006,10 @@ window.addEventListener('DOMContentLoaded', function() {
             }
 
             groupElement.innerHTML = `
-                <div class="consolidated-header expanded" onclick="toggleOriginalCodes(this)">
+                <div class="consolidated-header" onclick="toggleOriginalCodes(this)">
                     <div class="consolidated-title-container">
                         <div class="consolidated-title">${group.cleanName}</div>
-                        ${snomedId ? `<div class="snomed-code">${snomedId}</div>` : ''}
+                        ${snomedId ? `<div class="snomed-code">SNOMED-CT ID: ${snomedId}</div>` : ''}
                     </div>
                     <div class="consolidated-count-container">
                         <span class="consolidated-count">${group.totalCount} codes</span>
