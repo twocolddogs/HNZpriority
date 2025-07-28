@@ -1108,13 +1108,14 @@ window.addEventListener('DOMContentLoaded', function() {
                     if (resultsResponse.ok) {
                         const resultsData = await resultsResponse.json();
                         
-                        // Display the results using the standard display functions
-                        if (resultsData.results && resultsData.results.length > 0) {
+                        // Handle multiple possible data structures from R2
+                        const results = resultsData.results || resultsData;
+                        if (results && results.length > 0) {
                             if (statusId) statusManager.remove(statusId);
                             statusId = statusManager.show('Analyzing results and generating display...', 'progress');
                             
                             // Set global variables to display the results
-                            allMappings = resultsData.results;
+                            allMappings = results;
                             updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size} items)`);
                             
                             // Use runAnalysis to properly display results UI
@@ -1129,7 +1130,8 @@ window.addEventListener('DOMContentLoaded', function() {
                                 if (mainCard) mainCard.style.display = 'block';
                             }
                         } else {
-                            throw new Error('No results found in R2 data');
+                            console.log('R2 data structure:', resultsData);
+                            throw new Error(`No results found in R2 data. Structure: ${JSON.stringify(Object.keys(resultsData || {}))}`);
                         }
                     } else {
                         throw new Error(`Failed to fetch results: ${resultsResponse.statusText}`);
@@ -1145,12 +1147,13 @@ window.addEventListener('DOMContentLoaded', function() {
                         
                         if (retryResponse.ok) {
                             const retryData = await retryResponse.json();
-                            if (retryData.results && retryData.results.length > 0) {
+                            const retryResults = retryData.results || retryData;
+                            if (retryResults && retryResults.length > 0) {
                                 if (statusId) statusManager.remove(statusId);
                                 statusId = statusManager.show('Processing downloaded results...', 'progress');
                                 
                                 // Process the data locally
-                                allMappings = retryData.results;
+                                allMappings = retryResults;
                                 updatePageTitle(`Random Sample Demo (${result.processing_stats?.sample_size || 'Unknown'} items)`);
                                 
                                 try {
