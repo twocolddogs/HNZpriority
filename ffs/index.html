@@ -503,9 +503,15 @@
             console.log('Generated tableHtml length:', tableHtml.length);
             console.log('Generated mobileHtml length:', mobileHtml.length);
             console.log('First 200 chars of tableHtml:', tableHtml.substring(0, 200));
+            console.log('First 200 chars of mobileHtml:', mobileHtml.substring(0, 200));
             
-            tableBody.innerHTML = tableHtml;
-            mobileView.innerHTML = mobileHtml;
+            if (tableBody) tableBody.innerHTML = tableHtml;
+            if (mobileView) mobileView.innerHTML = mobileHtml;
+            
+            // Add fallback test content for mobile debugging
+            if (mobileView && mobileHtml.length === 0) {
+                mobileView.innerHTML = '<div style="padding: 1rem; border: 2px red solid;">DEBUG: Mobile view found but no content generated</div>';
+            }
             
             console.log('Content set. Table body children:', tableBody.children.length);
             console.log('Mobile view children:', mobileView.children.length);
@@ -515,6 +521,12 @@
             console.log('DOM loaded, jsonData:', jsonData);
             console.log('Table body element:', document.getElementById('rateTableBody'));
             console.log('Mobile view element:', document.getElementById('mobileView'));
+            
+            // Check viewport width and mobile view visibility
+            console.log('Window width:', window.innerWidth);
+            console.log('Is mobile view visible?', window.getComputedStyle(document.getElementById('mobileView')).display);
+            console.log('Is table wrapper visible?', window.getComputedStyle(document.querySelector('.table-wrapper')).display);
+            
             renderData(jsonData);
         });
     </script>
