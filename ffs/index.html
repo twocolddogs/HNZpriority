@@ -229,10 +229,10 @@
                     <tr>
                         <th>Modality</th>
                         <th>Exam Type</th>
-                        <th class="text-center">National Rate</th>
+                        <th class="text-center">HNZ Rate</th>
                         <th class="text-center">Northern</th>
                         <th class="text-center">Taranaki</th>
-                        <th class="text-center">Bay of Plenty</th>
+                        <th class="text-center">BOP</th>
                         <th class="text-center">Tairawhiti</th>
                         <th class="text-center">Central</th>
                         <th class="text-center">Nelson Marlborough</th>
@@ -250,24 +250,24 @@
     <script>
         const jsonData = {
              "rowData": [
-                {"Modality": "MRI", "Body Parts": "1 region/part", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$95.00", "Central": "$112.00", "Nelson Marlborough": "$105.00", "Canterbury": "$75.00", "Southern": "$75.00", "National Rates": "$125.00"},
-                {"Modality": "MRI", "Body Parts": "2 region/parts", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$190.00", "Central": "$224.00", "Nelson Marlborough": "$205.00", "Canterbury": "$75.00", "Southern": "$150.00", "National Rates": "$200.00"},
-                {"Modality": "MRI", "Body Parts": "3 region/parts", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$190.00", "Central": "$336.00", "Nelson Marlborough": "$295.00", "Canterbury": "$75.00", "Southern": "$225.00", "National Rates": "$260.00"},
+                {"Modality": "MRI", "Body Parts": "1 region", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$95.00", "Central": "$112.00", "Nelson Marlborough": "$105.00", "Canterbury": "$75.00", "Southern": "$75.00", "National Rates": "$125.00"},
+                {"Modality": "MRI", "Body Parts": "2 regions", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$190.00", "Central": "$224.00", "Nelson Marlborough": "$205.00", "Canterbury": "$75.00", "Southern": "$150.00", "National Rates": "$200.00"},
+                {"Modality": "MRI", "Body Parts": "3 regions", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$190.00", "Central": "$336.00", "Nelson Marlborough": "$295.00", "Canterbury": "$75.00", "Southern": "$225.00", "National Rates": "$260.00"},
                 {"Modality": "MRI", "Body Parts": "MRA/MRV 1", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$190.00", "Central": "$112.00", "Nelson Marlborough": "$155.00", "Canterbury": "$75.00", "Southern": "$75.00", "National Rates": "$200.00"},
                 {"Modality": "MRI", "Body Parts": "MRA/MRV 2", "Northern": "$150.00", "Taranaki": "$150.00", "Bay of Plenty": "-", "Tairawhiti": "$190.00", "Central": "$224.00", "Nelson Marlborough": "$290.00", "Canterbury": "$75.00", "Southern": "$150.00", "National Rates": "$260.00"},
-                {"Modality": "CT Scan", "Body Parts": "1 region/part", "Northern": "$100.00", "Taranaki": "$75.00", "Bay of Plenty": "$60.00", "Tairawhiti": "$60.00", "Central": "$84.00", "Nelson Marlborough": "$75.00", "Canterbury": "$60.00", "Southern": "$50.00", "National Rates": "$90.00"},
-                {"Modality": "CT Scan", "Body Parts": "2 region/parts", "Northern": "$150.00", "Taranaki": "$145.00", "Bay of Plenty": "$120.00", "Tairawhiti": "$120.00", "Central": "$168.00", "Nelson Marlborough": "$155.00", "Canterbury": "$135.00", "Southern": "$100.00", "National Rates": "$170.00"},
-                {"Modality": "CT Scan", "Body Parts": "3 region/parts", "Northern": "$180.00", "Taranaki": "$145.00", "Bay of Plenty": "$180.00", "Tairawhiti": "$180.00", "Central": "$252.00", "Nelson Marlborough": "$215.00", "Canterbury": "$160.00", "Southern": "$150.00", "National Rates": "$255.00"},
-                {"Modality": "CT Scan", "Body Parts": "4 region/parts", "Northern": "$180.00", "Taranaki": "$145.00", "Bay of Plenty": "$240.00", "Tairawhiti": "$240.00", "Central": "$252.00", "Nelson Marlborough": "-", "Canterbury": "$200.00", "Southern": "$200.00", "National Rates": "$300.00"},
+                {"Modality": "CT Scan", "Body Parts": "1 region", "Northern": "$100.00", "Taranaki": "$75.00", "Bay of Plenty": "$60.00", "Tairawhiti": "$60.00", "Central": "$84.00", "Nelson Marlborough": "$75.00", "Canterbury": "$60.00", "Southern": "$50.00", "National Rates": "$90.00"},
+                {"Modality": "CT Scan", "Body Parts": "2 regions", "Northern": "$150.00", "Taranaki": "$145.00", "Bay of Plenty": "$120.00", "Tairawhiti": "$120.00", "Central": "$168.00", "Nelson Marlborough": "$155.00", "Canterbury": "$135.00", "Southern": "$100.00", "National Rates": "$170.00"},
+                {"Modality": "CT Scan", "Body Parts": "3 regions", "Northern": "$180.00", "Taranaki": "$145.00", "Bay of Plenty": "$180.00", "Tairawhiti": "$180.00", "Central": "$252.00", "Nelson Marlborough": "$215.00", "Canterbury": "$160.00", "Southern": "$150.00", "National Rates": "$255.00"},
+                {"Modality": "CT Scan", "Body Parts": "4 regions", "Northern": "$180.00", "Taranaki": "$145.00", "Bay of Plenty": "$240.00", "Tairawhiti": "$240.00", "Central": "$252.00", "Nelson Marlborough": "-", "Canterbury": "$200.00", "Southern": "$200.00", "National Rates": "$300.00"},
                 {"Modality": "CT Scan", "Body Parts": "CTA/CTV 1", "Northern": "$100.00", "Taranaki": "$145.00", "Bay of Plenty": "$120.00", "Tairawhiti": "$120.00", "Central": "$84.00", "Nelson Marlborough": "$145.00", "Canterbury": "$60.00", "Southern": "$50.00", "National Rates": "$170.00"},
                 {"Modality": "CT Scan", "Body Parts": "CTA/CTV 2", "Northern": "$150.00", "Taranaki": "$145.00", "Bay of Plenty": "$120.00", "Tairawhiti": "$120.00", "Central": "$168.00", "Nelson Marlborough": "$245.00", "Canterbury": "$135.00", "Southern": "$100.00", "National Rates": "$255.00"},
-                {"Modality": "Ultrasound", "Body Parts": "1 region/part", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$30.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$40.00"},
-                {"Modality": "Ultrasound", "Body Parts": "2 region/parts", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$65.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$45.00"},
-                {"Modality": "Ultrasound", "Body Parts": "3 region/parts", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$90.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$45.00"},
+                {"Modality": "Ultrasound", "Body Parts": "1 region", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$30.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$40.00"},
+                {"Modality": "Ultrasound", "Body Parts": "2 regions", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$65.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$45.00"},
+                {"Modality": "Ultrasound", "Body Parts": "3 regions", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$90.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$45.00"},
                 {"Modality": "Ultrasound", "Body Parts": "MSK/Vasc", "Northern": "$50.00", "Taranaki": "$35.00", "Bay of Plenty": "-", "Tairawhiti": "$25.00", "Central": "$42.00", "Nelson Marlborough": "$55.00", "Canterbury": "$12.00", "Southern": "$30.00", "National Rates": "$45.00"},
-                {"Modality": "X-Ray", "Body Parts": "1 region/part", "Northern": "$15.00", "Taranaki": "$14.00", "Bay of Plenty": "$14.00", "Tairawhiti": "$10.00", "Central": "$14.00", "Nelson Marlborough": "$25.00", "Canterbury": "$12.00", "Southern": "$10.00", "National Rates": "$15.00"},
-                {"Modality": "X-Ray", "Body Parts": "2 region/parts", "Northern": "$30.00", "Taranaki": "-", "Bay of Plenty": "-", "Tairawhiti": "-", "Central": "$28.00", "Nelson Marlborough": "$50.00", "Canterbury": "$20.00", "Southern": "$10.00", "National Rates": "$30.00"},
-                {"Modality": "X-Ray", "Body Parts": "3 region/parts", "Northern": "$45.00", "Taranaki": "-", "Bay of Plenty": "-", "Tairawhiti": "-", "Central": "$36.00", "Nelson Marlborough": "$75.00", "Canterbury": "$35.00", "Southern": "$10.00", "National Rates": "$45.00"}
+                {"Modality": "X-Ray", "Body Parts": "1 region", "Northern": "$15.00", "Taranaki": "$14.00", "Bay of Plenty": "$14.00", "Tairawhiti": "$10.00", "Central": "$14.00", "Nelson Marlborough": "$25.00", "Canterbury": "$12.00", "Southern": "$10.00", "National Rates": "$15.00"},
+                {"Modality": "X-Ray", "Body Parts": "2 regions", "Northern": "$30.00", "Taranaki": "-", "Bay of Plenty": "-", "Tairawhiti": "-", "Central": "$28.00", "Nelson Marlborough": "$50.00", "Canterbury": "$20.00", "Southern": "$10.00", "National Rates": "$30.00"},
+                {"Modality": "X-Ray", "Body Parts": "3 regions", "Northern": "$45.00", "Taranaki": "-", "Bay of Plenty": "-", "Tairawhiti": "-", "Central": "$36.00", "Nelson Marlborough": "$75.00", "Canterbury": "$35.00", "Southern": "$10.00", "National Rates": "$45.00"}
             ]
         };
 
@@ -321,7 +321,7 @@
                 mobileHtml += `<div class="mobile-card">
                     <div class="mobile-card-header">${row.Modality} - ${row["Body Parts"]}</div>
                     <div class="mobile-card-row">
-                        <span class="mobile-card-label">National Rate</span>
+                        <span class="mobile-card-label">HNZ Rate</span>
                         <span class="mobile-card-value">${nationalRateDisplay}</span>
                     </div>`;
 
