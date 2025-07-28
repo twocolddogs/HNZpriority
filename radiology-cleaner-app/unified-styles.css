@@ -73,6 +73,47 @@
 @media (max-width: 768px) {
   .action-paths {
     grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 0 16px;
+  }
+  
+  .action-card {
+    padding: 16px !important;
+    margin: 0 !important;
+  }
+  
+  .action-card .action-icon {
+    font-size: 2em !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .action-card h3 {
+    font-size: 1.05em !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .action-card p {
+    font-size: 0.9em !important;
+    margin-bottom: 12px !important;
+    line-height: 1.4;
+  }
+  
+  .action-card .button {
+    padding: 10px 16px !important;
+    font-size: 0.9em !important;
+    border-radius: 6px;
+    min-height: 44px; /* iOS touch target minimum */
+  }
+  
+  /* Improve touch targets and interactions */
+  .action-card {
+    min-height: 120px;
+    touch-action: manipulation; /* Prevent double-tap zoom */
+  }
+  
+  .action-card:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
   }
   
   .workflow-steps {
@@ -696,6 +737,35 @@
   .app-logo {
     width: 80px;
     height: 26px;
+  }
+  
+  /* Action cards optimized for small screens */
+  .action-paths {
+    padding: 0 12px !important;
+    gap: 12px !important;
+  }
+  
+  .action-card {
+    padding: 14px !important;
+    border-radius: 8px !important;
+  }
+  
+  .action-card .action-icon {
+    font-size: 1.8em !important;
+  }
+  
+  .action-card h3 {
+    font-size: 1em !important;
+  }
+  
+  .action-card p {
+    font-size: 0.85em !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .action-card .button {
+    padding: 8px 12px !important;
+    font-size: 0.85em !important;
   }
   
   .brand-title {
