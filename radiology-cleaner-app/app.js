@@ -252,7 +252,7 @@ class StatusManager {
             .spinner { width: 16px; height: 16px; border: 2px solid var(--color-primary, #3f51b5); border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; }
             @keyframes statusFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
             @keyframes statusFadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
-            .status-message-container { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 1000; width: fit-content; max-width: 90%; padding: 0 10px; box-sizing: border-box; }
+            .status-message-container { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 1000; width: calc(100% - 20px); max-width: 1200px; padding: 0 10px; box-sizing: border-box; }
             .processing-stage { display: flex; flex-direction: column; gap: 4px; }
             .stage-name { font-weight: 600; font-size: 15px; }
             .stage-description { font-size: 13px; opacity: 0.9; }
@@ -1202,6 +1202,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 randomSampleButton.disabled = false;
                 randomSampleButton.innerHTML = 'Random Sample Demo';
             }
+            enableActionButtons(); // Re-enable buttons after processing
         }
     }
 
@@ -1613,7 +1614,10 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     function generateSourceLegend(mappings) {
-        const uniqueSources = [...new Set(mappings.map(item => item.data_source))];
+        const uniqueSources = [...new Set(mappings.map(item => {
+            const normalized = normalizeResultItem(item);
+            return normalized.data_source;
+        }))];
         const sourceNames = getSourceNames();
         
         let legendContainer = document.getElementById('sourceLegend');
@@ -1695,7 +1699,7 @@ window.addEventListener('DOMContentLoaded', function() {
         if (item.original_item && item.processed_result) {
             return {
                 data_source: item.original_item.DATA_SOURCE,
-                modality_code: item.original_item.MODALITY_CODE, // Assuming modality is also in original_item for consistency
+                modality_code: item.original_item.MODALITY_CODE,
                 exam_code: item.original_item.EXAM_CODE,
                 exam_name: item.original_item.EXAM_NAME,
                 
@@ -1704,10 +1708,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 ambiguous: item.processed_result.ambiguous,
                 snomed: item.processed_result.snomed,
                 components: item.processed_result.components,
-                all_candidates: item.processed_result.all_candidates,
-                
-                // Add any other top-level properties from processed_result if needed
-                // e.g., debug: item.processed_result.debug
+                all_candidates: item.processed_result.all_candidates
             };
         } else {
             // Assume it's already a flat structure (e.g., from sanity_test)
@@ -1870,7 +1871,10 @@ window.addEventListener('DOMContentLoaded', function() {
     function generateAnalyticsSummary(mappings) {
         const summary = {
             totalOriginalCodes: mappings.length,
-            uniqueCleanNames: new Set(mappings.map(m => m.clean_name).filter(n => n && !n.startsWith('ERROR'))).size,
+            uniqueCleanNames: new Set(mappings.map(m => {
+                const normalized = normalizeResultItem(m);
+                return normalized.clean_name;
+            }).filter(n => n && !n.startsWith('ERROR'))).size,
             modalityBreakdown: {}, 
             avgConfidence: 0,
             genderContextCount: 0,
@@ -1878,7 +1882,8 @@ window.addEventListener('DOMContentLoaded', function() {
         summary.consolidationRatio = summary.uniqueCleanNames > 0 ? (summary.totalOriginalCodes / summary.uniqueCleanNames).toFixed(2) : "0.00";
         
         let totalConfidence = 0, confidenceCount = 0;
-        mappings.forEach(m => {
+        mappings.forEach(rawItem => {
+            const m = normalizeResultItem(rawItem);
             if (!m.components || !m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const modality = m.components.modality || m.modality_code;
             if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
@@ -1912,11 +1917,12 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function generateConsolidatedResults(mappings) {
         const consolidatedGroups = {};
-        mappings.forEach(m => {
+        mappings.forEach(rawItem => {
+            const m = normalizeResultItem(rawItem);
             if (!m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const group = consolidatedGroups[m.clean_name] || {
                 cleanName: m.clean_name,
-                snomed: m.snomed, // Add snomed info
+                snomed: m.snomed,
                 sourceCodes: [],
                 totalCount: 0,
                 components: m.components,
