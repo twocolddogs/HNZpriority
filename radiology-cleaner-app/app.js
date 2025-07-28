@@ -964,23 +964,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- UPLOAD INTERFACE CONTROL ---
-    function hideUploadInterface() {
-        uploadSection.style.display = 'none';
-        if (demosSection) demosSection.style.display = 'none';
-        const modelSettingsSection = document.getElementById('modelSettingsSection');
-        if (modelSettingsSection) modelSettingsSection.style.display = 'none';
-        // Hide main card entirely during processing to avoid empty white box
-        mainCard.style.display = 'none';
-    }
-    
-    function showUploadInterface() {
-        uploadSection.style.display = 'block';
-        if (demosSection) demosSection.style.display = 'block';
-        const modelSettingsSection = document.getElementById('modelSettingsSection');
-        if (modelSettingsSection) modelSettingsSection.style.display = 'block';
-        // Show main card when displaying upload interface
-        mainCard.style.display = 'block';
-    }
+    // Upload interface functions removed - HTML sections no longer exist
     
     function startNewUpload() {
         // Hide all sections and return to initial view
@@ -1031,7 +1015,6 @@ window.addEventListener('DOMContentLoaded', function() {
             statusManager.show('Please upload a valid JSON file.', 'error', 5000);
             return;
         }
-        hideUploadInterface();
         statusManager.clearAll();
         statusManager.showFileInfo(file.name, file.size);
         resultsSection.style.display = 'none';
@@ -1047,7 +1030,6 @@ window.addEventListener('DOMContentLoaded', function() {
                 await processExams(codes, `File: ${file.name}`);
             } catch (error) {
                 statusManager.show(`Error processing file: ${error.message}`, 'error', 0);
-                showUploadInterface();
             }
         };
         reader.readAsText(file);
@@ -1058,7 +1040,6 @@ window.addEventListener('DOMContentLoaded', function() {
         let statusId = null; 
 
         try {
-            hideUploadInterface();
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
@@ -1073,7 +1054,6 @@ window.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Sanity test failed:', error);
             statusManager.show(`❌ Sanity Test Failed: ${error.message}`, 'error', 0);
-            showUploadInterface(); 
         } finally {
             if (statusId) statusManager.remove(statusId);
             if (sanityButton) {
@@ -1088,7 +1068,6 @@ window.addEventListener('DOMContentLoaded', function() {
         let statusId = null;
 
         try {
-            hideUploadInterface();
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
@@ -1160,7 +1139,6 @@ window.addEventListener('DOMContentLoaded', function() {
             console.error('Random sample demo failed:', error);
             if (statusId) statusManager.remove(statusId);
             statusManager.show(`❌ Random Sample Demo Failed: ${error.message}`, 'error', 0);
-            showUploadInterface();
         } finally {
             if (randomSampleButton) {
                 randomSampleButton.disabled = false;
@@ -1418,7 +1396,6 @@ window.addEventListener('DOMContentLoaded', function() {
             if (progressId) statusManager.remove(progressId);
             statusManager.show(`Processing failed: ${error.message}`, 'error', 0);
             console.error('Batch processing error:', error);
-            showUploadInterface();
         }
     }
 
@@ -1521,7 +1498,6 @@ window.addEventListener('DOMContentLoaded', function() {
             if (progressId) statusManager.remove(progressId);
             statusManager.show(`Individual processing failed: ${error.message}`, 'error', 0);
             console.error('Individual processing error:', error);
-            showUploadInterface();
         }
     }
     
