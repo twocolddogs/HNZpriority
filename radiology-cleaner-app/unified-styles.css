@@ -73,6 +73,61 @@
 @media (max-width: 768px) {
   .action-paths {
     grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 0 16px;
+  }
+  
+  .action-card {
+    padding: 16px !important;
+    margin: 0 !important;
+  }
+  
+  .action-card .action-icon {
+    font-size: 2em !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .action-card h3 {
+    font-size: 1.05em !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .action-card p {
+    font-size: 0.9em !important;
+    margin-bottom: 12px !important;
+    line-height: 1.4;
+  }
+  
+  /* Fix demo button grid overflow on mobile */
+  #demoOptions > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  #demoOptions .button.large {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 12px 16px !important;
+  }
+  
+  .action-card .button {
+    padding: 10px 16px !important;
+    font-size: 0.9em !important;
+    border-radius: 6px;
+    min-height: 44px; /* iOS touch target minimum */
+  }
+  
+  /* Improve touch targets and interactions */
+  .action-card {
+    min-height: 120px;
+    touch-action: manipulation; /* Prevent double-tap zoom */
+  }
+  
+  .action-card:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
   }
   
   .workflow-steps {
@@ -698,6 +753,35 @@
     height: 26px;
   }
   
+  /* Action cards optimized for small screens */
+  .action-paths {
+    padding: 0 12px !important;
+    gap: 12px !important;
+  }
+  
+  .action-card {
+    padding: 14px !important;
+    border-radius: 8px !important;
+  }
+  
+  .action-card .action-icon {
+    font-size: 1.8em !important;
+  }
+  
+  .action-card h3 {
+    font-size: 1em !important;
+  }
+  
+  .action-card p {
+    font-size: 0.85em !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .action-card .button {
+    padding: 8px 12px !important;
+    font-size: 0.85em !important;
+  }
+  
   .brand-title {
     font-size: var(--font-size-base);
     line-height: 1.2;
@@ -929,6 +1013,40 @@ a:focus-visible {
   opacity: 0.6;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+/* Loading disabled state for buttons and action cards */
+.loading-disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  position: relative;
+}
+
+.loading-disabled::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: inherit;
+  backdrop-filter: blur(1px);
+  z-index: 1;
+}
+
+.action-card.loading-disabled {
+  background-color: var(--color-gray-50) !important;
+  border-color: var(--color-gray-200) !important;
+  box-shadow: none !important;
+}
+
+.action-card.loading-disabled .card-title {
+  color: var(--color-gray-400) !important;
+}
+
+.action-card.loading-disabled .card-description {
+  color: var(--color-gray-400) !important;
 }
 
 .btn:focus-visible {
@@ -2098,6 +2216,25 @@ a:focus-visible {
   display: grid;
   grid-template-columns: repeat(3, minmax(150px, 1fr));
   gap: 0.5rem;
+}
+
+/* Mobile responsive fix for source legend */
+@media (max-width: 768px) {
+  .source-legend-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr)) !important;
+    gap: 0.4rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .source-legend-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.3rem !important;
+  }
+  
+  .source-legend-item {
+    font-size: 0.8rem !important;
+  }
 }
 
 .source-legend-item {

@@ -9,6 +9,8 @@
     <link href="./fonts/publicsans.css" rel="stylesheet" type="text/css">
     <!-- Unified Design System -->
     <link href="./unified-styles.css" rel="stylesheet" type="text/css">
+    <!-- FontAwesome Kit -->
+    <script src="https://kit.fontawesome.com/824818970b.js" crossorigin="anonymous"></script>
     <style>
         .action-card:hover {
             transform: translateY(-2px);
@@ -42,11 +44,11 @@
                     <div id="hamburgerDropdown" class="hamburger-dropdown hidden">
                         <div class="dropdown-section">
                             <a href="help.html" class="dropdown-item">
-                                <span class="dropdown-icon nerd-icon">󰋖</span>
+                                <span class="dropdown-icon"><i class="fas fa-question-circle"></i></span>
                                 Help
                             </a>
                             <a href="about.html" class="dropdown-item">
-                                <span class="dropdown-icon nerd-icon">󰘦</span>
+                                <span class="dropdown-icon"><i class="fas fa-info-circle"></i></span>
                                 How this works
                             </a>
                         </div>
@@ -64,7 +66,7 @@
                 <div class="action-paths" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto;">
                     <!-- Path 1: Quick Demo -->
                     <div class="action-card demo-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px;">🚀</div>
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px; color: #4CAF50;"><i class="fas fa-rocket"></i></div>
                         <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Try It Now</h3>
                         <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">See it in action with sample data. No upload required.</p>
                         <button class="button primary" id="quickDemoBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Start Demo →</button>
@@ -72,7 +74,7 @@
                     
                     <!-- Path 2: Upload Own Data -->
                     <div class="action-card upload-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px;">📁</div>
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px; color: #2196F3;"><i class="fas fa-upload"></i></div>
                         <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Upload Your Data</h3>
                         <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">Process your own radiology codes securely.</p>
                         <button class="button primary" id="uploadDataBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Choose File →</button>
@@ -80,7 +82,7 @@
                     
                     <!-- Path 3: Advanced Setup -->
                     <div class="action-card advanced-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px;">⚙️</div>
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px; color: #FF9800;"><i class="fas fa-cogs"></i></div>
                         <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Advanced Setup</h3>
                         <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">Configure preprocessing and parsing rules.</p>
                         <button class="button primary" id="advancedSetupBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Configure →</button>
@@ -122,60 +124,37 @@
                         <span style="background: #e0e0e0; color: #999; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 14px;">3</span>
                         Process Data
                     </h3>
+                    <!-- File Upload Data Source Display (only for uploads) -->
                     <div id="dataSourceDisplay" style="margin-bottom: 20px; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 8px; display: none;">
                         <strong>Data Source:</strong> <span id="dataSourceText"></span>
                     </div>
-                    <button class="button primary large" id="runProcessingBtn" style="padding: 15px 40px; font-size: 1.1em; font-weight: 600; disabled: true;" disabled>
-                        🚀 Start Processing
+                    
+                    <!-- Demo Options -->
+                    <div id="demoOptions" style="display: none; margin-bottom: 20px;">
+                        <p style="margin: 0 0 15px 0; font-size: 0.95em; color: #555;">Choose your demo type:</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <button class="button primary large" id="runRandomDemoBtn" style="padding: 15px 20px; font-size: 1.0em; font-weight: 600;" disabled>
+                                <i class="fas fa-dice"></i> Random Sample
+                                <small style="display: block; font-size: 0.8em; font-weight: normal; margin-top: 4px; opacity: 0.9;">100 random codes from live dataset</small>
+                            </button>
+                            <button class="button secondary large" id="runFixedTestBtn" style="padding: 15px 20px; font-size: 1.0em; font-weight: 600;" disabled>
+                                <i class="fas fa-vial"></i> Fixed Test Suite
+                                <small style="display: block; font-size: 0.8em; font-weight: normal; margin-top: 4px; opacity: 0.9;">94 curated test cases</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Upload Processing Button (for file uploads) -->
+                    <button class="button primary large" id="runProcessingBtn" style="padding: 15px 40px; font-size: 1.1em; font-weight: 600; display: none;" disabled>
+                        <i class="fas fa-rocket"></i> Start Processing
                     </button>
+                    
                     <p style="margin: 10px 0 0 0; font-size: 0.9em; color: #666;">Processing typically takes 30-60 seconds for 100 records</p>
                 </div>
             </div>
 
-            <!-- Hidden Upload Section -->
-            <div id="uploadSection" class="upload-section" style="display: none; padding: 20px 15px; min-height: auto;">
-                <div class="upload-icon"></div>
-                <h2 style="margin: 8px 0;">Upload Radiology Codes</h2>
-                <p style="margin: 3px 0 10px 0;">Drop your codes.json file here or click to browse.</p>
-                <input type="file" id="fileInput" accept=".json" />
-            </div>
-
-            <!-- Model Settings Section -->
-            <div id="modelSettingsSection" class="model-settings-section" style="display: none; margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
-                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Model Settings</h3>
-                <p style="color: #666; margin-bottom: 15px;">Additional model configuration options will appear here.</p>
-            </div>
-
-            <!-- Advanced Configuration Section -->
-            <div id="advancedSection" class="advanced-section" style="display: none; margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
-                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Advanced Configuration</h3>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-start;">
-                    <div style="flex: 1; min-width: 200px;">
-                        <button class="button secondary" id="sanityTestBtn" style="background-color: #ff6b35; color: white; border: none; width: 100%;">
-                            100 Exam Test Suite
-                        </button>
-                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
-                            Load and process the built-in test dataset to verify engine performance
-                        </p>
-                    </div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <button class="button secondary" id="randomSampleDemoBtn" style="background-color: #9C27B0; color: white; border: none; width: 100%;">
-                            Random Sample Demo
-                        </button>
-                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
-                            Process 100 random codes from HNZ dataset and upload results to R2
-                        </p>
-                    </div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <button class="button secondary" id="editConfigBtn" style="background-color: #4CAF50; color: white; border: none; width: 100%;">
-                            Edit Config
-                        </button>
-                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
-                            View and edit the system configuration file
-                        </p>
-                    </div>
-                </div>
-            </div>
+            
+            
 
             <div class="file-info" id="fileInfo"></div>
 
@@ -254,7 +233,7 @@
     <div class="modal" id="configEditorModal">
         <div class="modal-content" style="max-width: 90vw; width: 1200px; max-height: 90vh;">
             <div class="modal-header">
-                <h2>⚙️ Configuration Editor</h2>
+                <h2><i class="fas fa-cogs"></i> Configuration Editor</h2>
                 <button id="closeConfigEditorModal" class="modal-close">&times;</button>
             </div>
             <div class="modal-body" style="padding: 0; height: 70vh;">

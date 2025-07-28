@@ -361,6 +361,7 @@ def warmup_api():
 @app.route('/models', methods=['GET'])
 def list_available_models():
     """List available NLP models and their status (lightweight, no initialization required)"""
+    _ensure_app_is_initialized() # Ensure components are initialized
     try:
         available_models = NLPProcessor.get_available_models()
         model_info = {}

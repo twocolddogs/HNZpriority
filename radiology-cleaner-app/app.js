@@ -54,16 +54,9 @@ class StatusManager {
     ensureContainer() {
         if (!this.container) {
             this.container = document.getElementById('statusMessageContainer');
+            // The container already exists in HTML, so we don't need to create it
             if (!this.container) {
-                this.container = document.createElement('div');
-                this.container.id = 'statusMessageContainer';
-                this.container.className = 'status-message-container';
-                const fileInfo = document.getElementById('fileInfo');
-                if (fileInfo && fileInfo.parentNode) {
-                    fileInfo.parentNode.insertBefore(this.container, fileInfo.nextSibling);
-                } else {
-                    document.body.insertBefore(this.container, document.body.firstChild);
-                }
+                console.warn('Status message container not found in HTML');
             }
         }
         return this.container;
@@ -252,7 +245,7 @@ class StatusManager {
             .spinner { width: 16px; height: 16px; border: 2px solid var(--color-primary, #3f51b5); border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; }
             @keyframes statusFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
             @keyframes statusFadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
-            .status-message-container { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+            .status-message-container { display: flex; flex-direction: column; gap: 8px; margin: 0 auto 20px auto; position: static; width: 100%; max-width: 1200px; padding: 0 var(--space-8, 32px); box-sizing: border-box; }
             .processing-stage { display: flex; flex-direction: column; gap: 4px; }
             .stage-name { font-weight: 600; font-size: 15px; }
             .stage-description { font-size: 13px; opacity: 0.9; }
@@ -297,6 +290,65 @@ let currentPage = 1;
 let pageSize = 100;
 let sortBy = 'default';
 
+// Track button state during model loading
+let buttonsDisabledForLoading = true;
+
+// --- BUTTON STATE MANAGEMENT ---
+function disableActionButtons(reason = 'Models are loading...') {
+    const buttons = [
+        'runRandomDemoBtn', 
+        'runFixedTestBtn', 
+        'runProcessingBtn'
+    ];
+    
+    buttons.forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.disabled = true;
+            button.dataset.originalTitle = button.title || '';
+            button.title = reason;
+            button.classList.add('loading-disabled');
+        }
+    });
+    
+    // Also disable action cards
+    const actionCards = document.querySelectorAll('.action-card');
+    actionCards.forEach(card => {
+        card.classList.add('loading-disabled');
+        card.style.pointerEvents = 'none';
+        card.dataset.originalTitle = card.title || '';
+        card.title = reason;
+    });
+    
+    buttonsDisabledForLoading = true;
+}
+
+function enableActionButtons() {
+    const buttons = [
+        'runRandomDemoBtn', 
+        'runFixedTestBtn', 
+        'runProcessingBtn'
+    ];
+    
+    buttons.forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.disabled = false;
+            button.title = button.dataset.originalTitle || '';
+            button.classList.remove('loading-disabled');
+        }
+    });
+    
+    // Re-enable action cards
+    const actionCards = document.querySelectorAll('.action-card');
+    actionCards.forEach(card => {
+        card.classList.remove('loading-disabled');
+        card.style.pointerEvents = '';
+        card.title = card.dataset.originalTitle || '';
+    });
+    
+    buttonsDisabledForLoading = false;
+}
 
 // --- UTILITY & HELPER FUNCTIONS ---
 function formatProcessingTime(ms) {
@@ -359,11 +411,11 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- CENTRALIZED SOURCE NAMES ---
     function getSourceNames() {
         return {
-            'C': 'Central',
-            'CO': 'SIRS (Canterbury)', 
-            'K': 'Southern',
-            'TestData': 'Test Data',
-            'Upload': 'User Upload'
+            'SouthIsland-SIRS COMRAD': 'SIRS (Mid-Upper Sth Island)',
+            'Central-Phillips': 'Central',
+            'Southern-Karisma': 'Southern District',
+            'Auckland Metro-Agfa': 'Auckland Metro',
+            'Central-Philips': 'Central'
         };
     }
 
@@ -408,9 +460,18 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // --- DOM ELEMENTS ---
     const mainCard = document.querySelector('.main-card');
-    const uploadSection = document.getElementById('uploadSection');
     const demosSection = document.getElementById('demosSection');
-    const fileInput = document.getElementById('fileInput');
+    
+    // Create file input element if it doesn't exist
+    let fileInput = document.getElementById('fileInput');
+    if (!fileInput) {
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'fileInput';
+        fileInput.accept = '.json';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+    }
     const resultsSection = document.getElementById('resultsSection');
     const resultsBody = document.getElementById('resultsBody');
     const sanityButton = document.getElementById('sanityTestBtn');
@@ -462,6 +523,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 // Wait 2 seconds to let users see the success message before other status updates
                 await new Promise(resolve => setTimeout(resolve, 2000));
+                enableActionButtons(); // Enable buttons after successful warmup
             } else {
                 throw new Error(`Warmup failed with status ${response.status}`);
             }
@@ -519,19 +581,27 @@ window.addEventListener('DOMContentLoaded', function() {
                     currentReranker = modelsData.default_reranker || 'medcpt';
                 }
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
-                console.log('✓ Available rerankers loaded:', Object.keys(availableRerankers));
+                console.log('✓ Available rerankers loaded:', availableRerankers); // Added console.log for rerankers
                 
                 // Mark that we're not using fallback models
                 isUsingFallbackModels = false;
                 
-                // Clear loading message before building UI
+                // Build UI immediately after data loads (before status messages)
+                buildModelSelectionUI();
+                buildRerankerSelectionUI();
+                
+                
+                
+                // Refresh workflow completion check
+                if (window.workflowCheckFunction) {
+                    window.workflowCheckFunction();
+                }
+                
+                // Clear loading message after UI is built
                 if (loadingMessageId) {
                     statusManager.remove(loadingMessageId);
                     loadingMessageId = null;
                 }
-                
-                buildModelSelectionUI();
-                buildRerankerSelectionUI();
                 
                 // Show success message
                 statusManager.show('✓ Models loaded successfully', 'success', 3000);
@@ -586,6 +656,14 @@ window.addEventListener('DOMContentLoaded', function() {
         buildModelSelectionUI();
         buildRerankerSelectionUI();
         
+        // Update button states for fallback models - keep limited functionality
+        disableActionButtons('Limited functionality with fallback models');
+        
+        // Refresh workflow completion check
+        if (window.workflowCheckFunction) {
+            window.workflowCheckFunction();
+        }
+        
         // Show that fallback models are being used
         statusManager.show('ℹ️ Using offline fallback models - some features may be limited', 'info', 5000);
     }
@@ -610,6 +688,7 @@ window.addEventListener('DOMContentLoaded', function() {
             reloadBtn.style.cssText = 'font-size: 14px; padding: 8px 16px;';
             reloadBtn.onclick = () => {
                 statusManager.clearAll();
+                disableActionButtons('Retrying model loading...');
                 loadAvailableModels(0, true);
             };
             
@@ -785,36 +864,12 @@ window.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        uploadSection.addEventListener('click', () => fileInput.click());
-        ['dragover', 'dragleave', 'drop'].forEach(eventName => {
-            uploadSection.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-        ['dragenter', 'dragover'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.add('dragover'), false));
-        ['dragleave', 'drop'].forEach(eventName => uploadSection.addEventListener(eventName, () => uploadSection.classList.remove('dragover'), false));
-        uploadSection.addEventListener('drop', (e) => {
-            if (e.dataTransfer.files[0]) {
-                fileInput.files = e.dataTransfer.files;
-                // Trigger the change event to use the workflow handler
-                const event = new Event('change', { bubbles: true });
-                fileInput.dispatchEvent(event);
-            }
-        }, false);
+        // Upload section drag-and-drop functionality removed - HTML elements no longer exist
 
         document.getElementById('newUploadBtn')?.addEventListener('click', startNewUpload);
         document.getElementById('exportMappingsBtn')?.addEventListener('click', exportResults);
         
-        if (sanityButton) {
-            sanityButton.addEventListener('click', runSanityTest);
-        } else {
-            console.error('❌ Sanity test button not found!');
-        }
-        
-        if (randomSampleButton) {
-            randomSampleButton.addEventListener('click', runRandomSampleDemo);
-        } else {
-            console.error('❌ Random sample demo button not found!');
-        }
+        // Note: Demo buttons are now handled in the workflow section
         
         // New homepage workflow event listeners
         setupHomepageWorkflow();
@@ -822,10 +877,15 @@ window.addEventListener('DOMContentLoaded', function() {
         // Upload config functionality removed - Edit Config handles all config management
         
         // Config editor event listeners
+        const editConfigButton = document.getElementById('editConfigBtn');
+        const closeConfigEditorModal = document.getElementById('closeConfigEditorModal');
+        const closeConfigEditorBtn = document.getElementById('closeConfigEditorBtn');
+        const reloadConfigBtn = document.getElementById('reloadConfigBtn');
+        const saveConfigBtn = document.getElementById('saveConfigBtn');
+        const configEditorModal = document.getElementById('configEditorModal');
+        
         if (editConfigButton) {
             editConfigButton.addEventListener('click', openConfigEditor);
-        } else {
-            console.error('❌ Config edit button not found!');
         }
         
         if (closeConfigEditorModal) {
@@ -887,28 +947,11 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- UPLOAD INTERFACE CONTROL ---
-    function hideUploadInterface() {
-        uploadSection.style.display = 'none';
-        if (demosSection) demosSection.style.display = 'none';
-        const modelSettingsSection = document.getElementById('modelSettingsSection');
-        if (modelSettingsSection) modelSettingsSection.style.display = 'none';
-        // Hide main card entirely during processing to avoid empty white box
-        mainCard.style.display = 'none';
-    }
-    
-    function showUploadInterface() {
-        uploadSection.style.display = 'block';
-        if (demosSection) demosSection.style.display = 'block';
-        const modelSettingsSection = document.getElementById('modelSettingsSection');
-        if (modelSettingsSection) modelSettingsSection.style.display = 'block';
-        // Show main card when displaying upload interface
-        mainCard.style.display = 'block';
-    }
+    // Upload interface functions removed - HTML sections no longer exist
     
     function startNewUpload() {
         // Hide all sections and return to initial view
         resultsSection.style.display = 'none';
-        uploadSection.style.display = 'none';
         const advancedSection = document.getElementById('advancedSection');
         if (advancedSection) advancedSection.style.display = 'none';
         const modelSettingsSection = document.getElementById('modelSettingsSection');
@@ -950,11 +993,12 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     async function processFile(file) {
+        disableActionButtons('Processing uploaded file...');
         if (!file.name.endsWith('.json')) {
             statusManager.show('Please upload a valid JSON file.', 'error', 5000);
+            enableActionButtons(); // Re-enable if file type is wrong
             return;
         }
-        hideUploadInterface();
         statusManager.clearAll();
         statusManager.showFileInfo(file.name, file.size);
         resultsSection.style.display = 'none';
@@ -970,54 +1014,61 @@ window.addEventListener('DOMContentLoaded', function() {
                 await processExams(codes, `File: ${file.name}`);
             } catch (error) {
                 statusManager.show(`Error processing file: ${error.message}`, 'error', 0);
-                showUploadInterface();
+            } finally {
+                enableActionButtons(); // Re-enable buttons after file processing
             }
         };
         reader.readAsText(file);
     }
     
     async function runSanityTest() {
-        if (sanityButton) sanityButton.disabled = true;
-        let statusId = null; 
+        disableActionButtons('Running sanity test...');
+        let statusId = null;
 
         try {
-            hideUploadInterface();
+            // Hide main content during processing
+            if (mainCard) mainCard.style.display = 'none';
+            
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
-            statusId = statusManager.show(`Running test suite with ${modelDisplayName} → ${rerankerDisplayName} (processing in batches)...`, 'progress');
+            statusId = statusManager.show(`Running 100-exam sanity test with ${modelDisplayName} → ${rerankerDisplayName}...`, 'progress');
 
-            const response = await fetch('./sanity_test.json');
+            const response = await fetch('./backend/core/hundred_test.json');
             if (!response.ok) throw new Error(`Could not load test file: ${response.statusText}`);
             const codes = await response.json();
             
-            await processExams(codes, "100 Exam Test Suite");
+            await processExams(codes, "94 Exam Test Suite");
 
         } catch (error) {
             console.error('Sanity test failed:', error);
             statusManager.show(`❌ Sanity Test Failed: ${error.message}`, 'error', 0);
-            showUploadInterface(); 
+            // Show main card again on error
+            if (mainCard) mainCard.style.display = 'block';
         } finally {
             if (statusId) statusManager.remove(statusId);
             if (sanityButton) {
                  sanityButton.disabled = false;
                  sanityButton.innerHTML = '100 Exam Test Suite';
             }
+            enableActionButtons(); // Re-enable buttons after processing
         }
     }
 
     async function runRandomSampleDemo() {
-        if (randomSampleButton) randomSampleButton.disabled = true;
+        disableActionButtons('Processing random sample demo...');
         let statusId = null;
 
         try {
-            hideUploadInterface();
+            // Hide main content during processing
+            if (mainCard) mainCard.style.display = 'none';
+            
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
             statusId = statusManager.show(`Running random sample demo with ${modelDisplayName} → ${rerankerDisplayName}...`, 'progress');
 
-            const response = await fetch(`${API_BASE_URL}/demo_random_sample`, {
+            const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1038,26 +1089,113 @@ window.addEventListener('DOMContentLoaded', function() {
                 throw new Error(result.error);
             }
 
-            // Update status with completion message and URL
+            // Show processing completion
             if (statusId) statusManager.remove(statusId);
-            const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
-            const urlMessage = result.output?.url ? `<br><a href="${result.output.url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>` : '';
-            statusManager.show(successMessage + urlMessage, 'success', 10000);
+            statusId = statusManager.show(`✅ Processing completed! ${result.processing_stats.processed_successfully} items processed`, 'success', 2000);
+            
+            // Small delay to show completion message
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // Optionally show some basic stats
-            const statsMessage = `Processing Stats: ${result.processing_stats.input_items} total items, ${result.processing_stats.sample_size} sampled, ${result.processing_stats.processed_successfully} processed successfully in ${result.processing_stats.processing_time_ms}ms`;
-            console.log(statsMessage);
+            // Fetch and display the results from R2
+            if (statusId) statusManager.remove(statusId);
+            statusId = statusManager.show('Fetching results for display...', 'progress');
+            
+            if (result.output?.url) {
+                try {
+                    const resultsResponse = await fetch(result.output.url);
+                    if (resultsResponse.ok) {
+                        const resultsData = await resultsResponse.json();
+                        console.log('R2 fetched resultsData:', resultsData); // Added for debugging
+                        
+                        // Handle multiple possible data structures from R2
+                        const results = resultsData.results || resultsData;
+                        if (results && results.length > 0) {
+                            if (statusId) statusManager.remove(statusId);
+                            statusId = statusManager.show('Analyzing results and generating display...', 'progress');
+                            
+                            // Set global variables to display the results
+                            allMappings = results;
+                            updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size} items)`);
+                            
+                            // Use runAnalysis to properly display results UI
+                            try {
+                                runAnalysis(allMappings);
+                                
+                                const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || 'Unknown'} items processed`;
+                                statusManager.show(successMessage, 'success', 5000);
+                                if (mainCard) mainCard.style.display = 'block'; // Ensure main content is visible after successful analysis
+                            } catch (analysisError) {
+                                console.error('Error during results analysis:', analysisError);
+                                statusManager.show('❌ Error displaying results', 'error', 5000);
+                                if (mainCard) mainCard.style.display = 'block';
+                            }
+                        } else {
+                            console.log('R2 data structure:', resultsData);
+                            throw new Error(`No results found in R2 data. Structure: ${JSON.stringify(Object.keys(resultsData || {}))}`);
+                        }
+                    } else {
+                        throw new Error(`Failed to fetch results: ${resultsResponse.statusText}`);
+                    }
+                } catch (fetchError) {
+                    console.error('Failed to fetch results from R2:', fetchError);
+                    if (statusId) statusManager.remove(statusId);
+                    
+                    // Try to download and process the data despite the fetch error
+                    try {
+                        statusId = statusManager.show('Retrying results download...', 'progress');
+                        const retryResponse = await fetch(result.output.url);
+                        
+                        if (retryResponse.ok) {
+                            const retryData = await retryResponse.json();
+                            const retryResults = retryData.results || retryData;
+                            if (retryResults && retryResults.length > 0) {
+                                if (statusId) statusManager.remove(statusId);
+                                statusId = statusManager.show('Processing downloaded results...', 'progress');
+                                
+                                // Process the data locally
+                                allMappings = retryResults;
+                                updatePageTitle(`Random Sample Demo (${result.processing_stats?.sample_size || 'Unknown'} items)`);
+                                
+                                try {
+                                    runAnalysis(allMappings);
+                                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || 'Unknown'} items processed`;
+                                    statusManager.show(successMessage, 'success', 5000);
+                                    return; // Exit successfully
+                                } catch (analysisError) {
+                                    console.error('Error during retry results analysis:', analysisError);
+                                    statusManager.show('❌ Error displaying retry results', 'error', 5000);
+                                    if (mainCard) mainCard.style.display = 'block';
+                                    return;
+                                }
+                            }
+                        }
+                    } catch (retryError) {
+                        console.error('Retry also failed:', retryError);
+                    }
+                    
+                    // If all attempts fail, show the download link as fallback
+                    if (statusId) statusManager.remove(statusId);
+                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
+                    const urlMessage = `<br><a href="${result.output.url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
+                    statusManager.show(successMessage + urlMessage, 'success', 10000);
+                }
+            } else {
+                if (statusId) statusManager.remove(statusId);
+                statusManager.show('✅ Demo completed but no results URL available', 'warning', 5000);
+            }
 
         } catch (error) {
             console.error('Random sample demo failed:', error);
             if (statusId) statusManager.remove(statusId);
             statusManager.show(`❌ Random Sample Demo Failed: ${error.message}`, 'error', 0);
-            showUploadInterface();
+            // Show main card again on error
+            if (mainCard) mainCard.style.display = 'block';
         } finally {
             if (randomSampleButton) {
                 randomSampleButton.disabled = false;
                 randomSampleButton.innerHTML = 'Random Sample Demo';
             }
+            enableActionButtons(); // Re-enable buttons after processing
         }
     }
 
@@ -1206,20 +1344,24 @@ window.addEventListener('DOMContentLoaded', function() {
                 if (batchResult.results) {
                     // Old format - inline results
                     const chunkMappings = batchResult.results.map(item => {
-                        return item.status === 'success' ? {
-                            data_source: item.input.data_source,
-                            modality_code: item.input.modality_code,
-                            exam_code: item.input.exam_code,
-                            exam_name: item.input.exam_name,
-                            clean_name: item.output.clean_name,
-                            snomed: item.output.snomed || {},
-                            components: item.output.components || {},
-                            all_candidates: item.output.all_candidates || []
-                        } : {
-                            ...item.input,
-                            clean_name: `ERROR: ${item.error}`,
-                            components: {},
-                            all_candidates: []
+                        return {
+                            original_item: {
+                                DATA_SOURCE: item.input.data_source,
+                                MODALITY_CODE: item.input.modality_code,
+                                EXAM_CODE: item.input.exam_code,
+                                EXAM_NAME: item.input.exam_name
+                            },
+                            processed_result: item.status === 'success' ? {
+                                clean_name: item.output.clean_name,
+                                snomed: item.output.snomed || {},
+                                components: item.output.components || {},
+                                all_candidates: item.output.all_candidates || []
+                            } : {
+                                clean_name: `ERROR: ${item.error}`,
+                                snomed: {},
+                                components: {},
+                                all_candidates: []
+                            }
                         };
                     });
                     allMappings.push(...chunkMappings);
@@ -1232,20 +1374,24 @@ window.addEventListener('DOMContentLoaded', function() {
                         const r2Data = await r2Response.json();
                         if (r2Data.results && r2Data.results.length > 0) {
                             const chunkMappings = r2Data.results.map(item => {
-                                return item.status === 'success' ? {
-                                    data_source: item.input.data_source,
-                                    modality_code: item.input.modality_code,
-                                    exam_code: item.input.exam_code,
-                                    exam_name: item.input.exam_name,
-                                    clean_name: item.output.clean_name,
-                                    snomed: item.output.snomed || {},
-                                    components: item.output.components || {},
-                                    all_candidates: item.output.all_candidates || []
-                                } : {
-                                    ...item.input,
-                                    clean_name: `ERROR: ${item.error}`,
-                                    components: {},
-                                    all_candidates: []
+                                return {
+                                    original_item: {
+                                        DATA_SOURCE: item.input.data_source,
+                                        MODALITY_CODE: item.input.modality_code,
+                                        EXAM_CODE: item.input.exam_code,
+                                        EXAM_NAME: item.input.exam_name
+                                    },
+                                    processed_result: item.status === 'success' ? {
+                                        clean_name: item.output.clean_name,
+                                        snomed: item.output.snomed || {},
+                                        components: item.output.components || {},
+                                        all_candidates: item.output.all_candidates || []
+                                    } : {
+                                        clean_name: `ERROR: ${item.error}`,
+                                        snomed: {},
+                                        components: {},
+                                        all_candidates: []
+                                    }
                                 };
                             });
                             allMappings.push(...chunkMappings);
@@ -1273,20 +1419,24 @@ window.addEventListener('DOMContentLoaded', function() {
                         const fileResults = fileData.results || fileData;
                         if (fileResults && fileResults.length > 0) {
                             const chunkMappings = fileResults.map(item => {
-                                return item.status === 'success' ? {
-                                    data_source: item.input.data_source,
-                                    modality_code: item.input.modality_code,
-                                    exam_code: item.input.exam_code,
-                                    exam_name: item.input.exam_name,
-                                    clean_name: item.output.clean_name,
-                                    snomed: item.output.snomed || {},
-                                    components: item.output.components || {},
-                                    all_candidates: item.output.all_candidates || []
-                                } : {
-                                    ...item.input,
-                                    clean_name: `ERROR: ${item.error}`,
-                                    components: {},
-                                    all_candidates: []
+                                return {
+                                    original_item: {
+                                        DATA_SOURCE: item.input.data_source,
+                                        MODALITY_CODE: item.input.modality_code,
+                                        EXAM_CODE: item.input.exam_code,
+                                        EXAM_NAME: item.input.exam_name
+                                    },
+                                    processed_result: item.status === 'success' ? {
+                                        clean_name: item.output.clean_name,
+                                        snomed: item.output.snomed || {},
+                                        components: item.output.components || {},
+                                        all_candidates: item.output.all_candidates || []
+                                    } : {
+                                        clean_name: `ERROR: ${item.error}`,
+                                        snomed: {},
+                                        components: {},
+                                        all_candidates: []
+                                    }
                                 };
                             });
                             allMappings.push(...chunkMappings);
@@ -1310,7 +1460,6 @@ window.addEventListener('DOMContentLoaded', function() {
             if (progressId) statusManager.remove(progressId);
             statusManager.show(`Processing failed: ${error.message}`, 'error', 0);
             console.error('Batch processing error:', error);
-            showUploadInterface();
         }
     }
 
@@ -1382,23 +1531,24 @@ window.addEventListener('DOMContentLoaded', function() {
 
             // Convert results to the same format as batch processing
             const chunkMappings = results.map(item => {
-                return item.status === 'success' ? {
-                    data_source: item.input.DATA_SOURCE,
-                    modality_code: item.input.MODALITY_CODE,
-                    exam_code: item.input.EXAM_CODE,
-                    exam_name: item.input.EXAM_NAME,
-                    clean_name: item.output.clean_name,
-                    snomed: item.output.snomed || {},
-                    components: item.output.components || {},
-                    all_candidates: item.output.all_candidates || []
-                } : {
-                    data_source: item.input.DATA_SOURCE,
-                    modality_code: item.input.MODALITY_CODE,
-                    exam_code: item.input.EXAM_CODE,
-                    exam_name: item.input.EXAM_NAME,
-                    clean_name: `ERROR: ${item.error}`,
-                    components: {},
-                    all_candidates: []
+                return {
+                    original_item: {
+                        DATA_SOURCE: item.input.DATA_SOURCE,
+                        MODALITY_CODE: item.input.MODALITY_CODE,
+                        EXAM_CODE: item.input.EXAM_CODE,
+                        EXAM_NAME: item.input.EXAM_NAME
+                    },
+                    processed_result: item.status === 'success' ? {
+                        clean_name: item.output.clean_name,
+                        snomed: item.output.snomed || {},
+                        components: item.output.components || {},
+                        all_candidates: item.output.all_candidates || []
+                    } : {
+                        clean_name: `ERROR: ${item.error}`,
+                        snomed: {},
+                        components: {},
+                        all_candidates: []
+                    }
                 };
             });
 
@@ -1413,7 +1563,6 @@ window.addEventListener('DOMContentLoaded', function() {
             if (progressId) statusManager.remove(progressId);
             statusManager.show(`Individual processing failed: ${error.message}`, 'error', 0);
             console.error('Individual processing error:', error);
-            showUploadInterface();
         }
     }
     
@@ -1445,9 +1594,23 @@ window.addEventListener('DOMContentLoaded', function() {
         const rerankerDisplayName = formatRerankerName(currentReranker);
         titleElement.textContent = `Cleaning Results with ${modelDisplayName} → ${rerankerDisplayName}`;
     }
+    
+    function updatePageTitle(title) {
+        // Update browser tab title
+        document.title = `${title} - Radiology Cleaner`;
+        
+        // Update results title element if it exists
+        const titleElement = document.getElementById('resultsTitle');
+        if (titleElement) {
+            titleElement.textContent = title;
+        }
+    }
 
     function generateSourceLegend(mappings) {
-        const uniqueSources = [...new Set(mappings.map(item => item.data_source))];
+        const uniqueSources = [...new Set(mappings.map(item => {
+            const normalized = normalizeResultItem(item);
+            return normalized.data_source;
+        }))];
         const sourceNames = getSourceNames();
         
         let legendContainer = document.getElementById('sourceLegend');
@@ -1455,9 +1618,10 @@ window.addEventListener('DOMContentLoaded', function() {
             legendContainer = document.createElement('div');
             legendContainer.id = 'sourceLegend';
             legendContainer.className = 'source-legend';
-            const resultsTitle = document.getElementById('resultsTitle');
-            if (resultsTitle && resultsTitle.parentNode) {
-                resultsTitle.parentNode.insertBefore(legendContainer, resultsTitle.nextSibling);
+            const fullView = document.getElementById('fullView');
+            if (fullView) {
+                const firstChild = fullView.firstChild;
+                fullView.insertBefore(legendContainer, firstChild);
             }
         }
         
@@ -1480,9 +1644,19 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('genderContext').textContent = summary.genderContextCount;
     }
 
-    const sourceColors = { 'C': '#1f77b4', 'CO': '#2ca02c', 'K': '#9467bd', 'TestData': '#ff1493', 'Default': '#6c757d' };
+    const sourceColorPalette = [
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
+        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+        '#ff1493', '#00ced1', '#ff4500', '#32cd32', '#ba55d3'
+    ];
+    
+    const sourceColors = {};
     function getSourceColor(source) {
-        return sourceColors[source] || sourceColors['Default'];
+        if (!sourceColors[source]) {
+            const colorIndex = Object.keys(sourceColors).length % sourceColorPalette.length;
+            sourceColors[source] = sourceColorPalette[colorIndex];
+        }
+        return sourceColors[source];
     }
 
     function sortAndDisplayResults() {
@@ -1524,12 +1698,35 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function normalizeResultItem(item) {
+        // Check if it's a nested structure from demo_random_sample
+        if (item.original_item && item.processed_result) {
+            return {
+                data_source: item.original_item.DATA_SOURCE,
+                modality_code: item.original_item.MODALITY_CODE,
+                exam_code: item.original_item.EXAM_CODE,
+                exam_name: item.original_item.EXAM_NAME,
+                
+                // Processed results
+                clean_name: item.processed_result.clean_name,
+                ambiguous: item.processed_result.ambiguous,
+                snomed: item.processed_result.snomed,
+                components: item.processed_result.components,
+                all_candidates: item.processed_result.all_candidates
+            };
+        } else {
+            // Assume it's already a flat structure (e.g., from sanity_test)
+            return item;
+        }
+    }
+
     function displayResults(results) {
         resultsBody.innerHTML = '';
         const resultsMobile = document.getElementById('resultsMobile');
         if (resultsMobile) resultsMobile.innerHTML = '';
         
-        results.forEach(item => {
+        results.forEach(rawItem => {
+            const item = normalizeResultItem(rawItem);
             const row = resultsBody.insertRow();
             
             const sourceCell = row.insertCell();
@@ -1678,7 +1875,10 @@ window.addEventListener('DOMContentLoaded', function() {
     function generateAnalyticsSummary(mappings) {
         const summary = {
             totalOriginalCodes: mappings.length,
-            uniqueCleanNames: new Set(mappings.map(m => m.clean_name).filter(n => n && !n.startsWith('ERROR'))).size,
+            uniqueCleanNames: new Set(mappings.map(m => {
+                const normalized = normalizeResultItem(m);
+                return normalized.clean_name;
+            }).filter(n => n && !n.startsWith('ERROR'))).size,
             modalityBreakdown: {}, 
             avgConfidence: 0,
             genderContextCount: 0,
@@ -1686,7 +1886,8 @@ window.addEventListener('DOMContentLoaded', function() {
         summary.consolidationRatio = summary.uniqueCleanNames > 0 ? (summary.totalOriginalCodes / summary.uniqueCleanNames).toFixed(2) : "0.00";
         
         let totalConfidence = 0, confidenceCount = 0;
-        mappings.forEach(m => {
+        mappings.forEach(rawItem => {
+            const m = normalizeResultItem(rawItem);
             if (!m.components || !m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const modality = m.components.modality || m.modality_code;
             if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
@@ -1720,11 +1921,12 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function generateConsolidatedResults(mappings) {
         const consolidatedGroups = {};
-        mappings.forEach(m => {
+        mappings.forEach(rawItem => {
+            const m = normalizeResultItem(rawItem);
             if (!m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const group = consolidatedGroups[m.clean_name] || {
                 cleanName: m.clean_name,
-                snomed: m.snomed, // Add snomed info
+                snomed: m.snomed,
                 sourceCodes: [],
                 totalCount: 0,
                 components: m.components,
@@ -1892,6 +2094,9 @@ window.addEventListener('DOMContentLoaded', function() {
         const uploadSection = document.getElementById('uploadSection');
         const advancedSection = document.getElementById('advancedSection');
         const runProcessingBtn = document.getElementById('runProcessingBtn');
+        const runRandomDemoBtn = document.getElementById('runRandomDemoBtn');
+        const runFixedTestBtn = document.getElementById('runFixedTestBtn');
+        const demoOptions = document.getElementById('demoOptions');
         const dataSourceDisplay = document.getElementById('dataSourceDisplay');
         const dataSourceText = document.getElementById('dataSourceText');
         
@@ -1901,10 +2106,12 @@ window.addEventListener('DOMContentLoaded', function() {
         
         // Action card click handlers - make entire cards clickable
         document.querySelector('.demo-path')?.addEventListener('click', () => {
+            // Don't allow demo selection if models are still loading
+            if (buttonsDisabledForLoading) {
+                return;
+            }
             selectPath('demo');
             currentDataSource = 'demo';
-            dataSourceText.textContent = '100 Exam Test Suite (Sample Data)';
-            dataSourceDisplay.style.display = 'block';
             checkWorkflowCompletion();
             
             // Auto-scroll to model selection on mobile
@@ -1912,6 +2119,10 @@ window.addEventListener('DOMContentLoaded', function() {
         });
         
         document.querySelector('.upload-path')?.addEventListener('click', () => {
+            // Don't allow upload if models are still loading
+            if (buttonsDisabledForLoading) {
+                return;
+            }
             selectPath('upload');
             fileInput.click();
         });
@@ -1934,11 +2145,18 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Run processing button
+        // Demo buttons
+        runRandomDemoBtn?.addEventListener('click', async () => {
+            await runRandomSampleDemo();
+        });
+        
+        runFixedTestBtn?.addEventListener('click', async () => {
+            await runSanityTest();
+        });
+
+        // File upload processing button
         runProcessingBtn?.addEventListener('click', async () => {
-            if (currentDataSource === 'demo') {
-                await runSanityTest();
-            } else if (currentDataSource === 'upload' && fileInput.files[0]) {
+            if (currentDataSource === 'upload' && fileInput.files[0]) {
                 await processFile(fileInput.files[0]);
             }
         });
@@ -1947,14 +2165,14 @@ window.addEventListener('DOMContentLoaded', function() {
             // Remove all previous selections
             document.querySelectorAll('.action-card').forEach(card => card.classList.remove('selected'));
             
-            // Hide all sections
-            workflowSection.style.display = 'none';
-            uploadSection.style.display = 'none';
-            advancedSection.style.display = 'none';
+            // Hide all sections (with null checks)
+            if (workflowSection) workflowSection.style.display = 'none';
+            if (uploadSection) uploadSection.style.display = 'none';
+            if (advancedSection) advancedSection.style.display = 'none';
             
             if (path === 'demo' || path === 'upload') {
                 // Show workflow for demo and upload paths
-                workflowSection.style.display = 'block';
+                if (workflowSection) workflowSection.style.display = 'block';
                 
                 // Select the appropriate card
                 const selectedCard = path === 'demo' ? 
@@ -1967,7 +2185,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 
             } else if (path === 'advanced') {
                 // Show advanced configuration
-                advancedSection.style.display = 'block';
+                if (advancedSection) advancedSection.style.display = 'block';
                 document.querySelector('.advanced-path')?.classList.add('selected');
             }
         }
@@ -1986,6 +2204,8 @@ window.addEventListener('DOMContentLoaded', function() {
             selectedRetriever = null;
             selectedReranker = null;
             runProcessingBtn.disabled = true;
+            if (runRandomDemoBtn) runRandomDemoBtn.disabled = true;
+            if (runFixedTestBtn) runFixedTestBtn.disabled = true;
         }
         
         function activateStep(stepNumber) {
@@ -2017,7 +2237,21 @@ window.addEventListener('DOMContentLoaded', function() {
             selectedReranker = currentReranker;
             
             if (selectedRetriever && selectedReranker && currentDataSource) {
-                runProcessingBtn.disabled = false;
+                // Show appropriate buttons based on data source
+                if (currentDataSource === 'demo') {
+                    demoOptions.style.display = 'block';
+                    runProcessingBtn.style.display = 'none';
+                    // Only enable if models are loaded and not using fallbacks
+                    const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
+                    runRandomDemoBtn.disabled = !canEnable;
+                    runFixedTestBtn.disabled = !canEnable;
+                } else if (currentDataSource === 'upload') {
+                    demoOptions.style.display = 'none';
+                    runProcessingBtn.style.display = 'block';
+                    // Only enable if models are loaded and not using fallbacks
+                    const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
+                    runProcessingBtn.disabled = !canEnable;
+                }
                 activateStep(3);
             } else if (selectedRetriever && currentDataSource) {
                 activateStep(2);
@@ -2034,6 +2268,9 @@ window.addEventListener('DOMContentLoaded', function() {
     window.loadAvailableModels = loadAvailableModels;
     
     // --- INITIALIZE APP ---
+    // Disable action buttons initially until models load
+    disableActionButtons('Models are loading...');
+    
     testApiConnectivity();
     loadAvailableModels();
     setupEventListeners();
