@@ -435,8 +435,10 @@
         }
 
         function renderData(data) {
+            console.log('renderData called with:', data);
             const tableBody = document.getElementById('rateTableBody');
             const mobileView = document.getElementById('mobileView');
+            console.log('Elements found - tableBody:', tableBody, 'mobileView:', mobileView);
             let tableHtml = '';
             let mobileHtml = '';
             
@@ -498,11 +500,21 @@
                 mobileHtml += '</div>';
             });
 
+            console.log('Generated tableHtml length:', tableHtml.length);
+            console.log('Generated mobileHtml length:', mobileHtml.length);
+            console.log('First 200 chars of tableHtml:', tableHtml.substring(0, 200));
+            
             tableBody.innerHTML = tableHtml;
             mobileView.innerHTML = mobileHtml;
+            
+            console.log('Content set. Table body children:', tableBody.children.length);
+            console.log('Mobile view children:', mobileView.children.length);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, jsonData:', jsonData);
+            console.log('Table body element:', document.getElementById('rateTableBody'));
+            console.log('Mobile view element:', document.getElementById('mobileView'));
             renderData(jsonData);
         });
     </script>
