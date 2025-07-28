@@ -98,6 +98,20 @@
     line-height: 1.4;
   }
   
+  /* Fix demo button grid overflow on mobile */
+  #demoOptions > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  #demoOptions .button.large {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 12px 16px !important;
+  }
+  
   .action-card .button {
     padding: 10px 16px !important;
     font-size: 0.9em !important;
@@ -2202,6 +2216,25 @@ a:focus-visible {
   display: grid;
   grid-template-columns: repeat(3, minmax(150px, 1fr));
   gap: 0.5rem;
+}
+
+/* Mobile responsive fix for source legend */
+@media (max-width: 768px) {
+  .source-legend-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr)) !important;
+    gap: 0.4rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .source-legend-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.3rem !important;
+  }
+  
+  .source-legend-item {
+    font-size: 0.8rem !important;
+  }
 }
 
 .source-legend-item {
