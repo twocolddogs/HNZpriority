@@ -1050,10 +1050,10 @@ window.addEventListener('DOMContentLoaded', function() {
                             
                             // Set global variables to display the results
                             mappings = resultsData.results;
-                            showUploadInterface(); // Show the results interface
-                            updateResults();
-                            generateAnalyticsSummary();
                             updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size} items)`);
+                            
+                            // Use runAnalysis to properly display results UI
+                            runAnalysis(mappings);
                             
                             const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
                             statusManager.show(successMessage, 'success', 5000);
@@ -1922,8 +1922,6 @@ window.addEventListener('DOMContentLoaded', function() {
         const runRandomDemoBtn = document.getElementById('runRandomDemoBtn');
         const runFixedTestBtn = document.getElementById('runFixedTestBtn');
         const demoOptions = document.getElementById('demoOptions');
-        const dataSourceDisplay = document.getElementById('dataSourceDisplay');
-        const dataSourceText = document.getElementById('dataSourceText');
         
         let currentDataSource = null;
         let selectedRetriever = null;
@@ -1933,8 +1931,6 @@ window.addEventListener('DOMContentLoaded', function() {
         document.querySelector('.demo-path')?.addEventListener('click', () => {
             selectPath('demo');
             currentDataSource = 'demo';
-            dataSourceText.textContent = '100 Exam Test Suite (Sample Data)';
-            dataSourceDisplay.style.display = 'block';
             checkWorkflowCompletion();
             
             // Auto-scroll to model selection on mobile
@@ -1955,8 +1951,6 @@ window.addEventListener('DOMContentLoaded', function() {
         fileInput?.addEventListener('change', (e) => {
             if (e.target.files[0]) {
                 currentDataSource = 'upload';
-                dataSourceText.textContent = `Uploaded File: ${e.target.files[0].name}`;
-                dataSourceDisplay.style.display = 'block';
                 checkWorkflowCompletion();
                 
                 // Auto-scroll to model selection on mobile

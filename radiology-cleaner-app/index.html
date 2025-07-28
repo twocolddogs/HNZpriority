@@ -124,10 +124,6 @@
                         <span style="background: #e0e0e0; color: #999; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 14px;">3</span>
                         Process Data
                     </h3>
-                    <div id="dataSourceDisplay" style="margin-bottom: 20px; padding: 15px; background: white; border: 1px solid #ddd; border-radius: 8px; display: none;">
-                        <strong>Data Source:</strong> <span id="dataSourceText"></span>
-                    </div>
-                    
                     <!-- Demo Options -->
                     <div id="demoOptions" style="display: none; margin-bottom: 20px;">
                         <p style="margin: 0 0 15px 0; font-size: 0.95em; color: #555;">Choose your demo type:</p>
@@ -152,37 +148,8 @@
                 </div>
             </div>
 
-            <!-- Hidden Upload Section -->
-            <div id="uploadSection" class="upload-section" style="display: none; padding: 20px 15px; min-height: auto;">
-                <div class="upload-icon"></div>
-                <h2 style="margin: 8px 0;">Upload Radiology Codes</h2>
-                <p style="margin: 3px 0 10px 0;">Drop your codes.json file here or click to browse.</p>
-                <input type="file" id="fileInput" accept=".json" />
-            </div>
-
-            <!-- Model Settings Section -->
-            <div id="modelSettingsSection" class="model-settings-section" style="display: none; margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
-                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Model Settings</h3>
-                <p style="color: #666; margin-bottom: 15px;">Additional model configuration options will appear here.</p>
-            </div>
-
-            <!-- Advanced Configuration Section -->
-            <div id="advancedSection" class="advanced-section" style="display: none; margin-top: 20px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fafafa;">
-                <h3 style="margin: 0 0 15px 0; font-size: 1.1em; color: #333;">Advanced Configuration</h3>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-start;">
-                    <div style="flex: 1; min-width: 200px;">
-                        <button class="button secondary" id="editConfigBtn" style="background-color: #4CAF50; color: white; border: none; width: 100%;">
-                            Edit Config
-                        </button>
-                        <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
-                            View and edit the system configuration file
-                        </p>
-                    </div>
-                </div>
-                <p style="font-size: 0.9em; color: #666; margin-top: 15px;">
-                    <strong>Note:</strong> Demo options (Random Sample and Fixed Test Suite) are now available in the main workflow above.
-                </p>
-            </div>
+            
+            
 
             <div class="file-info" id="fileInfo"></div>
 
