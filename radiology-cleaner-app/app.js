@@ -588,7 +588,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     currentReranker = modelsData.default_reranker || 'medcpt';
                 }
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
-                console.log('✓ Available rerankers loaded:', Object.keys(availableRerankers));
+                console.log('✓ Available rerankers loaded:', availableRerankers); // Added console.log for rerankers
                 
                 // Mark that we're not using fallback models
                 isUsingFallbackModels = false;
