@@ -842,7 +842,16 @@ def _process_batch(data, start_time):
             
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_exam = {
-                    executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor, False, reranker_key, exam.get("data_source"), exam.get("exam_code")): exam 
+                    executor.submit(
+                        process_exam_request, 
+                        exam.get("EXAM_NAME") or exam.get("exam_name"), 
+                        exam.get("MODALITY_CODE") or exam.get("modality_code"), 
+                        selected_nlp_processor, 
+                        False, 
+                        reranker_key, 
+                        exam.get("DATA_SOURCE") or exam.get("data_source"), 
+                        exam.get("EXAM_CODE") or exam.get("exam_code")
+                    ): exam 
                     for exam in chunk
                 }
                 
@@ -1308,12 +1317,18 @@ def demo_random_sample():
             if exam_name:
                 exam_entry = {'exam_name': exam_name}
                 if isinstance(item, dict):
-                    if 'modality_code' in item:
-                        exam_entry['modality_code'] = item.get('modality_code')
-                    if 'data_source' in item:
-                        exam_entry['data_source'] = item.get('data_source')
-                    if 'exam_code' in item:
-                        exam_entry['exam_code'] = item.get('exam_code')
+                    # Handle both uppercase and lowercase field names
+                    modality_code = item.get('MODALITY_CODE') or item.get('modality_code')
+                    if modality_code:
+                        exam_entry['modality_code'] = modality_code
+                    
+                    data_source = item.get('DATA_SOURCE') or item.get('data_source')
+                    if data_source:
+                        exam_entry['data_source'] = data_source
+                    
+                    exam_code = item.get('EXAM_CODE') or item.get('exam_code')
+                    if exam_code:
+                        exam_entry['exam_code'] = exam_code
                 exams_for_batch.append(exam_entry)
 
         logger.info(f"Passing {len(exams_for_batch)} exams to batch processor.")

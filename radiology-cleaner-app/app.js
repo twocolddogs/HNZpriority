@@ -1318,10 +1318,10 @@ window.addEventListener('DOMContentLoaded', function() {
                             const chunkMappings = r2Data.results.map(item => {
                                 return {
                                     original_item: {
-                                        DATA_SOURCE: item.input.data_source,
-                                        MODALITY_CODE: item.input.modality_code,
-                                        EXAM_CODE: item.input.exam_code,
-                                        EXAM_NAME: item.input.exam_name
+                                        DATA_SOURCE: item.input.DATA_SOURCE || item.input.data_source,
+                                        MODALITY_CODE: item.input.MODALITY_CODE || item.input.modality_code,
+                                        EXAM_CODE: item.input.EXAM_CODE || item.input.exam_code,
+                                        EXAM_NAME: item.input.EXAM_NAME || item.input.exam_name
                                     },
                                     processed_result: item.status === 'success' ? {
                                         clean_name: item.output.clean_name,
@@ -1356,10 +1356,10 @@ window.addEventListener('DOMContentLoaded', function() {
                 const chunkMappings = batchResult.results.map(item => {
                     return {
                         original_item: {
-                            DATA_SOURCE: item.input.data_source,
-                            MODALITY_CODE: item.input.modality_code,
-                            EXAM_CODE: item.input.exam_code,
-                            EXAM_NAME: item.input.exam_name
+                            DATA_SOURCE: item.input.DATA_SOURCE || item.input.data_source,
+                            MODALITY_CODE: item.input.MODALITY_CODE || item.input.modality_code,
+                            EXAM_CODE: item.input.EXAM_CODE || item.input.exam_code,
+                            EXAM_NAME: item.input.EXAM_NAME || item.input.exam_name
                         },
                         processed_result: item.status === 'success' ? {
                             clean_name: item.output.clean_name,
