@@ -1066,7 +1066,9 @@ window.addEventListener('DOMContentLoaded', function() {
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
-            statusId = statusManager.show(`Running random sample demo with ${modelDisplayName} → ${rerankerDisplayName}...`, 'progress');
+            
+            // Start with a progress bar (we'll update the total once we know it)
+            statusId = statusManager.showProgress(`Running random sample demo with ${modelDisplayName} → ${rerankerDisplayName}`, 0, 100);
 
             const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
                 method: 'POST',
@@ -1090,10 +1092,7 @@ window.addEventListener('DOMContentLoaded', function() {
             }
 
             // If we have a batch_id, poll for progress
-            if (result.batch_id) {
-                if (statusId) statusManager.remove(statusId);
-                statusId = statusManager.show('Processing random sample (0%)...', 'progress');
-                
+            if (result.batch_id && statusId) {
                 // Poll for progress updates
                 const pollProgress = async () => {
                     try {
@@ -1102,33 +1101,40 @@ window.addEventListener('DOMContentLoaded', function() {
                             const progressData = await progressResponse.json();
                             const percentage = progressData.percentage || 0;
                             const processed = progressData.processed || 0;
-                            const total = progressData.total || 0;
+                            const total = progressData.total || 100;
+                            const success = progressData.success || 0;
+                            const errors = progressData.errors || 0;
                             
-                            if (statusId) {
-                                statusManager.update(statusId, `Processing random sample (${percentage}% - ${processed}/${total})...`, 'progress');
-                            }
+                            statusManager.updateProgress(statusId, processed, total, 
+                                `Random sample demo (${percentage}% - ${success} success, ${errors} errors)`);
                             
                             // Continue polling if not complete
                             if (percentage < 100 && processed < total) {
                                 setTimeout(pollProgress, 1000); // Poll every second
+                            } else {
+                                statusManager.updateProgress(statusId, total, total, 
+                                    `Random sample demo completed (${success} success, ${errors} errors)`);
                             }
                         } else {
                             // Progress file not found - processing likely complete
-                            if (statusId) {
-                                statusManager.update(statusId, 'Processing complete, finalizing results...', 'progress');
-                            }
+                            const estimated_total = result.processing_stats?.total_processed || 100;
+                            statusManager.updateProgress(statusId, estimated_total, estimated_total, 
+                                'Random sample demo completed');
                         }
                     } catch (progressError) {
                         console.log('Progress polling ended:', progressError.message);
-                        // Don't throw error, just stop polling
+                        // Don't throw error, just complete the progress
+                        const estimated_total = result.processing_stats?.total_processed || 100;
+                        statusManager.updateProgress(statusId, estimated_total, estimated_total, 
+                            'Random sample demo completed');
                     }
                 };
                 
-                // Start polling
-                setTimeout(pollProgress, 500); // Start polling after 500ms
+                // Start polling after a brief delay
+                setTimeout(pollProgress, 500);
                 
-                // Wait a bit longer for processing to complete
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                // Wait a bit for initial progress updates
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
 
             // Show processing completion
