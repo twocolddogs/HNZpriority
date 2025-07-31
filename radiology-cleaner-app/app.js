@@ -1070,7 +1070,8 @@ window.addEventListener('DOMContentLoaded', function() {
             // Start with a progress bar (we'll update the total once we know it)
             statusId = statusManager.showProgress(`Running random sample demo with ${modelDisplayName} → ${rerankerDisplayName}`, 0, 100);
 
-            const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
+            // Start the request and begin polling immediately
+            const responsePromise = fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1081,60 +1082,69 @@ window.addEventListener('DOMContentLoaded', function() {
                 })
             });
 
+            let pollingActive = true;
+            let batchId = null;
+            
+            // Start aggressive polling immediately
+            const pollProgress = async () => {
+                if (!pollingActive || !batchId) return;
+                
+                try {
+                    const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchId}`);
+                    if (progressResponse.ok && pollingActive) {
+                        const progressData = await progressResponse.json();
+                        const percentage = progressData.percentage || 0;
+                        const processed = progressData.processed || 0;
+                        const total = progressData.total || 100;
+                        const success = progressData.success || 0;
+                        const errors = progressData.errors || 0;
+                        
+                        if (statusId) {
+                            statusManager.updateProgress(statusId, processed, total, 
+                                `Random sample demo (${percentage}% - ${success} success, ${errors} errors)`);
+                        }
+                        
+                        // Continue polling if not complete
+                        if (percentage < 100 && processed < total && pollingActive) {
+                            setTimeout(pollProgress, 200); // Poll every 200ms for faster updates
+                        }
+                    }
+                } catch (progressError) {
+                    // Silently handle polling errors
+                }
+            };
+
+            // Wait for the response and extract batch_id
+            const response = await responsePromise;
+            
             if (!response.ok) {
+                pollingActive = false;
                 throw new Error(`Random sample demo failed: ${response.statusText}`);
             }
 
             const result = await response.json();
             
             if (result.error) {
+                pollingActive = false;
                 throw new Error(result.error);
             }
 
-            // If we have a batch_id, poll for progress
+            // Start polling if we have a batch_id
             if (result.batch_id && statusId) {
-                // Poll for progress updates
-                const pollProgress = async () => {
-                    try {
-                        const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${result.batch_id}`);
-                        if (progressResponse.ok) {
-                            const progressData = await progressResponse.json();
-                            const percentage = progressData.percentage || 0;
-                            const processed = progressData.processed || 0;
-                            const total = progressData.total || 100;
-                            const success = progressData.success || 0;
-                            const errors = progressData.errors || 0;
-                            
-                            statusManager.updateProgress(statusId, processed, total, 
-                                `Random sample demo (${percentage}% - ${success} success, ${errors} errors)`);
-                            
-                            // Continue polling if not complete
-                            if (percentage < 100 && processed < total) {
-                                setTimeout(pollProgress, 1000); // Poll every second
-                            } else {
-                                statusManager.updateProgress(statusId, total, total, 
-                                    `Random sample demo completed (${success} success, ${errors} errors)`);
-                            }
-                        } else {
-                            // Progress file not found - processing likely complete
-                            const estimated_total = result.processing_stats?.total_processed || 100;
-                            statusManager.updateProgress(statusId, estimated_total, estimated_total, 
-                                'Random sample demo completed');
-                        }
-                    } catch (progressError) {
-                        console.log('Progress polling ended:', progressError.message);
-                        // Don't throw error, just complete the progress
-                        const estimated_total = result.processing_stats?.total_processed || 100;
-                        statusManager.updateProgress(statusId, estimated_total, estimated_total, 
-                            'Random sample demo completed');
-                    }
-                };
+                batchId = result.batch_id;
+                // Start polling immediately
+                setTimeout(pollProgress, 50); // Start very quickly
                 
-                // Start polling after a brief delay
-                setTimeout(pollProgress, 500);
+                // Set a maximum polling duration (30 seconds)
+                setTimeout(() => {
+                    pollingActive = false;
+                }, 30000);
                 
-                // Wait a bit for initial progress updates
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Wait a bit for processing to potentially complete
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // Stop polling
+                pollingActive = false;
             }
 
             // Show processing completion
