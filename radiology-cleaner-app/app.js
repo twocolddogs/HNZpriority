@@ -1133,6 +1133,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 pollingActive = false;
             }, 120000);
 
+            // Check if secondary pipeline should be enabled
+            const enableSecondary = document.getElementById('enableSecondaryPipeline')?.checked || false;
+            
             // Start the API request
             const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
                 method: 'POST',
@@ -1141,7 +1144,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({
                     model: currentModel,
-                    reranker: currentReranker
+                    reranker: currentReranker,
+                    enable_secondary_pipeline: enableSecondary
                 })
             });
             
@@ -2262,6 +2266,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 if (currentDataSource === 'demo') {
                     demoOptions.style.display = 'block';
                     runProcessingBtn.style.display = 'none';
+                    // Show secondary pipeline option for demo
+                    const secondaryPipelineOption = document.getElementById('secondaryPipelineOption');
+                    if (secondaryPipelineOption) secondaryPipelineOption.style.display = 'block';
                     // Only enable if models are loaded and not using fallbacks
                     const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
                     runRandomDemoBtn.disabled = !canEnable;
@@ -2269,6 +2276,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 } else if (currentDataSource === 'upload') {
                     demoOptions.style.display = 'none';
                     runProcessingBtn.style.display = 'block';
+                    // Hide secondary pipeline option for file upload
+                    const secondaryPipelineOption = document.getElementById('secondaryPipelineOption');
+                    if (secondaryPipelineOption) secondaryPipelineOption.style.display = 'none';
                     // Only enable if models are loaded and not using fallbacks
                     const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
                     runProcessingBtn.disabled = !canEnable;

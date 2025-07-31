@@ -788,6 +788,7 @@ def _process_batch(data, start_time):
     exams_to_process = data['exams']
     model_key = data.get('model', 'retriever')
     reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
+    enable_secondary = data.get('enable_secondary_pipeline', False)
     
     import uuid
     # Use a dedicated directory for temporary batch processing files (not the persistent cache)
@@ -961,6 +962,50 @@ def _process_batch(data, start_time):
     else:
         logger.warning("R2 not available - results only stored locally")
 
+    # Optional secondary pipeline processing for low-confidence results
+    secondary_report = None
+    if enable_secondary and SECONDARY_PIPELINE_AVAILABLE:
+        _initialize_secondary_pipeline()
+        if secondary_integration and secondary_integration.is_enabled():
+            try:
+                logger.info("Running secondary pipeline on low-confidence results...")
+                update_progress(success_count + error_count, total_exams, success_count, error_count)
+                
+                # Load results from the consolidated file for secondary processing
+                if consolidated_filepath and os.path.exists(consolidated_filepath):
+                    with open(consolidated_filepath, 'r', encoding='utf-8') as f:
+                        consolidated_data = json.load(f)
+                        results_for_secondary = consolidated_data.get('results', [])
+                else:
+                    # Fallback: read from JSONL file
+                    results_for_secondary = []
+                    if os.path.exists(results_filepath):
+                        with open(results_filepath, 'r', encoding='utf-8') as f:
+                            for line in f:
+                                if line.strip():
+                                    results_for_secondary.append(json.loads(line.strip()))
+                
+                if results_for_secondary:
+                    # Run secondary pipeline
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    
+                    try:
+                        secondary_report = loop.run_until_complete(
+                            secondary_batch_processor.process_batch_results(results_for_secondary)
+                        )
+                        logger.info(f"Secondary pipeline completed: {secondary_report}")
+                        
+                        # Update progress to show secondary pipeline completion
+                        update_progress(total_exams, total_exams, success_count, error_count)
+                        
+                    finally:
+                        loop.close()
+                
+            except Exception as e:
+                logger.error(f"Secondary pipeline failed: {e}", exc_info=True)
+                secondary_report = {"error": str(e)}
+
     # Cleanup temporary files
     try:
         if os.path.exists(results_filepath):
@@ -975,8 +1020,9 @@ def _process_batch(data, start_time):
     # Always return the R2 URL if available, otherwise return a message.
     # Avoid returning in-memory results or file references to deleted files.
     logger.info(f"Batch processing complete. Returning response with R2 URL: {r2_url}")
-    return jsonify({
-        "message": "Batch processing complete. Results are available at the provided R2 URL.",
+    
+    response_data = {
+        "message": "Batch processing complete. Results are available at the provided R2 URL." + (" Secondary pipeline applied to low-confidence results." if secondary_report else ""),
         "batch_id": batch_id,
         "r2_url": r2_url,
         "r2_uploaded": r2_upload_success,
@@ -986,9 +1032,15 @@ def _process_batch(data, start_time):
             "errors": error_count,
             "processing_time_ms": processing_time_ms,
             "model_used": model_key,
-            "reranker_used": reranker_key
+            "reranker_used": reranker_key,
+            "secondary_pipeline_enabled": enable_secondary and SECONDARY_PIPELINE_AVAILABLE and secondary_integration and secondary_integration.is_enabled()
         }
-    })
+    }
+    
+    if secondary_report:
+        response_data["secondary_processing"] = secondary_report
+    
+    return jsonify(response_data)
 
 @app.route('/parse_batch', methods=['POST', 'OPTIONS'])
 def parse_batch():
@@ -1258,8 +1310,9 @@ def demo_random_sample():
         data = request.json or {}
         model_key = data.get('model', 'retriever')
         reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
+        enable_secondary = data.get('enable_secondary_pipeline', False)
         
-        logger.info(f"Starting demo random sample with model: '{model_key}', reranker: '{reranker_key}'")
+        logger.info(f"Starting demo random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}")
         
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
@@ -1345,7 +1398,8 @@ def demo_random_sample():
         batch_payload = {
             "exams": exams_for_batch,
             "model": model_key,
-            "reranker": reranker_key
+            "reranker": reranker_key,
+            "enable_secondary_pipeline": enable_secondary
         }
 
         return _process_batch(batch_payload, start_time)
