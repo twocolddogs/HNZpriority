@@ -302,40 +302,41 @@ class SecondaryPipeline:
     
     async def process_low_confidence_results(self, results: List[Dict]) -> List[EnsembleResult]:
         """Process list of low-confidence results through ensemble"""
-        
-        # Filter results below confidence threshold
-        low_confidence = [
-            r for r in results 
-            if r.get('confidence', 1.0) < self.config['confidence_threshold']
-        ]
-        
+
+        # The 'results' list is already filtered for low confidence by the integration layer.
+        # No need to filter again.
+        low_confidence = results
+
         logger.info(f"Processing {len(low_confidence)} low-confidence results")
-        
+        if not low_confidence:
+            return []
+
         # Process in batches to respect rate limits
         ensemble_results = []
         batch_size = self.config['max_concurrent_requests']
-        
+
         for i in range(0, len(low_confidence), batch_size):
             batch = low_confidence[i:i + batch_size]
-            
-            tasks = [
-                self.ensemble.process_ensemble(
-                    exam_name=result['exam_name'],
-                    context={
-                        'original_modality': result.get('modality', 'UNKNOWN'),
-                        'original_confidence': result.get('confidence', 0.0),
-                        'similar_exams': result.get('similar_exams', []),
-                        'original_result': result
-                    }
-                )
-                for result in batch
-            ]
-            
+
+            tasks = []
+            for result in batch:
+                # Extract data from the nested structure provided by the primary pipeline
+                components = result.get('output', {}).get('components', {})
+                exam_name = components.get('exam_name', 'Unknown Exam')
+                context = {
+                    'original_modality': components.get('modality', 'UNKNOWN'),
+                    'original_confidence': components.get('confidence', 0.0),
+                    'similar_exams': components.get('similar_exams', []),
+                    'original_result': result
+                }
+                tasks.append(self.ensemble.process_ensemble(exam_name, context))
+
             batch_results = await asyncio.gather(*tasks)
             ensemble_results.extend(batch_results)
-            
-            logger.info(f"Completed batch {i//batch_size + 1}/{(len(low_confidence)-1)//batch_size + 1}")
-        
+
+            if len(low_confidence) > 0:
+                logger.info(f"Completed batch {i//batch_size + 1}/{(len(low_confidence) - 1) // batch_size + 1}")
+
         return ensemble_results
     
     def save_results(self, results: List[EnsembleResult], output_path: str = None):
