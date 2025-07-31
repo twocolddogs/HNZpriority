@@ -1090,9 +1090,14 @@ window.addEventListener('DOMContentLoaded', function() {
                 if (!pollingActive || !batchId) return;
                 
                 try {
+                    console.log(`Polling progress for batch_id: ${batchId}`);
                     const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchId}`);
+                    console.log(`Progress response status: ${progressResponse.status}`);
+                    
                     if (progressResponse.ok && pollingActive) {
                         const progressData = await progressResponse.json();
+                        console.log('Progress data:', progressData);
+                        
                         const percentage = progressData.percentage || 0;
                         const processed = progressData.processed || 0;
                         const total = progressData.total || 100;
@@ -1108,9 +1113,11 @@ window.addEventListener('DOMContentLoaded', function() {
                         if (percentage < 100 && processed < total && pollingActive) {
                             setTimeout(pollProgress, 200); // Poll every 200ms for faster updates
                         }
+                    } else if (progressResponse.status === 404) {
+                        console.log('Progress file not found - processing likely completed before polling started');
                     }
                 } catch (progressError) {
-                    // Silently handle polling errors
+                    console.log('Progress polling error:', progressError);
                 }
             };
 
@@ -1132,6 +1139,7 @@ window.addEventListener('DOMContentLoaded', function() {
             // Start polling if we have a batch_id
             if (result.batch_id && statusId) {
                 batchId = result.batch_id;
+                console.log(`Got batch_id: ${batchId}, starting polling in 50ms`);
                 // Start polling immediately
                 setTimeout(pollProgress, 50); // Start very quickly
                 
