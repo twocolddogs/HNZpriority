@@ -154,11 +154,11 @@ INSTRUCTIONS:
 5. Explain your reasoning clearly
 
 REQUIRED OUTPUT FORMAT (JSON):
-{
+{{
     "modality": "YOUR_CLASSIFICATION",
     "confidence": 0.XX,
     "reasoning": "Detailed explanation of your classification logic"
-}
+}}
 """
         return prompt
     
