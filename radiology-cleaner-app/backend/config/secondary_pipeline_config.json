@@ -1,0 +1,66 @@
+{
+  "secondary_pipeline": {
+    "enabled": true,
+    "confidence_threshold": 0.8,
+    "models": {
+      "claude_sonnet": {
+        "model_id": "anthropic/claude-3.5-sonnet",
+        "enabled": true,
+        "weight": 1.0,
+        "timeout": 30
+      },
+      "gpt4_turbo": {
+        "model_id": "openai/gpt-4-turbo",
+        "enabled": true,
+        "weight": 1.0,
+        "timeout": 30
+      },
+      "gemini_pro": {
+        "model_id": "google/gemini-pro",
+        "enabled": true,
+        "weight": 1.0,
+        "timeout": 30
+      }
+    },
+    "processing": {
+      "max_concurrent_requests": 3,
+      "batch_size": 10,
+      "retry_count": 2,
+      "overall_timeout": 300
+    },
+    "consensus": {
+      "minimum_agreement_threshold": 0.67,
+      "confidence_boost_threshold": 0.1,
+      "require_majority": true
+    },
+    "output": {
+      "save_results": true,
+      "output_directory": "/tmp/secondary_pipeline_results",
+      "include_raw_responses": false,
+      "generate_reports": true
+    },
+    "logging": {
+      "level": "INFO",
+      "log_model_responses": true,
+      "log_consensus_details": true,
+      "performance_metrics": true
+    }
+  },
+  "integration": {
+    "auto_trigger": {
+      "enabled": true,
+      "min_low_confidence_count": 1,
+      "max_low_confidence_percentage": 50
+    },
+    "api_endpoints": {
+      "status_endpoint": "/api/secondary-pipeline/status",
+      "trigger_endpoint": "/api/secondary-pipeline/trigger",
+      "results_endpoint": "/api/secondary-pipeline/results"
+    },
+    "notifications": {
+      "completion_webhook": null,
+      "error_webhook": null,
+      "slack_channel": null
+    }
+  }
+}
