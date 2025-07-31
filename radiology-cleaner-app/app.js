@@ -1089,9 +1089,51 @@ window.addEventListener('DOMContentLoaded', function() {
                 throw new Error(result.error);
             }
 
+            // If we have a batch_id, poll for progress
+            if (result.batch_id) {
+                if (statusId) statusManager.remove(statusId);
+                statusId = statusManager.show('Processing random sample (0%)...', 'progress');
+                
+                // Poll for progress updates
+                const pollProgress = async () => {
+                    try {
+                        const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${result.batch_id}`);
+                        if (progressResponse.ok) {
+                            const progressData = await progressResponse.json();
+                            const percentage = progressData.percentage || 0;
+                            const processed = progressData.processed || 0;
+                            const total = progressData.total || 0;
+                            
+                            if (statusId) {
+                                statusManager.update(statusId, `Processing random sample (${percentage}% - ${processed}/${total})...`, 'progress');
+                            }
+                            
+                            // Continue polling if not complete
+                            if (percentage < 100 && processed < total) {
+                                setTimeout(pollProgress, 1000); // Poll every second
+                            }
+                        } else {
+                            // Progress file not found - processing likely complete
+                            if (statusId) {
+                                statusManager.update(statusId, 'Processing complete, finalizing results...', 'progress');
+                            }
+                        }
+                    } catch (progressError) {
+                        console.log('Progress polling ended:', progressError.message);
+                        // Don't throw error, just stop polling
+                    }
+                };
+                
+                // Start polling
+                setTimeout(pollProgress, 500); // Start polling after 500ms
+                
+                // Wait a bit longer for processing to complete
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+
             // Show processing completion
             if (statusId) statusManager.remove(statusId);
-            statusId = statusManager.show(`✅ Processing completed! ${result.processing_stats.processed_successfully} items processed`, 'success', 2000);
+            statusId = statusManager.show(`✅ Processing completed! ${result.processing_stats.successful || result.processing_stats.processed_successfully || 'Unknown'} items processed`, 'success', 2000);
             
             // Small delay to show completion message
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -1315,9 +1357,50 @@ window.addEventListener('DOMContentLoaded', function() {
             const batchResult = await response.json();
             console.log('Backend response:', batchResult);
 
-            // Note: Progress polling was implemented but since batch processing is synchronous,
-            // it only starts after processing completes. For now, show completed status.
-            if (progressId) {
+            // If we have a batch_id, poll for progress
+            if (batchResult.batch_id && progressId) {
+                // Poll for progress updates
+                const pollProgress = async () => {
+                    try {
+                        const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchResult.batch_id}`);
+                        if (progressResponse.ok) {
+                            const progressData = await progressResponse.json();
+                            const percentage = progressData.percentage || 0;
+                            const processed = progressData.processed || 0;
+                            const total = progressData.total || totalCodes;
+                            const success = progressData.success || 0;
+                            const errors = progressData.errors || 0;
+                            
+                            statusManager.updateProgress(progressId, processed, total, 
+                                `Processing ${jobName} (${percentage}% - ${success} success, ${errors} errors)`);
+                            
+                            // Continue polling if not complete
+                            if (percentage < 100 && processed < total) {
+                                setTimeout(pollProgress, 1000); // Poll every second
+                            } else {
+                                statusManager.updateProgress(progressId, total, total, 
+                                    `Completed processing ${jobName} (${success} success, ${errors} errors)`);
+                            }
+                        } else {
+                            // Progress file not found - processing likely complete
+                            statusManager.updateProgress(progressId, totalCodes, totalCodes, 
+                                `Completed processing ${jobName}`);
+                        }
+                    } catch (progressError) {
+                        console.log('Progress polling ended:', progressError.message);
+                        // Don't throw error, just complete the progress
+                        statusManager.updateProgress(progressId, totalCodes, totalCodes, 
+                            `Completed processing ${jobName}`);
+                    }
+                };
+                
+                // Start polling after a brief delay
+                setTimeout(pollProgress, 500);
+                
+                // Wait a bit for initial progress updates
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } else if (progressId) {
+                // Fallback if no batch_id available
                 statusManager.updateProgress(progressId, totalCodes, totalCodes, 
                     `Completed processing ${jobName}`);
             }
