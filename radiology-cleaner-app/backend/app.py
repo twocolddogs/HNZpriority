@@ -992,7 +992,7 @@ def _process_batch(data, start_time):
                     
                     try:
                         secondary_report = loop.run_until_complete(
-                            secondary_batch_processor.process_batch_results(results_for_secondary)
+                            secondary_batch_processor.process_batch_with_secondary(results_for_secondary)
                         )
                         logger.info(f"Secondary pipeline completed: {secondary_report}")
                         
