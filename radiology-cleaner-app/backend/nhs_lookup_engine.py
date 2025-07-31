@@ -1,11 +1,27 @@
-# --- START OF FILE nhs_lookup_engine.py ---
-
 # =============================================================================
-# NHS LOOKUP ENGINE (V2.4 - CORRECTED INITIALIZATION)
+# NHS LOOKUP ENGINE - Radiology Exam Name Standardization Pipeline
 # =============================================================================
-# This version corrects a KeyError during cache building by ensuring that
-# the preprocessed NHS names are correctly created and stored during engine
-# initialization. It retains the advanced, config-driven scoring model.
+# 
+# This engine implements a two-stage pipeline for standardizing radiology exam names:
+# 
+# STAGE 1 - RETRIEVAL: Uses BioLORD embeddings + FAISS index to find candidate matches
+# STAGE 2 - RERANKING: Uses configurable rerankers (MedCPT/GPT/Claude/Gemini) + 
+#                      component-based scoring to select the best match
+#
+# SAFETY FEATURES:
+# - Hard modality filtering prevents dangerous mismatches
+# - Anatomical compatibility constraints prevent impossible mappings
+# - Diagnostic protection prevents diagnostic→interventional mapping errors
+# - Component thresholds prevent semantic similarity from overriding clinical accuracy
+#
+# ARCHITECTURE:
+# - Config-driven scoring with weights loaded from R2 cloud storage
+# - Multiple reranker support via RerankerManager
+# - Complexity filtering for simple inputs
+# - Context-aware bonuses (gender, age, clinical)
+# - Bilateral peer detection for laterality handling
+#
+# =============================================================================
 
 import json
 import logging
@@ -33,36 +49,68 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 class NHSLookupEngine:
+    """
+    Two-stage pipeline for standardizing radiology exam names against NHS SNOMED database.
+    
+    PIPELINE OVERVIEW:
+    1. RETRIEVAL: BioLORD embeddings + FAISS search → top-k candidates
+    2. RERANKING: Configurable rerankers + component scoring → best match
+    
+    SAFETY SYSTEMS:
+    - Hard modality filtering
+    - Anatomical compatibility constraints  
+    - Diagnostic protection rules
+    - Component score thresholds
+    """
+    
     def __init__(self, nhs_json_path: str, retriever_processor: NLPProcessor, reranker_manager, semantic_parser: 'RadiologySemanticParser'):
+        """Initialize the NHS lookup engine with required processors and data."""
+        # Core data structures
         self.nhs_data = []
         self.snomed_lookup = {}
         self.index_to_snomed_id: List[str] = []
         self.vector_index: Optional[faiss.Index] = None
         
+        # Pipeline components
         self.nhs_json_path = nhs_json_path
-        self.retriever_processor = retriever_processor
-        self.reranker_manager = reranker_manager  # New: manages multiple rerankers
-        self.nlp_processor = retriever_processor  # Backward compatibility
-        self.semantic_parser = semantic_parser
-        self.complexity_scorer = ComplexityScorer()
+        self.retriever_processor = retriever_processor  # BioLORD for FAISS retrieval
+        self.reranker_manager = reranker_manager       # Manages multiple rerankers
+        self.nlp_processor = retriever_processor       # Backward compatibility
+        self.semantic_parser = semantic_parser         # Parses components from exam names
+        self.complexity_scorer = ComplexityScorer()    # Scores FSN complexity
         
+        # Load configuration and initialize data
         self._load_config_from_manager()
-        
         self._load_nhs_data()
         self._build_lookup_tables()
-        self._preprocess_and_parse_nhs_data() # This method will now function correctly
+        self._preprocess_and_parse_nhs_data()
         
+        # Runtime state
         self._embeddings_loaded = False
-
         self._specificity_stop_words = {
             'a', 'an', 'the', 'and', 'or', 'with', 'without', 'for', 'of', 'in', 'on', 'to',
             'ct', 'mr', 'mri', 'us', 'xr', 'x-ray', 'nm', 'pet', 'scan', 'imaging', 'procedure',
             'examination', 'study', 'left', 'right', 'bilateral', 'contrast', 'view'
         }
-        logger.info("NHSLookupEngine initialized with Advanced Scoring architecture (v2.4).")
+        
+        logger.info("NHSLookupEngine initialized with two-stage pipeline architecture.")
+
+    # =============================================================================
+    # INITIALIZATION & DATA LOADING
+    # =============================================================================
 
     def _load_config_from_manager(self):
-        """Loads configuration from R2 via ConfigManager."""
+        """
+        Load scoring configuration from R2 cloud storage via ConfigManager.
+        
+        Loads configuration sections for:
+        - scoring: Main scoring weights and thresholds
+        - modality_similarity: Cross-modality similarity matrices
+        - context_scoring: Clinical context bonuses
+        - preprocessing: Medical abbreviations and synonyms
+        
+        Falls back to safe defaults if cloud config unavailable.
+        """
         try:
             from config_manager import get_config
             config_manager = get_config()
@@ -70,7 +118,7 @@ class NHSLookupEngine:
             self.modality_similarity = config_manager.get_section('modality_similarity')
             self.context_scoring = config_manager.get_section('context_scoring')
             self.preprocessing_config = config_manager.get_section('preprocessing')
-            logger.info("Loaded enhanced scoring configuration from R2 via ConfigManager")
+            logger.info("Loaded enhanced scoring configuration from R2 cloud storage")
         except Exception as e:
             logger.error(f"Could not load configuration from R2. Using default weights. Error: {e}")
             self.config = {
@@ -82,6 +130,15 @@ class NHSLookupEngine:
             self.modality_similarity, self.context_scoring, self.preprocessing_config = {}, {}, {}
 
     def _load_nhs_data(self):
+        """
+        Load NHS SNOMED database from JSON file.
+        
+        Each entry contains:
+        - snomed_concept_id: Unique SNOMED identifier
+        - primary_source_name: Standardized exam name
+        - snomed_fsn: Full SNOMED Fully Specified Name
+        - Additional metadata fields
+        """
         try:
             with open(self.nhs_json_path, 'r', encoding='utf-8') as f:
                 self.nhs_data = json.load(f)
@@ -90,6 +147,10 @@ class NHSLookupEngine:
             logger.critical(f"Failed to load NHS data: {e}", exc_info=True); raise
 
     def _build_lookup_tables(self):
+        """
+        Build SNOMED ID → NHS entry lookup table for fast access.
+        Used during candidate retrieval to convert FAISS indices to NHS entries.
+        """
         for entry in self.nhs_data:
             if snomed_id := entry.get("snomed_concept_id"):
                 self.snomed_lookup[str(snomed_id)] = entry
@@ -97,45 +158,82 @@ class NHSLookupEngine:
 
     def _preprocess_and_parse_nhs_data(self):
         """
-        CORRECTED METHOD: Ensures that preprocessed names are created and stored
-        in each NHS data entry before they are needed for cache building or scoring.
+        Preprocess and parse all NHS entries to prepare for matching pipeline.
+        
+        This method enriches each NHS entry with:
+        - _clean_fsn_for_embedding: Preprocessed SNOMED FSN for embeddings
+        - _clean_primary_name_for_embedding: Preprocessed primary name for embeddings
+        - _interventional_terms: Detected interventional procedure indicators
+        - _parsed_components: Semantic components (anatomy, modality, etc.)
+        - _is_complex_fsn: Binary complexity flag for filtering
+        
+        This preprocessing enables efficient scoring during the matching pipeline.
         """
-        if not self.semantic_parser: raise RuntimeError("Semantic Parser required.")
+        if not self.semantic_parser: 
+            raise RuntimeError("Semantic Parser required for component parsing.")
         preprocessor = get_preprocessor()
-        if not preprocessor: raise RuntimeError("Preprocessor not initialized.")
+        if not preprocessor: 
+            raise RuntimeError("Preprocessor not initialized.")
         
         for entry in self.nhs_data:
             snomed_fsn_raw = entry.get("snomed_fsn", "").strip()
             primary_name_raw = entry.get("primary_source_name", "").strip()
             
+            # Clean SNOMED FSN by removing type qualifiers
             snomed_fsn_clean = re.sub(r'\s*\((procedure|qualifier value|finding)\)$', '', snomed_fsn_raw, flags=re.I).strip()
 
-            # ** THE FIX IS HERE **
-            # Preprocess and assign the cleaned names to the expected internal keys.
+            # Preprocess names for embedding generation and semantic matching
             entry["_clean_fsn_for_embedding"] = preprocessor.preprocess(snomed_fsn_clean)
             entry["_clean_primary_name_for_embedding"] = preprocessor.preprocess(primary_name_raw)
             
-            # These subsequent calls now have the clean names they need to function correctly.
+            # Detect interventional procedure terms for scoring bonuses/penalties
             entry["_interventional_terms"] = detect_interventional_procedure_terms(entry["_clean_primary_name_for_embedding"])
+            
+            # Parse semantic components (anatomy, modality, laterality, contrast, technique)
             entry['_parsed_components'] = self.semantic_parser.parse_exam_name(entry["_clean_primary_name_for_embedding"], 'Other')
             
-            # Calculate binary complexity flag for FSNs at buildtime
+            # Calculate complexity flag for simple input filtering (threshold 0.67)
             fsn_complexity_score = self.complexity_scorer.calculate_fsn_total_complexity(snomed_fsn_clean)
-            entry["_is_complex_fsn"] = fsn_complexity_score > 0.67  # Binary threshold (0.67 to allow basic anatomy while catching specialized procedures)
+            entry["_is_complex_fsn"] = fsn_complexity_score > 0.67
 
+    # =============================================================================
+    # FAISS INDEX MANAGEMENT
+    # =============================================================================
+    
     def _find_local_cache_file(self) -> Optional[str]:
+        """
+        Find cached FAISS index file for the current retriever model.
+        
+        Searches in RENDER_DISK_PATH or 'embedding-caches' directory for files matching
+        the pattern: {model_key}_*.cache
+        
+        Returns:
+            Optional[str]: Path to cache file if found, None otherwise
+        """
         cache_dir = os.environ.get('RENDER_DISK_PATH', 'embedding-caches')
-        if not os.path.isdir(cache_dir): return None
+        if not os.path.isdir(cache_dir): 
+            return None
+        
         for filename in os.listdir(cache_dir):
             if filename.startswith(f"{self.retriever_processor.model_key}_") and filename.endswith(".cache"):
                 return os.path.join(cache_dir, filename)
         return None
 
     def _load_index_from_local_disk(self):
+        """
+        Load pre-built FAISS index and ID mappings from local disk cache.
+        
+        The cache contains:
+        - index_data: Serialized FAISS index for vector search
+        - id_mapping: List mapping FAISS indices to SNOMED IDs
+        
+        This avoids rebuilding the index on every startup (expensive operation).
+        """
         local_cache_path = self._find_local_cache_file()
         if local_cache_path and os.path.exists(local_cache_path):
             try:
-                with open(local_cache_path, 'rb') as f: cache_content = pickle.load(f)
+                with open(local_cache_path, 'rb') as f: 
+                    cache_content = pickle.load(f)
                 self.vector_index = faiss.deserialize_index(cache_content['index_data'])
                 self.index_to_snomed_id = cache_content['id_mapping']
                 logger.info(f"Successfully loaded FAISS index for model '{self.retriever_processor.model_key}' from: {local_cache_path}")
@@ -144,109 +242,10 @@ class NHSLookupEngine:
         else:
             logger.critical(f"CRITICAL: Cache not found on local disk for model '{self.retriever_processor.model_key}'.")
 
-    def _calculate_semantic_similarity(self, text1: str, text2: str) -> float:
-        """Calculate semantic similarity between two texts using fuzzy string matching."""
-        if not text1 or not text2:
-            return 0.0
-        
-        # Normalize texts for comparison
-        norm_text1 = text1.lower().strip()
-        norm_text2 = text2.lower().strip()
-        
-        # Use fuzzy ratio for semantic similarity approximation
-        similarity = fuzz.ratio(norm_text1, norm_text2) / 100.0
-        return similarity
-
-    def _calculate_component_score(self, input_exam_text: str, input_components: Dict, nhs_entry: Dict) -> float:
-        """
-        Calculate component-based score for a candidate NHS entry.
-        This is the core of the rule-based matching logic extracted from v2 architecture.
-        
-        Returns:
-            float: Component score (0.0-1.0), or 0.0 if blocking violations detected
-        """
-        # 1. Check for any "blocking" level violations that should immediately reject the candidate
-        diagnostic_penalty = self._check_diagnostic_protection(input_exam_text, nhs_entry)
-        hybrid_modality_penalty = self._check_hybrid_modality_constraints(input_exam_text, nhs_entry)
-        technique_specialization_penalty = self._check_technique_specialization_constraints(input_exam_text, nhs_entry)
-        
-        # Check for blocking penalties (< -1.0)
-        if diagnostic_penalty < -1.0 or hybrid_modality_penalty < -1.0 or technique_specialization_penalty < -1.0:
-            logger.debug(f"Blocking violation detected for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
-            return 0.0
-        
-        nhs_components = nhs_entry.get('_parsed_components', {})
-        
-        # 2. Calculate all component scores
-        anatomy_score = self._calculate_anatomy_score_with_constraints(input_components, nhs_components)
-        
-        # Check for anatomy blocking penalty after the fact
-        if anatomy_score < -1.0:
-            logger.debug(f"Anatomical blocking violation for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
-            return 0.0
-        
-        modality_score = self._calculate_modality_score(
-            input_components.get('modality', []),
-            nhs_components.get('modality', [])
-        )
-        contrast_score = self._calculate_contrast_score(
-            input_components.get('contrast', []),
-            nhs_components.get('contrast', [])
-        )
-        technique_score = self._calculate_set_score(
-            input_components.get('technique', []),
-            nhs_components.get('technique', [])
-        )
-        
-        input_lat = (input_components.get('laterality') or [None])[0]
-        nhs_lat = (nhs_components.get('laterality') or [None])[0]
-        laterality_score = self._calculate_laterality_score(input_lat, nhs_lat)
-        
-        # 3. Check component thresholds to gate low-quality matches
-        if (violation := self._check_component_thresholds(anatomy_score, modality_score, laterality_score, contrast_score, technique_score)):
-            logger.debug(f"Component threshold violation for '{nhs_entry.get('primary_source_name')}': {violation}")
-            return 0.0
-        
-        # 4. Combine the component scores using weights from the config
-        w = self.config['weights_component']
-        component_score = (
-            w.get('anatomy', 0.25) * anatomy_score +
-            w.get('modality', 0.30) * modality_score +
-            w.get('laterality', 0.15) * laterality_score +
-            w.get('contrast', 0.20) * contrast_score +
-            w.get('technique', 0.10) * technique_score
-        )
-        
-        # 5. Add interventional scoring
-        input_techniques = set(input_components.get('technique', []))
-        is_input_interventional = any('Interventional' in t for t in input_techniques)
-        nhs_techniques = set(nhs_components.get('technique', []))
-        is_nhs_interventional = any('Interventional' in t for t in nhs_techniques)
-        
-        interventional_score = 0
-        if is_input_interventional and is_nhs_interventional:
-            interventional_score = self.config['interventional_bonus']
-        elif is_input_interventional and not is_nhs_interventional:
-            interventional_score = self.config['interventional_penalty']
-        
-        # 6. Add anatomical specificity score
-        anatomical_specificity_score = self._calculate_anatomical_specificity_score(input_exam_text, nhs_entry)
-        
-        # 7. Add all bonuses and non-blocking penalties
-        bonus_score = interventional_score + anatomical_specificity_score
-        bonus_score += diagnostic_penalty + hybrid_modality_penalty + technique_specialization_penalty
-        bonus_score += self._calculate_context_bonus(input_exam_text, nhs_entry, input_components.get('anatomy', []))
-        bonus_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
-        bonus_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
-        bonus_score += self._calculate_anatomy_specificity_preference(input_components, nhs_entry)
-        
-        # Exact match bonus
-        if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
-            bonus_score += self.config.get('exact_match_bonus', 0.25)
-        
-        final_component_score = component_score + bonus_score
-        return max(0.0, min(1.0, final_component_score))
-
+    # =============================================================================
+    # MAIN STANDARDIZATION PIPELINE - ENTRY POINT
+    # =============================================================================
+    
     def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None, is_input_simple: bool = False, debug: bool = False, reranker_key: Optional[str] = None) -> Dict:
         """
         V4 Two-Stage Pipeline: Retrieve candidates with BioLORD, then rerank with flexible rerankers + component scoring.
@@ -622,219 +621,114 @@ class NHSLookupEngine:
         logger.warning(f"[V3-PIPELINE] ❌ No suitable match found in {total_time:.2f}s total")
         return {'error': 'No suitable match found.', 'confidence': 0.0, 'all_candidates': all_candidates_list}
 
-    def _calculate_laterality_score(self, input_lat: Optional[str], nhs_lat: Optional[str]) -> float:
-        """Calculates a more punitive score for laterality mismatches."""
-        if input_lat == nhs_lat:
-            return 1.0  # Perfect match
-        if not input_lat or not nhs_lat:
-            return 0.7  # Ambiguous match (e.g., input "Knee" vs NHS "Knee Rt")
-        return 0.1  # Direct mismatch (e.g., input "Left" vs NHS "Right")
-
-    def _calculate_match_score(self, input_exam_text, input_components, nhs_entry, semantic_score, interventional_score, anatomical_specificity_score):
-        # 1. Check for any "blocking" level violations that should immediately reject the candidate.
+    # =============================================================================
+    # COMPONENT-BASED SCORING SYSTEM
+    # =============================================================================
+    
+    def _calculate_component_score(self, input_exam_text: str, input_components: Dict, nhs_entry: Dict) -> float:
+        """
+        CORE COMPONENT SCORING: Calculate rule-based match score for NHS candidate.
+        
+        This is the heart of the clinical matching logic that ensures safety and accuracy.
+        
+        SCORING PIPELINE:
+        1. Check for blocking violations (diagnostic→interventional, anatomy incompatibility)
+        2. Calculate individual component scores (anatomy, modality, laterality, contrast, technique)
+        3. Apply component thresholds to prevent low-quality matches
+        4. Combine component scores using configured weights
+        5. Add interventional scoring bonuses/penalties
+        6. Add context bonuses and specificity adjustments
+        
+        Args:
+            input_exam_text: Original user input text
+            input_components: Parsed semantic components from input
+            nhs_entry: NHS database entry being scored
+            
+        Returns:
+            float: Component score (0.0-1.0), or 0.0 if blocking violations detected
+        """
+        # 1. Check for any "blocking" level violations that should immediately reject the candidate
         diagnostic_penalty = self._check_diagnostic_protection(input_exam_text, nhs_entry)
         hybrid_modality_penalty = self._check_hybrid_modality_constraints(input_exam_text, nhs_entry)
         technique_specialization_penalty = self._check_technique_specialization_constraints(input_exam_text, nhs_entry)
-
-        # Note: We check for values less than -1.0 to distinguish from fractional penalties.
+        
+        # Check for blocking penalties (< -1.0)
         if diagnostic_penalty < -1.0 or hybrid_modality_penalty < -1.0 or technique_specialization_penalty < -1.0:
-                logger.debug(f"Blocking violation detected for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
-                return 0.0
-
+            logger.debug(f"Blocking violation detected for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
+            return 0.0
+        
         nhs_components = nhs_entry.get('_parsed_components', {})
-
-        # 2. Calculate all component scores using the new, correct list-based functions.
-        anatomy_score = self._calculate_anatomy_score_with_constraints(
-                input_components,
-                nhs_components  # Pass the full dicts to the constraint checker
-        )
+        
+        # 2. Calculate all component scores
+        anatomy_score = self._calculate_anatomy_score_with_constraints(input_components, nhs_components)
+        
         # Check for anatomy blocking penalty after the fact
         if anatomy_score < -1.0:
-                logger.debug(f"Anatomical blocking violation for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
-                return 0.0
-
+            logger.debug(f"Anatomical blocking violation for '{nhs_entry.get('primary_source_name')}', returning 0.0 score.")
+            return 0.0
+        
         modality_score = self._calculate_modality_score(
-                input_components.get('modality', []),
-                nhs_components.get('modality', [])
+            input_components.get('modality', []),
+            nhs_components.get('modality', [])
         )
-
         contrast_score = self._calculate_contrast_score(
-                input_components.get('contrast', []),
-                nhs_components.get('contrast', [])
+            input_components.get('contrast', []),
+            nhs_components.get('contrast', [])
         )
-
         technique_score = self._calculate_set_score(
-                input_components.get('technique', []),
-                nhs_components.get('technique', [])
+            input_components.get('technique', []),
+            nhs_components.get('technique', [])
         )
-
+        
         input_lat = (input_components.get('laterality') or [None])[0]
         nhs_lat = (nhs_components.get('laterality') or [None])[0]
         laterality_score = self._calculate_laterality_score(input_lat, nhs_lat)
-
-        # 3. Check component thresholds to gate low-quality matches.
+        
+        # 3. Check component thresholds to gate low-quality matches
         if (violation := self._check_component_thresholds(anatomy_score, modality_score, laterality_score, contrast_score, technique_score)):
-                logger.debug(f"Component threshold violation for '{nhs_entry.get('primary_source_name')}': {violation}")
-                return 0.0
-
-        # 4. Combine the component scores using weights from the config.
+            logger.debug(f"Component threshold violation for '{nhs_entry.get('primary_source_name')}': {violation}")
+            return 0.0
+        
+        # 4. Combine the component scores using weights from the config
         w = self.config['weights_component']
         component_score = (
-                w.get('anatomy', 0.25) * anatomy_score +
-                w.get('modality', 0.30) * modality_score +
-                w.get('laterality', 0.15) * laterality_score +
-                w.get('contrast', 0.20) * contrast_score +
-                w.get('technique', 0.10) * technique_score
+            w.get('anatomy', 0.25) * anatomy_score +
+            w.get('modality', 0.30) * modality_score +
+            w.get('laterality', 0.15) * laterality_score +
+            w.get('contrast', 0.20) * contrast_score +
+            w.get('technique', 0.10) * technique_score
         )
-
-        # 5. Combine component score and semantic score into a final score, applying weight limiting.
-        wf = self.config['weights_final']
-        threshold_config = self.config.get('minimum_component_thresholds', {})
-        if threshold_config.get('enable', False):
-                max_semantic_weight = threshold_config.get('max_semantic_weight', 0.6)
-                actual_semantic_weight = min(wf.get('semantic', 0.40), max_semantic_weight)
-                actual_component_weight = 1.0 - actual_semantic_weight
-                final_score = (actual_component_weight * component_score + actual_semantic_weight * semantic_score)
-        else:
-                final_score = (wf.get('component', 0.6) * component_score + wf.get('semantic', 0.4) * semantic_score)
-
-        # 6. Add all bonuses and non-blocking penalties to the final score.
-        final_score += interventional_score
-        final_score += diagnostic_penalty
-        final_score += hybrid_modality_penalty
-        final_score += technique_specialization_penalty
-        final_score += self._calculate_context_bonus(input_exam_text, nhs_entry, input_components.get('anatomy', []))
-        final_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
-        final_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
-        final_score += self._calculate_anatomy_specificity_preference(input_components, nhs_entry)
-        final_score += anatomical_specificity_score
-
+        
+        # 5. Add interventional scoring
+        input_techniques = set(input_components.get('technique', []))
+        is_input_interventional = any('Interventional' in t for t in input_techniques)
+        nhs_techniques = set(nhs_components.get('technique', []))
+        is_nhs_interventional = any('Interventional' in t for t in nhs_techniques)
+        
+        interventional_score = 0
+        if is_input_interventional and is_nhs_interventional:
+            interventional_score = self.config['interventional_bonus']
+        elif is_input_interventional and not is_nhs_interventional:
+            interventional_score = self.config['interventional_penalty']
+        
+        # 6. Add anatomical specificity score
+        anatomical_specificity_score = self._calculate_anatomical_specificity_score(input_exam_text, nhs_entry)
+        
+        # 7. Add all bonuses and non-blocking penalties
+        bonus_score = interventional_score + anatomical_specificity_score
+        bonus_score += diagnostic_penalty + hybrid_modality_penalty + technique_specialization_penalty
+        bonus_score += self._calculate_context_bonus(input_exam_text, nhs_entry, input_components.get('anatomy', []))
+        bonus_score += self._calculate_synonym_bonus(input_exam_text, nhs_entry)
+        bonus_score += self._calculate_biopsy_modality_preference(input_exam_text, nhs_entry)
+        bonus_score += self._calculate_anatomy_specificity_preference(input_components, nhs_entry)
+        
+        # Exact match bonus
         if input_exam_text.strip().lower() == nhs_entry.get('primary_source_name', '').lower():
-                final_score += self.config.get('exact_match_bonus', 0.25)
-
-        return max(0.0, min(1.0, final_score))
-
-    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False, input_exam_text: str = "", force_ambiguous: bool = False) -> Dict:
-        """
-        Formats the final result, ensuring it contains a fully populated 'components'
-        dictionary for consistent processing by the calling function.
-        """
-        model_name = getattr(nlp_proc, 'model_key', 'default').split('/')[-1]
-        source_name = f'UNIFIED_MATCH_V2_5_PRECISION_{model_name.upper()}'
-        is_interventional = bool(best_match.get('_interventional_terms', []))
+            bonus_score += self.config.get('exact_match_bonus', 0.25)
         
-        clean_name = best_match.get('primary_source_name', '')
+        final_component_score = component_score + bonus_score
+        return max(0.0, min(1.0, final_component_score))
 
-        if strip_laterality_from_name:
-            clean_name = re.sub(r'\s+(lt|rt|left|right|both|bilateral)$', '', clean_name, flags=re.I).strip()
-
-        input_contrast = (extracted_input_components.get('contrast') or [None])[0]
-        if input_contrast == 'with' and 'with contrast' not in clean_name.lower():
-            clean_name += " with contrast"
-
-        # --- CRITICAL FIX IS HERE ---
-        # Create the nested 'components' dictionary that app.py expects.
-        # This dictionary includes all parsed components, confidence score, AND context information.
-        
-        # PIPELINE STEP: Detect context information that was previously calculated post-scoring
-        # Now calculated here so it can influence the final result structure
-        from context_detection import detect_gender_context, detect_age_context, detect_clinical_context
-        
-        input_anatomy = extracted_input_components.get('anatomy', [])
-        gender_context = detect_gender_context(input_exam_text, input_anatomy)
-        age_context = detect_age_context(input_exam_text) 
-        clinical_context = detect_clinical_context(input_exam_text, input_anatomy)
-        
-        # Get components from the matched NHS entry (not input)
-        matched_components = best_match.get('_parsed_components', {})
-        
-        final_components = {
-            # Use components from the matched NHS entry
-            'anatomy': matched_components.get('anatomy', []),
-            'laterality': matched_components.get('laterality', []),
-            'contrast': matched_components.get('contrast', []),
-            'technique': matched_components.get('technique', []),
-            'modality': matched_components.get('modality', []),
-            'confidence': confidence,
-            # Add context information from the input (these are input-specific)
-            'gender_context': gender_context,
-            'age_context': age_context, 
-            'clinical_context': clinical_context
-        }
-        
-        # Check for biopsy ambiguity
-        biopsy_ambiguous = self._is_biopsy_ambiguous(input_exam_text, best_match)
-        
-        # Determine if this match is ambiguous (laterality, biopsy, or forced)
-        is_ambiguous = force_ambiguous or strip_laterality_from_name or biopsy_ambiguous
-        
-        return {
-            'clean_name': clean_name.strip(),
-            'snomed_id': best_match.get('snomed_concept_id', ''),
-            'snomed_fsn': best_match.get('snomed_fsn', ''),
-            'snomed_laterality_concept_id': best_match.get('snomed_laterality_concept_id', ''),
-            'snomed_laterality_fsn': best_match.get('snomed_laterality_fsn', ''),
-            'is_diagnostic': not is_interventional,
-            'is_interventional': is_interventional,
-            'source': source_name,
-            'ambiguous': is_ambiguous,  # Track laterality, biopsy, or forced ambiguity
-            'components': final_components # Return the components nested under one key
-        }
-
-    def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
-        specific_components = specific_entry.get('_parsed_components')
-        if not specific_components:
-                return None
-        target_modalities = set(specific_components.get('modality', []))
-        target_anatomy = set(specific_components.get('anatomy', []))
-        target_contrasts = set(specific_components.get('contrast', []))
-        target_techniques = set(specific_components.get('technique', []))
-
-        for entry in self.nhs_data:
-                entry_components = entry.get('_parsed_components')
-                if not entry_components:
-                        continue
-                entry_laterality = (entry_components.get('laterality') or [None])[0]
-                if entry_laterality not in [None, 'bilateral']:
-                        continue
-
-                if (set(entry_components.get('modality', [])) == target_modalities and
-                        set(entry_components.get('anatomy', [])) == target_anatomy and
-                        set(entry_components.get('contrast', [])) == target_contrasts and
-                        set(entry_components.get('technique', [])) == target_techniques):
-                        return entry
-
-        return None
-
-    def find_bilateral_peer_in_candidates(self, specific_entry: Dict, candidate_entries: List[Dict]) -> Optional[Dict]:
-        """Find bilateral peer within the filtered candidate entries (respects complexity filtering)."""
-        specific_components = specific_entry.get('_parsed_components')
-        if not specific_components:
-            return None
-        
-        target_modalities = set(specific_components.get('modality', []))
-        target_anatomy = set(specific_components.get('anatomy', []))
-        target_contrasts = set(specific_components.get('contrast', []))
-        target_techniques = set(specific_components.get('technique', []))
-
-        # Search within our filtered candidates first (respects complexity filtering)
-        for entry in candidate_entries:
-            entry_components = entry.get('_parsed_components')
-            if not entry_components:
-                continue
-            entry_laterality = (entry_components.get('laterality') or [None])[0]
-            if entry_laterality not in [None, 'bilateral']:
-                continue
-
-            if (set(entry_components.get('modality', [])) == target_modalities and
-                    set(entry_components.get('anatomy', [])) == target_anatomy and
-                    set(entry_components.get('contrast', [])) == target_contrasts and
-                    set(entry_components.get('technique', [])) == target_techniques):
-                return entry
-
-        # Fallback to original find_bilateral_peer if not found in candidates
-        return self.find_bilateral_peer(specific_entry)
-    
     def _calculate_set_score(self, list1: List[str], list2: List[str]) -> float:
         """
         Calculates a Jaccard similarity score between two lists of strings.
@@ -866,7 +760,15 @@ class NHSLookupEngine:
         
         # For multiple modalities, use set-based scoring
         return self._calculate_set_score(input_modality, nhs_modality)
-    
+
+    def _calculate_laterality_score(self, input_lat: Optional[str], nhs_lat: Optional[str]) -> float:
+        """Calculates a more punitive score for laterality mismatches."""
+        if input_lat == nhs_lat:
+            return 1.0  # Perfect match
+        if not input_lat or not nhs_lat:
+            return 0.7  # Ambiguous match (e.g., input "Knee" vs NHS "Knee Rt")
+        return 0.1  # Direct mismatch (e.g., input "Left" vs NHS "Right")
+
     def _calculate_contrast_score(self, input_contrast: List[str], nhs_contrast: List[str]) -> float:
         # Handle empty lists (no contrast specified)
         if not input_contrast and not nhs_contrast:
@@ -953,7 +855,68 @@ class NHSLookupEngine:
         if not input_anatomy.union(nhs_anatomy): 
             return 0.0
         return len(input_anatomy.intersection(nhs_anatomy)) / len(input_anatomy.union(nhs_anatomy))
-    
+
+    # =============================================================================
+    # SAFETY & CONSTRAINT CHECKS
+    # =============================================================================
+
+    def _check_component_thresholds(self, anatomy_score: float, modality_score: float, 
+                                   laterality_score: float, contrast_score: float, technique_score: float) -> Optional[str]:
+        """
+        Check minimum component score thresholds to prevent semantic similarity override.
+        
+        PIPELINE STEP: This method ensures that fundamental component mismatches 
+        cannot be overcome by high semantic similarity alone, maintaining clinical accuracy.
+        
+        Args:
+            anatomy_score: Individual anatomy component score
+            modality_score: Individual modality component score  
+            laterality_score: Individual laterality component score
+            contrast_score: Individual contrast component score
+            technique_score: Individual technique component score
+            
+        Returns:
+            Optional[str]: Violation description if threshold violated, None if passed
+        """
+        # Get threshold configuration
+        threshold_config = self.config.get('minimum_component_thresholds', {})
+        if not threshold_config.get('enable', False):
+            return None
+        
+        # Get individual thresholds
+        anatomy_min = threshold_config.get('anatomy_min', 0.1)
+        modality_min = threshold_config.get('modality_min', 0.4)
+        laterality_min = threshold_config.get('laterality_min', 0.0)
+        contrast_min = threshold_config.get('contrast_min', 0.3)
+        technique_min = threshold_config.get('technique_min', 0.0)
+        
+        # Check individual component thresholds
+        if anatomy_score < anatomy_min:
+            return f"Anatomy score {anatomy_score:.3f} below minimum {anatomy_min}"
+        if modality_score < modality_min:
+            return f"Modality score {modality_score:.3f} below minimum {modality_min}"
+        if laterality_score < laterality_min:
+            return f"Laterality score {laterality_score:.3f} below minimum {laterality_min}"
+        if contrast_score < contrast_min:
+            return f"Contrast score {contrast_score:.3f} below minimum {contrast_min}"
+        if technique_score < technique_min:
+            return f"Technique score {technique_score:.3f} below minimum {technique_min}"
+        
+        # Check combined component score threshold
+        combined_min = threshold_config.get('combined_min', 0.25)
+        w = self.config.get('weights_component', {})
+        combined_score = (w.get('anatomy', 0.25) * anatomy_score + 
+                         w.get('modality', 0.30) * modality_score + 
+                         w.get('laterality', 0.15) * laterality_score + 
+                         w.get('contrast', 0.20) * contrast_score + 
+                         w.get('technique', 0.10) * technique_score)
+        
+        if combined_score < combined_min:
+            return f"Combined component score {combined_score:.3f} below minimum {combined_min}"
+        
+        # All thresholds passed
+        return None
+
     def _check_diagnostic_protection(self, input_exam_text: str, nhs_entry: dict) -> float:
         """
         Check diagnostic protection rules to prevent diagnostic exams mapping to interventional procedures.
@@ -1050,63 +1013,6 @@ class NHSLookupEngine:
         # No violation detected
         return 0.0
     
-    def _check_component_thresholds(self, anatomy_score: float, modality_score: float, 
-                                   laterality_score: float, contrast_score: float, technique_score: float) -> Optional[str]:
-        """
-        Check minimum component score thresholds to prevent semantic similarity override.
-        
-        PIPELINE STEP: This method ensures that fundamental component mismatches 
-        cannot be overcome by high semantic similarity alone, maintaining clinical accuracy.
-        
-        Args:
-            anatomy_score: Individual anatomy component score
-            modality_score: Individual modality component score  
-            laterality_score: Individual laterality component score
-            contrast_score: Individual contrast component score
-            technique_score: Individual technique component score
-            
-        Returns:
-            Optional[str]: Violation description if threshold violated, None if passed
-        """
-        # Get threshold configuration
-        threshold_config = self.config.get('minimum_component_thresholds', {})
-        if not threshold_config.get('enable', False):
-            return None
-        
-        # Get individual thresholds
-        anatomy_min = threshold_config.get('anatomy_min', 0.1)
-        modality_min = threshold_config.get('modality_min', 0.4)
-        laterality_min = threshold_config.get('laterality_min', 0.0)
-        contrast_min = threshold_config.get('contrast_min', 0.3)
-        technique_min = threshold_config.get('technique_min', 0.0)
-        
-        # Check individual component thresholds
-        if anatomy_score < anatomy_min:
-            return f"Anatomy score {anatomy_score:.3f} below minimum {anatomy_min}"
-        if modality_score < modality_min:
-            return f"Modality score {modality_score:.3f} below minimum {modality_min}"
-        if laterality_score < laterality_min:
-            return f"Laterality score {laterality_score:.3f} below minimum {laterality_min}"
-        if contrast_score < contrast_min:
-            return f"Contrast score {contrast_score:.3f} below minimum {contrast_min}"
-        if technique_score < technique_min:
-            return f"Technique score {technique_score:.3f} below minimum {technique_min}"
-        
-        # Check combined component score threshold
-        combined_min = threshold_config.get('combined_min', 0.25)
-        w = self.config.get('weights_component', {})
-        combined_score = (w.get('anatomy', 0.25) * anatomy_score + 
-                         w.get('modality', 0.30) * modality_score + 
-                         w.get('laterality', 0.15) * laterality_score + 
-                         w.get('contrast', 0.20) * contrast_score + 
-                         w.get('technique', 0.10) * technique_score)
-        
-        if combined_score < combined_min:
-            return f"Combined component score {combined_score:.3f} below minimum {combined_min}"
-        
-        # All thresholds passed
-        return None
-
     def _check_technique_specialization_constraints(self, input_exam_text: str, nhs_entry: dict) -> float:
         """
         Check technique specialization constraints to prevent generic exams mapping to specialized techniques.
@@ -1153,7 +1059,11 @@ class NHSLookupEngine:
         
         # No violations detected
         return 0.0
-    
+
+    # =============================================================================
+    # BONUS & PENALTY CALCULATIONS
+    # =============================================================================
+
     def _calculate_context_bonus(self, input_exam: str, nhs_entry: dict, input_anatomy: List[str] = None) -> float:
         """
         Calculate context-based bonuses including gender, age, pregnancy, and clinical contexts.
@@ -1271,26 +1181,6 @@ class NHSLookupEngine:
         # Fall back to default preferences if no organ match
         return default_preferences.get(modality_key, 0.0)
     
-    def _is_biopsy_ambiguous(self, input_exam: str, nhs_entry: dict) -> bool:
-        """Check if this is an ambiguous biopsy case where modality preference was applied."""
-        if not self.config.get('biopsy_modality_preference', False):
-            return False
-            
-        input_lower = input_exam.lower()
-        
-        # Check if this is a biopsy procedure without explicit modality in input
-        has_biopsy = 'biopsy' in input_lower or 'bx' in input_lower
-        if not has_biopsy:
-            return False
-            
-        # Check if input already specifies a modality (if so, not ambiguous)
-        explicit_modalities = ['ct', 'us', 'ultrasound', 'fluoroscop', 'mri', 'mr']
-        if any(mod in input_lower for mod in explicit_modalities):
-            return False
-            
-        # If we get here, it's a biopsy without explicit modality - this is ambiguous
-        return True
-    
     def _calculate_anatomy_specificity_preference(self, input_components: dict, nhs_entry: dict) -> float:
         """Calculate preference bonus for generic NHS entries when input is generic."""
         if not self.config.get('anatomy_specificity_preference', False):
@@ -1354,6 +1244,176 @@ class NHSLookupEngine:
         total_score = anatomical_bonus + technique_bonus - administrative_penalty - unrecognized_penalty
         
         return total_score
+
+    # =============================================================================
+    # RESULT FORMATTING & UTILITIES
+    # =============================================================================
+
+    def _format_match_result(self, best_match: Dict, extracted_input_components: Dict, confidence: float, nlp_proc: NLPProcessor, strip_laterality_from_name: bool = False, input_exam_text: str = "", force_ambiguous: bool = False) -> Dict:
+        """
+        Formats the final result, ensuring it contains a fully populated 'components'
+        dictionary for consistent processing by the calling function.
+        """
+        model_name = getattr(nlp_proc, 'model_key', 'default').split('/')[-1]
+        source_name = f'UNIFIED_MATCH_V2_5_PRECISION_{model_name.upper()}'
+        is_interventional = bool(best_match.get('_interventional_terms', []))
+        
+        clean_name = best_match.get('primary_source_name', '')
+
+        if strip_laterality_from_name:
+            clean_name = re.sub(r'\s+(lt|rt|left|right|both|bilateral)$', '', clean_name, flags=re.I).strip()
+
+        input_contrast = (extracted_input_components.get('contrast') or [None])[0]
+        if input_contrast == 'with' and 'with contrast' not in clean_name.lower():
+            clean_name += " with contrast"
+
+        # --- CRITICAL FIX IS HERE ---
+        # Create the nested 'components' dictionary that app.py expects.
+        # This dictionary includes all parsed components, confidence score, AND context information.
+        
+        # PIPELINE STEP: Detect context information that was previously calculated post-scoring
+        # Now calculated here so it can influence the final result structure
+        from context_detection import detect_gender_context, detect_age_context, detect_clinical_context
+        
+        input_anatomy = extracted_input_components.get('anatomy', [])
+        gender_context = detect_gender_context(input_exam_text, input_anatomy)
+        age_context = detect_age_context(input_exam_text) 
+        clinical_context = detect_clinical_context(input_exam_text, input_anatomy)
+        
+        # Get components from the matched NHS entry (not input)
+        matched_components = best_match.get('_parsed_components', {})
+        
+        final_components = {
+            # Use components from the matched NHS entry
+            'anatomy': matched_components.get('anatomy', []),
+            'laterality': matched_components.get('laterality', []),
+            'contrast': matched_components.get('contrast', []),
+            'technique': matched_components.get('technique', []),
+            'modality': matched_components.get('modality', []),
+            'confidence': confidence,
+            # Add context information from the input (these are input-specific)
+            'gender_context': gender_context,
+            'age_context': age_context, 
+            'clinical_context': clinical_context
+        }
+        
+        # Check for biopsy ambiguity
+        biopsy_ambiguous = self._is_biopsy_ambiguous(input_exam_text, best_match)
+        
+        # Determine if this match is ambiguous (laterality, biopsy, or forced)
+        is_ambiguous = force_ambiguous or strip_laterality_from_name or biopsy_ambiguous
+        
+        return {
+            'clean_name': clean_name.strip(),
+            'snomed_id': best_match.get('snomed_concept_id', ''),
+            'snomed_fsn': best_match.get('snomed_fsn', ''),
+            'snomed_laterality_concept_id': best_match.get('snomed_laterality_concept_id', ''),
+            'snomed_laterality_fsn': best_match.get('snomed_laterality_fsn', ''),
+            'is_diagnostic': not is_interventional,
+            'is_interventional': is_interventional,
+            'source': source_name,
+            'ambiguous': is_ambiguous,  # Track laterality, biopsy, or forced ambiguity
+            'components': final_components # Return the components nested under one key
+        }
+
+    def find_bilateral_peer(self, specific_entry: Dict) -> Optional[Dict]:
+        specific_components = specific_entry.get('_parsed_components')
+        if not specific_components:
+                return None
+        target_modalities = set(specific_components.get('modality', []))
+        target_anatomy = set(specific_components.get('anatomy', []))
+        target_contrasts = set(specific_components.get('contrast', []))
+        target_techniques = set(specific_components.get('technique', []))
+
+        for entry in self.nhs_data:
+                entry_components = entry.get('_parsed_components')
+                if not entry_components: 
+                        continue
+                entry_laterality = (entry_components.get('laterality') or [None])[0]
+                if entry_laterality not in [None, 'bilateral']:
+                        continue
+
+                if (set(entry_components.get('modality', [])) == target_modalities and
+                        set(entry_components.get('anatomy', [])) == target_anatomy and
+                        set(entry_components.get('contrast', [])) == target_contrasts and
+                        set(entry_components.get('technique', [])) == target_techniques):
+                        return entry
+
+        return None
+
+    def find_bilateral_peer_in_candidates(self, specific_entry: Dict, candidate_entries: List[Dict]) -> Optional[Dict]:
+        """Find bilateral peer within the filtered candidate entries (respects complexity filtering)."""
+        specific_components = specific_entry.get('_parsed_components')
+        if not specific_components:
+            return None
+        
+        target_modalities = set(specific_components.get('modality', []))
+        target_anatomy = set(specific_components.get('anatomy', []))
+        target_contrasts = set(specific_components.get('contrast', []))
+        target_techniques = set(specific_components.get('technique', []))
+
+        # Search within our filtered candidates first (respects complexity filtering)
+        for entry in candidate_entries:
+            entry_components = entry.get('_parsed_components')
+            if not entry_components:
+                continue
+            entry_laterality = (entry_components.get('laterality') or [None])[0]
+            if entry_laterality not in [None, 'bilateral']:
+                continue
+
+            if (set(entry_components.get('modality', [])) == target_modalities and
+                    set(entry_components.get('anatomy', [])) == target_anatomy and
+                    set(entry_components.get('contrast', [])) == target_contrasts and
+                    set(entry_components.get('technique', [])) == target_techniques):
+                return entry
+
+        # Fallback to original find_bilateral_peer if not found in candidates
+        return self.find_bilateral_peer(specific_entry)
+    
+    def _is_biopsy_ambiguous(self, input_exam: str, nhs_entry: dict) -> bool:
+        """Check if this is an ambiguous biopsy case where modality preference was applied."""
+        if not self.config.get('biopsy_modality_preference', False):
+            return False
+            
+        input_lower = input_exam.lower()
+        
+        # Check if this is a biopsy procedure without explicit modality in input
+        has_biopsy = 'biopsy' in input_lower or 'bx' in input_lower
+        if not has_biopsy:
+            return False
+            
+        # Check if input already specifies a modality (if so, not ambiguous)
+        explicit_modalities = ['ct', 'us', 'ultrasound', 'fluoroscop', 'mri', 'mr']
+        if any(mod in input_lower for mod in explicit_modalities):
+            return False
+            
+        # If we get here, it's a biopsy without explicit modality - this is ambiguous
+        return True
+
+    def _calculate_semantic_similarity(self, text1: str, text2: str) -> float:
+        """
+        Calculate semantic similarity between two text strings using fuzzy matching.
+        
+        Used for complexity filtering to preserve high-similarity matches regardless
+        of FSN complexity when input is simple.
+        
+        Args:
+            text1: First text string
+            text2: Second text string
+            
+        Returns:
+            float: Similarity score between 0.0 and 1.0
+        """
+        if not text1 or not text2:
+            return 0.0
+        
+        # Normalize texts for comparison
+        norm_text1 = text1.lower().strip()
+        norm_text2 = text2.lower().strip()
+        
+        # Use fuzzy ratio for semantic similarity approximation
+        similarity = fuzz.ratio(norm_text1, norm_text2) / 100.0
+        return similarity
 
     def validate_consistency(self):
         snomed_to_names = defaultdict(set)
