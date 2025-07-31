@@ -1070,24 +1070,18 @@ window.addEventListener('DOMContentLoaded', function() {
             // Start with a progress bar (we'll update the total once we know it)
             statusId = statusManager.showProgress(`Running random sample demo with ${modelDisplayName} → ${rerankerDisplayName}`, 0, 100);
 
-            // Start the request and begin polling immediately
-            const responsePromise = fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: currentModel,
-                    reranker: currentReranker
-                })
-            });
-
             let pollingActive = true;
             let batchId = null;
             
-            // Start aggressive polling immediately
+            // Start aggressive polling function
             const pollProgress = async () => {
-                if (!pollingActive || !batchId) return;
+                if (!pollingActive || !batchId) {
+                    // If we don't have batch_id yet, keep trying
+                    if (pollingActive) {
+                        setTimeout(pollProgress, 100);
+                    }
+                    return;
+                }
                 
                 try {
                     console.log(`Polling progress for batch_id: ${batchId}`);
@@ -1111,18 +1105,45 @@ window.addEventListener('DOMContentLoaded', function() {
                         
                         // Continue polling if not complete
                         if (percentage < 100 && processed < total && pollingActive) {
-                            setTimeout(pollProgress, 200); // Poll every 200ms for faster updates
+                            setTimeout(pollProgress, 500); // Poll every 500ms during processing
+                        } else {
+                            console.log('Processing complete, stopping polling');
+                            pollingActive = false;
                         }
                     } else if (progressResponse.status === 404) {
-                        console.log('Progress file not found - processing likely completed before polling started');
+                        // Progress file not found yet, keep trying
+                        if (pollingActive) {
+                            setTimeout(pollProgress, 500);
+                        }
                     }
                 } catch (progressError) {
                     console.log('Progress polling error:', progressError);
+                    if (pollingActive) {
+                        setTimeout(pollProgress, 1000); // Slower retry on error
+                    }
                 }
             };
 
-            // Wait for the response and extract batch_id
-            const response = await responsePromise;
+            // Start polling immediately - even before we get the batch_id
+            setTimeout(pollProgress, 100);
+            
+            // Set a maximum polling duration (2 minutes for 100 exams)
+            setTimeout(() => {
+                console.log('Maximum polling duration reached, stopping');
+                pollingActive = false;
+            }, 120000);
+
+            // Start the API request
+            const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: currentModel,
+                    reranker: currentReranker
+                })
+            });
             
             if (!response.ok) {
                 pollingActive = false;
@@ -1136,24 +1157,16 @@ window.addEventListener('DOMContentLoaded', function() {
                 throw new Error(result.error);
             }
 
-            // Start polling if we have a batch_id
-            if (result.batch_id && statusId) {
+            // Set the batch_id so polling can start working
+            if (result.batch_id) {
                 batchId = result.batch_id;
-                console.log(`Got batch_id: ${batchId}, starting polling in 50ms`);
-                // Start polling immediately
-                setTimeout(pollProgress, 50); // Start very quickly
-                
-                // Set a maximum polling duration (30 seconds)
-                setTimeout(() => {
-                    pollingActive = false;
-                }, 30000);
-                
-                // Wait a bit for processing to potentially complete
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                
-                // Stop polling
-                pollingActive = false;
+                console.log(`Got batch_id: ${batchId}, polling should now be active`);
             }
+
+            // Wait for processing to complete (polling will handle progress updates)
+            // The API response comes back when processing is done
+            console.log('API response received, processing should be complete');
+            pollingActive = false;
 
             // Show processing completion
             if (statusId) statusManager.remove(statusId);
