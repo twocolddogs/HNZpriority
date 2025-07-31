@@ -56,7 +56,7 @@ class PipelineIntegration:
             # Identify low-confidence results
             low_confidence_results = [
                 result for result in batch_results
-                if result.get('confidence', 1.0) < self.pipeline_config['confidence_threshold']
+                if result.get('output', {}).get('components', {}).get('confidence', 1.0) < self.pipeline_config['confidence_threshold']
             ]
             
             if not low_confidence_results:
