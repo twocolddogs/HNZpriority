@@ -780,12 +780,226 @@ def parse_enhanced():
         logger.error(f"Parse enhanced endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
+def _process_batch(data, start_time):
+    """Helper function to process a batch of exams."""
+    if not data or 'exams' not in data:
+        return jsonify({"error": "Missing 'exams' list in request data"}), 400
+    
+    exams_to_process = data['exams']
+    model_key = data.get('model', 'retriever')
+    reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
+    
+    import uuid
+    output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
+    os.makedirs(output_dir, exist_ok=True)
+    batch_id = uuid.uuid4().hex
+    results_filename = f"batch_results_{batch_id}.jsonl"
+    results_filepath = os.path.join(output_dir, results_filename)
+    progress_filename = f"batch_progress_{batch_id}.json"
+    progress_filepath = os.path.join(output_dir, progress_filename)
+    
+    logger.info(f"Starting batch processing for {len(exams_to_process)} exams using model: '{model_key}', reranker: '{reranker_key}'")
+    logger.info(f"Results will be streamed to: {results_filepath}")
+    logger.info(f"Progress will be tracked at: {progress_filepath}")
+    
+    def update_progress(processed, total, success, errors):
+        """Update progress file with current status"""
+        progress_data = {
+            "processed": processed,
+            "total": total,
+            "success": success,
+            "errors": errors,
+            "percentage": round((processed / total) * 100, 1) if total > 0 else 0,
+            "timestamp": datetime.now().isoformat()
+        }
+        try:
+            with open(progress_filepath, 'w') as pf:
+                json.dump(progress_data, pf)
+        except Exception as e:
+            logger.error(f"Failed to update progress file: {e}")
+
+    selected_nlp_processor = _get_nlp_processor(model_key)
+    if not selected_nlp_processor:
+        return jsonify({"error": f"Model '{model_key}' not available"}), 400
+
+    success_count = 0
+    error_count = 0
+    
+    chunk_size = 10
+    total_exams = len(exams_to_process)
+    chunks = [exams_to_process[i:i + chunk_size] for i in range(0, total_exams, chunk_size)]
+    
+    update_progress(0, total_exams, 0, 0)
+    
+    cpu_cnt = os.cpu_count() or 1
+    max_workers = min(2, max(1, cpu_cnt))
+    logger.info(f"Processing {total_exams} exams in {len(chunks)} chunks of {chunk_size}")
+    logger.info(f"ThreadPoolExecutor using max_workers={max_workers}")
+
+    with open(results_filepath, 'w', encoding='utf-8') as f_out:
+        for chunk_idx, chunk in enumerate(chunks):
+            logger.info(f"Processing chunk {chunk_idx + 1}/{len(chunks)} ({len(chunk)} exams)")
+            
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_exam = {
+                    executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor, False, reranker_key, exam.get("data_source"), exam.get("exam_code")): exam 
+                    for exam in chunk
+                }
+                
+                chunk_completed = 0
+                per_future_timeout = 60
+
+                for future in as_completed(future_to_exam):
+                    original_exam = future_to_exam[future]
+                    try:
+                        processed_result = future.result(timeout=per_future_timeout)
+                        result_entry = {
+                            "input": original_exam,
+                            "output": processed_result,
+                            "status": "success"
+                        }
+                        f_out.write(json.dumps(result_entry) + '\n')
+                        f_out.flush()
+                        success_count += 1
+                    except Exception as e:
+                        logger.error(f"Error processing exam '{original_exam.get('exam_name')}': {e}", exc_info=True)
+                        error_entry = {
+                            "input": original_exam,
+                            "error": str(e),
+                            "status": "error"
+                        }
+                        f_out.write(json.dumps(error_entry) + '\n')
+                        f_out.flush()
+                        error_count += 1
+                    finally:
+                        chunk_completed += 1
+                        update_progress(success_count + error_count, total_exams, success_count, error_count)
+                
+                logger.info(f"Completed chunk {chunk_idx + 1}/{len(chunks)}: {chunk_completed} exams processed")
+                logger.info(f"Overall progress: {success_count + error_count}/{total_exams} exams processed")
+
+    processing_time_ms = int((time.time() - start_time) * 1000)
+    logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
+    
+    try:
+        if os.path.exists(progress_filepath):
+            os.remove(progress_filepath)
+            logger.info(f"Cleaned up progress file: {progress_filename}")
+    except Exception as e:
+        logger.warning(f"Failed to clean up progress file: {e}")
+
+    r2_upload_success = False
+    r2_url = None
+    
+    MAX_RESULTS_FOR_R2 = 50
+    if r2_manager.is_available() and total_exams <= MAX_RESULTS_FOR_R2:
+        try:
+            consolidated_results = []
+            with open(results_filepath, 'r', encoding='utf-8') as f_in:
+                for line in f_in:
+                    if line.strip():
+                        consolidated_results.append(json.loads(line.strip()))
+            
+            from config_manager import get_config
+            config_manager = get_config()
+            config_source = "R2" if config_manager._r2_config_cache else "local"
+            config_timestamp = datetime.fromtimestamp(config_manager._r2_config_cache_time).isoformat() if config_manager._r2_config_cache else "unknown"
+            
+            consolidated_data = {
+                "metadata": {
+                    "timestamp": datetime.now().isoformat(),
+                    "total_processed": len(exams_to_process),
+                    "successful": success_count,
+                    "errors": error_count,
+                    "processing_time_ms": processing_time_ms,
+                    "model_used": model_key,
+                    "results_count": len(consolidated_results),
+                    "config_source": config_source,
+                    "config_timestamp": config_timestamp
+                },
+                "results": consolidated_results
+            }
+            
+            r2_key = f"batch-results/{results_filename.replace('.jsonl', '.json')}"
+            consolidated_json = json.dumps(consolidated_data, indent=None, separators=(',', ':')).encode('utf-8')
+            
+            if r2_manager.upload_object(r2_key, consolidated_json, content_type="application/json"):
+                r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{r2_key}"
+                r2_upload_success = True
+                logger.info(f"Successfully uploaded consolidated results to R2: {r2_key}")
+                
+                try:
+                    config_key = f"batch-configs/{results_filename.replace('.jsonl', '')}_config.yaml"
+                    import yaml
+                    config_yaml = yaml.dump(config_manager.config, default_flow_style=False).encode('utf-8')
+                    if r2_manager.upload_object(config_key, config_yaml, content_type="text/yaml"):
+                        logger.info(f"Saved versioned config to R2: {config_key}")
+                    else:
+                        logger.warning(f"Failed to save config version: {config_key}")
+                except Exception as config_save_error:
+                    logger.warning(f"Failed to save config version: {config_save_error}")
+            else:
+                logger.warning(f"Failed to upload results to R2: {r2_key}")
+        except Exception as e:
+            logger.error(f"Error uploading to R2: {e}", exc_info=True)
+    elif r2_manager.is_available():
+        logger.warning(f"Skipping R2 upload for large dataset ({total_exams} exams > {MAX_RESULTS_FOR_R2} limit)")
+        logger.info("Results stored locally only - use pagination for viewing")
+    else:
+        logger.warning("R2 not available - results only stored locally")
+
+    MAX_INMEMORY_RESULTS = 10
+    if len(exams_to_process) <= MAX_INMEMORY_RESULTS:
+        try:
+            results = []
+            with open(results_filepath, 'r', encoding='utf-8') as f_in:
+                for line in f_in:
+                    if line.strip():
+                        results.append(json.loads(line.strip()))
+            logger.info(f"Loaded {len(results)} results into memory (no file deletion to avoid I/O issues)")
+            
+            return jsonify({
+                "message": "Batch processing complete.",
+                "batch_id": batch_id,
+                "results": results,
+                "results_file": results_filepath,
+                "results_filename": results_filename,
+                "r2_url": r2_url,
+                "r2_uploaded": r2_upload_success,
+                "processing_stats": {
+                    "total_processed": len(exams_to_process),
+                    "successful": success_count,
+                    "errors": error_count,
+                    "processing_time_ms": processing_time_ms,
+                    "model_used": model_key
+                }
+            })
+        except Exception as read_error:
+            logger.error(f"Failed to read results file: {read_error}")
+            pass
+    
+    logger.info(f"Returning file reference to avoid I/O issues: {results_filename}")
+    return jsonify({
+        "message": "Batch processing complete. Results streamed to disk.",
+        "batch_id": batch_id,
+        "results_file": results_filepath,
+        "results_filename": results_filename,
+        "r2_url": r2_url,
+        "r2_uploaded": r2_upload_success,
+        "processing_stats": {
+            "total_processed": len(exams_to_process),
+            "successful": success_count,
+            "errors": error_count,
+            "processing_time_ms": processing_time_ms,
+            "model_used": model_key
+        }
+    })
+
 @app.route('/parse_batch', methods=['POST', 'OPTIONS'])
 def parse_batch():
     """
     Processes a batch of exam names concurrently with streaming output to disk.
     """
-    # Handle preflight OPTIONS request
     if request.method == 'OPTIONS':
         return '', 200
     
@@ -793,241 +1007,7 @@ def parse_batch():
     start_time = time.time()
     
     try:
-        data = request.json
-        if not data or 'exams' not in data:
-            return jsonify({"error": "Missing 'exams' list in request data"}), 400
-        
-        exams_to_process = data['exams']
-        model_key = data.get('model', 'retriever')
-        reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
-        
-        import uuid
-        output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
-        os.makedirs(output_dir, exist_ok=True)
-        batch_id = uuid.uuid4().hex
-        results_filename = f"batch_results_{batch_id}.jsonl"
-        results_filepath = os.path.join(output_dir, results_filename)
-        progress_filename = f"batch_progress_{batch_id}.json"
-        progress_filepath = os.path.join(output_dir, progress_filename)
-        
-        logger.info(f"Starting batch processing for {len(exams_to_process)} exams using model: '{model_key}', reranker: '{reranker_key}'")
-        logger.info(f"Results will be streamed to: {results_filepath}")
-        logger.info(f"Progress will be tracked at: {progress_filepath}")
-        
-        def update_progress(processed, total, success, errors):
-            """Update progress file with current status"""
-            progress_data = {
-                "processed": processed,
-                "total": total,
-                "success": success,
-                "errors": errors,
-                "percentage": round((processed / total) * 100, 1) if total > 0 else 0,
-                "timestamp": datetime.now().isoformat()
-            }
-            try:
-                with open(progress_filepath, 'w') as pf:
-                    json.dump(progress_data, pf)
-            except Exception as e:
-                logger.error(f"Failed to update progress file: {e}")
-
-        selected_nlp_processor = _get_nlp_processor(model_key)
-        if not selected_nlp_processor:
-            return jsonify({"error": f"Model '{model_key}' not available"}), 400
-
-        success_count = 0
-        error_count = 0
-        
-        # Process in chunks of 10 to manage memory and provide more frequent progress updates
-        chunk_size = 10
-        total_exams = len(exams_to_process)
-        chunks = [exams_to_process[i:i + chunk_size] for i in range(0, total_exams, chunk_size)]
-        
-        # Initialize progress file
-        update_progress(0, total_exams, 0, 0)
-        
-        cpu_cnt = os.cpu_count() or 1
-        max_workers = min(2, max(1, cpu_cnt))  # Reduced workers to prevent OOM
-        logger.info(f"Processing {total_exams} exams in {len(chunks)} chunks of {chunk_size}")
-        logger.info(f"ThreadPoolExecutor using max_workers={max_workers}")
-
-        with open(results_filepath, 'w', encoding='utf-8') as f_out:
-            for chunk_idx, chunk in enumerate(chunks):
-                logger.info(f"Processing chunk {chunk_idx + 1}/{len(chunks)} ({len(chunk)} exams)")
-                
-                with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                    future_to_exam = {
-                        executor.submit(process_exam_request, exam.get("exam_name"), exam.get("modality_code"), selected_nlp_processor, False, reranker_key, exam.get("data_source"), exam.get("exam_code")): exam 
-                        for exam in chunk
-                    }
-                    
-                    chunk_completed = 0
-                    per_future_timeout = 60
-
-                    for future in as_completed(future_to_exam):
-                        original_exam = future_to_exam[future]
-                        try:
-                            processed_result = future.result(timeout=per_future_timeout)
-                            result_entry = {
-                                "input": original_exam,
-                                "output": processed_result,
-                                "status": "success"
-                            }
-                            f_out.write(json.dumps(result_entry) + '\n')
-                            f_out.flush()
-                            success_count += 1
-                        except Exception as e:
-                            logger.error(f"Error processing exam '{original_exam.get('exam_name')}': {e}", exc_info=True)
-                            error_entry = {
-                                "input": original_exam,
-                                "error": str(e),
-                                "status": "error"
-                            }
-                            f_out.write(json.dumps(error_entry) + '\n')
-                            f_out.flush()
-                            error_count += 1
-                        finally:
-                            chunk_completed += 1
-                            # Update progress after each exam
-                            update_progress(success_count + error_count, total_exams, success_count, error_count)
-                    
-                    logger.info(f"Completed chunk {chunk_idx + 1}/{len(chunks)}: {chunk_completed} exams processed")
-                    logger.info(f"Overall progress: {success_count + error_count}/{total_exams} exams processed")
-
-        processing_time_ms = int((time.time() - start_time) * 1000)
-        logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
-        
-        # Clean up progress file
-        try:
-            if os.path.exists(progress_filepath):
-                os.remove(progress_filepath)
-                logger.info(f"Cleaned up progress file: {progress_filename}")
-        except Exception as e:
-            logger.warning(f"Failed to clean up progress file: {e}")
-
-        # Upload consolidated results to R2 for permanent storage and frontend access
-        r2_upload_success = False
-        r2_url = None
-        
-        # Skip R2 upload for very large datasets to prevent OOM
-        MAX_RESULTS_FOR_R2 = 50  # Limit R2 upload to prevent memory issues
-        if r2_manager.is_available() and total_exams <= MAX_RESULTS_FOR_R2:
-            try:
-                # Read and consolidate all results into a single JSON array
-                consolidated_results = []
-                with open(results_filepath, 'r', encoding='utf-8') as f_in:
-                    for line in f_in:
-                        if line.strip():
-                            consolidated_results.append(json.loads(line.strip()))
-                
-                # Get current config for versioning
-                from config_manager import get_config
-                config_manager = get_config()
-                config_source = "R2" if config_manager._r2_config_cache else "local"
-                config_timestamp = datetime.fromtimestamp(config_manager._r2_config_cache_time).isoformat() if config_manager._r2_config_cache else "unknown"
-                
-                # Create consolidated JSON with metadata
-                consolidated_data = {
-                    "metadata": {
-                        "timestamp": datetime.now().isoformat(),
-                        "total_processed": len(exams_to_process),
-                        "successful": success_count,
-                        "errors": error_count,
-                        "processing_time_ms": processing_time_ms,
-                        "model_used": model_key,
-                        "results_count": len(consolidated_results),
-                        "config_source": config_source,
-                        "config_timestamp": config_timestamp
-                    },
-                    "results": consolidated_results
-                }
-                
-                # Upload to R2 with JSON format for easy frontend consumption
-                r2_key = f"batch-results/{results_filename.replace('.jsonl', '.json')}"
-                consolidated_json = json.dumps(consolidated_data, indent=None, separators=(',', ':')).encode('utf-8')
-                
-                if r2_manager.upload_object(r2_key, consolidated_json, content_type="application/json"):
-                    # Generate public URL
-                    r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{r2_key}"
-                    r2_upload_success = True
-                    logger.info(f"Successfully uploaded consolidated results to R2: {r2_key}")
-                    
-                    # Save versioned config copy for this run
-                    try:
-                        config_key = f"batch-configs/{results_filename.replace('.jsonl', '')}_config.yaml"
-                        # Save the R2 config version that was used (R2 is now the only source)
-                        import yaml
-                        config_yaml = yaml.dump(config_manager.config, default_flow_style=False).encode('utf-8')
-                        if r2_manager.upload_object(config_key, config_yaml, content_type="text/yaml"):
-                            logger.info(f"Saved versioned config to R2: {config_key}")
-                        else:
-                            logger.warning(f"Failed to save config version: {config_key}")
-                    except Exception as config_save_error:
-                        logger.warning(f"Failed to save config version: {config_save_error}")
-                        
-                else:
-                    logger.warning(f"Failed to upload results to R2: {r2_key}")
-                    
-            except Exception as e:
-                logger.error(f"Error uploading to R2: {e}", exc_info=True)
-        elif r2_manager.is_available():
-            logger.warning(f"Skipping R2 upload for large dataset ({total_exams} exams > {MAX_RESULTS_FOR_R2} limit)")
-            logger.info("Results stored locally only - use pagination for viewing")
-        else:
-            logger.warning("R2 not available - results only stored locally")
-
-        # V3 Fix: Use lighter approach to avoid I/O storm restarts
-        # For small batches, provide results but avoid heavy disk I/O
-        MAX_INMEMORY_RESULTS = 10  # Reduced from 50 to minimize I/O
-        
-        if len(exams_to_process) <= MAX_INMEMORY_RESULTS:
-            # Minimal I/O approach: read once, no deletion
-            try:
-                results = []
-                with open(results_filepath, 'r', encoding='utf-8') as f_in:
-                    for line in f_in:
-                        if line.strip():
-                            results.append(json.loads(line.strip()))
-                logger.info(f"Loaded {len(results)} results into memory (no file deletion to avoid I/O issues)")
-                
-                return jsonify({
-                    "message": "Batch processing complete.",
-                    "batch_id": batch_id,
-                    "results": results,
-                    "results_file": results_filepath,
-                    "results_filename": results_filename,
-                    "r2_url": r2_url,
-                    "r2_uploaded": r2_upload_success,
-                    "processing_stats": {
-                        "total_processed": len(exams_to_process),
-                        "successful": success_count,
-                        "errors": error_count,
-                        "processing_time_ms": processing_time_ms,
-                        "model_used": model_key
-                    }
-                })
-            except Exception as read_error:
-                logger.error(f"Failed to read results file: {read_error}")
-                # Fallback to file reference
-                pass
-        
-        # For larger batches or if reading failed, return file reference
-        logger.info(f"Returning file reference to avoid I/O issues: {results_filename}")
-        return jsonify({
-            "message": "Batch processing complete. Results streamed to disk.",
-            "batch_id": batch_id,
-            "results_file": results_filepath,
-            "results_filename": results_filename,
-            "r2_url": r2_url,
-            "r2_uploaded": r2_upload_success,
-            "processing_stats": {
-                "total_processed": len(exams_to_process),
-                "successful": success_count,
-                "errors": error_count,
-                "processing_time_ms": processing_time_ms,
-                "model_used": model_key
-            }
-        })
-        
+        return _process_batch(request.json, start_time)
     except Exception as e:
         logger.error(f"Batch endpoint failed with a critical error: {e}", exc_info=True)
         return jsonify({"error": "An internal server error occurred during batch processing"}), 500
@@ -1267,7 +1247,7 @@ def list_batch_results():
 def demo_random_sample():
     """
     Demo endpoint that downloads hnz_hdp_json from R2, takes a random sample of 100 codes,
-    processes them, and uploads results to R2 with reranker model in filename.
+    and passes them to the batch processing endpoint.
     """
     _ensure_app_is_initialized()
     start_time = time.time()
@@ -1279,16 +1259,13 @@ def demo_random_sample():
         
         logger.info(f"Starting demo random sample with model: '{model_key}', reranker: '{reranker_key}'")
         
-        # Validate model
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
             return jsonify({"error": f"Model '{model_key}' not available"}), 400
         
-        # Check R2 availability
         if not r2_manager.is_available():
             return jsonify({"error": "R2 storage not available"}), 500
         
-        # Download input file from R2
         import tempfile
         import random
         import uuid
@@ -1299,7 +1276,6 @@ def demo_random_sample():
         
         logger.info(f"Downloading {input_r2_key} from R2...")
         
-        # Try to download from R2
         try:
             import requests
             r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{input_r2_key}"
@@ -1313,136 +1289,59 @@ def demo_random_sample():
             logger.error(f"Failed to download input file from R2: {e}")
             return jsonify({"error": f"Failed to download input file: {str(e)}"}), 500
         
-        # Load and validate JSON
         try:
             with open(temp_input_file, 'r', encoding='utf-8') as f:
                 input_data = json.load(f)
         except Exception as e:
-            os.remove(temp_input_file)
             return jsonify({"error": f"Invalid JSON in input file: {str(e)}"}), 400
-        
-        # Validate input data structure
+        finally:
+            if os.path.exists(temp_input_file):
+                os.remove(temp_input_file)
+
         if not isinstance(input_data, list):
-            os.remove(temp_input_file)
             return jsonify({"error": "Input file must contain a JSON array"}), 400
         
-        if len(input_data) < 100:
+        sample_size = 100
+        if len(input_data) < sample_size:
             logger.warning(f"Input file contains only {len(input_data)} items, using all")
             sample_size = len(input_data)
-        else:
-            sample_size = 100
         
-        # Take random sample
         random_sample = random.sample(input_data, sample_size)
         logger.info(f"Selected random sample of {len(random_sample)} items from {len(input_data)} total")
         
-        # Process each item in the sample
-        results = []
-        processed_count = 0
-        
-        for i, item in enumerate(random_sample):
-            try:
-                # Extract exam name from the JSON structure
-                # Adapt this based on the actual structure of hnz_hdp_json
-                exam_name = None
-                if isinstance(item, dict):
-                    # Try common field names for exam name
-                    exam_name = (item.get('exam_name') or 
+        # Reformat sample for batch processing
+        exams_for_batch = []
+        for item in random_sample:
+            exam_name = None
+            if isinstance(item, dict):
+                exam_name = (item.get('exam_name') or 
                                item.get('EXAM_NAME') or 
                                item.get('name') or 
                                item.get('description') or 
                                item.get('title'))
-                elif isinstance(item, str):
-                    exam_name = item
-                
-                if not exam_name:
-                    logger.warning(f"Could not extract exam name from item {i}: {item}")
-                    continue
-                
-                # Process the exam
-                modality_code = item.get('modality_code') if isinstance(item, dict) else None
-                data_source = item.get('data_source') if isinstance(item, dict) else None
-                exam_code = item.get('exam_code') if isinstance(item, dict) else None
-                
-                processed_result = process_exam_request(
-                    exam_name, 
-                    modality_code,
-                    selected_nlp_processor, 
-                    False, 
-                    reranker_key,
-                    data_source,
-                    exam_code
-                )
-                
-                # Add original item data for reference
-                result_entry = {
-                    "original_item": item,
-                    "processed_result": processed_result,
-                    "sample_index": i + 1
-                }
-                
-                results.append(result_entry)
-                processed_count += 1
-                
-                if (i + 1) % 10 == 0:
-                    logger.info(f"Demo progress: {i + 1}/{len(random_sample)} samples processed")
-                    
-            except Exception as e:
-                logger.error(f"Error processing sample item {i}: {e}")
-                continue
-        
-        # Clean up temp input file
-        os.remove(temp_input_file)
-        
-        processing_time_ms = int((time.time() - start_time) * 1000)
-        
-        # Create output filename with timestamp and reranker model
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_filename = f"demo_sample_{timestamp}_{reranker_key}_{processed_count}items.json"
-        
-        # Prepare output data
-        output_data = {
-            "metadata": {
-                "demo_type": "random_sample",
-                "timestamp": datetime.now().isoformat(),
-                "input_file": input_r2_key,
-                "total_input_items": len(input_data),
-                "sample_size": len(random_sample),
-                "processed_successfully": processed_count,
-                "processing_time_ms": processing_time_ms,
-                "model_used": model_key,
-                "reranker_used": reranker_key
-            },
-            "results": results
+            elif isinstance(item, str):
+                exam_name = item
+            
+            if exam_name:
+                exam_entry = {'exam_name': exam_name}
+                if isinstance(item, dict):
+                    if 'modality_code' in item:
+                        exam_entry['modality_code'] = item.get('modality_code')
+                    if 'data_source' in item:
+                        exam_entry['data_source'] = item.get('data_source')
+                    if 'exam_code' in item:
+                        exam_entry['exam_code'] = item.get('exam_code')
+                exams_for_batch.append(exam_entry)
+
+        logger.info(f"Passing {len(exams_for_batch)} exams to batch processor.")
+        batch_payload = {
+            "exams": exams_for_batch,
+            "model": model_key,
+            "reranker": reranker_key
         }
-        
-        # Upload results to R2
-        output_r2_key = f"demo-results/{output_filename}"
-        output_json = json.dumps(output_data, indent=2).encode('utf-8')
-        
-        if r2_manager.upload_object(output_r2_key, output_json, content_type="application/json"):
-            output_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{output_r2_key}"
-            logger.info(f"Successfully uploaded demo results to R2: {output_r2_key}")
-            
-            return jsonify({
-                "message": "Demo random sample completed successfully",
-                "processing_stats": {
-                    "input_items": len(input_data),
-                    "sample_size": len(random_sample),
-                    "processed_successfully": processed_count,
-                    "processing_time_ms": processing_time_ms,
-                    "model_used": model_key,
-                    "reranker_used": reranker_key
-                },
-                "output": {
-                    "filename": output_filename,
-                    "r2_key": output_r2_key,
-                    "url": output_url
-                }
-            })
-        else:
-            return jsonify({"error": "Failed to upload results to R2"}), 500
-            
+
+        return _process_batch(batch_payload, start_time)
+
     except Exception as e:
         logger.error(f"Demo random sample endpoint error: {e}", exc_info=True)
         return jsonify({"error": f"Demo failed: {str(e)}"}), 500
