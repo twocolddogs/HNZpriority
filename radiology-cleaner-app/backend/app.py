@@ -960,50 +960,21 @@ def _process_batch(data, start_time):
     except Exception as e:
         logger.warning(f"Failed to clean up temporary files: {e}")
 
-    MAX_INMEMORY_RESULTS = 10
-    if len(exams_to_process) <= MAX_INMEMORY_RESULTS:
-        try:
-            results = []
-            with open(results_filepath, 'r', encoding='utf-8') as f_in:
-                for line in f_in:
-                    if line.strip():
-                        results.append(json.loads(line.strip()))
-            logger.info(f"Loaded {len(results)} results into memory (no file deletion to avoid I/O issues)")
-            
-            return jsonify({
-                "message": "Batch processing complete.",
-                "batch_id": batch_id,
-                "results": results,
-                "results_file": results_filepath,
-                "results_filename": results_filename,
-                "r2_url": r2_url,
-                "r2_uploaded": r2_upload_success,
-                "processing_stats": {
-                    "total_processed": len(exams_to_process),
-                    "successful": success_count,
-                    "errors": error_count,
-                    "processing_time_ms": processing_time_ms,
-                    "model_used": model_key
-                }
-            })
-        except Exception as read_error:
-            logger.error(f"Failed to read results file: {read_error}")
-            pass
-    
-    logger.info(f"Returning file reference to avoid I/O issues: {results_filename}")
+    # Always return the R2 URL if available, otherwise return a message.
+    # Avoid returning in-memory results or file references to deleted files.
+    logger.info(f"Batch processing complete. Returning response with R2 URL: {r2_url}")
     return jsonify({
-        "message": "Batch processing complete. Results streamed to disk.",
+        "message": "Batch processing complete. Results are available at the provided R2 URL.",
         "batch_id": batch_id,
-        "results_file": results_filepath,
-        "results_filename": results_filename,
         "r2_url": r2_url,
         "r2_uploaded": r2_upload_success,
         "processing_stats": {
-            "total_processed": len(exams_to_process),
+            "total_processed": total_exams,
             "successful": success_count,
             "errors": error_count,
             "processing_time_ms": processing_time_ms,
-            "model_used": model_key
+            "model_used": model_key,
+            "reranker_used": reranker_key
         }
     })
 

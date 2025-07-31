@@ -1100,9 +1100,9 @@ window.addEventListener('DOMContentLoaded', function() {
             if (statusId) statusManager.remove(statusId);
             statusId = statusManager.show('Fetching results for display...', 'progress');
             
-            if (result.output?.url) {
+            if (result.r2_url) {
                 try {
-                    const resultsResponse = await fetch(result.output.url);
+                    const resultsResponse = await fetch(result.r2_url);
                     if (resultsResponse.ok) {
                         const resultsData = await resultsResponse.json();
                         console.log('R2 fetched resultsData:', resultsData); // Added for debugging
@@ -1115,13 +1115,13 @@ window.addEventListener('DOMContentLoaded', function() {
                             
                             // Set global variables to display the results
                             allMappings = results;
-                            updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size} items)`);
+                            updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size || result.processing_stats.total_processed} items)`);
                             
                             // Use runAnalysis to properly display results UI
                             try {
                                 runAnalysis(allMappings);
                                 
-                                const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || 'Unknown'} items processed`;
+                                const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || result.processing_stats.successful || 'Unknown'} items processed`;
                                 statusManager.show(successMessage, 'success', 5000);
                                 if (mainCard) mainCard.style.display = 'block'; // Ensure main content is visible after successful analysis
                             } catch (analysisError) {
@@ -1140,43 +1140,9 @@ window.addEventListener('DOMContentLoaded', function() {
                     console.error('Failed to fetch results from R2:', fetchError);
                     if (statusId) statusManager.remove(statusId);
                     
-                    // Try to download and process the data despite the fetch error
-                    try {
-                        statusId = statusManager.show('Retrying results download...', 'progress');
-                        const retryResponse = await fetch(result.output.url);
-                        
-                        if (retryResponse.ok) {
-                            const retryData = await retryResponse.json();
-                            const retryResults = retryData.results || retryData;
-                            if (retryResults && retryResults.length > 0) {
-                                if (statusId) statusManager.remove(statusId);
-                                statusId = statusManager.show('Processing downloaded results...', 'progress');
-                                
-                                // Process the data locally
-                                allMappings = retryResults;
-                                updatePageTitle(`Random Sample Demo (${result.processing_stats?.sample_size || 'Unknown'} items)`);
-                                
-                                try {
-                                    runAnalysis(allMappings);
-                                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || 'Unknown'} items processed`;
-                                    statusManager.show(successMessage, 'success', 5000);
-                                    return; // Exit successfully
-                                } catch (analysisError) {
-                                    console.error('Error during retry results analysis:', analysisError);
-                                    statusManager.show('❌ Error displaying retry results', 'error', 5000);
-                                    if (mainCard) mainCard.style.display = 'block';
-                                    return;
-                                }
-                            }
-                        }
-                    } catch (retryError) {
-                        console.error('Retry also failed:', retryError);
-                    }
-                    
-                    // If all attempts fail, show the download link as fallback
-                    if (statusId) statusManager.remove(statusId);
-                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
-                    const urlMessage = `<br><a href="${result.output.url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
+                    // If the fetch fails, provide a direct link as a fallback
+                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats.successful} items processed`;
+                    const urlMessage = `<br><a href="${result.r2_url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
                     statusManager.show(successMessage + urlMessage, 'success', 10000);
                 }
             } else {
@@ -1340,35 +1306,11 @@ window.addEventListener('DOMContentLoaded', function() {
                     `Completed processing ${jobName}`);
             }
                 
-                // Handle both old format (inline results) and new format (file references)
-                if (batchResult.results) {
-                    // Old format - inline results
-                    const chunkMappings = batchResult.results.map(item => {
-                        return {
-                            original_item: {
-                                DATA_SOURCE: item.input.data_source,
-                                MODALITY_CODE: item.input.modality_code,
-                                EXAM_CODE: item.input.exam_code,
-                                EXAM_NAME: item.input.exam_name
-                            },
-                            processed_result: item.status === 'success' ? {
-                                clean_name: item.output.clean_name,
-                                snomed: item.output.snomed || {},
-                                components: item.output.components || {},
-                                all_candidates: item.output.all_candidates || []
-                            } : {
-                                clean_name: `ERROR: ${item.error}`,
-                                snomed: {},
-                                components: {},
-                                all_candidates: []
-                            }
-                        };
-                    });
-                    allMappings.push(...chunkMappings);
-                } else if (batchResult.r2_url && batchResult.r2_uploaded) {
-                    // R2 URL available - fetch directly from R2 (preferred method)
-                    console.log('Fetching results from R2:', batchResult.r2_url);
-                    
+                if (batchResult.r2_url) {
+                // R2 URL available - fetch directly from R2 (preferred method)
+                console.log('Fetching results from R2:', batchResult.r2_url);
+                
+                try {
                     const r2Response = await fetch(batchResult.r2_url);
                     if (r2Response.ok) {
                         const r2Data = await r2Response.json();
@@ -1396,59 +1338,47 @@ window.addEventListener('DOMContentLoaded', function() {
                             });
                             allMappings.push(...chunkMappings);
                             console.log(`Successfully loaded ${r2Data.results.length} results from R2`);
+                        } else {
+                            throw new Error('No results found in R2 data');
                         }
                     } else {
                         console.error('Failed to fetch from R2:', r2Response.statusText);
                         throw new Error(`Failed to fetch from R2: ${r2Response.statusText}`);
                     }
-                } else if (batchResult.results_filename || batchResult.file_reference || batchResult.results_file || batchResult.message?.includes('batch_results_')) {
-                    // Local file reference for large datasets (>50 exams)
-                    const fileReference = batchResult.results_filename || batchResult.file_reference || batchResult.results_file || batchResult.message;
-                    console.log('Fetching results from local file reference:', fileReference);
-                    
-                    // Extract filename from path if needed (results_file includes path)
-                    const filename = fileReference.includes('/') ? fileReference.split('/').pop() : fileReference;
-                    
-                    // Fetch the results file using the new endpoint
-                    const fileResponse = await fetch(`${apiConfig.baseUrl}/get_batch_results/${filename}`, {
-                        method: 'GET'
-                    });
-                    
-                    if (fileResponse.ok) {
-                        const fileData = await fileResponse.json();
-                        const fileResults = fileData.results || fileData;
-                        if (fileResults && fileResults.length > 0) {
-                            const chunkMappings = fileResults.map(item => {
-                                return {
-                                    original_item: {
-                                        DATA_SOURCE: item.input.data_source,
-                                        MODALITY_CODE: item.input.modality_code,
-                                        EXAM_CODE: item.input.exam_code,
-                                        EXAM_NAME: item.input.exam_name
-                                    },
-                                    processed_result: item.status === 'success' ? {
-                                        clean_name: item.output.clean_name,
-                                        snomed: item.output.snomed || {},
-                                        components: item.output.components || {},
-                                        all_candidates: item.output.all_candidates || []
-                                    } : {
-                                        clean_name: `ERROR: ${item.error}`,
-                                        snomed: {},
-                                        components: {},
-                                        all_candidates: []
-                                    }
-                                };
-                            });
-                            allMappings.push(...chunkMappings);
-                        }
-                    } else {
-                        console.error('Failed to fetch results file:', fileResponse.statusText);
-                        throw new Error(`Failed to fetch results file: ${fileResponse.statusText}`);
-                    }
-                } else {
-                    console.error('Unexpected response format:', batchResult);
-                    throw new Error('Unexpected response format from server');
+                } catch (error) {
+                    console.error('Error fetching or processing R2 results:', error);
+                    // Provide a fallback link for the user
+                    statusManager.show(`Processing complete. <a href="${batchResult.r2_url}" target="_blank">View results on R2</a>`, 'success', 0);
+                    return; // Stop further execution
                 }
+            } else if (batchResult.results) {
+                // Old format - inline results (for smaller batches)
+                const chunkMappings = batchResult.results.map(item => {
+                    return {
+                        original_item: {
+                            DATA_SOURCE: item.input.data_source,
+                            MODALITY_CODE: item.input.modality_code,
+                            EXAM_CODE: item.input.exam_code,
+                            EXAM_NAME: item.input.exam_name
+                        },
+                        processed_result: item.status === 'success' ? {
+                            clean_name: item.output.clean_name,
+                            snomed: item.output.snomed || {},
+                            components: item.output.components || {},
+                            all_candidates: item.output.all_candidates || []
+                        } : {
+                            clean_name: `ERROR: ${item.error}`,
+                            snomed: {},
+                            components: {},
+                            all_candidates: []
+                        }
+                    };
+                });
+                allMappings.push(...chunkMappings);
+            } else {
+                console.error('Unexpected response format:', batchResult);
+                throw new Error('Unexpected response format from server. No R2 URL or inline results found.');
+            }
                 
             statusManager.show(`Successfully processed ${allMappings.length} records from ${jobName}.`, 'success', 5000);
             
