@@ -35,3 +35,4 @@ PyYAML==6.0.1
 # -- Secondary Pipeline Dependencies --
 # OpenAI library for OpenRouter API integration (ensemble processing)
 openai==1.51.2
+httpx==0.23.0
