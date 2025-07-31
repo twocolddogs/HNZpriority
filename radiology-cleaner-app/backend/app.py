@@ -790,7 +790,8 @@ def _process_batch(data, start_time):
     reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
     
     import uuid
-    output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
+    # Use a dedicated directory for temporary batch processing files (not the persistent cache)
+    output_dir = 'batch_outputs'
     os.makedirs(output_dir, exist_ok=True)
     batch_id = uuid.uuid4().hex
     results_filename = f"batch_results_{batch_id}.jsonl"
@@ -1013,7 +1014,8 @@ def get_batch_progress(batch_id):
     Returns progress information from the progress file.
     """
     try:
-        output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
+        # Use the same dedicated directory as batch processing for temporary files
+        output_dir = 'batch_outputs'
         progress_filename = f"batch_progress_{batch_id}.json"
         progress_filepath = os.path.join(output_dir, progress_filename)
         
