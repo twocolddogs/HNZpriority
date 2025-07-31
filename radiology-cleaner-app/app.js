@@ -1316,24 +1316,17 @@ window.addEventListener('DOMContentLoaded', function() {
                         const r2Data = await r2Response.json();
                         if (r2Data.results && r2Data.results.length > 0) {
                             const chunkMappings = r2Data.results.map(item => {
+                                // Use backend structure directly
                                 return {
-                                    original_item: {
-                                        DATA_SOURCE: item.input.DATA_SOURCE || item.input.data_source,
-                                        MODALITY_CODE: item.input.MODALITY_CODE || item.input.modality_code,
-                                        EXAM_CODE: item.input.EXAM_CODE || item.input.exam_code,
-                                        EXAM_NAME: item.input.EXAM_NAME || item.input.exam_name
-                                    },
-                                    processed_result: item.status === 'success' ? {
-                                        clean_name: item.output.clean_name,
-                                        snomed: item.output.snomed || {},
-                                        components: item.output.components || {},
-                                        all_candidates: item.output.all_candidates || []
-                                    } : {
-                                        clean_name: `ERROR: ${item.error}`,
-                                        snomed: {},
-                                        components: {},
-                                        all_candidates: []
-                                    }
+                                    data_source: item.input.DATA_SOURCE || item.input.data_source || item.output.data_source,
+                                    modality_code: item.input.MODALITY_CODE || item.input.modality_code || item.output.modality_code,
+                                    exam_code: item.input.EXAM_CODE || item.input.exam_code || item.output.exam_code,
+                                    exam_name: item.input.EXAM_NAME || item.input.exam_name || item.output.exam_name,
+                                    clean_name: item.status === 'success' ? item.output.clean_name : `ERROR: ${item.error}`,
+                                    snomed: item.status === 'success' ? item.output.snomed || {} : {},
+                                    components: item.status === 'success' ? item.output.components || {} : {},
+                                    all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
+                                    ambiguous: item.status === 'success' ? item.output.ambiguous : false
                                 };
                             });
                             allMappings.push(...chunkMappings);
@@ -1354,24 +1347,17 @@ window.addEventListener('DOMContentLoaded', function() {
             } else if (batchResult.results) {
                 // Old format - inline results (for smaller batches)
                 const chunkMappings = batchResult.results.map(item => {
+                    // Use backend structure directly
                     return {
-                        original_item: {
-                            DATA_SOURCE: item.input.DATA_SOURCE || item.input.data_source,
-                            MODALITY_CODE: item.input.MODALITY_CODE || item.input.modality_code,
-                            EXAM_CODE: item.input.EXAM_CODE || item.input.exam_code,
-                            EXAM_NAME: item.input.EXAM_NAME || item.input.exam_name
-                        },
-                        processed_result: item.status === 'success' ? {
-                            clean_name: item.output.clean_name,
-                            snomed: item.output.snomed || {},
-                            components: item.output.components || {},
-                            all_candidates: item.output.all_candidates || []
-                        } : {
-                            clean_name: `ERROR: ${item.error}`,
-                            snomed: {},
-                            components: {},
-                            all_candidates: []
-                        }
+                        data_source: item.input.DATA_SOURCE || item.input.data_source || item.output.data_source,
+                        modality_code: item.input.MODALITY_CODE || item.input.modality_code || item.output.modality_code,
+                        exam_code: item.input.EXAM_CODE || item.input.exam_code || item.output.exam_code,
+                        exam_name: item.input.EXAM_NAME || item.input.exam_name || item.output.exam_name,
+                        clean_name: item.status === 'success' ? item.output.clean_name : `ERROR: ${item.error}`,
+                        snomed: item.status === 'success' ? item.output.snomed || {} : {},
+                        components: item.status === 'success' ? item.output.components || {} : {},
+                        all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
+                        ambiguous: item.status === 'success' ? item.output.ambiguous : false
                     };
                 });
                 allMappings.push(...chunkMappings);
@@ -1461,24 +1447,17 @@ window.addEventListener('DOMContentLoaded', function() {
 
             // Convert results to the same format as batch processing
             const chunkMappings = results.map(item => {
+                // Use backend structure directly
                 return {
-                    original_item: {
-                        DATA_SOURCE: item.input.DATA_SOURCE,
-                        MODALITY_CODE: item.input.MODALITY_CODE,
-                        EXAM_CODE: item.input.EXAM_CODE,
-                        EXAM_NAME: item.input.EXAM_NAME
-                    },
-                    processed_result: item.status === 'success' ? {
-                        clean_name: item.output.clean_name,
-                        snomed: item.output.snomed || {},
-                        components: item.output.components || {},
-                        all_candidates: item.output.all_candidates || []
-                    } : {
-                        clean_name: `ERROR: ${item.error}`,
-                        snomed: {},
-                        components: {},
-                        all_candidates: []
-                    }
+                    data_source: item.input.DATA_SOURCE || item.input.data_source || item.output.data_source,
+                    modality_code: item.input.MODALITY_CODE || item.input.modality_code || item.output.modality_code,
+                    exam_code: item.input.EXAM_CODE || item.input.exam_code || item.output.exam_code,
+                    exam_name: item.input.EXAM_NAME || item.input.exam_name || item.output.exam_name,
+                    clean_name: item.status === 'success' ? item.output.clean_name : `ERROR: ${item.error}`,
+                    snomed: item.status === 'success' ? item.output.snomed || {} : {},
+                    components: item.status === 'success' ? item.output.components || {} : {},
+                    all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
+                    ambiguous: item.status === 'success' ? item.output.ambiguous : false
                 };
             });
 
@@ -1538,8 +1517,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function generateSourceLegend(mappings) {
         const uniqueSources = [...new Set(mappings.map(item => {
-            const normalized = normalizeResultItem(item);
-            return normalized.data_source;
+            return item.data_source;
         }))];
         const sourceNames = getSourceNames();
         
@@ -1628,35 +1606,15 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function normalizeResultItem(item) {
-        // Check if it's a nested structure from demo_random_sample
-        if (item.original_item && item.processed_result) {
-            return {
-                data_source: item.original_item.DATA_SOURCE,
-                modality_code: item.original_item.MODALITY_CODE,
-                exam_code: item.original_item.EXAM_CODE,
-                exam_name: item.original_item.EXAM_NAME,
-                
-                // Processed results
-                clean_name: item.processed_result.clean_name,
-                ambiguous: item.processed_result.ambiguous,
-                snomed: item.processed_result.snomed,
-                components: item.processed_result.components,
-                all_candidates: item.processed_result.all_candidates
-            };
-        } else {
-            // Assume it's already a flat structure (e.g., from sanity_test)
-            return item;
-        }
-    }
+    // Removed normalizeResultItem function - now using backend structure directly
 
     function displayResults(results) {
         resultsBody.innerHTML = '';
         const resultsMobile = document.getElementById('resultsMobile');
         if (resultsMobile) resultsMobile.innerHTML = '';
         
-        results.forEach(rawItem => {
-            const item = normalizeResultItem(rawItem);
+        results.forEach(item => {
+            // item is already in the correct format from the mapping above
             const row = resultsBody.insertRow();
             
             const sourceCell = row.insertCell();
@@ -1806,8 +1764,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const summary = {
             totalOriginalCodes: mappings.length,
             uniqueCleanNames: new Set(mappings.map(m => {
-                const normalized = normalizeResultItem(m);
-                return normalized.clean_name;
+                return m.clean_name;
             }).filter(n => n && !n.startsWith('ERROR'))).size,
             modalityBreakdown: {}, 
             avgConfidence: 0,
@@ -1816,8 +1773,7 @@ window.addEventListener('DOMContentLoaded', function() {
         summary.consolidationRatio = summary.uniqueCleanNames > 0 ? (summary.totalOriginalCodes / summary.uniqueCleanNames).toFixed(2) : "0.00";
         
         let totalConfidence = 0, confidenceCount = 0;
-        mappings.forEach(rawItem => {
-            const m = normalizeResultItem(rawItem);
+        mappings.forEach(m => {
             if (!m.components || !m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const modality = m.components.modality || m.modality_code;
             if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
@@ -1851,8 +1807,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function generateConsolidatedResults(mappings) {
         const consolidatedGroups = {};
-        mappings.forEach(rawItem => {
-            const m = normalizeResultItem(rawItem);
+        mappings.forEach(m => {
             if (!m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const group = consolidatedGroups[m.clean_name] || {
                 cleanName: m.clean_name,
