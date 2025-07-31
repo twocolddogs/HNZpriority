@@ -47,6 +47,10 @@ class EnsembleResult:
     improved: bool
     timestamp: str
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert dataclass to dictionary"""
+        return asdict(self)
+
 class OpenRouterEnsemble:
     """Ensemble system using multiple OpenRouter models"""
     

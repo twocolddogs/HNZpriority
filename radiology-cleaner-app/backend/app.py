@@ -1001,7 +1001,49 @@ def _process_batch(data, start_time):
                         
                     finally:
                         loop.close()
-                
+
+                if secondary_report and secondary_report.get('results'):
+                    logger.info("Merging secondary pipeline results into the main result set...")
+                    
+                    # Load the original consolidated data again to be safe
+                    with open(consolidated_filepath, 'r', encoding='utf-8') as f:
+                        original_data = json.load(f)
+                    
+                    # Create a dictionary for faster lookups
+                    results_map = {res['input']['exam_name']: res for res in original_data['results']}
+                    
+                    # Merge results
+                    for secondary_res in secondary_report['results']:
+                        exam_name = secondary_res['original_result']['original_result']['input']['exam_name']
+                        if exam_name in results_map:
+                            # Update the relevant fields
+                            results_map[exam_name]['output']['components']['modality'] = [secondary_res['consensus_modality']]
+                            results_map[exam_name]['output']['components']['confidence'] = secondary_res['consensus_confidence']
+                            results_map[exam_name]['output']['secondary_pipeline_applied'] = True
+                            results_map[exam_name]['output']['secondary_pipeline_details'] = {
+                                'original_modality': secondary_res['original_result']['original_modality'],
+                                'original_confidence': secondary_res['original_result']['original_confidence'],
+                                'consensus_modality': secondary_res['consensus_modality'],
+                                'consensus_confidence': secondary_res['consensus_confidence'],
+                                'agreement_score': secondary_res['agreement_score'],
+                            }
+
+                    # Overwrite the consolidated file with the merged data
+                    merged_filepath = consolidated_filepath.replace('.json', '_merged.json')
+                    with open(merged_filepath, 'w', encoding='utf-8') as f:
+                        json.dump(original_data, f)
+                    
+                    logger.info(f"Successfully merged results into: {merged_filepath}")
+                    
+                    # Upload the merged file to R2
+                    merged_r2_key = f"batch-results/{os.path.basename(merged_filepath)}"
+                    if r2_manager.upload_file(merged_filepath, merged_r2_key, content_type="application/json"):
+                        r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{merged_r2_key}"
+                        r2_upload_success = True
+                        logger.info(f"Successfully uploaded merged results to R2: {r2_url}")
+                    else:
+                        logger.warning(f"Failed to upload merged results to R2: {merged_r2_key}")
+
             except Exception as e:
                 logger.error(f"Secondary pipeline failed: {e}", exc_info=True)
                 secondary_report = {"error": str(e)}

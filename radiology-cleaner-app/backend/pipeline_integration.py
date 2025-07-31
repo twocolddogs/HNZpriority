@@ -83,6 +83,7 @@ class PipelineIntegration:
             report = self.secondary_pipeline.generate_improvement_report(ensemble_results)
             report['output_file'] = output_file
             report['timestamp'] = timestamp
+            report['results'] = [res.to_dict() for res in ensemble_results] # Add full results to report
             
             logger.info(f"Secondary processing completed: {report['improved_results']}/{report['total_processed']} improved")
             
@@ -130,7 +131,7 @@ class BatchResultProcessor:
         if not results:
             return {'low_confidence_count': 0, 'average_confidence': 0.0}
         
-        confidences = [r.get('components', {}).get('confidence', 1.0) for r in results]
+        confidences = [r.get('output', {}).get('components', {}).get('confidence', 1.0) for r in results]
         threshold = self.integration.pipeline_config['confidence_threshold']
         
         return {
