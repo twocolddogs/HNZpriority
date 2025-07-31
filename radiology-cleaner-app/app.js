@@ -1113,8 +1113,24 @@ window.addEventListener('DOMContentLoaded', function() {
                             if (statusId) statusManager.remove(statusId);
                             statusId = statusManager.show('Analyzing results and generating display...', 'progress');
                             
+                            // Map the R2 results to the expected flat structure
+                            const mappedResults = results.map(item => {
+                                // Use backend structure directly
+                                return {
+                                    data_source: item.input?.DATA_SOURCE || item.input?.data_source || item.output?.data_source,
+                                    modality_code: item.input?.MODALITY_CODE || item.input?.modality_code || item.output?.modality_code,
+                                    exam_code: item.input?.EXAM_CODE || item.input?.exam_code || item.output?.exam_code,
+                                    exam_name: item.input?.EXAM_NAME || item.input?.exam_name || item.output?.exam_name,
+                                    clean_name: item.status === 'success' ? item.output?.clean_name : `ERROR: ${item.error}`,
+                                    snomed: item.status === 'success' ? item.output?.snomed || {} : {},
+                                    components: item.status === 'success' ? item.output?.components || {} : {},
+                                    all_candidates: item.status === 'success' ? item.output?.all_candidates || [] : [],
+                                    ambiguous: item.status === 'success' ? item.output?.ambiguous : false
+                                };
+                            });
+                            
                             // Set global variables to display the results
-                            allMappings = results;
+                            allMappings = mappedResults;
                             updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size || result.processing_stats.total_processed} items)`);
                             
                             // Use runAnalysis to properly display results UI
