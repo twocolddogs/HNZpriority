@@ -1689,7 +1689,6 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('consolidationRatio').textContent = `${summary.consolidationRatio}:1`;
         document.getElementById('modalityCount').textContent = Object.keys(summary.modalityBreakdown).length;
         document.getElementById('avgConfidence').textContent = `${summary.avgConfidence}%`;
-        document.getElementById('genderContext').textContent = summary.genderContextCount;
     }
 
     const sourceColorPalette = [
@@ -1908,7 +1907,6 @@ window.addEventListener('DOMContentLoaded', function() {
             }).filter(n => n && !n.startsWith('ERROR'))).size,
             modalityBreakdown: {}, 
             avgConfidence: 0,
-            genderContextCount: 0,
         };
         summary.consolidationRatio = summary.uniqueCleanNames > 0 ? (summary.totalOriginalCodes / summary.uniqueCleanNames).toFixed(2) : "0.00";
         
@@ -1917,7 +1915,6 @@ window.addEventListener('DOMContentLoaded', function() {
             if (!m.components || !m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const modality = m.components.modality || m.modality_code;
             if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
-            if (m.components.gender_context) summary.genderContextCount++;
             if (m.components.confidence !== undefined) {
                 totalConfidence += m.components.confidence;
                 confidenceCount++;
