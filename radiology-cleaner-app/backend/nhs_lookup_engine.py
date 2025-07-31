@@ -814,7 +814,7 @@ class NHSLookupEngine:
         Calculate anatomy score with anatomical compatibility constraints.
         
         PIPELINE STEP: This method enforces anatomical compatibility constraints to prevent 
-        impossible mappings like "Lower Limb" → "Penis" that could cause patient safety issues.
+        impossible mappings like "Lower Limb" → "Head" that could cause patient safety issues.
         
         Args:
             input_components: Parsed components from user input exam name

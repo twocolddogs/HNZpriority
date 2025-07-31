@@ -890,63 +890,75 @@ def _process_batch(data, start_time):
 
     r2_upload_success = False
     r2_url = None
-    
-    MAX_RESULTS_FOR_R2 = 50
-    if r2_manager.is_available() and total_exams <= MAX_RESULTS_FOR_R2:
+    consolidated_filepath = None
+
+    if r2_manager.is_available():
         try:
-            consolidated_results = []
-            with open(results_filepath, 'r', encoding='utf-8') as f_in:
-                for line in f_in:
-                    if line.strip():
-                        consolidated_results.append(json.loads(line.strip()))
-            
             from config_manager import get_config
             config_manager = get_config()
             config_source = "R2" if config_manager._r2_config_cache else "local"
             config_timestamp = datetime.fromtimestamp(config_manager._r2_config_cache_time).isoformat() if config_manager._r2_config_cache else "unknown"
-            
-            consolidated_data = {
-                "metadata": {
-                    "timestamp": datetime.now().isoformat(),
-                    "total_processed": len(exams_to_process),
-                    "successful": success_count,
-                    "errors": error_count,
-                    "processing_time_ms": processing_time_ms,
-                    "model_used": model_key,
-                    "results_count": len(consolidated_results),
-                    "config_source": config_source,
-                    "config_timestamp": config_timestamp
-                },
-                "results": consolidated_results
+
+            metadata = {
+                "timestamp": datetime.now().isoformat(),
+                "total_processed": total_exams,
+                "successful": success_count,
+                "errors": error_count,
+                "processing_time_ms": processing_time_ms,
+                "model_used": model_key,
+                "reranker_used": reranker_key,
+                "config_source": config_source,
+                "config_timestamp": config_timestamp
             }
+
+            # Create a new file for the consolidated JSON to stream into
+            consolidated_filename = f"consolidated_{results_filename.replace('.jsonl', '.json')}"
+            consolidated_filepath = os.path.join(output_dir, consolidated_filename)
+
+            logger.info(f"Streaming results to consolidated file: {consolidated_filepath}")
+            with open(consolidated_filepath, 'w', encoding='utf-8') as f_out:
+                f_out.write('{"metadata": ')
+                json.dump(metadata, f_out)
+                f_out.write(', "results": [')
+
+                # Stream-read the JSONL and write to the new JSON file
+                with open(results_filepath, 'r', encoding='utf-8') as f_in:
+                    first = True
+                    for line in f_in:
+                        if line.strip():
+                            if not first:
+                                f_out.write(',')
+                            f_out.write(line.strip())
+                            first = False
+                
+                f_out.write(']}')
             
-            r2_key = f"batch-results/{results_filename.replace('.jsonl', '.json')}"
-            consolidated_json = json.dumps(consolidated_data, indent=None, separators=(',', ':')).encode('utf-8')
-            
-            if r2_manager.upload_object(r2_key, consolidated_json, content_type="application/json"):
+            logger.info("Consolidated file created successfully.")
+
+            # Upload the consolidated file using the new streaming method
+            r2_key = f"batch-results/{consolidated_filename}"
+            if r2_manager.upload_file(consolidated_filepath, r2_key, content_type="application/json"):
                 r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{r2_key}"
                 r2_upload_success = True
                 logger.info(f"Successfully uploaded consolidated results to R2: {r2_key}")
-                
-                try:
-                    config_key = f"batch-configs/{results_filename.replace('.jsonl', '')}_config.yaml"
-                    import yaml
-                    config_yaml = yaml.dump(config_manager.config, default_flow_style=False).encode('utf-8')
-                    if r2_manager.upload_object(config_key, config_yaml, content_type="text/yaml"):
-                        logger.info(f"Saved versioned config to R2: {config_key}")
-                    else:
-                        logger.warning(f"Failed to save config version: {config_key}")
-                except Exception as config_save_error:
-                    logger.warning(f"Failed to save config version: {config_save_error}")
             else:
                 logger.warning(f"Failed to upload results to R2: {r2_key}")
+
         except Exception as e:
-            logger.error(f"Error uploading to R2: {e}", exc_info=True)
-    elif r2_manager.is_available():
-        logger.warning(f"Skipping R2 upload for large dataset ({total_exams} exams > {MAX_RESULTS_FOR_R2} limit)")
-        logger.info("Results stored locally only - use pagination for viewing")
+            logger.error(f"Error during R2 upload process: {e}", exc_info=True)
     else:
         logger.warning("R2 not available - results only stored locally")
+
+    # Cleanup temporary files
+    try:
+        if os.path.exists(results_filepath):
+            os.remove(results_filepath)
+            logger.info(f"Cleaned up temporary results file: {results_filepath}")
+        if consolidated_filepath and os.path.exists(consolidated_filepath):
+            os.remove(consolidated_filepath)
+            logger.info(f"Cleaned up temporary consolidated file: {consolidated_filepath}")
+    except Exception as e:
+        logger.warning(f"Failed to clean up temporary files: {e}")
 
     MAX_INMEMORY_RESULTS = 10
     if len(exams_to_process) <= MAX_INMEMORY_RESULTS:
