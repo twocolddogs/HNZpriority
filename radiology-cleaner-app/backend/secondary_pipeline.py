@@ -302,7 +302,7 @@ class SecondaryPipeline:
         # Filter results below confidence threshold
         low_confidence = [
             r for r in results 
-            if r.get('confidence', 1.0) < self.config['confidence_threshold']
+            if r.get('components', {}).get('confidence', 1.0) < self.config['confidence_threshold']
         ]
         
         logger.info(f"Processing {len(low_confidence)} low-confidence results")

@@ -130,7 +130,7 @@ class BatchResultProcessor:
         if not results:
             return {'low_confidence_count': 0, 'average_confidence': 0.0}
         
-        confidences = [r.get('confidence', 1.0) for r in results]
+        confidences = [r.get('components', {}).get('confidence', 1.0) for r in results]
         threshold = self.integration.pipeline_config['confidence_threshold']
         
         return {
