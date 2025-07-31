@@ -801,6 +801,8 @@ def _process_batch(data, start_time):
     logger.info(f"Starting batch processing for {len(exams_to_process)} exams using model: '{model_key}', reranker: '{reranker_key}'")
     logger.info(f"Results will be streamed to: {results_filepath}")
     logger.info(f"Progress will be tracked at: {progress_filepath}")
+    logger.info(f"RENDER_DISK_PATH environment variable: {os.environ.get('RENDER_DISK_PATH', 'NOT_SET')}")
+    logger.info(f"Using output directory: {output_dir}")
     
     def update_progress(processed, total, success, errors):
         """Update progress file with current status"""
@@ -1015,7 +1017,13 @@ def get_batch_progress(batch_id):
         progress_filename = f"batch_progress_{batch_id}.json"
         progress_filepath = os.path.join(output_dir, progress_filename)
         
+        logger.info(f"Polling for batch_id: {batch_id}")
+        logger.info(f"Looking for progress file at: {progress_filepath}")
+        logger.info(f"RENDER_DISK_PATH environment variable: {os.environ.get('RENDER_DISK_PATH', 'NOT_SET')}")
+        logger.info(f"Using output directory: {output_dir}")
+        
         if not os.path.exists(progress_filepath):
+            logger.info(f"Progress file not found at: {progress_filepath}")
             return jsonify({"error": "Progress not found or batch completed"}), 404
         
         with open(progress_filepath, 'r') as pf:
