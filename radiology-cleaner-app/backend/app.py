@@ -948,14 +948,9 @@ def _process_batch(data, start_time):
             
             logger.info("Consolidated file created successfully.")
 
-            # Upload the consolidated file using the new streaming method
-            r2_key = f"batch-results/{consolidated_filename}"
-            if r2_manager.upload_file(consolidated_filepath, r2_key, content_type="application/json"):
-                r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{r2_key}"
-                r2_upload_success = True
-                logger.info(f"Successfully uploaded consolidated results to R2: {r2_key}")
-            else:
-                logger.warning(f"Failed to upload results to R2: {r2_key}")
+            # Delay R2 upload until after secondary pipeline processing to ensure
+            # we upload the final version (either original or merged)
+            logger.info("Consolidated file ready - will upload to R2 after secondary pipeline processing")
 
         except Exception as e:
             logger.error(f"Error during R2 upload process: {e}", exc_info=True)
@@ -1035,19 +1030,27 @@ def _process_batch(data, start_time):
                     
                     logger.info(f"Successfully merged results into: {merged_filepath}")
                     
-                    # Upload the merged file to R2
-                    merged_r2_key = f"batch-results/{os.path.basename(merged_filepath)}"
-                    if r2_manager.upload_file(merged_filepath, merged_r2_key, content_type="application/json"):
-                        r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{merged_r2_key}"
-                        consolidated_filepath = merged_filepath  # Update consolidated_filepath to the merged file
-                        r2_upload_success = True
-                        logger.info(f"Successfully uploaded merged results to R2: {r2_url}")
-                    else:
-                        logger.warning(f"Failed to upload merged results to R2: {merged_r2_key}")
+                    # Update consolidated_filepath to point to the merged file for final upload
+                    consolidated_filepath = merged_filepath
+                    logger.info(f"Merged results ready for R2 upload: {merged_filepath}")
 
             except Exception as e:
                 logger.error(f"Secondary pipeline failed: {e}", exc_info=True)
                 secondary_report = {"error": str(e)}
+
+    # Now upload the final file to R2 (either original consolidated or merged version)
+    if r2_manager and consolidated_filepath and os.path.exists(consolidated_filepath):
+        try:
+            final_filename = os.path.basename(consolidated_filepath)
+            r2_key = f"batch-results/{final_filename}"
+            if r2_manager.upload_file(consolidated_filepath, r2_key, content_type="application/json"):
+                r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{r2_key}"
+                r2_upload_success = True
+                logger.info(f"Successfully uploaded final results to R2: {r2_key}")
+            else:
+                logger.warning(f"Failed to upload final results to R2: {r2_key}")
+        except Exception as e:
+            logger.error(f"Error during final R2 upload: {e}", exc_info=True)
 
     # Cleanup temporary files (keep merged files for R2 upload)
     try:
