@@ -1066,8 +1066,77 @@ window.addEventListener('DOMContentLoaded', function() {
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
-            statusId = statusManager.show(`Running random sample demo with ${modelDisplayName} → ${rerankerDisplayName}...`, 'progress');
+            
+            // Start with a progress bar (we'll update the total once we know it)
+            statusId = statusManager.showProgress(`Running random sample demo with ${modelDisplayName} → ${rerankerDisplayName}`, 0, 100);
 
+            let pollingActive = true;
+            let batchId = null;
+            
+            // Start aggressive polling function
+            const pollProgress = async () => {
+                if (!pollingActive || !batchId) {
+                    // If we don't have batch_id yet, keep trying
+                    if (pollingActive) {
+                        setTimeout(pollProgress, 100);
+                    }
+                    return;
+                }
+                
+                try {
+                    console.log(`Polling progress for batch_id: ${batchId}`);
+                    const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchId}`);
+                    console.log(`Progress response status: ${progressResponse.status}`);
+                    
+                    if (progressResponse.ok && pollingActive) {
+                        const progressData = await progressResponse.json();
+                        console.log('Progress data:', progressData);
+                        
+                        const percentage = progressData.percentage || 0;
+                        const processed = progressData.processed || 0;
+                        const total = progressData.total || 100;
+                        const success = progressData.success || 0;
+                        const errors = progressData.errors || 0;
+                        
+                        if (statusId) {
+                            statusManager.updateProgress(statusId, processed, total, 
+                                `Random sample demo (${percentage}% - ${success} success, ${errors} errors)`);
+                        }
+                        
+                        // Continue polling if not complete
+                        if (percentage < 100 && processed < total && pollingActive) {
+                            setTimeout(pollProgress, 500); // Poll every 500ms during processing
+                        } else {
+                            console.log('Processing complete, stopping polling');
+                            pollingActive = false;
+                        }
+                    } else if (progressResponse.status === 404) {
+                        // Progress file not found yet, keep trying
+                        if (pollingActive) {
+                            setTimeout(pollProgress, 500);
+                        }
+                    }
+                } catch (progressError) {
+                    console.log('Progress polling error:', progressError);
+                    if (pollingActive) {
+                        setTimeout(pollProgress, 1000); // Slower retry on error
+                    }
+                }
+            };
+
+            // Start polling immediately - even before we get the batch_id
+            setTimeout(pollProgress, 100);
+            
+            // Set a maximum polling duration (2 minutes for 100 exams)
+            setTimeout(() => {
+                console.log('Maximum polling duration reached, stopping');
+                pollingActive = false;
+            }, 120000);
+
+            // Check if secondary pipeline should be enabled
+            const enableSecondary = document.getElementById('enableSecondaryPipeline')?.checked || false;
+            
+            // Start the API request
             const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
                 method: 'POST',
                 headers: {
@@ -1075,23 +1144,37 @@ window.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({
                     model: currentModel,
-                    reranker: currentReranker
+                    reranker: currentReranker,
+                    enable_secondary_pipeline: enableSecondary
                 })
             });
-
+            
             if (!response.ok) {
+                pollingActive = false;
                 throw new Error(`Random sample demo failed: ${response.statusText}`);
             }
 
             const result = await response.json();
             
             if (result.error) {
+                pollingActive = false;
                 throw new Error(result.error);
             }
 
+            // Set the batch_id so polling can start working
+            if (result.batch_id) {
+                batchId = result.batch_id;
+                console.log(`Got batch_id: ${batchId}, polling should now be active`);
+            }
+
+            // Wait for processing to complete (polling will handle progress updates)
+            // The API response comes back when processing is done
+            console.log('API response received, processing should be complete');
+            pollingActive = false;
+
             // Show processing completion
             if (statusId) statusManager.remove(statusId);
-            statusId = statusManager.show(`✅ Processing completed! ${result.processing_stats.processed_successfully} items processed`, 'success', 2000);
+            statusId = statusManager.show(`✅ Processing completed! ${result.processing_stats.successful || result.processing_stats.processed_successfully || 'Unknown'} items processed`, 'success', 2000);
             
             // Small delay to show completion message
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -1100,9 +1183,9 @@ window.addEventListener('DOMContentLoaded', function() {
             if (statusId) statusManager.remove(statusId);
             statusId = statusManager.show('Fetching results for display...', 'progress');
             
-            if (result.output?.url) {
+            if (result.r2_url) {
                 try {
-                    const resultsResponse = await fetch(result.output.url);
+                    const resultsResponse = await fetch(result.r2_url);
                     if (resultsResponse.ok) {
                         const resultsData = await resultsResponse.json();
                         console.log('R2 fetched resultsData:', resultsData); // Added for debugging
@@ -1113,15 +1196,33 @@ window.addEventListener('DOMContentLoaded', function() {
                             if (statusId) statusManager.remove(statusId);
                             statusId = statusManager.show('Analyzing results and generating display...', 'progress');
                             
+                            // Map the R2 results to the expected flat structure
+                            const mappedResults = results.map(item => {
+                                // Use backend structure directly
+                                return {
+                                    data_source: item.input?.DATA_SOURCE || item.input?.data_source || item.output?.data_source,
+                                    modality_code: item.input?.MODALITY_CODE || item.input?.modality_code || item.output?.modality_code,
+                                    exam_code: item.input?.EXAM_CODE || item.input?.exam_code || item.output?.exam_code,
+                                    exam_name: item.input?.EXAM_NAME || item.input?.exam_name || item.output?.exam_name,
+                                    clean_name: item.status === 'success' ? item.output?.clean_name : `ERROR: ${item.error}`,
+                                    snomed: item.status === 'success' ? item.output?.snomed || {} : {},
+                                    components: item.status === 'success' ? item.output?.components || {} : {},
+                                    all_candidates: item.status === 'success' ? item.output?.all_candidates || [] : [],
+                                    ambiguous: item.status === 'success' ? item.output?.ambiguous : false,
+                                    secondary_pipeline_applied: item.status === 'success' ? item.output?.secondary_pipeline_applied || false : false,
+                                    secondary_pipeline_details: item.status === 'success' ? item.output?.secondary_pipeline_details : undefined
+                                };
+                            });
+                            
                             // Set global variables to display the results
-                            allMappings = results;
-                            updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size} items)`);
+                            allMappings = mappedResults;
+                            updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size || result.processing_stats.total_processed} items)`);
                             
                             // Use runAnalysis to properly display results UI
                             try {
                                 runAnalysis(allMappings);
                                 
-                                const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || 'Unknown'} items processed`;
+                                const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || result.processing_stats.successful || 'Unknown'} items processed`;
                                 statusManager.show(successMessage, 'success', 5000);
                                 if (mainCard) mainCard.style.display = 'block'; // Ensure main content is visible after successful analysis
                             } catch (analysisError) {
@@ -1140,43 +1241,9 @@ window.addEventListener('DOMContentLoaded', function() {
                     console.error('Failed to fetch results from R2:', fetchError);
                     if (statusId) statusManager.remove(statusId);
                     
-                    // Try to download and process the data despite the fetch error
-                    try {
-                        statusId = statusManager.show('Retrying results download...', 'progress');
-                        const retryResponse = await fetch(result.output.url);
-                        
-                        if (retryResponse.ok) {
-                            const retryData = await retryResponse.json();
-                            const retryResults = retryData.results || retryData;
-                            if (retryResults && retryResults.length > 0) {
-                                if (statusId) statusManager.remove(statusId);
-                                statusId = statusManager.show('Processing downloaded results...', 'progress');
-                                
-                                // Process the data locally
-                                allMappings = retryResults;
-                                updatePageTitle(`Random Sample Demo (${result.processing_stats?.sample_size || 'Unknown'} items)`);
-                                
-                                try {
-                                    runAnalysis(allMappings);
-                                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || 'Unknown'} items processed`;
-                                    statusManager.show(successMessage, 'success', 5000);
-                                    return; // Exit successfully
-                                } catch (analysisError) {
-                                    console.error('Error during retry results analysis:', analysisError);
-                                    statusManager.show('❌ Error displaying retry results', 'error', 5000);
-                                    if (mainCard) mainCard.style.display = 'block';
-                                    return;
-                                }
-                            }
-                        }
-                    } catch (retryError) {
-                        console.error('Retry also failed:', retryError);
-                    }
-                    
-                    // If all attempts fail, show the download link as fallback
-                    if (statusId) statusManager.remove(statusId);
-                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats.processed_successfully} items processed`;
-                    const urlMessage = `<br><a href="${result.output.url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
+                    // If the fetch fails, provide a direct link as a fallback
+                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats.successful} items processed`;
+                    const urlMessage = `<br><a href="${result.r2_url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
                     statusManager.show(successMessage + urlMessage, 'success', 10000);
                 }
             } else {
@@ -1333,122 +1400,117 @@ window.addEventListener('DOMContentLoaded', function() {
             const batchResult = await response.json();
             console.log('Backend response:', batchResult);
 
-            // Note: Progress polling was implemented but since batch processing is synchronous,
-            // it only starts after processing completes. For now, show completed status.
-            if (progressId) {
+            // If we have a batch_id, poll for progress
+            if (batchResult.batch_id && progressId) {
+                // Poll for progress updates
+                const pollProgress = async () => {
+                    try {
+                        const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchResult.batch_id}`);
+                        if (progressResponse.ok) {
+                            const progressData = await progressResponse.json();
+                            const percentage = progressData.percentage || 0;
+                            const processed = progressData.processed || 0;
+                            const total = progressData.total || totalCodes;
+                            const success = progressData.success || 0;
+                            const errors = progressData.errors || 0;
+                            
+                            statusManager.updateProgress(progressId, processed, total, 
+                                `Processing ${jobName} (${percentage}% - ${success} success, ${errors} errors)`);
+                            
+                            // Continue polling if not complete
+                            if (percentage < 100 && processed < total) {
+                                setTimeout(pollProgress, 1000); // Poll every second
+                            } else {
+                                statusManager.updateProgress(progressId, total, total, 
+                                    `Completed processing ${jobName} (${success} success, ${errors} errors)`);
+                            }
+                        } else {
+                            // Progress file not found - processing likely complete
+                            statusManager.updateProgress(progressId, totalCodes, totalCodes, 
+                                `Completed processing ${jobName}`);
+                        }
+                    } catch (progressError) {
+                        console.log('Progress polling ended:', progressError.message);
+                        // Don't throw error, just complete the progress
+                        statusManager.updateProgress(progressId, totalCodes, totalCodes, 
+                            `Completed processing ${jobName}`);
+                    }
+                };
+                
+                // Start polling after a brief delay
+                setTimeout(pollProgress, 500);
+                
+                // Wait a bit for initial progress updates
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } else if (progressId) {
+                // Fallback if no batch_id available
                 statusManager.updateProgress(progressId, totalCodes, totalCodes, 
                     `Completed processing ${jobName}`);
             }
                 
-                // Handle both old format (inline results) and new format (file references)
-                if (batchResult.results) {
-                    // Old format - inline results
-                    const chunkMappings = batchResult.results.map(item => {
-                        return {
-                            original_item: {
-                                DATA_SOURCE: item.input.data_source,
-                                MODALITY_CODE: item.input.modality_code,
-                                EXAM_CODE: item.input.exam_code,
-                                EXAM_NAME: item.input.exam_name
-                            },
-                            processed_result: item.status === 'success' ? {
-                                clean_name: item.output.clean_name,
-                                snomed: item.output.snomed || {},
-                                components: item.output.components || {},
-                                all_candidates: item.output.all_candidates || []
-                            } : {
-                                clean_name: `ERROR: ${item.error}`,
-                                snomed: {},
-                                components: {},
-                                all_candidates: []
-                            }
-                        };
-                    });
-                    allMappings.push(...chunkMappings);
-                } else if (batchResult.r2_url && batchResult.r2_uploaded) {
-                    // R2 URL available - fetch directly from R2 (preferred method)
-                    console.log('Fetching results from R2:', batchResult.r2_url);
-                    
+                if (batchResult.r2_url) {
+                // R2 URL available - fetch directly from R2 (preferred method)
+                console.log('Fetching results from R2:', batchResult.r2_url);
+                
+                try {
                     const r2Response = await fetch(batchResult.r2_url);
                     if (r2Response.ok) {
                         const r2Data = await r2Response.json();
                         if (r2Data.results && r2Data.results.length > 0) {
                             const chunkMappings = r2Data.results.map(item => {
+                                // Use backend structure directly
                                 return {
-                                    original_item: {
-                                        DATA_SOURCE: item.input.data_source,
-                                        MODALITY_CODE: item.input.modality_code,
-                                        EXAM_CODE: item.input.exam_code,
-                                        EXAM_NAME: item.input.exam_name
-                                    },
-                                    processed_result: item.status === 'success' ? {
-                                        clean_name: item.output.clean_name,
-                                        snomed: item.output.snomed || {},
-                                        components: item.output.components || {},
-                                        all_candidates: item.output.all_candidates || []
-                                    } : {
-                                        clean_name: `ERROR: ${item.error}`,
-                                        snomed: {},
-                                        components: {},
-                                        all_candidates: []
-                                    }
+                                    data_source: item.input.DATA_SOURCE || item.input.data_source || item.output.data_source,
+                                    modality_code: item.input.MODALITY_CODE || item.input.modality_code || item.output.modality_code,
+                                    exam_code: item.input.EXAM_CODE || item.input.exam_code || item.output.exam_code,
+                                    exam_name: item.input.EXAM_NAME || item.input.exam_name || item.output.exam_name,
+                                    clean_name: item.status === 'success' ? item.output.clean_name : `ERROR: ${item.error}`,
+                                    snomed: item.status === 'success' ? item.output.snomed || {} : {},
+                                    components: item.status === 'success' ? item.output.components || {} : {},
+                                    all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
+                                    ambiguous: item.status === 'success' ? item.output.ambiguous : false,
+                                    secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
+                                    secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
                                 };
                             });
                             allMappings.push(...chunkMappings);
                             console.log(`Successfully loaded ${r2Data.results.length} results from R2`);
+                        } else {
+                            throw new Error('No results found in R2 data');
                         }
                     } else {
                         console.error('Failed to fetch from R2:', r2Response.statusText);
                         throw new Error(`Failed to fetch from R2: ${r2Response.statusText}`);
                     }
-                } else if (batchResult.results_filename || batchResult.file_reference || batchResult.results_file || batchResult.message?.includes('batch_results_')) {
-                    // Local file reference for large datasets (>50 exams)
-                    const fileReference = batchResult.results_filename || batchResult.file_reference || batchResult.results_file || batchResult.message;
-                    console.log('Fetching results from local file reference:', fileReference);
-                    
-                    // Extract filename from path if needed (results_file includes path)
-                    const filename = fileReference.includes('/') ? fileReference.split('/').pop() : fileReference;
-                    
-                    // Fetch the results file using the new endpoint
-                    const fileResponse = await fetch(`${apiConfig.baseUrl}/get_batch_results/${filename}`, {
-                        method: 'GET'
-                    });
-                    
-                    if (fileResponse.ok) {
-                        const fileData = await fileResponse.json();
-                        const fileResults = fileData.results || fileData;
-                        if (fileResults && fileResults.length > 0) {
-                            const chunkMappings = fileResults.map(item => {
-                                return {
-                                    original_item: {
-                                        DATA_SOURCE: item.input.data_source,
-                                        MODALITY_CODE: item.input.modality_code,
-                                        EXAM_CODE: item.input.exam_code,
-                                        EXAM_NAME: item.input.exam_name
-                                    },
-                                    processed_result: item.status === 'success' ? {
-                                        clean_name: item.output.clean_name,
-                                        snomed: item.output.snomed || {},
-                                        components: item.output.components || {},
-                                        all_candidates: item.output.all_candidates || []
-                                    } : {
-                                        clean_name: `ERROR: ${item.error}`,
-                                        snomed: {},
-                                        components: {},
-                                        all_candidates: []
-                                    }
-                                };
-                            });
-                            allMappings.push(...chunkMappings);
-                        }
-                    } else {
-                        console.error('Failed to fetch results file:', fileResponse.statusText);
-                        throw new Error(`Failed to fetch results file: ${fileResponse.statusText}`);
-                    }
-                } else {
-                    console.error('Unexpected response format:', batchResult);
-                    throw new Error('Unexpected response format from server');
+                } catch (error) {
+                    console.error('Error fetching or processing R2 results:', error);
+                    // Provide a fallback link for the user
+                    statusManager.show(`Processing complete. <a href="${batchResult.r2_url}" target="_blank">View results on R2</a>`, 'success', 0);
+                    return; // Stop further execution
                 }
+            } else if (batchResult.results) {
+                // Old format - inline results (for smaller batches)
+                const chunkMappings = batchResult.results.map(item => {
+                    // Use backend structure directly
+                    return {
+                        data_source: item.input.DATA_SOURCE || item.input.data_source || item.output.data_source,
+                        modality_code: item.input.MODALITY_CODE || item.input.modality_code || item.output.modality_code,
+                        exam_code: item.input.EXAM_CODE || item.input.exam_code || item.output.exam_code,
+                        exam_name: item.input.EXAM_NAME || item.input.exam_name || item.output.exam_name,
+                        clean_name: item.status === 'success' ? item.output.clean_name : `ERROR: ${item.error}`,
+                        snomed: item.status === 'success' ? item.output.snomed || {} : {},
+                        components: item.status === 'success' ? item.output.components || {} : {},
+                        all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
+                        ambiguous: item.status === 'success' ? item.output.ambiguous : false,
+                        secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
+                        secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
+                    };
+                });
+                allMappings.push(...chunkMappings);
+            } else {
+                console.error('Unexpected response format:', batchResult);
+                throw new Error('Unexpected response format from server. No R2 URL or inline results found.');
+            }
                 
             statusManager.show(`Successfully processed ${allMappings.length} records from ${jobName}.`, 'success', 5000);
             
@@ -1531,24 +1593,19 @@ window.addEventListener('DOMContentLoaded', function() {
 
             // Convert results to the same format as batch processing
             const chunkMappings = results.map(item => {
+                // Use backend structure directly
                 return {
-                    original_item: {
-                        DATA_SOURCE: item.input.DATA_SOURCE,
-                        MODALITY_CODE: item.input.MODALITY_CODE,
-                        EXAM_CODE: item.input.EXAM_CODE,
-                        EXAM_NAME: item.input.EXAM_NAME
-                    },
-                    processed_result: item.status === 'success' ? {
-                        clean_name: item.output.clean_name,
-                        snomed: item.output.snomed || {},
-                        components: item.output.components || {},
-                        all_candidates: item.output.all_candidates || []
-                    } : {
-                        clean_name: `ERROR: ${item.error}`,
-                        snomed: {},
-                        components: {},
-                        all_candidates: []
-                    }
+                    data_source: item.input.DATA_SOURCE || item.input.data_source || item.output.data_source,
+                    modality_code: item.input.MODALITY_CODE || item.input.modality_code || item.output.modality_code,
+                    exam_code: item.input.EXAM_CODE || item.input.exam_code || item.output.exam_code,
+                    exam_name: item.input.EXAM_NAME || item.input.exam_name || item.output.exam_name,
+                    clean_name: item.status === 'success' ? item.output.clean_name : `ERROR: ${item.error}`,
+                    snomed: item.status === 'success' ? item.output.snomed || {} : {},
+                    components: item.status === 'success' ? item.output.components || {} : {},
+                    all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
+                    ambiguous: item.status === 'success' ? item.output.ambiguous : false,
+                    secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
+                    secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
                 };
             });
 
@@ -1608,8 +1665,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function generateSourceLegend(mappings) {
         const uniqueSources = [...new Set(mappings.map(item => {
-            const normalized = normalizeResultItem(item);
-            return normalized.data_source;
+            return item.data_source;
         }))];
         const sourceNames = getSourceNames();
         
@@ -1641,7 +1697,6 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('consolidationRatio').textContent = `${summary.consolidationRatio}:1`;
         document.getElementById('modalityCount').textContent = Object.keys(summary.modalityBreakdown).length;
         document.getElementById('avgConfidence').textContent = `${summary.avgConfidence}%`;
-        document.getElementById('genderContext').textContent = summary.genderContextCount;
     }
 
     const sourceColorPalette = [
@@ -1698,35 +1753,15 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function normalizeResultItem(item) {
-        // Check if it's a nested structure from demo_random_sample
-        if (item.original_item && item.processed_result) {
-            return {
-                data_source: item.original_item.DATA_SOURCE,
-                modality_code: item.original_item.MODALITY_CODE,
-                exam_code: item.original_item.EXAM_CODE,
-                exam_name: item.original_item.EXAM_NAME,
-                
-                // Processed results
-                clean_name: item.processed_result.clean_name,
-                ambiguous: item.processed_result.ambiguous,
-                snomed: item.processed_result.snomed,
-                components: item.processed_result.components,
-                all_candidates: item.processed_result.all_candidates
-            };
-        } else {
-            // Assume it's already a flat structure (e.g., from sanity_test)
-            return item;
-        }
-    }
+    // Removed normalizeResultItem function - now using backend structure directly
 
     function displayResults(results) {
         resultsBody.innerHTML = '';
         const resultsMobile = document.getElementById('resultsMobile');
         if (resultsMobile) resultsMobile.innerHTML = '';
         
-        results.forEach(rawItem => {
-            const item = normalizeResultItem(rawItem);
+        results.forEach(item => {
+            // item is already in the correct format from the mapping above
             const row = resultsBody.insertRow();
             
             const sourceCell = row.insertCell();
@@ -1810,7 +1845,9 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidence = item.components?.confidence || 0;
             const confidencePercent = Math.round(confidence * 100);
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
-            confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>`;
+            const isSecondaryPipelineApplied = item.secondary_pipeline_applied || false;
+            const secondaryPipelineTag = isSecondaryPipelineApplied ? '<div class="secondary-pipeline-tag" title="Improved by Secondary Pipeline"><i class="fas fa-robot"></i> AI Enhanced</div>' : '';
+            confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>${secondaryPipelineTag}`;
             
             // Create mobile card
             if (resultsMobile) {
@@ -1876,22 +1913,18 @@ window.addEventListener('DOMContentLoaded', function() {
         const summary = {
             totalOriginalCodes: mappings.length,
             uniqueCleanNames: new Set(mappings.map(m => {
-                const normalized = normalizeResultItem(m);
-                return normalized.clean_name;
+                return m.clean_name;
             }).filter(n => n && !n.startsWith('ERROR'))).size,
             modalityBreakdown: {}, 
             avgConfidence: 0,
-            genderContextCount: 0,
         };
         summary.consolidationRatio = summary.uniqueCleanNames > 0 ? (summary.totalOriginalCodes / summary.uniqueCleanNames).toFixed(2) : "0.00";
         
         let totalConfidence = 0, confidenceCount = 0;
-        mappings.forEach(rawItem => {
-            const m = normalizeResultItem(rawItem);
+        mappings.forEach(m => {
             if (!m.components || !m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const modality = m.components.modality || m.modality_code;
             if (modality) summary.modalityBreakdown[modality] = (summary.modalityBreakdown[modality] || 0) + 1;
-            if (m.components.gender_context) summary.genderContextCount++;
             if (m.components.confidence !== undefined) {
                 totalConfidence += m.components.confidence;
                 confidenceCount++;
@@ -1921,8 +1954,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function generateConsolidatedResults(mappings) {
         const consolidatedGroups = {};
-        mappings.forEach(rawItem => {
-            const m = normalizeResultItem(rawItem);
+        mappings.forEach(m => {
             if (!m.clean_name || m.clean_name.startsWith('ERROR')) return;
             const group = consolidatedGroups[m.clean_name] || {
                 cleanName: m.clean_name,
@@ -1931,12 +1963,16 @@ window.addEventListener('DOMContentLoaded', function() {
                 totalCount: 0,
                 components: m.components,
                 dataSources: new Set(),
-                modalities: new Set()
+                modalities: new Set(),
+                secondaryPipelineCount: 0
             };
             group.sourceCodes.push(m);
             group.totalCount++;
             group.dataSources.add(m.data_source);
             group.modalities.add(m.modality_code);
+            if (m.secondary_pipeline_applied) {
+                group.secondaryPipelineCount++;
+            }
             consolidatedGroups[m.clean_name] = group;
         });
         
@@ -2020,7 +2056,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     <div class="consolidated-meta">
                         <div class="meta-item"><strong>Data Sources</strong><div class="source-indicators">${Array.from(group.dataSources).map(source => `<div class="source-item" title="${getSourceDisplayName(source)}"><span class="source-color-dot" style="background-color: ${getSourceColor(source)}"></span>${getSourceDisplayName(source)}</div>`).join('')}</div></div>
                         <div class="meta-item"><strong>Modalities</strong><div class="modality-list">${Array.from(group.modalities).filter(m => m && m.trim()).join(', ') || 'None specified'}</div></div>
-                        <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div></div>
+                        <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div>${group.secondaryPipelineCount > 0 ? `<div class="secondary-pipeline-tag" title="${group.secondaryPipelineCount} of ${group.totalCount} results improved by Secondary Pipeline"><i class="fas fa-robot"></i> ${group.secondaryPipelineCount} AI Enhanced</div>` : ''}</div>
                         <div class="meta-item"><strong>Parsed Components</strong><div class="component-tags">${generateComponentTags(group.components)}</div></div>
                     </div>
                     <div class="original-codes-container" style="display: none;">
@@ -2241,6 +2277,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 if (currentDataSource === 'demo') {
                     demoOptions.style.display = 'block';
                     runProcessingBtn.style.display = 'none';
+                    // Show secondary pipeline option for demo
+                    const secondaryPipelineOption = document.getElementById('secondaryPipelineOption');
+                    if (secondaryPipelineOption) secondaryPipelineOption.style.display = 'block';
                     // Only enable if models are loaded and not using fallbacks
                     const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
                     runRandomDemoBtn.disabled = !canEnable;
@@ -2248,6 +2287,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 } else if (currentDataSource === 'upload') {
                     demoOptions.style.display = 'none';
                     runProcessingBtn.style.display = 'block';
+                    // Hide secondary pipeline option for file upload
+                    const secondaryPipelineOption = document.getElementById('secondaryPipelineOption');
+                    if (secondaryPipelineOption) secondaryPipelineOption.style.display = 'none';
                     // Only enable if models are loaded and not using fallbacks
                     const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
                     runProcessingBtn.disabled = !canEnable;

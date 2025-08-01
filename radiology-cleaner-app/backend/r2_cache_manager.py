@@ -72,6 +72,37 @@ class R2CacheManager:
             logger.error(f"AWS/R2 error uploading object {object_key}: {e}")
             return False
 
+    def upload_file(self, local_file_path: str, object_key: str, content_type: str = None, cors_headers: bool = True) -> bool:
+        """Uploads a local file to R2 using a memory-efficient multipart upload."""
+        if not self.is_available(): return False
+        try:
+            extra_args = {}
+            if content_type:
+                extra_args['ContentType'] = content_type
+            
+            if cors_headers:
+                extra_args['CacheControl'] = 'public, max-age=3600'
+                extra_args['ContentDisposition'] = 'inline'
+                extra_args['Metadata'] = {
+                    'access-type': 'public',
+                    'cors-enabled': 'true'
+                }
+
+            self.client.upload_file(
+                Filename=local_file_path,
+                Bucket=self.bucket_name,
+                Key=object_key,
+                ExtraArgs=extra_args
+            )
+            logger.info(f"Successfully uploaded file to R2: {object_key}")
+            return True
+        except ClientError as e:
+            logger.error(f"AWS/R2 error uploading file {object_key}: {e}")
+            return False
+        except FileNotFoundError:
+            logger.error(f"Local file not found for upload: {local_file_path}")
+            return False
+
     # --- NEW GENERIC DOWNLOAD METHOD ---
     def download_object(self, object_key: str, local_file_path: str) -> bool:
         """Downloads an object from R2 and saves it to a local file."""
