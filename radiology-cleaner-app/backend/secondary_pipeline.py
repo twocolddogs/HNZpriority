@@ -121,8 +121,15 @@ class OpenRouterEnsemble:
         original_confidence = context.get('original_confidence', 0.0)
         similar_exams = context.get('similar_exams', [])
         
-        prompt = f"""
-You are a radiology informatics expert tasked with accurately classifying medical imaging exams.
+        json_format = '''
+{{
+    "modality": "YOUR_CLASSIFICATION",
+    "confidence": 0.XX,
+    "reasoning": "Detailed explanation of your classification logic"
+}}
+'''
+
+        prompt = f"""You are a radiology informatics expert tasked with accurately classifying medical imaging exams.
 
 EXAM TO CLASSIFY: "{exam_name}"
 
@@ -154,11 +161,7 @@ INSTRUCTIONS:
 5. Explain your reasoning clearly
 
 REQUIRED OUTPUT FORMAT (JSON):
-{{
-    "modality": "YOUR_CLASSIFICATION",
-    "confidence": 0.XX,
-    "reasoning": "Detailed explanation of your classification logic"
-}}
+{json_format}
 """
         return prompt
     
