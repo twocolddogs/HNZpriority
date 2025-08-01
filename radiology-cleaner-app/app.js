@@ -1208,7 +1208,9 @@ window.addEventListener('DOMContentLoaded', function() {
                                     snomed: item.status === 'success' ? item.output?.snomed || {} : {},
                                     components: item.status === 'success' ? item.output?.components || {} : {},
                                     all_candidates: item.status === 'success' ? item.output?.all_candidates || [] : [],
-                                    ambiguous: item.status === 'success' ? item.output?.ambiguous : false
+                                    ambiguous: item.status === 'success' ? item.output?.ambiguous : false,
+                                    secondary_pipeline_applied: item.status === 'success' ? item.output?.secondary_pipeline_applied || false : false,
+                                    secondary_pipeline_details: item.status === 'success' ? item.output?.secondary_pipeline_details : undefined
                                 };
                             });
                             
@@ -1466,7 +1468,9 @@ window.addEventListener('DOMContentLoaded', function() {
                                     snomed: item.status === 'success' ? item.output.snomed || {} : {},
                                     components: item.status === 'success' ? item.output.components || {} : {},
                                     all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
-                                    ambiguous: item.status === 'success' ? item.output.ambiguous : false
+                                    ambiguous: item.status === 'success' ? item.output.ambiguous : false,
+                                    secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
+                                    secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
                                 };
                             });
                             allMappings.push(...chunkMappings);
@@ -1497,7 +1501,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         snomed: item.status === 'success' ? item.output.snomed || {} : {},
                         components: item.status === 'success' ? item.output.components || {} : {},
                         all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
-                        ambiguous: item.status === 'success' ? item.output.ambiguous : false
+                        ambiguous: item.status === 'success' ? item.output.ambiguous : false,
+                        secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
+                        secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
                     };
                 });
                 allMappings.push(...chunkMappings);
@@ -1597,7 +1603,9 @@ window.addEventListener('DOMContentLoaded', function() {
                     snomed: item.status === 'success' ? item.output.snomed || {} : {},
                     components: item.status === 'success' ? item.output.components || {} : {},
                     all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
-                    ambiguous: item.status === 'success' ? item.output.ambiguous : false
+                    ambiguous: item.status === 'success' ? item.output.ambiguous : false,
+                    secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
+                    secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
                 };
             });
 
