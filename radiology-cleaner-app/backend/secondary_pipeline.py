@@ -14,6 +14,7 @@ import statistics
 import openai
 from datetime import datetime
 import os
+import yaml
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -54,10 +55,13 @@ class EnsembleResult:
 class OpenRouterEnsemble:
     """Ensemble system using multiple OpenRouter models"""
     
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, config: Dict = None):
         self.api_key = api_key or os.getenv('OPENROUTER_API_KEY')
         if not self.api_key:
             raise ValueError("OpenRouter API key required")
+        
+        # Load configuration
+        self.config = config or self._load_default_config()
         
         # Configure OpenAI client for OpenRouter
         self.client = openai.AsyncOpenAI(
@@ -65,11 +69,11 @@ class OpenRouterEnsemble:
             base_url="https://openrouter.ai/api/v1"
         )
         
-        self.models = [
+        self.models = self.config.get('secondary_pipeline', {}).get('models', [
             ModelType.CLAUDE_SONNET.value,
             ModelType.GPT4_TURBO.value, 
             ModelType.GEMINI_PRO.value
-        ]
+        ])
     
     async def query_model(self, model: str, exam_name: str, context: Dict) -> ModelResponse:
         """Query a single model for exam classification"""
@@ -84,8 +88,8 @@ class OpenRouterEnsemble:
                 messages=[
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.1,  # Low temperature for consistency
-                max_tokens=500
+                temperature=self.config.get('secondary_pipeline', {}).get('temperature', 0.1),
+                max_tokens=self.config.get('secondary_pipeline', {}).get('max_tokens', 500)
             )
             
             processing_time = asyncio.get_event_loop().time() - start_time
@@ -114,22 +118,22 @@ class OpenRouterEnsemble:
                 processing_time=asyncio.get_event_loop().time() - start_time
             )
     
-    def _build_enhanced_prompt(self, exam_name: str, context: Dict) -> str:
-        """Build enhanced prompt with context from original processing"""
-        
-        original_modality = context.get('original_modality', 'UNKNOWN')
-        original_confidence = context.get('original_confidence', 0.0)
-        similar_exams = context.get('similar_exams', [])
-        
-        json_format = '''
-{{
-    "modality": "YOUR_CLASSIFICATION",
-    "confidence": 0.XX,
-    "reasoning": "Detailed explanation of your classification logic"
-}}
-'''
-
-        prompt = f"""You are a radiology informatics expert tasked with accurately classifying medical imaging exams.
+    def _load_default_config(self) -> Dict:
+        """Load configuration from YAML file"""
+        config_path = os.path.join(os.path.dirname(__file__), 'training_testing', 'config.yaml')
+        try:
+            with open(config_path, 'r') as f:
+                return yaml.safe_load(f)
+        except FileNotFoundError:
+            logger.warning(f"Config file not found at {config_path}, using defaults")
+            return {}
+        except Exception as e:
+            logger.error(f"Error loading config: {e}")
+            return {}
+    
+    def _get_default_prompt_template(self) -> str:
+        """Default prompt template as fallback"""
+        return """You are a radiology informatics expert tasked with accurately classifying medical imaging exams.
 
 EXAM TO CLASSIFY: "{exam_name}"
 
@@ -139,7 +143,7 @@ CONTEXT FROM INITIAL PROCESSING:
 - This exam was flagged for review due to low confidence (<80%)
 
 SIMILAR EXAMS FOR REFERENCE:
-{self._format_similar_exams(similar_exams)}
+{similar_exams}
 
 AVAILABLE MODALITIES:
 - XR (X-Ray/Radiography)
@@ -161,8 +165,31 @@ INSTRUCTIONS:
 5. Explain your reasoning clearly
 
 REQUIRED OUTPUT FORMAT (JSON):
-{json_format}
-"""
+{{
+    "modality": "YOUR_CLASSIFICATION",
+    "confidence": 0.XX,
+    "reasoning": "Detailed explanation of your classification logic"
+}}"""
+    
+    def _build_enhanced_prompt(self, exam_name: str, context: Dict) -> str:
+        """Build enhanced prompt with context from original processing"""
+        
+        original_modality = context.get('original_modality', 'UNKNOWN')
+        original_confidence = context.get('original_confidence', 0.0)
+        similar_exams = context.get('similar_exams', [])
+        
+        
+        # Get prompt template from config
+        prompt_template = self.config.get('secondary_pipeline', {}).get('prompt_template', self._get_default_prompt_template())
+        
+        # Format the prompt with context variables
+        prompt = prompt_template.format(
+            exam_name=exam_name,
+            original_modality=original_modality,
+            original_confidence=original_confidence,
+            similar_exams=self._format_similar_exams(similar_exams)
+        )
+        
         return prompt
     
     def _format_similar_exams(self, similar_exams: List[Dict]) -> str:
@@ -288,17 +315,36 @@ class SecondaryPipeline:
     """Main secondary pipeline coordinator"""
     
     def __init__(self, config: Dict = None):
-        self.config = config or self._default_config()
-        self.ensemble = OpenRouterEnsemble(self.config.get('openrouter_api_key'))
+        self.config = config or self._load_config()
+        self.ensemble = OpenRouterEnsemble(self.config.get('openrouter_api_key'), self.config)
         
-    def _default_config(self) -> Dict:
-        """Default configuration for secondary pipeline"""
-        return {
+    def _load_config(self) -> Dict:
+        """Load configuration from YAML file with defaults"""
+        config_path = os.path.join(os.path.dirname(__file__), 'training_testing', 'config.yaml')
+        try:
+            with open(config_path, 'r') as f:
+                yaml_config = yaml.safe_load(f)
+        except (FileNotFoundError, Exception) as e:
+            logger.warning(f"Could not load config from {config_path}: {e}")
+            yaml_config = {}
+        
+        # Merge with defaults
+        defaults = {
             'confidence_threshold': 0.8,
             'openrouter_api_key': os.getenv('OPENROUTER_API_KEY'),
             'max_concurrent_requests': 5,
             'output_path': os.path.join(os.environ.get('RENDER_DISK_PATH', '/tmp'), 'secondary_pipeline_results.json')
         }
+        
+        # Override defaults with values from secondary_pipeline section if present
+        secondary_config = yaml_config.get('secondary_pipeline', {})
+        if 'confidence_threshold' in secondary_config:
+            defaults['confidence_threshold'] = secondary_config['confidence_threshold']
+        if 'max_concurrent_requests' in secondary_config:
+            defaults['max_concurrent_requests'] = secondary_config['max_concurrent_requests']
+        
+        # Return merged config with yaml data included
+        return {**defaults, **yaml_config}
     
     async def process_low_confidence_results(self, results: List[Dict]) -> List[EnsembleResult]:
         """Process list of low-confidence results through ensemble"""

@@ -587,3 +587,62 @@ preprocessing:
     testes: testes
     testis: testes
     'whole body': 'whole body'
+
+# ====================================================================================
+# SECONDARY PIPELINE CONFIGURATION
+# Configuration for the multi-model ensemble pipeline used for low-confidence results
+# ====================================================================================
+secondary_pipeline:
+  # Enhanced prompt template for secondary pipeline model queries
+  prompt_template: |
+    You are a radiology informatics expert tasked with accurately classifying medical imaging exams.
+
+    EXAM TO CLASSIFY: "{exam_name}"
+
+    CONTEXT FROM INITIAL PROCESSING:
+    - Original Classification: {original_modality}
+    - Original Confidence: {original_confidence:.2f}
+    - This exam was flagged for review due to low confidence (<80%)
+
+    SIMILAR EXAMS FOR REFERENCE:
+    {similar_exams}
+
+    AVAILABLE MODALITIES:
+    - XR (X-Ray/Radiography)
+    - CT (Computed Tomography) 
+    - MR (Magnetic Resonance Imaging)
+    - US (Ultrasound)
+    - FL (Fluoroscopy)
+    - IR (Interventional Radiology)
+    - Mamm (Mammography)
+    - NM (Nuclear Medicine)
+    - PET (Positron Emission Tomography)
+    - Other (Procedures not fitting standard modalities)
+
+    INSTRUCTIONS:
+    1. Analyze the exam name carefully, considering medical terminology and context
+    2. Consider the original classification and whether it seems reasonable
+    3. Use the similar exams as reference points for pattern recognition
+    4. Provide your classification with confidence score (0.0-1.0)
+    5. Explain your reasoning clearly
+
+    REQUIRED OUTPUT FORMAT (JSON):
+    {{
+        "modality": "YOUR_CLASSIFICATION",
+        "confidence": 0.XX,
+        "reasoning": "Detailed explanation of your classification logic"
+    }}
+
+  # Model configuration
+  models:
+    - "anthropic/claude-3.5-sonnet"
+    - "openai/gpt-4-turbo"
+    - "google/gemini-2.5-pro"
+  
+  # API settings
+  temperature: 0.1
+  max_tokens: 500
+  
+  # Pipeline settings
+  confidence_threshold: 0.8
+  max_concurrent_requests: 5
