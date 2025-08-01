@@ -997,31 +997,47 @@ def _process_batch(data, start_time):
                     finally:
                         loop.close()
 
-                if secondary_report and secondary_report.get('results'):
+                if secondary_report and secondary_report.get('secondary_results') and secondary_report['secondary_results'].get('results'):
                     logger.info("Merging secondary pipeline results into the main result set...")
                     
                     # Load the original consolidated data again to be safe
                     with open(consolidated_filepath, 'r', encoding='utf-8') as f:
                         original_data = json.load(f)
                     
-                    # Create a dictionary for faster lookups
+                    # Create a dictionary for faster lookups using exam_name as the key
                     results_map = {res['input']['exam_name']: res for res in original_data['results']}
                     
                     # Merge results
-                    for secondary_res in secondary_report['results']:
-                        exam_name = secondary_res['original_result']['original_result']['input']['exam_name']
-                        if exam_name in results_map:
-                            # Update the relevant fields
-                            results_map[exam_name]['output']['components']['modality'] = [secondary_res['consensus_modality']]
-                            results_map[exam_name]['output']['components']['confidence'] = secondary_res['consensus_confidence']
-                            results_map[exam_name]['output']['secondary_pipeline_applied'] = True
-                            results_map[exam_name]['output']['secondary_pipeline_details'] = {
-                                'original_modality': secondary_res['original_result']['original_modality'],
-                                'original_confidence': secondary_res['original_result']['original_confidence'],
-                                'consensus_modality': secondary_res['consensus_modality'],
-                                'consensus_confidence': secondary_res['consensus_confidence'],
-                                'agreement_score': secondary_res['agreement_score'],
+                    for secondary_res in secondary_report['secondary_results']['results']:
+                        # The secondary_res contains the full original result, so we can extract the exam_name directly
+                        exam_name = secondary_res.get('original_result', {}).get('input', {}).get('exam_name')
+                        if exam_name and exam_name in results_map:
+                            # Get the original result from the map
+                            original_full_result = results_map[exam_name]
+
+                            # Update the 'output' part of the original result
+                            original_output = original_full_result.get('output', {})
+                            
+                            # Update confidence and modality
+                            original_output['components']['confidence'] = secondary_res.get('consensus_confidence', original_output.get('components', {}).get('confidence'))
+                            original_output['components']['modality'] = [secondary_res.get('consensus_modality', original_output.get('components', {}).get('modality', [None])[0])]
+
+                            # Add secondary pipeline metadata
+                            original_output['secondary_pipeline_applied'] = True
+                            original_output['secondary_pipeline_details'] = {
+                                'original_modality': secondary_res.get('original_result', {}).get('output', {}).get('components', {}).get('modality'),
+                                'original_confidence': secondary_res.get('original_result', {}).get('output', {}).get('components', {}).get('confidence'),
+                                'consensus_modality': secondary_res.get('consensus_modality'),
+                                'consensus_confidence': secondary_res.get('consensus_confidence'),
+                                'agreement_score': secondary_res.get('agreement_score'),
+                                'models_used': secondary_res.get('models_used', [])
                             }
+                            
+                            # Update the map with the modified result
+                            results_map[exam_name] = original_full_result
+
+                    # Reconstruct the results list from the updated map
+                    original_data['results'] = list(results_map.values())
 
                     # Overwrite the consolidated file with the merged data
                     merged_filepath = consolidated_filepath.replace('.json', '_merged.json')
