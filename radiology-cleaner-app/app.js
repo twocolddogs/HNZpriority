@@ -1837,7 +1837,9 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidence = item.components?.confidence || 0;
             const confidencePercent = Math.round(confidence * 100);
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
-            confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>`;
+            const isSecondaryPipelineApplied = item.secondary_pipeline_applied || false;
+            const secondaryPipelineTag = isSecondaryPipelineApplied ? '<div class="secondary-pipeline-tag" title="Improved by Secondary Pipeline"><i class="fas fa-robot"></i> AI Enhanced</div>' : '';
+            confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>${secondaryPipelineTag}`;
             
             // Create mobile card
             if (resultsMobile) {
@@ -1953,12 +1955,16 @@ window.addEventListener('DOMContentLoaded', function() {
                 totalCount: 0,
                 components: m.components,
                 dataSources: new Set(),
-                modalities: new Set()
+                modalities: new Set(),
+                secondaryPipelineCount: 0
             };
             group.sourceCodes.push(m);
             group.totalCount++;
             group.dataSources.add(m.data_source);
             group.modalities.add(m.modality_code);
+            if (m.secondary_pipeline_applied) {
+                group.secondaryPipelineCount++;
+            }
             consolidatedGroups[m.clean_name] = group;
         });
         
@@ -2042,7 +2048,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     <div class="consolidated-meta">
                         <div class="meta-item"><strong>Data Sources</strong><div class="source-indicators">${Array.from(group.dataSources).map(source => `<div class="source-item" title="${getSourceDisplayName(source)}"><span class="source-color-dot" style="background-color: ${getSourceColor(source)}"></span>${getSourceDisplayName(source)}</div>`).join('')}</div></div>
                         <div class="meta-item"><strong>Modalities</strong><div class="modality-list">${Array.from(group.modalities).filter(m => m && m.trim()).join(', ') || 'None specified'}</div></div>
-                        <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div></div>
+                        <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div>${group.secondaryPipelineCount > 0 ? `<div class="secondary-pipeline-tag" title="${group.secondaryPipelineCount} of ${group.totalCount} results improved by Secondary Pipeline"><i class="fas fa-robot"></i> ${group.secondaryPipelineCount} AI Enhanced</div>` : ''}</div>
                         <div class="meta-item"><strong>Parsed Components</strong><div class="component-tags">${generateComponentTags(group.components)}</div></div>
                     </div>
                     <div class="original-codes-container" style="display: none;">

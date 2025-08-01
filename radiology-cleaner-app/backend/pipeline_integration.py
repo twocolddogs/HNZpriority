@@ -30,7 +30,8 @@ class PipelineIntegration:
             'confidence_threshold': self.app_config.get('SECONDARY_PIPELINE_THRESHOLD', 0.8),
             'openrouter_api_key': self.app_config.get('OPENROUTER_API_KEY') or os.getenv('OPENROUTER_API_KEY'),
             'max_concurrent_requests': self.app_config.get('SECONDARY_PIPELINE_CONCURRENCY', 3),
-            'output_path': self.app_config.get('SECONDARY_PIPELINE_OUTPUT', '/tmp/secondary_results.json'),
+            'output_path': self.app_config.get('SECONDARY_PIPELINE_OUTPUT', 
+                                               os.path.join(os.environ.get('RENDER_DISK_PATH', '/tmp'), 'secondary_results.json')),
             'enabled': self.app_config.get('ENABLE_SECONDARY_PIPELINE', True)
         }
     
@@ -162,7 +163,7 @@ def create_config_template() -> Dict:
         'SECONDARY_PIPELINE_MODELS': [
             'anthropic/claude-3.5-sonnet',
             'openai/gpt-4-turbo', 
-            'google/gemini-pro'
+            'google/gemini-2.5-pro'
         ],
         
         # Performance Settings

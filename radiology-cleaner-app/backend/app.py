@@ -791,8 +791,8 @@ def _process_batch(data, start_time):
     enable_secondary = data.get('enable_secondary_pipeline', False)
     
     import uuid
-    # Use a dedicated directory for temporary batch processing files (not the persistent cache)
-    output_dir = 'batch_outputs'
+    # Use persistent disk if available, otherwise fall back to local directory
+    output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
     os.makedirs(output_dir, exist_ok=True)
     batch_id = uuid.uuid4().hex
     results_filename = f"batch_results_{batch_id}.jsonl"
@@ -1049,14 +1049,17 @@ def _process_batch(data, start_time):
                 logger.error(f"Secondary pipeline failed: {e}", exc_info=True)
                 secondary_report = {"error": str(e)}
 
-    # Cleanup temporary files
+    # Cleanup temporary files (keep merged files for R2 upload)
     try:
         if os.path.exists(results_filepath):
             os.remove(results_filepath)
             logger.info(f"Cleaned up temporary results file: {results_filepath}")
-        if consolidated_filepath and os.path.exists(consolidated_filepath):
-            os.remove(consolidated_filepath)
-            logger.info(f"Cleaned up temporary consolidated file: {consolidated_filepath}")
+        # Only cleanup original consolidated file if we have a merged version
+        original_consolidated = consolidated_filepath.replace('_merged.json', '.json')
+        if original_consolidated != consolidated_filepath and os.path.exists(original_consolidated):
+            os.remove(original_consolidated)
+            logger.info(f"Cleaned up original consolidated file: {original_consolidated}")
+        # Keep merged file for R2 upload success verification
     except Exception as e:
         logger.warning(f"Failed to clean up temporary files: {e}")
 
@@ -1077,7 +1080,8 @@ def _process_batch(data, start_time):
             "model_used": model_key,
             "reranker_used": reranker_key,
             "secondary_pipeline_enabled": enable_secondary and SECONDARY_PIPELINE_AVAILABLE and secondary_integration and secondary_integration.is_enabled()
-        }
+        },
+        "secondary_pipeline_summary": secondary_report if secondary_report else None
     }
     
     if secondary_report:

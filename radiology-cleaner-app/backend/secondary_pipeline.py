@@ -23,7 +23,7 @@ class ModelType(Enum):
     """Available OpenRouter models for ensemble processing"""
     CLAUDE_SONNET = "anthropic/claude-3.5-sonnet"
     GPT4_TURBO = "openai/gpt-4-turbo"
-    GEMINI_PRO = "google/gemini-pro"
+    GEMINI_PRO = "google/gemini-2.5-pro"
 
 @dataclass
 class ModelResponse:
@@ -273,12 +273,9 @@ REQUIRED OUTPUT FORMAT (JSON):
         # Calculate agreement score
         agreement_score = len(consensus_responses) / len(valid_responses)
         
-        # Generate reasoning
-        reasoning_parts = []
-        for response in consensus_responses:
-            reasoning_parts.append(f"{response.model}: {response.reasoning}")
-        
-        final_reasoning = f"Consensus ({len(consensus_responses)}/{len(valid_responses)} models agree): {'; '.join(reasoning_parts)}"
+        # Generate simplified reasoning for logs
+        model_names = [r.model.split('/')[-1] for r in consensus_responses]
+        final_reasoning = f"Consensus ({len(consensus_responses)}/{len(valid_responses)} models agree): {', '.join(model_names)}"
         
         return {
             'modality': consensus_modality,
@@ -300,7 +297,7 @@ class SecondaryPipeline:
             'confidence_threshold': 0.8,
             'openrouter_api_key': os.getenv('OPENROUTER_API_KEY'),
             'max_concurrent_requests': 5,
-            'output_path': '/tmp/secondary_pipeline_results.json'
+            'output_path': os.path.join(os.environ.get('RENDER_DISK_PATH', '/tmp'), 'secondary_pipeline_results.json')
         }
     
     async def process_low_confidence_results(self, results: List[Dict]) -> List[EnsembleResult]:
