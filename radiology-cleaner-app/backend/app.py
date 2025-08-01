@@ -1039,6 +1039,7 @@ def _process_batch(data, start_time):
                     merged_r2_key = f"batch-results/{os.path.basename(merged_filepath)}"
                     if r2_manager.upload_file(merged_filepath, merged_r2_key, content_type="application/json"):
                         r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{merged_r2_key}"
+                        consolidated_filepath = merged_filepath  # Update consolidated_filepath to the merged file
                         r2_upload_success = True
                         logger.info(f"Successfully uploaded merged results to R2: {r2_url}")
                     else:
