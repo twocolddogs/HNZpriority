@@ -1009,31 +1009,28 @@ def _process_batch(data, start_time):
                     
                     # Merge results
                     for secondary_res in secondary_report['secondary_results']['results']:
-                        # The secondary_res contains the full original result, so we can extract the exam_name directly
-                        exam_name = secondary_res.get('original_result', {}).get('input', {}).get('exam_name')
-                        if exam_name and exam_name in results_map:
-                            # Get the original result from the map
-                            original_full_result = results_map[exam_name]
+                        # Correctly extract exam_name from the properly nested structure
+                        exam_name = secondary_res.get('original_result', {}).get('original_result', {}).get('input', {}).get('exam_name')
 
-                            # Update the 'output' part of the original result
+                        if exam_name and exam_name in results_map:
+                            original_full_result = results_map[exam_name]
                             original_output = original_full_result.get('output', {})
                             
-                            # Update confidence and modality
+                            # Update confidence and modality from consensus
                             original_output['components']['confidence'] = secondary_res.get('consensus_confidence', original_output.get('components', {}).get('confidence'))
-                            original_output['components']['modality'] = [secondary_res.get('consensus_modality', original_output.get('components', {}).get('modality', [None])[0])]
+                            original_output['components']['modality'] = [secondary_res.get('consensus_modality', 'UNKNOWN')]
 
-                            # Add secondary pipeline metadata
+                            # Add detailed secondary pipeline metadata
                             original_output['secondary_pipeline_applied'] = True
                             original_output['secondary_pipeline_details'] = {
-                                'original_modality': secondary_res.get('original_result', {}).get('output', {}).get('components', {}).get('modality'),
-                                'original_confidence': secondary_res.get('original_result', {}).get('output', {}).get('components', {}).get('confidence'),
+                                'original_modality': secondary_res.get('original_result', {}).get('original_modality'),
+                                'original_confidence': secondary_res.get('original_result', {}).get('original_confidence'),
                                 'consensus_modality': secondary_res.get('consensus_modality'),
                                 'consensus_confidence': secondary_res.get('consensus_confidence'),
                                 'agreement_score': secondary_res.get('agreement_score'),
-                                'models_used': secondary_res.get('models_used', [])
+                                'models_used': [resp['model'] for resp in secondary_res.get('model_responses', [])]
                             }
                             
-                            # Update the map with the modified result
                             results_map[exam_name] = original_full_result
 
                     # Reconstruct the results list from the updated map
