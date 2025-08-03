@@ -125,17 +125,49 @@ class OpenRouterEnsemble:
             )
     
     def _load_default_config(self) -> Dict:
-        """Load configuration from YAML file"""
-        config_path = os.path.join(os.path.dirname(__file__), 'training_testing', 'config', 'config.yaml')
+        """Load configuration from R2 production URL (same as primary pipeline)"""
         try:
-            with open(config_path, 'r') as f:
-                return yaml.safe_load(f)
-        except FileNotFoundError:
-            logger.warning(f"Config file not found at {config_path}, using defaults")
-            return {}
+            from config_manager import get_config
+            config_manager = get_config()
+            
+            # Get the full config (all sections)
+            full_config = {}
+            
+            # Load all sections that secondary pipeline needs
+            scoring_config = config_manager.get_section('scoring')
+            if scoring_config:
+                full_config['scoring'] = scoring_config
+                
+            secondary_config = config_manager.get_section('secondary_pipeline') 
+            if secondary_config:
+                full_config['secondary_pipeline'] = secondary_config
+                
+            modality_config = config_manager.get_section('modality_similarity')
+            if modality_config:
+                full_config['modality_similarity'] = modality_config
+                
+            preprocessing_config = config_manager.get_section('preprocessing')
+            if preprocessing_config:
+                full_config['preprocessing'] = preprocessing_config
+            
+            logger.info("Loaded configuration from R2 production config (same as primary pipeline)")
+            return full_config
+            
         except Exception as e:
-            logger.error(f"Error loading config: {e}")
-            return {}
+            logger.error(f"Could not load R2 production config: {e}")
+            logger.info("Falling back to local config file")
+            
+            # Fallback to local file
+            config_path = os.path.join(os.path.dirname(__file__), 'training_testing', 'config', 'config.yaml')
+            try:
+                with open(config_path, 'r') as f:
+                    return yaml.safe_load(f)
+            except FileNotFoundError:
+                logger.warning(f"Config file not found at {config_path}, using defaults")
+                return {}
+            except Exception as e:
+                logger.error(f"Error loading local config: {e}")
+                return {}
     
     def _get_default_prompt_template(self) -> str:
         """Default prompt template as fallback"""
@@ -288,24 +320,71 @@ class SecondaryPipeline:
         self.ensemble = OpenRouterEnsemble(self.config.get('openrouter_api_key'), self.config)
         
     def _load_config(self) -> Dict:
-        """Load configuration from YAML file with defaults"""
-        config_path = os.path.join(os.path.dirname(__file__), 'training_testing', 'config', 'config.yaml')
+        """Load configuration from R2 production URL (same as primary pipeline)"""
         try:
-            with open(config_path, 'r') as f:
-                yaml_config = yaml.safe_load(f)
-        except (FileNotFoundError, Exception) as e:
-            logger.warning(f"Could not load config from {config_path}: {e}")
-            yaml_config = {}
-        
-        defaults = {
-            'confidence_threshold': 0.8,
-            'openrouter_api_key': os.getenv('OPENROUTER_API_KEY'),
-            'max_concurrent_requests': 5,
-            'output_path': os.path.join(os.environ.get('RENDER_DISK_PATH', '/tmp'), 'secondary_pipeline_results.json')
-        }
-        
-        secondary_config = yaml_config.get('secondary_pipeline', {})
-        return {**defaults, **secondary_config, 'prompt_template': secondary_config.get('prompt_template')}
+            from config_manager import get_config
+            config_manager = get_config()
+            
+            # Get the full config (all sections)
+            full_config = {}
+            
+            # Load all sections that secondary pipeline needs
+            scoring_config = config_manager.get_section('scoring')
+            if scoring_config:
+                full_config['scoring'] = scoring_config
+                
+            secondary_config = config_manager.get_section('secondary_pipeline') 
+            if secondary_config:
+                full_config['secondary_pipeline'] = secondary_config
+                # Also merge secondary_pipeline settings directly into root config for compatibility
+                full_config.update(secondary_config)
+                
+            modality_config = config_manager.get_section('modality_similarity')
+            if modality_config:
+                full_config['modality_similarity'] = modality_config
+                
+            preprocessing_config = config_manager.get_section('preprocessing')
+            if preprocessing_config:
+                full_config['preprocessing'] = preprocessing_config
+            
+            # Add defaults for any missing values
+            defaults = {
+                'confidence_threshold': 0.8,
+                'openrouter_api_key': os.getenv('OPENROUTER_API_KEY'),
+                'max_concurrent_requests': 5,
+                'output_path': os.path.join(os.environ.get('RENDER_DISK_PATH', '/tmp'), 'secondary_pipeline_results.json')
+            }
+            
+            # Merge defaults with loaded config
+            for key, value in defaults.items():
+                if key not in full_config:
+                    full_config[key] = value
+            
+            logger.info("SecondaryPipeline loaded configuration from R2 production config")
+            return full_config
+            
+        except Exception as e:
+            logger.error(f"SecondaryPipeline could not load R2 production config: {e}")
+            logger.info("Falling back to local config file")
+            
+            # Fallback to local file
+            config_path = os.path.join(os.path.dirname(__file__), 'training_testing', 'config', 'config.yaml')
+            try:
+                with open(config_path, 'r') as f:
+                    yaml_config = yaml.safe_load(f)
+            except (FileNotFoundError, Exception) as e:
+                logger.warning(f"Could not load config from {config_path}: {e}")
+                yaml_config = {}
+            
+            defaults = {
+                'confidence_threshold': 0.8,
+                'openrouter_api_key': os.getenv('OPENROUTER_API_KEY'),
+                'max_concurrent_requests': 5,
+                'output_path': os.path.join(os.environ.get('RENDER_DISK_PATH', '/tmp'), 'secondary_pipeline_results.json')
+            }
+            
+            secondary_config = yaml_config.get('secondary_pipeline', {})
+            return {**defaults, **secondary_config, 'prompt_template': secondary_config.get('prompt_template')}
 
     async def process_low_confidence_results(self, results: List[Dict]) -> List[EnsembleResult]:
         """Process list of low-confidence results through ensemble"""
