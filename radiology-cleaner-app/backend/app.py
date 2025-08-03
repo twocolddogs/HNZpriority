@@ -1419,7 +1419,7 @@ def demo_random_sample():
         if not isinstance(input_data, list):
             return jsonify({"error": "Input file must contain a JSON array"}), 400
         
-        sample_size = 100
+        sample_size = 20
         if len(input_data) < sample_size:
             logger.warning(f"Input file contains only {len(input_data)} items, using all")
             sample_size = len(input_data)
