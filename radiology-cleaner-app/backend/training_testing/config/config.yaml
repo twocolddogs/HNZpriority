@@ -19,7 +19,7 @@ scoring:
 
   # Number of initial candidates to retrieve from the fast vector search (FAISS).
   # A larger number might find a better match but increases processing time for the scoring stage.
-  retriever_top_k: 20
+  retriever_top_k: 15
 
   # --- COMPONENT WEIGHTS ---
   # These weights determine the importance of each structured part of the exam name when
@@ -32,35 +32,13 @@ scoring:
     technique: 0.10    # Importance of matching specific techniques (e.g., 'MRCP', 'SPECT').
 
   # --- FINAL SCORE WEIGHTS ---
-  # V4 Architecture: Reranker-specific weights optimize each model types strengths
+  # V3 Architecture: These weights combine the 'component_score' (rules-based), 'reranker_score' (cross-encoder),
+  # and 'complexity_score' (appropriateness matching) to produce the final confidence score.
   weights_final:
-    # Default weights (fallback for any unlisted rerankers)
-    component: 0.55    # Rules-based component matching
-    reranker: 0.45     # Cross-encoder/LLM reranking score
-
-    # Reranker-specific weights (optimal tuning per model type)
-    reranker_specific:
-      # NLP Models - Need more component scoring help due to limited clinical reasoning
-      medcpt:
-        component: 0.65   
-        reranker: 0.35
-      biolord:
-        component: 0.60   # Slightly more trust in BioLORD than MedCPT
-        reranker: 0.40
-      default:  # BioLORD fallback
-        component: 0.60
-        reranker: 0.40
-
-      # OpenRouter Models - Trust their advanced medical reasoning more
-      gpt-4o-mini:
-        component: 0.45   # Let GPTs medical logic shine
-        reranker: 0.55
-      claude-3-haiku:
-        component: 0.50   # Balanced approach for Claude
-        reranker: 0.50
-      gemini-2.5-flash-lite:
-        component: 0.48   # Slightly favor Geminis reasoning
-        reranker: 0.52
+    component: 0.65    # How much to trust the structured component match (rules-based). Increased to counteract reranker dominance.
+    reranker: 0.35     # How much to trust the MedCPT cross-encoder reranking score. Reduced to give component scoring more influence.
+    # complexity: 0.15   # How much to trust complexity appropriateness (simple inputs prefer simple FSNs).
+    # frequency: 0.10  # This appears to be a planned or deprecated feature for popularity-based scoring.
 
   # ----------------------------------------------------------------------------------
   # BONUSES & PENALTIES
@@ -140,26 +118,6 @@ scoring:
   # For a generic input (e.g., "CT"), this gives a bonus to a generic candidate (e.g., "CT without contrast").
   anatomy_specificity_preference: true
   generic_anatomy_preference_bonus: 0.15
-
-  # --- DEXA GENERIC PREFERENCE ---
-  # CRITICAL: When input is generic "DEXA" without anatomical qualifiers, strongly prefer generic bone densitometry
-  dexa_generic_preference:
-    enable: true
-    generic_preference_bonus: 0.50   # Strong bonus for generic "CT Bone densitometry" when input lacks anatomy
-    specific_penalty: -0.25          # Penalty for specific anatomical DEXA entries when input is generic
-    generic_dexa_indicators:         # Terms that indicate generic DEXA intent
-      - "dexa"
-      - "bone density"
-      - "bone densitometry"
-      - "dual energy"
-      - "dxa"
-    generic_nhs_entries:             # NHS entries that should get the generic bonus
-      - "CT Bone densitometry"
-      - "Bone densitometry"
-    specific_nhs_patterns:           # NHS patterns that should get penalized when input is generic
-      - "DEXA Scan of.*"
-      - "Dual energy.*absorptiometry.*of.*"
-      - "Bone mineral densitometry.*"
 
   # --- VESSEL TYPE PREFERENCE ---
   # CRITICAL: When input says "angiography" (generic), prefer arterial over venous studies
@@ -292,7 +250,7 @@ scoring:
     specificity_match_bonus: 0.15      # Bonus when clinical specificity levels match
     generic_over_specific_penalty: -0.10  # Penalty when NHS is generic but input is specific
     
-    # Clinical specificity patterns (specific â†’ generic hierarchy)
+    # Clinical specificity patterns (specific → generic hierarchy)
     clinical_specificity_patterns:
       # Pregnancy/Obstetric specificity
       pregnancy_specific:
@@ -321,15 +279,15 @@ scoring:
 # Defines a "partial credit" score for related but different modalities.
 # ====================================================================================
 modality_similarity:
-  CT: { CECT: 0.9, DECT: 0.8, HRCT: 0.9, PET: 0.7, DEXA: 0.85, DXA: 0.85, XR: 0.2, Fluoroscopy: 0.1 }
+  CT: { CECT: 0.9, DECT: 0.8, HRCT: 0.9, PET: 0.7, XR: 0.2, Fluoroscopy: 0.1 }
   MR: { MRI: 1.0, MRA: 0.95, FMRI: 0.8, CT: 0.1 }
   XR: { "X-ray": 1.0, Xray: 1.0, MG: 0.5, FL: 0.6, DEXA: 0.9 }
   US: { Ultrasound: 1.0, USS: 0.9, MRI: 0.1 }
   MG: { Mammography: 1.0, Mammogram: 1.0, Tomosynthesis: 0.9, XR: 0.5 }
   NM: { "Nuclear Medicine": 1.0, Scintigraphy: 0.8, SPECT: 0.9, PET: 0.4 }
   PET: { "PET/CT": 0.95, CT: 0.7 }
-  DEXA: { DXA: 1.0, "Bone Densitometry": 1.0, CT: 0.95, XR: 0.2 }
-  DXA: { DEXA: 1.0, "Bone Densitometry": 1.0, CT: 0.95, XR: 0.2 }
+  DEXA: { DXA: 1.0, "Bone Densitometry": 1.0, XR: 0.2 }
+  DXA: { DEXA: 1.0, "Bone Densitometry": 1.0, XR: 0.2 }
   IR: { Fluoroscopy: 0.6, CT: 0.2, US: 0.2 }
   FL: { Fluoroscopy: 1.0, XR: 0.6, IR: 0.6 } # Assuming FL is Fluoroscopy
 
@@ -367,8 +325,8 @@ preprocessing:
     "C spine": "cervical spine"            
     "L spine": "lumbar spine"              
     "T spine": "thoracic spine"            
-    "Bone density": "dexa bone densitometry"
-    "Bone density scan": "dexa bone densitometry"
+    "Bone density": "dexa"
+    "Bone density scan": "dexa"
     "Renogram": "renogram"                
     "Xray": "x-ray"                        
 
@@ -437,9 +395,9 @@ preprocessing:
     "REN": "renal"
     
     # --- MODALITY & TECHNIQUE ---
-    "MRCP": "magnetic resonance cholangiopancreatography biliary pancreas liver"
-    "DEXA": "dexa bone densitometry"
-    "DXA": "dexa bone densitometry" # Normalize DXA to DEXA
+    "MRCP": "magnetic resonance cholangiopancreatography"
+    "DEXA": "dual-energy x-ray absorptiometry"
+    "DXA": "dexa" # Normalize DXA to DEXA
     "NM": "nuclear medicine"
     "IR": "interventional radiology"
     "FL": "fluoroscopy"
@@ -507,7 +465,7 @@ preprocessing:
     "ABDOMEN": "abdomen"
     "ABDO": "abdomen"
     "TUMMY": "abdomen"
-    "BRAIN": "head"
+    "BRAIN": "brain"
     "CRANIUM": "head"
     "CHED": "head"
     "THORAX": "chest"
@@ -525,7 +483,7 @@ preprocessing:
     
   anatomy_vocabulary:
     head: head
-    brain: head
+    brain: brain
     skull: head
     cranium: head
     sinus: sinuses
@@ -563,11 +521,8 @@ preprocessing:
     spine: spine
     spinal: spine
     'cervical spine': 'cervical spine'
-    'spine cervical': 'cervical spine'
     'thoracic spine': 'thoracic spine'
-    'spine thoracic': 'thoracic spine'
     'lumbar spine': 'lumbar spine'
-    'spine lumbar': 'lumbar spine'
     sacrum: sacrum
     coccyx: coccyx
     shoulder: shoulder
@@ -606,7 +561,6 @@ preprocessing:
     thyroid: thyroid
     bone: bone
     bones: bone
-    densitometry: bone
     joint: joint
     joints: joint
     'soft tissue': 'soft tissue'
@@ -616,7 +570,6 @@ preprocessing:
     adrenals: adrenal
     biliary: biliary
     gallbladder: gallbladder
-    cholangiopancreatography: biliary
     'lymph node': 'lymph node'
     'lymph nodes': 'lymph node'
     parotid: parotid
@@ -634,3 +587,74 @@ preprocessing:
     testes: testes
     testis: testes
     'whole body': 'whole body'
+
+# ====================================================================================
+# SECONDARY PIPELINE CONFIGURATION
+# Configuration for the multi-model ensemble pipeline used for low-confidence results
+# ====================================================================================
+secondary_pipeline:
+  # Enhanced prompt template for secondary pipeline model queries
+  prompt_template: |
+    You are a senior radiology informatics specialist performing a final quality assurance review.
+
+    An initial automated system has failed to confidently match a real-world radiology exam name to a standardized procedure. Your task is to use your expert judgment to select the single best match from a list of candidates. This is a critical step for low-confidence cases, so precision is essential.
+
+    ---
+    **INPUTS:**
+
+    1.  **`input_exam`**: The real-world exam name to be matched.
+        - `{exam_name}`
+
+    2.  **`candidate_procedures`**: A numbered list of potential matches retrieved by the initial system. Each candidate has a name and its original modality.
+        ```json
+        {similar_exams_json_str}
+        ```
+
+    ---
+    **CRITICAL INSTRUCTIONS:**
+
+    1.  **Analyze the `input_exam`**: Deconstruct it to identify the core modality, anatomy, and any clinical specifiers (e.g., contrast, laterality, interventional terms like 'biopsy' or 'guidance').
+
+    2.  **Evaluate Each Candidate**: Systematically compare the `input_exam` against each `candidate_procedure` using the following strict criteria, in order:
+        *   **A. Modality and Anatomy Match (Essential):** The candidate's modality and primary anatomy MUST match the input. A mismatch here is a failure (e.g., "CT Head" cannot match "MRI Head").
+        *   **B. Clinical Specifier Match (High Priority):**
+            *   **Contrast:** "with contrast" vs. "without contrast" must be respected.
+            *   **Interventional Terms:** If the input has terms like "biopsy", "guidance", or "drainage", the chosen candidate MUST also be interventional. If the input is diagnostic, the candidate must NOT be interventional.
+            *   **Laterality:** Match terms like "left", "right", "bilateral". If the input is non-specific, prefer a non-specific or bilateral candidate.
+        *   **C. Principle of Sufficient Specificity (Tie-breaker):** From the candidates that pass the above checks, select the one that is the best fit in terms of detail.
+            *   **Do not add information:** If the input is "CT Chest", the best match is "CT of Chest", not "CT of Chest with contrast".
+            *   **Do not lose information:** If the input is "CT Chest with contrast", the candidate "CT of Chest" is a poor match because it loses the critical contrast specifier.
+
+    3.  **Select the Single Best Match**: Choose the one candidate number that represents the most accurate and safest match based on your evaluation.
+
+    4.  **Provide Justification**: Explain your choice by referencing the evaluation criteria above. Be specific about why the chosen candidate is superior and why other plausible candidates were rejected.
+
+    ---
+    **REQUIRED OUTPUT FORMAT (JSON):**
+
+    - You **MUST** respond with **ONLY** a single, valid JSON object.
+    - Do not add any explanation, commentary, or markdown formatting before or after the JSON object.
+
+    ```json
+    {{
+        "best_match_candidate_number": <Integer>,
+        "best_match_procedure_name": "The full name of the chosen procedure",
+        "final_modality": "The modality of the chosen procedure (e.g., CT, MRI, XR)",
+        "confidence": <Float from 0.0 to 1.0>,
+        "reasoning": "Detailed explanation of your choice, referencing the evaluation criteria and comparing the chosen candidate to other top contenders."
+    }}
+    ```
+
+  # Model configuration
+  models:
+    - "anthropic/claude-3.5-sonnet"
+    - "openai/gpt-4-turbo"
+    - "google/gemini-2.5-pro"
+  
+  # API settings
+  temperature: 0.1
+  max_tokens: 500
+  
+  # Pipeline settings
+  confidence_threshold: 0.8
+  max_concurrent_requests: 5
