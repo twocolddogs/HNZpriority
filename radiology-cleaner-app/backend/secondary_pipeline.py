@@ -174,9 +174,7 @@ class OpenRouterEnsemble:
         """Parse structured response from the new selection-focused model prompt."""
         try:
             # Try to extract JSON from response, including markdown code blocks
-            match = re.search(r"""```json
-({.*?})
-```""", content, re.DOTALL)
+            match = re.search(r"```json\s*(\{.*?\})\s*```", content, re.DOTALL)
             if match:
                 json_str = match.group(1)
             else:
@@ -344,7 +342,7 @@ class SecondaryPipeline:
 
         return ensemble_results
     
-    def save_results(self, results: List[EnsembleResult}, output_path: str = None):
+    def save_results(self, results: List[EnsembleResult], output_path: str = None):
         """Save ensemble results to file"""
         output_path = output_path or self.config.get('output_path')
         
@@ -359,7 +357,7 @@ class SecondaryPipeline:
         
         logger.info(f"Results saved to {output_path}")
     
-    def generate_improvement_report(self, results: List[EnsembleResult}) -> Dict:
+    def generate_improvement_report(self, results: List[EnsembleResult]) -> Dict:
         """Generate report on improvements achieved"""
         
         if not results:
