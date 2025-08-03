@@ -622,7 +622,10 @@ secondary_pipeline:
 
   # User prompt with clearer instructions and placeholders.
   prompt_template: |
-    As a senior radiology informatics specialist, select the single best match for the `input_exam` from the `candidate_procedures`.
+    You are a meticulous radiology data standardization expert. Your task is to map an `input_exam` to the most appropriate candidate from a given list, following a strict principle of parsimony.
+
+    **GUIDING PRINCIPLE: The Principle of Parsimony**
+    The correct match is the one that includes all specified components from the `input_exam` (modality, anatomy, contrast, etc.) while introducing the **absolute minimum** of new, unspecified information. Do not "upgrade" the exam to a more complex version. Your goal is strict standardization, not clinical recommendation.
 
     **INPUT EXAM:**
     `{exam_name}`
@@ -633,20 +636,26 @@ secondary_pipeline:
     ```
 
     **INSTRUCTIONS:**
-    1.  **Analyze Input:** Identify the core modality, anatomy, and clinical specifiers (contrast, laterality, interventional terms) in the `input_exam`.
-    2.  **Evaluate Candidates:** Compare the `input_exam` to each candidate, prioritizing matches for modality, anatomy, and clinical specifiers.
-    3.  **Select Best Match:** Choose the candidate that is the most accurate and safest match by its `snomed_id`. Do not add or lose critical information (like contrast).
-    4.  **Justify:** Briefly explain your choice and why other plausible candidates were rejected.
+    1.  **Strictly Decompose Input:** Identify the essential components of the `input_exam`: Modality, Anatomy, Contrast, and any other key specifiers.
+    2.  **Evaluate Candidates against Input:** For each candidate, determine if it meets all the essential components from the input.
+    3.  **Apply the Parsimony Filter:**
+        -   **Penalize Additions:** Heavily penalize and likely reject any candidate that adds significant new information not present in the input. For example, if the input is `MRI Lumbar Spine`, a candidate for `MRI Lumbar spine and pelvis` is incorrect because it adds 'pelvis'.
+        -   **Prefer Simplicity:** If multiple candidates match the input components, choose the simplest one (the one with the fewest extra words/concepts).
+    4.  **Select Best Match:** Choose the candidate that best adheres to the Guiding Principle. If no candidate is a good fit, state that.
+    5.  **Justify Your Choice:** In your reasoning, explicitly state why your chosen candidate is the most parsimonious match and briefly mention why a more complex (but plausible-looking) alternative was rejected.
+
+    **EXAMPLE OF CORRECT LOGIC:**
+    - If `input_exam` is "CT Chest", and candidates are "CT Chest" and "CT Chest with contrast", you MUST choose "CT Chest". The addition of "with contrast" makes the second option incorrect as it was not specified.
 
     **RETURN A SINGLE, VALID JSON OBJECT AND NOTHING ELSE.**
 
     ```json
-    {
+    {{
         "best_match_snomed_id": "The SNOMED ID of the chosen procedure",
         "best_match_procedure_name": "The primary_name of the chosen procedure",
         "confidence": <Float between 0.0 and 1.0>,
-        "reasoning": "Brief but specific justification for your choice."
-    }
+        "reasoning": "My choice is the most parsimonious match. I rejected [Other Candidate] because it added [New Information] which was not in the input."
+    }}
     ```
 
   # Model configuration

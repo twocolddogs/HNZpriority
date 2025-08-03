@@ -294,6 +294,17 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
         logger.info(f"[DEBUG-FLOW] About to call standardize_exam with debug=True, is_input_simple={is_input_simple}")
     nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key)
     
+    if nhs_result.get('error') == 'EXCLUDED_NON_CLINICAL':
+        logger.info(f"Engine excluded '{exam_name}' as non-clinical. Formatting final response.")
+        # Return a formatted response consistent with the preprocessor's exclusion logic.
+        return {
+            'error': 'EXCLUDED_NON_CLINICAL',
+            'message': nhs_result.get('message', f'Excluded non-clinical entry: {exam_name}'),
+            'exam_name': exam_name,
+            'excluded': True
+        }
+    
+    
     ### FIX: The context (gender, age, etc.) is a property of the INPUT request, not the matched NHS entry.
     ### We must calculate context here from the cleaned input string to ensure it's always correct.
     components_from_engine = nhs_result.get('components', {})

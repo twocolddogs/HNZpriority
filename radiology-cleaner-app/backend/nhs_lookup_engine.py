@@ -390,6 +390,21 @@ class NHSLookupEngine:
         # Get reranker scores using selected reranker
         rerank_scores = self.reranker_manager.get_rerank_scores(input_exam, candidate_texts, reranker_key)
         
+        # ### NEW LOGIC START ###
+        # Check for the "clinically invalid" signal from the reranker (all scores are 0.0)
+        is_clinically_invalid = all(score == 0.0 for score in rerank_scores)
+
+        if is_clinically_invalid:
+            logger.warning(f"[V4-PIPELINE] Input exam '{input_exam}' was flagged as clinically invalid by the reranker. Aborting match.")
+            # Return a specific error/status that app.py can handle
+            return {
+                'error': 'EXCLUDED_NON_CLINICAL',
+                'message': f'Reranker identified input as non-clinical: {input_exam}',
+                'confidence': 0.0,
+                'all_candidates': [] # No candidates are relevant
+            }
+        # ### NEW LOGIC END ###
+
         if not rerank_scores or len(rerank_scores) != len(candidate_entries):
             logger.warning(f"[V4-PIPELINE] Reranker {reranker_name} failed (got {len(rerank_scores) if rerank_scores else 0} scores for {len(candidate_entries)} candidates) - using neutral fallback")
             rerank_scores = [0.5] * len(candidate_entries)  # Neutral fallback
