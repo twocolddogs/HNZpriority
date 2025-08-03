@@ -1,5 +1,5 @@
 # ====================================================================================
-# UNIFIED SCORING & PREPROCESSING CONFIGURATION (V3.1 - AUGMENTED)
+# UNIFIED SCORING & PREPROCESSING CONFIGURATION (V3.2 - ROBUST PROMPTING)
 # ====================================================================================
 # This file centralizes all business logic, weights, rules, and abbreviations for the
 # radiology exam standardization engine. It is the "brain" of the application.
@@ -613,58 +613,39 @@ preprocessing:
     'whole body': 'whole body'
 
 # ====================================================================================
-# SECONDARY PIPELINE CONFIGURATION
-# Configuration for the multi-model ensemble pipeline used for low-confidence results
+# SECONDARY PIPELINE CONFIGURATION (V2 - MORE ROBUST)
 # ====================================================================================
 secondary_pipeline:
-  # Enhanced prompt template for secondary pipeline model queries
+  # System prompt to set the model's role and behavior firmly.
+  system_prompt: |
+    You are a silent, efficient JSON API endpoint. Your sole purpose is to receive a query and return a single, valid JSON object with no extra text, commentary, or markdown. Do not say "Here is the JSON object". Do not use markdown. Respond ONLY with the JSON.
+
+  # User prompt with clearer instructions and placeholders.
   prompt_template: |
-    You are a senior radiology informatics specialist performing a final quality assurance review.
+    As a senior radiology informatics specialist, select the single best match for the `input_exam` from the `candidate_procedures`.
 
-    An initial automated system has failed to confidently match a real-world radiology exam name to a standardized procedure. Your task is to use your expert judgment to select the single best match from a list of candidates. This is a critical step for low-confidence cases, so precision is essential.
+    **INPUT EXAM:**
+    `{exam_name}`
 
-    ---
-    **INPUTS:**
+    **CANDIDATE PROCEDURES:**
+    ```json
+    {similar_exams}
+    ```
 
-    1.  **`input_exam`**: The real-world exam name to be matched.
-        - `{exam_name}`
+    **INSTRUCTIONS:**
+    1.  **Analyze Input:** Identify the core modality, anatomy, and clinical specifiers (contrast, laterality, interventional terms) in the `input_exam`.
+    2.  **Evaluate Candidates:** Compare the `input_exam` to each candidate, prioritizing matches for modality, anatomy, and clinical specifiers.
+    3.  **Select Best Match:** Choose the candidate that is the most accurate and safest match by its `snomed_id`. Do not add or lose critical information (like contrast).
+    4.  **Justify:** Briefly explain your choice and why other plausible candidates were rejected.
 
-    2.  **`candidate_procedures`**: An array of potential matches retrieved by the initial system. Each candidate includes the procedure name, SNOMED details, and confidence score.
-        ```json
-        {similar_exams}
-        ```
-
-    ---
-    **CRITICAL INSTRUCTIONS:**
-
-    1.  **Analyze the `input_exam`**: Deconstruct it to identify the core modality, anatomy, and any clinical specifiers (e.g., contrast, laterality, interventional terms like 'biopsy' or 'guidance').
-
-    2.  **Evaluate Each Candidate**: Systematically compare the `input_exam` against each `candidate_procedure` using the following strict criteria, in order:
-        *   **A. Modality and Anatomy Match (Essential):** The candidate's modality and primary anatomy MUST match the input. A mismatch here is a failure (e.g., "CT Head" cannot match "MRI Head").
-        *   **B. Clinical Specifier Match (High Priority):**
-            *   **Contrast:** "with contrast" vs. "without contrast" must be respected.
-            *   **Interventional Terms:** If the input has terms like "biopsy", "guidance", or "drainage", the chosen candidate MUST also be interventional. If the input is diagnostic, the candidate must NOT be interventional.
-            *   **Laterality:** Match terms like "left", "right", "bilateral". If the input is non-specific, prefer a non-specific or bilateral candidate.
-        *   **C. Principle of Sufficient Specificity (Tie-breaker):** From the candidates that pass the above checks, select the one that is the best fit in terms of detail.
-            *   **Do not add information:** If the input is "CT Chest", the best match is "CT of Chest", not "CT of Chest with contrast".
-            *   **Do not lose information:** If the input is "CT Chest with contrast", the candidate "CT of Chest" is a poor match because it loses the critical contrast specifier.
-
-    3.  **Select the Single Best Match**: Choose the one candidate by its `snomed_id` that represents the most accurate and safest match based on your evaluation.
-
-    4.  **Provide Justification**: Explain your choice by referencing the evaluation criteria above. Be specific about why the chosen candidate is superior and why other plausible candidates were rejected.
-
-    ---
-    **REQUIRED OUTPUT FORMAT (JSON):**
-
-    - You **MUST** respond with **ONLY** a single, valid JSON object.
-    - Do not add any explanation, commentary, or markdown formatting before or after the JSON object.
+    **RETURN A SINGLE, VALID JSON OBJECT AND NOTHING ELSE.**
 
     ```json
     {{
         "best_match_snomed_id": "The SNOMED ID of the chosen procedure",
         "best_match_procedure_name": "The primary_name of the chosen procedure",
-        "confidence": <Float from 0.0 to 1.0>,
-        "reasoning": "Detailed explanation of your choice, referencing the evaluation criteria and comparing the chosen candidate to other top contenders."
+        "confidence": <Float between 0.0 and 1.0>,
+        "reasoning": "Brief but specific justification for your choice."
     }}
     ```
 
@@ -675,8 +656,8 @@ secondary_pipeline:
     - "google/gemini-2.5-pro"
   
   # API settings
-  temperature: 0.1
-  max_tokens: 500
+  temperature: 0.0 # Set to 0 for maximum determinism and adherence to instructions
+  max_tokens: 600
   
   # Pipeline settings
   confidence_threshold: 0.8
