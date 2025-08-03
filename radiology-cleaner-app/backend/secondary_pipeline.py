@@ -299,8 +299,7 @@ class OpenRouterEnsemble:
         agreeing_models = [r.model.split('/')[-1] for r in consensus_responses]
         combined_reasoning = f"Consensus choice is SNOMED ID {winning_snomed_id} with {agreement_score:.0%} agreement from models: {', '.join(agreeing_models)}.\n\n"
         for r in consensus_responses:
-            combined_reasoning += f"--- Reasoning from {r.model.split('/')[-1]} (Confidence: {r.confidence:.2f}) ---
-{r.reasoning}\n\n"
+            combined_reasoning += f"--- Reasoning from {r.model.split('/')[-1]} (Confidence: {r.confidence:.2f}) ---\n{r.reasoning}\n\n"
             
         return {
             'best_match_snomed_id': winning_snomed_id,
