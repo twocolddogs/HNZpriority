@@ -166,10 +166,11 @@ Rank the {len(documents)} candidate procedures from BEST to WORST match for the 
 
 Input exams come from legacy radiology systems with character limits, so assume they contain maximum relevant information despite abbreviations.
 
-**Guiding Principle: Sufficient Specificity**
-The ideal candidate has the **same level of clinical detail** as the input. Your goal is to find the match that is "just right"—not too generic, not too specific.
+**Guiding Principle: Sufficient Specificity (FAVOR SIMPLICITY)**
+The ideal candidate has the **same level of clinical detail** as the input. Your goal is to find the match that is "just right"—not too generic, not too specific. **When in doubt, always choose the SIMPLER option.**
 - **Generic Input → Generic Candidate:** If the input is simple (e.g., "XR Chest"), the best match is the simplest canonical name ("XR Chest"), not a more detailed one ("XR Chest PA View").
 - **Specific Input → Specific Candidate:** If the input contains details (e.g., "XR Chest PA View"), those details **must** be present in the best match.
+- **CRITICAL**: Avoid adding imaging techniques, clinical details, or procedural specifics not explicitly mentioned in the input. Simple, direct matches are almost always better than complex ones.
 
 **RANKING METHODOLOGY - Apply in priority order:**
 
@@ -196,10 +197,13 @@ The ideal candidate has the **same level of clinical detail** as the input. Your
 **Priority 3: Complexity & Specificity Matching (Final Tie-breaker)**
 - **Apply the Guiding Principle:** Use the "Sufficient Specificity" principle to rank candidates that have passed the above checks.
 - **IGNORE administrative terms**: "portable", "ward", "stat", "single view" (not clinically relevant)
-- **PENALIZE over-specification**: Don't add clinical details not in input.
-  - BAD: Input "MRI Brain" → Candidate "MRI Brain with Spectroscopy" (adds a new technique).
+- **STRONGLY PENALIZE over-specification**: Don't add clinical details not in input. **This is CRITICAL - simpler matches are almost always better.**
+  - **MAJOR PENALTY**: Input "MRI Brain" → Candidate "MRI Brain with Spectroscopy" (adds a new technique).
+  - **MAJOR PENALTY**: Input "US DVT upper limb" → Candidate "US Doppler Vein Map Upper Limb" (adds "flow mapping" technique).
+  - **PREFERRED**: Input "US DVT upper limb" → Candidate "US Doppler Upper Limb Veins" (simpler, more direct).
 - **REWARD specific matches**: When input has specific terms, find the candidate that also has them.
   - EXCELLENT: Input "MRI Brain with Diffusion" → Candidate "MRI Brain with Diffusion".
+- **Simplicity wins**: If two candidates match equally well but one is simpler, always prefer the simpler one.
 
 ---
 **FINAL INSTRUCTIONS:**
