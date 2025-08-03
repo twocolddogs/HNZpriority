@@ -325,11 +325,16 @@ class SecondaryPipeline:
 
             tasks = []
             for result in batch:
-                components = result.get('output', {}).get('components', {})
-                exam_name = components.get('exam_name', 'Unknown Exam')
+                output_data = result.get('output', {})
+                components = output_data.get('components', {})
+                
+                # Correctly get exam_name from the top-level of the output object
+                exam_name = output_data.get('exam_name', 'Unknown Exam')
+                
                 context = {
                     'original_confidence': components.get('confidence', 0.0),
-                    'similar_exams': components.get('similar_exams', []),
+                    # Correctly get 'all_candidates' and map it to 'similar_exams'
+                    'similar_exams': output_data.get('all_candidates', []),
                     'original_result': result
                 }
                 tasks.append(self.ensemble.process_ensemble(exam_name, context))

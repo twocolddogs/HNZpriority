@@ -39,6 +39,30 @@ scoring:
     reranker: 0.35     # How much to trust the MedCPT cross-encoder reranking score. Reduced to give component scoring more influence.
     # complexity: 0.15   # How much to trust complexity appropriateness (simple inputs prefer simple FSNs).
     # frequency: 0.10  # This appears to be a planned or deprecated feature for popularity-based scoring.
+    
+    # Reranker-specific weights (optimal tuning per model type)
+    reranker_specific:
+      # NLP Models - Need more component scoring help due to limited clinical reasoning
+      medcpt:
+        component: 0.65   
+        reranker: 0.35
+      biolord:
+        component: 0.60   # Slightly more trust in BioLORD than MedCPT
+        reranker: 0.40
+      default:  # BioLORD fallback
+        component: 0.60
+        reranker: 0.40
+
+      # OpenRouter Models - Trust their advanced medical reasoning more
+      gpt-4o-mini:
+        component: 0.45   # Let GPTs medical logic shine
+        reranker: 0.55
+      claude-3-haiku:
+        component: 0.50   # Balanced approach for Claude
+        reranker: 0.50
+      gemini-2.5-flash-lite:
+        component: 0.48   # Slightly favor Geminis reasoning
+        reranker: 0.52
 
   # ----------------------------------------------------------------------------------
   # BONUSES & PENALTIES
