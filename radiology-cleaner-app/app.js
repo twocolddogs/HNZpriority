@@ -965,6 +965,9 @@ window.addEventListener('DOMContentLoaded', function() {
         
         // Show main card
         mainCard.style.display = 'block';
+        // Remove under-banner positioning when main content is shown
+        const statusContainer = document.getElementById('statusMessageContainer');
+        if (statusContainer) statusContainer.classList.remove('under-banner');
         statusManager.clearAll();
         fileInput.value = '';
         allMappings = [];
@@ -1027,7 +1030,12 @@ window.addEventListener('DOMContentLoaded', function() {
 
         try {
             // Hide main content during processing
-            if (mainCard) mainCard.style.display = 'none';
+            if (mainCard) {
+                mainCard.style.display = 'none';
+                // Position status container under banner when main content is hidden
+                const statusContainer = document.getElementById('statusMessageContainer');
+                if (statusContainer) statusContainer.classList.add('under-banner');
+            }
             
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
@@ -1044,7 +1052,12 @@ window.addEventListener('DOMContentLoaded', function() {
             console.error('Sanity test failed:', error);
             statusManager.show(`❌ Sanity Test Failed: ${error.message}`, 'error', 0);
             // Show main card again on error
-            if (mainCard) mainCard.style.display = 'block';
+            if (mainCard) {
+                mainCard.style.display = 'block';
+                // Remove under-banner positioning when main content is shown
+                const statusContainer = document.getElementById('statusMessageContainer');
+                if (statusContainer) statusContainer.classList.remove('under-banner');
+            }
         } finally {
             if (statusId) statusManager.remove(statusId);
             if (sanityButton) {
@@ -1061,7 +1074,12 @@ window.addEventListener('DOMContentLoaded', function() {
 
         try {
             // Hide main content during processing
-            if (mainCard) mainCard.style.display = 'none';
+            if (mainCard) {
+                mainCard.style.display = 'none';
+                // Position status container under banner when main content is hidden
+                const statusContainer = document.getElementById('statusMessageContainer');
+                if (statusContainer) statusContainer.classList.add('under-banner');
+            }
             
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
@@ -1224,11 +1242,21 @@ window.addEventListener('DOMContentLoaded', function() {
                                 
                                 const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || result.processing_stats.successful || 'Unknown'} items processed`;
                                 statusManager.show(successMessage, 'success', 5000);
-                                if (mainCard) mainCard.style.display = 'block'; // Ensure main content is visible after successful analysis
+                                if (mainCard) {
+                                    mainCard.style.display = 'block'; // Ensure main content is visible after successful analysis
+                                    // Remove under-banner positioning when main content is shown
+                                    const statusContainer = document.getElementById('statusMessageContainer');
+                                    if (statusContainer) statusContainer.classList.remove('under-banner');
+                                }
                             } catch (analysisError) {
                                 console.error('Error during results analysis:', analysisError);
                                 statusManager.show('❌ Error displaying results', 'error', 5000);
-                                if (mainCard) mainCard.style.display = 'block';
+                                if (mainCard) {
+                                    mainCard.style.display = 'block';
+                                    // Remove under-banner positioning when main content is shown
+                                    const statusContainer = document.getElementById('statusMessageContainer');
+                                    if (statusContainer) statusContainer.classList.remove('under-banner');
+                                }
                             }
                         } else {
                             console.log('R2 data structure:', resultsData);
@@ -1256,7 +1284,12 @@ window.addEventListener('DOMContentLoaded', function() {
             if (statusId) statusManager.remove(statusId);
             statusManager.show(`❌ Random Sample Demo Failed: ${error.message}`, 'error', 0);
             // Show main card again on error
-            if (mainCard) mainCard.style.display = 'block';
+            if (mainCard) {
+                mainCard.style.display = 'block';
+                // Remove under-banner positioning when main content is shown
+                const statusContainer = document.getElementById('statusMessageContainer');
+                if (statusContainer) statusContainer.classList.remove('under-banner');
+            }
         } finally {
             if (randomSampleButton) {
                 randomSampleButton.disabled = false;
@@ -1642,6 +1675,9 @@ window.addEventListener('DOMContentLoaded', function() {
         if (workflowSection) workflowSection.style.display = 'none';
         // Show main card when displaying results
         mainCard.style.display = 'block';
+        // Remove under-banner positioning when main content is shown
+        const statusContainer = document.getElementById('statusMessageContainer');
+        if (statusContainer) statusContainer.classList.remove('under-banner');
     }
 
     // --- UI & DISPLAY FUNCTIONS ---

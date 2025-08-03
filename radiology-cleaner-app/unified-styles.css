@@ -2132,6 +2132,18 @@ a:focus-visible {
   margin: var(--space-4) 0;
 }
 
+/* Positioned just under banner when main content is hidden */
+.status-message-container.under-banner {
+  position: fixed;
+  top: 80px; /* Adjust based on banner height */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  margin: 0;
+  width: auto;
+  max-width: 90vw;
+}
+
 /* Generic message shell – colours are injected inline from JS but we
    still include sensible fall-backs here so HTML-only render is graceful */
 .status-message {
