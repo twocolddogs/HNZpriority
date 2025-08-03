@@ -8,7 +8,7 @@ import asyncio
 import json
 import logging
 import re
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from enum import Enum
 import statistics
@@ -18,7 +18,7 @@ import os
 import yaml
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG) # TEMPORARY: Increased log level for debugging
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class ModelType(Enum):
@@ -37,7 +37,6 @@ class ModelResponse:
     reasoning: str
     raw_response: str
     processing_time: float
-
 
 @dataclass
 class EnsembleResult:
@@ -59,12 +58,14 @@ class EnsembleResult:
 class OpenRouterEnsemble:
     """Ensemble system using multiple OpenRouter models"""
     
-    def __init__(self, api_key: str = None, config: Dict = None):
-        self.api_key = api_key or os.getenv('OPENROUTER_API_KEY')
-        if not self.api_key:
-            raise ValueError("OpenRouter API key required")
-        
-        self.config = config or self._load_default_config()
+    def __init__(self, api_key: str, config: Dict):
+        if not api_key:
+            raise ValueError("OpenRouter API key is required for the ensemble.")
+        if not config:
+            raise ValueError("A valid configuration object is required for the ensemble.")
+
+        self.api_key = api_key
+        self.config = config
         
         self.client = openai.AsyncOpenAI(
             api_key=self.api_key,
@@ -86,16 +87,13 @@ class OpenRouterEnsemble:
         try:
             response = await self.client.chat.completions.create(
                 model=model,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
+                messages=[{"role": "user", "content": prompt}],
                 temperature=self.config.get('secondary_pipeline', {}).get('temperature', 0.1),
-                max_tokens=self.config.get('secondary_pipeline', {}).get('max_tokens', 800) # Increased for longer reasoning
+                max_tokens=self.config.get('secondary_pipeline', {}).get('max_tokens', 800)
             )
             
             processing_time = asyncio.get_event_loop().time() - start_time
             content = response.choices[0].message.content
-            
             parsed = self._parse_model_response(content)
             
             return ModelResponse(
@@ -109,7 +107,7 @@ class OpenRouterEnsemble:
             )
             
         except Exception as e:
-            logger.error(f"Error querying {model}: {e}")
+            logger.error(f"Error querying {model}: {e}", exc_info=True)
             return ModelResponse(
                 model=model,
                 best_match_snomed_id=None,
@@ -120,99 +118,32 @@ class OpenRouterEnsemble:
                 processing_time=asyncio.get_event_loop().time() - start_time
             )
     
-    def _load_default_config(self) -> Dict:
-        """Load configuration from R2 production URL (same as primary pipeline)"""
-        try:
-            from config_manager import get_config
-            config_manager = get_config()
-            
-            # Get the full config (all sections)
-            full_config = {}
-            
-            # Load all sections that secondary pipeline needs
-            scoring_config = config_manager.get_section('scoring')
-            if scoring_config:
-                full_config['scoring'] = scoring_config
-                
-            secondary_config = config_manager.get_section('secondary_pipeline') 
-            if secondary_config:
-                full_config['secondary_pipeline'] = secondary_config
-                
-            modality_config = config_manager.get_section('modality_similarity')
-            if modality_config:
-                full_config['modality_similarity'] = modality_config
-                
-            preprocessing_config = config_manager.get_section('preprocessing')
-            if preprocessing_config:
-                full_config['preprocessing'] = preprocessing_config
-            
-            logger.info("Loaded configuration from R2 production config (same as primary pipeline)")
-            return full_config
-            
-        except Exception as e:
-            logger.error(f"Could not load R2 production config: {e}")
-            logger.info("Falling back to local config file")
-            
-            # Fallback to local file
-            config_path = os.path.join(os.path.dirname(__file__), 'training_testing', 'config', 'config.yaml')
-            try:
-                with open(config_path, 'r') as f:
-                    return yaml.safe_load(f)
-            except FileNotFoundError:
-                logger.warning(f"Config file not found at {config_path}, using defaults")
-                return {}
-            except Exception as e:
-                logger.error(f"Error loading local config: {e}")
-                return {}
-    
-    def _get_default_prompt_template(self) -> str:
-        """Default prompt template as fallback"""
-        # This should not be used if config is loaded correctly, but is a safe fallback.
-        return """You are a senior radiology informatics specialist performing a final quality assurance review.
-Please select the best match for the input exam from the candidates provided.
-REQUIRED OUTPUT FORMAT (JSON):
-{{
-    "best_match_candidate_number": <Integer>,
-    "best_match_procedure_name": "The full name of the chosen procedure",
-    "final_modality": "The modality of the chosen procedure (e.g., CT, MRI, XR)",
-    "confidence": <Float from 0.0 to 1.0>,
-    "reasoning": "Detailed explanation of your choice."
-}}"""
-    
     def _build_enhanced_prompt(self, exam_name: str, context: Dict) -> str:
         """Build enhanced prompt with context from original processing"""
-        
         similar_exams = context.get('similar_exams', [])
         
-        prompt_template = self.config.get('secondary_pipeline', {}).get('prompt_template', self._get_default_prompt_template())
-        
-        # Debug logging
-        logger.info(f"Building prompt for exam: {exam_name}")
-        logger.info(f"Similar exams count: {len(similar_exams)}")
-        logger.info(f"Template found: {prompt_template is not None}")
-        
-        # Limit to top 10 candidates
-        limited_exams = similar_exams[:10]
+        try:
+            prompt_template = self.config['secondary_pipeline']['prompt_template']
+        except KeyError:
+            logger.error("'prompt_template' not found in the 'secondary_pipeline' section of the configuration.")
+            raise
+            
+        logger.debug(f"Building prompt for exam: {exam_name} with {len(similar_exams)} candidates.")
         
         try:
             prompt = prompt_template.format(
                 exam_name=exam_name,
-                similar_exams=json.dumps(limited_exams, indent=2)
+                similar_exams=json.dumps(similar_exams[:10], indent=2)
             )
-            logger.info(f"Prompt built successfully, length: {len(prompt)}")
-            logger.debug(f"--- START OF PROMPT ---\n{prompt}\n--- END OF PROMPT ---") # Log the full prompt for debugging
+            logger.debug(f"--- START OF PROMPT ---\n{prompt}\n--- END OF PROMPT ---")
+            return prompt
         except KeyError as e:
-            logger.error(f"Missing template variable: {e}")
-            logger.error(f"Template: {prompt_template[:200]}...")
+            logger.error(f"A placeholder in the prompt template is missing from the format() call: {e}")
             raise
-        
-        return prompt
-    
-    
+
     def _parse_model_response(self, content: str) -> Dict:
         """Parse structured response from the new selection-focused model prompt."""
         try:
-            # Try to extract JSON from response, including markdown code blocks
             match = re.search(r"```json\s*(\{.*?\})\s*```", content, re.DOTALL)
             if match:
                 json_str = match.group(1)
@@ -225,10 +156,13 @@ REQUIRED OUTPUT FORMAT (JSON):
 
             parsed = json.loads(json_str)
             
+            confidence_val = parsed.get('confidence')
+            confidence = float(confidence_val) if confidence_val is not None else 0.0
+
             return {
                 'best_match_snomed_id': parsed.get('best_match_snomed_id'),
                 'best_match_procedure_name': parsed.get('best_match_procedure_name'),
-                'confidence': float(parsed.get('confidence', 0.0)),
+                'confidence': confidence,
                 'reasoning': parsed.get('reasoning', 'No reasoning provided')
             }
         except (json.JSONDecodeError, ValueError, KeyError) as e:
@@ -242,7 +176,6 @@ REQUIRED OUTPUT FORMAT (JSON):
     
     async def process_ensemble(self, exam_name: str, context: Dict) -> EnsembleResult:
         """Process exam through all models and generate ensemble result"""
-        
         tasks = [self.query_model(model, exam_name, context) for model in self.models]
         model_responses = await asyncio.gather(*tasks)
         
@@ -265,43 +198,27 @@ REQUIRED OUTPUT FORMAT (JSON):
     
     def _calculate_consensus(self, responses: List[ModelResponse], candidates: List[Dict]) -> Dict:
         """Calculate consensus based on the selected best match SNOMED ID."""
-        
         valid_responses = [r for r in responses if r.best_match_snomed_id is not None]
         
         if not valid_responses:
-            return {
-                'best_match_snomed_id': None,
-                'best_match_procedure_name': None,
-                'confidence': 0.0,
-                'agreement_score': 0.0,
-                'reasoning': 'All models failed to provide a valid selection.'
-            }
+            return {'best_match_snomed_id': None, 'best_match_procedure_name': None, 'confidence': 0.0, 'agreement_score': 0.0, 'reasoning': 'All models failed to provide a valid selection.'}
             
-        # Vote for the best SNOMED ID
         votes = {}
         for r in valid_responses:
-            snomed_id = str(r.best_match_snomed_id) # Ensure SNOMED ID is a string for consistent voting
+            snomed_id = str(r.best_match_snomed_id)
             if snomed_id not in votes:
                 votes[snomed_id] = []
             votes[snomed_id].append(r)
             
-        # Find the winning SNOMED ID (most votes, then highest average confidence)
-        winning_snomed_id = max(
-            votes.keys(),
-            key=lambda snomed: (len(votes[snomed]), statistics.mean(r.confidence for r in votes[snomed]))
-        )
+        winning_snomed_id = max(votes.keys(), key=lambda snomed: (len(votes[snomed]), statistics.mean(r.confidence for r in votes[snomed])))
         
         consensus_responses = votes[winning_snomed_id]
-        
-        # Calculate consensus confidence
         consensus_confidence = statistics.mean(r.confidence for r in consensus_responses)
         agreement_score = len(consensus_responses) / len(valid_responses)
         
-        # Get procedure name from the original candidate list using the winning SNOMED ID
         winning_candidate = next((c for c in candidates if str(c.get('snomed_id')) == winning_snomed_id), None)
         consensus_procedure_name = winning_candidate.get('primary_name') if winning_candidate else "Unknown Procedure"
 
-        # Combine reasoning from all agreeing models
         agreeing_models = [r.model.split('/')[-1] for r in consensus_responses]
         combined_reasoning = f"Consensus choice is SNOMED ID {winning_snomed_id} with {agreement_score:.0%} agreement from models: {', '.join(agreeing_models)}.\n\n"
         for r in consensus_responses:
@@ -320,144 +237,88 @@ class SecondaryPipeline:
     
     def __init__(self, config: Dict = None):
         self.config = config or self._load_config()
-        self.ensemble = OpenRouterEnsemble(self.config.get('openrouter_api_key'), self.config)
+        self.ensemble = OpenRouterEnsemble(
+            api_key=self.config.get('openrouter_api_key'),
+            config=self.config
+        )
         
     def _load_config(self) -> Dict:
-        """Load configuration from R2 production URL (same as primary pipeline)"""
+        """Load configuration, preferring R2 but falling back to local file."""
         try:
             from config_manager import get_config
             config_manager = get_config()
-            
-            # Get the full config (all sections)
-            full_config = {}
-            
-            # Load all sections that secondary pipeline needs
-            scoring_config = config_manager.get_section('scoring')
-            if scoring_config:
-                full_config['scoring'] = scoring_config
-                
-            secondary_config = config_manager.get_section('secondary_pipeline') 
-            if secondary_config:
-                full_config['secondary_pipeline'] = secondary_config
-                # Also merge secondary_pipeline settings directly into root config for compatibility
-                full_config.update(secondary_config)
-                
-            modality_config = config_manager.get_section('modality_similarity')
-            if modality_config:
-                full_config['modality_similarity'] = modality_config
-                
-            preprocessing_config = config_manager.get_section('preprocessing')
-            if preprocessing_config:
-                full_config['preprocessing'] = preprocessing_config
-            
-            # Add defaults for any missing values
-            defaults = {
-                'confidence_threshold': 0.8,
-                'openrouter_api_key': os.getenv('OPENROUTER_API_KEY'),
-                'max_concurrent_requests': 5,
-                'output_path': os.path.join(os.environ.get('RENDER_DISK_PATH', '/tmp'), 'secondary_pipeline_results.json')
-            }
-            
-            # Merge defaults with loaded config
-            for key, value in defaults.items():
-                if key not in full_config:
-                    full_config[key] = value
-            
-            logger.info("SecondaryPipeline loaded configuration from R2 production config")
-            return full_config
-            
+            # force_r2_reload ensures we get the latest config from R2
+            if config_manager.force_r2_reload():
+                logger.info("Successfully loaded latest configuration from R2 for Secondary Pipeline.")
+                # The config_manager holds the entire config dictionary
+                return config_manager.get_full_config()
+            else:
+                raise RuntimeError("Failed to fetch config from R2.")
         except Exception as e:
-            logger.error(f"SecondaryPipeline could not load R2 production config: {e}")
-            logger.info("Falling back to local config file")
-            
-            # Fallback to local file
+            logger.warning(f"Could not load config from R2 ({e}), falling back to local file.")
             config_path = os.path.join(os.path.dirname(__file__), 'training_testing', 'config', 'config.yaml')
             try:
                 with open(config_path, 'r') as f:
-                    yaml_config = yaml.safe_load(f)
-            except (FileNotFoundError, Exception) as e:
-                logger.warning(f"Could not load config from {config_path}: {e}")
-                yaml_config = {}
-            
-            defaults = {
-                'confidence_threshold': 0.8,
-                'openrouter_api_key': os.getenv('OPENROUTER_API_KEY'),
-                'max_concurrent_requests': 5,
-                'output_path': os.path.join(os.environ.get('RENDER_DISK_PATH', '/tmp'), 'secondary_pipeline_results.json')
-            }
-            
-            secondary_config = yaml_config.get('secondary_pipeline', {})
-            return {**defaults, **secondary_config, 'prompt_template': secondary_config.get('prompt_template')}
+                    conf = yaml.safe_load(f)
+                    logger.info(f"Successfully loaded local config from {config_path}")
+                    return conf
+            except Exception as file_e:
+                logger.error(f"CRITICAL: Failed to load local config file: {file_e}")
+                return {} # Return empty config if all sources fail
 
     async def process_low_confidence_results(self, results: List[Dict]) -> List[EnsembleResult]:
         """Process list of low-confidence results through ensemble"""
-
         low_confidence = results
         logger.info(f"Processing {len(low_confidence)} low-confidence results")
         if not low_confidence:
             return []
 
         ensemble_results = []
-        batch_size = self.config.get('max_concurrent_requests', 5)
+        batch_size = self.config.get('secondary_pipeline', {}).get('max_concurrent_requests', 5)
 
         for i in range(0, len(low_confidence), batch_size):
             batch = low_confidence[i:i + batch_size]
-
             tasks = []
             for result in batch:
                 output_data = result.get('output', {})
-                components = output_data.get('components', {})
-                
-                # Correctly get exam_name from the top-level of the output object
-                exam_name = output_data.get('exam_name', 'Unknown Exam')
-                
                 context = {
-                    'original_confidence': components.get('confidence', 0.0),
-                    # Correctly get 'all_candidates' and map it to 'similar_exams'
+                    'original_confidence': output_data.get('components', {}).get('confidence', 0.0),
                     'similar_exams': output_data.get('all_candidates', []),
                     'original_result': result
                 }
-                tasks.append(self.ensemble.process_ensemble(exam_name, context))
+                tasks.append(self.ensemble.process_ensemble(output_data.get('exam_name', 'Unknown'), context))
 
             batch_results = await asyncio.gather(*tasks)
             ensemble_results.extend(batch_results)
-
-            if len(low_confidence) > 0:
-                logger.info(f"Completed batch {i//batch_size + 1}/{(len(low_confidence) - 1) // batch_size + 1}")
+            logger.info(f"Completed batch {i//batch_size + 1}/{(len(low_confidence) - 1) // batch_size + 1}")
 
         return ensemble_results
     
     def save_results(self, results: List[EnsembleResult], output_path: str = None):
         """Save ensemble results to file"""
-        output_path = output_path or self.config.get('output_path')
+        path = output_path or self.config.get('secondary_pipeline', {}).get('output_path', '/tmp/secondary_pipeline_results.json')
+        serializable_results = [res.to_dict() for res in results]
         
-        serializable_results = [asdict(result) for result in results]
+        with open(path, 'w') as f:
+            json.dump({'timestamp': datetime.now().isoformat(), 'total_processed': len(results), 'results': serializable_results}, f, indent=2)
         
-        with open(output_path, 'w') as f:
-            json.dump({
-                'timestamp': datetime.now().isoformat(),
-                'total_processed': len(results),
-                'results': serializable_results
-            }, f, indent=2)
-        
-        logger.info(f"Results saved to {output_path}")
+        logger.info(f"Results saved to {path}")
     
     def generate_improvement_report(self, results: List[EnsembleResult]) -> Dict:
         """Generate report on improvements achieved"""
-        
         if not results:
             return {'total_processed': 0}
 
         improved_count = sum(1 for r in results if r.improved)
         total_count = len(results)
         
-        original_avg_confidence = statistics.mean([
-            r.original_result.get('output', {}).get('components', {}).get('confidence', 0.0) for r in results
-        ])
+        original_confidences = [r.original_result.get('output', {}).get('components', {}).get('confidence', 0.0) for r in results]
+        original_avg_confidence = statistics.mean(original_confidences) if original_confidences else 0.0
         
-        new_avg_confidence = statistics.mean([r.consensus_confidence for r in results])
+        new_confidences = [r.consensus_confidence for r in results]
+        new_avg_confidence = statistics.mean(new_confidences) if new_confidences else 0.0
         
-        high_agreement = sum(1 for r in results if r.agreement_score >= 0.67)  # 2/3 agreement
+        high_agreement = sum(1 for r in results if r.agreement_score >= 0.67)
         
         return {
             'total_processed': total_count,
