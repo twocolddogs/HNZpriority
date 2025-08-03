@@ -80,14 +80,19 @@ class OpenRouterEnsemble:
         """Query a single model for exam classification using the new selection prompt."""
         start_time = asyncio.get_event_loop().time()
         
-        prompt = self._build_enhanced_prompt(exam_name, context)
+        system_prompt, user_prompt = self._build_enhanced_prompt(exam_name, context)
         
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+
         try:
             response = await self.client.chat.completions.create(
                 model=model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=self.config.get('temperature', 0.1),
-                max_tokens=self.config.get('max_tokens', 800)
+                messages=messages,
+                temperature=self.config.get('temperature', 0.0),
+                max_tokens=self.config.get('max_tokens', 600)
             )
             
             processing_time = asyncio.get_event_loop().time() - start_time
@@ -116,40 +121,43 @@ class OpenRouterEnsemble:
                 processing_time=asyncio.get_event_loop().time() - start_time
             )
     
-    def _build_enhanced_prompt(self, exam_name: str, context: Dict) -> str:
-        """Build enhanced prompt with context from original processing"""
+    def _build_enhanced_prompt(self, exam_name: str, context: Dict) -> tuple[str, str]:
+        """Build the system and user prompts from the configuration."""
         similar_exams = context.get('similar_exams', [])
-        prompt_template = self.config.get('prompt_template')
-
-        if not prompt_template:
-            logger.error("'prompt_template' not found in configuration. Using a fallback message.")
-            return "Error: Prompt template is missing from the configuration."
-            
-        logger.debug(f"Building prompt for exam: '{exam_name}' with {len(similar_exams)} candidates.")
         
+        system_prompt = self.config.get('system_prompt', 'You are a JSON API.')
+        user_prompt_template = self.config.get('prompt_template')
+
+        if not user_prompt_template:
+            logger.error("'prompt_template' not found in configuration. Cannot build prompt.")
+            return system_prompt, "Error: User prompt template is missing from the configuration."
+            
         try:
-            # The entire candidate list is passed as a single JSON string
-            prompt = prompt_template.format(
+            user_prompt = user_prompt_template.format(
                 exam_name=exam_name,
-                similar_exams=json.dumps(similar_exams[:10], indent=2) 
+                similar_exams=json.dumps(similar_exams[:10], indent=2)
             )
-            logger.debug(f"--- START OF PROMPT ---\n{prompt}\n--- END OF PROMPT ---")
-            return prompt
+            logger.debug(f"--- START OF USER PROMPT ---\n{user_prompt}\n--- END OF USER PROMPT ---")
+            return system_prompt, user_prompt
         except KeyError as e:
             logger.error(f"A placeholder in the prompt template is missing from the format() call: {e}")
-            return f"Error: Could not format prompt. Missing key: {e}"
+            return system_prompt, f"Error: Could not format prompt. Missing key: {e}"
 
     def _parse_model_response(self, content: str) -> Dict:
-        """Parse structured response from the new selection-focused model prompt."""
+        """Robustly parse the JSON object from a model's potentially messy response."""
         try:
-            match = re.search(r"```json\s*(\{.*?\})\s*```", content, re.DOTALL)
-            json_str = match.group(1) if match else content
-            start = json_str.find('{')
-            end = json_str.rfind('}') + 1
-            if start == -1 or end <= start:
-                raise ValueError("No JSON object found in response")
-            parsed = json.loads(json_str[start:end])
+            # Find the start of a JSON object that specifically contains our key
+            match = re.search(r'}_{{\s*"best_match_snomed_id":', content)
+            if not match:
+                raise ValueError("No valid JSON object start found in response.")
+
+            # Start parsing from that point
+            json_str = content[match.start():]
             
+            # Use a proper JSON decoder to find the end of the object
+            decoder = json.JSONDecoder()
+            parsed, _ = decoder.raw_decode(json_str)
+
             confidence = float(parsed['confidence']) if parsed.get('confidence') is not None else 0.0
 
             return {
