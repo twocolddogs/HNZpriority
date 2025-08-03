@@ -58,21 +58,19 @@ class EnsembleResult:
 class OpenRouterEnsemble:
     """Ensemble system using multiple OpenRouter models"""
     
-    def __init__(self, api_key: str, config: Dict):
-        if not api_key:
-            raise ValueError("OpenRouter API key is required for the ensemble.")
-        if not config:
-            raise ValueError("A valid configuration object is required for the ensemble.")
+    def __init__(self, config: Dict):
+        self.config = config.get('secondary_pipeline', {})
+        self.api_key = os.getenv('OPENROUTER_API_KEY')
 
-        self.api_key = api_key
-        self.config = config
-        
+        if not self.api_key:
+            raise ValueError("OPENROUTER_API_KEY environment variable not set.")
+
         self.client = openai.AsyncOpenAI(
             api_key=self.api_key,
             base_url="https://openrouter.ai/api/v1"
         )
         
-        self.models = self.config.get('secondary_pipeline', {}).get('models', [
+        self.models = self.config.get('models', [
             ModelType.CLAUDE_SONNET.value,
             ModelType.GPT4_TURBO.value, 
             ModelType.GEMINI_PRO.value
@@ -88,8 +86,8 @@ class OpenRouterEnsemble:
             response = await self.client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
-                temperature=self.config.get('secondary_pipeline', {}).get('temperature', 0.1),
-                max_tokens=self.config.get('secondary_pipeline', {}).get('max_tokens', 800)
+                temperature=self.config.get('temperature', 0.1),
+                max_tokens=self.config.get('max_tokens', 800)
             )
             
             processing_time = asyncio.get_event_loop().time() - start_time
@@ -121,43 +119,38 @@ class OpenRouterEnsemble:
     def _build_enhanced_prompt(self, exam_name: str, context: Dict) -> str:
         """Build enhanced prompt with context from original processing"""
         similar_exams = context.get('similar_exams', [])
-        
-        try:
-            prompt_template = self.config['secondary_pipeline']['prompt_template']
-        except KeyError:
-            logger.error("'prompt_template' not found in the 'secondary_pipeline' section of the configuration.")
-            raise
+        prompt_template = self.config.get('prompt_template')
+
+        if not prompt_template:
+            logger.error("'prompt_template' not found in configuration. Using a fallback message.")
+            return "Error: Prompt template is missing from the configuration."
             
-        logger.debug(f"Building prompt for exam: {exam_name} with {len(similar_exams)} candidates.")
+        logger.debug(f"Building prompt for exam: '{exam_name}' with {len(similar_exams)} candidates.")
         
         try:
+            # The entire candidate list is passed as a single JSON string
             prompt = prompt_template.format(
                 exam_name=exam_name,
-                similar_exams=json.dumps(similar_exams[:10], indent=2)
+                similar_exams=json.dumps(similar_exams[:10], indent=2) 
             )
             logger.debug(f"--- START OF PROMPT ---\n{prompt}\n--- END OF PROMPT ---")
             return prompt
         except KeyError as e:
             logger.error(f"A placeholder in the prompt template is missing from the format() call: {e}")
-            raise
+            return f"Error: Could not format prompt. Missing key: {e}"
 
     def _parse_model_response(self, content: str) -> Dict:
         """Parse structured response from the new selection-focused model prompt."""
         try:
             match = re.search(r"```json\s*(\{.*?\})\s*```", content, re.DOTALL)
-            if match:
-                json_str = match.group(1)
-            else:
-                start = content.find('{')
-                end = content.rfind('}') + 1
-                if start == -1 or end <= start:
-                    raise ValueError("No JSON object found in response")
-                json_str = content[start:end]
-
-            parsed = json.loads(json_str)
+            json_str = match.group(1) if match else content
+            start = json_str.find('{')
+            end = json_str.rfind('}') + 1
+            if start == -1 or end <= start:
+                raise ValueError("No JSON object found in response")
+            parsed = json.loads(json_str[start:end])
             
-            confidence_val = parsed.get('confidence')
-            confidence = float(confidence_val) if confidence_val is not None else 0.0
+            confidence = float(parsed['confidence']) if parsed.get('confidence') is not None else 0.0
 
             return {
                 'best_match_snomed_id': parsed.get('best_match_snomed_id'),
@@ -165,14 +158,9 @@ class OpenRouterEnsemble:
                 'confidence': confidence,
                 'reasoning': parsed.get('reasoning', 'No reasoning provided')
             }
-        except (json.JSONDecodeError, ValueError, KeyError) as e:
+        except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
             logger.warning(f"Failed to parse structured response: {e}. Content: {content}")
-            return {
-                'best_match_snomed_id': None,
-                'best_match_procedure_name': None,
-                'confidence': 0.0,
-                'reasoning': f'Failed to parse response: {str(e)}'
-            }
+            return {'best_match_snomed_id': None, 'best_match_procedure_name': None, 'confidence': 0.0, 'reasoning': f'Failed to parse response: {str(e)}'}
     
     async def process_ensemble(self, exam_name: str, context: Dict) -> EnsembleResult:
         """Process exam through all models and generate ensemble result"""
@@ -235,22 +223,17 @@ class OpenRouterEnsemble:
 class SecondaryPipeline:
     """Main secondary pipeline coordinator"""
     
-    def __init__(self, config: Dict = None):
-        self.config = config or self._load_config()
-        self.ensemble = OpenRouterEnsemble(
-            api_key=self.config.get('openrouter_api_key'),
-            config=self.config
-        )
+    def __init__(self):
+        self.config = self._load_config()
+        self.ensemble = OpenRouterEnsemble(config=self.config)
         
     def _load_config(self) -> Dict:
         """Load configuration, preferring R2 but falling back to local file."""
         try:
             from config_manager import get_config
             config_manager = get_config()
-            # force_r2_reload ensures we get the latest config from R2
             if config_manager.force_r2_reload():
                 logger.info("Successfully loaded latest configuration from R2 for Secondary Pipeline.")
-                # The config_manager holds the entire config dictionary
                 return config_manager.get_full_config()
             else:
                 raise RuntimeError("Failed to fetch config from R2.")
@@ -264,7 +247,7 @@ class SecondaryPipeline:
                     return conf
             except Exception as file_e:
                 logger.error(f"CRITICAL: Failed to load local config file: {file_e}")
-                return {} # Return empty config if all sources fail
+                return {}
 
     async def process_low_confidence_results(self, results: List[Dict]) -> List[EnsembleResult]:
         """Process list of low-confidence results through ensemble"""
@@ -357,7 +340,7 @@ async def run_secondary_pipeline(primary_results_file: str):
 
     if not low_confidence_results:
         logger.info("No low-confidence results to process.")
-        return [], {}
+        return
 
     ensemble_results = await pipeline.process_low_confidence_results(low_confidence_results)
     
