@@ -61,7 +61,25 @@ The `priority_data_set.json` follows this structure:
 ```
 
 
-## Development Commands
+## Development Policy
+
+### Production-First Development Approach
+**CRITICAL: This is a production-tested codebase with limited users - all code must assume production deployment.**
+
+While local development environments exist, all committed code **must be written assuming it will run in production**. This is essential because:
+- This tool serves healthcare professionals in New Zealand's health system
+- Only a small number of users test the application
+- Most testing occurs directly in the production environment
+- Configuration and file paths must work in production deployment contexts
+
+### Key Production Considerations:
+1. **File Paths**: Always use production-ready path resolution (R2 cloud storage, environment variables, relative paths)
+2. **Configuration Loading**: Prefer production config sources (R2 URLs, ConfigManager) over local files
+3. **Environment Variables**: Ensure all required environment variables have proper fallbacks
+4. **Logging**: Include comprehensive logging for production debugging
+5. **Error Handling**: Robust error handling with informative messages for production troubleshooting
+
+### Development Commands
 
 Both applications are static web applications with no build process. They run directly in the browser.
 
@@ -274,6 +292,37 @@ curl -X POST http://localhost:10000/parse_enhanced \
 ### Production Deployment
 - Production deployment still uses `buildit` command for Render.com
 - Local development complements but doesn't replace production testing
+
+## Configuration Management
+
+### Production-First Configuration Strategy
+**CRITICAL: Always design configuration loading to work in production first, with local fallbacks.**
+
+#### Primary Pattern (Recommended):
+```python
+try:
+    from config_manager import get_config
+    config_manager = get_config()
+    config = config_manager.get_section('section_name')
+    logger.info("Loaded configuration from R2 production source")
+except Exception as e:
+    logger.error(f"Could not load production config: {e}")
+    # Fallback to local config
+    with open(local_config_path, 'r') as f:
+        config = yaml.safe_load(f)
+```
+
+#### Configuration Sources (Priority Order):
+1. **R2 Cloud Storage** (Production): `https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/config/config.yaml`
+2. **Local Development Files**: `backend/training_testing/config/config.yaml`
+3. **Hardcoded Defaults**: Built-in fallback values
+
+#### Rules:
+- **Never assume local files exist** in production
+- **Always provide comprehensive fallbacks** for missing config sections
+- **Log configuration source** for production debugging
+- **Use ConfigManager** for any production-critical configuration
+- **Test configuration loading** in both local and production contexts
 
 ## Code Patterns
 
