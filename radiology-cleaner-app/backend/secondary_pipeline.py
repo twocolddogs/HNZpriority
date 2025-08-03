@@ -149,13 +149,24 @@ class OpenRouterEnsemble:
         
         prompt_template = self.config.get('secondary_pipeline', {}).get('prompt_template', self._get_default_prompt_template())
         
+        # Debug logging
+        logger.info(f"Building prompt for exam: {exam_name}")
+        logger.info(f"Similar exams count: {len(similar_exams)}")
+        logger.info(f"Template found: {prompt_template is not None}")
+        
         # Limit to top 10 candidates
         limited_exams = similar_exams[:10]
         
-        prompt = prompt_template.format(
-            exam_name=exam_name,
-            similar_exams=json.dumps(limited_exams, indent=2)
-        )
+        try:
+            prompt = prompt_template.format(
+                exam_name=exam_name,
+                similar_exams=json.dumps(limited_exams, indent=2)
+            )
+            logger.info(f"Prompt built successfully, length: {len(prompt)}")
+        except KeyError as e:
+            logger.error(f"Missing template variable: {e}")
+            logger.error(f"Template: {prompt_template[:200]}...")
+            raise
         
         return prompt
     
@@ -177,18 +188,16 @@ class OpenRouterEnsemble:
             parsed = json.loads(json_str)
             
             return {
-                'best_match_candidate_number': parsed.get('best_match_candidate_number'),
+                'best_match_snomed_id': parsed.get('best_match_snomed_id'),
                 'best_match_procedure_name': parsed.get('best_match_procedure_name'),
-                'final_modality': parsed.get('final_modality', 'UNKNOWN').upper(),
                 'confidence': float(parsed.get('confidence', 0.0)),
                 'reasoning': parsed.get('reasoning', 'No reasoning provided')
             }
         except (json.JSONDecodeError, ValueError, KeyError) as e:
             logger.warning(f"Failed to parse structured response: {e}. Content: {content}")
             return {
-                'best_match_candidate_number': None,
+                'best_match_snomed_id': None,
                 'best_match_procedure_name': None,
-                'final_modality': 'UNKNOWN',
                 'confidence': 0.0,
                 'reasoning': f'Failed to parse response: {str(e)}'
             }
@@ -220,13 +229,12 @@ class OpenRouterEnsemble:
     def _calculate_consensus(self, responses: List[ModelResponse]) -> Dict:
         """Calculate consensus based on the selected best match candidate."""
         
-        valid_responses = [r for r in responses if r.best_match_candidate_number is not None]
+        valid_responses = [r for r in responses if r.best_match_snomed_id is not None]
         
         if not valid_responses:
             return {
-                'best_match_candidate_number': None,
+                'best_match_snomed_id': None,
                 'best_match_procedure_name': None,
-                'final_modality': 'UNKNOWN',
                 'confidence': 0.0,
                 'agreement_score': 0.0,
                 'reasoning': 'All models failed to provide a valid selection.'
