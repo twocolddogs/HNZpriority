@@ -240,16 +240,15 @@ class OpenRouterEnsemble:
         tasks = [self.query_model(model, exam_name, context) for model in self.models]
         model_responses = await asyncio.gather(*tasks)
         
-        consensus_result = self._calculate_consensus(model_responses)
+        consensus_result = self._calculate_consensus(model_responses, context.get('similar_exams', []))
         
         original_confidence = context.get('original_confidence', 0.0)
         improved = consensus_result['confidence'] > original_confidence
         
         return EnsembleResult(
             original_result=context.get('original_result', {}),
-            consensus_best_match_candidate_number=consensus_result['best_match_candidate_number'],
+            consensus_best_match_snomed_id=consensus_result['best_match_snomed_id'],
             consensus_best_match_procedure_name=consensus_result['best_match_procedure_name'],
-            consensus_final_modality=consensus_result['final_modality'],
             consensus_confidence=consensus_result['confidence'],
             model_responses=model_responses,
             agreement_score=consensus_result['agreement_score'],
@@ -258,8 +257,8 @@ class OpenRouterEnsemble:
             timestamp=datetime.now().isoformat()
         )
     
-    def _calculate_consensus(self, responses: List[ModelResponse]) -> Dict:
-        """Calculate consensus based on the selected best match candidate."""
+    def _calculate_consensus(self, responses: List[ModelResponse], candidates: List[Dict]) -> Dict:
+        """Calculate consensus based on the selected best match SNOMED ID."""
         
         valid_responses = [r for r in responses if r.best_match_snomed_id is not None]
         
@@ -275,7 +274,7 @@ class OpenRouterEnsemble:
         # Vote for the best SNOMED ID
         votes = {}
         for r in valid_responses:
-            snomed_id = r.best_match_snomed_id
+            snomed_id = str(r.best_match_snomed_id) # Ensure SNOMED ID is a string for consistent voting
             if snomed_id not in votes:
                 votes[snomed_id] = []
             votes[snomed_id].append(r)
@@ -288,25 +287,24 @@ class OpenRouterEnsemble:
         
         consensus_responses = votes[winning_snomed_id]
         
-        # Calculate consensus confidence and other details from the winning group
+        # Calculate consensus confidence
         consensus_confidence = statistics.mean(r.confidence for r in consensus_responses)
         agreement_score = len(consensus_responses) / len(valid_responses)
         
-        # Use the details from the first agreeing model (they should be consistent)
-        winning_response = consensus_responses[0]
-        consensus_procedure_name = winning_response.best_match_procedure_name
-        consensus_final_modality = winning_response.final_modality
-        
+        # Get procedure name from the original candidate list using the winning SNOMED ID
+        winning_candidate = next((c for c in candidates if str(c.get('snomed_id')) == winning_snomed_id), None)
+        consensus_procedure_name = winning_candidate.get('primary_name') if winning_candidate else "Unknown Procedure"
+
         # Combine reasoning from all agreeing models
         agreeing_models = [r.model.split('/')[-1] for r in consensus_responses]
-        combined_reasoning = f"Consensus choice is candidate #{winning_candidate_num} with {agreement_score:.0%} agreement from models: {', '.join(agreeing_models)}.\n\n"
+        combined_reasoning = f"Consensus choice is SNOMED ID {winning_snomed_id} with {agreement_score:.0%} agreement from models: {', '.join(agreeing_models)}.\n\n"
         for r in consensus_responses:
-            combined_reasoning += f"--- Reasoning from {r.model.split('/')[-1]} (Confidence: {r.confidence:.2f}) ---\n{r.reasoning}\n\n"
+            combined_reasoning += f"--- Reasoning from {r.model.split('/')[-1]} (Confidence: {r.confidence:.2f}) ---
+{r.reasoning}\n\n"
             
         return {
-            'best_match_candidate_number': winning_candidate_num,
+            'best_match_snomed_id': winning_snomed_id,
             'best_match_procedure_name': consensus_procedure_name,
-            'final_modality': consensus_final_modality,
             'confidence': consensus_confidence,
             'agreement_score': agreement_score,
             'reasoning': combined_reasoning.strip()
