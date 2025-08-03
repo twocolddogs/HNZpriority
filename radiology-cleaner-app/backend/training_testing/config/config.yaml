@@ -629,9 +629,9 @@ secondary_pipeline:
     1.  **`input_exam`**: The real-world exam name to be matched.
         - `{exam_name}`
 
-    2.  **`candidate_procedures`**: A numbered list of potential matches retrieved by the initial system. Each candidate has a name and its original modality.
+    2.  **`candidate_procedures`**: An array of potential matches retrieved by the initial system. Each candidate includes the procedure name, SNOMED details, and confidence score.
         ```json
-        {similar_exams_json_str}
+        {similar_exams}
         ```
 
     ---
@@ -649,7 +649,7 @@ secondary_pipeline:
             *   **Do not add information:** If the input is "CT Chest", the best match is "CT of Chest", not "CT of Chest with contrast".
             *   **Do not lose information:** If the input is "CT Chest with contrast", the candidate "CT of Chest" is a poor match because it loses the critical contrast specifier.
 
-    3.  **Select the Single Best Match**: Choose the one candidate number that represents the most accurate and safest match based on your evaluation.
+    3.  **Select the Single Best Match**: Choose the one candidate by its `snomed_id` that represents the most accurate and safest match based on your evaluation.
 
     4.  **Provide Justification**: Explain your choice by referencing the evaluation criteria above. Be specific about why the chosen candidate is superior and why other plausible candidates were rejected.
 
@@ -661,9 +661,8 @@ secondary_pipeline:
 
     ```json
     {{
-        "best_match_candidate_number": <Integer>,
-        "best_match_procedure_name": "The full name of the chosen procedure",
-        "final_modality": "The modality of the chosen procedure (e.g., CT, MRI, XR)",
+        "best_match_snomed_id": "The SNOMED ID of the chosen procedure",
+        "best_match_procedure_name": "The primary_name of the chosen procedure",
         "confidence": <Float from 0.0 to 1.0>,
         "reasoning": "Detailed explanation of your choice, referencing the evaluation criteria and comparing the chosen candidate to other top contenders."
     }}

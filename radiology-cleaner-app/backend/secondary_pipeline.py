@@ -149,26 +149,16 @@ class OpenRouterEnsemble:
         
         prompt_template = self.config.get('secondary_pipeline', {}).get('prompt_template', self._get_default_prompt_template())
         
+        # Limit to top 10 candidates
+        limited_exams = similar_exams[:10]
+        
         prompt = prompt_template.format(
             exam_name=exam_name,
-            similar_exams_json_str=self._format_similar_exams_as_json(similar_exams)
+            similar_exams=json.dumps(limited_exams, indent=2)
         )
         
         return prompt
     
-    def _format_similar_exams_as_json(self, similar_exams: List[Dict]) -> str:
-        """Formats the list of similar exams into a numbered JSON string for the prompt."""
-        if not similar_exams:
-            return "{}"
-
-        candidates = {}
-        for i, exam in enumerate(similar_exams[:10], 1):  # Limit to top 10 for the prompt
-            candidates[i] = {
-                "name": exam.get("name", "Unknown Procedure"),
-                "modality": exam.get("modality", "UNKNOWN")
-            }
-        
-        return json.dumps(candidates, indent=4)
     
     def _parse_model_response(self, content: str) -> Dict:
         """Parse structured response from the new selection-focused model prompt."""
@@ -242,21 +232,21 @@ class OpenRouterEnsemble:
                 'reasoning': 'All models failed to provide a valid selection.'
             }
             
-        # Vote for the best candidate number
+        # Vote for the best SNOMED ID
         votes = {}
         for r in valid_responses:
-            candidate_num = r.best_match_candidate_number
-            if candidate_num not in votes:
-                votes[candidate_num] = []
-            votes[candidate_num].append(r)
+            snomed_id = r.best_match_snomed_id
+            if snomed_id not in votes:
+                votes[snomed_id] = []
+            votes[snomed_id].append(r)
             
-        # Find the winning candidate (most votes, then highest average confidence)
-        winning_candidate_num = max(
+        # Find the winning SNOMED ID (most votes, then highest average confidence)
+        winning_snomed_id = max(
             votes.keys(),
-            key=lambda num: (len(votes[num]), statistics.mean(r.confidence for r in votes[num]))
+            key=lambda snomed: (len(votes[snomed]), statistics.mean(r.confidence for r in votes[snomed]))
         )
         
-        consensus_responses = votes[winning_candidate_num]
+        consensus_responses = votes[winning_snomed_id]
         
         # Calculate consensus confidence and other details from the winning group
         consensus_confidence = statistics.mean(r.confidence for r in consensus_responses)
