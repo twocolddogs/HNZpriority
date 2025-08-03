@@ -641,12 +641,12 @@ secondary_pipeline:
     **RETURN A SINGLE, VALID JSON OBJECT AND NOTHING ELSE.**
 
     ```json
-    {{
+    {
         "best_match_snomed_id": "The SNOMED ID of the chosen procedure",
         "best_match_procedure_name": "The primary_name of the chosen procedure",
         "confidence": <Float between 0.0 and 1.0>,
         "reasoning": "Brief but specific justification for your choice."
-    }}
+    }
     ```
 
   # Model configuration

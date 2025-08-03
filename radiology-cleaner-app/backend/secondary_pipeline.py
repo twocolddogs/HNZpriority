@@ -147,9 +147,16 @@ class OpenRouterEnsemble:
         """Robustly parse the JSON object from a model's potentially messy response."""
         try:
             # Find the start of a JSON object that specifically contains our key
-            match = re.search(r'{{\s*"best_match_snomed_id":', content)
+            # CHANGE IS HERE: Use a single curly brace in the regex
+            match = re.search(r'{\s*"best_match_snomed_id":', content) # <-- REMOVED ONE BRACE
             if not match:
-                raise ValueError("No valid JSON object start found in response.")
+                # Check if the model wrapped the response in markdown
+                if '```json' in content:
+                    content = content.split('```json')[1].split('```')[0]
+                # Try again with potentially cleaned content
+                match = re.search(r'{\s*"best_match_snomed_id":', content)
+                if not match:
+                    raise ValueError("No valid JSON object start found in response.")
 
             # Start parsing from that point
             json_str = content[match.start():]
