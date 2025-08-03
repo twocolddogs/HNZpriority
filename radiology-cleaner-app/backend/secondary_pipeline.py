@@ -18,7 +18,7 @@ import os
 import yaml
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG) # TEMPORARY: Increased log level for debugging
 logger = logging.getLogger(__name__)
 
 class ModelType(Enum):
@@ -31,9 +31,8 @@ class ModelType(Enum):
 class ModelResponse:
     """Response from a single model, aligned with the new selection prompt"""
     model: str
-    best_match_candidate_number: Optional[int]
+    best_match_snomed_id: Optional[str]
     best_match_procedure_name: Optional[str]
-    final_modality: str
     confidence: float
     reasoning: str
     raw_response: str
@@ -44,9 +43,8 @@ class ModelResponse:
 class EnsembleResult:
     """Final ensemble result with consensus, aligned with the new selection prompt"""
     original_result: Dict[str, Any]
-    consensus_best_match_candidate_number: Optional[int]
+    consensus_best_match_snomed_id: Optional[str]
     consensus_best_match_procedure_name: Optional[str]
-    consensus_final_modality: str
     consensus_confidence: float
     model_responses: List[ModelResponse]
     agreement_score: float
@@ -102,11 +100,10 @@ class OpenRouterEnsemble:
             
             return ModelResponse(
                 model=model,
-                best_match_candidate_number=parsed['best_match_candidate_number'],
-                best_match_procedure_name=parsed['best_match_procedure_name'],
-                final_modality=parsed['final_modality'],
-                confidence=parsed['confidence'],
-                reasoning=parsed['reasoning'],
+                best_match_snomed_id=parsed.get('best_match_snomed_id'),
+                best_match_procedure_name=parsed.get('best_match_procedure_name'),
+                confidence=parsed.get('confidence', 0.0),
+                reasoning=parsed.get('reasoning', 'No reasoning provided'),
                 raw_response=content,
                 processing_time=processing_time
             )
@@ -115,9 +112,8 @@ class OpenRouterEnsemble:
             logger.error(f"Error querying {model}: {e}")
             return ModelResponse(
                 model=model,
-                best_match_candidate_number=None,
+                best_match_snomed_id=None,
                 best_match_procedure_name=None,
-                final_modality="UNKNOWN",
                 confidence=0.0,
                 reasoning=f"Error: {str(e)}",
                 raw_response="",
@@ -172,7 +168,16 @@ class OpenRouterEnsemble:
     def _get_default_prompt_template(self) -> str:
         """Default prompt template as fallback"""
         # This should not be used if config is loaded correctly, but is a safe fallback.
-        return """You are a senior radiology informatics specialist performing a final quality assurance review.\nPlease select the best match for the input exam from the candidates provided.\nREQUIRED OUTPUT FORMAT (JSON):\n{{\n    "best_match_candidate_number": <Integer>,\n    "best_match_procedure_name": "The full name of the chosen procedure",\n    "final_modality": "The modality of the chosen procedure (e.g., CT, MRI, XR)",\n    "confidence": <Float from 0.0 to 1.0>,\n    "reasoning": "Detailed explanation of your choice."\n}}"""
+        return """You are a senior radiology informatics specialist performing a final quality assurance review.
+Please select the best match for the input exam from the candidates provided.
+REQUIRED OUTPUT FORMAT (JSON):
+{{
+    "best_match_candidate_number": <Integer>,
+    "best_match_procedure_name": "The full name of the chosen procedure",
+    "final_modality": "The modality of the chosen procedure (e.g., CT, MRI, XR)",
+    "confidence": <Float from 0.0 to 1.0>,
+    "reasoning": "Detailed explanation of your choice."
+}}"""
     
     def _build_enhanced_prompt(self, exam_name: str, context: Dict) -> str:
         """Build enhanced prompt with context from original processing"""
@@ -195,6 +200,7 @@ class OpenRouterEnsemble:
                 similar_exams=json.dumps(limited_exams, indent=2)
             )
             logger.info(f"Prompt built successfully, length: {len(prompt)}")
+            logger.debug(f"--- START OF PROMPT ---\n{prompt}\n--- END OF PROMPT ---") # Log the full prompt for debugging
         except KeyError as e:
             logger.error(f"Missing template variable: {e}")
             logger.error(f"Template: {prompt_template[:200]}...")
