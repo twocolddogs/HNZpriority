@@ -13,7 +13,7 @@ from typing import List, Dict, Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from pathlib import Path
-from secondary_pipeline import SecondaryPipeline
+from secondary_pipeline import SecondaryPipeline, get_secondary_pipeline
 from pipeline_integration import PipelineIntegration, BatchResultProcessor
 import asyncio 
 
@@ -33,7 +33,7 @@ from r2_cache_manager import R2CacheManager
 
 # Secondary Pipeline Integration
 try:
-    from secondary_pipeline import SecondaryPipeline
+    from secondary_pipeline import SecondaryPipeline, get_secondary_pipeline
     from pipeline_integration import PipelineIntegration, BatchResultProcessor
     import asyncio
     SECONDARY_PIPELINE_AVAILABLE = True
@@ -112,6 +112,7 @@ semantic_parser: Optional[RadiologySemanticParser] = None
 nhs_lookup_engine: Optional[NHSLookupEngine] = None
 model_processors: Dict[str, NLPProcessor] = {}
 reranker_manager: Optional[RerankerManager] = None
+_batch_preloaded_config = None  # Shared config for secondary pipeline to avoid repeated R2 fetches
 _init_lock = threading.Lock()
 _app_initialized = False
 # DB/Cache managers would be initialized here in a full app
@@ -365,7 +366,9 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             }
             
             try:
-                pipeline = SecondaryPipeline()
+                # Use shared instance with preloaded config to avoid repeated R2 fetches
+                global _batch_preloaded_config
+                pipeline = get_secondary_pipeline(preloaded_config=_batch_preloaded_config)
                 # Use the new helper function to run the async code
                 ensemble_results = run_async_task(pipeline.process_low_confidence_results([single_item_batch]))
                 
@@ -992,6 +995,21 @@ def _process_batch(data, start_time):
     success_count = 0
     error_count = 0
     
+    # Pre-load config once for the entire batch to avoid repeated R2 fetches during secondary pipeline processing
+    global _batch_preloaded_config
+    _batch_preloaded_config = None
+    if enable_secondary and SECONDARY_PIPELINE_AVAILABLE:
+        try:
+            from config_manager import get_config
+            config_manager = get_config()
+            if config_manager.force_r2_reload():
+                _batch_preloaded_config = config_manager.get_full_config()
+                logger.info("Pre-loaded configuration from R2 for batch processing (will be reused for secondary pipeline)")
+            else:
+                logger.warning("Failed to pre-load config from R2, secondary pipeline will load individually")
+        except Exception as e:
+            logger.warning(f"Could not pre-load config from R2 ({e}), secondary pipeline will load individually")
+    
     chunk_size = 10
     total_exams = len(exams_to_process)
     chunks = [exams_to_process[i:i + chunk_size] for i in range(0, total_exams, chunk_size)]
@@ -1111,116 +1129,18 @@ def _process_batch(data, start_time):
             
             logger.info("Consolidated file created successfully.")
 
-            # Delay R2 upload until after secondary pipeline processing to ensure
-            # we upload the final version (either original or merged)
-            logger.info("Consolidated file ready - will upload to R2 after secondary pipeline processing")
+            # Consolidated file ready for R2 upload
+            logger.info("Consolidated file created and ready for R2 upload")
 
         except Exception as e:
             logger.error(f"Error during R2 upload process: {e}", exc_info=True)
     else:
         logger.warning("R2 not available - results only stored locally")
 
-    # Optional secondary pipeline processing for low-confidence results
-    secondary_report = None
-    if enable_secondary and SECONDARY_PIPELINE_AVAILABLE:
-        _initialize_secondary_pipeline()
-        if secondary_integration and secondary_integration.is_enabled():
-            try:
-                logger.info("Running secondary pipeline on low-confidence results...")
-                update_progress(success_count + error_count, total_exams, success_count, error_count)
-                
-                # Load results from the consolidated file for secondary processing
-                if consolidated_filepath and os.path.exists(consolidated_filepath):
-                    with open(consolidated_filepath, 'r', encoding='utf-8') as f:
-                        consolidated_data = json.load(f)
-                        results_for_secondary = consolidated_data.get('results', [])
-                else:
-                    # Fallback: read from JSONL file
-                    results_for_secondary = []
-                    if os.path.exists(results_filepath):
-                        with open(results_filepath, 'r', encoding='utf-8') as f:
-                            for line in f:
-                                if line.strip():
-                                    results_for_secondary.append(json.loads(line.strip()))
-                
-                if results_for_secondary:
-                    # Run secondary pipeline using the safe async runner
-                    secondary_report = run_async_task(
-                        secondary_batch_processor.process_batch_with_secondary(results_for_secondary)
-                    )
-                    logger.info(f"Secondary pipeline completed: {secondary_report}")
-                    
-                    # Update progress to show secondary pipeline completion
-                    update_progress(total_exams, total_exams, success_count, error_count)
+    # Secondary pipeline processing is now handled inline per exam during individual processing
+    # No batch processing needed at the end
 
-                if secondary_report and secondary_report.get('secondary_results') and secondary_report['secondary_results'].get('results'):
-                    logger.info("Merging secondary pipeline results into the main result set...")
-                    
-                    # Load the original consolidated data again to be safe
-                    with open(consolidated_filepath, 'r', encoding='utf-8') as f:
-                        original_data = json.load(f)
-                    
-                    # Create a dictionary for faster lookups using exam_name as the key
-                    results_map = {res['input']['exam_name']: res for res in original_data['results']}
-                    
-                    # Merge results
-                    for secondary_res in secondary_report['secondary_results']['results']:
-                        original_full_record = secondary_res.get('original_result', {})
-                        exam_name = original_full_record.get('input', {}).get('exam_name')
-
-                        if exam_name and exam_name in results_map:
-                            # Get the result from our map to modify it in place
-                            result_to_update = results_map[exam_name]
-                            
-                            # Update the 'output' part of the result
-                            output_to_update = result_to_update.get('output', {})
-                            
-                            # Get original values for the new metadata fields
-                            original_confidence = output_to_update.get('components', {}).get('confidence', 0.0)
-                            
-                            # Update confidence and other relevant fields from the consensus
-                            output_to_update['components']['confidence'] = secondary_res.get('consensus_confidence', original_confidence)
-                            
-                            # IMPORTANT: Update the top-level snomed info and clean_name as well
-                            output_to_update['clean_name'] = secondary_res.get('consensus_best_match_procedure_name', output_to_update.get('clean_name'))
-                            output_to_update['snomed']['id'] = secondary_res.get('consensus_best_match_snomed_id', output_to_update.get('snomed', {}).get('id'))
-                            output_to_update['snomed']['fsn'] = secondary_res.get('consensus_snomed_fsn', output_to_update.get('snomed', {}).get('fsn'))
-                            
-                            # Add detailed secondary pipeline metadata
-                            output_to_update['secondary_pipeline_applied'] = True
-                            
-                            # Add detailed secondary pipeline metadata for transparency
-                            output_to_update['secondary_pipeline_applied'] = True
-                            output_to_update['secondary_pipeline_details'] = {
-                                'improved': secondary_res.get('improved', False),
-                                'original_confidence': original_confidence,
-                                'consensus_confidence': secondary_res.get('consensus_confidence'),
-                                'agreement_score': secondary_res.get('agreement_score'),
-                                'models_used': [resp['model'] for resp in secondary_res.get('model_responses', [])]
-                            }
-                            
-                            # Put the updated result back into the map
-                            results_map[exam_name] = result_to_update
-
-                    # Reconstruct the results list from the updated map
-                    original_data['results'] = list(results_map.values())
-
-                    # Overwrite the consolidated file with the merged data
-                    merged_filepath = consolidated_filepath.replace('.json', '_merged.json')
-                    with open(merged_filepath, 'w', encoding='utf-8') as f:
-                        json.dump(original_data, f)
-                    
-                    logger.info(f"Successfully merged results into: {merged_filepath}")
-                    
-                    # Update consolidated_filepath to point to the merged file for final upload
-                    consolidated_filepath = merged_filepath
-                    logger.info(f"Merged results ready for R2 upload: {merged_filepath}")
-
-            except Exception as e:
-                logger.error(f"Secondary pipeline failed: {e}", exc_info=True)
-                secondary_report = {"error": str(e)}
-
-    # Now upload the final file to R2 (either original consolidated or merged version)
+    # Upload the consolidated file to R2
     if r2_manager and consolidated_filepath and os.path.exists(consolidated_filepath):
         try:
             final_filename = os.path.basename(consolidated_filepath)
@@ -1239,12 +1159,7 @@ def _process_batch(data, start_time):
         if os.path.exists(results_filepath):
             os.remove(results_filepath)
             logger.info(f"Cleaned up temporary results file: {results_filepath}")
-        # Only cleanup original consolidated file if we have a merged version
-        original_consolidated = consolidated_filepath.replace('_merged.json', '.json')
-        if original_consolidated != consolidated_filepath and os.path.exists(original_consolidated):
-            os.remove(original_consolidated)
-            logger.info(f"Cleaned up original consolidated file: {original_consolidated}")
-        # Keep merged file for R2 upload success verification
+        # Keep consolidated file for R2 upload success verification
     except Exception as e:
         logger.warning(f"Failed to clean up temporary files: {e}")
 
@@ -1253,7 +1168,7 @@ def _process_batch(data, start_time):
     logger.info(f"Batch processing complete. Returning response with R2 URL: {r2_url}")
     
     response_data = {
-        "message": "Batch processing complete. Results are available at the provided R2 URL." + (" Secondary pipeline applied to low-confidence results." if secondary_report else ""),
+        "message": "Batch processing complete. Results are available at the provided R2 URL." + (" Secondary pipeline applied inline to low-confidence results." if enable_secondary else ""),
         "batch_id": batch_id,
         "r2_url": r2_url,
         "r2_uploaded": r2_upload_success,
@@ -1266,11 +1181,8 @@ def _process_batch(data, start_time):
             "reranker_used": reranker_key,
             "secondary_pipeline_enabled": enable_secondary and SECONDARY_PIPELINE_AVAILABLE and secondary_integration and secondary_integration.is_enabled()
         },
-        "secondary_pipeline_summary": secondary_report if secondary_report else None
+        "secondary_pipeline_summary": "Secondary pipeline processing handled inline per exam" if enable_secondary else None
     }
-    
-    if secondary_report:
-        response_data["secondary_processing"] = secondary_report
     
     return jsonify(response_data)
 

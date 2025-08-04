@@ -21,6 +21,10 @@ import yaml
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Global cache for shared secondary pipeline instance
+_shared_secondary_pipeline = None
+_shared_config = None
+
 class ModelType(Enum):
     """Available OpenRouter models for ensemble processing"""
     CLAUDE_SONNET = "anthropic/claude-3.5-sonnet"
@@ -261,8 +265,8 @@ class OpenRouterEnsemble:
 class SecondaryPipeline:
     """Main secondary pipeline coordinator"""
     
-    def __init__(self):
-        self.config = self._load_config()
+    def __init__(self, preloaded_config=None):
+        self.config = preloaded_config if preloaded_config is not None else self._load_config()
         self.ensemble = OpenRouterEnsemble(config=self.config)
         
     def _load_config(self) -> Dict:
@@ -351,6 +355,27 @@ class SecondaryPipeline:
             'high_agreement_results': high_agreement,
             'high_agreement_rate': high_agreement / total_count if total_count > 0 else 0
         }
+
+
+def get_secondary_pipeline(preloaded_config=None):
+    """
+    Get a shared SecondaryPipeline instance, reusing the same config to avoid repeated R2 fetches.
+    If preloaded_config is provided, it will be used for the shared instance.
+    """
+    global _shared_secondary_pipeline, _shared_config
+    
+    # If we have a preloaded config and it's different from our cached config, update the shared instance
+    if preloaded_config is not None and preloaded_config != _shared_config:
+        logger.info("Creating new shared SecondaryPipeline instance with preloaded config")
+        _shared_config = preloaded_config
+        _shared_secondary_pipeline = SecondaryPipeline(preloaded_config=preloaded_config)
+    # If we don't have a shared instance yet, create one
+    elif _shared_secondary_pipeline is None:
+        logger.info("Creating first shared SecondaryPipeline instance")
+        _shared_secondary_pipeline = SecondaryPipeline(preloaded_config=preloaded_config)
+        _shared_config = _shared_secondary_pipeline.config
+    
+    return _shared_secondary_pipeline
 
 # Example usage and integration
 async def run_secondary_pipeline(primary_results_file: str):
