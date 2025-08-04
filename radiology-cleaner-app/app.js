@@ -1850,8 +1850,8 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidence = item.components?.confidence || 0;
             const confidencePercent = Math.round(confidence * 100);
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
-            const isSecondaryPipelineApplied = item.secondary_pipeline_applied || false;
-            const secondaryPipelineTag = isSecondaryPipelineApplied ? '<div class="secondary-pipeline-tag" title="Improved by Secondary Pipeline"><i class="fas fa-robot"></i> Super AI Mapped</div>' : '';
+            const isSecondaryPipelineImproved = item.secondary_pipeline_applied && item.secondary_pipeline_details?.improved;
+            const secondaryPipelineTag = isSecondaryPipelineImproved ? '<div class="secondary-pipeline-tag" title="Improved by Secondary Pipeline"><i class="fas fa-robot"></i> Super AI Mapped</div>' : '';
             confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>${secondaryPipelineTag}`;
             
             // Create mobile card
@@ -1975,7 +1975,7 @@ window.addEventListener('DOMContentLoaded', function() {
             group.totalCount++;
             group.dataSources.add(m.data_source);
             group.modalities.add(m.modality_code);
-            if (m.secondary_pipeline_applied) {
+            if (m.secondary_pipeline_applied && m.secondary_pipeline_details?.improved) {
                 group.secondaryPipelineCount++;
             }
             consolidatedGroups[m.clean_name] = group;
