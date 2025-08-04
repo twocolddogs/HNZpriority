@@ -1189,7 +1189,7 @@ def _process_batch(data, start_time):
                                 # Overwrite with improved data
                                 output_to_update['clean_name'] = secondary_res_dict['consensus_best_match_procedure_name']
                                 output_to_update['snomed']['id'] = secondary_res_dict['consensus_best_match_snomed_id']
-                                output_to_update['snomed']['fsn'] = secondary_res_dict.get('consensus_snomed_fsn', output_to_update.get('snomed',{}).get('fsn'))
+                                output_to_update['snomed']['fsn'] = secondary_res_dict.get('consensus_snomed_fsn')
                                 output_to_update['components']['confidence'] = secondary_res_dict['consensus_confidence']
                                 
                                 # Add metadata for transparency

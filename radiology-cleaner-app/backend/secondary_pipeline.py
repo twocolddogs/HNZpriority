@@ -80,6 +80,7 @@ class EnsembleResult:
     original_result: Dict[str, Any]
     consensus_best_match_snomed_id: Optional[str]
     consensus_best_match_procedure_name: Optional[str]
+    consensus_snomed_fsn: Optional[str]
     consensus_confidence: float
     model_responses: List[ModelResponse]
     agreement_score: float
@@ -250,6 +251,7 @@ class OpenRouterEnsemble:
             original_result=context.get('original_result', {}),
             consensus_best_match_snomed_id=consensus_result['best_match_snomed_id'],
             consensus_best_match_procedure_name=consensus_result['best_match_procedure_name'],
+            consensus_snomed_fsn=consensus_result.get('snomed_fsn'),
             consensus_confidence=consensus_result['confidence'],
             model_responses=model_responses,
             agreement_score=consensus_result['agreement_score'],
@@ -280,6 +282,7 @@ class OpenRouterEnsemble:
         
         winning_candidate = next((c for c in candidates if str(c.get('snomed_id')) == winning_snomed_id), None)
         consensus_procedure_name = winning_candidate.get('primary_name') if winning_candidate else "Unknown Procedure"
+        consensus_fsn = winning_candidate.get('snomed_fsn') if winning_candidate else None
 
         agreeing_models = [r.model.split('/')[-1] for r in consensus_responses]
         combined_reasoning = f"Consensus choice is SNOMED ID {winning_snomed_id} with {agreement_score:.0%} agreement from models: {', '.join(agreeing_models)}.\n\n"
@@ -289,6 +292,7 @@ class OpenRouterEnsemble:
         return {
             'best_match_snomed_id': winning_snomed_id,
             'best_match_procedure_name': consensus_procedure_name,
+            'snomed_fsn': consensus_fsn,
             'confidence': consensus_confidence,
             'agreement_score': agreement_score,
             'reasoning': combined_reasoning.strip()

@@ -1402,8 +1402,8 @@ class NHSLookupEngine:
                     set(entry_components.get('technique', [])) == target_techniques):
                 return entry
 
-        # Fallback to original find_bilateral_peer if not found in candidates
-        return self.find_bilateral_peer(specific_entry)
+        # No fallback - only return results from candidate_entries to maintain consistency
+        return None
     
     def _apply_semantic_similarity_safeguard(self, result: Dict, input_exam: str) -> Dict:
         """
