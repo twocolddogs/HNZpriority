@@ -343,18 +343,17 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             nhs_result.get('semantic_similarity_safeguard', {}).get('applied', False)
         )
         if run_secondary_inline and should_apply_secondary and SECONDARY_PIPELINE_AVAILABLE:
-        # Ensure the error for non-clinical exams is handled first
-        if nhs_result.get('error') == 'EXCLUDED_NON_CLINICAL':
-            logger.info(f"Engine excluded '{exam_name}' as non-clinical. Formatting final response.")
-            return {
-                'error': 'EXCLUDED_NON_CLINICAL',
-                'message': nhs_result.get('message', f'Excluded non-clinical entry: {exam_name}'),
-                'exam_name': exam_name,
-                'excluded': True
-            }
+            # Ensure the error for non-clinical exams is handled first
+            if nhs_result.get('error') == 'EXCLUDED_NON_CLINICAL':
+                logger.info(f"Engine excluded '{exam_name}' as non-clinical. Formatting final response.")
+                return {
+                    'error': 'EXCLUDED_NON_CLINICAL',
+                    'message': nhs_result.get('message', f'Excluded non-clinical entry: {exam_name}'),
+                    'exam_name': exam_name,
+                    'excluded': True
+                }
 
-        # Apply secondary pipeline if the conditions are met and the module is available
-        if should_apply_secondary and SECONDARY_PIPELINE_AVAILABLE:
+            # Apply secondary pipeline if the conditions are met and the module is available
             logger.info(f"[SECONDARY-PIPELINE] Applying secondary pipeline for single exam: {exam_name} (Confidence: {confidence:.2f})")
             _initialize_secondary_pipeline() # Make sure it's ready
             
