@@ -309,7 +309,11 @@ modality_similarity:
   US: { Ultrasound: 1.0, USS: 0.9, MRI: 0.1 }
   MG: { Mammography: 1.0, Mammogram: 1.0, Tomosynthesis: 0.9, XR: 0.5 }
   NM: { "Nuclear Medicine": 1.0, Scintigraphy: 0.8, SPECT: 0.9, PET: 0.4 }
-  PET: { "PET/CT": 0.95, CT: 0.7 }
+  PET: { "PET/CT": 0.95, "PET-CT": 1.0, CT: 0.7 }
+  "PET/CT": { "PET-CT": 1.0, PET: 0.95, CT: 0.7, NM: 0.4 }
+  "PET-CT": { "PET/CT": 1.0, PET: 0.95, CT: 0.7, NM: 0.4 }
+  "PET/MRI": { "PET-MRI": 1.0, PET: 0.90, MR: 0.6, NM: 0.4 }
+  "PET-MRI": { "PET/MRI": 1.0, PET: 0.90, MR: 0.6, NM: 0.4 }
   DEXA: { DXA: 1.0, "Bone Densitometry": 1.0, XR: 0.2 }
   DXA: { DEXA: 1.0, "Bone Densitometry": 1.0, XR: 0.2 }
   IR: { Fluoroscopy: 0.6, CT: 0.2, US: 0.2 }
@@ -427,6 +431,18 @@ preprocessing:
     "FL": "fluoroscopy"
     "Mamm": "mammography"
     "PET": "positron emission tomography"
+    "PET-CT": "PET/CT"  # Normalize hyphenated to slash notation
+    "PET CT": "PET/CT"  # Normalize spaced to slash notation
+    "PETCT": "PET/CT"   # Normalize concatenated to slash notation
+    "positron emission tomography-CT": "PET/CT"  # Handle expanded PET + CT combination
+    "positron emission tomography CT": "PET/CT"   # Handle expanded PET + CT combination
+    "positron emission tomography/CT": "PET/CT"   # Handle expanded PET + CT combination
+    "PET-MRI": "PET/MRI"  # Normalize hyphenated to slash notation
+    "PET MRI": "PET/MRI"  # Normalize spaced to slash notation
+    "PETMRI": "PET/MRI"   # Normalize concatenated to slash notation
+    "positron emission tomography-MRI": "PET/MRI"  # Handle expanded PET + MRI combination
+    "positron emission tomography MRI": "PET/MRI"   # Handle expanded PET + MRI combination
+    "positron emission tomography/MRI": "PET/MRI"   # Handle expanded PET + MRI combination
     
     # --- CLINICAL CONTEXT & TRACERS ---
     "DVT": "deep vein thrombosis"
