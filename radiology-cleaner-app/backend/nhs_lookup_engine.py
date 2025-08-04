@@ -572,9 +572,16 @@ class NHSLookupEngine:
                             result['debug'] = {'error': f'Debug error: {str(e)}'}
                     
                     result['all_candidates'] = all_candidates_list
+                    
+                    # Apply semantic similarity safeguard to bilateral peer result
+                    result = self._apply_semantic_similarity_safeguard(result, input_exam)
+                    
                     return result
             
             result = self._format_match_result(best_match, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
+            
+            # Apply semantic similarity safeguard
+            result = self._apply_semantic_similarity_safeguard(result, input_exam)
             
             # Add debug information if requested (MUST be after _format_match_result)
             if debug:
@@ -1384,6 +1391,59 @@ class NHSLookupEngine:
 
         # Fallback to original find_bilateral_peer if not found in candidates
         return self.find_bilateral_peer(specific_entry)
+    
+    def _apply_semantic_similarity_safeguard(self, result: Dict, input_exam: str) -> Dict:
+        """
+        Apply semantic similarity safeguard to detect catastrophic mismatches.
+        
+        If similarity between input and output is catastrophically low, forces ambiguous=True
+        and lowers confidence to trigger secondary pipeline correction.
+        """
+        final_clean_name = result.get('clean_name', '')
+        if not final_clean_name or not input_exam:
+            return result
+            
+        try:
+            # Use the retriever processor to get embeddings for similarity check
+            input_embedding = self.retriever_processor.get_text_embedding(input_exam.lower())
+            output_embedding = self.retriever_processor.get_text_embedding(final_clean_name.lower())
+            
+            if input_embedding is not None and output_embedding is not None:
+                # Calculate cosine similarity
+                import numpy as np
+                similarity = np.dot(input_embedding, output_embedding) / (
+                    np.linalg.norm(input_embedding) * np.linalg.norm(output_embedding)
+                )
+                
+                # If semantic similarity is catastrophically low, force ambiguous and lower confidence
+                similarity_threshold = 0.3  # Very low threshold for catastrophic mismatches
+                if similarity < similarity_threshold:
+                    logger.warning(f"[SEMANTIC-SAFEGUARD] Catastrophic mismatch detected! Input: '{input_exam}' -> Output: '{final_clean_name}' (similarity: {similarity:.3f})")
+                    
+                    # Force ambiguous to trigger secondary pipeline
+                    result['ambiguous'] = True
+                    
+                    # Lower confidence to ensure secondary pipeline activation
+                    if 'components' in result and 'confidence' in result['components']:
+                        original_confidence = result['components']['confidence']
+                        result['components']['confidence'] = min(0.2, original_confidence)  # Cap at very low confidence
+                        logger.warning(f"[SEMANTIC-SAFEGUARD] Lowered confidence: {original_confidence:.3f} -> {result['components']['confidence']:.3f}")
+                    
+                    # Add metadata for transparency
+                    result['semantic_similarity_safeguard'] = {
+                        'applied': True,
+                        'similarity_score': float(similarity),
+                        'threshold': similarity_threshold,
+                        'reason': 'Catastrophic semantic mismatch detected'
+                    }
+                else:
+                    logger.debug(f"[SEMANTIC-SAFEGUARD] Similarity check passed: {similarity:.3f} (threshold: {similarity_threshold})")
+                
+        except Exception as e:
+            logger.error(f"[SEMANTIC-SAFEGUARD] Error in similarity check: {e}")
+            # Don't fail the entire request, just log and continue
+        
+        return result
     
     def _is_biopsy_ambiguous(self, input_exam: str, nhs_entry: dict) -> bool:
         """Check if this is an ambiguous biopsy case where modality preference was applied."""

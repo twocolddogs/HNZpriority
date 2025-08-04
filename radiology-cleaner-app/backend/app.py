@@ -294,6 +294,76 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
         logger.info(f"[DEBUG-FLOW] About to call standardize_exam with debug=True, is_input_simple={is_input_simple}")
     nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key)
     
+    # === SECONDARY PIPELINE FOR SINGLE EXAM PROCESSING ===
+    # Apply secondary pipeline if result is ambiguous or has low confidence
+    should_apply_secondary = (
+        nhs_result.get('ambiguous', False) or 
+        nhs_result.get('components', {}).get('confidence', 1.0) < 0.5 or
+        nhs_result.get('semantic_similarity_safeguard', {}).get('applied', False)
+    )
+    
+    if should_apply_secondary and secondary_pipeline:
+        logger.info(f"[SECONDARY-PIPELINE] Applying secondary pipeline for single exam: {exam_name}")
+        try:
+            # Create a single-item batch for secondary pipeline processing
+            single_item_batch = {
+                'data_source': data_source or 'N/A',
+                'modality_code': modality_code or 'Other',
+                'exam_code': exam_code or 'N/A', 
+                'exam_name': exam_name,
+                'clean_name': nhs_result.get('clean_name', ''),
+                'snomed': {
+                    'found': bool(nhs_result.get('snomed_id')),
+                    'fsn': nhs_result.get('snomed_fsn', ''),
+                    'id': nhs_result.get('snomed_id', ''),
+                },
+                'components': nhs_result.get('components', {}),
+                'ambiguous': nhs_result.get('ambiguous', False),
+                'all_candidates': nhs_result.get('all_candidates', [])
+            }
+            
+            # Apply secondary pipeline
+            secondary_result = secondary_pipeline.process_single_result(single_item_batch)
+            
+            if secondary_result and secondary_result.get('improved', False):
+                logger.info(f"[SECONDARY-PIPELINE] Secondary pipeline improved result for: {exam_name}")
+                
+                # Update nhs_result with improved values from secondary pipeline
+                if secondary_result.get('consensus_best_match_snomed_id'):
+                    nhs_result['snomed_id'] = secondary_result['consensus_best_match_snomed_id']
+                if secondary_result.get('consensus_best_match_procedure_name'):
+                    nhs_result['clean_name'] = secondary_result['consensus_best_match_procedure_name']
+                if secondary_result.get('consensus_confidence') is not None:
+                    if 'components' not in nhs_result:
+                        nhs_result['components'] = {}
+                    nhs_result['components']['confidence'] = secondary_result['consensus_confidence']
+                
+                # Add secondary pipeline metadata
+                nhs_result['secondary_pipeline_applied'] = True
+                nhs_result['secondary_pipeline_details'] = {
+                    'improved': secondary_result.get('improved', False),
+                    'original_confidence': single_item_batch.get('components', {}).get('confidence', 0.0),
+                    'consensus_confidence': secondary_result.get('consensus_confidence'),
+                    'agreement_score': secondary_result.get('agreement_score'),
+                    'models_used': [resp['model'] for resp in secondary_result.get('model_responses', [])]
+                }
+            else:
+                logger.info(f"[SECONDARY-PIPELINE] No improvement from secondary pipeline for: {exam_name}")
+                nhs_result['secondary_pipeline_applied'] = True
+                nhs_result['secondary_pipeline_details'] = {'improved': False, 'reason': 'No consensus improvement found'}
+                
+        except Exception as e:
+            logger.error(f"[SECONDARY-PIPELINE] Error applying secondary pipeline to single exam: {e}")
+            # Continue with original result if secondary pipeline fails
+            nhs_result['secondary_pipeline_applied'] = False
+            nhs_result['secondary_pipeline_error'] = str(e)
+    else:
+        nhs_result['secondary_pipeline_applied'] = False
+        if not should_apply_secondary:
+            logger.debug(f"[SECONDARY-PIPELINE] Skipping secondary pipeline - result not ambiguous (confidence: {nhs_result.get('components', {}).get('confidence', 'N/A')})")
+        elif not secondary_pipeline:
+            logger.debug("[SECONDARY-PIPELINE] Secondary pipeline not available")
+    
     if nhs_result.get('error') == 'EXCLUDED_NON_CLINICAL':
         logger.info(f"Engine excluded '{exam_name}' as non-clinical. Formatting final response.")
         # Return a formatted response consistent with the preprocessor's exclusion logic.

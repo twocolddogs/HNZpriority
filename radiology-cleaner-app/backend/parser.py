@@ -87,7 +87,7 @@ class RadiologySemanticParser:
                 r'\b(ivc filter|vena cava filter|thrombolysis venous)\b'
             ]],
             'Non-Vascular Interventional': [re.compile(p, re.I) for p in [
-                r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation)\b',
+                r'\b(biopsy|bx|fna|drainage|aspirat|injection|vertebroplasty|ablation|guided|guidance|placement|locali[sz]ation|nephrostomy|tube)\b',
                 r'\b(?!.*\b(?:picc|line|catheter)\b)(insertion|insert)\b'
             ]],
 
