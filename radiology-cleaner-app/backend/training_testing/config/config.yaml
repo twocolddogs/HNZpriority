@@ -636,25 +636,27 @@ secondary_pipeline:
     ```
 
     **INSTRUCTIONS:**
-    1.  **Strictly Decompose Input:** Identify the essential components of the `input_exam`: Modality, Anatomy, Contrast, and any other key specifiers.
+    1.  **Strictly Decompose Input:** Identify the essential components of the `input_exam`: Modality, Anatomy, Contrast, and any other key specifiers. A modality mismatch (e.g., input is 'US' but all candidates are 'MG') is a critical failure.
     2.  **Evaluate Candidates against Input:** For each candidate, determine if it meets all the essential components from the input.
     3.  **Apply the Parsimony Filter:**
-        -   **Penalize Additions:** Heavily penalize and likely reject any candidate that adds significant new information not present in the input. For example, if the input is `MRI Lumbar Spine`, a candidate for `MRI Lumbar spine and pelvis` is incorrect because it adds 'pelvis'.
-        -   **Prefer Simplicity:** If multiple candidates match the input components, choose the simplest one (the one with the fewest extra words/concepts).
-    4.  **Select Best Match:** Choose the candidate that best adheres to the Guiding Principle. If no candidate is a good fit, state that.
-    5.  **Justify Your Choice:** In your reasoning, explicitly state why your chosen candidate is the most parsimonious match and briefly mention why a more complex (but plausible-looking) alternative was rejected.
+        -   **Penalize Additions:** Heavily penalize and likely reject any candidate that adds significant new information not present in the input.
+        -   **Prefer Simplicity:** If multiple candidates match the input components, choose the simplest one.
+    4.  **Select Best Match:** Choose the candidate that best adheres to the Guiding Principle.
+
+    **If no candidate is a suitable match (e.g., there is a clear modality mismatch or all candidates add significant, incorrect information), you MUST return `null` for `best_match_snomed_id` and `best_match_procedure_name`, and `0.0` for `confidence`.**
 
     **EXAMPLE OF CORRECT LOGIC:**
-    - If `input_exam` is "CT Chest", and candidates are "CT Chest" and "CT Chest with contrast", you MUST choose "CT Chest". The addition of "with contrast" makes the second option incorrect as it was not specified.
+    - If `input_exam` is "CT Chest", and candidates are "CT Chest" and "CT Chest with contrast", you MUST choose "CT Chest".
+    - If `input_exam` is "US Breast", and all candidates are "Mammogram...", you MUST return a "no match" response as described above.
 
     **RETURN A SINGLE, VALID JSON OBJECT AND NOTHING ELSE.**
 
     ```json
     {{
-        "best_match_snomed_id": "The SNOMED ID of the chosen procedure",
-        "best_match_procedure_name": "The primary_name of the chosen procedure",
+        "best_match_snomed_id": "The SNOMED ID of the chosen procedure, or null",
+        "best_match_procedure_name": "The primary_name of the chosen procedure, or null",
         "confidence": <Float between 0.0 and 1.0>,
-        "reasoning": "My choice is the most parsimonious match. I rejected [Other Candidate] because it added [New Information] which was not in the input."
+        "reasoning": "My choice is the most parsimonious match. I rejected [Other Candidate] because it added [New Information] which was not in the input. If no match, explain why (e.g., modality mismatch)."
     }}
     ```
 

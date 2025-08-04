@@ -1020,29 +1020,39 @@ def _process_batch(data, start_time):
                     
                     # Merge results
                     for secondary_res in secondary_report['secondary_results']['results']:
-                        # Correctly extract exam_name from the properly nested structure
-                        exam_name = secondary_res.get('original_result', {}).get('original_result', {}).get('input', {}).get('exam_name')
+                        original_full_record = secondary_res.get('original_result', {})
+                        exam_name = original_full_record.get('input', {}).get('exam_name')
 
                         if exam_name and exam_name in results_map:
-                            original_full_result = results_map[exam_name]
-                            original_output = original_full_result.get('output', {})
+                            # Get the result from our map to modify it in place
+                            result_to_update = results_map[exam_name]
                             
-                            # Update confidence and modality from consensus
-                            original_output['components']['confidence'] = secondary_res.get('consensus_confidence', original_output.get('components', {}).get('confidence'))
-                            original_output['components']['modality'] = [secondary_res.get('consensus_modality', 'UNKNOWN')]
-
-                            # Add detailed secondary pipeline metadata
-                            original_output['secondary_pipeline_applied'] = True
-                            original_output['secondary_pipeline_details'] = {
-                                'original_modality': secondary_res.get('original_result', {}).get('original_modality'),
-                                'original_confidence': secondary_res.get('original_result', {}).get('original_confidence'),
-                                'consensus_modality': secondary_res.get('consensus_modality'),
+                            # Update the 'output' part of the result
+                            output_to_update = result_to_update.get('output', {})
+                            
+                            # Get original values for the new metadata fields
+                            original_confidence = output_to_update.get('components', {}).get('confidence', 0.0)
+                            
+                            # Update confidence and other relevant fields from the consensus
+                            output_to_update['components']['confidence'] = secondary_res.get('consensus_confidence', original_confidence)
+                            
+                            # IMPORTANT: Update the top-level snomed info and clean_name as well
+                            output_to_update['clean_name'] = secondary_res.get('consensus_best_match_procedure_name', output_to_update.get('clean_name'))
+                            output_to_update['snomed']['id'] = secondary_res.get('consensus_best_match_snomed_id', output_to_update.get('snomed', {}).get('id'))
+                            output_to_update['snomed']['fsn'] = f"New FSN for {secondary_res.get('consensus_best_match_procedure_name')}" # You might need to look this up
+                            
+                            # Add detailed secondary pipeline metadata for transparency
+                            output_to_update['secondary_pipeline_applied'] = True
+                            output_to_update['secondary_pipeline_details'] = {
+                                'improved': secondary_res.get('improved', False),
+                                'original_confidence': original_confidence,
                                 'consensus_confidence': secondary_res.get('consensus_confidence'),
                                 'agreement_score': secondary_res.get('agreement_score'),
                                 'models_used': [resp['model'] for resp in secondary_res.get('model_responses', [])]
                             }
                             
-                            results_map[exam_name] = original_full_result
+                            # Put the updated result back into the map
+                            results_map[exam_name] = result_to_update
 
                     # Reconstruct the results list from the updated map
                     original_data['results'] = list(results_map.values())
