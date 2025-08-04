@@ -1137,6 +1137,10 @@ window.addEventListener('DOMContentLoaded', function() {
             const enableSecondary = document.getElementById('enableSecondaryPipeline')?.checked || false;
             
             // Start the API request
+            // Get sample size from user input
+            const sampleSizeInput = document.getElementById('sampleSizeInput');
+            const sampleSize = parseInt(sampleSizeInput.value) || 100;
+            
             const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
                 method: 'POST',
                 headers: {
@@ -1145,7 +1149,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     model: currentModel,
                     reranker: currentReranker,
-                    enable_secondary_pipeline: enableSecondary
+                    enable_secondary_pipeline: enableSecondary,
+                    sample_size: sampleSize
                 })
             });
             
@@ -1846,7 +1851,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidencePercent = Math.round(confidence * 100);
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             const isSecondaryPipelineApplied = item.secondary_pipeline_applied || false;
-            const secondaryPipelineTag = isSecondaryPipelineApplied ? '<div class="secondary-pipeline-tag" title="Improved by Secondary Pipeline"><i class="fas fa-robot"></i> AI Enhanced</div>' : '';
+            const secondaryPipelineTag = isSecondaryPipelineApplied ? '<div class="secondary-pipeline-tag" title="Improved by Secondary Pipeline"><i class="fas fa-robot"></i> Super AI Mapped</div>' : '';
             confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>${secondaryPipelineTag}`;
             
             // Create mobile card
@@ -2056,7 +2061,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     <div class="consolidated-meta">
                         <div class="meta-item"><strong>Data Sources</strong><div class="source-indicators">${Array.from(group.dataSources).map(source => `<div class="source-item" title="${getSourceDisplayName(source)}"><span class="source-color-dot" style="background-color: ${getSourceColor(source)}"></span>${getSourceDisplayName(source)}</div>`).join('')}</div></div>
                         <div class="meta-item"><strong>Modalities</strong><div class="modality-list">${Array.from(group.modalities).filter(m => m && m.trim()).join(', ') || 'None specified'}</div></div>
-                        <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div>${group.secondaryPipelineCount > 0 ? `<div class="secondary-pipeline-tag" title="${group.secondaryPipelineCount} of ${group.totalCount} results improved by Secondary Pipeline"><i class="fas fa-robot"></i> ${group.secondaryPipelineCount} AI Enhanced</div>` : ''}</div>
+                        <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div>${group.secondaryPipelineCount > 0 ? `<div class="secondary-pipeline-tag" title="${group.secondaryPipelineCount} of ${group.totalCount} results improved by Secondary Pipeline"><i class="fas fa-robot"></i> ${group.secondaryPipelineCount} Super AI Mapped</div>` : ''}</div>
                         <div class="meta-item"><strong>Parsed Components</strong><div class="component-tags">${generateComponentTags(group.components)}</div></div>
                     </div>
                     <div class="original-codes-container" style="display: none;">
@@ -2185,6 +2190,23 @@ window.addEventListener('DOMContentLoaded', function() {
         runRandomDemoBtn?.addEventListener('click', async () => {
             await runRandomSampleDemo();
         });
+        
+        // Sample size input listener
+        const sampleSizeInput = document.getElementById('sampleSizeInput');
+        const randomSampleSubtext = document.getElementById('randomSampleSubtext');
+        
+        function updateSampleSizeDisplay() {
+            const sampleSize = parseInt(sampleSizeInput?.value) || 100;
+            if (randomSampleSubtext) {
+                randomSampleSubtext.textContent = `${sampleSize} random codes from live dataset`;
+            }
+        }
+        
+        sampleSizeInput?.addEventListener('input', updateSampleSizeDisplay);
+        sampleSizeInput?.addEventListener('change', updateSampleSizeDisplay);
+        
+        // Initialize the display
+        updateSampleSizeDisplay();
         
         runFixedTestBtn?.addEventListener('click', async () => {
             await runSanityTest();

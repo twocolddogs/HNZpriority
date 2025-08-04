@@ -1520,8 +1520,17 @@ def demo_random_sample():
         model_key = data.get('model', 'retriever')
         reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
         enable_secondary = data.get('enable_secondary_pipeline', False)
+        sample_size = data.get('sample_size', 100)  # Default to 100 if not provided
         
-        logger.info(f"Starting demo random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}")
+        # Validate sample_size
+        try:
+            sample_size = int(sample_size)
+            if sample_size < 1 or sample_size > 1000:
+                return jsonify({"error": "Sample size must be between 1 and 1000"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Sample size must be a valid integer"}), 400
+        
+        logger.info(f"Starting demo random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}, sample_size: {sample_size}")
         
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
@@ -1565,7 +1574,7 @@ def demo_random_sample():
         if not isinstance(input_data, list):
             return jsonify({"error": "Input file must contain a JSON array"}), 400
         
-        sample_size = 20
+        # Use sample_size from request parameter (already extracted above)
         if len(input_data) < sample_size:
             logger.warning(f"Input file contains only {len(input_data)} items, using all")
             sample_size = len(input_data)
