@@ -422,6 +422,7 @@ preprocessing:
     "THY": "thyroid"
     "REN": "renal"
     "IAM": "internal auditory meatus"
+    "POCUS": "point of care ultrasound"
     
     # --- MODALITY & TECHNIQUE ---
     "MRCP": "magnetic resonance cholangiopancreatography"
