@@ -77,71 +77,95 @@ class OpenRouterEnsemble:
         ])
     
     async def query_model(self, model: str, exam_name: str, context: Dict) -> ModelResponse:
-        """Query a single model for exam classification using the new selection prompt."""
+        """Query a single model for exam classification using forced tool-use (function calling)."""
         start_time = asyncio.get_event_loop().time()
         
-        system_prompt, user_prompt = self._build_enhanced_prompt(exam_name, context)
+        # The user prompt is now much simpler. It only provides the raw data.
+        # The complex instructions are now part of the tool definition.
+        user_prompt = f"Please analyze the following radiology exam and select the best match from the candidates.\n\nInput Exam: `{exam_name}`\n\nCandidate Procedures:\n{json.dumps(context.get('similar_exams', [])[:10], indent=2)}"
+        
+        system_prompt = self.config.get('system_prompt', '') # The original system prompt is fine.
         
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ]
 
+        # Define the "tool" (function) that we will force the model to call.
+        # This provides a rigid schema for the output JSON.
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "select_best_match",
+                    "description": "Selects the best SNOMED procedure from a list of candidates that matches the input exam based on the principle of parsimony.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "best_match_snomed_id": {
+                                "type": ["string", "null"],
+                                "description": "The SNOMED ID of the chosen procedure. Use null if no suitable match is found."
+                            },
+                            "best_match_procedure_name": {
+                                "type": ["string", "null"],
+                                "description": "The primary_name of the chosen procedure. Use null if no suitable match is found."
+                            },
+                            "confidence": {
+                                "type": "number",
+                                "description": "A float between 0.0 and 1.0 representing confidence. Use 0.0 if no match is found."
+                            },
+                            "reasoning": {
+                                "type": "string",
+                                "description": "Brief but specific justification for the choice, explaining why it is the most parsimonious match based on the FSN."
+                            }
+                        },
+                        "required": ["best_match_snomed_id", "best_match_procedure_name", "confidence", "reasoning"]
+                    }
+                }
+            }
+        ]
+
         try:
             response = await self.client.chat.completions.create(
                 model=model,
                 messages=messages,
+                tools=tools,
+                tool_choice={"type": "function", "function": {"name": "select_best_match"}}, # This FORCES the model to use our function.
                 temperature=self.config.get('temperature', 0.0),
-                max_tokens=self.config.get('max_tokens', 600)
+                max_tokens=self.config.get('max_tokens', 800) # Give a bit more room for tool use
             )
             
             processing_time = asyncio.get_event_loop().time() - start_time
-            content = response.choices[0].message.content
-            parsed = self._parse_model_response(content)
             
+            # The JSON is now in a different place in the response object
+            tool_call = response.choices[0].message.tool_calls[0]
+            if tool_call.function.name == "select_best_match":
+                content = tool_call.function.arguments # This is a guaranteed JSON string
+                parsed = json.loads(content)
+            else:
+                raise ValueError(f"Model called an unexpected tool: {tool_call.function.name}")
+
             return ModelResponse(
                 model=model,
                 best_match_snomed_id=parsed.get('best_match_snomed_id'),
                 best_match_procedure_name=parsed.get('best_match_procedure_name'),
-                confidence=parsed.get('confidence', 0.0),
+                confidence=float(parsed.get('confidence', 0.0)),
                 reasoning=parsed.get('reasoning', 'No reasoning provided'),
                 raw_response=content,
                 processing_time=processing_time
             )
             
         except Exception as e:
-            logger.error(f"Error querying {model}: {e}", exc_info=True)
+            logger.error(f"Error querying {model} with tool-use: {e}", exc_info=True)
             return ModelResponse(
                 model=model,
                 best_match_snomed_id=None,
                 best_match_procedure_name=None,
                 confidence=0.0,
-                reasoning=f"Error: {str(e)}",
+                reasoning=f"Error during tool-use API call: {str(e)}",
                 raw_response="",
                 processing_time=asyncio.get_event_loop().time() - start_time
             )
-    
-    def _build_enhanced_prompt(self, exam_name: str, context: Dict) -> tuple[str, str]:
-        """Build the system and user prompts from the configuration."""
-        similar_exams = context.get('similar_exams', [])
-        
-        system_prompt = self.config.get('system_prompt', 'You are a JSON API.')
-        user_prompt_template = self.config.get('prompt_template')
-
-        if not user_prompt_template:
-            logger.error("'prompt_template' not found in configuration. Cannot build prompt.")
-            return system_prompt, "Error: User prompt template is missing from the configuration."
-            
-        try:
-            user_prompt = user_prompt_template.format(
-                exam_name=exam_name,
-                similar_exams=json.dumps(similar_exams[:10], indent=2)
-            )
-            logger.debug(f"--- START OF USER PROMPT ---\n{user_prompt}\n--- END OF USER PROMPT ---")
-            return system_prompt, user_prompt
-        except KeyError as e:
-            logger.error(f"A placeholder in the prompt template is missing from the format() call: {e}")
-            return system_prompt, f"Error: Could not format prompt. Missing key: {e}"
 
     def _parse_model_response(self, content: str) -> Dict:
         """Robustly parse the JSON object from a model's potentially messy response."""
