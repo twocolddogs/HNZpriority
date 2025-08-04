@@ -421,6 +421,7 @@ preprocessing:
     "CSP": "cervical spine"
     "THY": "thyroid"
     "REN": "renal"
+    "IAM": "internal auditory meatus"
     
     # --- MODALITY & TECHNIQUE ---
     "MRCP": "magnetic resonance cholangiopancreatography"
