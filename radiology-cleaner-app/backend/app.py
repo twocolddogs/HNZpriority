@@ -70,6 +70,9 @@ def run_async_task(coro):
     asyncio.set_event_loop(loop)
     try:
         result = loop.run_until_complete(coro)
+        
+        # --- START OF NEW, GRACEFUL SHUTDOWN LOGIC ---
+        
         # Allow time for background cleanup tasks (like from httpx) to complete
         # by running all pending tasks before closing the loop.
         pending = asyncio.all_tasks(loop=loop)
@@ -78,6 +81,8 @@ def run_async_task(coro):
         
         # Additional graceful shutdown step for async generators
         loop.run_until_complete(loop.shutdown_asyncgens())
+        
+        # --- END OF NEW, GRACEFUL SHUTDOWN LOGIC ---
         
         return result
     finally:
