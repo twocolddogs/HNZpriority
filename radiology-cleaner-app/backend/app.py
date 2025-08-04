@@ -1109,7 +1109,10 @@ def _process_batch(data, start_time):
                             # IMPORTANT: Update the top-level snomed info and clean_name as well
                             output_to_update['clean_name'] = secondary_res.get('consensus_best_match_procedure_name', output_to_update.get('clean_name'))
                             output_to_update['snomed']['id'] = secondary_res.get('consensus_best_match_snomed_id', output_to_update.get('snomed', {}).get('id'))
-                            output_to_update['snomed']['fsn'] = f"New FSN for {secondary_res.get('consensus_best_match_procedure_name')}" # You might need to look this up
+                            output_to_update['snomed']['fsn'] = secondary_res.get('consensus_snomed_fsn', output_to_update.get('snomed', {}).get('fsn'))
+                            
+                            # Add detailed secondary pipeline metadata
+                            output_to_update['secondary_pipeline_applied'] = True
                             
                             # Add detailed secondary pipeline metadata for transparency
                             output_to_update['secondary_pipeline_applied'] = True
