@@ -1137,12 +1137,25 @@ class NHSLookupEngine:
         # PART 2: Calculate clinical context bonuses (from context_scoring config)
         if self.context_scoring:
             for context_type, details in self.context_scoring.items():
-                if isinstance(details, dict) and 'keywords' in details and 'bonus' in details:
+                if isinstance(details, dict) and 'keywords' in details:
                     keywords = details['keywords']
-                    if any(k in input_lower for k in keywords) and any(k in nhs_name_lower for k in keywords):
-                        clinical_bonus = details['bonus']
-                        total_bonus += clinical_bonus
-                        logger.debug(f"Applied {context_type} clinical context bonus: +{clinical_bonus}")
+                    bonus = details.get('bonus', 0.10)
+                    # Use a small, consistent penalty
+                    penalty = -0.15 
+
+                    # Check if the input contains any keyword for this context
+                    input_has_context = any(k in input_lower for k in keywords)
+                    # Check if the NHS candidate contains any keyword for this context
+                    nhs_has_context = any(k in nhs_name_lower for k in keywords)
+
+                    if input_has_context and nhs_has_context:
+                        # Both have the context, apply bonus
+                        total_bonus += bonus
+                        logger.debug(f"Applied {context_type} context bonus: +{bonus}")
+                    elif input_has_context and not nhs_has_context:
+                        # Input has context but candidate is missing it, apply penalty
+                        total_bonus += penalty
+                        logger.debug(f"Applied {context_type} context penalty: {penalty} (Input had context, candidate did not)")
         
         return total_bonus
     

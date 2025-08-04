@@ -322,15 +322,15 @@ modality_similarity:
 # ====================================================================================
 context_scoring:
   emergency_keywords: ["emergency", "urgent", "stat", "trauma", "acute"]
-  emergency_bonus: 0.10
+  emergency_bonus: 0.15
   screening_keywords: ["screening", "surveillance", "routine", "annual"]
-  screening_bonus: 0.08
+  screening_bonus: 0.15
   intervention_keywords: ["biopsy", "drainage", "injection", "aspiration", "guided", "picc", "line"]
-  intervention_bonus: 0.12
+  intervention_bonus: 0.20
   pregnancy_keywords: ["obstetric", "pregnancy", "prenatal", "fetal", "trimester"]
-  pregnancy_bonus: 0.15
+  pregnancy_bonus: 0.25
   paediatric_keywords: ["paediatric", "pediatric", "paed", "peds", "child", "infant", "newborn"]
-  paediatric_bonus: 0.10
+  paediatric_bonus: 0.20
 
 # ====================================================================================
 # PREPROCESSING CONFIGURATION
