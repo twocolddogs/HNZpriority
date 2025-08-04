@@ -634,9 +634,9 @@ secondary_pipeline:
 
   # Model configuration
   models:
-    - "anthropic/claude-3.5-sonnet"
+    - "anthropic/claude-sonnet-4"
     - "openai/gpt-4-turbo"
-    - "google/gemini-2.5-pro"
+    - "openai/gpt-4.1-mini"
   
   # API settings
   temperature: 0.0 # Set to 0 for maximum determinism and adherence to instructions
