@@ -57,6 +57,38 @@ CORS(app,
      allow_headers=['Content-Type', 'Authorization'],
      supports_credentials=False)
 
+# =============================================================================
+# ### START OF ADDED CODE FOR ASYNC MANAGEMENT ###
+# =============================================================================
+
+def run_async_task(coro):
+    """
+    Safely runs an async coroutine in a synchronous context by creating,
+    managing, and gracefully shutting down a new event loop.
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        result = loop.run_until_complete(coro)
+        # Allow time for background cleanup tasks (like from httpx) to complete
+        # by running all pending tasks before closing the loop.
+        pending = asyncio.all_tasks(loop=loop)
+        if pending:
+            loop.run_until_complete(asyncio.gather(*pending))
+        
+        # Additional graceful shutdown step for async generators
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        
+        return result
+    finally:
+        # Close the loop only after ensuring all tasks are done.
+        loop.close()
+        asyncio.set_event_loop(None)
+
+# =============================================================================
+# ### END OF ADDED CODE ###
+# =============================================================================
+
 @app.before_request
 def handle_preflight():
     """Handle preflight OPTIONS requests"""
@@ -332,11 +364,10 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
                 "status": "success"
             }
             
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
             try:
                 pipeline = SecondaryPipeline()
-                ensemble_results = loop.run_until_complete(pipeline.process_low_confidence_results([single_item_batch]))
+                # Use the new helper function to run the async code
+                ensemble_results = run_async_task(pipeline.process_low_confidence_results([single_item_batch]))
                 
                 if ensemble_results and ensemble_results[0].improved:
                     secondary_result = ensemble_results[0]
@@ -364,8 +395,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
                 logger.error(f"Error during single-exam secondary pipeline processing: {e}", exc_info=True)
                 nhs_result['secondary_pipeline_applied'] = False
                 nhs_result['secondary_pipeline_error'] = str(e)
-            finally:
-                loop.close()
+
         else:
             nhs_result['secondary_pipeline_applied'] = False
 
@@ -1114,21 +1144,14 @@ def _process_batch(data, start_time):
                                     results_for_secondary.append(json.loads(line.strip()))
                 
                 if results_for_secondary:
-                    # Run secondary pipeline
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
+                    # Run secondary pipeline using the safe async runner
+                    secondary_report = run_async_task(
+                        secondary_batch_processor.process_batch_with_secondary(results_for_secondary)
+                    )
+                    logger.info(f"Secondary pipeline completed: {secondary_report}")
                     
-                    try:
-                        secondary_report = loop.run_until_complete(
-                            secondary_batch_processor.process_batch_with_secondary(results_for_secondary)
-                        )
-                        logger.info(f"Secondary pipeline completed: {secondary_report}")
-                        
-                        # Update progress to show secondary pipeline completion
-                        update_progress(total_exams, total_exams, success_count, error_count)
-                        
-                    finally:
-                        loop.close()
+                    # Update progress to show secondary pipeline completion
+                    update_progress(total_exams, total_exams, success_count, error_count)
 
                 if secondary_report and secondary_report.get('secondary_results') and secondary_report['secondary_results'].get('results'):
                     logger.info("Merging secondary pipeline results into the main result set...")
