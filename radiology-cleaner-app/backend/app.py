@@ -296,7 +296,7 @@ def _ensure_app_is_initialized():
             _initialize_app()
             _app_initialized = True
 
-def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None, data_source: Optional[str] = None, exam_code: Optional[str] = None) -> Dict:
+def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None, data_source: Optional[str] = None, exam_code: Optional[str] = None, run_secondary_inline: bool = True) -> Dict:
     """Central processing logic for a single exam."""
     if debug:
         logger.info(f"[DEBUG-FLOW] process_exam_request received debug=True for exam: {exam_name}")
@@ -342,7 +342,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             confidence < 0.8 or  # Use a clear threshold
             nhs_result.get('semantic_similarity_safeguard', {}).get('applied', False)
         )
-
+        if run_secondary_inline and should_apply_secondary and SECONDARY_PIPELINE_AVAILABLE:
         # Ensure the error for non-clinical exams is handled first
         if nhs_result.get('error') == 'EXCLUDED_NON_CLINICAL':
             logger.info(f"Engine excluded '{exam_name}' as non-clinical. Formatting final response.")
@@ -1040,7 +1040,8 @@ def _process_batch(data, start_time):
                         False, 
                         reranker_key, 
                         exam.get("DATA_SOURCE") or exam.get("data_source"), 
-                        exam.get("EXAM_CODE") or exam.get("exam_code")
+                        exam.get("EXAM_CODE") or exam.get("exam_code"),
+                        run_secondary_inline=False
                     ): exam 
                     for exam in chunk
                 }
@@ -1142,11 +1143,80 @@ def _process_batch(data, start_time):
     else:
         logger.warning("R2 not available - results only stored locally")
 
-    # Secondary pipeline processing is now handled inline per exam during individual processing
-    # No batch processing needed at the end
+    secondary_report = None
+    merged_filepath = None
+    
+    if enable_secondary and SECONDARY_PIPELINE_AVAILABLE:
+        _initialize_secondary_pipeline()
+        if secondary_integration and secondary_integration.is_enabled():
+            logger.info("Starting secondary pipeline processing for the entire batch...")
+            
+            # 1. Load all results from the primary processing stage
+            all_results = []
+            if os.path.exists(results_filepath):
+                with open(results_filepath, 'r', encoding='utf-8') as f_in:
+                    for line in f_in:
+                        if line.strip():
+                            all_results.append(json.loads(line.strip()))
+            
+            if all_results:
+                try:
+                    # 2. Trigger secondary processing ONCE with all results
+                    # The integration layer will filter for low-confidence items internally
+                    secondary_report = run_async_task(
+                        secondary_integration.trigger_secondary_processing(all_results)
+                    )
+                    
+                    # 3. If there were improvements, merge them into a new file
+                    if secondary_report and secondary_report.get('results'):
+                        logger.info("Merging secondary pipeline improvements into final results...")
+                        
+                        # Load the original consolidated data to modify it
+                        with open(consolidated_filepath, 'r', encoding='utf-8') as f:
+                            original_data = json.load(f)
+                        
+                        # Create a map for efficient lookups
+                        results_map = {res['input']['exam_name']: res for res in original_data['results'] if 'exam_name' in res.get('input', {})}
+                        
+                        for secondary_res_dict in secondary_report['results']:
+                            # The original result is nested inside the ensemble result
+                            original_full_record = secondary_res_dict.get('original_result', {})
+                            exam_name = original_full_record.get('input', {}).get('exam_name')
+                            
+                            if exam_name and exam_name in results_map:
+                                result_to_update = results_map[exam_name]
+                                output_to_update = result_to_update['output']
+
+                                # Overwrite with improved data
+                                output_to_update['clean_name'] = secondary_res_dict['consensus_best_match_procedure_name']
+                                output_to_update['snomed']['id'] = secondary_res_dict['consensus_best_match_snomed_id']
+                                output_to_update['snomed']['fsn'] = secondary_res_dict.get('consensus_snomed_fsn', output_to_update.get('snomed',{}).get('fsn'))
+                                output_to_update['components']['confidence'] = secondary_res_dict['consensus_confidence']
+                                
+                                # Add metadata for transparency
+                                output_to_update['secondary_pipeline_applied'] = True
+                                output_to_update['secondary_pipeline_details'] = {
+                                    'improved': secondary_res_dict.get('improved', False),
+                                    'original_confidence': secondary_res_dict.get('original_result', {}).get('output', {}).get('components', {}).get('confidence'),
+                                    'consensus_confidence': secondary_res_dict.get('consensus_confidence'),
+                                    'agreement_score': secondary_res_dict.get('agreement_score'),
+                                }
+                        
+                        # Reconstruct the results list and save to a new merged file
+                        original_data['results'] = list(results_map.values())
+                        merged_filepath = consolidated_filepath.replace('.json', '_merged.json')
+                        with open(merged_filepath, 'w', encoding='utf-8') as f:
+                            json.dump(original_data, f, indent=2)
+                        
+                        logger.info(f"Successfully merged results into: {merged_filepath}")
+                        
+                except Exception as e:
+                    logger.error(f"Secondary pipeline batch processing failed: {e}", exc_info=True)
+                    secondary_report = {"error": str(e)}
 
     # Upload the consolidated file to R2
-    if r2_manager and consolidated_filepath and os.path.exists(consolidated_filepath):
+    final_upload_path = merged_filepath if merged_filepath else consolidated_filepath
+    if r2_manager and final_upload_path and os.path.exists(final_upload_path):
         try:
             final_filename = os.path.basename(consolidated_filepath)
             r2_key = f"batch-results/{final_filename}"

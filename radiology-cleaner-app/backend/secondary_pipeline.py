@@ -16,6 +16,7 @@ import openai
 from datetime import datetime
 import os
 import yaml
+import threading
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -24,6 +25,37 @@ logger = logging.getLogger(__name__)
 # Global cache for shared secondary pipeline instance
 _shared_secondary_pipeline = None
 _shared_config = None
+_pipeline_lock = threading.Lock()
+
+def get_secondary_pipeline(preloaded_config=None):
+    """
+    Get a shared SecondaryPipeline instance, reusing the same config to avoid repeated R2 fetches.
+    This function is thread-safe.
+    """
+    global _shared_secondary_pipeline, _shared_config
+    
+    # No need to lock for a simple read, it's fast and mostly safe
+    if _shared_secondary_pipeline is not None and (preloaded_config is None or preloaded_config == _shared_config):
+        return _shared_secondary_pipeline
+
+    # Use a lock for the expensive creation/re-creation part
+    with _pipeline_lock:
+        # Double-check inside the lock to prevent re-creation if another thread just finished
+        if _shared_secondary_pipeline is not None and (preloaded_config is None or preloaded_config == _shared_config):
+            return _shared_secondary_pipeline
+
+        # Now we are sure we need to create or re-create the instance
+        if preloaded_config is not None and preloaded_config != _shared_config:
+            logger.info("Creating new shared SecondaryPipeline instance with preloaded config")
+            _shared_config = preloaded_config
+            _shared_secondary_pipeline = SecondaryPipeline(preloaded_config=preloaded_config)
+        
+        elif _shared_secondary_pipeline is None:
+            logger.info("Creating first shared SecondaryPipeline instance")
+            _shared_secondary_pipeline = SecondaryPipeline(preloaded_config=preloaded_config)
+            _shared_config = _shared_secondary_pipeline.config
+        
+        return _shared_secondary_pipeline
 
 class ModelType(Enum):
     """Available OpenRouter models for ensemble processing"""
