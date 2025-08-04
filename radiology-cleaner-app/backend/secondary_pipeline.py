@@ -146,26 +146,25 @@ class OpenRouterEnsemble:
     def _parse_model_response(self, content: str) -> Dict:
         """Robustly parse the JSON object from a model's potentially messy response."""
         try:
-            # Find the start of a JSON object that specifically contains our key
-            # CHANGE IS HERE: Use a single curly brace in the regex
-            match = re.search(r'{\s*"best_match_snomed_id":', content) # <-- REMOVED ONE BRACE
-            if not match:
-                # Check if the model wrapped the response in markdown
-                if '```json' in content:
-                    content = content.split('```json')[1].split('```')[0]
-                # Try again with potentially cleaned content
-                match = re.search(r'{\s*"best_match_snomed_id":', content)
-                if not match:
-                    raise ValueError("No valid JSON object start found in response.")
-
-            # Start parsing from that point
-            json_str = content[match.start():]
+            # --- START OF NEW, MORE ROBUST LOGIC ---
             
-            # Use a proper JSON decoder to find the end of the object
+            # Find the first opening curly brace to locate the start of the JSON
+            json_start_index = content.find('{')
+            if json_start_index == -1:
+                raise ValueError("No JSON object start '{' found in response.")
+
+            # Create a substring from the start of the JSON object
+            json_str = content[json_start_index:]
+            
+            # Use the json decoder to find the first complete JSON object in the string
             decoder = json.JSONDecoder()
             parsed, _ = decoder.raw_decode(json_str)
+            
+            # --- END OF NEW LOGIC ---
 
-            confidence = float(parsed['confidence']) if parsed.get('confidence') is not None else 0.0
+            # Safely get and convert confidence
+            confidence_val = parsed.get('confidence')
+            confidence = float(confidence_val) if confidence_val is not None else 0.0
 
             return {
                 'best_match_snomed_id': parsed.get('best_match_snomed_id'),

@@ -625,29 +625,32 @@ secondary_pipeline:
     You are a meticulous radiology data standardization expert. Your task is to map an `input_exam` to the most appropriate candidate from a given list, following a strict principle of parsimony.
 
     **GUIDING PRINCIPLE: The Principle of Parsimony**
-    The correct match is the one that includes all specified components from the `input_exam` (modality, anatomy, contrast, etc.) while introducing the **absolute minimum** of new, unspecified information. Do not "upgrade" the exam to a more complex version. Your goal is strict standardization, not clinical recommendation.
+    The correct match is the one that includes all specified components from the `input_exam` (modality, anatomy, contrast, etc.) while introducing the **absolute minimum** of new, unspecified information. Do not "upgrade" the exam to a more complex version.
 
     **INPUT EXAM:**
     `{exam_name}`
 
     **CANDIDATE PROCEDURES:**
+    Each candidate has a short `primary_name` and a detailed `snomed_fsn` (Fully Specified Name). **You must evaluate both.** The FSN often contains critical details about technique or context that are essential for an accurate match.
     ```json
     {similar_exams}
     ```
 
     **INSTRUCTIONS:**
-    1.  **Strictly Decompose Input:** Identify the essential components of the `input_exam`: Modality, Anatomy, Contrast, and any other key specifiers. A modality mismatch (e.g., input is 'US' but all candidates are 'MG') is a critical failure.
-    2.  **Evaluate Candidates against Input:** For each candidate, determine if it meets all the essential components from the input.
-    3.  **Apply the Parsimony Filter:**
-        -   **Penalize Additions:** Heavily penalize and likely reject any candidate that adds significant new information not present in the input.
-        -   **Prefer Simplicity:** If multiple candidates match the input components, choose the simplest one.
-    4.  **Select Best Match:** Choose the candidate that best adheres to the Guiding Principle.
+    1.  **Decompose Input:** Identify the essential components of the `input_exam`: Modality, Anatomy, Contrast, and any other key specifiers.
+    2.  **Evaluate Candidates:** For each candidate, compare the `input_exam` against both its `primary_name` and its `snomed_fsn`. The FSN is the ultimate source of truth for the procedure's definition. 
+        ### ### NEW INSTRUCTION HERE ### ###
+        **NOTE: You can safely ignore the text `(procedure)` at the end of the FSN, as it is present on all entries and not clinically relevant for differentiation.**
+    3.  **Apply Parsimony Filter:**
+        -   A candidate is only a good match if the details in its `snomed_fsn` are justified by the `input_exam`.
+        -   For example, if the input is "CT Chest", a candidate with FSN "CT of chest with contrast (procedure)" is a poor match because it adds "contrast".
+    4.  **Select Best Match:** Choose the candidate whose `snomed_fsn` best represents the procedure described in the `input_exam` without adding unsubstantiated details.
 
-    **If no candidate is a suitable match (e.g., there is a clear modality mismatch or all candidates add significant, incorrect information), you MUST return `null` for `best_match_snomed_id` and `best_match_procedure_name`, and `0.0` for `confidence`.**
+    **CRITICAL INSTRUCTION FOR NO MATCH:**
+    If no candidate's `snomed_fsn` is a suitable match (e.g., critical modality mismatch), you MUST return `null` for `best_match_snomed_id` and `best_match_procedure_name`, and `0.0` for `confidence`.
 
     **EXAMPLE OF CORRECT LOGIC:**
-    - If `input_exam` is "CT Chest", and candidates are "CT Chest" and "CT Chest with contrast", you MUST choose "CT Chest".
-    - If `input_exam` is "US Breast", and all candidates are "Mammogram...", you MUST return a "no match" response as described above.
+    - If `input_exam` is "US Breast", and all candidates have a `snomed_fsn` indicating "Mammography...", you MUST return a "no match" response.
 
     **RETURN A SINGLE, VALID JSON OBJECT AND NOTHING ELSE.**
 
@@ -656,7 +659,7 @@ secondary_pipeline:
         "best_match_snomed_id": "The SNOMED ID of the chosen procedure, or null",
         "best_match_procedure_name": "The primary_name of the chosen procedure, or null",
         "confidence": <Float between 0.0 and 1.0>,
-        "reasoning": "My choice is the most parsimonious match. I rejected [Other Candidate] because it added [New Information] which was not in the input. If no match, explain why (e.g., modality mismatch)."
+        "reasoning": "My choice is the most parsimonious match based on the FSN. I rejected [Other Candidate FSN] because it added [New Information] not present in the input."
     }}
     ```
 
