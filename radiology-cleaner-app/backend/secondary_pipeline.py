@@ -129,25 +129,83 @@ class OpenRouterEnsemble:
             }
         ]
 
+        # Check if this model supports tool calling properly
+        supports_tool_calling = not model.startswith('google/')  # Gemini models don't support tool calling well
+        
         try:
-            response = await self.client.chat.completions.create(
-                model=model,
-                messages=messages,
-                tools=tools,
-                tool_choice={"type": "function", "function": {"name": "select_best_match"}}, # This FORCES the model to use our function.
-                temperature=self.config.get('temperature', 0.0),
-                max_tokens=self.config.get('max_tokens', 800) # Give a bit more room for tool use
-            )
+            if supports_tool_calling:
+                response = await self.client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    tools=tools,
+                    tool_choice={"type": "function", "function": {"name": "select_best_match"}}, # This FORCES the model to use our function.
+                    temperature=self.config.get('temperature', 0.0),
+                    max_tokens=self.config.get('max_tokens', 800) # Give a bit more room for tool use
+                )
+            else:
+                # Fallback to prompt-based approach for models that don't support tool calling
+                enhanced_user_prompt = user_prompt + "\n\nPlease respond with ONLY a valid JSON object in this exact format:\n```json\n{\"best_match_snomed_id\": \"string or null\", \"best_match_procedure_name\": \"string or null\", \"confidence\": 0.0, \"reasoning\": \"your reasoning here\"}\n```"
+                enhanced_messages = [
+                    {"role": "system", "content": system_prompt + "\n\nIMPORTANT: You must respond with ONLY valid JSON, no other text."},
+                    {"role": "user", "content": enhanced_user_prompt}
+                ]
+                response = await self.client.chat.completions.create(
+                    model=model,
+                    messages=enhanced_messages,
+                    temperature=self.config.get('temperature', 0.0),
+                    max_tokens=self.config.get('max_tokens', 800)
+                )
             
             processing_time = asyncio.get_event_loop().time() - start_time
             
-            # The JSON is now in a different place in the response object
-            tool_call = response.choices[0].message.tool_calls[0]
-            if tool_call.function.name == "select_best_match":
-                content = tool_call.function.arguments # This is a guaranteed JSON string
-                parsed = json.loads(content)
+            # Handle different response formats based on whether we used tool calling
+            if supports_tool_calling:
+                # Handle tool calling response
+                tool_calls = response.choices[0].message.tool_calls
+                
+                if tool_calls is None or len(tool_calls) == 0:
+                    raise ValueError(f"Model {model} was expected to use tool calling but returned no tool_calls")
+                
+                tool_call = tool_calls[0]
+                if tool_call.function.name == "select_best_match":
+                    content = tool_call.function.arguments # This is a guaranteed JSON string
+                    parsed = json.loads(content)
+                else:
+                    raise ValueError(f"Model called an unexpected tool: {tool_call.function.name}")
             else:
-                raise ValueError(f"Model called an unexpected tool: {tool_call.function.name}")
+                # Handle prompt-based response (for models like Gemini)
+                raw_content = response.choices[0].message.content or ""
+                logger.debug(f"Parsing prompt-based response from {model}: {raw_content[:200]}...")
+                
+                # Try to find JSON in the content
+                try:
+                    # Look for JSON object in the response content (handles ```json blocks too)
+                    import re
+                    json_match = re.search(r'```json\s*(\{.*?\})\s*```', raw_content, re.DOTALL)
+                    if json_match:
+                        content = json_match.group(1)
+                    else:
+                        # Try to find any JSON object
+                        json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', raw_content, re.DOTALL)
+                        if json_match:
+                            content = json_match.group(0)
+                        else:
+                            raise ValueError("No JSON found in response content")
+                    
+                    parsed = json.loads(content)
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.error(f"Failed to parse JSON from {model} response: {e}")
+                    logger.error(f"Raw content: {raw_content}")
+                    # Return a "no match" response
+                    return ModelResponse(
+                        model=model,
+                        best_match_snomed_id=None,
+                        best_match_procedure_name=None,
+                        confidence=0.0,
+                        reasoning=f"Model {model} failed to return valid JSON response: {str(e)}",
+                        raw_response=raw_content,
+                        processing_time=processing_time
+                    )
 
             return ModelResponse(
                 model=model,
