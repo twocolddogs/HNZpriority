@@ -1219,7 +1219,7 @@ def _process_batch(data, start_time):
         try:
             final_filename = os.path.basename(consolidated_filepath)
             r2_key = f"batch-results/{final_filename}"
-            if r2_manager.upload_file(consolidated_filepath, r2_key, content_type="application/json"):
+            if r2_manager.upload_file(final_upload_path, r2_key, content_type="application/json"):
                 r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{r2_key}"
                 r2_upload_success = True
                 logger.info(f"Successfully uploaded final results to R2: {r2_key}")
