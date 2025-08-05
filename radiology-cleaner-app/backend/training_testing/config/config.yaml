@@ -431,6 +431,7 @@ preprocessing:
     "NM": "nuclear medicine"
     "IR": "interventional radiology"
     "FL": "fluoroscopy"
+    "HRCT": "high resolution computed tomography"
     "Mamm": "mammography"
     "PET": "positron emission tomography"
     "PET-CT": "PET/CT"  # Normalize hyphenated to slash notation
