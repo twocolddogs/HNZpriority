@@ -30,6 +30,7 @@ from context_detection import detect_all_contexts
 from preprocessing import initialize_preprocessor, preprocess_exam_name, get_preprocessor
 from cache_version import get_current_cache_version, format_cache_key
 from r2_cache_manager import R2CacheManager
+from validation.generate_view import generate_view_data
 
 # Secondary Pipeline Integration
 try:
@@ -296,7 +297,7 @@ def _ensure_app_is_initialized():
             _initialize_app()
             _app_initialized = True
 
-def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None, data_source: Optional[str] = None, exam_code: Optional[str] = None, run_secondary_inline: bool = True) -> Dict:
+def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None, data_source: Optional[str] = None, exam_code: Optional[str] = None, run_secondary_inline: bool = True, unique_input_id: Optional[str] = None) -> Dict:
     """Central processing logic for a single exam."""
     if debug:
         logger.info(f"[DEBUG-FLOW] process_exam_request received debug=True for exam: {exam_name}")
@@ -329,7 +330,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     
     # Wrap the entire processing logic in a try...except block to prevent crashes from returning malformed data
     try:
-        nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key)
+        nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key, unique_input_id=unique_input_id)
 
         # =============================================================================
         # ### START OF REFACTORED SECONDARY PIPELINE LOGIC ###
@@ -421,6 +422,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             'exam_name': exam_name,
             'clean_name': _medical_title_case(nhs_result.get('clean_name', cleaned_exam_name)),
             'ambiguous': nhs_result.get('ambiguous', False),
+            'unique_input_id': unique_input_id,
             'snomed': {
                 'found': bool(nhs_result.get('snomed_id')),
                 'fsn': nhs_result.get('snomed_fsn', ''),
@@ -479,6 +481,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
         'exam_name': exam_name,
         'clean_name': _medical_title_case(nhs_result.get('clean_name', cleaned_exam_name)),
         'ambiguous': nhs_result.get('ambiguous', False),
+        'unique_input_id': unique_input_id,
         'snomed': {
             'found': bool(nhs_result.get('snomed_id')),
             'fsn': nhs_result.get('snomed_fsn', ''),
@@ -1030,20 +1033,46 @@ def _process_batch(data, start_time):
             logger.info(f"Processing chunk {chunk_idx + 1}/{len(chunks)} ({len(chunk)} exams)")
             
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                future_to_exam = {
-                    executor.submit(
+                future_to_exam = {}
+                
+                for exam in chunk:
+                    # Handle HITL validation format vs. legacy format
+                    if 'input_data' in exam:
+                        # New HITL validation format
+                        input_data = exam['input_data']
+                        exam_name = input_data.get("exam_name")
+                        modality_code = input_data.get("modality_code")
+                        data_source = input_data.get("data_source")
+                        exam_code = input_data.get("exam_code")
+                        unique_input_id = exam.get("unique_input_id")
+                        reprocessing_hint = exam.get("reprocessing_hint", {})
+                        
+                        # Apply reprocessing hints
+                        hint_reranker_key = reprocessing_hint.get("use_reranker", reranker_key)
+                        hint_enable_secondary = reprocessing_hint.get("force_secondary_pipeline", enable_secondary)
+                    else:
+                        # Legacy format
+                        exam_name = exam.get("EXAM_NAME") or exam.get("exam_name")
+                        modality_code = exam.get("MODALITY_CODE") or exam.get("modality_code")
+                        data_source = exam.get("DATA_SOURCE") or exam.get("data_source")
+                        exam_code = exam.get("EXAM_CODE") or exam.get("exam_code")
+                        unique_input_id = None
+                        hint_reranker_key = reranker_key
+                        hint_enable_secondary = enable_secondary
+                    
+                    future = executor.submit(
                         process_exam_request, 
-                        exam.get("EXAM_NAME") or exam.get("exam_name"), 
-                        exam.get("MODALITY_CODE") or exam.get("modality_code"), 
+                        exam_name,
+                        modality_code,
                         selected_nlp_processor, 
                         False, 
-                        reranker_key, 
-                        exam.get("DATA_SOURCE") or exam.get("data_source"), 
-                        exam.get("EXAM_CODE") or exam.get("exam_code"),
-                        run_secondary_inline=False
-                    ): exam 
-                    for exam in chunk
-                }
+                        hint_reranker_key,
+                        data_source,
+                        exam_code,
+                        run_secondary_inline=False,
+                        unique_input_id=unique_input_id
+                    )
+                    future_to_exam[future] = exam
                 
                 chunk_completed = 0
                 per_future_timeout = 60
@@ -1634,6 +1663,21 @@ def demo_random_sample():
     except Exception as e:
         logger.error(f"Demo random sample endpoint error: {e}", exc_info=True)
         return jsonify({"error": f"Demo failed: {str(e)}"}), 500
+
+@app.route('/generate_view_data', methods=['POST'])
+def generate_view_data_endpoint():
+    """
+    Generates view_data.json for the validation UI.
+    """
+    _ensure_app_is_initialized()
+    try:
+        # Assuming generate_view_data handles its own file paths and returns the path
+        # It will use the latest batch results from R2
+        view_data_path = generate_view_data()
+        return jsonify({"view_data_path": view_data_path})
+    except Exception as e:
+        logger.error(f"Error generating view data: {e}", exc_info=True)
+        return jsonify({"error": f"Failed to generate view data: {str(e)}"}), 500
 
 # =============================================================================
 # SECONDARY PIPELINE ROUTES

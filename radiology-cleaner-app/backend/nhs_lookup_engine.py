@@ -81,6 +81,7 @@ class NHSLookupEngine:
         
         # Load configuration and initialize data
         self._load_config_from_manager()
+        self._load_validation_caches()  # Load HITL validation caches
         self._load_nhs_data()
         self._build_lookup_tables()
         self._preprocess_and_parse_nhs_data()
@@ -128,6 +129,40 @@ class NHSLookupEngine:
                 'contrast_mismatch_score': 0.3, 'contrast_null_score': 0.7
             }
             self.modality_similarity, self.context_scoring, self.preprocessing_config = {}, {}, {}
+
+    def _load_validation_caches(self):
+        """
+        Load HITL validation caches for approved and failed mappings.
+        
+        Loads:
+        - gold_standard_cache.json: Approved mappings for instant return
+        - failed_mappings.json: Rejected mappings to exclude from processing
+        
+        Falls back to empty caches if files don't exist.
+        """
+        self.gold_standard_cache = {}
+        self.failed_mappings_cache = {}
+        
+        try:
+            # Load gold standard cache (approved mappings)
+            gold_cache_path = 'validation/gold_standard_cache.json'
+            if os.path.exists(gold_cache_path):
+                with open(gold_cache_path, 'r', encoding='utf-8') as f:
+                    self.gold_standard_cache = json.load(f)
+                logger.info(f"Loaded {len(self.gold_standard_cache)} approved mappings from validation cache")
+            
+            # Load failed mappings cache (rejected mappings)
+            failed_cache_path = 'validation/failed_mappings.json'
+            if os.path.exists(failed_cache_path):
+                with open(failed_cache_path, 'r', encoding='utf-8') as f:
+                    self.failed_mappings_cache = json.load(f)
+                logger.info(f"Loaded {len(self.failed_mappings_cache)} failed mappings from validation cache")
+                
+        except Exception as e:
+            logger.warning(f"Could not load validation caches: {e}")
+            logger.info("Continuing without validation caches (normal for first run)")
+            self.gold_standard_cache = {}
+            self.failed_mappings_cache = {}
 
     def _load_nhs_data(self):
         """
@@ -246,7 +281,7 @@ class NHSLookupEngine:
     # MAIN STANDARDIZATION PIPELINE - ENTRY POINT
     # =============================================================================
     
-    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None, is_input_simple: bool = False, debug: bool = False, reranker_key: Optional[str] = None) -> Dict:
+    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None, is_input_simple: bool = False, debug: bool = False, reranker_key: Optional[str] = None, unique_input_id: Optional[str] = None) -> Dict:
         """
         V4 Two-Stage Pipeline: Retrieve candidates with BioLORD, then rerank with flexible rerankers + component scoring.
         
@@ -255,6 +290,32 @@ class NHSLookupEngine:
         """
         if debug:
             logger.info(f"[DEBUG] Debug mode enabled for input: {input_exam}, is_input_simple: {is_input_simple}")
+        
+        # === HITL VALIDATION CACHE CHECK ===
+        if unique_input_id:
+            # Check gold standard cache for approved mappings
+            if unique_input_id in self.gold_standard_cache:
+                cached_result = self.gold_standard_cache[unique_input_id].copy()
+                cached_result['cache_hit'] = 'gold_standard'
+                if debug:
+                    logger.info(f"[DEBUG] Returning approved mapping from gold standard cache for {unique_input_id}")
+                    cached_result['debug_cache_hit'] = 'Gold standard cache hit'
+                return cached_result
+            
+            # Check failed mappings cache for rejected inputs
+            if unique_input_id in self.failed_mappings_cache:
+                failed_info = self.failed_mappings_cache[unique_input_id]
+                result = {
+                    'error': 'EXCLUDED_FAILED_VALIDATION',
+                    'confidence': 0.0,
+                    'cache_hit': 'failed_mappings',
+                    'failed_reason': failed_info.get('reason', 'Marked as failed by validator'),
+                    'failed_timestamp': failed_info.get('timestamp', 'Unknown')
+                }
+                if debug:
+                    logger.info(f"[DEBUG] Excluding input {unique_input_id} - marked as failed in validation")
+                    result['debug_cache_hit'] = 'Failed mappings cache hit - excluded'
+                return result
         
         # === VALIDATION ===
         if not self.retriever_processor or not self.retriever_processor.is_available():

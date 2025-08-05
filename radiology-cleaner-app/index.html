@@ -87,11 +87,25 @@
                         <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">Configure preprocessing and parsing rules.</p>
                         <button class="button primary" id="advancedSetupBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Configure →</button>
                     </div>
+                    <!-- Path 4: Validation Pipeline -->
+                    <div class="action-card validation-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px; color: #3f51b5;"><i class="fas fa-check-double"></i></div>
+                        <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Validation Pipeline</h3>
+                        <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">Review, correct, and approve mappings to improve the system.</p>
+                        <button class="button primary" id="runValidationBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Start Validation →</button>
+                    </div>
                 </div>
             </div>
 
             <!-- Streamlined Workflow Section -->
-            <div id="workflowSection" class="workflow-section" style="display: none;">
+            <div id="workflowSection" class="workflow-section" style="display: none;">...</div>
+
+            <div id="commitSection" class="workflow-step" style="display: none; margin-top: 25px; padding: 25px; border: 2px solid #3f51b5; border-radius: 12px; background: #f9f9ff;">
+                <h3 style="margin: 0 0 15px 0; color: #3f51b5;">Commit Validated Decisions</h3>
+                <p style="margin: 0 0 20px 0; color: #666;">Upload your 'decisions.json' file to apply your team's feedback and update the master dataset on R2.</p>
+                <input type="file" id="decisionsFileInput" accept=".json" class="button secondary" style="margin-right: 15px;">
+                <button id="commitDecisionsBtn" class="button primary">Commit to R2</button>
+            </div>
 
                 <!-- Step 1: Retriever Selection -->
                 <div id="retrieverStep" class="workflow-step active" style="margin-bottom: 25px; padding: 25px; border: 2px solid #4CAF50; border-radius: 12px; background: #f9fff9;">
@@ -196,6 +210,7 @@
                 
                 <!-- Combined Action Buttons - Reorganized Order -->
                 <div class="action-buttons view-toggle">
+                    <button class="button success" id="validateResultsBtn" style="display: none;">Validate Results</button>
                     <button class="button active" id="viewToggleBtn">Switch to Consolidated View</button>
                     <button class="button primary new-upload" id="newUploadBtn">Start Over</button>
                     <button class="button success" id="exportMappingsBtn">Export Mappings</button>
@@ -301,6 +316,11 @@
         </div>
     </div>
 
+
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <div class="loading-text">Processing...</div>
+    </div>
 
     <script type="module" src="./app.js"></script>
 </body>
