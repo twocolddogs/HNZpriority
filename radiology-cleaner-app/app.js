@@ -545,7 +545,6 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 // Wait 2 seconds to let users see the success message before other status updates
                 await new Promise(resolve => setTimeout(resolve, 2000));
-                enableActionButtons(); // Enable buttons after successful warmup
             } else {
                 throw new Error(`Warmup failed with status ${response.status}`);
             }
@@ -554,6 +553,9 @@ window.addEventListener('DOMContentLoaded', function() {
             // Clear the warming up message and show warning
             if (warmupMessageId) statusManager.remove(warmupMessageId);
             statusManager.show('⚠️ Engine warmup incomplete - first processing may take longer', 'warning', 5000);
+            // Hide loading indicator and enable buttons on failure
+            hideLoadingIndicator();
+            enableActionButtons();
         }
     }
 
@@ -626,6 +628,9 @@ window.addEventListener('DOMContentLoaded', function() {
                     loadingMessageId = null;
                 }
                 hideLoadingIndicator();
+
+                // Enable hero buttons now that models are loaded and UI is ready
+                enableActionButtons();
                 
                 // Show success message
                 statusManager.show('✓ Models loaded successfully', 'success', 3000);
@@ -681,8 +686,8 @@ window.addEventListener('DOMContentLoaded', function() {
         buildModelSelectionUI();
         buildRerankerSelectionUI();
         
-        // Update button states for fallback models - keep limited functionality
-        disableActionButtons('Limited functionality with fallback models');
+        // Enable buttons for fallback mode, but with limited functionality message
+        enableActionButtons();
         
         // Refresh workflow completion check
         if (window.workflowCheckFunction) {
