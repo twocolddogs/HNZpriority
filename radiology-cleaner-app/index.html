@@ -97,16 +97,8 @@
                 </div>
             </div>
 
-            <!-- Streamlined Workflow Section -->
-            <div id="workflowSection" class="workflow-section" style="display: none;">...</div>
-
-            <div id="commitSection" class="workflow-step" style="display: none; margin-top: 25px; padding: 25px; border: 2px solid #3f51b5; border-radius: 12px; background: #f9f9ff;">
-                <h3 style="margin: 0 0 15px 0; color: #3f51b5;">Commit Validated Decisions</h3>
-                <p style="margin: 0 0 20px 0; color: #666;">Upload your 'decisions.json' file to apply your team's feedback and update the master dataset on R2.</p>
-                <input type="file" id="decisionsFileInput" accept=".json" class="button secondary" style="margin-right: 15px;">
-                <button id="commitDecisionsBtn" class="button primary">Commit to R2</button>
-            </div>
-
+            <!-- Main Processing Workflow Section (Demo/Upload paths) -->
+            <div id="workflowSection" class="workflow-section" style="display: none;">
                 <!-- Step 1: Retriever Selection -->
                 <div id="retrieverStep" class="workflow-step active" style="margin-bottom: 25px; padding: 25px; border: 2px solid #4CAF50; border-radius: 12px; background: #f9fff9;">
                     <h3 style="margin: 0 0 15px 0; color: #4CAF50; display: flex; align-items: center;">
@@ -191,6 +183,14 @@
                     
                     <p style="margin: 10px 0 0 0; font-size: 0.9em; color: #666;">Processing typically takes 30-60 seconds for 100 records</p>
                 </div>
+            </div>
+
+            <!-- Validation Workflow Section (separate from main workflow) -->
+            <div id="commitSection" class="workflow-step" style="display: none; margin-top: 25px; padding: 25px; border: 2px solid #3f51b5; border-radius: 12px; background: #f9f9ff;">
+                <h3 style="margin: 0 0 15px 0; color: #3f51b5;">Commit Validated Decisions</h3>
+                <p style="margin: 0 0 20px 0; color: #666;">Upload your 'decisions.json' file to apply your team's feedback and update the master dataset on R2.</p>
+                <input type="file" id="decisionsFileInput" accept=".json" class="button secondary" style="margin-right: 15px;">
+                <button id="commitDecisionsBtn" class="button primary">Commit to R2</button>
             </div>
 
             

@@ -111,6 +111,13 @@
   cursor: not-allowed;
 }
 
+/* Fix action card sizing for better fit */
+.action-paths {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  gap: 16px !important;
+  max-width: 1000px !important;
+}
+
 /* Responsive design for mobile */
 @media (max-width: 768px) {
   .action-paths {
