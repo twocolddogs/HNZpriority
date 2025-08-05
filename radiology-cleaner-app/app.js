@@ -497,7 +497,6 @@ window.addEventListener('DOMContentLoaded', function() {
     const sanityButton = document.getElementById('sanityTestBtn');
     const randomSampleButton = document.getElementById('randomSampleDemoBtn');
     const validationPath = document.querySelector('.validation-path');
-    const validationPath = document.querySelector('.validation-path');
     
     // Config editor elements
     const editConfigButton = document.getElementById('editConfigBtn');
