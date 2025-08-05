@@ -2216,217 +2216,175 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- HOMEPAGE WORKFLOW FUNCTIONALITY ---
     let isValidationMode = false;
 
-    function setupHomepageWorkflow() {
-        const quickDemoBtn = document.getElementById('quickDemoBtn');
-        const uploadDataBtn = document.getElementById('uploadDataBtn');
-        const advancedSetupBtn = document.getElementById('advancedSetupBtn');
+
+window.addEventListener('DOMContentLoaded', function() {
+
+    // --- State Variable for the Workflow ---
+    let currentDataSource = null;
+
+    // --- Helper Functions for the Homepage Workflow ---
+
+    /**
+     * Manages the visibility of the main content sections inside the main-card.
+     */
+    function showMainContentSection(sectionId) {
+        const heroSection = document.querySelector('.hero-section');
         const workflowSection = document.getElementById('workflowSection');
-        const uploadSection = document.getElementById('uploadSection');
-        const advancedSection = document.getElementById('advancedSection');
+        const commitSection = document.getElementById('commitSection');
+        const resultsSection = document.getElementById('resultsSection');
+
+        // Hide all potential main sections first
+        heroSection?.classList.add('hidden');
+        workflowSection?.classList.add('hidden');
+        commitSection?.classList.add('hidden');
+        resultsSection?.classList.add('hidden');
+
+        // Show the correct section
+        if (sectionId) {
+            document.getElementById(sectionId)?.classList.remove('hidden');
+        } else {
+            // If no sectionId is provided, show the default hero section
+            heroSection?.classList.remove('hidden');
+        }
+    }
+
+    /**
+     * Resets the UI to the initial state.
+     */
+    function resetToHomepage() {
+        showMainContentSection(null);
+        statusManager.clearAll();
+        fileInput.value = '';
+        allMappings = [];
+        summaryData = null;
+        currentDataSource = null;
+        document.querySelectorAll('.action-card').forEach(card => card.classList.remove('selected'));
+    }
+
+    /**
+     * Checks if the workflow is complete enough to enable the final processing buttons.
+     */
+    function checkWorkflowCompletion() {
+        const retrieverSelected = !!currentModel;
+        const rerankerSelected = !!currentReranker;
+        const dataSourceProvided = !!currentDataSource;
+        const modelsReady = !buttonsDisabledForLoading && !isUsingFallbackModels;
+        const canProcess = retrieverSelected && rerankerSelected && dataSourceProvided && modelsReady;
+
         const runProcessingBtn = document.getElementById('runProcessingBtn');
         const runRandomDemoBtn = document.getElementById('runRandomDemoBtn');
         const runFixedTestBtn = document.getElementById('runFixedTestBtn');
-        const demoOptions = document.getElementById('demoOptions');
+
+        if (dataSourceProvided) {
+            document.getElementById('rerankerStep')?.classList.toggle('active', retrieverSelected);
+            document.getElementById('runStep')?.classList.toggle('active', retrieverSelected && rerankerSelected);
+        }
+
+        if (currentDataSource === 'demo') {
+            if (runRandomDemoBtn) runRandomDemoBtn.disabled = !canProcess;
+            if (runFixedTestBtn) runFixedTestBtn.disabled = !canProcess;
+        } else if (currentDataSource === 'upload') {
+            if (runProcessingBtn) runProcessingBtn.disabled = !canProcess;
+        }
+    }
+
+    /**
+     * Sets up all event listeners for the homepage action cards.
+     */
+    function setupHomepageWorkflow() {
+        const demoPathCard = document.getElementById('demoPathCard');
+        const uploadPathCard = document.getElementById('uploadPathCard');
+        const advancedPathCard = document.getElementById('advancedPathCard');
+        const validationPathCard = document.getElementById('validationPathCard');
+        const runProcessingBtn = document.getElementById('runProcessingBtn');
+        const runRandomDemoBtn = document.getElementById('runRandomDemoBtn');
+        const runFixedTestBtn = document.getElementById('runFixedTestBtn');
         const dataSourceDisplay = document.getElementById('dataSourceDisplay');
         const dataSourceText = document.getElementById('dataSourceText');
-        
-        let currentDataSource = null;
-        let selectedRetriever = null;
-        let selectedReranker = null;
-        
-        // Action card click handlers - make entire cards clickable
-        document.querySelector('.demo-path')?.addEventListener('click', () => {
-            // Don't allow demo selection if models are still loading
-            if (buttonsDisabledForLoading) {
-                return;
-            }
-            selectPath('demo');
+        const demoOptions = document.getElementById('demoOptions');
+
+        // Path 1: Demo
+        demoPathCard?.addEventListener('click', () => {
+            if (buttonsDisabledForLoading) return;
+            document.querySelectorAll('.action-card').forEach(c => c.classList.remove('selected'));
+            demoPathCard.classList.add('selected');
+            showMainContentSection('workflowSection');
             currentDataSource = 'demo';
+            demoOptions.classList.remove('hidden');
+            runProcessingBtn.classList.add('hidden');
+            dataSourceDisplay.classList.add('hidden');
+            document.getElementById('secondaryPipelineOption')?.style.display = 'block';
             checkWorkflowCompletion();
-            
-            // Auto-scroll to model selection on mobile
             scrollToModelSelection();
         });
-        
-        document.querySelector('.upload-path')?.addEventListener('click', () => {
-            // Don't allow upload if models are still loading
-            if (buttonsDisabledForLoading) {
-                return;
-            }
-            selectPath('upload');
+
+        // Path 2: Upload
+        uploadPathCard?.addEventListener('click', () => {
+            if (buttonsDisabledForLoading) return;
+            document.querySelectorAll('.action-card').forEach(c => c.classList.remove('selected'));
+            uploadPathCard.classList.add('selected');
+            showMainContentSection('workflowSection');
+            demoOptions.classList.add('hidden');
+            runProcessingBtn.classList.remove('hidden');
+            document.getElementById('secondaryPipelineOption')?.style.display = 'none';
             fileInput.click();
         });
-        
-        document.querySelector('.advanced-path')?.addEventListener('click', () => {
-            // Open config editor instead of advanced section
-            openConfigEditor();
-        });
-        
-        // File input handler for upload path
+
         fileInput?.addEventListener('change', (e) => {
             if (e.target.files[0]) {
                 currentDataSource = 'upload';
                 dataSourceText.textContent = `Uploaded File: ${e.target.files[0].name}`;
-                dataSourceDisplay.style.display = 'block';
+                dataSourceDisplay.classList.remove('hidden');
                 checkWorkflowCompletion();
-                
-                // Auto-scroll to model selection on mobile
                 scrollToModelSelection();
             }
         });
-        
-        // Demo buttons
-        runRandomDemoBtn?.addEventListener('click', async () => {
-            await runRandomSampleDemo();
+
+        // Path 3: Advanced
+        advancedPathCard?.addEventListener('click', () => {
+            openConfigEditor();
         });
-        
-        // Sample size input listener
+
+        // Path 4: Validation
+        validationPathCard?.addEventListener('click', () => {
+            document.querySelectorAll('.action-card').forEach(c => c.classList.remove('selected'));
+            validationPathCard.classList.add('selected');
+            showMainContentSection('commitSection');
+        });
+
+        // --- Workflow Action Buttons ---
+        runRandomDemoBtn?.addEventListener('click', () => runRandomSampleDemo());
+        runFixedTestBtn?.addEventListener('click', () => runSanityTest());
+        runProcessingBtn?.addEventListener('click', () => {
+            if (currentDataSource === 'upload' && fileInput.files[0]) {
+                processFile(fileInput.files[0]);
+            } else {
+                statusManager.show('No file selected for upload.', 'warning', 3000);
+            }
+        });
+
+        // --- Other UI Listeners ---
+        document.getElementById('newUploadBtn')?.addEventListener('click', resetToHomepage);
         const sampleSizeInput = document.getElementById('sampleSizeInput');
         const randomSampleSubtext = document.getElementById('randomSampleSubtext');
-        
         function updateSampleSizeDisplay() {
             const sampleSize = parseInt(sampleSizeInput?.value) || 100;
-            if (randomSampleSubtext) {
-                randomSampleSubtext.textContent = `${sampleSize} random codes from live dataset`;
-            }
+            if (randomSampleSubtext) randomSampleSubtext.textContent = `${sampleSize} random codes from live dataset`;
         }
-        
         sampleSizeInput?.addEventListener('input', updateSampleSizeDisplay);
         sampleSizeInput?.addEventListener('change', updateSampleSizeDisplay);
-        
-        // Initialize the display
         updateSampleSizeDisplay();
-        
-        runFixedTestBtn?.addEventListener('click', async () => {
-            await runSanityTest();
-        });
-
-        // File upload processing button
-        runProcessingBtn?.addEventListener('click', async () => {
-            if (currentDataSource === 'upload' && fileInput.files[0]) {
-                await processFile(fileInput.files[0]);
-            }
-        });
-        
-        function selectPath(path) {
-            // Remove all previous selections
-            document.querySelectorAll('.action-card').forEach(card => card.classList.remove('selected'));
-            
-            // Hide all sections (with null checks)
-            if (workflowSection) workflowSection.style.display = 'none';
-            if (uploadSection) uploadSection.style.display = 'none';
-            if (advancedSection) advancedSection.style.display = 'none';
-            
-            if (path === 'demo' || path === 'upload') {
-                // Show workflow for demo and upload paths
-                if (workflowSection) workflowSection.style.display = 'block';
-                
-                // Select the appropriate card
-                const selectedCard = path === 'demo' ? 
-                    document.querySelector('.demo-path') : 
-                    document.querySelector('.upload-path');
-                selectedCard?.classList.add('selected');
-                
-                // Reset workflow state
-                resetWorkflowSteps();
-                
-            } else if (path === 'advanced') {
-                // Show advanced configuration
-                if (advancedSection) advancedSection.style.display = 'block';
-                document.querySelector('.advanced-path')?.classList.add('selected');
-            }
-        }
-        
-        function resetWorkflowSteps() {
-            // Reset step indicators
-            document.getElementById('step1')?.classList.add('active');
-            document.getElementById('step2')?.classList.remove('active');
-            document.getElementById('step3')?.classList.remove('active');
-            
-            // Reset step sections
-            document.getElementById('retrieverStep')?.classList.add('active');
-            document.getElementById('rerankerStep')?.classList.remove('active');
-            document.getElementById('runStep')?.classList.remove('active');
-            
-            selectedRetriever = null;
-            selectedReranker = null;
-            runProcessingBtn.disabled = true;
-            if (runRandomDemoBtn) runRandomDemoBtn.disabled = true;
-            if (runFixedTestBtn) runFixedTestBtn.disabled = true;
-        }
-        
-        function activateStep(stepNumber) {
-            // Update step indicators
-            for (let i = 1; i <= 3; i++) {
-                const step = document.getElementById(`step${i}`);
-                if (i <= stepNumber) {
-                    step?.classList.add('active');
-                } else {
-                    step?.classList.remove('active');
-                }
-            }
-            
-            // Update step sections
-            const steps = ['retrieverStep', 'rerankerStep', 'runStep'];
-            steps.forEach((stepId, index) => {
-                const stepElement = document.getElementById(stepId);
-                if (index < stepNumber) {
-                    stepElement?.classList.add('active');
-                } else {
-                    stepElement?.classList.remove('active');
-                }
-            });
-        }
-        
-        function checkWorkflowCompletion() {
-            // Update selected models based on current state
-            selectedRetriever = currentModel;
-            selectedReranker = currentReranker;
-            
-            if (selectedRetriever && selectedReranker && currentDataSource) {
-                // Show appropriate buttons based on data source
-                if (currentDataSource === 'demo') {
-                    demoOptions.style.display = 'block';
-                    runProcessingBtn.style.display = 'none';
-                    // Show secondary pipeline option for demo
-                    const secondaryPipelineOption = document.getElementById('secondaryPipelineOption');
-                    if (secondaryPipelineOption) secondaryPipelineOption.style.display = 'block';
-                    // Only enable if models are loaded and not using fallbacks
-                    const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
-                    runRandomDemoBtn.disabled = !canEnable;
-                    runFixedTestBtn.disabled = !canEnable;
-                } else if (currentDataSource === 'upload') {
-                    demoOptions.style.display = 'none';
-                    runProcessingBtn.style.display = 'block';
-                    // Hide secondary pipeline option for file upload
-                    const secondaryPipelineOption = document.getElementById('secondaryPipelineOption');
-                    if (secondaryPipelineOption) secondaryPipelineOption.style.display = 'none';
-                    // Only enable if models are loaded and not using fallbacks
-                    const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
-                    runProcessingBtn.disabled = !canEnable;
-                }
-                activateStep(3);
-            } else if (selectedRetriever && currentDataSource) {
-                activateStep(2);
-            } else if (currentDataSource) {
-                activateStep(1);
-            }
-        }
-        
-        // Expose workflow check function globally
-        window.workflowCheckFunction = checkWorkflowCompletion;
     }
+    
+    // Expose the workflow check function globally so it can be called when models are loaded
+    window.workflowCheckFunction = checkWorkflowCompletion;
 
-    // Make loadAvailableModels globally accessible for navigation handling
-    window.loadAvailableModels = loadAvailableModels;
-    
     // --- INITIALIZE APP ---
-    // Disable action buttons initially until models load
     disableActionButtons('Models are loading...');
-    
     testApiConnectivity();
     loadAvailableModels();
-    setupEventListeners();
+    setupEventListeners(); 
+    setupHomepageWorkflow(); // Call our new, clean function to set up card listeners.
 });
 
 // Handle page navigation (back/forward) to ensure models reload
