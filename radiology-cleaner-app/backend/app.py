@@ -13,7 +13,7 @@ from typing import List, Dict, Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from pathlib import Path
-from secondary_pipeline import SecondaryPipeline
+from secondary_pipeline import SecondaryPipeline, get_secondary_pipeline
 from pipeline_integration import PipelineIntegration, BatchResultProcessor
 import asyncio 
 
@@ -33,7 +33,7 @@ from r2_cache_manager import R2CacheManager
 
 # Secondary Pipeline Integration
 try:
-    from secondary_pipeline import SecondaryPipeline
+    from secondary_pipeline import SecondaryPipeline, get_secondary_pipeline
     from pipeline_integration import PipelineIntegration, BatchResultProcessor
     import asyncio
     SECONDARY_PIPELINE_AVAILABLE = True
@@ -56,6 +56,43 @@ CORS(app,
      methods=['GET', 'POST', 'OPTIONS'],
      allow_headers=['Content-Type', 'Authorization'],
      supports_credentials=False)
+
+# =============================================================================
+# ### START OF ADDED CODE FOR ASYNC MANAGEMENT ###
+# =============================================================================
+
+def run_async_task(coro):
+    """
+    Safely runs an async coroutine in a synchronous context by creating,
+    managing, and gracefully shutting down a new event loop.
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        result = loop.run_until_complete(coro)
+        
+        # --- START OF NEW, GRACEFUL SHUTDOWN LOGIC ---
+        
+        # Allow time for background cleanup tasks (like from httpx) to complete
+        # by running all pending tasks before closing the loop.
+        pending = asyncio.all_tasks(loop=loop)
+        if pending:
+            loop.run_until_complete(asyncio.gather(*pending))
+        
+        # Additional graceful shutdown step for async generators
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        
+        # --- END OF NEW, GRACEFUL SHUTDOWN LOGIC ---
+        
+        return result
+    finally:
+        # Close the loop only after ensuring all tasks are done.
+        loop.close()
+        asyncio.set_event_loop(None)
+
+# =============================================================================
+# ### END OF ADDED CODE ###
+# =============================================================================
 
 @app.before_request
 def handle_preflight():
@@ -80,6 +117,7 @@ semantic_parser: Optional[RadiologySemanticParser] = None
 nhs_lookup_engine: Optional[NHSLookupEngine] = None
 model_processors: Dict[str, NLPProcessor] = {}
 reranker_manager: Optional[RerankerManager] = None
+_batch_preloaded_config = None  # Shared config for secondary pipeline to avoid repeated R2 fetches
 _init_lock = threading.Lock()
 _app_initialized = False
 # DB/Cache managers would be initialized here in a full app
@@ -258,7 +296,7 @@ def _ensure_app_is_initialized():
             _initialize_app()
             _app_initialized = True
 
-def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None, data_source: Optional[str] = None, exam_code: Optional[str] = None) -> Dict:
+def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None, data_source: Optional[str] = None, exam_code: Optional[str] = None, run_secondary_inline: bool = True) -> Dict:
     """Central processing logic for a single exam."""
     if debug:
         logger.info(f"[DEBUG-FLOW] process_exam_request received debug=True for exam: {exam_name}")
@@ -277,22 +315,154 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
             'excluded': True
         }
     
-    # Use complexity-aware preprocessing
     cleaned_exam_name, is_input_simple = _preprocessor.preprocess_with_complexity(exam_name)
     parsed_input_components = semantic_parser.parse_exam_name(cleaned_exam_name, modality_code or 'Other')
     
-    # V3 Architecture: Always use the main dual-processor lookup engine
-    # The v3 architecture uses both retriever and reranker models regardless of API model parameter
     lookup_engine_to_use = nhs_lookup_engine
     
     if nlp_processor.model_key != nhs_lookup_engine.retriever_processor.model_key:
         logger.warning(f"🔄 [V4-API] Model parameter '{nlp_processor.model_key}' ignored - using V4 dual-processor pipeline")
         logger.info(f"🔄 [V4-API] Pipeline: {nhs_lookup_engine.retriever_processor.model_key} → {reranker_key or 'default'}")
     
-    # V4 Architecture: Use dual-processor pipeline with flexible rerankers
     if debug:
         logger.info(f"[DEBUG-FLOW] About to call standardize_exam with debug=True, is_input_simple={is_input_simple}")
-    nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key)
+    
+    # Wrap the entire processing logic in a try...except block to prevent crashes from returning malformed data
+    try:
+        nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key)
+
+        # =============================================================================
+        # ### START OF REFACTORED SECONDARY PIPELINE LOGIC ###
+        # =============================================================================
+
+        # Determine if the secondary pipeline should run for this single result
+        confidence = nhs_result.get('components', {}).get('confidence', 1.0)
+        should_apply_secondary = (
+            nhs_result.get('ambiguous', False) or
+            confidence < 0.8 or  # Use a clear threshold
+            nhs_result.get('semantic_similarity_safeguard', {}).get('applied', False)
+        )
+        if run_secondary_inline and should_apply_secondary and SECONDARY_PIPELINE_AVAILABLE:
+            # Ensure the error for non-clinical exams is handled first
+            if nhs_result.get('error') == 'EXCLUDED_NON_CLINICAL':
+                logger.info(f"Engine excluded '{exam_name}' as non-clinical. Formatting final response.")
+                return {
+                    'error': 'EXCLUDED_NON_CLINICAL',
+                    'message': nhs_result.get('message', f'Excluded non-clinical entry: {exam_name}'),
+                    'exam_name': exam_name,
+                    'excluded': True
+                }
+
+            # Apply secondary pipeline if the conditions are met and the module is available
+            logger.info(f"[SECONDARY-PIPELINE] Applying secondary pipeline for single exam: {exam_name} (Confidence: {confidence:.2f})")
+            _initialize_secondary_pipeline() # Make sure it's ready
+            
+            # Construct the single-item batch using the full result structure
+            single_item_batch = {
+                "input": {
+                    "exam_name": exam_name,
+                    "modality_code": modality_code,
+                    "data_source": data_source,
+                    "exam_code": exam_code
+                },
+                "output": nhs_result,
+                "status": "success"
+            }
+            
+            try:
+                # Use shared instance with preloaded config to avoid repeated R2 fetches
+                global _batch_preloaded_config
+                pipeline = get_secondary_pipeline(preloaded_config=_batch_preloaded_config)
+                # Use the new helper function to run the async code
+                ensemble_results = run_async_task(pipeline.process_low_confidence_results([single_item_batch]))
+                
+                if ensemble_results and ensemble_results[0].improved:
+                    secondary_result = ensemble_results[0]
+                    logger.info(f"[SECONDARY-PIPELINE] Secondary pipeline improved result for: {exam_name}")
+                    
+                    # Overwrite the primary result fields with the improved consensus data
+                    nhs_result['clean_name'] = secondary_result.consensus_best_match_procedure_name
+                    nhs_result['snomed_id'] = secondary_result.consensus_best_match_snomed_id
+                    nhs_result['snomed_fsn'] = secondary_result.consensus_snomed_fsn
+                    nhs_result['components']['confidence'] = secondary_result.consensus_confidence
+                    
+                    nhs_result['secondary_pipeline_applied'] = True
+                    nhs_result['secondary_pipeline_details'] = {
+                        'improved': True,
+                        'original_confidence': confidence,
+                        'consensus_confidence': secondary_result.consensus_confidence,
+                        'agreement_score': secondary_result.agreement_score
+                    }
+                else:
+                    logger.info(f"[SECONDARY-PIPELINE] No improvement from secondary pipeline for: {exam_name}")
+                    nhs_result['secondary_pipeline_applied'] = True
+                    nhs_result['secondary_pipeline_details'] = {'improved': False, 'reason': 'No consensus improvement found'}
+
+            except Exception as e:
+                logger.error(f"Error during single-exam secondary pipeline processing: {e}", exc_info=True)
+                nhs_result['secondary_pipeline_applied'] = False
+                nhs_result['secondary_pipeline_error'] = str(e)
+
+        else:
+            nhs_result['secondary_pipeline_applied'] = False
+
+        # =============================================================================
+        # ### END OF REFACTORED LOGIC ###
+        # =============================================================================
+
+        components_from_engine = nhs_result.get('components', {})
+        context_from_input = detect_all_contexts(cleaned_exam_name, parsed_input_components.get('anatomy', []))
+        matched_modalities = components_from_engine.get('modality', [])
+
+        final_result = {
+            'data_source': data_source or 'N/A',
+            'modality_code': [modality_code] if modality_code else [],
+            'exam_code': exam_code or 'N/A',
+            'exam_name': exam_name,
+            'clean_name': _medical_title_case(nhs_result.get('clean_name', cleaned_exam_name)),
+            'ambiguous': nhs_result.get('ambiguous', False),
+            'snomed': {
+                'found': bool(nhs_result.get('snomed_id')),
+                'fsn': nhs_result.get('snomed_fsn', ''),
+                'id': nhs_result.get('snomed_id', ''),
+                'laterality_concept_id': nhs_result.get('snomed_laterality_concept_id', ''),
+                'laterality_fsn': nhs_result.get('snomed_laterality_fsn', '')
+            },
+            'components': {
+                'anatomy': components_from_engine.get('anatomy', []),
+                'laterality': components_from_engine.get('laterality', []),
+                'contrast': components_from_engine.get('contrast', []),
+                'technique': components_from_engine.get('technique', []),
+                'modality': matched_modalities,
+                'confidence': components_from_engine.get('confidence', 0.0),
+                'gender_context': context_from_input['gender_context'],
+                'age_context': context_from_input['age_context'],
+                'clinical_context': context_from_input['clinical_context'],
+            },
+            # Add secondary pipeline status fields directly to the main result object
+            'secondary_pipeline_applied': nhs_result.get('secondary_pipeline_applied', False),
+            'secondary_pipeline_details': nhs_result.get('secondary_pipeline_details')
+        }
+        
+        if 'all_candidates' in nhs_result:
+            final_result['all_candidates'] = nhs_result['all_candidates']
+        
+        if debug and 'debug' in nhs_result:
+            final_result['debug'] = nhs_result['debug']
+        
+        return final_result
+
+    except Exception as e:
+        # This is a critical safeguard. If anything goes wrong, return a proper error structure.
+        logger.error(f"FATAL ERROR in process_exam_request for '{exam_name}': {e}", exc_info=True)
+        return {
+            "error": f"Internal processing error: {type(e).__name__}",
+            "message": str(e),
+            "exam_name": exam_name,
+            "clean_name": f"ERROR: {type(e).__name__}",
+            "excluded": True
+        }
+    
     
     ### FIX: The context (gender, age, etc.) is a property of the INPUT request, not the matched NHS entry.
     ### We must calculate context here from the cleaned input string to ensure it's always correct.
@@ -829,6 +999,21 @@ def _process_batch(data, start_time):
     success_count = 0
     error_count = 0
     
+    # Pre-load config once for the entire batch to avoid repeated R2 fetches during secondary pipeline processing
+    global _batch_preloaded_config
+    _batch_preloaded_config = None
+    if enable_secondary and SECONDARY_PIPELINE_AVAILABLE:
+        try:
+            from config_manager import get_config
+            config_manager = get_config()
+            if config_manager.force_r2_reload():
+                _batch_preloaded_config = config_manager.get_full_config()
+                logger.info("Pre-loaded configuration from R2 for batch processing (will be reused for secondary pipeline)")
+            else:
+                logger.warning("Failed to pre-load config from R2, secondary pipeline will load individually")
+        except Exception as e:
+            logger.warning(f"Could not pre-load config from R2 ({e}), secondary pipeline will load individually")
+    
     chunk_size = 10
     total_exams = len(exams_to_process)
     chunks = [exams_to_process[i:i + chunk_size] for i in range(0, total_exams, chunk_size)]
@@ -854,7 +1039,8 @@ def _process_batch(data, start_time):
                         False, 
                         reranker_key, 
                         exam.get("DATA_SOURCE") or exam.get("data_source"), 
-                        exam.get("EXAM_CODE") or exam.get("exam_code")
+                        exam.get("EXAM_CODE") or exam.get("exam_code"),
+                        run_secondary_inline=False
                     ): exam 
                     for exam in chunk
                 }
@@ -948,115 +1134,92 @@ def _process_batch(data, start_time):
             
             logger.info("Consolidated file created successfully.")
 
-            # Delay R2 upload until after secondary pipeline processing to ensure
-            # we upload the final version (either original or merged)
-            logger.info("Consolidated file ready - will upload to R2 after secondary pipeline processing")
+            # Consolidated file ready for R2 upload
+            logger.info("Consolidated file created and ready for R2 upload")
 
         except Exception as e:
             logger.error(f"Error during R2 upload process: {e}", exc_info=True)
     else:
         logger.warning("R2 not available - results only stored locally")
 
-    # Optional secondary pipeline processing for low-confidence results
     secondary_report = None
+    merged_filepath = None
+    
     if enable_secondary and SECONDARY_PIPELINE_AVAILABLE:
         _initialize_secondary_pipeline()
         if secondary_integration and secondary_integration.is_enabled():
-            try:
-                logger.info("Running secondary pipeline on low-confidence results...")
-                update_progress(success_count + error_count, total_exams, success_count, error_count)
-                
-                # Load results from the consolidated file for secondary processing
-                if consolidated_filepath and os.path.exists(consolidated_filepath):
-                    with open(consolidated_filepath, 'r', encoding='utf-8') as f:
-                        consolidated_data = json.load(f)
-                        results_for_secondary = consolidated_data.get('results', [])
-                else:
-                    # Fallback: read from JSONL file
-                    results_for_secondary = []
-                    if os.path.exists(results_filepath):
-                        with open(results_filepath, 'r', encoding='utf-8') as f:
-                            for line in f:
-                                if line.strip():
-                                    results_for_secondary.append(json.loads(line.strip()))
-                
-                if results_for_secondary:
-                    # Run secondary pipeline
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
+            logger.info("Starting secondary pipeline processing for the entire batch...")
+            
+            # 1. Load all results from the primary processing stage
+            all_results = []
+            if os.path.exists(results_filepath):
+                with open(results_filepath, 'r', encoding='utf-8') as f_in:
+                    for line in f_in:
+                        if line.strip():
+                            all_results.append(json.loads(line.strip()))
+            
+            if all_results:
+                try:
+                    # 2. Trigger secondary processing ONCE with all results
+                    # The integration layer will filter for low-confidence items internally
+                    secondary_report = run_async_task(
+                        secondary_integration.trigger_secondary_processing(all_results)
+                    )
                     
-                    try:
-                        secondary_report = loop.run_until_complete(
-                            secondary_batch_processor.process_batch_with_secondary(results_for_secondary)
-                        )
-                        logger.info(f"Secondary pipeline completed: {secondary_report}")
+                    # 3. If there were improvements, merge them into a new file
+                    if secondary_report and secondary_report.get('results'):
+                        logger.info("Merging secondary pipeline improvements into final results...")
                         
-                        # Update progress to show secondary pipeline completion
-                        update_progress(total_exams, total_exams, success_count, error_count)
+                        # Load the original consolidated data to modify it
+                        with open(consolidated_filepath, 'r', encoding='utf-8') as f:
+                            original_data = json.load(f)
                         
-                    finally:
-                        loop.close()
-
-                if secondary_report and secondary_report.get('secondary_results') and secondary_report['secondary_results'].get('results'):
-                    logger.info("Merging secondary pipeline results into the main result set...")
-                    
-                    # Load the original consolidated data again to be safe
-                    with open(consolidated_filepath, 'r', encoding='utf-8') as f:
-                        original_data = json.load(f)
-                    
-                    # Create a dictionary for faster lookups using exam_name as the key
-                    results_map = {res['input']['exam_name']: res for res in original_data['results']}
-                    
-                    # Merge results
-                    for secondary_res in secondary_report['secondary_results']['results']:
-                        # Correctly extract exam_name from the properly nested structure
-                        exam_name = secondary_res.get('original_result', {}).get('original_result', {}).get('input', {}).get('exam_name')
-
-                        if exam_name and exam_name in results_map:
-                            original_full_result = results_map[exam_name]
-                            original_output = original_full_result.get('output', {})
+                        # Create a map for efficient lookups
+                        results_map = {res['input']['exam_name']: res for res in original_data['results'] if 'exam_name' in res.get('input', {})}
+                        
+                        for secondary_res_dict in secondary_report['results']:
+                            # The original result is nested inside the ensemble result
+                            original_full_record = secondary_res_dict.get('original_result', {})
+                            exam_name = original_full_record.get('input', {}).get('exam_name')
                             
-                            # Update confidence and modality from consensus
-                            original_output['components']['confidence'] = secondary_res.get('consensus_confidence', original_output.get('components', {}).get('confidence'))
-                            original_output['components']['modality'] = [secondary_res.get('consensus_modality', 'UNKNOWN')]
+                            if exam_name and exam_name in results_map:
+                                result_to_update = results_map[exam_name]
+                                output_to_update = result_to_update['output']
 
-                            # Add detailed secondary pipeline metadata
-                            original_output['secondary_pipeline_applied'] = True
-                            original_output['secondary_pipeline_details'] = {
-                                'original_modality': secondary_res.get('original_result', {}).get('original_modality'),
-                                'original_confidence': secondary_res.get('original_result', {}).get('original_confidence'),
-                                'consensus_modality': secondary_res.get('consensus_modality'),
-                                'consensus_confidence': secondary_res.get('consensus_confidence'),
-                                'agreement_score': secondary_res.get('agreement_score'),
-                                'models_used': [resp['model'] for resp in secondary_res.get('model_responses', [])]
-                            }
-                            
-                            results_map[exam_name] = original_full_result
+                                # Overwrite with improved data
+                                output_to_update['clean_name'] = secondary_res_dict['consensus_best_match_procedure_name']
+                                output_to_update['snomed']['id'] = secondary_res_dict['consensus_best_match_snomed_id']
+                                output_to_update['snomed']['fsn'] = secondary_res_dict.get('consensus_snomed_fsn')
+                                output_to_update['components']['confidence'] = secondary_res_dict['consensus_confidence']
+                                
+                                # Add metadata for transparency
+                                output_to_update['secondary_pipeline_applied'] = True
+                                output_to_update['secondary_pipeline_details'] = {
+                                    'improved': secondary_res_dict.get('improved', False),
+                                    'original_confidence': secondary_res_dict.get('original_result', {}).get('output', {}).get('components', {}).get('confidence'),
+                                    'consensus_confidence': secondary_res_dict.get('consensus_confidence'),
+                                    'agreement_score': secondary_res_dict.get('agreement_score'),
+                                }
+                        
+                        # Reconstruct the results list and save to a new merged file
+                        original_data['results'] = list(results_map.values())
+                        merged_filepath = consolidated_filepath.replace('.json', '_merged.json')
+                        with open(merged_filepath, 'w', encoding='utf-8') as f:
+                            json.dump(original_data, f, indent=2)
+                        
+                        logger.info(f"Successfully merged results into: {merged_filepath}")
+                        
+                except Exception as e:
+                    logger.error(f"Secondary pipeline batch processing failed: {e}", exc_info=True)
+                    secondary_report = {"error": str(e)}
 
-                    # Reconstruct the results list from the updated map
-                    original_data['results'] = list(results_map.values())
-
-                    # Overwrite the consolidated file with the merged data
-                    merged_filepath = consolidated_filepath.replace('.json', '_merged.json')
-                    with open(merged_filepath, 'w', encoding='utf-8') as f:
-                        json.dump(original_data, f)
-                    
-                    logger.info(f"Successfully merged results into: {merged_filepath}")
-                    
-                    # Update consolidated_filepath to point to the merged file for final upload
-                    consolidated_filepath = merged_filepath
-                    logger.info(f"Merged results ready for R2 upload: {merged_filepath}")
-
-            except Exception as e:
-                logger.error(f"Secondary pipeline failed: {e}", exc_info=True)
-                secondary_report = {"error": str(e)}
-
-    # Now upload the final file to R2 (either original consolidated or merged version)
-    if r2_manager and consolidated_filepath and os.path.exists(consolidated_filepath):
+    # Upload the consolidated file to R2
+    final_upload_path = merged_filepath if merged_filepath else consolidated_filepath
+    if r2_manager and final_upload_path and os.path.exists(final_upload_path):
         try:
             final_filename = os.path.basename(consolidated_filepath)
             r2_key = f"batch-results/{final_filename}"
-            if r2_manager.upload_file(consolidated_filepath, r2_key, content_type="application/json"):
+            if r2_manager.upload_file(final_upload_path, r2_key, content_type="application/json"):
                 r2_url = f"https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/{r2_key}"
                 r2_upload_success = True
                 logger.info(f"Successfully uploaded final results to R2: {r2_key}")
@@ -1070,12 +1233,7 @@ def _process_batch(data, start_time):
         if os.path.exists(results_filepath):
             os.remove(results_filepath)
             logger.info(f"Cleaned up temporary results file: {results_filepath}")
-        # Only cleanup original consolidated file if we have a merged version
-        original_consolidated = consolidated_filepath.replace('_merged.json', '.json')
-        if original_consolidated != consolidated_filepath and os.path.exists(original_consolidated):
-            os.remove(original_consolidated)
-            logger.info(f"Cleaned up original consolidated file: {original_consolidated}")
-        # Keep merged file for R2 upload success verification
+        # Keep consolidated file for R2 upload success verification
     except Exception as e:
         logger.warning(f"Failed to clean up temporary files: {e}")
 
@@ -1084,7 +1242,7 @@ def _process_batch(data, start_time):
     logger.info(f"Batch processing complete. Returning response with R2 URL: {r2_url}")
     
     response_data = {
-        "message": "Batch processing complete. Results are available at the provided R2 URL." + (" Secondary pipeline applied to low-confidence results." if secondary_report else ""),
+        "message": "Batch processing complete. Results are available at the provided R2 URL." + (" Secondary pipeline applied inline to low-confidence results." if enable_secondary else ""),
         "batch_id": batch_id,
         "r2_url": r2_url,
         "r2_uploaded": r2_upload_success,
@@ -1097,11 +1255,8 @@ def _process_batch(data, start_time):
             "reranker_used": reranker_key,
             "secondary_pipeline_enabled": enable_secondary and SECONDARY_PIPELINE_AVAILABLE and secondary_integration and secondary_integration.is_enabled()
         },
-        "secondary_pipeline_summary": secondary_report if secondary_report else None
+        "secondary_pipeline_summary": "Secondary pipeline processing handled inline per exam" if enable_secondary else None
     }
-    
-    if secondary_report:
-        response_data["secondary_processing"] = secondary_report
     
     return jsonify(response_data)
 
@@ -1374,8 +1529,17 @@ def demo_random_sample():
         model_key = data.get('model', 'retriever')
         reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
         enable_secondary = data.get('enable_secondary_pipeline', False)
+        sample_size = data.get('sample_size', 100)  # Default to 100 if not provided
         
-        logger.info(f"Starting demo random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}")
+        # Validate sample_size
+        try:
+            sample_size = int(sample_size)
+            if sample_size < 1 or sample_size > 1000:
+                return jsonify({"error": "Sample size must be between 1 and 1000"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Sample size must be a valid integer"}), 400
+        
+        logger.info(f"Starting demo random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}, sample_size: {sample_size}")
         
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
@@ -1419,7 +1583,7 @@ def demo_random_sample():
         if not isinstance(input_data, list):
             return jsonify({"error": "Input file must contain a JSON array"}), 400
         
-        sample_size = 100
+        # Use sample_size from request parameter (already extracted above)
         if len(input_data) < sample_size:
             logger.warning(f"Input file contains only {len(input_data)} items, using all")
             sample_size = len(input_data)

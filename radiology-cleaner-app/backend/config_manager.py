@@ -245,6 +245,10 @@ class ConfigManager:
             return self.defaults[section]
         return result
     
+    def get_full_config(self) -> Dict[str, Any]:
+        """Return the entire configuration dictionary."""
+        return self.config
+    
     def _load_r2_config(self) -> Optional[Dict[str, Any]]:
         """Load configuration from R2 with caching."""
         try:

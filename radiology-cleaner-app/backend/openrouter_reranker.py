@@ -148,7 +148,7 @@ class OpenRouterReranker:
         prompt = f"""You are a precision medical coding specialist responsible for mapping real-world radiology exam names to standardized NHS procedures. This is a healthcare-critical system where accuracy is paramount.
 
 **Primary Objective:**
-Rank the {len(documents)} candidate procedures from BEST to WORST match for the input exam. Your ranking directly impacts patient care by determining which standardized procedure code is selected. 
+Evaluate the `input_exam`. If it represents a valid clinical procedure, rank the candidate procedures from BEST to WORST match. If it is NOT a valid procedure, indicate that no match is possible.
 
 ---
 **INPUTS:**
@@ -164,12 +164,23 @@ Rank the {len(documents)} candidate procedures from BEST to WORST match for the 
 ---
 **EVALUATION FRAMEWORK:**
 
-Input exams come from legacy radiology systems with character limits, so assume they contain maximum relevant information despite abbreviations.
+### ### NEW SECTION START ### ###
+**Priority 0: Triage for Clinical Validity (CRITICAL FIRST STEP)**
+First, analyze the `input_exam` for keywords that indicate it is NOT a diagnostic or interventional procedure. These are typically administrative or status updates.
 
-**Guiding Principle: Sufficient Specificity**
-The ideal candidate has the **same level of clinical detail** as the input. Your goal is to find the match that is "just right"—not too generic, not too specific.
+- **Keywords to look for**: `declined`, `cancelled`, `did not arrive`, `abandoned`, `unprocessed order`, `unable to contact`, `dna`, `no report`.
+
+- **Action**: If you find any of these keywords, the input is considered clinically invalid for matching. You **MUST** stop and return a JSON object with an empty "ranking" array. This signals that no procedure should be coded.
+    - **Example**: If `input_exam` is "MRI Did Not Arrive", your entire response must be `{{"ranking": []}}`.
+
+**If and ONLY IF the `input_exam` passes this triage step, proceed to the ranking methodology below.**
+### ### NEW SECTION END ### ###
+
+**Guiding Principle: Sufficient Specificity (FAVOR SIMPLICITY)**
+The ideal candidate has the **same level of clinical detail** as the input. Your goal is to find the match that is "just right"—not too generic, not too specific. **When in doubt, always choose the SIMPLER option.**
 - **Generic Input → Generic Candidate:** If the input is simple (e.g., "XR Chest"), the best match is the simplest canonical name ("XR Chest"), not a more detailed one ("XR Chest PA View").
 - **Specific Input → Specific Candidate:** If the input contains details (e.g., "XR Chest PA View"), those details **must** be present in the best match.
+- **CRITICAL**: Avoid adding imaging techniques, clinical details, or procedural specifics not explicitly mentioned in the input. Simple, direct matches are almost always better than complex ones.
 
 **RANKING METHODOLOGY - Apply in priority order:**
 
@@ -196,31 +207,32 @@ The ideal candidate has the **same level of clinical detail** as the input. Your
 **Priority 3: Complexity & Specificity Matching (Final Tie-breaker)**
 - **Apply the Guiding Principle:** Use the "Sufficient Specificity" principle to rank candidates that have passed the above checks.
 - **IGNORE administrative terms**: "portable", "ward", "stat", "single view" (not clinically relevant)
-- **PENALIZE over-specification**: Don't add clinical details not in input.
-  - BAD: Input "MRI Brain" → Candidate "MRI Brain with Spectroscopy" (adds a new technique).
+- **STRONGLY PENALIZE over-specification**: Don't add clinical details not in input. **This is CRITICAL - simpler matches are almost always better.**
+  - **MAJOR PENALTY**: Input "MRI Brain" → Candidate "MRI Brain with Spectroscopy" (adds a new technique).
+  - **MAJOR PENALTY**: Input "US DVT upper limb" → Candidate "US Doppler Vein Map Upper Limb" (adds "flow mapping" technique).
+  - **PREFERRED**: Input "US DVT upper limb" → Candidate "US Doppler Upper Limb Veins" (simpler, more direct).
 - **REWARD specific matches**: When input has specific terms, find the candidate that also has them.
   - EXCELLENT: Input "MRI Brain with Diffusion" → Candidate "MRI Brain with Diffusion".
+- **Simplicity wins**: If two candidates match equally well but one is simpler, always prefer the simpler one.
 
 ---
 **FINAL INSTRUCTIONS:**
 
-1. **Apply priorities in order**: Modality match first, then clinical specifiers, then complexity matching
-2. **Rank ALL {len(documents)} candidates**: Even poor matches must be ranked (worst matches go last)
-3. **Consider patient safety**: Modality mismatches are dangerous and should rank last
-4. **Preserve clinical intent**: The best match captures the same clinical procedure as the input
+1. **Perform Triage First**: This is the most important step.
+2. **Apply ranking priorities in order**: If triage passes, use Modality -> Clinical Specifiers -> Complexity.
+3. **Rank ALL {len(documents)} candidates**: If the input is valid, even poor matches must be ranked.
+4. **Preserve clinical intent**: The best match captures the same clinical procedure as the input.
 
 **RESPONSE FORMAT & CONSTRAINTS:**
 
 - You **MUST** respond with **ONLY** a single, valid JSON object.
-- The JSON object must contain a single key, "ranking", with a value being an array of ALL candidate numbers (as integers) in ranked order from best to worst.
-- **CRITICAL**: The final "ranking" array **must** be a permutation of the numbers from 1 to {len(documents)}. Every candidate number must appear exactly once.
+- **Case 1 (Valid Input)**: The JSON object must contain a single key, "ranking", with a value being an array of ALL candidate numbers (as integers) in ranked order from best to worst. The array **must** be a permutation of the numbers from 1 to {len(documents)}.
+- **Case 2 (Invalid Input)**: The JSON object must contain a single key, "ranking", with a value of an **empty array `[]`**.
 - Do not add any explanation, commentary, or markdown formatting before or after the JSON object.
 
-**Example Response Structure for {len(documents)} candidates:**
-```json
-{{
-  "ranking": [{', '.join(map(str, range(1, len(documents) + 1)))}]
-}}"""
+**Example Response Structures:**
+- **Valid Input**: `{{"ranking": [3, 1, 4, 2]}}`
+- **Invalid Input**: `{{"ranking": []}}`"""
 
         return prompt
     
@@ -287,9 +299,12 @@ The ideal candidate has the **same level of clinical detail** as the input. Your
             logger.error(f"[OPENROUTER] Unexpected error: {e}")
             return None
     
+    # In class OpenRouterReranker
+
     def _parse_scores_from_response(self, response: str, expected_count: int) -> List[float]:
         """
         Parse ranking from LLM response and convert to similarity scores.
+        Handles a special case for invalid inputs where an empty ranking is returned.
         
         Args:
             response: Raw LLM response text containing ranked candidate numbers
@@ -299,77 +314,69 @@ The ideal candidate has the **same level of clinical detail** as the input. Your
             List of normalized scores (0.0-1.0) based on ranking
         """
         try:
-            # Try to find JSON in response (handle markdown code blocks)
             import re
             
-            # First try to extract JSON from markdown code blocks
-            json_block_match = re.search(r'```(?:json)?\s*(\{[^}]*"ranking"[^}]*\})\s*```', response, re.DOTALL)
-            if json_block_match:
-                json_str = json_block_match.group(1)
-                try:
-                    json_obj = json.loads(json_str)
-                    if "ranking" in json_obj:
-                        ranking = json_obj["ranking"]
-                    else:
-                        ranking = None
-                except json.JSONDecodeError:
-                    ranking = None
-            else:
-                # Fallback: Look for JSON array pattern with candidate numbers
-                json_match = re.search(r'\[[^\]]+\]', response)
-                if json_match:
-                    json_str = json_match.group(0)
-                    ranking = json.loads(json_str)
+            # This regex is more robust and finds a JSON object containing the "ranking" key,
+            # even if it's surrounded by other text or markdown.
+            json_match = re.search(r'\{.*"ranking"\s*:\s*\[.*?\][^}]*\}', response, re.DOTALL)
+            
+            if not json_match:
+                logger.warning(f"[OPENROUTER] Could not parse a valid JSON object with a 'ranking' key from response: {response[:200]}...")
+                return [0.5] * expected_count
+                
+            json_str = json_match.group(0)
+            data = json.loads(json_str)
+            ranking = data.get("ranking")
+
+            # --- NEW LOGIC START ---
+            # Handle the "no match found" signal from the LLM.
+            # An empty list is the specific instruction we gave for invalid inputs.
+            if ranking == []:
+                logger.info(f"[OPENROUTER] Model identified input as clinically invalid. Returning zero scores for all {expected_count} candidates.")
+                return [0.0] * expected_count
+            # --- NEW LOGIC END ---
+
+            if ranking is None or not isinstance(ranking, list):
+                 logger.warning(f"[OPENROUTER] Parsed JSON but 'ranking' key is missing or not a list. Response: {json_str}")
+                 return [0.5] * expected_count
+
+            # Convert the ranking order into a list of scores
+            scores = [0.3] * expected_count  # Default score for any unranked items
+
+            # Ensure all items in ranking are integers
+            try:
+                ranking = [int(r) for r in ranking]
+            except (ValueError, TypeError):
+                logger.error(f"[OPENROUTER] Ranking contains non-integer values: {ranking}. Aborting score calculation.")
+                return [0.5] * expected_count
+
+            num_ranked_items = len(ranking)
+            if num_ranked_items == 0: # Should be caught above, but as a safeguard
+                 return [0.0] * expected_count
+
+            for rank_position, candidate_num in enumerate(ranking):
+                candidate_index = candidate_num - 1  # Convert to 0-based index
+                
+                if 0 <= candidate_index < expected_count:
+                    # Linear scoring: 1st place = 1.0, last place = ~0.1
+                    # This ensures the top-ranked item gets a high score.
+                    score = 1.0 - (rank_position * 0.9 / (num_ranked_items - 1)) if num_ranked_items > 1 else 1.0
+                    scores[candidate_index] = max(0.1, score)
                 else:
-                    ranking = None
+                    logger.warning(f"[OPENROUTER] Ranking contained an out-of-bounds candidate number: {candidate_num}")
+
+            if num_ranked_items < expected_count:
+                missing_count = expected_count - num_ranked_items
+                logger.warning(f"[OPENROUTER] Partial ranking received: {num_ranked_items}/{expected_count} candidates ranked. {missing_count} will have default score (0.3).")
             
-            if ranking and isinstance(ranking, list) and len(ranking) <= expected_count:
-                # Convert ranking to scores (1st place = highest score)
-                scores = [0.3] * expected_count  # Default score for unranked items
-                ranked_indices = set()
+            logger.debug(f"[OPENROUTER] Converted ranking {ranking} to scores successfully.")
+            return scores
                 
-                for rank_position, candidate_num in enumerate(ranking):
-                    try:
-                        candidate_index = int(candidate_num) - 1  # Convert to 0-based index
-                        if 0 <= candidate_index < expected_count:
-                            # Linear scoring: 1st place = 1.0, last place = 0.1
-                            # Use actual ranking length for scoring, not expected count
-                            score = 1.0 - (rank_position * 0.9 / (len(ranking) - 1)) if len(ranking) > 1 else 1.0
-                            scores[candidate_index] = max(0.1, score)
-                            ranked_indices.add(candidate_index)
-                    except (ValueError, TypeError, IndexError):
-                        logger.warning(f"[OPENROUTER] Invalid candidate number in ranking: {candidate_num}")
-                
-                # Log info about partial ranking
-                if len(ranking) < expected_count:
-                    missing_count = expected_count - len(ranking)
-                    logger.info(f"[OPENROUTER] Partial ranking received: {len(ranking)}/{expected_count} candidates ranked, {missing_count} given default score (0.3)")
-                
-                logger.debug(f"[OPENROUTER] Converted ranking {ranking} to scores successfully")
-                return scores
-            
-            # Fallback: try to extract ranking numbers from response
-            numbers = re.findall(r'\b\d+\b', response)
-            if len(numbers) == expected_count:
-                scores = [0.0] * expected_count
-                for rank_position, num_str in enumerate(numbers):
-                    try:
-                        candidate_index = int(num_str) - 1  # Convert to 0-based index
-                        if 0 <= candidate_index < expected_count:
-                            # Linear scoring: 1st place = 1.0, last place = 0.1
-                            score = 1.0 - (rank_position * 0.9 / (expected_count - 1)) if expected_count > 1 else 1.0
-                            scores[candidate_index] = max(0.1, score)
-                    except (ValueError, TypeError, IndexError):
-                        logger.warning(f"[OPENROUTER] Invalid candidate number: {num_str}")
-                
-                logger.debug(f"[OPENROUTER] Extracted ranking from text and converted to scores")
-                return scores
-            
-            logger.warning(f"[OPENROUTER] Could not parse ranking from response: {response[:200]}...")
+        except json.JSONDecodeError as e:
+            logger.error(f"[OPENROUTER] Failed to decode JSON from response. Error: {e}. Response snippet: {response[:200]}...")
             return [0.5] * expected_count
-            
         except Exception as e:
-            logger.error(f"[OPENROUTER] Ranking parsing error: {e}")
+            logger.error(f"[OPENROUTER] An unexpected error occurred during ranking parsing: {e}")
             return [0.5] * expected_count
     
     def test_connection(self) -> bool:

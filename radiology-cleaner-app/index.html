@@ -132,10 +132,23 @@
                     <!-- Demo Options -->
                     <div id="demoOptions" style="display: none; margin-bottom: 20px;">
                         <p style="margin: 0 0 15px 0; font-size: 0.95em; color: #555;">Choose your demo type:</p>
+                        
+                        <!-- Sample Size Control -->
+                        <div style="margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
+                            <label for="sampleSizeInput" style="display: block; font-size: 0.9em; font-weight: 600; color: #495057; margin-bottom: 6px;">
+                                Random Sample Size:
+                            </label>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="number" id="sampleSizeInput" min="1" max="1000" value="100" 
+                                       style="width: 80px; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9em; text-align: center;">
+                                <span style="font-size: 0.85em; color: #6c757d;">codes (1-1000)</span>
+                            </div>
+                            <small style="display: block; margin-top: 4px; font-size: 0.8em; color: #6c757d;">Number of random codes to sample from the live dataset</small>
+                        </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                             <button class="button primary large" id="runRandomDemoBtn" style="padding: 15px 20px; font-size: 1.0em; font-weight: 600;" disabled>
                                 <i class="fas fa-dice"></i> Random Sample
-                                <small style="display: block; font-size: 0.8em; font-weight: normal; margin-top: 4px; opacity: 0.9;">100 random codes from live dataset</small>
+                                <small id="randomSampleSubtext" style="display: block; font-size: 0.8em; font-weight: normal; margin-top: 4px; opacity: 0.9;">100 random codes from live dataset</small>
                             </button>
                             <button class="button secondary large" id="runFixedTestBtn" style="padding: 15px 20px; font-size: 1.0em; font-weight: 600;" disabled>
                                 <i class="fas fa-vial"></i> Fixed Test Suite

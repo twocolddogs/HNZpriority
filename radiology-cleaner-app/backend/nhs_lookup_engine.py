@@ -390,6 +390,21 @@ class NHSLookupEngine:
         # Get reranker scores using selected reranker
         rerank_scores = self.reranker_manager.get_rerank_scores(input_exam, candidate_texts, reranker_key)
         
+        # ### NEW LOGIC START ###
+        # Check for the "clinically invalid" signal from the reranker (all scores are 0.0)
+        is_clinically_invalid = all(score == 0.0 for score in rerank_scores)
+
+        if is_clinically_invalid:
+            logger.warning(f"[V4-PIPELINE] Input exam '{input_exam}' was flagged as clinically invalid by the reranker. Aborting match.")
+            # Return a specific error/status that app.py can handle
+            return {
+                'error': 'EXCLUDED_NON_CLINICAL',
+                'message': f'Reranker identified input as non-clinical: {input_exam}',
+                'confidence': 0.0,
+                'all_candidates': [] # No candidates are relevant
+            }
+        # ### NEW LOGIC END ###
+
         if not rerank_scores or len(rerank_scores) != len(candidate_entries):
             logger.warning(f"[V4-PIPELINE] Reranker {reranker_name} failed (got {len(rerank_scores) if rerank_scores else 0} scores for {len(candidate_entries)} candidates) - using neutral fallback")
             rerank_scores = [0.5] * len(candidate_entries)  # Neutral fallback
@@ -557,9 +572,16 @@ class NHSLookupEngine:
                             result['debug'] = {'error': f'Debug error: {str(e)}'}
                     
                     result['all_candidates'] = all_candidates_list
+                    
+                    # Apply semantic similarity safeguard to bilateral peer result
+                    result = self._apply_semantic_similarity_safeguard(result, input_exam)
+                    
                     return result
             
             result = self._format_match_result(best_match, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
+            
+            # Apply semantic similarity safeguard
+            result = self._apply_semantic_similarity_safeguard(result, input_exam)
             
             # Add debug information if requested (MUST be after _format_match_result)
             if debug:
@@ -1115,12 +1137,25 @@ class NHSLookupEngine:
         # PART 2: Calculate clinical context bonuses (from context_scoring config)
         if self.context_scoring:
             for context_type, details in self.context_scoring.items():
-                if isinstance(details, dict) and 'keywords' in details and 'bonus' in details:
+                if isinstance(details, dict) and 'keywords' in details:
                     keywords = details['keywords']
-                    if any(k in input_lower for k in keywords) and any(k in nhs_name_lower for k in keywords):
-                        clinical_bonus = details['bonus']
-                        total_bonus += clinical_bonus
-                        logger.debug(f"Applied {context_type} clinical context bonus: +{clinical_bonus}")
+                    bonus = details.get('bonus', 0.10)
+                    # Use a small, consistent penalty
+                    penalty = -0.15 
+
+                    # Check if the input contains any keyword for this context
+                    input_has_context = any(k in input_lower for k in keywords)
+                    # Check if the NHS candidate contains any keyword for this context
+                    nhs_has_context = any(k in nhs_name_lower for k in keywords)
+
+                    if input_has_context and nhs_has_context:
+                        # Both have the context, apply bonus
+                        total_bonus += bonus
+                        logger.debug(f"Applied {context_type} context bonus: +{bonus}")
+                    elif input_has_context and not nhs_has_context:
+                        # Input has context but candidate is missing it, apply penalty
+                        total_bonus += penalty
+                        logger.debug(f"Applied {context_type} context penalty: {penalty} (Input had context, candidate did not)")
         
         return total_bonus
     
@@ -1367,8 +1402,61 @@ class NHSLookupEngine:
                     set(entry_components.get('technique', [])) == target_techniques):
                 return entry
 
-        # Fallback to original find_bilateral_peer if not found in candidates
-        return self.find_bilateral_peer(specific_entry)
+        # No fallback - only return results from candidate_entries to maintain consistency
+        return None
+    
+    def _apply_semantic_similarity_safeguard(self, result: Dict, input_exam: str) -> Dict:
+        """
+        Apply semantic similarity safeguard to detect catastrophic mismatches.
+        
+        If similarity between input and output is catastrophically low, forces ambiguous=True
+        and lowers confidence to trigger secondary pipeline correction.
+        """
+        final_clean_name = result.get('clean_name', '')
+        if not final_clean_name or not input_exam:
+            return result
+            
+        try:
+            # Use the retriever processor to get embeddings for similarity check
+            input_embedding = self.retriever_processor.get_text_embedding(input_exam.lower())
+            output_embedding = self.retriever_processor.get_text_embedding(final_clean_name.lower())
+            
+            if input_embedding is not None and output_embedding is not None:
+                # Calculate cosine similarity
+                import numpy as np
+                similarity = np.dot(input_embedding, output_embedding) / (
+                    np.linalg.norm(input_embedding) * np.linalg.norm(output_embedding)
+                )
+                
+                # If semantic similarity is catastrophically low, force ambiguous and lower confidence
+                similarity_threshold = 0.3  # Very low threshold for catastrophic mismatches
+                if similarity < similarity_threshold:
+                    logger.warning(f"[SEMANTIC-SAFEGUARD] Catastrophic mismatch detected! Input: '{input_exam}' -> Output: '{final_clean_name}' (similarity: {similarity:.3f})")
+                    
+                    # Force ambiguous to trigger secondary pipeline
+                    result['ambiguous'] = True
+                    
+                    # Lower confidence to ensure secondary pipeline activation
+                    if 'components' in result and 'confidence' in result['components']:
+                        original_confidence = result['components']['confidence']
+                        result['components']['confidence'] = min(0.2, original_confidence)  # Cap at very low confidence
+                        logger.warning(f"[SEMANTIC-SAFEGUARD] Lowered confidence: {original_confidence:.3f} -> {result['components']['confidence']:.3f}")
+                    
+                    # Add metadata for transparency
+                    result['semantic_similarity_safeguard'] = {
+                        'applied': True,
+                        'similarity_score': float(similarity),
+                        'threshold': similarity_threshold,
+                        'reason': 'Catastrophic semantic mismatch detected'
+                    }
+                else:
+                    logger.debug(f"[SEMANTIC-SAFEGUARD] Similarity check passed: {similarity:.3f} (threshold: {similarity_threshold})")
+                
+        except Exception as e:
+            logger.error(f"[SEMANTIC-SAFEGUARD] Error in similarity check: {e}")
+            # Don't fail the entire request, just log and continue
+        
+        return result
     
     def _is_biopsy_ambiguous(self, input_exam: str, nhs_entry: dict) -> bool:
         """Check if this is an ambiguous biopsy case where modality preference was applied."""

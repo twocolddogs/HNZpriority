@@ -7,29 +7,68 @@ Uses multiple OpenRouter models to achieve consensus on uncertain classification
 import asyncio
 import json
 import logging
-from typing import Dict, List, Optional, Tuple, Any
+import re
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from enum import Enum
 import statistics
 import openai
 from datetime import datetime
 import os
+import yaml
+import threading
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Global cache for shared secondary pipeline instance
+_shared_secondary_pipeline = None
+_shared_config = None
+_pipeline_lock = threading.Lock()
+
+def get_secondary_pipeline(preloaded_config=None):
+    """
+    Get a shared SecondaryPipeline instance, reusing the same config to avoid repeated R2 fetches.
+    This function is thread-safe.
+    """
+    global _shared_secondary_pipeline, _shared_config
+    
+    # No need to lock for a simple read, it's fast and mostly safe
+    if _shared_secondary_pipeline is not None and (preloaded_config is None or preloaded_config == _shared_config):
+        return _shared_secondary_pipeline
+
+    # Use a lock for the expensive creation/re-creation part
+    with _pipeline_lock:
+        # Double-check inside the lock to prevent re-creation if another thread just finished
+        if _shared_secondary_pipeline is not None and (preloaded_config is None or preloaded_config == _shared_config):
+            return _shared_secondary_pipeline
+
+        # Now we are sure we need to create or re-create the instance
+        if preloaded_config is not None and preloaded_config != _shared_config:
+            logger.info("Creating new shared SecondaryPipeline instance with preloaded config")
+            _shared_config = preloaded_config
+            _shared_secondary_pipeline = SecondaryPipeline(preloaded_config=preloaded_config)
+        
+        elif _shared_secondary_pipeline is None:
+            logger.info("Creating first shared SecondaryPipeline instance")
+            _shared_secondary_pipeline = SecondaryPipeline(preloaded_config=preloaded_config)
+            _shared_config = _shared_secondary_pipeline.config
+        
+        return _shared_secondary_pipeline
 
 class ModelType(Enum):
     """Available OpenRouter models for ensemble processing"""
-    CLAUDE_SONNET = "anthropic/claude-3.5-sonnet"
+    CLAUDE_SONNET = "anthropic/claude-sonnet-4"
     GPT4_TURBO = "openai/gpt-4-turbo"
-    GEMINI_PRO = "google/gemini-2.5-pro"
+    GPT4_MINI = "openai/gpt-4.1-mini"
 
 @dataclass
 class ModelResponse:
-    """Response from a single model"""
+    """Response from a single model, aligned with the new selection prompt"""
     model: str
-    modality: str
+    best_match_snomed_id: Optional[str]
+    best_match_procedure_name: Optional[str]
     confidence: float
     reasoning: str
     raw_response: str
@@ -37,9 +76,11 @@ class ModelResponse:
 
 @dataclass
 class EnsembleResult:
-    """Final ensemble result with consensus"""
+    """Final ensemble result with consensus, aligned with the new selection prompt"""
     original_result: Dict[str, Any]
-    consensus_modality: str
+    consensus_best_match_snomed_id: Optional[str]
+    consensus_best_match_procedure_name: Optional[str]
+    consensus_snomed_fsn: Optional[str]
     consensus_confidence: float
     model_responses: List[ModelResponse]
     agreement_score: float
@@ -54,175 +95,163 @@ class EnsembleResult:
 class OpenRouterEnsemble:
     """Ensemble system using multiple OpenRouter models"""
     
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.getenv('OPENROUTER_API_KEY')
+    def __init__(self, config: Dict):
+        self.config = config.get('secondary_pipeline', {})
+        self.api_key = os.getenv('OPENROUTER_API_KEY')
+
         if not self.api_key:
-            raise ValueError("OpenRouter API key required")
-        
-        # Configure OpenAI client for OpenRouter
+            raise ValueError("OPENROUTER_API_KEY environment variable not set.")
+
         self.client = openai.AsyncOpenAI(
             api_key=self.api_key,
             base_url="https://openrouter.ai/api/v1"
         )
         
-        self.models = [
+        self.models = self.config.get('models', [
             ModelType.CLAUDE_SONNET.value,
             ModelType.GPT4_TURBO.value, 
-            ModelType.GEMINI_PRO.value
-        ]
+            ModelType.GPT4_MINI.value
+        ])
     
     async def query_model(self, model: str, exam_name: str, context: Dict) -> ModelResponse:
-        """Query a single model for exam classification"""
+        """Query a single model for exam classification using forced tool-use (function calling)."""
         start_time = asyncio.get_event_loop().time()
         
-        # Enhanced prompt with context from original processing
-        prompt = self._build_enhanced_prompt(exam_name, context)
+        # The user prompt is now much simpler. It only provides the raw data.
+        # The complex instructions are now part of the tool definition.
+        user_prompt = f"Please analyze the following radiology exam and select the best match from the candidates.\n\nInput Exam: `{exam_name}`\n\nCandidate Procedures:\n{json.dumps(context.get('similar_exams', [])[:10], indent=2)}"
         
+        system_prompt = self.config.get('system_prompt', '') # The original system prompt is fine.
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+
+        # Define the "tool" (function) that we will force the model to call.
+        # This provides a rigid schema for the output JSON.
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "select_best_match",
+                    "description": "Selects the best SNOMED procedure from a list of candidates that matches the input exam based on the principle of parsimony.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "best_match_snomed_id": {
+                                "type": ["string", "null"],
+                                "description": "The SNOMED ID of the chosen procedure. Use null if no suitable match is found."
+                            },
+                            "best_match_procedure_name": {
+                                "type": ["string", "null"],
+                                "description": "The primary_name of the chosen procedure. Use null if no suitable match is found."
+                            },
+                            "confidence": {
+                                "type": "number",
+                                "description": "A float between 0.0 and 1.0 representing confidence. Use 0.0 if no match is found."
+                            },
+                            "reasoning": {
+                                "type": "string",
+                                "description": "Brief but specific justification for the choice, explaining why it is the most parsimonious match based on the FSN."
+                            }
+                        },
+                        "required": ["best_match_snomed_id", "best_match_procedure_name", "confidence", "reasoning"]
+                    }
+                }
+            }
+        ]
+
         try:
             response = await self.client.chat.completions.create(
                 model=model,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.1,  # Low temperature for consistency
-                max_tokens=500
+                messages=messages,
+                tools=tools,
+                tool_choice={"type": "function", "function": {"name": "select_best_match"}}, # This FORCES the model to use our function.
+                temperature=self.config.get('temperature', 0.0),
+                max_tokens=self.config.get('max_tokens', 800) # Give a bit more room for tool use
             )
             
             processing_time = asyncio.get_event_loop().time() - start_time
-            content = response.choices[0].message.content
             
-            # Parse structured response
-            parsed = self._parse_model_response(content)
-            
+            # The JSON is now in a different place in the response object
+            tool_call = response.choices[0].message.tool_calls[0]
+            if tool_call.function.name == "select_best_match":
+                content = tool_call.function.arguments # This is a guaranteed JSON string
+                parsed = json.loads(content)
+            else:
+                raise ValueError(f"Model called an unexpected tool: {tool_call.function.name}")
+
             return ModelResponse(
                 model=model,
-                modality=parsed['modality'],
-                confidence=parsed['confidence'],
-                reasoning=parsed['reasoning'],
+                best_match_snomed_id=parsed.get('best_match_snomed_id'),
+                best_match_procedure_name=parsed.get('best_match_procedure_name'),
+                confidence=float(parsed.get('confidence', 0.0)),
+                reasoning=parsed.get('reasoning', 'No reasoning provided'),
                 raw_response=content,
                 processing_time=processing_time
             )
             
         except Exception as e:
-            logger.error(f"Error querying {model}: {e}")
+            logger.error(f"Error querying {model} with tool-use: {e}", exc_info=True)
             return ModelResponse(
                 model=model,
-                modality="UNKNOWN",
+                best_match_snomed_id=None,
+                best_match_procedure_name=None,
                 confidence=0.0,
-                reasoning=f"Error: {str(e)}",
+                reasoning=f"Error during tool-use API call: {str(e)}",
                 raw_response="",
                 processing_time=asyncio.get_event_loop().time() - start_time
             )
-    
-    def _build_enhanced_prompt(self, exam_name: str, context: Dict) -> str:
-        """Build enhanced prompt with context from original processing"""
-        
-        original_modality = context.get('original_modality', 'UNKNOWN')
-        original_confidence = context.get('original_confidence', 0.0)
-        similar_exams = context.get('similar_exams', [])
-        
-        json_format = '''
-{{
-    "modality": "YOUR_CLASSIFICATION",
-    "confidence": 0.XX,
-    "reasoning": "Detailed explanation of your classification logic"
-}}
-'''
 
-        prompt = f"""You are a radiology informatics expert tasked with accurately classifying medical imaging exams.
-
-EXAM TO CLASSIFY: "{exam_name}"
-
-CONTEXT FROM INITIAL PROCESSING:
-- Original Classification: {original_modality}
-- Original Confidence: {original_confidence:.2f}
-- This exam was flagged for review due to low confidence (<80%)
-
-SIMILAR EXAMS FOR REFERENCE:
-{self._format_similar_exams(similar_exams)}
-
-AVAILABLE MODALITIES:
-- XR (X-Ray/Radiography)
-- CT (Computed Tomography) 
-- MR (Magnetic Resonance Imaging)
-- US (Ultrasound)
-- FL (Fluoroscopy)
-- IR (Interventional Radiology)
-- Mamm (Mammography)
-- NM (Nuclear Medicine)
-- PET (Positron Emission Tomography)
-- Other (Procedures not fitting standard modalities)
-
-INSTRUCTIONS:
-1. Analyze the exam name carefully, considering medical terminology and context
-2. Consider the original classification and whether it seems reasonable
-3. Use the similar exams as reference points for pattern recognition
-4. Provide your classification with confidence score (0.0-1.0)
-5. Explain your reasoning clearly
-
-REQUIRED OUTPUT FORMAT (JSON):
-{json_format}
-"""
-        return prompt
-    
-    def _format_similar_exams(self, similar_exams: List[Dict]) -> str:
-        """Format similar exams for context"""
-        if not similar_exams:
-            return "No similar exams provided"
-        
-        formatted = []
-        for exam in similar_exams[:5]:  # Limit to top 5
-            formatted.append(f"- \"{exam.get('name', '')}\" → {exam.get('modality', 'UNKNOWN')}")
-        
-        return "\n".join(formatted)
-    
     def _parse_model_response(self, content: str) -> Dict:
-        """Parse structured response from model"""
+        """Robustly parse the JSON object from a model's potentially messy response."""
         try:
-            # Try to extract JSON from response
-            start = content.find('{')
-            end = content.rfind('}') + 1
+            # --- START OF NEW, MORE ROBUST LOGIC ---
             
-            if start >= 0 and end > start:
-                json_str = content[start:end]
-                parsed = json.loads(json_str)
-                
-                return {
-                    'modality': parsed.get('modality', 'UNKNOWN').upper(),
-                    'confidence': float(parsed.get('confidence', 0.0)),
-                    'reasoning': parsed.get('reasoning', 'No reasoning provided')
-                }
-        except:
-            logger.warning("Failed to parse structured response, attempting fallback")
-        
-        # Fallback parsing
-        return {
-            'modality': 'UNKNOWN',
-            'confidence': 0.0,
-            'reasoning': 'Failed to parse response'
-        }
+            # Find the first opening curly brace to locate the start of the JSON
+            json_start_index = content.find('{')
+            if json_start_index == -1:
+                raise ValueError("No JSON object start '{' found in response.")
+
+            # Create a substring from the start of the JSON object
+            json_str = content[json_start_index:]
+            
+            # Use the json decoder to find the first complete JSON object in the string
+            decoder = json.JSONDecoder()
+            parsed, _ = decoder.raw_decode(json_str)
+            
+            # --- END OF NEW LOGIC ---
+
+            # Safely get and convert confidence
+            confidence_val = parsed.get('confidence')
+            confidence = float(confidence_val) if confidence_val is not None else 0.0
+
+            return {
+                'best_match_snomed_id': parsed.get('best_match_snomed_id'),
+                'best_match_procedure_name': parsed.get('best_match_procedure_name'),
+                'confidence': confidence,
+                'reasoning': parsed.get('reasoning', 'No reasoning provided')
+            }
+        except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
+            logger.warning(f"Failed to parse structured response: {e}. Content: {content}")
+            return {'best_match_snomed_id': None, 'best_match_procedure_name': None, 'confidence': 0.0, 'reasoning': f'Failed to parse response: {str(e)}'}
     
     async def process_ensemble(self, exam_name: str, context: Dict) -> EnsembleResult:
         """Process exam through all models and generate ensemble result"""
-        
-        # Query all models concurrently
-        tasks = [
-            self.query_model(model, exam_name, context)
-            for model in self.models
-        ]
-        
+        tasks = [self.query_model(model, exam_name, context) for model in self.models]
         model_responses = await asyncio.gather(*tasks)
         
-        # Calculate consensus
-        consensus_result = self._calculate_consensus(model_responses)
+        consensus_result = self._calculate_consensus(model_responses, context.get('similar_exams', []))
         
-        # Check if result improved over original
         original_confidence = context.get('original_confidence', 0.0)
         improved = consensus_result['confidence'] > original_confidence
         
         return EnsembleResult(
-            original_result=context,
-            consensus_modality=consensus_result['modality'],
+            original_result=context.get('original_result', {}),
+            consensus_best_match_snomed_id=consensus_result['best_match_snomed_id'],
+            consensus_best_match_procedure_name=consensus_result['best_match_procedure_name'],
+            consensus_snomed_fsn=consensus_result.get('snomed_fsn'),
             consensus_confidence=consensus_result['confidence'],
             model_responses=model_responses,
             agreement_score=consensus_result['agreement_score'],
@@ -231,142 +260,126 @@ REQUIRED OUTPUT FORMAT (JSON):
             timestamp=datetime.now().isoformat()
         )
     
-    def _calculate_consensus(self, responses: List[ModelResponse]) -> Dict:
-        """Calculate consensus from multiple model responses"""
-        
-        # Filter out error responses
-        valid_responses = [r for r in responses if r.modality != "UNKNOWN"]
+    def _calculate_consensus(self, responses: List[ModelResponse], candidates: List[Dict]) -> Dict:
+        """Calculate consensus based on the selected best match SNOMED ID."""
+        valid_responses = [r for r in responses if r.best_match_snomed_id is not None]
         
         if not valid_responses:
-            return {
-                'modality': 'UNKNOWN',
-                'confidence': 0.0,
-                'agreement_score': 0.0,
-                'reasoning': 'All models failed to provide valid responses'
-            }
-        
-        # Count modality votes
-        modality_votes = {}
-        confidence_by_modality = {}
-        
-        for response in valid_responses:
-            modality = response.modality
+            return {'best_match_snomed_id': None, 'best_match_procedure_name': None, 'confidence': 0.0, 'agreement_score': 0.0, 'reasoning': 'All models failed to provide a valid selection.'}
             
-            if modality not in modality_votes:
-                modality_votes[modality] = []
-                confidence_by_modality[modality] = []
+        votes = {}
+        for r in valid_responses:
+            snomed_id = str(r.best_match_snomed_id)
+            if snomed_id not in votes:
+                votes[snomed_id] = []
+            votes[snomed_id].append(r)
             
-            modality_votes[modality].append(response)
-            confidence_by_modality[modality].append(response.confidence)
+        winning_snomed_id = max(votes.keys(), key=lambda snomed: (len(votes[snomed]), statistics.mean(r.confidence for r in votes[snomed])))
         
-        # Find consensus modality (most votes, then highest average confidence)
-        consensus_modality = max(
-            modality_votes.keys(),
-            key=lambda m: (len(modality_votes[m]), statistics.mean(confidence_by_modality[m]))
-        )
-        
-        # Calculate consensus confidence (weighted average)
-        consensus_responses = modality_votes[consensus_modality]
-        total_confidence = sum(r.confidence for r in consensus_responses)
-        consensus_confidence = total_confidence / len(consensus_responses)
-        
-        # Calculate agreement score
+        consensus_responses = votes[winning_snomed_id]
+        consensus_confidence = statistics.mean(r.confidence for r in consensus_responses)
         agreement_score = len(consensus_responses) / len(valid_responses)
         
-        # Generate simplified reasoning for logs
-        model_names = [r.model.split('/')[-1] for r in consensus_responses]
-        final_reasoning = f"Consensus ({len(consensus_responses)}/{len(valid_responses)} models agree): {', '.join(model_names)}"
-        
+        winning_candidate = next((c for c in candidates if str(c.get('snomed_id')) == winning_snomed_id), None)
+        consensus_procedure_name = winning_candidate.get('primary_name') if winning_candidate else "Unknown Procedure"
+        consensus_fsn = winning_candidate.get('snomed_fsn') if winning_candidate else None
+
+        agreeing_models = [r.model.split('/')[-1] for r in consensus_responses]
+        combined_reasoning = f"Consensus choice is SNOMED ID {winning_snomed_id} with {agreement_score:.0%} agreement from models: {', '.join(agreeing_models)}.\n\n"
+        for r in consensus_responses:
+            combined_reasoning += f"--- Reasoning from {r.model.split('/')[-1]} (Confidence: {r.confidence:.2f}) ---\n{r.reasoning}\n\n"
+            
         return {
-            'modality': consensus_modality,
+            'best_match_snomed_id': winning_snomed_id,
+            'best_match_procedure_name': consensus_procedure_name,
+            'snomed_fsn': consensus_fsn,
             'confidence': consensus_confidence,
             'agreement_score': agreement_score,
-            'reasoning': final_reasoning
+            'reasoning': combined_reasoning.strip()
         }
 
 class SecondaryPipeline:
     """Main secondary pipeline coordinator"""
     
-    def __init__(self, config: Dict = None):
-        self.config = config or self._default_config()
-        self.ensemble = OpenRouterEnsemble(self.config.get('openrouter_api_key'))
+    def __init__(self, preloaded_config=None):
+        self.config = preloaded_config if preloaded_config is not None else self._load_config()
+        self.ensemble = OpenRouterEnsemble(config=self.config)
         
-    def _default_config(self) -> Dict:
-        """Default configuration for secondary pipeline"""
-        return {
-            'confidence_threshold': 0.8,
-            'openrouter_api_key': os.getenv('OPENROUTER_API_KEY'),
-            'max_concurrent_requests': 5,
-            'output_path': os.path.join(os.environ.get('RENDER_DISK_PATH', '/tmp'), 'secondary_pipeline_results.json')
-        }
-    
+    def _load_config(self) -> Dict:
+        """Load configuration, preferring R2 but falling back to local file."""
+        try:
+            from config_manager import get_config
+            config_manager = get_config()
+            if config_manager.force_r2_reload():
+                logger.info("Successfully loaded latest configuration from R2 for Secondary Pipeline.")
+                return config_manager.get_full_config()
+            else:
+                raise RuntimeError("Failed to fetch config from R2.")
+        except Exception as e:
+            logger.warning(f"Could not load config from R2 ({e}), falling back to local file.")
+            config_path = os.path.join(os.path.dirname(__file__), 'training_testing', 'config', 'config.yaml')
+            try:
+                with open(config_path, 'r') as f:
+                    conf = yaml.safe_load(f)
+                    logger.info(f"Successfully loaded local config from {config_path}")
+                    return conf
+            except Exception as file_e:
+                logger.error(f"CRITICAL: Failed to load local config file: {file_e}")
+                return {}
+
     async def process_low_confidence_results(self, results: List[Dict]) -> List[EnsembleResult]:
         """Process list of low-confidence results through ensemble"""
-
-        # The 'results' list is already filtered for low confidence by the integration layer.
-        # No need to filter again.
         low_confidence = results
-
         logger.info(f"Processing {len(low_confidence)} low-confidence results")
         if not low_confidence:
             return []
 
-        # Process in batches to respect rate limits
         ensemble_results = []
-        batch_size = self.config['max_concurrent_requests']
+        batch_size = self.config.get('secondary_pipeline', {}).get('max_concurrent_requests', 5)
 
         for i in range(0, len(low_confidence), batch_size):
             batch = low_confidence[i:i + batch_size]
-
             tasks = []
             for result in batch:
-                # Extract data from the nested structure provided by the primary pipeline
-                components = result.get('output', {}).get('components', {})
-                exam_name = components.get('exam_name', 'Unknown Exam')
+                output_data = result.get('output', {})
                 context = {
-                    'original_modality': components.get('modality', 'UNKNOWN'),
-                    'original_confidence': components.get('confidence', 0.0),
-                    'similar_exams': components.get('similar_exams', []),
+                    'original_confidence': output_data.get('components', {}).get('confidence', 0.0),
+                    'similar_exams': output_data.get('all_candidates', []),
                     'original_result': result
                 }
-                tasks.append(self.ensemble.process_ensemble(exam_name, context))
+                tasks.append(self.ensemble.process_ensemble(output_data.get('exam_name', 'Unknown'), context))
 
             batch_results = await asyncio.gather(*tasks)
             ensemble_results.extend(batch_results)
-
-            if len(low_confidence) > 0:
-                logger.info(f"Completed batch {i//batch_size + 1}/{(len(low_confidence) - 1) // batch_size + 1}")
+            logger.info(f"Completed batch {i//batch_size + 1}/{(len(low_confidence) - 1) // batch_size + 1}")
 
         return ensemble_results
     
     def save_results(self, results: List[EnsembleResult], output_path: str = None):
         """Save ensemble results to file"""
-        output_path = output_path or self.config['output_path']
+        path = output_path or self.config.get('secondary_pipeline', {}).get('output_path', '/tmp/secondary_pipeline_results.json')
+        serializable_results = [res.to_dict() for res in results]
         
-        serializable_results = [asdict(result) for result in results]
+        with open(path, 'w') as f:
+            json.dump({'timestamp': datetime.now().isoformat(), 'total_processed': len(results), 'results': serializable_results}, f, indent=2)
         
-        with open(output_path, 'w') as f:
-            json.dump({
-                'timestamp': datetime.now().isoformat(),
-                'total_processed': len(results),
-                'results': serializable_results
-            }, f, indent=2)
-        
-        logger.info(f"Results saved to {output_path}")
+        logger.info(f"Results saved to {path}")
     
     def generate_improvement_report(self, results: List[EnsembleResult]) -> Dict:
         """Generate report on improvements achieved"""
-        
+        if not results:
+            return {'total_processed': 0}
+
         improved_count = sum(1 for r in results if r.improved)
         total_count = len(results)
         
-        original_avg_confidence = statistics.mean([
-            r.original_result.get('original_confidence', 0.0) for r in results
-        ])
+        original_confidences = [r.original_result.get('output', {}).get('components', {}).get('confidence', 0.0) for r in results]
+        original_avg_confidence = statistics.mean(original_confidences) if original_confidences else 0.0
         
-        new_avg_confidence = statistics.mean([r.consensus_confidence for r in results])
+        new_confidences = [r.consensus_confidence for r in results]
+        new_avg_confidence = statistics.mean(new_confidences) if new_confidences else 0.0
         
-        high_agreement = sum(1 for r in results if r.agreement_score >= 0.67)  # 2/3 agreement
+        high_agreement = sum(1 for r in results if r.agreement_score >= 0.67)
         
         return {
             'total_processed': total_count,
@@ -379,40 +392,78 @@ class SecondaryPipeline:
             'high_agreement_rate': high_agreement / total_count if total_count > 0 else 0
         }
 
+
+def get_secondary_pipeline(preloaded_config=None):
+    """
+    Get a shared SecondaryPipeline instance, reusing the same config to avoid repeated R2 fetches.
+    If preloaded_config is provided, it will be used for the shared instance.
+    """
+    global _shared_secondary_pipeline, _shared_config
+    
+    # If we have a preloaded config and it's different from our cached config, update the shared instance
+    if preloaded_config is not None and preloaded_config != _shared_config:
+        logger.info("Creating new shared SecondaryPipeline instance with preloaded config")
+        _shared_config = preloaded_config
+        _shared_secondary_pipeline = SecondaryPipeline(preloaded_config=preloaded_config)
+    # If we don't have a shared instance yet, create one
+    elif _shared_secondary_pipeline is None:
+        logger.info("Creating first shared SecondaryPipeline instance")
+        _shared_secondary_pipeline = SecondaryPipeline(preloaded_config=preloaded_config)
+        _shared_config = _shared_secondary_pipeline.config
+    
+    return _shared_secondary_pipeline
+
 # Example usage and integration
 async def run_secondary_pipeline(primary_results_file: str):
     """Example function showing how to run the secondary pipeline"""
     
-    # Load primary results
-    with open(primary_results_file, 'r') as f:
-        primary_results = json.load(f)
-    
-    # Initialize pipeline
+    try:
+        with open(primary_results_file, 'r') as f:
+            primary_results_data = json.load(f)
+            # Assuming the results are in a top-level key, e.g., 'results'
+            primary_results = primary_results_data.get('results', primary_results_data)
+            if not isinstance(primary_results, list):
+                raise ValueError("Primary results file should contain a list of results.")
+    except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
+        logger.error(f"Error loading or parsing primary results file: {e}")
+        return
+
     pipeline = SecondaryPipeline()
     
-    # Process low-confidence results
-    ensemble_results = await pipeline.process_low_confidence_results(primary_results)
+    # Filter for low-confidence results based on the pipeline's config
+    confidence_threshold = pipeline.config.get('confidence_threshold', 0.8)
+    low_confidence_results = [
+        r for r in primary_results 
+        if r.get('output', {}).get('components', {}).get('confidence', 1.0) < confidence_threshold
+    ]
+
+    if not low_confidence_results:
+        logger.info("No low-confidence results to process.")
+        return
+
+    ensemble_results = await pipeline.process_low_confidence_results(low_confidence_results)
     
-    # Save results
-    pipeline.save_results(ensemble_results)
-    
-    # Generate report
-    report = pipeline.generate_improvement_report(ensemble_results)
-    
-    logger.info("Secondary Pipeline Report:")
-    logger.info(f"Processed: {report['total_processed']} exams")
-    logger.info(f"Improved: {report['improved_results']} ({report['improvement_rate']:.1%})")
-    logger.info(f"Confidence boost: {report['confidence_improvement']:.3f}")
-    logger.info(f"High agreement: {report['high_agreement_results']} ({report['high_agreement_rate']:.1%})")
-    
-    return ensemble_results, report
+    if ensemble_results:
+        pipeline.save_results(ensemble_results)
+        report = pipeline.generate_improvement_report(ensemble_results)
+        
+        logger.info("--- Secondary Pipeline Report ---")
+        logger.info(f"Total Exams Processed: {report['total_processed']}")
+        logger.info(f"Improved Results: {report['improved_results']} ({report['improvement_rate']:.1%})")
+        logger.info(f"Avg. Confidence Change: {report['original_avg_confidence']:.3f} -> {report['new_avg_confidence']:.3f} (Boost: {report['confidence_improvement']:.3f})")
+        logger.info(f"High Agreement (>66%): {report['high_agreement_results']} ({report['high_agreement_rate']:.1%})")
+        logger.info("---------------------------------")
+        
+        return ensemble_results, report
+    else:
+        logger.info("No results were generated by the secondary pipeline.")
+        return [], {}
 
 if __name__ == "__main__":
-    # Example usage
     import sys
     
     if len(sys.argv) < 2:
-        print("Usage: python3 secondary_pipeline.py <primary_results_file>")
+        print("Usage: python3 secondary_pipeline.py <primary_results_file.json>")
         sys.exit(1)
     
     asyncio.run(run_secondary_pipeline(sys.argv[1]))

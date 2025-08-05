@@ -1,5 +1,5 @@
 # ====================================================================================
-# UNIFIED SCORING & PREPROCESSING CONFIGURATION (V3.1 - AUGMENTED)
+# UNIFIED SCORING & PREPROCESSING CONFIGURATION (V3.2 - ROBUST PROMPTING)
 # ====================================================================================
 # This file centralizes all business logic, weights, rules, and abbreviations for the
 # radiology exam standardization engine. It is the "brain" of the application.
@@ -19,7 +19,7 @@ scoring:
 
   # Number of initial candidates to retrieve from the fast vector search (FAISS).
   # A larger number might find a better match but increases processing time for the scoring stage.
-  retriever_top_k: 20
+  retriever_top_k: 15
 
   # --- COMPONENT WEIGHTS ---
   # These weights determine the importance of each structured part of the exam name when
@@ -32,12 +32,14 @@ scoring:
     technique: 0.10    # Importance of matching specific techniques (e.g., 'MRCP', 'SPECT').
 
   # --- FINAL SCORE WEIGHTS ---
-  # V4 Architecture: Reranker-specific weights optimize each model types strengths
+  # V3 Architecture: These weights combine the 'component_score' (rules-based), 'reranker_score' (cross-encoder),
+  # and 'complexity_score' (appropriateness matching) to produce the final confidence score.
   weights_final:
-    # Default weights (fallback for any unlisted rerankers)
-    component: 0.55    # Rules-based component matching
-    reranker: 0.45     # Cross-encoder/LLM reranking score
-
+    component: 0.65    # How much to trust the structured component match (rules-based). Increased to counteract reranker dominance.
+    reranker: 0.35     # How much to trust the MedCPT cross-encoder reranking score. Reduced to give component scoring more influence.
+    # complexity: 0.15   # How much to trust complexity appropriateness (simple inputs prefer simple FSNs).
+    # frequency: 0.10  # This appears to be a planned or deprecated feature for popularity-based scoring.
+    
     # Reranker-specific weights (optimal tuning per model type)
     reranker_specific:
       # NLP Models - Need more component scoring help due to limited clinical reasoning
@@ -140,26 +142,6 @@ scoring:
   # For a generic input (e.g., "CT"), this gives a bonus to a generic candidate (e.g., "CT without contrast").
   anatomy_specificity_preference: true
   generic_anatomy_preference_bonus: 0.15
-
-  # --- DEXA GENERIC PREFERENCE ---
-  # CRITICAL: When input is generic "DEXA" without anatomical qualifiers, strongly prefer generic bone densitometry
-  dexa_generic_preference:
-    enable: true
-    generic_preference_bonus: 0.50   # Strong bonus for generic "CT Bone densitometry" when input lacks anatomy
-    specific_penalty: -0.25          # Penalty for specific anatomical DEXA entries when input is generic
-    generic_dexa_indicators:         # Terms that indicate generic DEXA intent
-      - "dexa"
-      - "bone density"
-      - "bone densitometry"
-      - "dual energy"
-      - "dxa"
-    generic_nhs_entries:             # NHS entries that should get the generic bonus
-      - "CT Bone densitometry"
-      - "Bone densitometry"
-    specific_nhs_patterns:           # NHS patterns that should get penalized when input is generic
-      - "DEXA Scan of.*"
-      - "Dual energy.*absorptiometry.*of.*"
-      - "Bone mineral densitometry.*"
 
   # --- VESSEL TYPE PREFERENCE ---
   # CRITICAL: When input says "angiography" (generic), prefer arterial over venous studies
@@ -292,7 +274,7 @@ scoring:
     specificity_match_bonus: 0.15      # Bonus when clinical specificity levels match
     generic_over_specific_penalty: -0.10  # Penalty when NHS is generic but input is specific
     
-    # Clinical specificity patterns (specific â†’ generic hierarchy)
+    # Clinical specificity patterns (specific → generic hierarchy)
     clinical_specificity_patterns:
       # Pregnancy/Obstetric specificity
       pregnancy_specific:
@@ -321,15 +303,19 @@ scoring:
 # Defines a "partial credit" score for related but different modalities.
 # ====================================================================================
 modality_similarity:
-  CT: { CECT: 0.9, DECT: 0.8, HRCT: 0.9, PET: 0.7, DEXA: 0.85, DXA: 0.85, XR: 0.2, Fluoroscopy: 0.1 }
+  CT: { CECT: 0.9, DECT: 0.8, HRCT: 0.9, PET: 0.7, XR: 0.2, Fluoroscopy: 0.1 }
   MR: { MRI: 1.0, MRA: 0.95, FMRI: 0.8, CT: 0.1 }
   XR: { "X-ray": 1.0, Xray: 1.0, MG: 0.5, FL: 0.6, DEXA: 0.9 }
   US: { Ultrasound: 1.0, USS: 0.9, MRI: 0.1 }
   MG: { Mammography: 1.0, Mammogram: 1.0, Tomosynthesis: 0.9, XR: 0.5 }
   NM: { "Nuclear Medicine": 1.0, Scintigraphy: 0.8, SPECT: 0.9, PET: 0.4 }
-  PET: { "PET/CT": 0.95, CT: 0.7 }
-  DEXA: { DXA: 1.0, "Bone Densitometry": 1.0, CT: 0.95, XR: 0.2 }
-  DXA: { DEXA: 1.0, "Bone Densitometry": 1.0, CT: 0.95, XR: 0.2 }
+  PET: { "PET/CT": 0.95, "PET-CT": 1.0, CT: 0.7 }
+  "PET/CT": { "PET-CT": 1.0, PET: 0.95, CT: 0.7, NM: 0.4 }
+  "PET-CT": { "PET/CT": 1.0, PET: 0.95, CT: 0.7, NM: 0.4 }
+  "PET/MRI": { "PET-MRI": 1.0, PET: 0.90, MR: 0.6, NM: 0.4 }
+  "PET-MRI": { "PET/MRI": 1.0, PET: 0.90, MR: 0.6, NM: 0.4 }
+  DEXA: { DXA: 1.0, "Bone Densitometry": 1.0, XR: 0.2 }
+  DXA: { DEXA: 1.0, "Bone Densitometry": 1.0, XR: 0.2 }
   IR: { Fluoroscopy: 0.6, CT: 0.2, US: 0.2 }
   FL: { Fluoroscopy: 1.0, XR: 0.6, IR: 0.6 } # Assuming FL is Fluoroscopy
 
@@ -340,15 +326,15 @@ modality_similarity:
 # ====================================================================================
 context_scoring:
   emergency_keywords: ["emergency", "urgent", "stat", "trauma", "acute"]
-  emergency_bonus: 0.10
+  emergency_bonus: 0.15
   screening_keywords: ["screening", "surveillance", "routine", "annual"]
-  screening_bonus: 0.08
+  screening_bonus: 0.15
   intervention_keywords: ["biopsy", "drainage", "injection", "aspiration", "guided", "picc", "line"]
-  intervention_bonus: 0.12
+  intervention_bonus: 0.20
   pregnancy_keywords: ["obstetric", "pregnancy", "prenatal", "fetal", "trimester"]
-  pregnancy_bonus: 0.15
+  pregnancy_bonus: 0.25
   paediatric_keywords: ["paediatric", "pediatric", "paed", "peds", "child", "infant", "newborn"]
-  paediatric_bonus: 0.10
+  paediatric_bonus: 0.20
 
 # ====================================================================================
 # PREPROCESSING CONFIGURATION
@@ -367,8 +353,8 @@ preprocessing:
     "C spine": "cervical spine"            
     "L spine": "lumbar spine"              
     "T spine": "thoracic spine"            
-    "Bone density": "dexa bone densitometry"
-    "Bone density scan": "dexa bone densitometry"
+    "Bone density": "dexa"
+    "Bone density scan": "dexa"
     "Renogram": "renogram"                
     "Xray": "x-ray"                        
 
@@ -435,16 +421,31 @@ preprocessing:
     "CSP": "cervical spine"
     "THY": "thyroid"
     "REN": "renal"
+    "IAM": "internal auditory meatus"
+    "POCUS": "point of care ultrasound"
     
     # --- MODALITY & TECHNIQUE ---
-    "MRCP": "magnetic resonance cholangiopancreatography biliary pancreas liver"
-    "DEXA": "dexa bone densitometry"
-    "DXA": "dexa bone densitometry" # Normalize DXA to DEXA
+    "MRCP": "magnetic resonance cholangiopancreatography"
+    "DEXA": "dual-energy x-ray absorptiometry"
+    "DXA": "dexa" # Normalize DXA to DEXA
     "NM": "nuclear medicine"
     "IR": "interventional radiology"
     "FL": "fluoroscopy"
+    "HRCT": "high resolution computed tomography"
     "Mamm": "mammography"
     "PET": "positron emission tomography"
+    "PET-CT": "PET/CT"  # Normalize hyphenated to slash notation
+    "PET CT": "PET/CT"  # Normalize spaced to slash notation
+    "PETCT": "PET/CT"   # Normalize concatenated to slash notation
+    "positron emission tomography-CT": "PET/CT"  # Handle expanded PET + CT combination
+    "positron emission tomography CT": "PET/CT"   # Handle expanded PET + CT combination
+    "positron emission tomography/CT": "PET/CT"   # Handle expanded PET + CT combination
+    "PET-MRI": "PET/MRI"  # Normalize hyphenated to slash notation
+    "PET MRI": "PET/MRI"  # Normalize spaced to slash notation
+    "PETMRI": "PET/MRI"   # Normalize concatenated to slash notation
+    "positron emission tomography-MRI": "PET/MRI"  # Handle expanded PET + MRI combination
+    "positron emission tomography MRI": "PET/MRI"   # Handle expanded PET + MRI combination
+    "positron emission tomography/MRI": "PET/MRI"   # Handle expanded PET + MRI combination
     
     # --- CLINICAL CONTEXT & TRACERS ---
     "DVT": "deep vein thrombosis"
@@ -507,7 +508,7 @@ preprocessing:
     "ABDOMEN": "abdomen"
     "ABDO": "abdomen"
     "TUMMY": "abdomen"
-    "BRAIN": "head"
+    "BRAIN": "brain"
     "CRANIUM": "head"
     "CHED": "head"
     "THORAX": "chest"
@@ -525,7 +526,7 @@ preprocessing:
     
   anatomy_vocabulary:
     head: head
-    brain: head
+    brain: brain
     skull: head
     cranium: head
     sinus: sinuses
@@ -563,11 +564,8 @@ preprocessing:
     spine: spine
     spinal: spine
     'cervical spine': 'cervical spine'
-    'spine cervical': 'cervical spine'
     'thoracic spine': 'thoracic spine'
-    'spine thoracic': 'thoracic spine'
     'lumbar spine': 'lumbar spine'
-    'spine lumbar': 'lumbar spine'
     sacrum: sacrum
     coccyx: coccyx
     shoulder: shoulder
@@ -606,7 +604,6 @@ preprocessing:
     thyroid: thyroid
     bone: bone
     bones: bone
-    densitometry: bone
     joint: joint
     joints: joint
     'soft tissue': 'soft tissue'
@@ -616,7 +613,6 @@ preprocessing:
     adrenals: adrenal
     biliary: biliary
     gallbladder: gallbladder
-    cholangiopancreatography: biliary
     'lymph node': 'lymph node'
     'lymph nodes': 'lymph node'
     parotid: parotid
@@ -634,3 +630,37 @@ preprocessing:
     testes: testes
     testis: testes
     'whole body': 'whole body'
+
+# ====================================================================================
+# SECONDARY PIPELINE CONFIGURATION (V2 - MORE ROBUST)
+# ====================================================================================
+secondary_pipeline:
+  # System prompt to set the model's role and behavior firmly.
+  system_prompt: |
+    You are a meticulous radiology data standardization expert. Your task is to map an `input_exam` to the most appropriate candidate from a given list by calling the `select_best_match` tool.
+
+    **GUIDING PRINCIPLE: The Principle of Parsimony**
+    The correct match is the one that includes all specified components from the `input_exam` (modality, anatomy, contrast, etc.) while introducing the **absolute minimum** of new, unspecified information. Do not "upgrade" the exam to a more complex version.
+
+    **Evaluation Steps:**
+    1.  **Decompose Input:** Identify the essential components of the `input_exam`. A modality mismatch (e.g., input is 'US' but all candidates are 'MG') is a critical failure.
+    2.  **Evaluate Candidates:** For each candidate, compare the `input_exam` against both its `primary_name` and its `snomed_fsn`. The FSN is the ultimate source of truth. Ignore the `(procedure)` suffix in the FSN.
+    3.  **Select Best Match:** Choose the candidate whose `snomed_fsn` best represents the procedure described in the `input_exam` without adding unsubstantiated details.
+    4.  **Handle No Match:** If no candidate is a suitable match, you MUST provide `null` for the `best_match_snomed_id` and `best_match_procedure_name` arguments in your tool call.
+
+  # User prompt with clearer instructions and placeholders.
+  prompt_template: ""
+
+  # Model configuration
+  models:
+    - "anthropic/claude-sonnet-4"
+    - "openai/gpt-4-turbo"
+    - "openai/gpt-4.1-mini"
+  
+  # API settings
+  temperature: 0.0 # Set to 0 for maximum determinism and adherence to instructions
+  max_tokens: 600
+  
+  # Pipeline settings
+  confidence_threshold: 0.8
+  max_concurrent_requests: 5
