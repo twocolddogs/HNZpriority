@@ -1,4 +1,13 @@
 // --- STATUS MANAGER CLASS ---
+async function testApiConnectivity() {
+    try {
+        const response = await fetch(HEALTH_URL, { method: 'GET' });
+        if (response.ok) console.log('✓ API connectivity test passed');
+        else console.warn('⚠ API health check failed:', response.status);
+    } catch (error) {
+        console.error('✗ API connectivity test failed:', error);
+    }
+}
 class StatusManager {
     constructor() {
         this.container = null;
@@ -509,15 +518,6 @@ window.addEventListener('DOMContentLoaded', function() {
     const closeConfigEditorBtn = document.getElementById('closeConfigEditorBtn');
 
     // --- CORE INITIALIZATION ---
-    async function testApiConnectivity() {
-        try {
-            const response = await fetch(HEALTH_URL, { method: 'GET' });
-            if (response.ok) console.log('✓ API connectivity test passed');
-            else console.warn('⚠ API health check failed:', response.status);
-        } catch (error) {
-            console.error('✗ API connectivity test failed:', error);
-        }
-    }
 
     async function warmupAPI() {
         let warmupMessageId = null;
