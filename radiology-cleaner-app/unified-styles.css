@@ -111,11 +111,11 @@
   cursor: not-allowed;
 }
 
-/* Fix action card sizing for better fit */
+/* Fix action card sizing for better fit - 4 cards across */
 .action-paths {
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  grid-template-columns: repeat(4, 1fr) !important;
   gap: 16px !important;
-  max-width: 1000px !important;
+  max-width: 1200px !important;
 }
 
 /* Responsive design for mobile */

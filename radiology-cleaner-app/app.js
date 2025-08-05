@@ -1343,10 +1343,30 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- CONFIG EDITOR FUNCTIONS ---
     
     async function openConfigEditor() {
-        if (configEditorModal) {
-            configEditorModal.style.display = 'block';
-            document.body.style.overflow = 'hidden'; // Prevent background scrolling
-            await loadCurrentConfig();
+        try {
+            if (configEditorModal) {
+                configEditorModal.style.display = 'block';
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+                
+                // Set loading state immediately
+                if (configEditor) {
+                    configEditor.value = 'Loading configuration from R2...';
+                }
+                if (configStatus) {
+                    configStatus.textContent = 'Loading...';
+                }
+                
+                // Load config asynchronously without blocking UI
+                setTimeout(async () => {
+                    await loadCurrentConfig();
+                }, 100);
+            } else {
+                console.error('Config editor modal not found');
+                statusManager.show('❌ Configuration editor not available', 'error', 3000);
+            }
+        } catch (error) {
+            console.error('Error opening config editor:', error);
+            statusManager.show('❌ Failed to open configuration editor', 'error', 3000);
         }
     }
     
@@ -1364,8 +1384,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 reloadConfigBtn.innerHTML = '🔄 Loading...';
             }
             
-            configStatus.textContent = 'Loading...';
-            configEditor.value = 'Loading configuration from R2...';
+            if (configStatus) configStatus.textContent = 'Loading...';
+            if (configEditor) configEditor.value = 'Loading configuration from R2...';
             
             const response = await fetch(`${apiConfig.baseUrl}/config/current`, {
                 method: 'GET'
@@ -1377,13 +1397,13 @@ window.addEventListener('DOMContentLoaded', function() {
             }
             
             const result = await response.json();
-            configEditor.value = result.config_yaml;
-            configStatus.textContent = `Loaded at ${new Date(result.timestamp).toLocaleTimeString()}`;
+            if (configEditor) configEditor.value = result.config_yaml;
+            if (configStatus) configStatus.textContent = `Loaded at ${new Date(result.timestamp).toLocaleTimeString()}`;
             
         } catch (error) {
             console.error('Failed to load config:', error);
-            configEditor.value = `# Error loading configuration:\n# ${error.message}\n\n# Please try reloading or check the server logs.`;
-            configStatus.textContent = 'Error loading config';
+            if (configEditor) configEditor.value = `# Error loading configuration:\n# ${error.message}\n\n# Please try reloading or check the server logs.`;
+            if (configStatus) configStatus.textContent = 'Error loading config';
             statusManager.show(`❌ Failed to load config: ${error.message}`, 'error', 5000);
         } finally {
             if (reloadConfigBtn) {
