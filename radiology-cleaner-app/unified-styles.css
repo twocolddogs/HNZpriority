@@ -1634,15 +1634,6 @@ a:focus-visible {
   align-items: center;
 }
 
-/* File info display */
-.file-info {
-  background: var(--color-gray-100);
-  padding: var(--space-4);
-  border-radius: var(--radius-base);
-  margin-bottom: var(--space-6);
-  font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
-}
 
 /* ==========================================================================
    12. Modal Components

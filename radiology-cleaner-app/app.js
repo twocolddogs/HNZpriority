@@ -2216,6 +2216,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // --- HOMEPAGE WORKFLOW FUNCTIONALITY ---
     let isValidationMode = false;
 
+}); // End of first DOMContentLoaded event listener
 
 window.addEventListener('DOMContentLoaded', function() {
 
@@ -2313,7 +2314,8 @@ window.addEventListener('DOMContentLoaded', function() {
             demoOptions.classList.remove('hidden');
             runProcessingBtn.classList.add('hidden');
             dataSourceDisplay.classList.add('hidden');
-            document.getElementById('secondaryPipelineOption')?.style.display = 'block';
+            const secondaryPipelineOptionDemo = document.getElementById('secondaryPipelineOption');
+            if (secondaryPipelineOptionDemo) secondaryPipelineOptionDemo.style.display = 'block';
             checkWorkflowCompletion();
             scrollToModelSelection();
         });
@@ -2326,7 +2328,8 @@ window.addEventListener('DOMContentLoaded', function() {
             showMainContentSection('workflowSection');
             demoOptions.classList.add('hidden');
             runProcessingBtn.classList.remove('hidden');
-            document.getElementById('secondaryPipelineOption')?.style.display = 'none';
+            const secondaryPipelineOptionUpload2 = document.getElementById('secondaryPipelineOption');
+            if (secondaryPipelineOptionUpload2) secondaryPipelineOptionUpload2.style.display = 'none';
             fileInput.click();
         });
 
