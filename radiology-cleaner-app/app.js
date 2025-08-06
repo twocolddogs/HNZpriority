@@ -2534,7 +2534,10 @@ window.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Create validation interface with statistics
+        // Group mappings by NHS reference (consolidated view)
+        const consolidatedGroups = createConsolidatedValidationGroups(validationState);
+        
+        // Create validation interface with statistics and consolidated groups
         const interfaceHTML = `
             <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
                 <h4 style="margin: 0 0 15px 0; color: #3f51b5;">
@@ -2546,6 +2549,10 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div style="font-size: 20px; font-weight: bold; color: #1976d2;">${mappingCount}</div>
                         <div style="font-size: 12px; color: #666;">Total Mappings</div>
                     </div>
+                    <div style="background: #e8f5e8; padding: 10px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: bold; color: #4caf50;">${Object.keys(consolidatedGroups).length}</div>
+                        <div style="font-size: 12px; color: #666;">NHS References</div>
+                    </div>
                     <div style="background: #fff3e0; padding: 10px; border-radius: 6px; text-align: center;">
                         <div style="font-size: 20px; font-weight: bold; color: #f57c00;">${flagCounts.low_confidence}</div>
                         <div style="font-size: 12px; color: #666;">Low Confidence</div>
@@ -2554,34 +2561,34 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div style="font-size: 20px; font-weight: bold; color: #c2185b;">${flagCounts.ambiguous}</div>
                         <div style="font-size: 12px; color: #666;">Ambiguous</div>
                     </div>
-                    <div style="background: #f3e5f5; padding: 10px; border-radius: 6px; text-align: center;">
-                        <div style="font-size: 20px; font-weight: bold; color: #7b1fa2;">${flagCounts.singleton_mapping}</div>
-                        <div style="font-size: 12px; color: #666;">Singleton</div>
-                    </div>
                 </div>
                 
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-                    <p style="margin: 0 0 10px 0; color: #666;">
-                        <strong>Ready for Validation:</strong> This interface will allow you to:
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button id="approveAllBtn" class="button" style="background: #4caf50; color: white;">
+                            <i class="fas fa-check-double"></i> Approve All Groups
+                        </button>
+                        <button id="expandAllBtn" class="button" style="background: #2196F3; color: white;">
+                            <i class="fas fa-expand-alt"></i> Expand All
+                        </button>
+                        <button id="collapseAllBtn" class="button" style="background: #607d8b; color: white;">
+                            <i class="fas fa-compress-alt"></i> Collapse All
+                        </button>
+                    </div>
+                    <p style="margin: 0; color: #666; font-size: 14px;">
+                        <strong>Consolidated View:</strong> Mappings are grouped by NHS reference for bulk approval. 
+                        Individual mappings can be overridden within each group.
                     </p>
-                    <ul style="margin: 0; padding-left: 20px; color: #666;">
-                        <li>Review mappings requiring attention (flagged items)</li>
-                        <li>Approve or correct individual mappings</li>
-                        <li>Add validation notes and decisions</li>
-                        <li>Export validation state for record keeping</li>
-                    </ul>
                 </div>
-                
-                <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; border-left: 4px solid #4caf50; margin-bottom: 15px;">
-                    <small style="color: #2e7d32;">
-                        <strong>✅ Validation State Initialized:</strong> ${mappingCount} mappings are ready for review with attention flags applied.
-                    </small>
-                </div>
+            </div>
+            
+            <div id="validationGroups">
+                ${renderValidationGroups(consolidatedGroups)}
             </div>
         `;
         
         validationInterface.innerHTML = interfaceHTML + `
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
                 <button id="exportValidationStateBtn" class="button" style="background: #2196F3; color: white;">
                     <i class="fas fa-download"></i> Export Validation State
                 </button>
@@ -2592,8 +2599,167 @@ window.addEventListener('DOMContentLoaded', function() {
         `;
         
         // Add event listeners for validation buttons
+        setupValidationEventListeners(validationState);
+        
+        // Store validation state globally for access by other functions
+        window.currentValidationState = validationState;
+    }
+    
+    function createConsolidatedValidationGroups(validationState) {
+        const groups = {};
+        
+        Object.values(validationState).forEach(state => {
+            const mapping = state.original_mapping;
+            const nhsReference = mapping.clean_name || 'Unknown';
+            
+            if (!groups[nhsReference]) {
+                groups[nhsReference] = {
+                    nhs_reference: nhsReference,
+                    mappings: [],
+                    group_flags: new Set(),
+                    group_decision: 'pending',
+                    total_mappings: 0,
+                    flagged_count: 0
+                };
+            }
+            
+            groups[nhsReference].mappings.push(state);
+            groups[nhsReference].total_mappings++;
+            
+            // Aggregate flags at group level
+            state.needs_attention_flags.forEach(flag => {
+                groups[nhsReference].group_flags.add(flag);
+            });
+            
+            if (state.needs_attention_flags.length > 0) {
+                groups[nhsReference].flagged_count++;
+            }
+        });
+        
+        // Convert Set to Array for easier handling
+        Object.values(groups).forEach(group => {
+            group.group_flags = Array.from(group.group_flags);
+        });
+        
+        return groups;
+    }
+    
+    function renderValidationGroups(consolidatedGroups) {
+        let html = '';
+        
+        Object.values(consolidatedGroups).forEach((group, index) => {
+            const groupId = `group_${index}`;
+            const hasFlags = group.flagged_count > 0;
+            const flagBadges = group.group_flags.map(flag => 
+                `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`
+            ).join('');
+            
+            html += `
+                <div class="validation-group" data-group-id="${groupId}" style="background: white; border-radius: 8px; margin-bottom: 15px; overflow: hidden; border: 1px solid ${hasFlags ? '#ff9800' : '#e0e0e0'};">
+                    <div class="group-header" style="padding: 15px; background: ${hasFlags ? '#fff8e1' : '#f5f5f5'}; border-bottom: 1px solid #e0e0e0; cursor: pointer;" onclick="toggleValidationGroup('${groupId}')">
+                        <div style="display: flex; align-items: center; justify-content: between;">
+                            <div style="flex: 1;">
+                                <h5 style="margin: 0 0 5px 0; color: #1976d2; font-size: 16px;">
+                                    <i class="fas fa-chevron-right group-toggle" style="margin-right: 8px; transition: transform 0.2s;"></i>
+                                    ${group.nhs_reference}
+                                </h5>
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <span style="font-size: 14px; color: #666;">${group.total_mappings} mapping(s)</span>
+                                    ${group.flagged_count > 0 ? `<span style="font-size: 14px; color: #f57c00;">${group.flagged_count} flagged</span>` : ''}
+                                    ${flagBadges}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <select class="group-decision-select" data-group-id="${groupId}" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc;" onchange="updateGroupDecision('${groupId}', this.value)" onclick="event.stopPropagation()">
+                                    <option value="pending">Pending</option>
+                                    <option value="approve">Approve Group</option>
+                                    <option value="reject">Reject Group</option>
+                                    <option value="review">Individual Review</option>
+                                </select>
+                                <button class="button" style="background: #4caf50; color: white; padding: 6px 12px;" onclick="event.stopPropagation(); quickApproveGroup('${groupId}')">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="group-content" id="${groupId}_content" style="display: none; padding: 15px;">
+                        ${renderGroupMappings(group.mappings, groupId)}
+                    </div>
+                </div>
+            `;
+        });
+        
+        return html;
+    }
+    
+    function renderGroupMappings(mappings, groupId) {
+        let html = '<div style="max-height: 400px; overflow-y: auto;">';
+        
+        mappings.forEach((state, index) => {
+            const mapping = state.original_mapping;
+            const mappingId = state.unique_mapping_id;
+            const hasFlags = state.needs_attention_flags.length > 0;
+            
+            const flagBadges = state.needs_attention_flags.map(flag => 
+                `<span class="flag-badge flag-${flag}" style="background: #ffecb3; color: #e65100; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-right: 4px;">${flag.replace('_', ' ')}</span>`
+            ).join('');
+            
+            html += `
+                <div class="mapping-item" data-mapping-id="${mappingId}" style="background: ${hasFlags ? '#fff3e0' : '#f9f9f9'}; padding: 12px; margin-bottom: 8px; border-radius: 6px; border-left: 3px solid ${hasFlags ? '#ff9800' : '#4caf50'};">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; color: #1976d2; margin-bottom: 4px;">${mapping.exam_name || 'Unknown Exam'}</div>
+                            <div style="font-size: 13px; color: #666; margin-bottom: 6px;">
+                                <strong>Source:</strong> ${mapping.data_source || 'Unknown'} | 
+                                <strong>Code:</strong> ${mapping.exam_code || 'N/A'} |
+                                <strong>Confidence:</strong> ${(mapping.components?.confidence || 0).toFixed(3)}
+                            </div>
+                            ${flagBadges ? `<div style="margin-bottom: 8px;">${flagBadges}</div>` : ''}
+                            ${mapping.components?.reasoning ? `
+                                <div style="font-size: 12px; color: #666; background: #f5f5f5; padding: 6px; border-radius: 3px; margin-top: 6px;">
+                                    <strong>Reasoning:</strong> ${mapping.components.reasoning}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div style="display: flex; gap: 6px; margin-left: 15px;">
+                            <button class="button" style="background: #4caf50; color: white; padding: 4px 8px; font-size: 12px;" onclick="updateMappingDecision('${mappingId}', 'approve')">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="button" style="background: #f44336; color: white; padding: 4px 8px; font-size: 12px;" onclick="updateMappingDecision('${mappingId}', 'reject')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button class="button" style="background: #ff9800; color: white; padding: 4px 8px; font-size: 12px;" onclick="showMappingDetails('${mappingId}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        return html;
+    }
+    
+    function setupValidationEventListeners(validationState) {
+        // Bulk action buttons
+        const approveAllBtn = document.getElementById('approveAllBtn');
+        const expandAllBtn = document.getElementById('expandAllBtn');
+        const collapseAllBtn = document.getElementById('collapseAllBtn');
         const commitBtn = document.getElementById('commitDecisionsBtn');
         const exportBtn = document.getElementById('exportValidationStateBtn');
+        
+        if (approveAllBtn) {
+            approveAllBtn.addEventListener('click', () => approveAllGroups());
+        }
+        
+        if (expandAllBtn) {
+            expandAllBtn.addEventListener('click', () => toggleAllGroups(true));
+        }
+        
+        if (collapseAllBtn) {
+            collapseAllBtn.addEventListener('click', () => toggleAllGroups(false));
+        }
         
         if (commitBtn) {
             commitBtn.addEventListener('click', commitValidatedDecisions);
@@ -2602,9 +2768,6 @@ window.addEventListener('DOMContentLoaded', function() {
         if (exportBtn) {
             exportBtn.addEventListener('click', () => exportValidationState(validationState));
         }
-        
-        // Store validation state globally for access by other functions
-        window.currentValidationState = validationState;
     }
     
     function exportValidationState(validationState) {
@@ -2632,6 +2795,239 @@ window.addEventListener('DOMContentLoaded', function() {
         statusManager.show(`✅ Exported validation state: ${filename}`, 'success', 3000);
     }
     
+    // Validation interaction functions
+    function toggleValidationGroup(groupId) {
+        const content = document.getElementById(`${groupId}_content`);
+        const toggle = document.querySelector(`[data-group-id="${groupId}"] .group-toggle`);
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            toggle.style.transform = 'rotate(90deg)';
+        } else {
+            content.style.display = 'none';
+            toggle.style.transform = 'rotate(0deg)';
+        }
+    }
+    
+    function toggleAllGroups(expand) {
+        const groups = document.querySelectorAll('.validation-group');
+        groups.forEach((group, index) => {
+            const groupId = `group_${index}`;
+            const content = document.getElementById(`${groupId}_content`);
+            const toggle = group.querySelector('.group-toggle');
+            
+            if (expand) {
+                content.style.display = 'block';
+                toggle.style.transform = 'rotate(90deg)';
+            } else {
+                content.style.display = 'none';
+                toggle.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+    
+    function updateGroupDecision(groupId, decision) {
+        console.log(`📝 Updating group ${groupId} decision to: ${decision}`);
+        
+        const groupElement = document.querySelector(`[data-group-id="${groupId}"]`);
+        if (!groupElement) return;
+        
+        // Update visual state
+        const header = groupElement.querySelector('.group-header');
+        switch (decision) {
+            case 'approve':
+                header.style.background = '#e8f5e8';
+                break;
+            case 'reject':
+                header.style.background = '#ffebee';
+                break;
+            case 'review':
+                header.style.background = '#fff3e0';
+                break;
+            default:
+                header.style.background = '#f5f5f5';
+        }
+        
+        // Update all mappings in the group if bulk decision
+        if (decision === 'approve' || decision === 'reject') {
+            const mappingElements = groupElement.querySelectorAll('.mapping-item');
+            mappingElements.forEach(mappingEl => {
+                const mappingId = mappingEl.dataset.mappingId;
+                updateMappingDecisionInState(mappingId, decision);
+                
+                // Update visual state
+                if (decision === 'approve') {
+                    mappingEl.style.borderLeft = '3px solid #4caf50';
+                    mappingEl.style.background = '#e8f5e8';
+                } else if (decision === 'reject') {
+                    mappingEl.style.borderLeft = '3px solid #f44336';
+                    mappingEl.style.background = '#ffebee';
+                }
+            });
+        }
+        
+        statusManager.show(`✅ Group decision: ${decision}`, 'success', 2000);
+    }
+    
+    function quickApproveGroup(groupId) {
+        const select = document.querySelector(`[data-group-id="${groupId}"] .group-decision-select`);
+        if (select) {
+            select.value = 'approve';
+            updateGroupDecision(groupId, 'approve');
+        }
+    }
+    
+    function approveAllGroups() {
+        const groups = document.querySelectorAll('.validation-group');
+        let approvedCount = 0;
+        
+        groups.forEach((group, index) => {
+            const groupId = `group_${index}`;
+            const select = group.querySelector('.group-decision-select');
+            
+            if (select && select.value !== 'approve') {
+                select.value = 'approve';
+                updateGroupDecision(groupId, 'approve');
+                approvedCount++;
+            }
+        });
+        
+        statusManager.show(`✅ Approved ${approvedCount} groups`, 'success', 3000);
+    }
+    
+    function updateMappingDecision(mappingId, decision) {
+        console.log(`📝 Updating mapping ${mappingId} decision to: ${decision}`);
+        
+        updateMappingDecisionInState(mappingId, decision);
+        
+        const mappingElement = document.querySelector(`[data-mapping-id="${mappingId}"]`);
+        if (mappingElement) {
+            // Update visual state
+            switch (decision) {
+                case 'approve':
+                    mappingElement.style.borderLeft = '3px solid #4caf50';
+                    mappingElement.style.background = '#e8f5e8';
+                    break;
+                case 'reject':
+                    mappingElement.style.borderLeft = '3px solid #f44336';
+                    mappingElement.style.background = '#ffebee';
+                    break;
+                case 'modify':
+                    mappingElement.style.borderLeft = '3px solid #ff9800';
+                    mappingElement.style.background = '#fff8e1';
+                    break;
+            }
+        }
+        
+        statusManager.show(`✅ Mapping ${decision}d`, 'success', 1500);
+    }
+    
+    function updateMappingDecisionInState(mappingId, decision) {
+        if (window.currentValidationState && window.currentValidationState[mappingId]) {
+            window.currentValidationState[mappingId].validator_decision = decision;
+            window.currentValidationState[mappingId].validation_status = 'reviewed';
+            window.currentValidationState[mappingId].timestamp_reviewed = new Date().toISOString();
+        }
+    }
+    
+    function showMappingDetails(mappingId) {
+        const state = window.currentValidationState?.[mappingId];
+        if (!state) {
+            statusManager.show('❌ Mapping not found', 'error', 3000);
+            return;
+        }
+        
+        const mapping = state.original_mapping;
+        
+        // Create detailed view modal/popup
+        const modalHTML = `
+            <div id="mappingDetailsModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                <div style="background: white; border-radius: 8px; padding: 20px; max-width: 600px; max-height: 80vh; overflow-y: auto; margin: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                        <h3 style="margin: 0; color: #1976d2;">Mapping Details</h3>
+                        <button onclick="closeMappingDetails()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 8px 0; color: #333;">Original Exam</h4>
+                        <div style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
+                            <strong>${mapping.exam_name || 'Unknown'}</strong><br>
+                            <small>Source: ${mapping.data_source || 'Unknown'} | Code: ${mapping.exam_code || 'N/A'}</small>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 8px 0; color: #333;">Matched NHS Reference</h4>
+                        <div style="background: #e8f5e8; padding: 10px; border-radius: 4px;">
+                            <strong>${mapping.clean_name || 'Unknown'}</strong><br>
+                            <small>Confidence: ${(mapping.components?.confidence || 0).toFixed(3)}</small>
+                        </div>
+                    </div>
+                    
+                    ${mapping.components?.reasoning ? `
+                        <div style="margin-bottom: 15px;">
+                            <h4 style="margin: 0 0 8px 0; color: #333;">AI Reasoning</h4>
+                            <div style="background: #f0f7ff; padding: 10px; border-radius: 4px; border-left: 3px solid #2196f3;">
+                                ${mapping.components.reasoning}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${state.needs_attention_flags.length > 0 ? `
+                        <div style="margin-bottom: 15px;">
+                            <h4 style="margin: 0 0 8px 0; color: #333;">Attention Flags</h4>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                ${state.needs_attention_flags.map(flag => 
+                                    `<span style="background: #ffecb3; color: #e65100; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${flag.replace('_', ' ')}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="margin: 0 0 8px 0; color: #333;">Validation Notes</h4>
+                        <textarea id="validationNotes" placeholder="Add validation notes..." style="width: 100%; height: 60px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: vertical;">${state.validation_notes || ''}</textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="saveValidationDecision('${mappingId}', 'approve')" style="background: #4caf50; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button onclick="saveValidationDecision('${mappingId}', 'reject')" style="background: #f44336; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                        <button onclick="saveValidationDecision('${mappingId}', 'modify')" style="background: #ff9800; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-edit"></i> Modify
+                        </button>
+                        <button onclick="closeMappingDetails()" style="background: #607d8b; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+    
+    function closeMappingDetails() {
+        const modal = document.getElementById('mappingDetailsModal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+    
+    function saveValidationDecision(mappingId, decision) {
+        const notes = document.getElementById('validationNotes')?.value || '';
+        
+        // Update state with notes
+        if (window.currentValidationState?.[mappingId]) {
+            window.currentValidationState[mappingId].validation_notes = notes;
+        }
+        
+        updateMappingDecision(mappingId, decision);
+        closeMappingDetails();
+    }
+
     function commitValidatedDecisions() {
         console.log('💾 Committing validated decisions');
         statusManager.show('🚀 Validation decision commit functionality coming soon!', 'info', 5000);
