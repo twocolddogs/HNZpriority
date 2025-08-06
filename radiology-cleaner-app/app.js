@@ -561,10 +561,23 @@ async function runRandomDemo(sampleSize) {
         });
         
         if (response.ok) {
-            const results = await response.json();
-            console.log('📥 Random demo response received:', results);
-            displayResults(results);
-            statusManager.show('✅ Random demo completed successfully', 'success', 3000);
+            const apiResponse = await response.json();
+            console.log('📥 Random demo response received:', apiResponse);
+            
+            // Handle both R2 URL and direct results format
+            if (apiResponse.r2_url) {
+                console.log('🔗 Fetching results from R2 URL:', apiResponse.r2_url);
+                statusManager.show('📥 Fetching results from cloud storage...', 'info');
+                await fetchAndDisplayFromR2(apiResponse.r2_url);
+                statusManager.show('✅ Random demo completed successfully', 'success', 3000);
+            } else if (apiResponse.results || Array.isArray(apiResponse)) {
+                console.log('📋 Using direct results from API response');
+                displayResults(apiResponse.results || apiResponse);
+                statusManager.show('✅ Random demo completed successfully', 'success', 3000);
+            } else {
+                console.error('❌ Unexpected response format:', apiResponse);
+                statusManager.show('❌ Unexpected response format from server', 'error', 5000);
+            }
         } else {
             const errorText = await response.text();
             console.error('❌ Random demo failed:', response.status, response.statusText, errorText);
@@ -598,9 +611,23 @@ async function runFixedTest() {
         });
         
         if (response.ok) {
-            const results = await response.json();
-            displayResults(results);
-            statusManager.show('✅ Fixed test completed successfully', 'success', 3000);
+            const apiResponse = await response.json();
+            console.log('📥 Fixed test response received:', apiResponse);
+            
+            // Handle both R2 URL and direct results format
+            if (apiResponse.r2_url) {
+                console.log('🔗 Fetching results from R2 URL:', apiResponse.r2_url);
+                statusManager.show('📥 Fetching results from cloud storage...', 'info');
+                await fetchAndDisplayFromR2(apiResponse.r2_url);
+                statusManager.show('✅ Fixed test completed successfully', 'success', 3000);
+            } else if (apiResponse.results || Array.isArray(apiResponse)) {
+                console.log('📋 Using direct results from API response');
+                displayResults(apiResponse.results || apiResponse);
+                statusManager.show('✅ Fixed test completed successfully', 'success', 3000);
+            } else {
+                console.error('❌ Unexpected response format:', apiResponse);
+                statusManager.show('❌ Unexpected response format from server', 'error', 5000);
+            }
         } else {
             throw new Error(`Test failed: ${response.statusText}`);
         }
@@ -618,6 +645,74 @@ function handleFileUpload(file) {
     
     console.log('📁 File uploaded:', file.name);
     statusManager.show(`📁 File loaded: ${file.name}`, 'success', 3000);
+}
+
+// R2 URL Fetch Function
+async function fetchAndDisplayFromR2(r2Url) {
+    try {
+        console.log('🔗 Fetching results from R2:', r2Url);
+        const r2Response = await fetch(r2Url, { 
+            method: 'GET',
+            mode: 'cors'
+        });
+        
+        if (r2Response.ok) {
+            const r2Data = await r2Response.json();
+            console.log('📊 R2 data received:', r2Data);
+            
+            // Handle multiple possible data structures from R2
+            const results = r2Data.results || r2Data;
+            if (results && results.length > 0) {
+                // Map the R2 results to the expected format
+                const mappedResults = results.map(item => {
+                    // Handle both nested structure (item.input/item.output) and flat structure
+                    if (item.input && item.output) {
+                        // V5-Secondary-Pipeline nested format
+                        return {
+                            data_source: item.input.DATA_SOURCE || item.input.data_source || item.output.data_source,
+                            modality_code: item.input.MODALITY_CODE || item.input.modality_code || item.output.modality_code,
+                            exam_code: item.input.EXAM_CODE || item.input.exam_code || item.output.exam_code,
+                            exam_name: item.input.EXAM_NAME || item.input.exam_name || item.output.exam_name,
+                            clean_name: item.status === 'success' ? item.output.clean_name : `ERROR: ${item.error}`,
+                            snomed_fsn: item.status === 'success' ? item.output.snomed?.fsn || item.output.snomed_fsn : '',
+                            tags: item.status === 'success' ? item.output.tags || [] : [],
+                            confidence: item.status === 'success' ? `${Math.round((item.output.components?.confidence || 0) * 100)}%` : '0%',
+                            components: item.status === 'success' ? item.output.components || {} : {},
+                            all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
+                            secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false
+                        };
+                    } else {
+                        // Direct flat format
+                        return {
+                            exam_code: item.exam_code || item.original_code,
+                            exam_name: item.exam_name || item.original_name,
+                            clean_name: item.clean_name,
+                            snomed_fsn: item.snomed_fsn,
+                            tags: item.tags,
+                            confidence: item.confidence,
+                            components: item.components,
+                            all_candidates: item.all_candidates
+                        };
+                    }
+                });
+                
+                console.log(`📋 Mapped ${mappedResults.length} results from R2`);
+                displayResults(mappedResults);
+            } else {
+                throw new Error('No results found in R2 data');
+            }
+        } else {
+            throw new Error(`Failed to fetch from R2: ${r2Response.status} ${r2Response.statusText}`);
+        }
+    } catch (error) {
+        console.error('❌ Error fetching from R2:', error);
+        statusManager.show(`❌ Failed to fetch results: ${error.message}`, 'error', 8000);
+        
+        // Provide a fallback link for the user
+        const fallbackMessage = `Processing complete. <a href="${r2Url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View results on R2</a>`;
+        statusManager.show(fallbackMessage, 'info', 0);
+        throw error;
+    }
 }
 
 // Results Display
