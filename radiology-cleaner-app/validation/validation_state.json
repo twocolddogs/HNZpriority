@@ -1,0 +1,59 @@
+{
+  "d6639b7fa0f443ff3666992732790dd603afea8d5ac4d6d4ec50c16fbec7a887": {
+    "unique_mapping_id": "d6639b7fa0f443ff3666992732790dd603afea8d5ac4d6d4ec50c16fbec7a887",
+    "original_mapping": {
+      "data_source": "Central-Philips",
+      "modality_code": "Mamm",
+      "exam_code": "BBMA",
+      "exam_name": "BR Bilateral Mammogram",
+      "clean_name": "MG Mammogram Both",
+      "snomed": {
+        "found": true,
+        "fsn": "Bilateral mammography (procedure)",
+        "id": 43204002,
+        "laterality_concept_id": 51440002,
+        "laterality_fsn": "Right and left (qualifier value)"
+      },
+      "components": {
+        "anatomy": [
+          "breast"
+        ],
+        "laterality": [
+          "bilateral"
+        ],
+        "contrast": [],
+        "technique": [],
+        "modality": [],
+        "confidence": 0.8512500000000001,
+        "gender_context": "female",
+        "age_context": null,
+        "clinical_context": []
+      },
+      "all_candidates": [
+        {
+          "snomed_id": 43204002,
+          "primary_name": "MG Mammogram Both",
+          "snomed_fsn": "Bilateral mammography (procedure)",
+          "confidence": 0.85
+        },
+        {
+          "snomed_id": 1094061000000105,
+          "primary_name": "MG Mammogram excised tissue breast Both",
+          "snomed_fsn": "Plain X-ray of excised tissue of bilateral breasts (procedure)",
+          "confidence": 0.77
+        }
+      ],
+      "ambiguous": false,
+      "secondary_pipeline_applied": false,
+      "secondary_pipeline_details": null
+    },
+    "validation_status": "approved",
+    "validator_decision": "approve",
+    "validation_notes": "Mapping looks correct. Good confidence score and appropriate SNOMED match for bilateral mammogram.",
+    "needs_attention_flags": [
+      "singleton_mapping"
+    ],
+    "timestamp_created": "2025-08-06T08:42:22.345330+00:00",
+    "timestamp_reviewed": "2025-08-06T08:51:39.571716Z"
+  }
+}

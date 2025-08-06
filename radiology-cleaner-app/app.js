@@ -2389,7 +2389,74 @@ window.addEventListener('DOMContentLoaded', function() {
         statusManager.show(`📋 Ready to validate ${allMappings.length} mappings`, 'info', 3000);
     }
     
-    function handleValidateCurrentResults() {
+    // JavaScript equivalent of load_mappings.py functionality
+    function generateMappingId(mapping) {
+        // Create a simple hash based on key mapping properties
+        const keyString = `${mapping.data_source}-${mapping.exam_code}-${mapping.exam_name}-${mapping.clean_name}`;
+        return btoa(keyString).replace(/[+/=]/g, '').substring(0, 32);
+    }
+    
+    function applyAttentionFlags(mapping) {
+        const flags = [];
+        const confidence = mapping.components?.confidence || 0;
+        
+        // Low confidence flag
+        if (confidence < 0.85) {
+            flags.push('low_confidence');
+        }
+        
+        // Ambiguous flag
+        if (mapping.ambiguous === true) {
+            flags.push('ambiguous');
+        }
+        
+        // Singleton mapping flag (only one candidate or top candidate much higher than second)
+        const candidates = mapping.all_candidates || [];
+        if (candidates.length === 1) {
+            flags.push('singleton_mapping');
+        } else if (candidates.length > 1) {
+            const topConfidence = candidates[0]?.confidence || 0;
+            const secondConfidence = candidates[1]?.confidence || 0;
+            if (topConfidence - secondConfidence > 0.15) {
+                flags.push('high_confidence_gap');
+            }
+        }
+        
+        // Secondary pipeline applied flag
+        if (mapping.secondary_pipeline_applied === true) {
+            flags.push('secondary_pipeline');
+        }
+        
+        return flags;
+    }
+    
+    async function initializeValidationFromMappings(mappings) {
+        console.log(`🔧 Transforming ${mappings.length} mappings into validation state`);
+        
+        const validationState = {};
+        const timestamp = new Date().toISOString();
+        
+        for (const mapping of mappings) {
+            const mappingId = generateMappingId(mapping);
+            const flags = applyAttentionFlags(mapping);
+            
+            validationState[mappingId] = {
+                unique_mapping_id: mappingId,
+                original_mapping: mapping,
+                validation_status: 'pending_review',
+                validator_decision: null,
+                validation_notes: null,
+                needs_attention_flags: flags,
+                timestamp_created: timestamp,
+                timestamp_reviewed: null
+            };
+        }
+        
+        console.log(`✅ Created validation state for ${Object.keys(validationState).length} mappings`);
+        return validationState;
+    }
+    
+    async function handleValidateCurrentResults() {
         console.log('📋 Loading current results for validation');
         
         if (!allMappings || allMappings.length === 0) {
@@ -2397,20 +2464,30 @@ window.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Hide mode selection, show validation interface
-        const modeSelection = document.getElementById('validationModeSelection');
-        const validationInterface = document.getElementById('validationInterface');
-        
-        if (modeSelection) modeSelection.style.display = 'none';
-        if (validationInterface) {
-            validationInterface.classList.remove('hidden');
-            validationInterface.style.display = 'block';
+        try {
+            statusManager.show('🔄 Initializing validation state...', 'info');
+            
+            // Transform allMappings into validation state
+            const validationState = await initializeValidationFromMappings(allMappings);
+            
+            // Hide mode selection, show validation interface
+            const modeSelection = document.getElementById('validationModeSelection');
+            const validationInterface = document.getElementById('validationInterface');
+            
+            if (modeSelection) modeSelection.style.display = 'none';
+            if (validationInterface) {
+                validationInterface.classList.remove('hidden');
+                validationInterface.style.display = 'block';
+            }
+            
+            // Load mappings into validation interface with validation state
+            loadValidationInterface(validationState);
+            
+            statusManager.show(`✅ Initialized validation for ${Object.keys(validationState).length} mappings`, 'success', 3000);
+        } catch (error) {
+            console.error('Failed to initialize validation:', error);
+            statusManager.show('❌ Failed to initialize validation', 'error', 5000);
         }
-        
-        // Load mappings into validation interface
-        loadValidationInterface(allMappings);
-        
-        statusManager.show(`✅ Loaded ${allMappings.length} mappings for validation`, 'success', 3000);
     }
     
     function handleUploadValidationFile() {
@@ -2433,48 +2510,126 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function loadValidationInterface(mappings) {
-        console.log(`🔧 Building validation interface for ${mappings.length} mappings`);
+    function loadValidationInterface(validationState) {
+        const mappingCount = Object.keys(validationState).length;
+        console.log(`🔧 Building validation interface for ${mappingCount} mappings`);
         
         const validationInterface = document.getElementById('validationInterface');
         if (!validationInterface) return;
         
-        // Create a simple validation interface
+        // Count mappings by attention flags
+        let flagCounts = {
+            low_confidence: 0,
+            ambiguous: 0,
+            singleton_mapping: 0,
+            high_confidence_gap: 0,
+            secondary_pipeline: 0
+        };
+        
+        Object.values(validationState).forEach(state => {
+            state.needs_attention_flags.forEach(flag => {
+                if (flagCounts.hasOwnProperty(flag)) {
+                    flagCounts[flag]++;
+                }
+            });
+        });
+        
+        // Create validation interface with statistics
         const interfaceHTML = `
             <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
                 <h4 style="margin: 0 0 15px 0; color: #3f51b5;">
-                    <i class="fas fa-clipboard-check"></i> Review ${mappings.length} Mappings
+                    <i class="fas fa-clipboard-check"></i> Review ${mappingCount} Mappings
                 </h4>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px;">
+                    <div style="background: #e3f2fd; padding: 10px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: bold; color: #1976d2;">${mappingCount}</div>
+                        <div style="font-size: 12px; color: #666;">Total Mappings</div>
+                    </div>
+                    <div style="background: #fff3e0; padding: 10px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: bold; color: #f57c00;">${flagCounts.low_confidence}</div>
+                        <div style="font-size: 12px; color: #666;">Low Confidence</div>
+                    </div>
+                    <div style="background: #fce4ec; padding: 10px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: bold; color: #c2185b;">${flagCounts.ambiguous}</div>
+                        <div style="font-size: 12px; color: #666;">Ambiguous</div>
+                    </div>
+                    <div style="background: #f3e5f5; padding: 10px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: bold; color: #7b1fa2;">${flagCounts.singleton_mapping}</div>
+                        <div style="font-size: 12px; color: #666;">Singleton</div>
+                    </div>
+                </div>
+                
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
                     <p style="margin: 0 0 10px 0; color: #666;">
-                        <strong>Next steps:</strong> This validation interface will allow you to:
+                        <strong>Ready for Validation:</strong> This interface will allow you to:
                     </p>
                     <ul style="margin: 0; padding-left: 20px; color: #666;">
-                        <li>Review individual mappings for accuracy</li>
-                        <li>Mark corrections and approvals</li>
-                        <li>Export validation decisions</li>
-                        <li>Commit approved changes to the system</li>
+                        <li>Review mappings requiring attention (flagged items)</li>
+                        <li>Approve or correct individual mappings</li>
+                        <li>Add validation notes and decisions</li>
+                        <li>Export validation state for record keeping</li>
                     </ul>
                 </div>
-                <div style="background: #fff3cd; padding: 10px; border-radius: 4px; border-left: 4px solid #ffc107;">
-                    <small style="color: #856404;">
-                        <strong>Coming Soon:</strong> Full validation UI with individual mapping review, correction tools, and decision tracking.
+                
+                <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; border-left: 4px solid #4caf50; margin-bottom: 15px;">
+                    <small style="color: #2e7d32;">
+                        <strong>✅ Validation State Initialized:</strong> ${mappingCount} mappings are ready for review with attention flags applied.
                     </small>
                 </div>
             </div>
         `;
         
         validationInterface.innerHTML = interfaceHTML + `
-            <button id="commitDecisionsBtn" class="button primary">
-                <i class="fas fa-cloud-upload-alt"></i> Commit Validated Decisions to R2
-            </button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button id="exportValidationStateBtn" class="button" style="background: #2196F3; color: white;">
+                    <i class="fas fa-download"></i> Export Validation State
+                </button>
+                <button id="commitDecisionsBtn" class="button primary">
+                    <i class="fas fa-cloud-upload-alt"></i> Commit Validated Decisions to R2
+                </button>
+            </div>
         `;
         
-        // Add event listener for commit button
+        // Add event listeners for validation buttons
         const commitBtn = document.getElementById('commitDecisionsBtn');
+        const exportBtn = document.getElementById('exportValidationStateBtn');
+        
         if (commitBtn) {
             commitBtn.addEventListener('click', commitValidatedDecisions);
         }
+        
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => exportValidationState(validationState));
+        }
+        
+        // Store validation state globally for access by other functions
+        window.currentValidationState = validationState;
+    }
+    
+    function exportValidationState(validationState) {
+        console.log('📥 Exporting validation state');
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `validation_state_${timestamp}.json`;
+        
+        const exportData = {
+            export_timestamp: new Date().toISOString(),
+            mapping_count: Object.keys(validationState).length,
+            validation_state: validationState
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        
+        URL.revokeObjectURL(url);
+        
+        statusManager.show(`✅ Exported validation state: ${filename}`, 'success', 3000);
     }
     
     function commitValidatedDecisions() {

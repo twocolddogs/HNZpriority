@@ -1698,6 +1698,248 @@ def test_secondary_pipeline():
         logger.error(f"Secondary pipeline test error: {e}")
         return jsonify({'error': str(e)}), 500
 
+
+# =============================================================================
+# VALIDATION API ENDPOINTS
+# =============================================================================
+# Human-in-the-Loop validation system endpoints for reviewing and correcting
+# mapping decisions from the radiology cleaner pipeline
+
+@app.route('/validation/initialize', methods=['POST'])
+def initialize_validation():
+    """
+    Initialize validation state from export mappings.
+    Takes array of mapping objects and creates validation state.
+    """
+    try:
+        data = request.get_json()
+        if not data or 'mappings' not in data:
+            return jsonify({'error': 'Missing mappings data'}), 400
+            
+        mappings = data['mappings']
+        if not isinstance(mappings, list):
+            return jsonify({'error': 'Mappings must be an array'}), 400
+            
+        logger.info(f"Initializing validation for {len(mappings)} mappings")
+        
+        # Transform mappings into validation state (similar to frontend logic)
+        validation_state = {}
+        timestamp = datetime.utcnow().isoformat() + 'Z'
+        
+        for mapping in mappings:
+            # Generate mapping ID
+            key_string = f"{mapping.get('data_source', '')}-{mapping.get('exam_code', '')}-{mapping.get('exam_name', '')}-{mapping.get('clean_name', '')}"
+            mapping_id = key_string.replace(' ', '_').replace('/', '_')[:32]
+            
+            # Apply attention flags
+            flags = []
+            confidence = mapping.get('components', {}).get('confidence', 0)
+            
+            if confidence < 0.85:
+                flags.append('low_confidence')
+            if mapping.get('ambiguous', False):
+                flags.append('ambiguous')
+                
+            candidates = mapping.get('all_candidates', [])
+            if len(candidates) == 1:
+                flags.append('singleton_mapping')
+            elif len(candidates) > 1:
+                top_conf = candidates[0].get('confidence', 0)
+                second_conf = candidates[1].get('confidence', 0)
+                if top_conf - second_conf > 0.15:
+                    flags.append('high_confidence_gap')
+                    
+            if mapping.get('secondary_pipeline_applied', False):
+                flags.append('secondary_pipeline')
+            
+            validation_state[mapping_id] = {
+                'unique_mapping_id': mapping_id,
+                'original_mapping': mapping,
+                'validation_status': 'pending_review',
+                'validator_decision': None,
+                'validation_notes': None,
+                'needs_attention_flags': flags,
+                'timestamp_created': timestamp,
+                'timestamp_reviewed': None
+            }
+        
+        logger.info(f"Created validation state for {len(validation_state)} mappings")
+        
+        return jsonify({
+            'success': True,
+            'mapping_count': len(validation_state),
+            'validation_state': validation_state,
+            'summary': {
+                'total_mappings': len(validation_state),
+                'flagged_mappings': len([v for v in validation_state.values() if v['needs_attention_flags']]),
+                'timestamp': timestamp
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize validation: {e}")
+        return jsonify({'error': f'Validation initialization failed: {str(e)}'}), 500
+
+
+@app.route('/validation/decision', methods=['POST'])
+def submit_validation_decision():
+    """
+    Submit a validation decision for a specific mapping.
+    Updates the validation state with reviewer decision and notes.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Missing request data'}), 400
+            
+        mapping_id = data.get('mapping_id')
+        decision = data.get('decision')  # 'approve', 'reject', 'modify'
+        notes = data.get('notes', '')
+        corrected_mapping = data.get('corrected_mapping')  # For 'modify' decisions
+        
+        if not mapping_id or not decision:
+            return jsonify({'error': 'Missing mapping_id or decision'}), 400
+            
+        if decision not in ['approve', 'reject', 'modify']:
+            return jsonify({'error': 'Invalid decision type'}), 400
+            
+        logger.info(f"Processing validation decision: {decision} for mapping {mapping_id}")
+        
+        # In a real implementation, this would update a database or validation store
+        # For now, return success with the decision data
+        validation_decision = {
+            'mapping_id': mapping_id,
+            'decision': decision,
+            'notes': notes,
+            'timestamp_reviewed': datetime.utcnow().isoformat() + 'Z',
+            'validation_status': 'reviewed' if decision == 'approve' else 'needs_correction'
+        }
+        
+        if decision == 'modify' and corrected_mapping:
+            validation_decision['corrected_mapping'] = corrected_mapping
+            
+        return jsonify({
+            'success': True,
+            'validation_decision': validation_decision,
+            'message': f'Decision "{decision}" recorded for mapping {mapping_id}'
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to submit validation decision: {e}")
+        return jsonify({'error': f'Decision submission failed: {str(e)}'}), 500
+
+
+@app.route('/validation/batch_decisions', methods=['POST'])
+def submit_batch_validation_decisions():
+    """
+    Submit multiple validation decisions in a single request.
+    Accepts array of decision objects.
+    """
+    try:
+        data = request.get_json()
+        if not data or 'decisions' not in data:
+            return jsonify({'error': 'Missing decisions data'}), 400
+            
+        decisions = data['decisions']
+        if not isinstance(decisions, list):
+            return jsonify({'error': 'Decisions must be an array'}), 400
+            
+        logger.info(f"Processing batch validation decisions: {len(decisions)} decisions")
+        
+        processed_decisions = []
+        errors = []
+        
+        for decision_data in decisions:
+            try:
+                mapping_id = decision_data.get('mapping_id')
+                decision = decision_data.get('decision')
+                notes = decision_data.get('notes', '')
+                
+                if not mapping_id or not decision:
+                    errors.append(f'Invalid decision data: missing mapping_id or decision')
+                    continue
+                    
+                processed_decision = {
+                    'mapping_id': mapping_id,
+                    'decision': decision,
+                    'notes': notes,
+                    'timestamp_reviewed': datetime.utcnow().isoformat() + 'Z'
+                }
+                
+                processed_decisions.append(processed_decision)
+                
+            except Exception as e:
+                errors.append(f'Error processing decision: {str(e)}')
+        
+        return jsonify({
+            'success': True,
+            'processed_count': len(processed_decisions),
+            'error_count': len(errors),
+            'decisions': processed_decisions,
+            'errors': errors if errors else None
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to process batch validation decisions: {e}")
+        return jsonify({'error': f'Batch decision processing failed: {str(e)}'}), 500
+
+
+@app.route('/validation/export', methods=['POST'])
+def export_validation_results():
+    """
+    Export validation results in various formats.
+    Returns validation decisions and approved/rejected mappings.
+    """
+    try:
+        data = request.get_json()
+        validation_state = data.get('validation_state', {}) if data else {}
+        export_format = data.get('format', 'json') if data else 'json'
+        
+        logger.info(f"Exporting validation results in {export_format} format")
+        
+        # Process validation state to create export data
+        export_data = {
+            'export_timestamp': datetime.utcnow().isoformat() + 'Z',
+            'total_mappings': len(validation_state),
+            'approved_mappings': [],
+            'rejected_mappings': [],
+            'modified_mappings': [],
+            'pending_mappings': []
+        }
+        
+        for mapping_id, state in validation_state.items():
+            decision = state.get('validator_decision')
+            if decision == 'approve':
+                export_data['approved_mappings'].append(state)
+            elif decision == 'reject':
+                export_data['rejected_mappings'].append(state)
+            elif decision == 'modify':
+                export_data['modified_mappings'].append(state)
+            else:
+                export_data['pending_mappings'].append(state)
+        
+        # Add summary statistics
+        export_data['summary'] = {
+            'approved_count': len(export_data['approved_mappings']),
+            'rejected_count': len(export_data['rejected_mappings']),
+            'modified_count': len(export_data['modified_mappings']),
+            'pending_count': len(export_data['pending_mappings']),
+            'completion_rate': (len(export_data['approved_mappings']) + 
+                              len(export_data['rejected_mappings']) + 
+                              len(export_data['modified_mappings'])) / len(validation_state) * 100 if validation_state else 0
+        }
+        
+        return jsonify({
+            'success': True,
+            'export_data': export_data,
+            'format': export_format
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to export validation results: {e}")
+        return jsonify({'error': f'Export failed: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     logger.info("Running in local development mode, initializing app immediately.")
     _ensure_app_is_initialized()
