@@ -333,11 +333,11 @@ function buildModelSelectionUI() {
     
     Object.entries(availableModels).forEach(([key, model]) => {
         const button = document.createElement('button');
-        button.className = `model-card ${currentModel === key ? 'selected' : ''}`;
+        button.className = `btn model-card ${currentModel === key ? 'selected' : ''}`;
         button.innerHTML = `
-            <strong>${model.name}</strong>
-            <div class="model-description">${model.description}</div>
-            <div class="model-status status-${model.status}">${model.status}</div>
+            <h4>${model.name}</h4>
+            <p>${model.description}</p>
+            <div class="status ${model.status}">${model.status}</div>
         `;
         button.addEventListener('click', () => selectModel(key));
         container.appendChild(button);
@@ -352,11 +352,11 @@ function buildRerankerSelectionUI() {
     
     Object.entries(availableRerankers).forEach(([key, reranker]) => {
         const button = document.createElement('button');
-        button.className = `model-card ${currentReranker === key ? 'selected' : ''}`;
+        button.className = `btn model-card ${currentReranker === key ? 'selected' : ''}`;
         button.innerHTML = `
-            <strong>${reranker.name}</strong>
-            <div class="reranker-description">${reranker.description}</div>
-            <div class="reranker-status status-${reranker.status}">${reranker.status}</div>
+            <h4>${reranker.name}</h4>
+            <p>${reranker.description}</p>
+            <div class="status ${reranker.status}">${reranker.status}</div>
         `;
         button.addEventListener('click', () => selectReranker(key));
         container.appendChild(button);
@@ -452,7 +452,7 @@ async function runRandomDemo(sampleSize) {
     statusManager.show(`🎲 Starting random demo with ${sampleSize} samples...`, 'info');
     
     try {
-        const response = await fetch(`${apiConfig.baseUrl}/demo/random`, {
+        const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -480,7 +480,7 @@ async function runFixedTest() {
     statusManager.show('🧪 Running fixed test suite...', 'info');
     
     try {
-        const response = await fetch(`${apiConfig.baseUrl}/demo/fixed`, {
+        const response = await fetch(`${apiConfig.baseUrl}/process_sanity_test`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -641,7 +641,7 @@ async function loadConfigEditor() {
     
     try {
         status.textContent = 'Loading...';
-        const response = await fetch(`${apiConfig.baseUrl}/config`);
+        const response = await fetch(`${apiConfig.baseUrl}/config/current`);
         
         if (response.ok) {
             const config = await response.text();
