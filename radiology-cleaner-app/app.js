@@ -251,8 +251,7 @@ async function testApiConnectivity() {
     try {
         const response = await fetch(apiConfig.healthUrl, { 
             method: 'GET',
-            mode: 'cors',
-            credentials: 'include'
+            mode: 'cors'
         });
         if (response.ok) {
             console.log('✓ API connectivity test passed');
@@ -275,7 +274,6 @@ async function loadAvailableModels(retryCount = 0) {
         const response = await fetch(apiConfig.modelsUrl, { 
             method: 'GET',
             mode: 'cors',
-            credentials: 'include',
             signal: AbortSignal.timeout(10000)
         });
         
@@ -554,7 +552,6 @@ async function runRandomDemo(sampleSize) {
         const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
             method: 'POST',
             mode: 'cors',
-            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 sample_size: sampleSize,
@@ -593,7 +590,6 @@ async function runFixedTest() {
         const response = await fetch(`${apiConfig.baseUrl}/process_sanity_test`, {
             method: 'POST',
             mode: 'cors',
-            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: currentModel,
@@ -821,8 +817,7 @@ async function loadConfigEditor() {
         status.textContent = 'Loading...';
         const response = await fetch(`${apiConfig.baseUrl}/config/current`, {
             method: 'GET',
-            mode: 'cors',
-            credentials: 'include'
+            mode: 'cors'
         });
         
         if (response.ok) {
