@@ -13,7 +13,7 @@ let currentView = 'full'; // 'full' or 'consolidated'
 
 // API Configuration
 const apiConfig = {
-    baseUrl: window.location.origin,
+    baseUrl: 'https://radiology-api-staging.onrender.com',
     get healthUrl() { return `${this.baseUrl}/health`; },
     get modelsUrl() { return `${this.baseUrl}/models`; }
 };
@@ -333,7 +333,7 @@ function buildModelSelectionUI() {
     
     Object.entries(availableModels).forEach(([key, model]) => {
         const button = document.createElement('button');
-        button.className = `model-btn ${currentModel === key ? 'selected' : ''}`;
+        button.className = `model-card ${currentModel === key ? 'selected' : ''}`;
         button.innerHTML = `
             <strong>${model.name}</strong>
             <div class="model-description">${model.description}</div>
@@ -352,7 +352,7 @@ function buildRerankerSelectionUI() {
     
     Object.entries(availableRerankers).forEach(([key, reranker]) => {
         const button = document.createElement('button');
-        button.className = `reranker-btn ${currentReranker === key ? 'selected' : ''}`;
+        button.className = `model-card ${currentReranker === key ? 'selected' : ''}`;
         button.innerHTML = `
             <strong>${reranker.name}</strong>
             <div class="reranker-description">${reranker.description}</div>
