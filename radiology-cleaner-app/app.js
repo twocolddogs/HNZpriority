@@ -332,15 +332,35 @@ function buildModelSelectionUI() {
     container.innerHTML = '';
     
     Object.entries(availableModels).forEach(([key, model]) => {
+        const modelWrapper = document.createElement('div');
+        modelWrapper.className = 'model-wrapper';
+        modelWrapper.style.cssText = 'display: flex; align-items: center; gap: 15px; margin-bottom: 10px;';
+        
         const button = document.createElement('button');
-        button.className = `btn model-card ${currentModel === key ? 'selected' : ''}`;
-        button.innerHTML = `
-            <h4>${model.name}</h4>
-            <p>${model.description}</p>
-            <div class="status ${model.status}">${model.status}</div>
-        `;
-        button.addEventListener('click', () => selectModel(key));
-        container.appendChild(button);
+        button.className = `button secondary model-toggle ${key === currentModel ? 'active' : ''}`;
+        button.id = `${key}ModelBtn`;
+        button.dataset.model = key;
+        button.style.cssText = 'min-width: 150px; flex-shrink: 0;';
+        
+        const statusText = model.status === 'available' ? '' : ' (Unavailable)';
+        button.innerHTML = `<span class="model-name">${model.name}${statusText}</span>`;
+        
+        const description = document.createElement('span');
+        description.className = 'model-description';
+        description.style.cssText = 'font-size: 0.85em; color: #666; flex: 1;';
+        description.textContent = model.description || '';
+        
+        if (model.status !== 'available') {
+            button.disabled = true;
+            button.title = `${model.name} is currently unavailable`;
+            description.style.color = '#999';
+        } else {
+            button.addEventListener('click', () => selectModel(key));
+        }
+        
+        modelWrapper.appendChild(button);
+        modelWrapper.appendChild(description);
+        container.appendChild(modelWrapper);
     });
 }
 
@@ -350,29 +370,96 @@ function buildRerankerSelectionUI() {
 
     container.innerHTML = '';
     
-    Object.entries(availableRerankers).forEach(([key, reranker]) => {
-        const button = document.createElement('button');
-        button.className = `btn model-card ${currentReranker === key ? 'selected' : ''}`;
-        button.innerHTML = `
-            <h4>${reranker.name}</h4>
-            <p>${reranker.description}</p>
-            <div class="status ${reranker.status}">${reranker.status}</div>
-        `;
-        button.addEventListener('click', () => selectReranker(key));
-        container.appendChild(button);
+    // Sort rerankers to put MedCPT first, then others alphabetically
+    const sortedRerankers = Object.entries(availableRerankers).sort(([keyA], [keyB]) => {
+        if (keyA === 'medcpt') return -1;  // MedCPT goes first
+        if (keyB === 'medcpt') return 1;   // MedCPT goes first
+        return keyA.localeCompare(keyB);   // Others alphabetically
     });
+    
+    sortedRerankers.forEach(([key, reranker]) => {
+        const rerankerWrapper = document.createElement('div');
+        rerankerWrapper.className = 'reranker-wrapper';
+        rerankerWrapper.style.cssText = 'display: flex; align-items: center; gap: 15px; margin-bottom: 10px;';
+        
+        const button = document.createElement('button');
+        button.className = `button reranker-toggle ${key === currentReranker ? 'active' : ''}`;
+        button.id = `${key}RerankerBtn`;
+        button.dataset.reranker = key;
+        button.style.cssText = 'min-width: 180px; flex-shrink: 0;';
+        
+        const statusText = reranker.status === 'available' ? '' : ' (Unavailable)';
+        const typeInfo = reranker.type === 'openrouter' ? ' 🌐' : ' 🤗';
+        button.innerHTML = `<span class="reranker-name">${formatRerankerName(key)}${typeInfo}${statusText}</span>`;
+        
+        const description = document.createElement('span');
+        description.className = 'reranker-description';
+        description.style.cssText = 'font-size: 0.85em; color: #666; flex: 1;';
+        description.textContent = reranker.description || '';
+        
+        if (reranker.status !== 'available') {
+            button.disabled = true;
+            button.title = `${reranker.name} is currently unavailable`;
+            description.style.color = '#999';
+        } else {
+            button.addEventListener('click', () => selectReranker(key));
+        }
+        
+        rerankerWrapper.appendChild(button);
+        rerankerWrapper.appendChild(description);
+        container.appendChild(rerankerWrapper);
+    });
+}
+
+function formatRerankerName(rerankerKey) {
+    if (availableRerankers && availableRerankers[rerankerKey] && availableRerankers[rerankerKey].name) {
+        return availableRerankers[rerankerKey].name;
+    }
+    const nameMap = {
+        'medcpt': 'MedCPT (HuggingFace)',
+        'gpt-4o-mini': 'GPT-4o Mini',
+        'claude-3-haiku': 'Claude 3 Haiku', 
+        'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite'
+    };
+    return nameMap[rerankerKey] || rerankerKey.charAt(0).toUpperCase() + rerankerKey.slice(1);
 }
 
 function selectModel(modelKey) {
     currentModel = modelKey;
-    buildModelSelectionUI();
+    // Update button states
+    document.querySelectorAll('.model-toggle').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`${modelKey}ModelBtn`)?.classList.add('active');
     updateWorkflowProgress();
     console.log('📋 Selected model:', modelKey);
 }
 
 function selectReranker(rerankerKey) {
+    if (!availableRerankers[rerankerKey] || availableRerankers[rerankerKey].status !== 'available') {
+        console.warn(`Reranker ${rerankerKey} is not available.`);
+        return;
+    }
     currentReranker = rerankerKey;
-    buildRerankerSelectionUI();
+    // Update button states
+    document.querySelectorAll('.reranker-toggle').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`${rerankerKey}RerankerBtn`)?.classList.add('active');
+    
+    // Show reranker status message in local area instead of global status
+    const rerankerStatusEl = document.getElementById('rerankerStatusMessage');
+    if (rerankerStatusEl) {
+        rerankerStatusEl.style.display = 'block';
+        rerankerStatusEl.style.background = '#d4edda';
+        rerankerStatusEl.style.color = '#155724';
+        rerankerStatusEl.style.border = '1px solid #c3e6cb';
+        rerankerStatusEl.textContent = `✓ Switched to ${formatRerankerName(rerankerKey)} reranker`;
+        
+        // Hide the message after 3 seconds
+        setTimeout(() => {
+            if (rerankerStatusEl) {
+                rerankerStatusEl.style.display = 'none';
+            }
+        }, 3000);
+    }
+    
     updateWorkflowProgress();
     console.log('🔄 Selected reranker:', rerankerKey);
 }
