@@ -2470,11 +2470,13 @@ window.addEventListener('DOMContentLoaded', function() {
             // Transform allMappings into validation state
             const validationState = await initializeValidationFromMappings(allMappings);
             
-            // Hide mode selection, show validation interface
+            // Hide mode selection and results display, show validation interface
             const modeSelection = document.getElementById('validationModeSelection');
             const validationInterface = document.getElementById('validationInterface');
+            const resultsDisplay = document.getElementById('resultsDisplay');
             
             if (modeSelection) modeSelection.style.display = 'none';
+            if (resultsDisplay) resultsDisplay.style.display = 'none';
             if (validationInterface) {
                 validationInterface.classList.remove('hidden');
                 validationInterface.style.display = 'block';
@@ -2539,62 +2541,67 @@ window.addEventListener('DOMContentLoaded', function() {
         
         // Create validation interface with statistics and consolidated groups
         const interfaceHTML = `
-            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-                <h4 style="margin: 0 0 15px 0; color: #3f51b5;">
-                    <i class="fas fa-clipboard-check"></i> Review ${mappingCount} Mappings
-                </h4>
+            <div class="validation-header">
+                <div class="validation-title-container">
+                    <h3 class="validation-title">
+                        <i class="fas fa-clipboard-check"></i> Validation Review
+                    </h3>
+                    <p class="validation-subtitle">Review ${mappingCount} mappings grouped by NHS reference for efficient validation</p>
+                </div>
                 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px;">
-                    <div style="background: #e3f2fd; padding: 10px; border-radius: 6px; text-align: center;">
-                        <div style="font-size: 20px; font-weight: bold; color: #1976d2;">${mappingCount}</div>
-                        <div style="font-size: 12px; color: #666;">Total Mappings</div>
+                <div class="validation-stats">
+                    <div class="stat-item stat-total">
+                        <div class="stat-number">${mappingCount}</div>
+                        <div class="stat-label">Total Mappings</div>
                     </div>
-                    <div style="background: #e8f5e8; padding: 10px; border-radius: 6px; text-align: center;">
-                        <div style="font-size: 20px; font-weight: bold; color: #4caf50;">${Object.keys(consolidatedGroups).length}</div>
-                        <div style="font-size: 12px; color: #666;">NHS References</div>
+                    <div class="stat-item stat-groups">
+                        <div class="stat-number">${Object.keys(consolidatedGroups).length}</div>
+                        <div class="stat-label">NHS References</div>
                     </div>
-                    <div style="background: #fff3e0; padding: 10px; border-radius: 6px; text-align: center;">
-                        <div style="font-size: 20px; font-weight: bold; color: #f57c00;">${flagCounts.low_confidence}</div>
-                        <div style="font-size: 12px; color: #666;">Low Confidence</div>
+                    <div class="stat-item stat-flagged">
+                        <div class="stat-number">${flagCounts.low_confidence}</div>
+                        <div class="stat-label">Low Confidence</div>
                     </div>
-                    <div style="background: #fce4ec; padding: 10px; border-radius: 6px; text-align: center;">
-                        <div style="font-size: 20px; font-weight: bold; color: #c2185b;">${flagCounts.ambiguous}</div>
-                        <div style="font-size: 12px; color: #666;">Ambiguous</div>
+                    <div class="stat-item stat-ambiguous">
+                        <div class="stat-number">${flagCounts.ambiguous}</div>
+                        <div class="stat-label">Ambiguous</div>
                     </div>
                 </div>
                 
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button id="approveAllBtn" class="button" style="background: #4caf50; color: white;">
+                <div class="validation-controls">
+                    <div class="control-group">
+                        <button id="approveAllBtn" class="button button-success">
                             <i class="fas fa-check-double"></i> Approve All Groups
                         </button>
-                        <button id="expandAllBtn" class="button" style="background: #2196F3; color: white;">
+                        <button id="expandAllBtn" class="button button-primary">
                             <i class="fas fa-expand-alt"></i> Expand All
                         </button>
-                        <button id="collapseAllBtn" class="button" style="background: #607d8b; color: white;">
+                        <button id="collapseAllBtn" class="button button-secondary">
                             <i class="fas fa-compress-alt"></i> Collapse All
                         </button>
                     </div>
-                    <p style="margin: 0; color: #666; font-size: 14px;">
-                        <strong>Consolidated View:</strong> Mappings are grouped by NHS reference for bulk approval. 
-                        Individual mappings can be overridden within each group.
-                    </p>
+                    <div class="control-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span><strong>Consolidated View:</strong> Mappings are grouped by NHS reference for bulk approval. Individual mappings can be overridden within each group.</span>
+                    </div>
                 </div>
             </div>
             
-            <div id="validationGroups">
+            <div id="validationGroups" class="validation-groups-container">
                 ${renderValidationGroups(consolidatedGroups)}
             </div>
         `;
         
         validationInterface.innerHTML = interfaceHTML + `
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
-                <button id="exportValidationStateBtn" class="button" style="background: #2196F3; color: white;">
-                    <i class="fas fa-download"></i> Export Validation State
-                </button>
-                <button id="commitDecisionsBtn" class="button primary">
-                    <i class="fas fa-cloud-upload-alt"></i> Commit Validated Decisions to R2
-                </button>
+            <div class="validation-actions">
+                <div class="action-group">
+                    <button id="exportValidationStateBtn" class="button button-primary">
+                        <i class="fas fa-download"></i> Export Validation State
+                    </button>
+                    <button id="commitDecisionsBtn" class="button button-success">
+                        <i class="fas fa-cloud-upload-alt"></i> Commit Validated Decisions
+                    </button>
+                </div>
             </div>
         `;
         
@@ -2654,35 +2661,43 @@ window.addEventListener('DOMContentLoaded', function() {
                 `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`
             ).join('');
             
+            // Get SNOMED-ID from first mapping in the group
+            const snomedId = group.mappings[0]?.original_mapping?.snomed_id || 'Unknown';
+            const isSingleton = group.total_mappings === 1;
+            
             html += `
-                <div class="validation-group" data-group-id="${groupId}" style="background: white; border-radius: 8px; margin-bottom: 15px; overflow: hidden; border: 1px solid ${hasFlags ? '#ff9800' : '#e0e0e0'};">
-                    <div class="group-header" style="padding: 15px; background: ${hasFlags ? '#fff8e1' : '#f5f5f5'}; border-bottom: 1px solid #e0e0e0; cursor: pointer;" onclick="toggleValidationGroup('${groupId}')">
-                        <div style="display: flex; align-items: center; justify-content: between;">
-                            <div style="flex: 1;">
-                                <h5 style="margin: 0 0 5px 0; color: #1976d2; font-size: 16px;">
-                                    <i class="fas fa-chevron-right group-toggle" style="margin-right: 8px; transition: transform 0.2s;"></i>
-                                    ${group.nhs_reference}
-                                </h5>
-                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                    <span style="font-size: 14px; color: #666;">${group.total_mappings} mapping(s)</span>
-                                    ${group.flagged_count > 0 ? `<span style="font-size: 14px; color: #f57c00;">${group.flagged_count} flagged</span>` : ''}
-                                    ${flagBadges}
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <select class="group-decision-select" data-group-id="${groupId}" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc;" onchange="updateGroupDecision('${groupId}', this.value)" onclick="event.stopPropagation()">
+                <div class="validation-group consolidated-group ${hasFlags ? 'validation-flagged' : ''}" data-group-id="${groupId}">
+                    <div class="validation-header consolidated-header ${hasFlags ? 'flagged-header' : ''}" onclick="toggleValidationGroup('${groupId}')">
+                        <div class="consolidated-title-container">
+                            <div class="consolidated-title">${group.nhs_reference}</div>
+                            <div class="snomed-code">${snomedId}</div>
+                            ${isSingleton ? '<div class="singleton-badge"><i class="fas fa-user"></i> SINGLETON</div>' : ''}
+                            ${flagBadges}
+                        </div>
+                        <div class="consolidated-count-container">
+                            <span class="consolidated-count">${group.total_mappings} mapping${group.total_mappings !== 1 ? 's' : ''}</span>
+                            ${group.flagged_count > 0 ? `<span class="flagged-count"><i class="fas fa-exclamation-triangle"></i> ${group.flagged_count} flagged</span>` : ''}
+                            <div class="validation-controls-inline">
+                                <select class="group-decision-select" data-group-id="${groupId}" onchange="updateGroupDecision('${groupId}', this.value)" onclick="event.stopPropagation()">
                                     <option value="pending">Pending</option>
                                     <option value="approve">Approve Group</option>
                                     <option value="reject">Reject Group</option>
+                                    ${isSingleton ? '<option value="skip">Skip (Singleton)</option>' : ''}
                                     <option value="review">Individual Review</option>
                                 </select>
-                                <button class="button" style="background: #4caf50; color: white; padding: 6px 12px;" onclick="event.stopPropagation(); quickApproveGroup('${groupId}')">
+                                <button class="button button-sm button-success" onclick="event.stopPropagation(); quickApproveGroup('${groupId}')" title="Quick approve">
                                     <i class="fas fa-check"></i>
                                 </button>
+                                ${isSingleton ? `
+                                    <button class="button button-sm button-secondary" onclick="event.stopPropagation(); skipSingletonGroup('${groupId}')" title="Skip singleton for potential better mapping">
+                                        <i class="fas fa-forward"></i>
+                                    </button>
+                                ` : ''}
                             </div>
+                            <span class="expand-icon"></span>
                         </div>
                     </div>
-                    <div class="group-content" id="${groupId}_content" style="display: none; padding: 15px;">
+                    <div class="validation-body consolidated-body" id="${groupId}_content" style="display: none;">
                         ${renderGroupMappings(group.mappings, groupId)}
                     </div>
                 </div>
@@ -2693,44 +2708,68 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function renderGroupMappings(mappings, groupId) {
-        let html = '<div style="max-height: 400px; overflow-y: auto;">';
+        let html = '<div class="validation-mappings-container">';
         
         mappings.forEach((state, index) => {
             const mapping = state.original_mapping;
             const mappingId = state.unique_mapping_id;
             const hasFlags = state.needs_attention_flags.length > 0;
+            const confidence = mapping.components?.confidence || 0;
+            const confidencePercent = Math.round(confidence * 100);
+            const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             
             const flagBadges = state.needs_attention_flags.map(flag => 
-                `<span class="flag-badge flag-${flag}" style="background: #ffecb3; color: #e65100; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-right: 4px;">${flag.replace('_', ' ')}</span>`
+                `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`
             ).join('');
             
             html += `
-                <div class="mapping-item" data-mapping-id="${mappingId}" style="background: ${hasFlags ? '#fff3e0' : '#f9f9f9'}; padding: 12px; margin-bottom: 8px; border-radius: 6px; border-left: 3px solid ${hasFlags ? '#ff9800' : '#4caf50'};">
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div style="flex: 1;">
-                            <div style="font-weight: bold; color: #1976d2; margin-bottom: 4px;">${mapping.exam_name || 'Unknown Exam'}</div>
-                            <div style="font-size: 13px; color: #666; margin-bottom: 6px;">
-                                <strong>Source:</strong> ${mapping.data_source || 'Unknown'} | 
-                                <strong>Code:</strong> ${mapping.exam_code || 'N/A'} |
-                                <strong>Confidence:</strong> ${(mapping.components?.confidence || 0).toFixed(3)}
+                <div class="validation-mapping-item ${hasFlags ? 'mapping-flagged' : ''}" data-mapping-id="${mappingId}">
+                    <div class="mapping-content">
+                        <div class="mapping-header">
+                            <div class="mapping-title">${mapping.exam_name || 'Unknown Exam'}</div>
+                            <div class="mapping-actions">
+                                <button class="button button-sm button-success" onclick="updateMappingDecision('${mappingId}', 'approve')" title="Approve mapping">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject mapping">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="View details">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
                             </div>
-                            ${flagBadges ? `<div style="margin-bottom: 8px;">${flagBadges}</div>` : ''}
+                        </div>
+                        <div class="mapping-details">
+                            <div class="mapping-meta">
+                                <span class="meta-item">
+                                    <i class="fas fa-database"></i>
+                                    <strong>Source:</strong> ${mapping.data_source || 'Unknown'}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="fas fa-barcode"></i>
+                                    <strong>Code:</strong> ${mapping.exam_code || 'N/A'}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <strong>Confidence:</strong>
+                                    <div class="confidence-display">
+                                        <div class="confidence-bar">
+                                            <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
+                                        </div>
+                                        <div class="confidence-text">${confidencePercent}%</div>
+                                    </div>
+                                </span>
+                            </div>
+                            ${flagBadges ? `<div class="mapping-flags">${flagBadges}</div>` : ''}
                             ${mapping.components?.reasoning ? `
-                                <div style="font-size: 12px; color: #666; background: #f5f5f5; padding: 6px; border-radius: 3px; margin-top: 6px;">
-                                    <strong>Reasoning:</strong> ${mapping.components.reasoning}
+                                <div class="mapping-reasoning">
+                                    <div class="reasoning-header">
+                                        <i class="fas fa-brain"></i>
+                                        <strong>AI Reasoning:</strong>
+                                    </div>
+                                    <div class="reasoning-content">${mapping.components.reasoning}</div>
                                 </div>
                             ` : ''}
-                        </div>
-                        <div style="display: flex; gap: 6px; margin-left: 15px;">
-                            <button class="button" style="background: #4caf50; color: white; padding: 4px 8px; font-size: 12px;" onclick="updateMappingDecision('${mappingId}', 'approve')">
-                                <i class="fas fa-check"></i>
-                            </button>
-                            <button class="button" style="background: #f44336; color: white; padding: 4px 8px; font-size: 12px;" onclick="updateMappingDecision('${mappingId}', 'reject')">
-                                <i class="fas fa-times"></i>
-                            </button>
-                            <button class="button" style="background: #ff9800; color: white; padding: 4px 8px; font-size: 12px;" onclick="showMappingDetails('${mappingId}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -2796,16 +2835,18 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     // Validation interaction functions
-    function toggleValidationGroup(groupId) {
+    window.toggleValidationGroup = function(groupId) {
         const content = document.getElementById(`${groupId}_content`);
         const toggle = document.querySelector(`[data-group-id="${groupId}"] .group-toggle`);
         
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            toggle.style.transform = 'rotate(90deg)';
-        } else {
-            content.style.display = 'none';
-            toggle.style.transform = 'rotate(0deg)';
+        if (content && toggle) {
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'block';
+                toggle.style.transform = 'rotate(90deg)';
+            } else {
+                content.style.display = 'none';
+                toggle.style.transform = 'rotate(0deg)';
+            }
         }
     }
     
@@ -2826,7 +2867,7 @@ window.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    function updateGroupDecision(groupId, decision) {
+    window.updateGroupDecision = function(groupId, decision) {
         console.log(`📝 Updating group ${groupId} decision to: ${decision}`);
         
         const groupElement = document.querySelector(`[data-group-id="${groupId}"]`);
@@ -2844,12 +2885,15 @@ window.addEventListener('DOMContentLoaded', function() {
             case 'review':
                 header.style.background = '#fff3e0';
                 break;
+            case 'skip':
+                header.style.background = '#f3e5f5';
+                break;
             default:
                 header.style.background = '#f5f5f5';
         }
         
         // Update all mappings in the group if bulk decision
-        if (decision === 'approve' || decision === 'reject') {
+        if (decision === 'approve' || decision === 'reject' || decision === 'skip') {
             const mappingElements = groupElement.querySelectorAll('.mapping-item');
             mappingElements.forEach(mappingEl => {
                 const mappingId = mappingEl.dataset.mappingId;
@@ -2862,6 +2906,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 } else if (decision === 'reject') {
                     mappingEl.style.borderLeft = '3px solid #f44336';
                     mappingEl.style.background = '#ffebee';
+                } else if (decision === 'skip') {
+                    mappingEl.style.borderLeft = '3px solid #9c27b0';
+                    mappingEl.style.background = '#f3e5f5';
                 }
             });
         }
@@ -2869,7 +2916,7 @@ window.addEventListener('DOMContentLoaded', function() {
         statusManager.show(`✅ Group decision: ${decision}`, 'success', 2000);
     }
     
-    function quickApproveGroup(groupId) {
+    window.quickApproveGroup = function(groupId) {
         const select = document.querySelector(`[data-group-id="${groupId}"] .group-decision-select`);
         if (select) {
             select.value = 'approve';
@@ -2895,7 +2942,15 @@ window.addEventListener('DOMContentLoaded', function() {
         statusManager.show(`✅ Approved ${approvedCount} groups`, 'success', 3000);
     }
     
-    function updateMappingDecision(mappingId, decision) {
+    window.skipSingletonGroup = function(groupId) {
+        const select = document.querySelector(`[data-group-id="${groupId}"] .group-decision-select`);
+        if (select) {
+            select.value = 'skip';
+            updateGroupDecision(groupId, 'skip');
+        }
+    }
+    
+    window.updateMappingDecision = function(mappingId, decision) {
         console.log(`📝 Updating mapping ${mappingId} decision to: ${decision}`);
         
         updateMappingDecisionInState(mappingId, decision);
@@ -2916,6 +2971,10 @@ window.addEventListener('DOMContentLoaded', function() {
                     mappingElement.style.borderLeft = '3px solid #ff9800';
                     mappingElement.style.background = '#fff8e1';
                     break;
+                case 'skip':
+                    mappingElement.style.borderLeft = '3px solid #9c27b0';
+                    mappingElement.style.background = '#f3e5f5';
+                    break;
             }
         }
         
@@ -2930,7 +2989,7 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function showMappingDetails(mappingId) {
+    window.showMappingDetails = function(mappingId) {
         const state = window.currentValidationState?.[mappingId];
         if (!state) {
             statusManager.show('❌ Mapping not found', 'error', 3000);
@@ -3009,14 +3068,14 @@ window.addEventListener('DOMContentLoaded', function() {
         document.body.insertAdjacentHTML('beforeend', modalHTML);
     }
     
-    function closeMappingDetails() {
+    window.closeMappingDetails = function() {
         const modal = document.getElementById('mappingDetailsModal');
         if (modal) {
             modal.remove();
         }
     }
     
-    function saveValidationDecision(mappingId, decision) {
+    window.saveValidationDecision = function(mappingId, decision) {
         const notes = document.getElementById('validationNotes')?.value || '';
         
         // Update state with notes
