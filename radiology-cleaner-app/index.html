@@ -87,6 +87,14 @@
                         <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">Configure preprocessing and parsing rules.</p>
                         <button class="button primary" id="advancedSetupBtn" style="width: 100%; padding: 8px; font-weight: 600; pointer-events: none; font-size: 0.9em;">Configure →</button>
                     </div>
+                    
+                    <!-- Path 4: Validation Pipeline -->
+                    <div id="validationPathCard" class="action-card validation-path" style="background: white; color: #333; padding: 18px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div class="action-icon" style="font-size: 2.5em; margin-bottom: 10px; color: #3f51b5;"><i class="fas fa-check-double"></i></div>
+                        <h3 style="margin: 0 0 6px 0; color: #2c3e50; font-size: 1.1em;">Validation Pipeline</h3>
+                        <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #666;">Review, correct, and approve mappings to improve the system.</p>
+                        <button class="button primary" style="width: 100%; padding: 8px; font-weight: 600; font-size: 0.9em; pointer-events: none;">Start Validation →</button>
+                    </div>
                 </div>
             </div>
 
@@ -179,8 +187,45 @@
                 </div>
             </div>
 
-            
-            
+            <!-- Validation Workflow Section -->
+            <div id="validationSection" class="workflow-step hidden" style="margin-top: 25px; padding: 25px; border: 2px solid #3f51b5; border-radius: 12px; background: #f9f9ff;">
+                <h3 style="margin: 0 0 15px 0; color: #3f51b5;">
+                    <i class="fas fa-check-double"></i> Validation Pipeline
+                </h3>
+                
+                <!-- Validation workflow has two modes -->
+                <div id="validationModeSelection" class="validation-modes" style="margin-bottom: 20px;">
+                    <p style="margin: 0 0 15px 0; color: #666;">Choose your validation approach:</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <button class="button secondary" id="validateCurrentResultsBtn" style="padding: 15px; text-align: left;">
+                            <div><strong><i class="fas fa-clipboard-check"></i> Validate Current Results</strong></div>
+                            <small style="display: block; margin-top: 5px; opacity: 0.8;">Review and validate the results from your recent demo/processing run</small>
+                        </button>
+                        <button class="button secondary" id="uploadValidationFileBtn" style="padding: 15px; text-align: left;">
+                            <div><strong><i class="fas fa-upload"></i> Upload Validation File</strong></div>
+                            <small style="display: block; margin-top: 5px; opacity: 0.8;">Upload a previously exported decisions.json file</small>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- File upload section (hidden initially) -->
+                <div id="validationFileUpload" class="hidden" style="margin-bottom: 20px;">
+                    <p style="margin: 0 0 15px 0; color: #666;">Upload your 'decisions.json' file to apply your team's feedback:</p>
+                    <input type="file" id="decisionsFileInput" accept=".json" class="button secondary" style="margin-right: 15px;">
+                </div>
+                
+                <!-- Validation interface will appear here -->
+                <div id="validationInterface" class="hidden" style="margin-top: 20px;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 10px 0;">Review Mappings</h4>
+                        <p style="margin: 0; color: #666;">Validation interface will appear here when results are loaded.</p>
+                    </div>
+                    
+                    <button id="commitDecisionsBtn" class="button primary" disabled>
+                        <i class="fas fa-cloud-upload-alt"></i> Commit Validated Decisions to R2
+                    </button>
+                </div>
+            </div>
 
             <div class="file-info" id="fileInfo"></div>
 
@@ -196,6 +241,9 @@
                 
                 <!-- Combined Action Buttons - Reorganized Order -->
                 <div class="action-buttons view-toggle">
+                    <button class="button" style="background: #3f51b5; color: white;" id="validateResultsBtn">
+                        <i class="fas fa-check-double"></i> Validate Results
+                    </button>
                     <button class="button active" id="viewToggleBtn">Switch to Consolidated View</button>
                     <button class="button primary new-upload" id="newUploadBtn">Start Over</button>
                     <button class="button success" id="exportMappingsBtn">Export Mappings</button>

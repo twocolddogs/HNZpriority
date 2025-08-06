@@ -868,6 +868,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('newUploadBtn')?.addEventListener('click', startNewUpload);
         document.getElementById('exportMappingsBtn')?.addEventListener('click', exportResults);
+        document.getElementById('validateResultsBtn')?.addEventListener('click', startValidation);
         
         // Note: Demo buttons are now handled in the workflow section
         
@@ -2173,6 +2174,18 @@ window.addEventListener('DOMContentLoaded', function() {
             openConfigEditor();
         });
         
+        document.querySelector('.validation-path')?.addEventListener('click', () => {
+            // Don't allow validation selection if models are still loading
+            if (buttonsDisabledForLoading) {
+                return;
+            }
+            selectPath('validation');
+        });
+        
+        // Validation mode buttons
+        document.getElementById('validateCurrentResultsBtn')?.addEventListener('click', handleValidateCurrentResults);
+        document.getElementById('uploadValidationFileBtn')?.addEventListener('click', handleUploadValidationFile);
+        
         // File input handler for upload path
         fileInput?.addEventListener('change', (e) => {
             if (e.target.files[0]) {
@@ -2227,6 +2240,11 @@ window.addEventListener('DOMContentLoaded', function() {
             if (workflowSection) workflowSection.style.display = 'none';
             if (uploadSection) uploadSection.style.display = 'none';
             if (advancedSection) advancedSection.style.display = 'none';
+            const validationSection = document.getElementById('validationSection');
+            if (validationSection) {
+                validationSection.classList.add('hidden');
+                validationSection.style.display = 'none';
+            }
             
             if (path === 'demo' || path === 'upload') {
                 // Show workflow for demo and upload paths
@@ -2245,6 +2263,19 @@ window.addEventListener('DOMContentLoaded', function() {
                 // Show advanced configuration
                 if (advancedSection) advancedSection.style.display = 'block';
                 document.querySelector('.advanced-path')?.classList.add('selected');
+                
+            } else if (path === 'validation') {
+                // Show validation workflow
+                if (validationSection) {
+                    validationSection.classList.remove('hidden');
+                    validationSection.style.display = 'block';
+                    
+                    // Scroll to validation section smoothly
+                    setTimeout(() => {
+                        validationSection.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                }
+                document.querySelector('.validation-path')?.classList.add('selected');
             }
         }
         
@@ -2330,6 +2361,126 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // Make loadAvailableModels globally accessible for navigation handling
     window.loadAvailableModels = loadAvailableModels;
+    
+    // --- VALIDATION FUNCTIONS ---
+    function startValidation() {
+        console.log('🔍 Starting validation with current results');
+        
+        // Check if we have current results to validate
+        if (!allMappings || allMappings.length === 0) {
+            statusManager.show('❌ No results to validate. Please run a demo or process data first.', 'error', 5000);
+            return;
+        }
+        
+        // Switch to validation mode
+        const validationCard = document.querySelector('.validation-path');
+        if (validationCard) {
+            validationCard.click();
+        }
+        
+        // Auto-select "Validate Current Results" option
+        setTimeout(() => {
+            const validateCurrentBtn = document.getElementById('validateCurrentResultsBtn');
+            if (validateCurrentBtn) {
+                validateCurrentBtn.click();
+            }
+        }, 200);
+        
+        statusManager.show(`📋 Ready to validate ${allMappings.length} mappings`, 'info', 3000);
+    }
+    
+    function handleValidateCurrentResults() {
+        console.log('📋 Loading current results for validation');
+        
+        if (!allMappings || allMappings.length === 0) {
+            statusManager.show('❌ No current results found to validate', 'error', 5000);
+            return;
+        }
+        
+        // Hide mode selection, show validation interface
+        const modeSelection = document.getElementById('validationModeSelection');
+        const validationInterface = document.getElementById('validationInterface');
+        
+        if (modeSelection) modeSelection.style.display = 'none';
+        if (validationInterface) {
+            validationInterface.classList.remove('hidden');
+            validationInterface.style.display = 'block';
+        }
+        
+        // Load mappings into validation interface
+        loadValidationInterface(allMappings);
+        
+        statusManager.show(`✅ Loaded ${allMappings.length} mappings for validation`, 'success', 3000);
+    }
+    
+    function handleUploadValidationFile() {
+        console.log('📁 Showing file upload for validation');
+        
+        // Hide mode selection, show file upload
+        const modeSelection = document.getElementById('validationModeSelection');
+        const fileUpload = document.getElementById('validationFileUpload');
+        
+        if (modeSelection) modeSelection.style.display = 'none';
+        if (fileUpload) {
+            fileUpload.classList.remove('hidden');
+            fileUpload.style.display = 'block';
+        }
+        
+        // Trigger file input
+        const fileInput = document.getElementById('decisionsFileInput');
+        if (fileInput) {
+            fileInput.click();
+        }
+    }
+    
+    function loadValidationInterface(mappings) {
+        console.log(`🔧 Building validation interface for ${mappings.length} mappings`);
+        
+        const validationInterface = document.getElementById('validationInterface');
+        if (!validationInterface) return;
+        
+        // Create a simple validation interface
+        const interfaceHTML = `
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                <h4 style="margin: 0 0 15px 0; color: #3f51b5;">
+                    <i class="fas fa-clipboard-check"></i> Review ${mappings.length} Mappings
+                </h4>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <p style="margin: 0 0 10px 0; color: #666;">
+                        <strong>Next steps:</strong> This validation interface will allow you to:
+                    </p>
+                    <ul style="margin: 0; padding-left: 20px; color: #666;">
+                        <li>Review individual mappings for accuracy</li>
+                        <li>Mark corrections and approvals</li>
+                        <li>Export validation decisions</li>
+                        <li>Commit approved changes to the system</li>
+                    </ul>
+                </div>
+                <div style="background: #fff3cd; padding: 10px; border-radius: 4px; border-left: 4px solid #ffc107;">
+                    <small style="color: #856404;">
+                        <strong>Coming Soon:</strong> Full validation UI with individual mapping review, correction tools, and decision tracking.
+                    </small>
+                </div>
+            </div>
+        `;
+        
+        validationInterface.innerHTML = interfaceHTML + `
+            <button id="commitDecisionsBtn" class="button primary">
+                <i class="fas fa-cloud-upload-alt"></i> Commit Validated Decisions to R2
+            </button>
+        `;
+        
+        // Add event listener for commit button
+        const commitBtn = document.getElementById('commitDecisionsBtn');
+        if (commitBtn) {
+            commitBtn.addEventListener('click', commitValidatedDecisions);
+        }
+    }
+    
+    function commitValidatedDecisions() {
+        console.log('💾 Committing validated decisions');
+        statusManager.show('🚀 Validation decision commit functionality coming soon!', 'info', 5000);
+    }
     
     // --- INITIALIZE APP ---
     // Disable action buttons initially until models load
