@@ -538,6 +538,12 @@ async function runRandomDemo(sampleSize) {
     console.log(`🎲 Starting random demo with ${sampleSize} samples`);
     statusManager.show(`🎲 Starting random demo with ${sampleSize} samples...`, 'info');
     
+    // Hide workflow section when processing starts
+    const workflowSection = document.getElementById('workflowSection');
+    if (workflowSection) {
+        workflowSection.classList.add('hidden');
+    }
+    
     try {
         const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
             method: 'POST',
@@ -551,10 +557,13 @@ async function runRandomDemo(sampleSize) {
         
         if (response.ok) {
             const results = await response.json();
+            console.log('📥 Random demo response received:', results);
             displayResults(results);
             statusManager.show('✅ Random demo completed successfully', 'success', 3000);
         } else {
-            throw new Error(`Demo failed: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('❌ Random demo failed:', response.status, response.statusText, errorText);
+            throw new Error(`Demo failed: ${response.status} ${response.statusText}`);
         }
     } catch (error) {
         console.error('Random demo failed:', error);
@@ -565,6 +574,12 @@ async function runRandomDemo(sampleSize) {
 async function runFixedTest() {
     console.log('🧪 Starting fixed test suite');
     statusManager.show('🧪 Running fixed test suite...', 'info');
+    
+    // Hide workflow section when processing starts
+    const workflowSection = document.getElementById('workflowSection');
+    if (workflowSection) {
+        workflowSection.classList.add('hidden');
+    }
     
     try {
         const response = await fetch(`${apiConfig.baseUrl}/process_sanity_test`, {
@@ -601,7 +616,29 @@ function handleFileUpload(file) {
 
 // Results Display
 function displayResults(results) {
+    console.log('📊 Displaying results:', results);
     processingResults = results;
+    
+    // Validate results structure - handle both array format and object format
+    if (!results) {
+        console.error('❌ No results data provided');
+        statusManager.show('❌ No results data received', 'error', 5000);
+        return;
+    }
+    
+    // Support both formats: direct array or object with mappings property
+    let mappingsArray;
+    if (Array.isArray(results)) {
+        mappingsArray = results;
+        console.log(`📋 Processing direct array with ${results.length} items`);
+    } else if (results.mappings && Array.isArray(results.mappings)) {
+        mappingsArray = results.mappings;
+        console.log(`📋 Processing results.mappings with ${results.mappings.length} items`);
+    } else {
+        console.error('❌ Results invalid format:', results);
+        statusManager.show('❌ Invalid results format - expected array or object with mappings', 'error', 5000);
+        return;
+    }
     
     // Show results section
     const resultsSection = document.getElementById('resultsSection');
@@ -609,11 +646,11 @@ function displayResults(results) {
         resultsSection.classList.remove('hidden');
     }
     
-    // Update stats
-    updateResultsStats(results);
+    // Update stats - pass the mappings array
+    updateResultsStats({ mappings: mappingsArray, stats: results.stats });
     
-    // Build results table
-    buildResultsTable(results);
+    // Build results table - pass the mappings array
+    buildResultsTable({ mappings: mappingsArray });
     
     // Scroll to results
     resultsSection.scrollIntoView({ behavior: 'smooth' });
@@ -622,14 +659,37 @@ function displayResults(results) {
 function updateResultsStats(results) {
     // Update statistics display
     const stats = results.stats || {};
+    const mappings = results.mappings || [];
+    
+    // Calculate stats from mappings if not provided in stats object
+    const originalCount = stats.original_count || mappings.length;
+    const cleanCount = stats.clean_count || new Set(mappings.map(m => m.clean_name)).size;
+    const consolidationRatio = stats.consolidation_ratio || (originalCount > 0 ? `${originalCount}:${cleanCount}` : '0:1');
+    const modalityCount = stats.modality_count || new Set(mappings.map(m => m.modality)).size;
+    
+    // Calculate average confidence if not provided
+    let avgConfidence = stats.avg_confidence;
+    if (!avgConfidence && mappings.length > 0) {
+        const confidences = mappings.map(m => {
+            const conf = m.confidence || m.confidence_score;
+            if (typeof conf === 'string' && conf.includes('%')) {
+                return parseFloat(conf.replace('%', ''));
+            }
+            return parseFloat(conf) || 0;
+        });
+        const avg = confidences.reduce((sum, conf) => sum + conf, 0) / confidences.length;
+        avgConfidence = `${Math.round(avg)}%`;
+    }
     
     const elements = {
-        'originalCount': stats.original_count || 0,
-        'cleanCount': stats.clean_count || 0,
-        'consolidationRatio': stats.consolidation_ratio || '0:1',
-        'modalityCount': stats.modality_count || 0,
-        'avgConfidence': stats.avg_confidence || '0%'
+        'originalCount': originalCount,
+        'cleanCount': cleanCount,
+        'consolidationRatio': consolidationRatio,
+        'modalityCount': modalityCount,
+        'avgConfidence': avgConfidence || '0%'
     };
+    
+    console.log('📊 Updating stats:', elements);
     
     Object.entries(elements).forEach(([id, value]) => {
         const element = document.getElementById(id);
@@ -639,23 +699,44 @@ function updateResultsStats(results) {
 
 function buildResultsTable(results) {
     const tbody = document.getElementById('resultsBody');
-    if (!tbody || !results.mappings) return;
+    if (!tbody) {
+        console.error('❌ Results table body not found');
+        return;
+    }
     
+    if (!results.mappings) {
+        console.error('❌ No mappings in results');
+        return;
+    }
+    
+    console.log(`🏗️ Building table with ${results.mappings.length} rows`);
     tbody.innerHTML = '';
     
     results.mappings.forEach((mapping, index) => {
         const row = document.createElement('tr');
+        
+        // Handle both formats: V5-Secondary-Pipeline format (exam_code, exam_name) 
+        // and develop branch format (original_code, original_name)
+        const originalCode = mapping.exam_code || mapping.original_code || '';
+        const originalName = mapping.exam_name || mapping.original_name || '';
+        const cleanName = mapping.clean_name || '';
+        const snomedFsn = mapping.snomed_fsn || '';
+        const tags = mapping.tags ? (Array.isArray(mapping.tags) ? mapping.tags.join(', ') : mapping.tags) : '';
+        const confidence = mapping.confidence || mapping.confidence_score || '0%';
+        
         row.innerHTML = `
             <td style="width: 12px; padding: 0;"></td>
-            <td>${mapping.original_code || ''}</td>
-            <td>${mapping.original_name || ''}</td>
-            <td>${mapping.clean_name || ''}</td>
-            <td>${mapping.snomed_fsn || ''}</td>
-            <td>${mapping.tags ? mapping.tags.join(', ') : ''}</td>
-            <td>${mapping.confidence || '0%'}</td>
+            <td>${originalCode}</td>
+            <td>${originalName}</td>
+            <td>${cleanName}</td>
+            <td>${snomedFsn}</td>
+            <td>${tags}</td>
+            <td>${confidence}</td>
         `;
         tbody.appendChild(row);
     });
+    
+    console.log(`✅ Table populated with ${tbody.children.length} rows`);
 }
 
 function toggleResultsView() {
