@@ -296,8 +296,8 @@ let buttonsDisabledForLoading = true;
 // --- BUTTON STATE MANAGEMENT ---
 function disableActionButtons(reason = 'Models are loading...') {
     const buttons = [
-        'runRandomDemoBtn', 
-        'runFixedTestBtn', 
+        'runRandomSampleBtn', 
+ 
         'runProcessingBtn'
     ];
     
@@ -325,8 +325,8 @@ function disableActionButtons(reason = 'Models are loading...') {
 
 function enableActionButtons() {
     const buttons = [
-        'runRandomDemoBtn', 
-        'runFixedTestBtn', 
+        'runRandomSampleBtn', 
+ 
         'runProcessingBtn'
     ];
     
@@ -460,7 +460,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // --- DOM ELEMENTS ---
     const mainCard = document.querySelector('.main-card');
-    const demosSection = document.getElementById('demosSection');
+    const samplesSection = document.getElementById('samplesSection');
     
     // Create file input element if it doesn't exist
     let fileInput = document.getElementById('fileInput');
@@ -474,8 +474,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     const resultsSection = document.getElementById('resultsSection');
     const resultsBody = document.getElementById('resultsBody');
-    const sanityButton = document.getElementById('sanityTestBtn');
-    const randomSampleButton = document.getElementById('randomSampleDemoBtn');
+    const randomSampleButton = document.getElementById('randomSampleBtn');
     
     // Config editor elements
     const editConfigButton = document.getElementById('editConfigBtn');
@@ -870,7 +869,7 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('exportMappingsBtn')?.addEventListener('click', exportResults);
         document.getElementById('validateResultsBtn')?.addEventListener('click', startValidation);
         
-        // Note: Demo buttons are now handled in the workflow section
+        // Note: Sample buttons are now handled in the workflow section
         
         // New homepage workflow event listeners
         setupHomepageWorkflow();
@@ -1022,42 +1021,9 @@ window.addEventListener('DOMContentLoaded', function() {
         reader.readAsText(file);
     }
     
-    async function runSanityTest() {
-        disableActionButtons('Running sanity test...');
-        let statusId = null;
 
-        try {
-            // Hide main content during processing
-            if (mainCard) mainCard.style.display = 'none';
-            
-            statusManager.clearAll();
-            const modelDisplayName = formatModelName(currentModel);
-            const rerankerDisplayName = formatRerankerName(currentReranker);
-            statusId = statusManager.show(`Running 100-exam sanity test with ${modelDisplayName} → ${rerankerDisplayName}...`, 'progress');
-
-            const response = await fetch('./backend/core/hundred_test.json');
-            if (!response.ok) throw new Error(`Could not load test file: ${response.statusText}`);
-            const codes = await response.json();
-            
-            await processExams(codes, "94 Exam Test Suite");
-
-        } catch (error) {
-            console.error('Sanity test failed:', error);
-            statusManager.show(`❌ Sanity Test Failed: ${error.message}`, 'error', 0);
-            // Show main card again on error
-            if (mainCard) mainCard.style.display = 'block';
-        } finally {
-            if (statusId) statusManager.remove(statusId);
-            if (sanityButton) {
-                 sanityButton.disabled = false;
-                 sanityButton.innerHTML = '100 Exam Test Suite';
-            }
-            enableActionButtons(); // Re-enable buttons after processing
-        }
-    }
-
-    async function runRandomSampleDemo() {
-        disableActionButtons('Processing random sample demo...');
+    async function runRandomSample() {
+        disableActionButtons('Processing random sample...');
         let statusId = null;
 
         try {
@@ -1069,7 +1035,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const rerankerDisplayName = formatRerankerName(currentReranker);
             
             // Start with a progress bar (we'll update the total once we know it)
-            statusId = statusManager.showProgress(`Running random sample demo with ${modelDisplayName} → ${rerankerDisplayName}`, 0, 100);
+            statusId = statusManager.showProgress(`Running random sample with ${modelDisplayName} → ${rerankerDisplayName}`, 0, 100);
 
             let pollingActive = true;
             let batchId = null;
@@ -1101,7 +1067,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         
                         if (statusId) {
                             statusManager.updateProgress(statusId, processed, total, 
-                                `Random sample demo (${percentage}% - ${success} success, ${errors} errors)`);
+                                `Random sample (${percentage}% - ${success} success, ${errors} errors)`);
                         }
                         
                         // Continue polling if not complete
@@ -1142,7 +1108,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const sampleSizeInput = document.getElementById('sampleSizeInput');
             const sampleSize = parseInt(sampleSizeInput.value) || 100;
             
-            const response = await fetch(`${apiConfig.baseUrl}/demo_random_sample`, {
+            const response = await fetch(`${apiConfig.baseUrl}/random_sample`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1157,7 +1123,7 @@ window.addEventListener('DOMContentLoaded', function() {
             
             if (!response.ok) {
                 pollingActive = false;
-                throw new Error(`Random sample demo failed: ${response.statusText}`);
+                throw new Error(`Random sample failed: ${response.statusText}`);
             }
 
             const result = await response.json();
@@ -1222,13 +1188,13 @@ window.addEventListener('DOMContentLoaded', function() {
                             
                             // Set global variables to display the results
                             allMappings = mappedResults;
-                            updatePageTitle(`Random Sample Demo (${result.processing_stats.sample_size || result.processing_stats.total_processed} items)`);
+                            updatePageTitle(`Random Sample (${result.processing_stats.sample_size || result.processing_stats.total_processed} items)`);
                             
                             // Use runAnalysis to properly display results UI
                             try {
                                 runAnalysis(allMappings);
                                 
-                                const successMessage = `✅ Random sample demo completed! ${result.processing_stats?.processed_successfully || result.processing_stats.successful || 'Unknown'} items processed`;
+                                const successMessage = `✅ Random sample completed! ${result.processing_stats?.processed_successfully || result.processing_stats.successful || 'Unknown'} items processed`;
                                 statusManager.show(successMessage, 'success', 5000);
                                 if (mainCard) mainCard.style.display = 'block'; // Ensure main content is visible after successful analysis
                             } catch (analysisError) {
@@ -1248,25 +1214,25 @@ window.addEventListener('DOMContentLoaded', function() {
                     if (statusId) statusManager.remove(statusId);
                     
                     // If the fetch fails, provide a direct link as a fallback
-                    const successMessage = `✅ Random sample demo completed! ${result.processing_stats.successful} items processed`;
+                    const successMessage = `✅ Random sample completed! ${result.processing_stats.successful} items processed`;
                     const urlMessage = `<br><a href="${result.r2_url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
                     statusManager.show(successMessage + urlMessage, 'success', 10000);
                 }
             } else {
                 if (statusId) statusManager.remove(statusId);
-                statusManager.show('✅ Demo completed but no results URL available', 'warning', 5000);
+                statusManager.show('✅ Processing completed but no results URL available', 'warning', 5000);
             }
 
         } catch (error) {
-            console.error('Random sample demo failed:', error);
+            console.error('Random sample failed:', error);
             if (statusId) statusManager.remove(statusId);
-            statusManager.show(`❌ Random Sample Demo Failed: ${error.message}`, 'error', 0);
+            statusManager.show(`❌ Random Sample Failed: ${error.message}`, 'error', 0);
             // Show main card again on error
             if (mainCard) mainCard.style.display = 'block';
         } finally {
             if (randomSampleButton) {
                 randomSampleButton.disabled = false;
-                randomSampleButton.innerHTML = 'Random Sample Demo';
+                randomSampleButton.innerHTML = 'Random Sample';
             }
             enableActionButtons(); // Re-enable buttons after processing
         }
@@ -2129,16 +2095,15 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // --- HOMEPAGE WORKFLOW FUNCTIONALITY ---
     function setupHomepageWorkflow() {
-        const quickDemoBtn = document.getElementById('quickDemoBtn');
+        const quickSampleBtn = document.getElementById('quickSampleBtn');
         const uploadDataBtn = document.getElementById('uploadDataBtn');
         const advancedSetupBtn = document.getElementById('advancedSetupBtn');
         const workflowSection = document.getElementById('workflowSection');
         const uploadSection = document.getElementById('uploadSection');
         const advancedSection = document.getElementById('advancedSection');
         const runProcessingBtn = document.getElementById('runProcessingBtn');
-        const runRandomDemoBtn = document.getElementById('runRandomDemoBtn');
-        const runFixedTestBtn = document.getElementById('runFixedTestBtn');
-        const demoOptions = document.getElementById('demoOptions');
+        const runRandomSampleBtn = document.getElementById('runRandomSampleBtn');
+        const sampleOptions = document.getElementById('sampleOptions');
         const dataSourceDisplay = document.getElementById('dataSourceDisplay');
         const dataSourceText = document.getElementById('dataSourceText');
         
@@ -2147,13 +2112,13 @@ window.addEventListener('DOMContentLoaded', function() {
         let selectedReranker = null;
         
         // Action card click handlers - make entire cards clickable
-        document.querySelector('.demo-path')?.addEventListener('click', () => {
-            // Don't allow demo selection if models are still loading
+        document.querySelector('.sample-path')?.addEventListener('click', () => {
+            // Don't allow sample selection if models are still loading
             if (buttonsDisabledForLoading) {
                 return;
             }
-            selectPath('demo');
-            currentDataSource = 'demo';
+            selectPath('sample');
+            currentDataSource = 'sample';
             checkWorkflowCompletion();
             
             // Auto-scroll to model selection on mobile
@@ -2199,9 +2164,9 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Demo buttons
-        runRandomDemoBtn?.addEventListener('click', async () => {
-            await runRandomSampleDemo();
+        // Sample buttons
+        runRandomSampleBtn?.addEventListener('click', async () => {
+            await runRandomSample();
         });
         
         // Sample size input listener
@@ -2221,9 +2186,6 @@ window.addEventListener('DOMContentLoaded', function() {
         // Initialize the display
         updateSampleSizeDisplay();
         
-        runFixedTestBtn?.addEventListener('click', async () => {
-            await runSanityTest();
-        });
 
         // File upload processing button
         runProcessingBtn?.addEventListener('click', async () => {
@@ -2246,13 +2208,13 @@ window.addEventListener('DOMContentLoaded', function() {
                 validationSection.style.display = 'none';
             }
             
-            if (path === 'demo' || path === 'upload') {
-                // Show workflow for demo and upload paths
+            if (path === 'sample' || path === 'upload') {
+                // Show workflow for sample and upload paths
                 if (workflowSection) workflowSection.style.display = 'block';
                 
                 // Select the appropriate card
-                const selectedCard = path === 'demo' ? 
-                    document.querySelector('.demo-path') : 
+                const selectedCard = path === 'sample' ? 
+                    document.querySelector('.sample-path') : 
                     document.querySelector('.upload-path');
                 selectedCard?.classList.add('selected');
                 
@@ -2293,8 +2255,7 @@ window.addEventListener('DOMContentLoaded', function() {
             selectedRetriever = null;
             selectedReranker = null;
             runProcessingBtn.disabled = true;
-            if (runRandomDemoBtn) runRandomDemoBtn.disabled = true;
-            if (runFixedTestBtn) runFixedTestBtn.disabled = true;
+            if (runRandomSampleBtn) runRandomSampleBtn.disabled = true;
         }
         
         function activateStep(stepNumber) {
@@ -2327,18 +2288,17 @@ window.addEventListener('DOMContentLoaded', function() {
             
             if (selectedRetriever && selectedReranker && currentDataSource) {
                 // Show appropriate buttons based on data source
-                if (currentDataSource === 'demo') {
-                    demoOptions.style.display = 'block';
+                if (currentDataSource === 'sample') {
+                    sampleOptions.style.display = 'block';
                     runProcessingBtn.style.display = 'none';
-                    // Show secondary pipeline option for demo
+                    // Show secondary pipeline option for sample
                     const secondaryPipelineOption = document.getElementById('secondaryPipelineOption');
                     if (secondaryPipelineOption) secondaryPipelineOption.style.display = 'block';
                     // Only enable if models are loaded and not using fallbacks
                     const canEnable = !buttonsDisabledForLoading && !isUsingFallbackModels;
-                    runRandomDemoBtn.disabled = !canEnable;
-                    runFixedTestBtn.disabled = !canEnable;
+                    runRandomSampleBtn.disabled = !canEnable;
                 } else if (currentDataSource === 'upload') {
-                    demoOptions.style.display = 'none';
+                    sampleOptions.style.display = 'none';
                     runProcessingBtn.style.display = 'block';
                     // Hide secondary pipeline option for file upload
                     const secondaryPipelineOption = document.getElementById('secondaryPipelineOption');
@@ -2368,7 +2328,7 @@ window.addEventListener('DOMContentLoaded', function() {
         
         // Check if we have current results to validate
         if (!allMappings || allMappings.length === 0) {
-            statusManager.show('❌ No results to validate. Please run a demo or process data first.', 'error', 5000);
+            statusManager.show('❌ No results to validate. Please run a sample or process data first.', 'error', 5000);
             return;
         }
         

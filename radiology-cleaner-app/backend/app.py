@@ -1307,61 +1307,6 @@ def get_batch_progress(batch_id):
         logger.error(f"Error fetching batch progress: {e}")
         return jsonify({"error": "Failed to fetch progress"}), 500
 
-@app.route('/process_sanity_test', methods=['POST'])
-def process_sanity_test_endpoint():
-    """
-    Processes the entire sanity_test.json file using a user-specified model.
-    """
-    _ensure_app_is_initialized()
-    start_time = time.time()
-    
-    try:
-        data = request.json or {}
-        model_key = data.get('model', 'retriever')
-        reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
-        
-        logger.info(f"Processing sanity_test.json using model: '{model_key}', reranker: '{reranker_key}'")
-        selected_nlp_processor = _get_nlp_processor(model_key)
-        if not selected_nlp_processor:
-            return jsonify({"error": f"Model '{model_key}' not available"}), 400
-
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        sanity_test_path = os.path.join(base_dir, 'core', 'sanity_test.json')
-        
-        with open(sanity_test_path, 'r', encoding='utf-8') as f:
-            sanity_data = json.load(f)
-
-        total_exams = len(sanity_data)
-        logger.info(f"Starting sanity test processing for {total_exams} exams")
-        results = []
-        processed_count = 0
-        
-        for i, exam in enumerate(sanity_data):
-            exam_name = exam.get("EXAM_NAME")
-            modality_code = exam.get("MODALITY_CODE")
-            
-            if exam_name:
-                data_source = exam.get("DATA_SOURCE")
-                exam_code = exam.get("EXAM_CODE")
-                processed_result = process_exam_request(exam_name, modality_code, selected_nlp_processor, False, reranker_key, data_source, exam_code)
-                results.append(processed_result)
-                processed_count += 1
-                
-                if (i + 1) % 25 == 0 or (i + 1) == total_exams:
-                    progress_pct = ((i + 1) / total_exams) * 100
-                    elapsed_time = time.time() - start_time
-                    logger.info(f"Sanity test progress: {i + 1}/{total_exams} ({progress_pct:.1f}%) - Elapsed: {elapsed_time:.1f}s")
-        
-        processing_time_ms = int((time.time() - start_time) * 1000)
-        logger.info(f"Sanity test processing complete in {processing_time_ms}ms. Processed: {processed_count}/{total_exams} exams")
-        
-        return jsonify(results)
-
-    except FileNotFoundError:
-        return jsonify({"error": "sanity_test.json not found"}), 404
-    except Exception as e:
-        logger.error(f"Error processing sanity test: {e}", exc_info=True)
-        return jsonify({"error": "Internal Server Error"}), 500
 
 @app.route('/load_batch_chunk/<filename>', methods=['GET'])
 def load_batch_chunk(filename):
@@ -1515,10 +1460,10 @@ def list_batch_results():
         logger.error(f"Error listing batch results: {e}", exc_info=True)
         return jsonify({"error": "Failed to list batch results"}), 500
 
-@app.route('/demo_random_sample', methods=['POST'])
-def demo_random_sample():
+@app.route('/random_sample', methods=['POST'])
+def random_sample():
     """
-    Demo endpoint that downloads hnz_hdp_json from R2, takes a random sample of 100 codes,
+    Random sample endpoint that downloads hnz_hdp_json from R2, takes a random sample of codes,
     and passes them to the batch processing endpoint.
     """
     _ensure_app_is_initialized()
@@ -1539,7 +1484,7 @@ def demo_random_sample():
         except (ValueError, TypeError):
             return jsonify({"error": "Sample size must be a valid integer"}), 400
         
-        logger.info(f"Starting demo random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}, sample_size: {sample_size}")
+        logger.info(f"Starting random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}, sample_size: {sample_size}")
         
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
@@ -1632,8 +1577,8 @@ def demo_random_sample():
         return _process_batch(batch_payload, start_time)
 
     except Exception as e:
-        logger.error(f"Demo random sample endpoint error: {e}", exc_info=True)
-        return jsonify({"error": f"Demo failed: {str(e)}"}), 500
+        logger.error(f"Random sample endpoint error: {e}", exc_info=True)
+        return jsonify({"error": f"Random sample failed: {str(e)}"}), 500
 
 # =============================================================================
 # SECONDARY PIPELINE ROUTES
