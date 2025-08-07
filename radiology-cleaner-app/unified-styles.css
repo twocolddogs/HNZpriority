@@ -5,6 +5,75 @@
    ========================================================================== */
 
 /* ==========================================================================
+   Validation Interface Enhancements
+   ========================================================================== */
+
+/* SNOMED inline display in headers */
+.snomed-inline {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+  background-color: var(--color-gray-100);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  margin-left: var(--space-2);
+  font-weight: normal;
+}
+
+/* Inline metadata layout */
+.mapping-meta-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+  margin-bottom: var(--space-3);
+}
+
+.meta-item-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.meta-separator {
+  color: var(--color-gray-400);
+  font-weight: bold;
+}
+
+.confidence-inline {
+  font-weight: var(--font-weight-medium);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+}
+
+.confidence-inline.confidence-high {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.confidence-inline.confidence-medium {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.confidence-inline.confidence-low {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+/* Smaller validation buttons */
+.button-sm {
+  min-height: 24px;
+  min-width: 24px;
+}
+
+.validation-header.expanded {
+  background-color: var(--color-primary-light);
+}
+
+/* ==========================================================================
    Homepage Action Cards & Hero Section
    ========================================================================== */
 

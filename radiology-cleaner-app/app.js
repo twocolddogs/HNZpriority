@@ -2669,8 +2669,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 <div class="validation-group consolidated-group ${hasFlags ? 'validation-flagged' : ''}" data-group-id="${groupId}">
                     <div class="validation-header consolidated-header ${hasFlags ? 'flagged-header' : ''}" onclick="toggleValidationGroup('${groupId}')">
                         <div class="consolidated-title-container">
-                            <div class="consolidated-title">${group.nhs_reference}</div>
-                            <div class="snomed-code">${snomedId}</div>
+                            <div class="consolidated-title">${group.nhs_reference} 
+                                ${snomedId && snomedId !== 'Unknown' ? `<span class="snomed-inline">SNOMED: ${snomedId}</span>` : ''}
+                            </div>
                             ${isSingleton ? '<div class="singleton-badge"><i class="fas fa-user"></i> SINGLETON</div>' : ''}
                             ${flagBadges}
                         </div>
@@ -2685,12 +2686,12 @@ window.addEventListener('DOMContentLoaded', function() {
                                     ${isSingleton ? '<option value="skip">Skip (Singleton)</option>' : ''}
                                     <option value="review">Individual Review</option>
                                 </select>
-                                <button class="button button-sm button-success" onclick="event.stopPropagation(); quickApproveGroup('${groupId}')" title="Quick approve">
-                                    <i class="fas fa-check"></i>
+                                <button class="button button-sm button-success" onclick="event.stopPropagation(); quickApproveGroup('${groupId}')" title="Quick approve" style="padding: 4px 8px;">
+                                    <i class="fas fa-check" style="font-size: 12px;"></i>
                                 </button>
                                 ${isSingleton ? `
-                                    <button class="button button-sm button-secondary" onclick="event.stopPropagation(); skipSingletonGroup('${groupId}')" title="Skip singleton for potential better mapping">
-                                        <i class="fas fa-forward"></i>
+                                    <button class="button button-sm button-secondary" onclick="event.stopPropagation(); skipSingletonGroup('${groupId}')" title="Skip singleton for potential better mapping" style="padding: 4px 8px;">
+                                        <i class="fas fa-step-forward" style="font-size: 12px;"></i>
                                     </button>
                                 ` : ''}
                             </div>
@@ -2728,36 +2729,30 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div class="mapping-header">
                             <div class="mapping-title">${mapping.exam_name || 'Unknown Exam'}</div>
                             <div class="mapping-actions">
-                                <button class="button button-sm button-success" onclick="updateMappingDecision('${mappingId}', 'approve')" title="Approve mapping">
-                                    <i class="fas fa-check"></i>
+                                <button class="button button-sm button-success" onclick="updateMappingDecision('${mappingId}', 'approve')" title="Approve mapping" style="padding: 4px 8px;">
+                                    <i class="fas fa-check" style="font-size: 12px;"></i>
                                 </button>
-                                <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject mapping">
-                                    <i class="fas fa-times"></i>
+                                <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject mapping" style="padding: 4px 8px;">
+                                    <i class="fas fa-times" style="font-size: 12px;"></i>
                                 </button>
-                                <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="View details">
-                                    <i class="fas fa-info-circle"></i>
+                                <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
+                                    <i class="fas fa-info-circle" style="font-size: 12px;"></i>
                                 </button>
                             </div>
                         </div>
                         <div class="mapping-details">
-                            <div class="mapping-meta">
-                                <span class="meta-item">
-                                    <i class="fas fa-database"></i>
-                                    <strong>Source:</strong> ${mapping.data_source || 'Unknown'}
+                            <div class="mapping-meta-inline">
+                                <span class="meta-item-inline">
+                                    <i class="fas fa-database"></i> <strong>Source:</strong> ${mapping.data_source || 'Unknown'}
                                 </span>
-                                <span class="meta-item">
-                                    <i class="fas fa-barcode"></i>
-                                    <strong>Code:</strong> ${mapping.exam_code || 'N/A'}
+                                <span class="meta-separator">•</span>
+                                <span class="meta-item-inline">
+                                    <i class="fas fa-barcode"></i> <strong>Code:</strong> ${mapping.exam_code || 'N/A'}
                                 </span>
-                                <span class="meta-item">
-                                    <i class="fas fa-chart-bar"></i>
-                                    <strong>Confidence:</strong>
-                                    <div class="confidence-display">
-                                        <div class="confidence-bar">
-                                            <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
-                                        </div>
-                                        <div class="confidence-text">${confidencePercent}%</div>
-                                    </div>
+                                <span class="meta-separator">•</span>
+                                <span class="meta-item-inline">
+                                    <i class="fas fa-chart-bar"></i> <strong>Confidence:</strong> 
+                                    <span class="confidence-inline ${confidenceClass}">${confidencePercent}%</span>
                                 </span>
                             </div>
                             ${flagBadges ? `<div class="mapping-flags">${flagBadges}</div>` : ''}
@@ -2837,15 +2832,18 @@ window.addEventListener('DOMContentLoaded', function() {
     // Validation interaction functions
     window.toggleValidationGroup = function(groupId) {
         const content = document.getElementById(`${groupId}_content`);
-        const toggle = document.querySelector(`[data-group-id="${groupId}"] .group-toggle`);
+        const toggle = document.querySelector(`[data-group-id="${groupId}"] .expand-icon`);
+        const header = document.querySelector(`[data-group-id="${groupId}"] .validation-header`);
         
-        if (content && toggle) {
+        if (content) {
             if (content.style.display === 'none' || content.style.display === '') {
                 content.style.display = 'block';
-                toggle.style.transform = 'rotate(90deg)';
+                if (header) header.classList.add('expanded');
+                if (toggle) toggle.style.transform = 'rotate(90deg)';
             } else {
                 content.style.display = 'none';
-                toggle.style.transform = 'rotate(0deg)';
+                if (header) header.classList.remove('expanded');
+                if (toggle) toggle.style.transform = 'rotate(0deg)';
             }
         }
     }
