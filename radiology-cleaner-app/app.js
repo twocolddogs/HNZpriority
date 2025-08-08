@@ -632,7 +632,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 loadingMessageId = statusManager.show('Loading available models...', 'info');
             }
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
             const response = await fetch(MODELS_URL, { method: 'GET', signal: controller.signal });
             clearTimeout(timeoutId);
             if (response.ok) {
@@ -1647,50 +1647,68 @@ window.addEventListener('DOMContentLoaded', function() {
     function displayConsolidatedResults() {
         const container = document.getElementById('consolidatedResults');
         container.innerHTML = '';
-        
         filteredConsolidatedData.forEach(group => {
             const groupElement = document.createElement('div');
             groupElement.className = 'consolidated-group';
             const confidencePercent = Math.round(group.avgConfidence * 100);
             const confidenceClass = group.avgConfidence >= 0.8 ? 'confidence-high' : group.avgConfidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             
-            const snomedId = group.snomed && group.snomed.id ? `(${group.snomed.id})` : '';
+            const sourceNames = getSourceNames();
+            const sourcesHTML = [...group.dataSources].map(source => {
+                const color = getSourceColor(source);
+                const displayName = sourceNames[source] || source;
+                return `<span class="source-tag" style="background-color: ${color};" title="${displayName}"></span>`;
+            }).join('');
             
-            const originalCodesList = group.sourceCodes.map(code =>
-                `<li class="original-code-item">
-                    <span class="original-code-source" style="background-color: ${getSourceColor(code.data_source)}" title="${getSourceDisplayName(code.data_source)}"></span>
-                    <span class="original-code-name">${code.exam_name}</span>
-                    <span class="original-code-details">(${code.exam_code})</span>
-                </li>`
-            ).join('');
-            
-            // Debug: Log if no codes found
-            if (group.sourceCodes.length === 0) {
-                console.warn('No source codes found for group:', group.cleanName);
-            }
+            const secondaryPipelineHTML = group.secondaryPipelineCount > 0 ? 
+                `<div class="secondary-pipeline-indicator" title="${group.secondaryPipelineCount} items improved by Secondary Pipeline">
+                    <i class="fas fa-robot"></i> ${group.secondaryPipelineCount}
+                 </div>` : '';
 
             groupElement.innerHTML = `
-                <div class="consolidated-header" onclick="toggleOriginalCodes(this)">
-                    <div class="consolidated-title-container">
-                        <div class="consolidated-title">${group.cleanName}</div>
-                        ${snomedId ? `<div class="snomed-code">SNOMED-CT ID: ${snomedId}</div>` : ''}
+                <div class="consolidated-group-header" onclick="toggleOriginalCodes(this)">
+                    <div class="header-main-content">
+                        <div class="header-title-section">
+                            <div class="consolidated-name">${group.cleanName}</div>
+                            <div class="consolidated-snomed">${group.snomed?.fsn || 'No SNOMED mapping'}</div>
+                        </div>
+                        <div class="header-meta-section">
+                            <div class="consolidated-count" title="${group.totalCount} original codes">${group.totalCount} codes</div>
+                            <div class="consolidated-sources">${sourcesHTML}</div>
+                            ${secondaryPipelineHTML}
+                            <div class="consolidated-confidence">
+                                <div class="confidence-bar-small">
+                                    <div class="confidence-fill-small ${confidenceClass}" style="width: ${confidencePercent}%"></div>
+                                </div>
+                                <small>${confidencePercent}%</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="consolidated-count-container">
-                        <span class="consolidated-count">${group.totalCount} codes</span>
-                        <span class="expand-icon"></span>
-                    </div>
+                    <div class="expand-indicator">›</div>
                 </div>
-                <div class="consolidated-body">
-                    <div class="consolidated-meta">
-                        <div class="meta-item"><strong>Data Sources</strong><div class="source-indicators">${Array.from(group.dataSources).map(source => `<div class="source-item" title="${getSourceDisplayName(source)}"><span class="source-color-dot" style="background-color: ${getSourceColor(source)}"></span>${getSourceDisplayName(source)}</div>`).join('')}</div></div>
-                        <div class="meta-item"><strong>Modalities</strong><div class="modality-list">${Array.from(group.modalities).filter(m => m && m.trim()).join(', ') || 'None specified'}</div></div>
-                        <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div>${group.secondaryPipelineCount > 0 ? `<div class="secondary-pipeline-tag" title="${group.secondaryPipelineCount} of ${group.totalCount} results improved by Secondary Pipeline"><i class="fas fa-robot"></i> ${group.secondaryPipelineCount} Super AI Mapped</div>` : ''}</div>
-                        <div class="meta-item"><strong>Parsed Components</strong><div class="component-tags">${generateComponentTags(group.components)}</div></div>
-                    </div>
-                    <div class="original-codes-container" style="display: none;">
-                        <ul class="original-codes-list">${originalCodesList}</ul>
-                    </div>
-                </div>`;
+                <div class="original-codes-container" style="display: none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Original Name</th>
+                                <th>Code</th>
+                                <th>Source</th>
+                                <th>Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${group.sourceCodes.map(code => `
+                                <tr>
+                                    <td>${code.exam_name}</td>
+                                    <td>${code.exam_code}</td>
+                                    <td>${sourceNames[code.data_source] || code.data_source}</td>
+                                    <td>${Math.round((code.components?.confidence || 0) * 100)}%</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
             container.appendChild(groupElement);
         });
     }
@@ -1718,48 +1736,68 @@ window.addEventListener('DOMContentLoaded', function() {
     function displayConsolidatedResults() {
         const container = document.getElementById('consolidatedResults');
         container.innerHTML = '';
-        filteredConsolidatedData.forEach((group, index) => {
-            const groupId = `group_${index}`;
+        filteredConsolidatedData.forEach(group => {
             const groupElement = document.createElement('div');
             groupElement.className = 'consolidated-group';
             const confidencePercent = Math.round(group.avgConfidence * 100);
             const confidenceClass = group.avgConfidence >= 0.8 ? 'confidence-high' : group.avgConfidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
-            const snomedId = group.snomed && group.snomed.id ? `(${group.snomed.id})` : '';
-            const originalCodesList = group.sourceCodes.map(code =>
-                `<li class="original-code-item">
-                    <span class="original-code-source" style="background-color: ${getSourceColor(code.data_source)}" title="${getSourceDisplayName(code.data_source)}"></span>
-                    <span class="original-code-name">${code.exam_name}</span>
-                    <span class="original-code-details">(${code.exam_code})</span>
-                </li>`
-            ).join('');
-            if (group.sourceCodes.length === 0) {
-                console.warn('No source codes found for group:', group.cleanName);
-            }
+            
+            const sourceNames = getSourceNames();
+            const sourcesHTML = [...group.dataSources].map(source => {
+                const color = getSourceColor(source);
+                const displayName = sourceNames[source] || source;
+                return `<span class="source-tag" style="background-color: ${color};" title="${displayName}"></span>`;
+            }).join('');
+            
+            const secondaryPipelineHTML = group.secondaryPipelineCount > 0 ? 
+                `<div class="secondary-pipeline-indicator" title="${group.secondaryPipelineCount} items improved by Secondary Pipeline">
+                    <i class="fas fa-robot"></i> ${group.secondaryPipelineCount}
+                 </div>` : '';
+
             groupElement.innerHTML = `
-                <div class="consolidated-header" onclick="toggleOriginalCodes(this)">
-                    <div class="consolidated-title-container">
-                        <div class="consolidated-title">${group.cleanName} ${snomedId && snomedId !== 'Unknown' ? `<span class="snomed-inline">SNOMED: ${snomedId}</span>` : ''}</div>
-                        ${group.total_mappings === 1 ? '<div class="singleton-badge"><i class="fas fa-user"></i> SINGLETON</div>' : ''}
-                        ${group.flagged_count > 0 ? group.group_flags.map(flag => `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`).join('') : ''}
-                    </div>
-                    <div class="consolidated-count-container">
-                        <span class="consolidated-count">${group.totalCount} codes</span>
-                        ${group.flagged_count > 0 ? `<span class="flagged-count"><i class="fas fa-exclamation-triangle"></i> ${group.flagged_count} flagged</span>` : ''}
-                        <div class="validation-controls-inline">
-                            <select class="group-decision-select" data-group-id="${groupId}" onchange="updateGroupDecision('${groupId}', this.value)" onclick="event.stopPropagation()">
-                                <option value="pending">Pending</option>
-                                <option value="approve">Approve Group</option>
-                                <option value="reject">Reject Group</option>
-                                ${group.total_mappings === 1 ? '<option value="skip">Skip (Singleton)</option>' : ''}
-                                <option value="review">Individual Review</option>
-                            </select>
-                            <button class="button button-sm button-success" onclick="event.stopPropagation(); quickApproveGroup('${groupId}')" title="Quick approve"><i class="fas fa-check"></i></button>
-                            ${group.total_mappings === 1 ? `<button class="button button-sm button-secondary" onclick="event.stopPropagation(); skipSingletonGroup('${groupId}')" title="Skip singleton"><i class="fas fa-step-forward"></i></button>` : ''}
+                <div class="consolidated-group-header" onclick="toggleOriginalCodes(this)">
+                    <div class="header-main-content">
+                        <div class="header-title-section">
+                            <div class="consolidated-name">${group.cleanName}</div>
+                            <div class="consolidated-snomed">${group.snomed?.fsn || 'No SNOMED mapping'}</div>
                         </div>
-                        <span class="expand-icon"></span>
+                        <div class="header-meta-section">
+                            <div class="consolidated-count" title="${group.totalCount} original codes">${group.totalCount} codes</div>
+                            <div class="consolidated-sources">${sourcesHTML}</div>
+                            ${secondaryPipelineHTML}
+                            <div class="consolidated-confidence">
+                                <div class="confidence-bar-small">
+                                    <div class="confidence-fill-small ${confidenceClass}" style="width: ${confidencePercent}%"></div>
+                                </div>
+                                <small>${confidencePercent}%</small>
+                            </div>
+                        </div>
                     </div>
+                    <div class="expand-indicator">›</div>
                 </div>
-                <div class="validation-body consolidated-body" id="${groupId}_content" style="display: none;">${renderGroupMappings(group.mappings, groupId)}</div>`;
+                <div class="original-codes-container" style="display: none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Original Name</th>
+                                <th>Code</th>
+                                <th>Source</th>
+                                <th>Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${group.sourceCodes.map(code => `
+                                <tr>
+                                    <td>${code.exam_name}</td>
+                                    <td>${code.exam_code}</td>
+                                    <td>${sourceNames[code.data_source] || code.data_source}</td>
+                                    <td>${Math.round((code.components?.confidence || 0) * 100)}%</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
             container.appendChild(groupElement);
         });
     }
