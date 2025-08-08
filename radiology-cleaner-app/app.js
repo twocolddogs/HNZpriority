@@ -1967,9 +1967,22 @@ window.addEventListener('DOMContentLoaded', function() {
             const modeSelection = document.getElementById('validationModeSelection');
             const validationInterface = document.getElementById('validationInterface');
             const resultsDisplay = document.getElementById('resultsDisplay');
+            const validationSection = document.getElementById('validationSection');
             
             if (modeSelection) modeSelection.style.display = 'none';
             if (resultsDisplay) resultsDisplay.style.display = 'none';
+            
+            // Make sure the validation section is visible and active
+            if (validationSection) {
+                console.log('🔍 Validation section element found:', validationSection);
+                validationSection.classList.remove('hidden');
+                validationSection.classList.add('active');
+                validationSection.style.display = 'block';
+                console.log('🔍 Validation section made visible and active');
+            } else {
+                console.error('❌ Validation section element not found!');
+            }
+            
             if (validationInterface) {
                 console.log('🔍 Validation interface element found:', validationInterface);
                 console.log('🔍 Before changes - classList:', validationInterface.classList.toString());
