@@ -1925,10 +1925,25 @@ window.addEventListener('DOMContentLoaded', function() {
     async function initializeValidationFromMappings(mappings) {
         console.log(`🔧 Transforming ${mappings.length} mappings into validation state`);
         
+        // Filter out already approved mappings
+        const unapprovedMappings = mappings.filter(mapping => {
+            const isApproved = mapping.validation_status === 'approved_by_human';
+            if (isApproved) {
+                console.log(`📋 Skipping already approved mapping: ${mapping.exam_name} (${mapping.data_source})`);
+            }
+            return !isApproved;
+        });
+        
+        const approvedCount = mappings.length - unapprovedMappings.length;
+        if (approvedCount > 0) {
+            console.log(`📋 Filtered out ${approvedCount} already approved mappings, ${unapprovedMappings.length} remaining for validation`);
+            statusManager.show(`📋 ${approvedCount} mappings already approved, showing ${unapprovedMappings.length} for validation`, 'info', 3000);
+        }
+        
         const validationState = {};
         const timestamp = new Date().toISOString();
         
-        for (const mapping of mappings) {
+        for (const mapping of unapprovedMappings) {
             const mappingId = generateMappingId(mapping);
             const flags = applyAttentionFlags(mapping);
             
@@ -1967,10 +1982,12 @@ window.addEventListener('DOMContentLoaded', function() {
             const modeSelection = document.getElementById('validationModeSelection');
             const validationInterface = document.getElementById('validationInterface');
             const resultsDisplay = document.getElementById('resultsDisplay');
+            const resultsSection = document.getElementById('resultsSection');
             const validationSection = document.getElementById('validationSection');
             
             if (modeSelection) modeSelection.style.display = 'none';
             if (resultsDisplay) resultsDisplay.style.display = 'none';
+            if (resultsSection) resultsSection.style.display = 'none';
             
             // Make sure the validation section is visible and active
             if (validationSection) {
@@ -2086,9 +2103,6 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 <div class="validation-controls">
                     <div class="control-group">
-                        <button id="approveAllBtn" class="button button-success">
-                            <i class="fas fa-check-double"></i> Approve All Groups
-                        </button>
                         <button id="expandAllBtn" class="button button-primary">
                             <i class="fas fa-expand-alt"></i> Expand All
                         </button>
@@ -2294,15 +2308,10 @@ window.addEventListener('DOMContentLoaded', function() {
     
     function setupValidationEventListeners(validationState) {
         // Bulk action buttons
-        const approveAllBtn = document.getElementById('approveAllBtn');
         const expandAllBtn = document.getElementById('expandAllBtn');
         const collapseAllBtn = document.getElementById('collapseAllBtn');
         const commitBtn = document.getElementById('commitDecisionsBtn');
         const exportBtn = document.getElementById('exportValidationStateBtn');
-        
-        if (approveAllBtn) {
-            approveAllBtn.addEventListener('click', () => approveAllGroups());
-        }
         
         if (expandAllBtn) {
             expandAllBtn.addEventListener('click', () => toggleAllGroups(true));
@@ -2436,23 +2445,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function approveAllGroups() {
-        const groups = document.querySelectorAll('.validation-group');
-        let approvedCount = 0;
-        
-        groups.forEach((group, index) => {
-            const groupId = `group_${index}`;
-            const select = group.querySelector('.group-decision-select');
-            
-            if (select && select.value !== 'approve') {
-                select.value = 'approve';
-                updateGroupDecision(groupId, 'approve');
-                approvedCount++;
-            }
-        });
-        
-        statusManager.show(`✅ Approved ${approvedCount} groups`, 'success', 3000);
-    }
     
     window.skipSingletonGroup = function(groupId) {
         const select = document.querySelector(`[data-group-id="${groupId}"] .group-decision-select`);
