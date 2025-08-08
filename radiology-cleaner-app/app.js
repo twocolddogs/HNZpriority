@@ -1970,8 +1970,15 @@ window.addEventListener('DOMContentLoaded', function() {
             if (modeSelection) modeSelection.style.display = 'none';
             if (resultsDisplay) resultsDisplay.style.display = 'none';
             if (validationInterface) {
+                console.log('🔍 Validation interface element found:', validationInterface);
+                console.log('🔍 Before changes - classList:', validationInterface.classList.toString());
+                console.log('🔍 Before changes - style.display:', validationInterface.style.display);
                 validationInterface.classList.remove('hidden');
                 validationInterface.style.display = 'block';
+                console.log('🔍 After changes - classList:', validationInterface.classList.toString());
+                console.log('🔍 After changes - style.display:', validationInterface.style.display);
+            } else {
+                console.error('❌ Validation interface element not found!');
             }
             
             // Load mappings into validation interface with validation state
@@ -2007,6 +2014,7 @@ window.addEventListener('DOMContentLoaded', function() {
     function loadValidationInterface(validationState) {
         const mappingCount = Object.keys(validationState).length;
         console.log(`🔧 Building validation interface for ${mappingCount} mappings`);
+        console.log('🔍 loadValidationInterface called with state:', validationState);
         
         const validationInterface = document.getElementById('validationInterface');
         if (!validationInterface) return;
@@ -2084,6 +2092,7 @@ window.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
+        console.log('🔍 Setting validation interface HTML, length:', interfaceHTML.length);
         validationInterface.innerHTML = interfaceHTML + `
             <div class="validation-actions">
                 <div class="action-group">
