@@ -1732,131 +1732,7 @@ window.addEventListener('DOMContentLoaded', function() {
         });
         displayConsolidatedResults();
     }
-
-    function displayConsolidatedResults() {
-        const container = document.getElementById('consolidatedResults');
-        container.innerHTML = '';
-        filteredConsolidatedData.forEach(group => {
-            const groupElement = document.createElement('div');
-            groupElement.className = 'consolidated-group';
-            const confidencePercent = Math.round(group.avgConfidence * 100);
-            const confidenceClass = group.avgConfidence >= 0.8 ? 'confidence-high' : group.avgConfidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
-            
-            const sourceNames = getSourceNames();
-            const sourcesHTML = [...group.dataSources].map(source => {
-                const color = getSourceColor(source);
-                const displayName = sourceNames[source] || source;
-                return `<span class="source-tag" style="background-color: ${color};" title="${displayName}"></span>`;
-            }).join('');
-            
-            const secondaryPipelineHTML = group.secondaryPipelineCount > 0 ? 
-                `<div class="secondary-pipeline-indicator" title="${group.secondaryPipelineCount} items improved by Secondary Pipeline">
-                    <i class="fas fa-robot"></i> ${group.secondaryPipelineCount}
-                 </div>` : '';
-
-            groupElement.innerHTML = `
-                <div class="consolidated-group-header" onclick="toggleOriginalCodes(this)">
-                    <div class="header-main-content">
-                        <div class="header-title-section">
-                            <div class="consolidated-name">${group.cleanName}</div>
-                            <div class="consolidated-snomed">${group.snomed?.fsn || 'No SNOMED mapping'}</div>
-                        </div>
-                        <div class="header-meta-section">
-                            <div class="consolidated-count" title="${group.totalCount} original codes">${group.totalCount} codes</div>
-                            <div class="consolidated-sources">${sourcesHTML}</div>
-                            ${secondaryPipelineHTML}
-                            <div class="consolidated-confidence">
-                                <div class="confidence-bar-small">
-                                    <div class="confidence-fill-small ${confidenceClass}" style="width: ${confidencePercent}%"></div>
-                                </div>
-                                <small>${confidencePercent}%</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="expand-indicator">›</div>
-                </div>
-                <div class="original-codes-container" style="display: none;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Original Name</th>
-                                <th>Code</th>
-                                <th>Source</th>
-                                <th>Confidence</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${group.sourceCodes.map(code => `
-                                <tr>
-                                    <td>${code.exam_name}</td>
-                                    <td>${code.exam_code}</td>
-                                    <td>${sourceNames[code.data_source] || code.data_source}</td>
-                                    <td>${Math.round((code.components?.confidence || 0) * 100)}%</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            container.appendChild(groupElement);
-        });
-    }
     
-    function renderGroupMappings(mappings, groupId) {
-        let html = '<div class="validation-mappings-container">';
-        mappings.forEach((state, index) => {
-            const mapping = state.original_mapping;
-            const mappingId = state.unique_mapping_id;
-            const hasFlags = state.needs_attention_flags.length > 0;
-            const confidence = mapping.components?.confidence || 0;
-            const confidencePercent = Math.round(confidence * 100);
-            const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
-            const flagBadges = state.needs_attention_flags.map(flag => `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`).join('');
-            html += `
-                <div class="validation-mapping-item ${hasFlags ? 'mapping-flagged' : ''}" data-mapping-id="${mappingId}">
-                    <div class="mapping-content">
-                        <div class="mapping-header">
-                            <div class="mapping-title">${mapping.exam_name || 'Unknown'}</div>
-                            <div class="mapping-actions">
-                                <button class="button button-sm button-success" onclick="updateMappingDecision('${mappingId}', 'approve')" title="Approve"><i class="fas fa-check"></i></button>
-                                <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject"><i class="fas fa-times"></i></button>
-                                <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="Details"><i class="fas fa-info-circle"></i></button>
-                            </div>
-                        </div>
-                        <div class="mapping-details">
-                            <div class="mapping-meta-inline">
-                                <span class="meta-item-inline"><i class="fas fa-database"></i> ${mapping.data_source || 'N/A'}</span>
-                                <span class="meta-separator">•</span>
-                                <span class="meta-item-inline"><i class="fas fa-barcode"></i> ${mapping.exam_code || 'N/A'}</span>
-                                <span class="meta-separator">•</span>
-                                <span class="meta-item-inline"><i class="fas fa-chart-bar"></i> <span class="confidence-inline ${confidenceClass}">${confidencePercent}%</span></span>
-                            </div>
-                            ${flagBadges ? `<div class="mapping-flags">${flagBadges}</div>` : ''}
-                            ${mapping.components?.reasoning ? `<div class="mapping-reasoning"><div class="reasoning-header"><i class="fas fa-brain"></i> AI Reasoning:</div><div class="reasoning-content">${mapping.components.reasoning}</div></div>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        html += '</div>';
-        return html;
-    }
-    
-    function setupValidationEventListeners(validationState) {
-        document.getElementById('approveAllBtn')?.addEventListener('click', () => approveAllGroups());
-        document.getElementById('expandAllBtn')?.addEventListener('click', () => toggleAllGroups(true));
-        document.getElementById('collapseAllBtn')?.addEventListener('click', () => toggleAllGroups(false));
-        document.getElementById('commitDecisionsBtn')?.addEventListener('click', commitValidatedDecisions);
-        document.getElementById('exportValidationStateBtn')?.addEventListener('click', () => exportValidationState(validationState));
-    }
-    
-    function exportValidationState(validationState) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `validation_state_${timestamp}.json`;
-        const exportData = { export_timestamp: new Date().toISOString(), mapping_count: Object.keys(validationState).length, validation_state: validationState };
-        downloadJSON(exportData, filename);
-        statusManager.show(`✅ Exported validation state: ${filename}`, 'success', 3000);
-    }
     
     window.toggleValidationGroup = function(groupId) {
         const content = document.getElementById(`${groupId}_content`);
@@ -1868,17 +1744,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function toggleAllGroups(expand) {
-        document.querySelectorAll('.validation-group').forEach((group) => {
-            const groupId = group.dataset.groupId;
-            const content = document.getElementById(`${groupId}_content`);
-            const header = group.querySelector('.validation-header');
-            if (content) {
-                content.style.display = expand ? 'block' : 'none';
-                header?.classList.toggle('expanded', expand);
-            }
-        });
-    }
     
     window.updateGroupDecision = function(groupId, decision) {
         const groupElement = document.querySelector(`[data-group-id="${groupId}"]`);
@@ -1905,18 +1770,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function approveAllGroups() {
-        let approvedCount = 0;
-        document.querySelectorAll('.validation-group').forEach((group) => {
-            const select = group.querySelector('.group-decision-select');
-            if (select && select.value !== 'approve') {
-                select.value = 'approve';
-                updateGroupDecision(group.dataset.groupId, 'approve');
-                approvedCount++;
-            }
-        });
-        statusManager.show(`✅ Approved ${approvedCount} groups`, 'success', 3000);
-    }
     
     window.skipSingletonGroup = function(groupId) {
         const select = document.querySelector(`[data-group-id="${groupId}"] .group-decision-select`);
@@ -2416,11 +2269,31 @@ window.addEventListener('DOMContentLoaded', function() {
     
     function setupValidationEventListeners(validationState) {
         // Bulk action buttons
-        document.getElementById('approveAllBtn')?.addEventListener('click', () => approveAllGroups());
-        document.getElementById('expandAllBtn')?.addEventListener('click', () => toggleAllGroups(true));
-        document.getElementById('collapseAllBtn')?.addEventListener('click', () => toggleAllGroups(false));
-        document.getElementById('commitDecisionsBtn')?.addEventListener('click', commitValidatedDecisions);
-        document.getElementById('exportValidationStateBtn')?.addEventListener('click', () => exportValidationState(validationState));
+        const approveAllBtn = document.getElementById('approveAllBtn');
+        const expandAllBtn = document.getElementById('expandAllBtn');
+        const collapseAllBtn = document.getElementById('collapseAllBtn');
+        const commitBtn = document.getElementById('commitDecisionsBtn');
+        const exportBtn = document.getElementById('exportValidationStateBtn');
+        
+        if (approveAllBtn) {
+            approveAllBtn.addEventListener('click', () => approveAllGroups());
+        }
+        
+        if (expandAllBtn) {
+            expandAllBtn.addEventListener('click', () => toggleAllGroups(true));
+        }
+        
+        if (collapseAllBtn) {
+            collapseAllBtn.addEventListener('click', () => toggleAllGroups(false));
+        }
+        
+        if (commitBtn) {
+            commitBtn.addEventListener('click', commitValidatedDecisions);
+        }
+        
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => exportValidationState(validationState));
+        }
     }
     
     function exportValidationState(validationState) {
@@ -2557,14 +2430,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         
         statusManager.show(`✅ Mapping ${decision}d`, 'success', 1500);
-    }
-    
-    function updateMappingDecisionInState(mappingId, decision) {
-        if (window.currentValidationState && window.currentValidationState[mappingId]) {
-            window.currentValidationState[mappingId].validator_decision = decision;
-            window.currentValidationState[mappingId].validation_status = 'reviewed';
-            window.currentValidationState[mappingId].timestamp_reviewed = new Date().toISOString();
-        }
     }
     
     window.showMappingDetails = function(mappingId) {
