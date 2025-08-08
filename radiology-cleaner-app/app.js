@@ -124,16 +124,16 @@ class StatusManager {
         const messageElement = document.createElement('div');
         messageElement.id = messageId;
         messageElement.className = `status-message status-${type}`;
-        messageElement.style.cssText = '
+        messageElement.style.cssText = `
             padding: 12px 16px; background: ${style.background}; border: ${style.border}; border-radius: 6px;
             font-size: 14px; color: var(--color-gray-800, #333); font-weight: 500; display: flex;
             align-items: center; gap: 12px; animation: statusFadeIn 0.3s ease-out; position: relative;
-        ';
+        `;
         
         const iconElement = document.createElement('div');
         iconElement.className = 'status-icon';
         iconElement.innerHTML = style.icon;
-        iconElement.style.cssText = 'flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: ${style.color};';
+        iconElement.style.cssText = `flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: ${style.color};`;
         
         const textElement = document.createElement('div');
         textElement.className = 'status-text';
@@ -1991,12 +1991,14 @@ window.addEventListener('DOMContentLoaded', function() {
                 if (currentDataSource === 'sample') {
                     sampleOptions.style.display = 'block';
                     runProcessingBtn.style.display = 'none';
-                    document.getElementById('secondaryPipelineOption')?.style.display = 'block';
+                    const secondaryPipelineOption = document.getElementById('secondaryPipelineOption');
+                    if (secondaryPipelineOption) secondaryPipelineOption.style.display = 'block';
                     runRandomSampleBtn.disabled = buttonsDisabledForLoading || isUsingFallbackModels;
                 } else if (currentDataSource === 'upload') {
                     sampleOptions.style.display = 'none';
                     runProcessingBtn.style.display = 'block';
-                    document.getElementById('secondaryPipelineOption')?.style.display = 'none';
+                    const secondaryPipelineOption2 = document.getElementById('secondaryPipelineOption');
+                    if (secondaryPipelineOption2) secondaryPipelineOption2.style.display = 'none';
                     runProcessingBtn.disabled = buttonsDisabledForLoading || isUsingFallbackModels;
                 }
                 activateStep(3);
