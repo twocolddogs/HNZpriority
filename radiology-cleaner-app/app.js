@@ -1718,7 +1718,8 @@ window.addEventListener('DOMContentLoaded', function() {
     function displayConsolidatedResults() {
         const container = document.getElementById('consolidatedResults');
         container.innerHTML = '';
-        filteredConsolidatedData.forEach(group => {
+        filteredConsolidatedData.forEach((group, index) => {
+            const groupId = `group_${index}`;
             const groupElement = document.createElement('div');
             groupElement.className = 'consolidated-group';
             const confidencePercent = Math.round(group.avgConfidence * 100);
