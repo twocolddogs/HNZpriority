@@ -1876,6 +1876,10 @@ def submit_batch_validation_decisions():
         r2_success = True
         cache_reload_success = True
         
+        # Add detailed logging for R2 operations
+        logger.info(f"Starting R2 save process: {len(approved_mappings)} approved, {len(rejected_mappings)} rejected mappings")
+        logger.info(f"R2 manager available: {r2_manager.is_available()}")
+        
         try:
             import json
             
@@ -1896,6 +1900,9 @@ def submit_batch_validation_decisions():
                 all_approved = existing_approved + approved_mappings
                 approved_json = json.dumps(all_approved, indent=2)
                 
+                logger.info(f"Attempting to upload approved mappings: {len(approved_json)} bytes")
+                logger.info(f"R2 bucket: {r2_manager.bucket_name}, endpoint: {r2_manager.endpoint_url}")
+                
                 success = r2_manager.upload_object(
                     object_key='validation_caches/approved_mappings.json',
                     data=approved_json.encode('utf-8'),
@@ -1907,7 +1914,7 @@ def submit_batch_validation_decisions():
                     logger.info(f"Successfully saved {len(approved_mappings)} new approved mappings to R2 (total: {len(all_approved)})")
                 else:
                     r2_success = False
-                    logger.error("Failed to save approved mappings to R2")
+                    logger.error("Failed to save approved mappings to R2 - upload_object returned False")
             
             # Load existing rejected mappings from R2 and merge with new ones
             if rejected_mappings:
@@ -1925,6 +1932,8 @@ def submit_batch_validation_decisions():
                 all_rejected = existing_rejected + rejected_mappings
                 rejected_json = json.dumps(all_rejected, indent=2)
                 
+                logger.info(f"Attempting to upload rejected mappings: {len(rejected_json)} bytes")
+                
                 success = r2_manager.upload_object(
                     object_key='validation_caches/rejected_mappings.json',
                     data=rejected_json.encode('utf-8'),
@@ -1936,11 +1945,14 @@ def submit_batch_validation_decisions():
                     logger.info(f"Successfully saved {len(rejected_mappings)} new rejected mappings to R2 (total: {len(all_rejected)})")
                 else:
                     r2_success = False
-                    logger.error("Failed to save rejected mappings to R2")
+                    logger.error("Failed to save rejected mappings to R2 - upload_object returned False")
             
         except Exception as e:
             r2_success = False
             logger.error(f"Exception saving validation caches to R2: {e}")
+            logger.error(f"Exception details: {type(e).__name__}: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
         
         # Trigger cache reload in NHS lookup engine
         try:
@@ -1955,27 +1967,32 @@ def submit_batch_validation_decisions():
             cache_reload_success = False
             logger.error(f"Exception reloading validation caches: {e}")
         
-        # Prepare response
+        # Prepare response - fail if R2 storage fails since decisions must persist
         response_data = {
-            'success': True,
+            'success': r2_success,  # Only successful if R2 storage succeeded
             'processed_count': len(processed_decisions),
             'approved_count': len(approved_mappings),
             'rejected_count': len(rejected_mappings),
             'error_count': len(errors),
             'r2_storage_success': r2_success,
             'cache_reload_success': cache_reload_success,
+            'cache_updated': cache_reload_success,  # For frontend compatibility
             'decisions': processed_decisions,
             'errors': errors if errors else None
         }
         
         if not r2_success:
-            response_data['warning'] = 'Decisions processed but R2 storage failed - decisions may not persist'
+            response_data['error'] = 'Validation decisions could not be saved to R2 storage - decisions not persisted'
+            logger.error("Validation batch failed: R2 storage unavailable or failed")
         
         if not cache_reload_success:
-            response_data['warning'] = (response_data.get('warning', '') + 
-                                      ' Cache reload failed - restart may be needed').strip()
+            response_data['warning'] = 'Cache reload failed - restart may be needed for changes to take effect'
         
-        return jsonify(response_data)
+        # Return appropriate HTTP status code
+        if not r2_success:
+            return jsonify(response_data), 500
+        else:
+            return jsonify(response_data)
         
     except Exception as e:
         logger.error(f"Failed to process batch validation decisions: {e}")
