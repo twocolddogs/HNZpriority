@@ -1950,6 +1950,7 @@ window.addEventListener('DOMContentLoaded', function() {
     
     async function handleValidateCurrentResults() {
         console.log('📋 Loading current results for validation');
+        console.log('🔍 handleValidateCurrentResults called, allMappings:', allMappings?.length || 'undefined');
         
         if (!allMappings || allMappings.length === 0) {
             statusManager.show('❌ No current results found to validate', 'error', 5000);
@@ -1975,6 +1976,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 console.log('🔍 Before changes - style.display:', validationInterface.style.display);
                 validationInterface.classList.remove('hidden');
                 validationInterface.style.display = 'block';
+                validationInterface.style.visibility = 'visible';
+                validationInterface.hidden = false;
                 console.log('🔍 After changes - classList:', validationInterface.classList.toString());
                 console.log('🔍 After changes - style.display:', validationInterface.style.display);
             } else {
