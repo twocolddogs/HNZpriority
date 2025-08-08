@@ -30,6 +30,7 @@ import os
 import pickle
 import time
 import yaml
+import hashlib
 import numpy as np
 import faiss
 from typing import Dict, List, Optional
@@ -42,6 +43,7 @@ from nlp_processor import NLPProcessor
 from context_detection import detect_interventional_procedure_terms
 from preprocessing import get_preprocessor
 from complexity import ComplexityScorer
+from r2_cache_manager import R2CacheManager
 
 if TYPE_CHECKING:
     from parser import RadiologySemanticParser
@@ -92,6 +94,10 @@ class NHSLookupEngine:
             'ct', 'mr', 'mri', 'us', 'xr', 'x-ray', 'nm', 'pet', 'scan', 'imaging', 'procedure',
             'examination', 'study', 'left', 'right', 'bilateral', 'contrast', 'view'
         }
+        
+        # Load validation caches for human-in-the-loop feedback  
+        self.r2_manager = R2CacheManager()
+        self._load_validation_caches()
         
         logger.info("NHSLookupEngine initialized with two-stage pipeline architecture.")
 
@@ -195,6 +201,155 @@ class NHSLookupEngine:
             # Calculate complexity flag for simple input filtering (threshold 0.67)
             fsn_complexity_score = self.complexity_scorer.calculate_fsn_total_complexity(snomed_fsn_clean)
             entry["_is_complex_fsn"] = fsn_complexity_score > 0.67
+    
+    def _fetch_json_from_r2(self, object_key: str) -> dict:
+        """Fetch and parse JSON data from R2 storage."""
+        if not self.r2_manager.is_available():
+            logger.warning(f"R2 not available, cannot fetch {object_key}")
+            return {}
+        
+        try:
+            # Download to temporary location
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w+b', delete=False, suffix='.json') as temp_file:
+                temp_path = temp_file.name
+            
+            if self.r2_manager.download_object(object_key, temp_path):
+                with open(temp_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                os.unlink(temp_path)  # Clean up temp file
+                return data
+            else:
+                logger.warning(f"Failed to download {object_key} from R2")
+                return {}
+        except Exception as e:
+            logger.error(f"Error fetching JSON from R2 {object_key}: {e}")
+            return {}
+
+    def _load_validation_caches(self):
+        """
+        Load validation caches from R2 cloud storage for human-in-the-loop feedback.
+        
+        Loads:
+        - validation/approved_mappings_cache.json: Hash -> complete mapping data
+        - validation/rejected_mappings.json: Hash -> set of rejected SNOMED IDs  
+        """
+        # Initialize validation caches
+        self.approved_mappings = {}
+        self.rejected_mappings = {}
+        
+        # Load approved mappings cache from R2
+        approved_data = self._fetch_json_from_r2('validation/approved_mappings_cache.json')
+        for hash_key, entry in approved_data.items():
+            if 'mapping_data' in entry:
+                self.approved_mappings[hash_key] = entry['mapping_data']
+        logger.info(f"Loaded {len(self.approved_mappings)} approved mappings from R2 validation cache")
+        
+        # Load rejected mappings from R2  
+        rejected_data = self._fetch_json_from_r2('validation/rejected_mappings.json')
+        for hash_key, entry in rejected_data.items():
+            if 'rejected_snomed_ids' in entry:
+                # Convert to set for O(1) lookup performance
+                self.rejected_mappings[hash_key] = set(entry['rejected_snomed_ids'])
+        logger.info(f"Loaded {len(self.rejected_mappings)} rejected mapping entries from R2 validation cache")
+
+    def _generate_request_hash(self, exam_code: str = '', exam_name: str = '', data_source: str = '', clean_name: str = '') -> str:
+        """
+        Generate SHA-256 hash for request matching validation system.
+        
+        This must match the exact hash generation logic in validation/load_mappings.py
+        to ensure proper lookup of approved/rejected mappings.
+        
+        Args:
+            exam_code: Exam code from input
+            exam_name: Original exam name
+            data_source: Data source identifier  
+            clean_name: Cleaned/standardized name
+            
+        Returns:
+            SHA-256 hash string for validation cache lookup
+        """
+        # Use same key fields as validation system
+        key_fields = [
+            str(exam_code).strip().lower(),
+            str(exam_name).strip().lower(), 
+            str(data_source).strip().lower(),
+            str(clean_name).strip().lower()
+        ]
+        
+        # Create hash from concatenated fields (matching validation logic exactly)
+        hash_input = '|'.join(key_fields)
+        return hashlib.sha256(hash_input.encode('utf-8')).hexdigest()
+    
+    def _generate_request_hash_from_mapping(self, mapping: Dict) -> str:
+        """
+        Generate SHA-256 hash from mapping dictionary (convenience method).
+        
+        Args:
+            mapping: Dictionary containing exam_code, exam_name, data_source, clean_name
+            
+        Returns:
+            SHA-256 hash string for validation cache lookup
+        """
+        return self._generate_request_hash(
+            exam_code=mapping.get('exam_code', ''),
+            exam_name=mapping.get('exam_name', ''), 
+            data_source=mapping.get('data_source', ''),
+            clean_name=mapping.get('clean_name', '')
+        )
+
+    def reload_validation_caches(self) -> Dict[str, any]:
+        """
+        Public method to reload validation caches from R2 cloud storage.
+        
+        This allows external systems (API endpoints, admin tools) to refresh
+        the validation caches without restarting the NHS lookup engine.
+        
+        Returns:
+            Dict with detailed statistics of loaded approved and rejected mappings
+        """
+        logger.info("[VALIDATION-RELOAD] Reloading validation caches from R2...")
+        
+        try:
+            # Clear existing caches
+            old_approved_count = len(self.approved_mappings)
+            old_rejected_count = len(self.rejected_mappings)
+            
+            self.approved_mappings.clear()
+            self.rejected_mappings.clear()
+            
+            # Reload from R2 using existing logic
+            self._load_validation_caches()
+            
+            result = {
+                'approved_count': len(self.approved_mappings),
+                'rejected_count': len(self.rejected_mappings),
+                'previous_approved_count': old_approved_count,
+                'previous_rejected_count': old_rejected_count,
+                'approved_delta': len(self.approved_mappings) - old_approved_count,
+                'rejected_delta': len(self.rejected_mappings) - old_rejected_count,
+                'r2_available': self.r2_manager.is_available(),
+                'status': 'success',
+                'timestamp': time.time()
+            }
+            
+            logger.info(f"[VALIDATION-RELOAD] Successfully reloaded validation caches: approved={result['approved_count']} (Δ{result['approved_delta']:+d}), rejected={result['rejected_count']} (Δ{result['rejected_delta']:+d})")
+            return result
+            
+        except Exception as e:
+            logger.error(f"[VALIDATION-RELOAD] Failed to reload validation caches: {e}")
+            return {
+                'approved_count': len(self.approved_mappings),
+                'rejected_count': len(self.rejected_mappings),
+                'previous_approved_count': old_approved_count if 'old_approved_count' in locals() else 0,
+                'previous_rejected_count': old_rejected_count if 'old_rejected_count' in locals() else 0,
+                'approved_delta': 0,
+                'rejected_delta': 0,
+                'r2_available': self.r2_manager.is_available() if hasattr(self, 'r2_manager') else False,
+                'status': 'error',
+                'error': str(e),
+                'timestamp': time.time()
+            }
 
     # =============================================================================
     # FAISS INDEX MANAGEMENT
@@ -246,7 +401,7 @@ class NHSLookupEngine:
     # MAIN STANDARDIZATION PIPELINE - ENTRY POINT
     # =============================================================================
     
-    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None, is_input_simple: bool = False, debug: bool = False, reranker_key: Optional[str] = None) -> Dict:
+    def standardize_exam(self, input_exam: str, extracted_input_components: Dict, custom_nlp_processor: Optional[NLPProcessor] = None, is_input_simple: bool = False, debug: bool = False, reranker_key: Optional[str] = None, data_source: Optional[str] = None, exam_code: Optional[str] = None) -> Dict:
         """
         V4 Two-Stage Pipeline: Retrieve candidates with BioLORD, then rerank with flexible rerankers + component scoring.
         
@@ -576,6 +731,43 @@ class NHSLookupEngine:
                     # Apply semantic similarity safeguard to bilateral peer result
                     result = self._apply_semantic_similarity_safeguard(result, input_exam)
                     
+                    # === HUMAN-IN-THE-LOOP VALIDATION CACHE CHECK ===
+                    if data_source and exam_code and input_exam:
+                        # Generate hash from the final result mapping
+                        result_hash = self._generate_request_hash(
+                            exam_code=exam_code or '',
+                            exam_name=input_exam,
+                            data_source=data_source or '',
+                            clean_name=result.get('clean_name', '')
+                        )
+                        
+                        # Check for approved mapping (override result with approved version)
+                        if result_hash in self.approved_mappings:
+                            approved_mapping = self.approved_mappings[result_hash]
+                            logger.info(f"[VALIDATION-OVERRIDE] Using approved mapping for {input_exam} (hash: {result_hash[:12]}...)")
+                            
+                            # Override with approved mapping but preserve some original metadata
+                            original_confidence = result.get('components', {}).get('confidence', 0.0)
+                            result = approved_mapping.copy()
+                            result.update({
+                                'validation_status': 'approved_by_human',
+                                'confidence': 1.0,  # Human approval = max confidence
+                                'validation_hash': result_hash,
+                                'original_ai_confidence': original_confidence
+                            })
+                            if debug:
+                                result['debug_validation_override'] = True
+                        
+                        # Check for rejected mapping (mark as rejected but don't change result)
+                        elif result_hash in self.rejected_mappings:
+                            logger.info(f"[VALIDATION-REJECTED] Found rejected mapping for {input_exam} (hash: {result_hash[:12]}...)")
+                            result.update({
+                                'validation_status': 'rejected_by_human',
+                                'validation_hash': result_hash
+                            })
+                            if debug:
+                                result['debug_validation_rejected'] = True
+                    
                     return result
             
             result = self._format_match_result(best_match, extracted_input_components, highest_confidence, self.retriever_processor, strip_laterality_from_name=strip_laterality, input_exam_text=input_exam, force_ambiguous=laterally_ambiguous)
@@ -638,6 +830,44 @@ class NHSLookupEngine:
                     result['debug'] = {'error': f'Debug error: {str(e)}'}
             
             result['all_candidates'] = all_candidates_list
+            
+            # === HUMAN-IN-THE-LOOP VALIDATION CACHE CHECK ===
+            if data_source and exam_code and input_exam:
+                # Generate hash from the final result mapping
+                result_hash = self._generate_request_hash(
+                    exam_code=exam_code or '',
+                    exam_name=input_exam,
+                    data_source=data_source or '',
+                    clean_name=result.get('clean_name', '')
+                )
+                
+                # Check for approved mapping (override result with approved version)
+                if result_hash in self.approved_mappings:
+                    approved_mapping = self.approved_mappings[result_hash]
+                    logger.info(f"[VALIDATION-OVERRIDE] Using approved mapping for {input_exam} (hash: {result_hash[:12]}...)")
+                    
+                    # Override with approved mapping but preserve some original metadata
+                    original_confidence = result.get('components', {}).get('confidence', 0.0)
+                    result = approved_mapping.copy()
+                    result.update({
+                        'validation_status': 'approved_by_human',
+                        'confidence': 1.0,  # Human approval = max confidence
+                        'validation_hash': result_hash,
+                        'original_ai_confidence': original_confidence
+                    })
+                    if debug:
+                        result['debug_validation_override'] = True
+                
+                # Check for rejected mapping (mark as rejected but don't change result)
+                elif result_hash in self.rejected_mappings:
+                    logger.info(f"[VALIDATION-REJECTED] Found rejected mapping for {input_exam} (hash: {result_hash[:12]}...)")
+                    result.update({
+                        'validation_status': 'rejected_by_human',
+                        'validation_hash': result_hash
+                    })
+                    if debug:
+                        result['debug_validation_rejected'] = True
+            
             return result
         
         logger.warning(f"[V3-PIPELINE] ❌ No suitable match found in {total_time:.2f}s total")

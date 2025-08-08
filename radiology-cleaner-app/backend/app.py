@@ -329,7 +329,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     
     # Wrap the entire processing logic in a try...except block to prevent crashes from returning malformed data
     try:
-        nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key)
+        nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key, data_source=data_source, exam_code=exam_code)
 
         # =============================================================================
         # ### START OF REFACTORED SECONDARY PIPELINE LOGIC ###
@@ -634,6 +634,42 @@ def reload_config():
     except Exception as e:
         logger.error(f"Config reload endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Failed to reload configuration"}), 500
+
+@app.route('/admin/reload-validation-cache', methods=['POST'])
+def reload_validation_cache():
+    """
+    Admin endpoint to reload validation caches from R2 cloud storage.
+    
+    This allows administrators to refresh validation caches after updating
+    the validation files in R2 without restarting the backend service.
+    
+    Returns:
+        JSON response with detailed statistics and status
+    """
+    try:
+        if not nhs_lookup_engine:
+            return jsonify({
+                'status': 'error',
+                'error': 'NHS lookup engine not available',
+                'timestamp': time.time()
+            }), 500
+        
+        # Call the reload method on the NHS lookup engine
+        result = nhs_lookup_engine.reload_validation_caches()
+        
+        # Return appropriate HTTP status code based on result
+        if result.get('status') == 'success':
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Failed to reload validation cache via admin endpoint: {e}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': time.time()
+        }), 500
 
 @app.route('/config/status', methods=['GET'])
 def config_status():
