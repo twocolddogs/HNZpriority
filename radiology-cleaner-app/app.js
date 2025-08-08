@@ -1647,6 +1647,77 @@ window.addEventListener('DOMContentLoaded', function() {
     function displayConsolidatedResults() {
         const container = document.getElementById('consolidatedResults');
         container.innerHTML = '';
+        
+        filteredConsolidatedData.forEach(group => {
+            const groupElement = document.createElement('div');
+            groupElement.className = 'consolidated-group';
+            const confidencePercent = Math.round(group.avgConfidence * 100);
+            const confidenceClass = group.avgConfidence >= 0.8 ? 'confidence-high' : group.avgConfidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
+            
+            const snomedId = group.snomed && group.snomed.id ? `(${group.snomed.id})` : '';
+            
+            const originalCodesList = group.sourceCodes.map(code =>
+                `<li class="original-code-item">
+                    <span class="original-code-source" style="background-color: ${getSourceColor(code.data_source)}" title="${getSourceDisplayName(code.data_source)}"></span>
+                    <span class="original-code-name">${code.exam_name}</span>
+                    <span class="original-code-details">(${code.exam_code})</span>
+                </li>`
+            ).join('');
+            
+            // Debug: Log if no codes found
+            if (group.sourceCodes.length === 0) {
+                console.warn('No source codes found for group:', group.cleanName);
+            }
+
+            groupElement.innerHTML = `
+                <div class="consolidated-header" onclick="toggleOriginalCodes(this)">
+                    <div class="consolidated-title-container">
+                        <div class="consolidated-title">${group.cleanName}</div>
+                        ${snomedId ? `<div class="snomed-code">SNOMED-CT ID: ${snomedId}</div>` : ''}
+                    </div>
+                    <div class="consolidated-count-container">
+                        <span class="consolidated-count">${group.totalCount} codes</span>
+                        <span class="expand-icon"></span>
+                    </div>
+                </div>
+                <div class="consolidated-body">
+                    <div class="consolidated-meta">
+                        <div class="meta-item"><strong>Data Sources</strong><div class="source-indicators">${Array.from(group.dataSources).map(source => `<div class="source-item" title="${getSourceDisplayName(source)}"><span class="source-color-dot" style="background-color: ${getSourceColor(source)}"></span>${getSourceDisplayName(source)}</div>`).join('')}</div></div>
+                        <div class="meta-item"><strong>Modalities</strong><div class="modality-list">${Array.from(group.modalities).filter(m => m && m.trim()).join(', ') || 'None specified'}</div></div>
+                        <div class="meta-item"><strong>Avg Confidence</strong><div class="confidence-display"><div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><div class="confidence-text">${confidencePercent}%</div></div>${group.secondaryPipelineCount > 0 ? `<div class="secondary-pipeline-tag" title="${group.secondaryPipelineCount} of ${group.totalCount} results improved by Secondary Pipeline"><i class="fas fa-robot"></i> ${group.secondaryPipelineCount} Super AI Mapped</div>` : ''}</div>
+                        <div class="meta-item"><strong>Parsed Components</strong><div class="component-tags">${generateComponentTags(group.components)}</div></div>
+                    </div>
+                    <div class="original-codes-container" style="display: none;">
+                        <ul class="original-codes-list">${originalCodesList}</ul>
+                    </div>
+                </div>`;
+            container.appendChild(groupElement);
+        });
+    }
+
+    function filterConsolidatedResults(event) {
+        const searchTerm = event.target.value.toLowerCase();
+        filteredConsolidatedData = consolidatedData.filter(group => 
+            group.cleanName.toLowerCase().includes(searchTerm) ||
+            group.sourceCodes.some(code => code.exam_name.toLowerCase().includes(searchTerm) || code.exam_code.toLowerCase().includes(searchTerm))
+        );
+        sortConsolidatedResults();
+    }
+
+    function sortConsolidatedResults() {
+        const sortByValue = document.getElementById('consolidatedSort').value;
+        filteredConsolidatedData.sort((a, b) => {
+            if (sortByValue === 'count') return b.totalCount - a.totalCount;
+            if (sortByValue === 'name') return a.cleanName.localeCompare(b.cleanName);
+            if (sortByValue === 'confidence') return b.avgConfidence - a.avgConfidence;
+            return b.totalCount - a.totalCount;
+        });
+        displayConsolidatedResults();
+    }
+
+    function displayConsolidatedResults() {
+        const container = document.getElementById('consolidatedResults');
+        container.innerHTML = '';
         filteredConsolidatedData.forEach(group => {
             const groupElement = document.createElement('div');
             groupElement.className = 'consolidated-group';
