@@ -1814,7 +1814,7 @@ def submit_validation_decision():
 def submit_batch_validation_decisions():
     """
     Submit multiple validation decisions in a single request.
-    Accepts array of decision objects.
+    Accepts array of decision objects and saves them to R2 validation caches.
     """
     try:
         data = request.get_json()
@@ -1827,7 +1827,17 @@ def submit_batch_validation_decisions():
             
         logger.info(f"Processing batch validation decisions: {len(decisions)} decisions")
         
+        # Import R2CacheManager for saving validation caches
+        from r2_cache_manager import R2CacheManager
+        r2_manager = R2CacheManager()
+        
+        if not r2_manager.is_available():
+            logger.error("R2CacheManager not available - validation decisions cannot be saved")
+            return jsonify({'error': 'R2 storage not available - decisions cannot be persisted'}), 500
+        
         processed_decisions = []
+        approved_mappings = []
+        rejected_mappings = []
         errors = []
         
         for decision_data in decisions:
@@ -1844,21 +1854,128 @@ def submit_batch_validation_decisions():
                     'mapping_id': mapping_id,
                     'decision': decision,
                     'notes': notes,
-                    'timestamp_reviewed': datetime.utcnow().isoformat() + 'Z'
+                    'timestamp_reviewed': datetime.utcnow().isoformat() + 'Z',
+                    'original_mapping': decision_data.get('original_mapping', {}),
+                    'data_source': decision_data.get('data_source', ''),
+                    'exam_code': decision_data.get('exam_code', ''),
+                    'exam_name': decision_data.get('exam_name', '')
                 }
                 
                 processed_decisions.append(processed_decision)
                 
+                # Categorize decisions for R2 storage
+                if decision == 'approve':
+                    approved_mappings.append(processed_decision)
+                elif decision == 'reject':
+                    rejected_mappings.append(processed_decision)
+                
             except Exception as e:
                 errors.append(f'Error processing decision: {str(e)}')
         
-        return jsonify({
+        # Save validation decisions to R2 cloud storage
+        r2_success = True
+        cache_reload_success = True
+        
+        try:
+            import json
+            
+            # Load existing approved mappings from R2 and merge with new ones
+            if approved_mappings:
+                existing_approved = []
+                try:
+                    import requests
+                    approved_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation_caches/approved_mappings.json"
+                    response = requests.get(approved_url, timeout=10)
+                    if response.status_code == 200:
+                        existing_approved = response.json()
+                        logger.info(f"Loaded {len(existing_approved)} existing approved mappings from R2")
+                except Exception as e:
+                    logger.warning(f"Could not load existing approved mappings: {e}")
+                
+                # Merge and save approved mappings
+                all_approved = existing_approved + approved_mappings
+                approved_json = json.dumps(all_approved, indent=2)
+                
+                success = r2_manager.upload_object(
+                    object_key='validation_caches/approved_mappings.json',
+                    data=approved_json.encode('utf-8'),
+                    content_type='application/json',
+                    cors_headers=True
+                )
+                
+                if success:
+                    logger.info(f"Successfully saved {len(approved_mappings)} new approved mappings to R2 (total: {len(all_approved)})")
+                else:
+                    r2_success = False
+                    logger.error("Failed to save approved mappings to R2")
+            
+            # Load existing rejected mappings from R2 and merge with new ones
+            if rejected_mappings:
+                existing_rejected = []
+                try:
+                    rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation_caches/rejected_mappings.json"
+                    response = requests.get(rejected_url, timeout=10)
+                    if response.status_code == 200:
+                        existing_rejected = response.json()
+                        logger.info(f"Loaded {len(existing_rejected)} existing rejected mappings from R2")
+                except Exception as e:
+                    logger.warning(f"Could not load existing rejected mappings: {e}")
+                
+                # Merge and save rejected mappings
+                all_rejected = existing_rejected + rejected_mappings
+                rejected_json = json.dumps(all_rejected, indent=2)
+                
+                success = r2_manager.upload_object(
+                    object_key='validation_caches/rejected_mappings.json',
+                    data=rejected_json.encode('utf-8'),
+                    content_type='application/json',
+                    cors_headers=True
+                )
+                
+                if success:
+                    logger.info(f"Successfully saved {len(rejected_mappings)} new rejected mappings to R2 (total: {len(all_rejected)})")
+                else:
+                    r2_success = False
+                    logger.error("Failed to save rejected mappings to R2")
+            
+        except Exception as e:
+            r2_success = False
+            logger.error(f"Exception saving validation caches to R2: {e}")
+        
+        # Trigger cache reload in NHS lookup engine
+        try:
+            if nhs_lookup_engine and r2_success:
+                reload_result = nhs_lookup_engine.reload_validation_caches()
+                if reload_result.get('status') != 'success':
+                    cache_reload_success = False
+                    logger.error(f"Failed to reload validation caches: {reload_result}")
+                else:
+                    logger.info("Successfully reloaded validation caches in NHS lookup engine")
+        except Exception as e:
+            cache_reload_success = False
+            logger.error(f"Exception reloading validation caches: {e}")
+        
+        # Prepare response
+        response_data = {
             'success': True,
             'processed_count': len(processed_decisions),
+            'approved_count': len(approved_mappings),
+            'rejected_count': len(rejected_mappings),
             'error_count': len(errors),
+            'r2_storage_success': r2_success,
+            'cache_reload_success': cache_reload_success,
             'decisions': processed_decisions,
             'errors': errors if errors else None
-        })
+        }
+        
+        if not r2_success:
+            response_data['warning'] = 'Decisions processed but R2 storage failed - decisions may not persist'
+        
+        if not cache_reload_success:
+            response_data['warning'] = (response_data.get('warning', '') + 
+                                      ' Cache reload failed - restart may be needed').strip()
+        
+        return jsonify(response_data)
         
     except Exception as e:
         logger.error(f"Failed to process batch validation decisions: {e}")

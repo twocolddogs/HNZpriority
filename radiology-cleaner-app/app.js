@@ -1864,9 +1864,25 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
             statusManager.show('🔄 Committing validation decisions...', 'info');
             
+            // Convert currentValidationState object to array format expected by backend
+            const decisionsArray = [];
+            for (const [mappingId, state] of Object.entries(window.currentValidationState)) {
+                if (state.validator_decision && state.validator_decision !== 'pending') {
+                    decisionsArray.push({
+                        mapping_id: mappingId,
+                        decision: state.validator_decision,
+                        notes: state.validation_notes || '',
+                        original_mapping: state.original_mapping || {},
+                        data_source: state.original_mapping?.data_source || '',
+                        exam_code: state.original_mapping?.exam_code || '',
+                        exam_name: state.original_mapping?.exam_name || ''
+                    });
+                }
+            }
+            
             // Prepare the payload for the backend
             const payload = {
-                decisions: window.currentValidationState,
+                decisions: decisionsArray,
                 summary: {
                     approved_count: approved,
                     rejected_count: rejected,
