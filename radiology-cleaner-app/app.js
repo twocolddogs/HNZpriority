@@ -1835,9 +1835,89 @@ window.addEventListener('DOMContentLoaded', function() {
         closeMappingDetails();
     }
 
-    function commitValidatedDecisions() {
+    async function commitValidatedDecisions() {
         console.log('💾 Committing validated decisions');
-        statusManager.show('🚀 Validation decision commit functionality coming soon!', 'info', 5000);
+        
+        if (!window.currentValidationState) {
+            statusManager.show('❌ No validation state found', 'error', 3000);
+            return;
+        }
+        
+        // Count decisions
+        const decisions = Object.values(window.currentValidationState);
+        const approved = decisions.filter(d => d.validator_decision === 'approve').length;
+        const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
+        const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
+        const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
+        
+        if (approved === 0 && rejected === 0 && skipped === 0) {
+            statusManager.show('⚠️ No decisions made yet', 'warning', 3000);
+            return;
+        }
+        
+        // Confirm with user
+        const message = `Commit ${approved} approved, ${rejected} rejected, and ${skipped} skipped decisions?${pending > 0 ? ` (${pending} will remain pending)` : ''}`;
+        if (!confirm(message)) {
+            return;
+        }
+        
+        try {
+            statusManager.show('🔄 Committing validation decisions...', 'info');
+            
+            // Prepare the payload for the backend
+            const payload = {
+                decisions: window.currentValidationState,
+                summary: {
+                    approved_count: approved,
+                    rejected_count: rejected,
+                    skipped_count: skipped,
+                    pending_count: pending,
+                    total_count: decisions.length,
+                    timestamp: new Date().toISOString()
+                }
+            };
+            
+            // Send to validation/batch_decisions endpoint
+            const response = await fetch('/validation/batch_decisions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            // Success - clear the validation state and provide feedback
+            window.currentValidationState = {};
+            statusManager.show(`✅ Successfully committed ${approved + rejected + skipped} validation decisions`, 'success', 5000);
+            
+            // Optionally clear the validation interface
+            const validationInterface = document.getElementById('validationInterface');
+            if (validationInterface) {
+                validationInterface.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <i class="fas fa-check-circle" style="font-size: 48px; color: #4CAF50; margin-bottom: 16px;"></i>
+                        <h3>Validation Decisions Committed</h3>
+                        <p>Successfully processed ${approved + rejected + skipped} validation decisions.</p>
+                        <p style="margin-top: 20px;">
+                            <strong>Approved:</strong> ${approved} &nbsp;|&nbsp; 
+                            <strong>Rejected:</strong> ${rejected} &nbsp;|&nbsp; 
+                            <strong>Skipped:</strong> ${skipped}
+                        </p>
+                        ${result.cache_updated ? '<p style="color: #4CAF50;"><i class="fas fa-sync"></i> Validation caches updated successfully</p>' : ''}
+                    </div>
+                `;
+            }
+            
+        } catch (error) {
+            console.error('Error committing validation decisions:', error);
+            statusManager.show(`❌ Failed to commit decisions: ${error.message}`, 'error', 5000);
+        }
     }
 
     // -----------------------------------------------------------------------------
