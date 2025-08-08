@@ -1763,20 +1763,12 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     window.quickApproveGroup = function(groupId) {
-        const select = document.querySelector(`[data-group-id="${groupId}"] .group-decision-select`);
-        if (select) {
-            select.value = 'approve';
-            updateGroupDecision(groupId, 'approve');
-        }
+        updateGroupDecision(groupId, 'approve');
     }
     
     
     window.skipSingletonGroup = function(groupId) {
-        const select = document.querySelector(`[data-group-id="${groupId}"] .group-decision-select`);
-        if (select) {
-            select.value = 'skip';
-            updateGroupDecision(groupId, 'skip');
-        }
+        updateGroupDecision(groupId, 'skip');
     }
     
     window.updateMappingDecision = function(mappingId, decision) {
@@ -1910,7 +1902,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const topConfidence = candidates[0]?.confidence || 0;
             const secondConfidence = candidates[1]?.confidence || 0;
             if (topConfidence - secondConfidence > 0.15) {
-                flags.push('high_confidence_gap');
+                flags.push('high confidence gap');
             }
         }
         
@@ -2057,7 +2049,7 @@ window.addEventListener('DOMContentLoaded', function() {
             low_confidence: 0,
             ambiguous: 0,
             singleton_mapping: 0,
-            high_confidence_gap: 0,
+            'high confidence gap': 0,
             secondary_pipeline: 0
         };
         
@@ -2198,35 +2190,32 @@ window.addEventListener('DOMContentLoaded', function() {
             
             html += `
                 <div class="validation-group consolidated-group ${hasFlags ? 'validation-flagged' : ''}" data-group-id="${groupId}">
-                    <div class="validation-header consolidated-header ${hasFlags ? 'flagged-header' : ''}" onclick="toggleValidationGroup('${groupId}')">
-                        <div class="consolidated-title-container">
-                            <div class="consolidated-title">${group.nhs_reference} 
-                                ${snomedId && snomedId !== 'Unknown' ? `<span class="snomed-inline">SNOMED: ${snomedId}</span>` : ''}
+                    <div class="validation-header consolidated-header ${hasFlags ? 'flagged-header' : ''}" onclick="toggleValidationGroup('${groupId}')" style="display: grid; grid-template-rows: auto auto; gap: 8px;">
+                        <div class="validation-header-row-1" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="consolidated-title-container" style="flex: 1;">
+                                <div class="consolidated-title" style="font-weight: 600; font-size: 14px;">${group.nhs_reference}</div>
+                                ${snomedId && snomedId !== 'Unknown' ? `<span class="snomed-inline" style="color: #666; font-size: 12px; margin-left: 8px;">SNOMED: ${snomedId}</span>` : ''}
                             </div>
-                            ${isSingleton ? '<div class="singleton-badge"><i class="fas fa-user"></i> SINGLETON</div>' : ''}
-                            ${flagBadges}
-                        </div>
-                        <div class="consolidated-count-container">
-                            <span class="consolidated-count">${group.total_mappings} mapping${group.total_mappings !== 1 ? 's' : ''}</span>
-                            ${group.flagged_count > 0 ? `<span class="flagged-count"><i class="fas fa-exclamation-triangle"></i> ${group.flagged_count} flagged</span>` : ''}
-                            <div class="validation-controls-inline">
-                                <select class="group-decision-select" data-group-id="${groupId}" onchange="updateGroupDecision('${groupId}', this.value)" onclick="event.stopPropagation()">
-                                    <option value="pending">Pending</option>
-                                    <option value="approve">Approve Group</option>
-                                    <option value="reject">Reject Group</option>
-                                    ${isSingleton ? '<option value="skip">Skip (Singleton)</option>' : ''}
-                                    <option value="review">Individual Review</option>
-                                </select>
+                            <div class="validation-controls-inline" style="display: flex; gap: 4px;">
                                 <button class="button button-sm button-success" onclick="event.stopPropagation(); quickApproveGroup('${groupId}')" title="Quick approve" style="padding: 4px 8px;">
                                     <i class="fas fa-check" style="font-size: 12px;"></i>
                                 </button>
                                 ${isSingleton ? `
-                                    <button class="button button-sm button-secondary" onclick="event.stopPropagation(); skipSingletonGroup('${groupId}')" title="Skip singleton for potential better mapping" style="padding: 4px 8px;">
-                                        <i class="fas fa-step-forward" style="font-size: 12px;"></i>
+                                    <button class="button button-sm button-secondary" onclick="event.stopPropagation(); skipSingletonGroup('${groupId}')" title="Skip for later review" style="padding: 4px 8px;">
+                                        Skip
                                     </button>
                                 ` : ''}
                             </div>
-                            <span class="expand-icon"></span>
+                            <span class="expand-icon" style="margin-left: 8px;"></span>
+                        </div>
+                        <div class="validation-header-row-2" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="validation-meta-info" style="display: flex; gap: 12px; align-items: center;">
+                                <span class="consolidated-count" style="color: #666; font-size: 12px;">${group.total_mappings} mapping${group.total_mappings !== 1 ? 's' : ''}</span>
+                                ${group.flagged_count > 0 ? `<span class="flagged-count" style="color: #ff9800; font-size: 12px;"><i class="fas fa-exclamation-triangle"></i> ${group.flagged_count} flagged</span>` : ''}
+                            </div>
+                            <div class="validation-flags" style="display: flex; gap: 4px;">
+                                ${flagBadges}
+                            </div>
                         </div>
                     </div>
                     <div class="validation-body consolidated-body" id="${groupId}_content" style="display: none;">
@@ -2438,20 +2427,12 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     window.quickApproveGroup = function(groupId) {
-        const select = document.querySelector(`[data-group-id="${groupId}"] .group-decision-select`);
-        if (select) {
-            select.value = 'approve';
-            updateGroupDecision(groupId, 'approve');
-        }
+        updateGroupDecision(groupId, 'approve');
     }
     
     
     window.skipSingletonGroup = function(groupId) {
-        const select = document.querySelector(`[data-group-id="${groupId}"] .group-decision-select`);
-        if (select) {
-            select.value = 'skip';
-            updateGroupDecision(groupId, 'skip');
-        }
+        updateGroupDecision(groupId, 'skip');
     }
     
     window.updateMappingDecision = function(mappingId, decision) {
