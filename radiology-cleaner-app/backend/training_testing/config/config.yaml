@@ -1,5 +1,5 @@
 # ====================================================================================
-# UNIFIED SCORING & PREPROCESSING CONFIGURATION (V3.2 - ROBUST PROMPTING)
+# UNIFIED SCORING & PREPROCESSING CONFIGURATION (V3.3 - ENHANCED SAFETY)
 # ====================================================================================
 # This file centralizes all business logic, weights, rules, and abbreviations for the
 # radiology exam standardization engine. It is the "brain" of the application.
@@ -10,6 +10,29 @@
 # - Define new rules and constraints to enforce clinical safety and logic.
 # - Comments explain the purpose and impact of each section.
 # ====================================================================================
+
+# ====================================================================================
+# METADATA & VERSIONING
+# ====================================================================================
+metadata:
+  version: "3.3.0"
+  last_updated: "2024-08-08"
+  description: "Enhanced safety configuration with improved coverage and clarity"
+  changes_summary: |
+    - Added comprehensive medical abbreviations (CTA/CTV/MRA/MRV, ERCP/HSG/VCUG/MCUG, etc.)
+    - Strengthened vessel type preference with additional venous indicators
+    - Added case-insensitive hybrid modality matching
+    - Reduced CT↔PET similarity for safer cross-modality handling
+    - Enhanced system prompt with explicit no-match criteria and tie-breakers
+  compatibility_notes: |
+    - Backward compatible with existing consumers
+    - Unknown keys (metadata, case_insensitive) are harmless if unrecognized
+    - All changes are additive or safer defaults
+  audit_trail:
+    - version: "3.2.0"
+      changes: "Initial robust prompting implementation"
+    - version: "3.3.0" 
+      changes: "Safety, coverage, and clarity improvements"
 
 scoring:
   # ----------------------------------------------------------------------------------
@@ -169,6 +192,9 @@ scoring:
       - "ct venography"
       - "mr venography"
       - "mrv"
+      - "phlebography"    # Added: Venous imaging term
+      - "phlebogram"      # Added: Venous imaging term  
+      - "dural venous sinus"  # Added: Specific venous anatomy
 
   # --- ANATOMICAL COMPATIBILITY CONSTRAINTS ---
   # CRITICAL: Blocks anatomically impossible mappings to ensure patient safety.
@@ -189,6 +215,7 @@ scoring:
   # CRITICAL: Prevents incorrect mapping between different types of hybrid scans (e.g., PET/CT vs. PET/MRI).
   hybrid_modality_constraints:
     enable: true
+    case_insensitive: true  # Robust matching avoids brittle failures on capitalization
     blocking_penalty: -6.0
     hybrid_incompatibilities:
       - input_pattern: "pet.*ct|pet/ct|pet-ct"
@@ -303,15 +330,15 @@ scoring:
 # Defines a "partial credit" score for related but different modalities.
 # ====================================================================================
 modality_similarity:
-  CT: { CECT: 0.9, DECT: 0.8, HRCT: 0.9, PET: 0.7, XR: 0.2, Fluoroscopy: 0.1 }
+  CT: { CECT: 0.9, DECT: 0.8, HRCT: 0.9, PET: 0.4, XR: 0.2, Fluoroscopy: 0.1 }
   MR: { MRI: 1.0, MRA: 0.95, FMRI: 0.8, CT: 0.1 }
   XR: { "X-ray": 1.0, Xray: 1.0, MG: 0.5, FL: 0.6, DEXA: 0.9 }
   US: { Ultrasound: 1.0, USS: 0.9, MRI: 0.1 }
   MG: { Mammography: 1.0, Mammogram: 1.0, Tomosynthesis: 0.9, XR: 0.5 }
   NM: { "Nuclear Medicine": 1.0, Scintigraphy: 0.8, SPECT: 0.9, PET: 0.4 }
-  PET: { "PET/CT": 0.95, "PET-CT": 1.0, CT: 0.7 }
-  "PET/CT": { "PET-CT": 1.0, PET: 0.95, CT: 0.7, NM: 0.4 }
-  "PET-CT": { "PET/CT": 1.0, PET: 0.95, CT: 0.7, NM: 0.4 }
+  PET: { "PET/CT": 0.95, "PET-CT": 1.0, CT: 0.4 }
+  "PET/CT": { "PET-CT": 1.0, PET: 0.95, CT: 0.4, NM: 0.4 }
+  "PET-CT": { "PET/CT": 1.0, PET: 0.95, CT: 0.4, NM: 0.4 }
   "PET/MRI": { "PET-MRI": 1.0, PET: 0.90, MR: 0.6, NM: 0.4 }
   "PET-MRI": { "PET/MRI": 1.0, PET: 0.90, MR: 0.6, NM: 0.4 }
   DEXA: { DXA: 1.0, "Bone Densitometry": 1.0, XR: 0.2 }
@@ -377,6 +404,37 @@ preprocessing:
     "GAD": "with contrast"
     "GADOLINIUM": "with contrast"
     "PRIMOVIST": "with contrast"
+    "DOTAREM": "with contrast"
+    "GADOTERATE": "with contrast"
+    "MULTIHANCE": "with contrast"
+    "GADOBUTROL": "with contrast"
+    "GADOVIST": "with contrast"
+    
+    # --- ADDITIONAL CONTRAST VARIANTS ---
+    "CONTRAST+": "with contrast"
+    "CONTRAST-": "without contrast"
+    "W/ CONTRAST": "with contrast"
+    "W/O CONTRAST": "without contrast"
+    "W CONTRAST": "with contrast" 
+    "WO CONTRAST": "without contrast"
+    "ENHANCED": "with contrast"
+    "UNENHANCED": "without contrast"
+    "NON ENHANCED": "without contrast"
+    "PLAIN": "without contrast"
+    "NATIVE": "without contrast"
+    "PRE CONTRAST": "without contrast"
+    "POST CONTRAST": "with contrast"
+    "ARTERIAL": "with contrast"
+    "VENOUS": "with contrast"
+    "DELAYED": "with contrast"
+    
+    # --- ANGIOGRAPHY ABBREVIATIONS ---
+    "CTA": "ct angiography"
+    "CTV": "ct venography"
+    "MRA": "mr angiography"
+    "MRV": "mr venography"
+    "DSA": "digital subtraction angiography"
+    "IA": "intra-arterial"
     
     # --- AGE/GENDER CONTEXT ---
     "PAED": "paediatric"
@@ -434,6 +492,26 @@ preprocessing:
     "HRCT": "high resolution computed tomography"
     "Mamm": "mammography"
     "PET": "positron emission tomography"
+    
+    # --- MRI TECHNIQUE ABBREVIATIONS ---
+    "SWI": "susceptibility weighted imaging"
+    "FLAIR": "fluid attenuated inversion recovery"
+    "DWI": "diffusion weighted imaging"
+    "ADC": "apparent diffusion coefficient"
+    "DTI": "diffusion tensor imaging"
+    "BOLD": "blood oxygen level dependent"
+    "STIR": "short tau inversion recovery"
+    "PWI": "perfusion weighted imaging"
+    "ASL": "arterial spin labelling"
+    "T1WI": "t1 weighted imaging"
+    "T2WI": "t2 weighted imaging"
+    "PDWI": "proton density weighted imaging"
+    
+    # --- OTHER IMAGING TECHNIQUES ---
+    "FAST": "focused assessment with sonography for trauma"
+    "DBT": "digital breast tomosynthesis"
+    "CBCT": "cone beam computed tomography"
+    "LDCT": "low dose computed tomography"
     "PET-CT": "PET/CT"  # Normalize hyphenated to slash notation
     "PET CT": "PET/CT"  # Normalize spaced to slash notation
     "PETCT": "PET/CT"   # Normalize concatenated to slash notation
@@ -472,6 +550,31 @@ preprocessing:
     "DOTATOC": "gallium 68 dotatoc"
     "SPECT": "single photon emission computed tomography"
     "WBSP": "whole body spect"
+    
+    # --- ADDITIONAL NUCLEAR MEDICINE AGENTS ---
+    "TC99M": "technetium 99m"
+    "TC-99M": "technetium 99m"
+    "MIBI": "sestamibi"
+    "DMSA": "dimercaptosuccinic acid"
+    "DTPA": "diethylenetriaminepentaacetic acid"
+    "HDP": "hydroxydiphosphonate"
+    "MDP": "methylene diphosphonate"
+    "HMPAO": "hexamethylpropyleneamine oxime"
+    "ECD": "ethyl cysteinate dimer"
+    "MIBG": "metaiodobenzylguanidine"
+    "OCTREOTIDE": "octreotide"
+    "WHITE CELL": "white cell scan"
+    "LEUCOCYTE": "white cell scan"
+    
+    # --- SPECIALISED PROCEDURES ---
+    "ERCP": "endoscopic retrograde cholangiopancreatography"
+    "HSG": "hysterosalpingography"
+    "VCUG": "voiding cystourethrography"
+    "MCUG": "micturating cystourethrography"
+    "IVU": "intravenous urography"
+    "IVP": "intravenous pyelography"
+    "PTCA": "percutaneous transluminal coronary angioplasty"
+    "PTC": "percutaneous transhepatic cholangiography"
     
     # --- PROCEDURE & BREAST IMAGING ---
     "WB": "whole body"
@@ -647,6 +750,26 @@ secondary_pipeline:
     2.  **Evaluate Candidates:** For each candidate, compare the `input_exam` against both its `primary_name` and its `snomed_fsn`. The FSN is the ultimate source of truth. Ignore the `(procedure)` suffix in the FSN.
     3.  **Select Best Match:** Choose the candidate whose `snomed_fsn` best represents the procedure described in the `input_exam` without adding unsubstantiated details.
     4.  **Handle No Match:** If no candidate is a suitable match, you MUST provide `null` for the `best_match_snomed_id` and `best_match_procedure_name` arguments in your tool call.
+
+    **EXPLICIT NO-MATCH CRITERIA - Automatically reject candidates if:**
+    - **Modality mismatch:** Input specifies 'CT' but candidate is 'MRI' or vice versa
+    - **Contrast mismatch:** Input specifies 'with contrast' but candidate is 'without contrast' or vice versa  
+    - **Hybrid modality mismatch:** Input is 'PET/CT' but candidate is 'PET/MRI' or vice versa
+    - **Diagnostic vs Interventional mismatch:** Input is simple diagnostic but candidate is interventional (biopsy, drainage, etc.)
+    - **Anatomical incompatibility:** Input anatomy cannot physically match candidate anatomy (e.g., 'breast' vs 'prostate')
+    - **Vessel type mismatch:** Input specifies arterial imaging but candidate is venous or vice versa
+
+    **TIE-BREAKER HIERARCHY (when multiple candidates are equally valid):**
+    1. **SNOMED FSN Authority:** Prefer candidate whose FSN most precisely matches input without excess detail
+    2. **Parsimony Principle:** Choose simpler procedure over complex one (fewer qualifiers, techniques, or specifications)
+    3. **Modality Exactness:** Prefer exact modality match over partial/similar modality
+    4. **Contrast Clarity:** Prefer explicit contrast specification over ambiguous contrast status
+    5. **Anatomical Precision:** Prefer specific anatomy match over general anatomy when input is specific
+
+    **QUALITY CHECKS:**
+    - Verify the selected candidate actually addresses the clinical question implied by the input
+    - Ensure no critical clinical information from input is lost in the mapping
+    - Confirm the match represents the same level of clinical complexity as the input
 
   # User prompt with clearer instructions and placeholders.
   prompt_template: ""
