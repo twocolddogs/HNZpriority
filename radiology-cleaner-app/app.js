@@ -2124,7 +2124,7 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function loadValidationInterface(validationState) {
+    window.loadValidationInterface = function(validationState) {
         const mappingCount = Object.keys(validationState).length;
         console.log(`🔧 Building validation interface for ${mappingCount} mappings`);
         console.log('🔍 loadValidationInterface called with state:', validationState);
@@ -2150,7 +2150,7 @@ window.addEventListener('DOMContentLoaded', function() {
         });
         
         // Group mappings by NHS reference (consolidated view)
-        const consolidatedGroups = createConsolidatedValidationGroups(validationState);
+        const consolidatedGroups = window.createConsolidatedValidationGroups(validationState);
         
         // Create validation interface with statistics and consolidated groups
         const interfaceHTML = `
@@ -2276,7 +2276,7 @@ window.addEventListener('DOMContentLoaded', function() {
             </div>
             
             <div id="validationGroups" class="validation-groups-container">
-                ${renderValidationGroups(consolidatedGroups)}
+                ${window.renderValidationGroups(consolidatedGroups)}
             </div>
         `;
         
@@ -2295,7 +2295,7 @@ window.addEventListener('DOMContentLoaded', function() {
         `;
         
         // Add event listeners for validation buttons
-        setupValidationEventListeners(validationState);
+        window.setupValidationEventListeners(validationState);
         
         // Initialize validation toolbar functionality
         initializeValidationToolbar(validationState, consolidatedGroups);
@@ -2305,7 +2305,7 @@ window.addEventListener('DOMContentLoaded', function() {
         window.currentConsolidatedGroups = consolidatedGroups;
     }
     
-    function createConsolidatedValidationGroups(validationState) {
+    window.createConsolidatedValidationGroups = function(validationState) {
         const groups = {};
         
         Object.values(validationState).forEach(state => {
@@ -2345,7 +2345,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     // Simple hash function for stable group IDs
-    function hashString(str) {
+    window.hashString = function(str) {
         let hash = 0;
         if (str.length === 0) return hash;
         for (let i = 0; i < str.length; i++) {
@@ -2357,24 +2357,24 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     // Normalize attention flag values to slug-safe CSS classnames
-    function normalizeFlag(flag) {
+    window.normalizeFlag = function(flag) {
         return flag.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
     }
 
     // Get human-friendly label for flag
-    function getFlagLabel(flag) {
+    window.getFlagLabel = function(flag) {
         return flag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
 
-    function renderValidationGroups(consolidatedGroups) {
+    window.renderValidationGroups = function(consolidatedGroups) {
         let html = '';
         
         Object.values(consolidatedGroups).forEach((group, index) => {
             // Use stable group ID based on NHS reference hash instead of array index
-            const groupId = `group_${hashString(group.nhs_reference)}`;
+            const groupId = `group_${window.hashString(group.nhs_reference)}`;
             const hasFlags = group.flagged_count > 0;
             const flagBadges = group.group_flags.map(flag => 
-                `<span class="flag-badge flag-${normalizeFlag(flag)}">${getFlagLabel(flag)}</span>`
+                `<span class="flag-badge flag-${window.normalizeFlag(flag)}">${window.getFlagLabel(flag)}</span>`
             ).join('');
             
             // Get SNOMED-ID from first mapping in the group
@@ -2412,7 +2412,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                     <div class="validation-body consolidated-body" id="${groupId}_content" style="display: none;">
-                        ${renderGroupMappings(group.mappings, groupId)}
+                        ${window.renderGroupMappings(group.mappings, groupId)}
                     </div>
                 </div>
             `;
@@ -2421,7 +2421,7 @@ window.addEventListener('DOMContentLoaded', function() {
         return html;
     }
     
-    function renderGroupMappings(mappings, groupId) {
+    window.renderGroupMappings = function(mappings, groupId) {
         let html = '<div class="validation-mappings-container">';
         
         mappings.forEach((state, index) => {
@@ -2433,7 +2433,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             
             const flagBadges = state.needs_attention_flags.map(flag => 
-                `<span class="flag-badge flag-${normalizeFlag(flag)}">${getFlagLabel(flag)}</span>`
+                `<span class="flag-badge flag-${window.normalizeFlag(flag)}">${window.getFlagLabel(flag)}</span>`
             ).join('');
             
             html += `
@@ -2488,7 +2488,7 @@ window.addEventListener('DOMContentLoaded', function() {
         return html;
     }
     
-    function setupValidationEventListeners(validationState) {
+    window.setupValidationEventListeners = function(validationState) {
         // Bulk action buttons
         const expandAllBtn = document.getElementById('expandAllBtn');
         const collapseAllBtn = document.getElementById('collapseAllBtn');
@@ -3211,3 +3211,160 @@ window.addEventListener('pageshow', function(event) {
         }
     }
 });
+
+// =================================================================================
+// TESTING: Mock Validation Data (Development Only)
+// =================================================================================
+
+// Test function to create mock validation data for UI testing
+window.loadMockValidationData = function() {
+    console.log('Loading mock validation data for testing...');
+    
+    const mockValidationState = {
+        "mapping_1": {
+            unique_mapping_id: "mapping_1",
+            original_mapping: {
+                exam_name: "CT Chest without contrast",
+                clean_name: "CT CHEST",
+                data_source: "Test Hospital A",
+                components: {
+                    confidence: 0.95
+                },
+                snomed: {
+                    id: "169069000",
+                    fsn: "Computed tomography of chest"
+                },
+                all_candidates: [
+                    { primary_name: "CT CHEST", confidence: 0.95 },
+                    { primary_name: "CT THORAX", confidence: 0.82 }
+                ]
+            },
+            needs_attention_flags: [],
+            validator_decision: 'pending',
+            validation_notes: ''
+        },
+        "mapping_2": {
+            unique_mapping_id: "mapping_2",
+            original_mapping: {
+                exam_name: "Xray Chest PA",
+                clean_name: "X-RAY CHEST",
+                data_source: "Test Hospital B",
+                components: {
+                    confidence: 0.65
+                },
+                snomed: {
+                    id: "399208008",
+                    fsn: "Plain chest X-ray"
+                },
+                all_candidates: [
+                    { primary_name: "X-RAY CHEST", confidence: 0.65 },
+                    { primary_name: "CHEST RADIOGRAPH", confidence: 0.62 }
+                ]
+            },
+            needs_attention_flags: ['low_confidence', 'ambiguous'],
+            validator_decision: 'pending',
+            validation_notes: ''
+        },
+        "mapping_3": {
+            unique_mapping_id: "mapping_3",
+            original_mapping: {
+                exam_name: "CT Chest with contrast",
+                clean_name: "CT CHEST",
+                data_source: "Test Hospital C", 
+                components: {
+                    confidence: 0.88
+                },
+                snomed: {
+                    id: "169069000",
+                    fsn: "Computed tomography of chest"
+                },
+                all_candidates: [
+                    { primary_name: "CT CHEST", confidence: 0.88 }
+                ]
+            },
+            needs_attention_flags: [],
+            validator_decision: 'pending',
+            validation_notes: ''
+        },
+        "mapping_4": {
+            unique_mapping_id: "mapping_4",
+            original_mapping: {
+                exam_name: "MRI Brain",
+                clean_name: "MRI BRAIN",
+                data_source: "Test Hospital A",
+                components: {
+                    confidence: 0.45
+                },
+                snomed: {
+                    id: "278107002",
+                    fsn: "Magnetic resonance imaging of brain"
+                },
+                all_candidates: [
+                    { primary_name: "MRI BRAIN", confidence: 0.45 },
+                    { primary_name: "MRI HEAD", confidence: 0.43 },
+                    { primary_name: "BRAIN MRI", confidence: 0.41 }
+                ]
+            },
+            needs_attention_flags: ['low_confidence', 'singleton_mapping'],
+            validator_decision: 'pending',
+            validation_notes: ''
+        },
+        "mapping_5": {
+            unique_mapping_id: "mapping_5",
+            original_mapping: {
+                exam_name: "Ultrasound Abdomen",
+                clean_name: "US ABDOMEN",
+                data_source: "Test Hospital D",
+                components: {
+                    confidence: 0.78
+                },
+                snomed: {
+                    id: "241527001",
+                    fsn: "Ultrasonography of abdomen"
+                },
+                all_candidates: [
+                    { primary_name: "US ABDOMEN", confidence: 0.78 }
+                ]
+            },
+            needs_attention_flags: ['secondary_pipeline'],
+            validator_decision: 'pending',
+            validation_notes: ''
+        }
+    };
+    
+    // Load the validation interface with mock data
+    loadValidationInterface(mockValidationState);
+    
+    // Show the validation interface
+    const validationInterface = document.getElementById('validationInterface');
+    if (validationInterface) {
+        validationInterface.classList.remove('hidden');
+        validationInterface.style.display = 'block';
+    }
+    
+    // Hide other sections to focus on validation
+    const workflowSection = document.getElementById('workflowSection');
+    if (workflowSection) {
+        workflowSection.style.display = 'none';
+    }
+    
+    statusManager.show('✅ Mock validation data loaded for UI testing', 'success', 3000);
+};
+
+// Add test button to page when in development mode
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add test button after a delay to ensure other elements are loaded
+        setTimeout(() => {
+            const heroSection = document.querySelector('.hero-section');
+            if (heroSection) {
+                const testButton = document.createElement('button');
+                testButton.textContent = '🧪 Load Mock Validation Data (DEV)';
+                testButton.className = 'button button-primary';
+                testButton.style.cssText = 'margin: 20px auto; display: block; background: #e91e63; border-color: #e91e63;';
+                testButton.onclick = window.loadMockValidationData;
+                heroSection.appendChild(testButton);
+            }
+        }, 1000);
+    });
+}
