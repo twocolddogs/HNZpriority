@@ -8,6 +8,302 @@
    Validation Interface Enhancements
    ========================================================================== */
 
+/* Validation Toolbar - Sticky navigation and controls */
+.validation-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.validation-counters {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.counter-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+}
+
+.counter-item .count {
+  font-weight: var(--font-weight-bold);
+  min-width: 2ch;
+}
+
+.counter-item.approved { border-color: var(--color-success); background: var(--color-success-light); }
+.counter-item.rejected { border-color: var(--color-danger); background: var(--color-danger-light); }
+.counter-item.skipped { border-color: var(--color-warning); background: var(--color-warning-light); }
+.counter-item.pending { border-color: var(--color-info); background: var(--color-info-light); }
+
+.validation-filters {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: var(--font-size-sm);
+  user-select: none;
+}
+
+.filter-toggle:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.filter-toggle.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.validation-sort {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.sort-select {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.validation-search {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.search-input {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.threshold-slider-container {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-left: auto;
+}
+
+.threshold-slider {
+  width: 120px;
+}
+
+.threshold-value {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  min-width: 4ch;
+}
+
+.next-flagged-btn {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-warning);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition: background 0.2s ease;
+}
+
+.next-flagged-btn:hover {
+  background: var(--color-warning-dark);
+}
+
+.next-flagged-btn:disabled {
+  background: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
+/* Validation Group Headers with enhanced state */
+.validation-group-header {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+}
+
+.validation-group-header:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 90, 156, 0.1);
+}
+
+.validation-group-header.expanded {
+  background-color: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+.expand-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+  color: var(--color-gray-600);
+}
+
+.expand-icon.rotated {
+  transform: rotate(90deg);
+}
+
+/* Mapping item states */
+.mapping-item {
+  transition: all 0.2s ease;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-2);
+}
+
+.mapping-item.compact {
+  padding: var(--space-2) var(--space-3);
+}
+
+.mapping-item.is-approved {
+  border-color: var(--color-success);
+  background: var(--color-success-light);
+}
+
+.mapping-item.is-rejected {
+  border-color: var(--color-danger);
+  background: var(--color-danger-light);
+}
+
+.mapping-item.is-skipped {
+  border-color: var(--color-warning);
+  background: var(--color-warning-light);
+}
+
+.mapping-item.focused {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+/* Flag badges with consistent styling */
+.flag-badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-gray-200);
+}
+
+.flag-badge.flag-low-confidence {
+  background: var(--color-warning-light);
+  color: var(--color-warning-dark);
+  border-color: var(--color-warning);
+}
+
+.flag-badge.flag-ambiguous {
+  background: var(--color-info-light);
+  color: var(--color-info-dark);
+  border-color: var(--color-info);
+}
+
+.flag-badge.flag-singleton {
+  background: var(--color-secondary-light);
+  color: var(--color-secondary-dark);
+  border-color: var(--color-secondary);
+}
+
+.flag-badge.flag-secondary {
+  background: var(--color-accent-light);
+  color: var(--color-accent-dark);
+  border-color: var(--color-accent);
+}
+
+/* Confidence indicators */
+.confidence-pill {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.confidence-pill.confidence-high {
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+}
+
+.confidence-pill.confidence-medium {
+  background: var(--color-warning-light);
+  color: var(--color-warning-dark);
+}
+
+.confidence-pill.confidence-low {
+  background: var(--color-danger-light);
+  color: var(--color-danger-dark);
+}
+
+.confidence-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--color-gray-200);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.confidence-fill.confidence-high {
+  background: var(--color-success);
+}
+
+.confidence-fill.confidence-medium {
+  background: var(--color-warning);
+}
+
+.confidence-fill.confidence-low {
+  background: var(--color-danger);
+}
+
 /* SNOMED inline display in headers */
 .snomed-inline {
   font-size: var(--font-size-xs);
@@ -241,6 +537,7 @@
   /* ## Semantic Colors */
   --color-success: #10B981;         /* Emerald green */
   --color-success-light: #D1FAE5;   
+  --color-success-dark: #065F46;    /* Darker green */
   --color-success-hover: #0EA972;   /* Subtle success hover */
   --color-warning: #F59E0B;         /* Amber */
   --color-warning-light: #FEF3C7;   
@@ -248,9 +545,15 @@
   --color-warning-hover: #E9940A;   /* Subtle warning hover */
   --color-danger: #EF4444;          /* Red */
   --color-danger-light: #FEE2E2;    
+  --color-danger-dark: #B91C1C;     /* Darker red */
   --color-danger-hover: #E73C3C;    /* Subtle danger hover */
   --color-info: #3B82F6;            /* Blue */
   --color-info-light: #DBEAFE;      
+  --color-info-dark: #1E40AF;       /* Darker blue */
+  
+  /* ## Additional Color Variants */
+  --color-secondary-dark: #0F5454;  /* Darker teal */
+  --color-accent-dark: #B45309;     /* Darker amber */      
 
   /* ## Typography Scale */
   --font-family-primary: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -294,6 +597,7 @@
   /* ## Border Radius */
   --radius-sm: 0.25rem;             /* 4px */
   --radius-base: 0.5rem;            /* 8px */
+  --radius-md: 0.625rem;            /* 10px */
   --radius-lg: 0.75rem;             /* 12px */
   --radius-xl: 1rem;                /* 16px */
   --radius-full: 9999px;            /* Fully rounded */

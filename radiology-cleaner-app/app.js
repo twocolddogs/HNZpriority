@@ -1734,15 +1734,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     
-    window.toggleValidationGroup = function(groupId) {
-        const content = document.getElementById(`${groupId}_content`);
-        const header = document.querySelector(`[data-group-id="${groupId}"] .validation-header`);
-        if (content) {
-            const isHidden = content.style.display === 'none' || content.style.display === '';
-            content.style.display = isHidden ? 'block' : 'none';
-            header?.classList.toggle('expanded', isHidden);
-        }
-    }
+    // This function is defined later in the file - removing duplicate
     
     
     window.updateGroupDecision = function(groupId, decision) {
@@ -1807,7 +1799,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div class="detail-section"><h4>Original Exam</h4><div class="detail-box"><strong>${mapping.exam_name || 'N/A'}</strong><br><small>Source: ${mapping.data_source || 'N/A'} | Code: ${mapping.exam_code || 'N/A'}</small></div></div>
                         <div class="detail-section"><h4>Matched NHS Reference</h4><div class="detail-box success"><strong>${mapping.clean_name || 'N/A'}</strong><br><small>Confidence: ${(mapping.components?.confidence || 0).toFixed(3)}</small></div></div>
                         ${mapping.components?.reasoning ? `<div class="detail-section"><h4>AI Reasoning</h4><div class="detail-box info">${mapping.components.reasoning}</div></div>` : ''}
-                        ${state.needs_attention_flags.length > 0 ? `<div class="detail-section"><h4>Attention Flags</h4><div class="flag-container">${state.needs_attention_flags.map(flag => `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`).join('')}</div></div>` : ''}
+                        ${state.needs_attention_flags.length > 0 ? `<div class="detail-section"><h4>Attention Flags</h4><div class="flag-container">${state.needs_attention_flags.map(flag => `<span class="flag-badge flag-${normalizeFlag(flag)}">${getFlagLabel(flag)}</span>`).join('')}</div></div>` : ''}
                         <div class="detail-section"><h4>Validation Notes</h4><textarea id="validationNotes" class="notes-textarea">${state.validation_notes || ''}</textarea></div>
                     </div>
                     <div class="modal-footer">
@@ -1894,7 +1886,7 @@ window.addEventListener('DOMContentLoaded', function() {
             };
             
             // Send to validation/batch_decisions endpoint
-            const response = await fetch('/validation/batch_decisions', {
+            const response = await fetch(`${apiConfig.baseUrl}/validation/batch_decisions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2132,7 +2124,7 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function loadValidationInterface(validationState) {
+    window.loadValidationInterface = function(validationState) {
         const mappingCount = Object.keys(validationState).length;
         console.log(`🔧 Building validation interface for ${mappingCount} mappings`);
         console.log('🔍 loadValidationInterface called with state:', validationState);
@@ -2158,7 +2150,7 @@ window.addEventListener('DOMContentLoaded', function() {
         });
         
         // Group mappings by NHS reference (consolidated view)
-        const consolidatedGroups = createConsolidatedValidationGroups(validationState);
+        const consolidatedGroups = window.createConsolidatedValidationGroups(validationState);
         
         // Create validation interface with statistics and consolidated groups
         const interfaceHTML = `
@@ -2205,8 +2197,86 @@ window.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             
+            <!-- Validation Toolbar -->
+            <div class="validation-toolbar">
+                <div class="validation-counters">
+                    <div class="counter-item approved">
+                        <i class="fas fa-check"></i>
+                        <span>Approved:</span>
+                        <span class="count" id="approvedCount">0</span>
+                    </div>
+                    <div class="counter-item rejected">
+                        <i class="fas fa-times"></i>
+                        <span>Rejected:</span>
+                        <span class="count" id="rejectedCount">0</span>
+                    </div>
+                    <div class="counter-item skipped">
+                        <i class="fas fa-clock"></i>
+                        <span>Skipped:</span>
+                        <span class="count" id="skippedCount">0</span>
+                    </div>
+                    <div class="counter-item pending">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span>Pending:</span>
+                        <span class="count" id="pendingCount">${mappingCount}</span>
+                    </div>
+                </div>
+                
+                <div class="validation-filters">
+                    <label class="filter-toggle" data-filter="flagged">
+                        <input type="checkbox" style="display: none;" />
+                        <i class="fas fa-flag"></i>
+                        <span>Flagged Only</span>
+                    </label>
+                    <label class="filter-toggle" data-filter="low-confidence">
+                        <input type="checkbox" style="display: none;" />
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Low Confidence</span>
+                    </label>
+                    <label class="filter-toggle" data-filter="ambiguous">
+                        <input type="checkbox" style="display: none;" />
+                        <i class="fas fa-question-circle"></i>
+                        <span>Ambiguous</span>
+                    </label>
+                    <label class="filter-toggle" data-filter="singleton">
+                        <input type="checkbox" style="display: none;" />
+                        <i class="fas fa-dot-circle"></i>
+                        <span>Singleton</span>
+                    </label>
+                    <label class="filter-toggle" data-filter="secondary">
+                        <input type="checkbox" style="display: none;" />
+                        <i class="fas fa-layers"></i>
+                        <span>Secondary Pipeline</span>
+                    </label>
+                    
+                    <div class="validation-sort">
+                        <label for="sortSelect" style="font-size: var(--font-size-sm); margin-right: var(--space-2);">Sort:</label>
+                        <select id="sortSelect" class="sort-select">
+                            <option value="flagged-first">Flagged First</option>
+                            <option value="group-size">Group Size (Desc)</option>
+                            <option value="confidence">Avg Confidence (Asc)</option>
+                            <option value="alphabetical">Alphabetical A-Z</option>
+                        </select>
+                    </div>
+                    
+                    <button class="next-flagged-btn" id="nextFlaggedBtn">
+                        <i class="fas fa-arrow-right"></i>
+                        Next Flagged
+                    </button>
+                </div>
+                
+                <div class="validation-search">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search groups by NHS reference, exam name, code, or source..." />
+                    <div class="threshold-slider-container">
+                        <span style="font-size: var(--font-size-sm);">Confidence Threshold:</span>
+                        <input type="range" id="confidenceThreshold" class="threshold-slider" min="0.5" max="0.95" step="0.01" value="0.7" />
+                        <span class="threshold-value" id="thresholdValue">0.70</span>
+                    </div>
+                </div>
+            </div>
+            
             <div id="validationGroups" class="validation-groups-container">
-                ${renderValidationGroups(consolidatedGroups)}
+                ${window.renderValidationGroups(consolidatedGroups)}
             </div>
         `;
         
@@ -2225,13 +2295,17 @@ window.addEventListener('DOMContentLoaded', function() {
         `;
         
         // Add event listeners for validation buttons
-        setupValidationEventListeners(validationState);
+        window.setupValidationEventListeners(validationState);
+        
+        // Initialize validation toolbar functionality
+        initializeValidationToolbar(validationState, consolidatedGroups);
         
         // Store validation state globally for access by other functions
         window.currentValidationState = validationState;
+        window.currentConsolidatedGroups = consolidatedGroups;
     }
     
-    function createConsolidatedValidationGroups(validationState) {
+    window.createConsolidatedValidationGroups = function(validationState) {
         const groups = {};
         
         Object.values(validationState).forEach(state => {
@@ -2270,18 +2344,41 @@ window.addEventListener('DOMContentLoaded', function() {
         return groups;
     }
     
-    function renderValidationGroups(consolidatedGroups) {
+    // Simple hash function for stable group IDs
+    window.hashString = function(str) {
+        let hash = 0;
+        if (str.length === 0) return hash;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return Math.abs(hash).toString(36);
+    }
+
+    // Normalize attention flag values to slug-safe CSS classnames
+    window.normalizeFlag = function(flag) {
+        return flag.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    // Get human-friendly label for flag
+    window.getFlagLabel = function(flag) {
+        return flag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    window.renderValidationGroups = function(consolidatedGroups) {
         let html = '';
         
         Object.values(consolidatedGroups).forEach((group, index) => {
-            const groupId = `group_${index}`;
+            // Use stable group ID based on NHS reference hash instead of array index
+            const groupId = `group_${window.hashString(group.nhs_reference)}`;
             const hasFlags = group.flagged_count > 0;
             const flagBadges = group.group_flags.map(flag => 
-                `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`
+                `<span class="flag-badge flag-${window.normalizeFlag(flag)}">${window.getFlagLabel(flag)}</span>`
             ).join('');
             
             // Get SNOMED-ID from first mapping in the group
-            const snomedId = group.mappings[0]?.original_mapping?.snomed_id || 'Unknown';
+            const snomedId = group.mappings[0]?.original_mapping?.snomed?.id || 'Unknown';
             const isSingleton = group.total_mappings === 1;
             
             html += `
@@ -2315,7 +2412,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                     <div class="validation-body consolidated-body" id="${groupId}_content" style="display: none;">
-                        ${renderGroupMappings(group.mappings, groupId)}
+                        ${window.renderGroupMappings(group.mappings, groupId)}
                     </div>
                 </div>
             `;
@@ -2324,7 +2421,7 @@ window.addEventListener('DOMContentLoaded', function() {
         return html;
     }
     
-    function renderGroupMappings(mappings, groupId) {
+    window.renderGroupMappings = function(mappings, groupId) {
         let html = '<div class="validation-mappings-container">';
         
         mappings.forEach((state, index) => {
@@ -2336,7 +2433,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             
             const flagBadges = state.needs_attention_flags.map(flag => 
-                `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`
+                `<span class="flag-badge flag-${window.normalizeFlag(flag)}">${window.getFlagLabel(flag)}</span>`
             ).join('');
             
             html += `
@@ -2391,7 +2488,7 @@ window.addEventListener('DOMContentLoaded', function() {
         return html;
     }
     
-    function setupValidationEventListeners(validationState) {
+    window.setupValidationEventListeners = function(validationState) {
         // Bulk action buttons
         const expandAllBtn = document.getElementById('expandAllBtn');
         const collapseAllBtn = document.getElementById('collapseAllBtn');
@@ -2413,6 +2510,323 @@ window.addEventListener('DOMContentLoaded', function() {
         if (exportBtn) {
             exportBtn.addEventListener('click', () => exportValidationState(validationState));
         }
+    }
+    
+    // Validation Toolbar State Management
+    let validationToolbarState = {
+        filters: {
+            flagged: false,
+            'low-confidence': false,
+            ambiguous: false,
+            singleton: false,
+            secondary: false
+        },
+        sort: 'flagged-first',
+        search: '',
+        confidenceThreshold: 0.7,
+        activeGroupIndex: -1,
+        activeMappingIndex: -1
+    };
+
+    function initializeValidationToolbar(validationState, consolidatedGroups) {
+        // Initialize filter toggles
+        const filterToggles = document.querySelectorAll('[data-filter]');
+        filterToggles.forEach(toggle => {
+            toggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const filter = toggle.getAttribute('data-filter');
+                validationToolbarState.filters[filter] = !validationToolbarState.filters[filter];
+                toggle.classList.toggle('active', validationToolbarState.filters[filter]);
+                filterAndDisplayGroups();
+            });
+        });
+
+        // Initialize sort dropdown
+        const sortSelect = document.getElementById('sortSelect');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                validationToolbarState.sort = e.target.value;
+                filterAndDisplayGroups();
+            });
+        }
+
+        // Initialize search input
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    validationToolbarState.search = e.target.value.toLowerCase();
+                    filterAndDisplayGroups();
+                }, 300); // Debounce search
+            });
+        }
+
+        // Initialize confidence threshold slider
+        const thresholdSlider = document.getElementById('confidenceThreshold');
+        const thresholdValue = document.getElementById('thresholdValue');
+        if (thresholdSlider && thresholdValue) {
+            thresholdSlider.addEventListener('input', (e) => {
+                validationToolbarState.confidenceThreshold = parseFloat(e.target.value);
+                thresholdValue.textContent = validationToolbarState.confidenceThreshold.toFixed(2);
+                filterAndDisplayGroups();
+            });
+        }
+
+        // Initialize next flagged button
+        const nextFlaggedBtn = document.getElementById('nextFlaggedBtn');
+        if (nextFlaggedBtn) {
+            nextFlaggedBtn.addEventListener('click', () => {
+                jumpToNextFlaggedGroup();
+            });
+        }
+
+        // Initialize keyboard shortcuts
+        initializeKeyboardShortcuts();
+
+        // Initial render
+        filterAndDisplayGroups();
+    }
+
+    function filterAndDisplayGroups() {
+        if (!window.currentConsolidatedGroups) return;
+        
+        const groups = window.currentConsolidatedGroups;
+        let filteredGroups = Object.values(groups);
+
+        // Apply filters
+        if (validationToolbarState.filters.flagged) {
+            filteredGroups = filteredGroups.filter(group => group.flagged_count > 0);
+        }
+
+        if (validationToolbarState.filters['low-confidence']) {
+            filteredGroups = filteredGroups.filter(group => 
+                group.mappings.some(m => (m.original_mapping.components?.confidence || 0) < validationToolbarState.confidenceThreshold)
+            );
+        }
+
+        if (validationToolbarState.filters.ambiguous) {
+            filteredGroups = filteredGroups.filter(group => 
+                group.group_flags.includes('ambiguous')
+            );
+        }
+
+        if (validationToolbarState.filters.singleton) {
+            filteredGroups = filteredGroups.filter(group => group.total_mappings === 1);
+        }
+
+        if (validationToolbarState.filters.secondary) {
+            filteredGroups = filteredGroups.filter(group => 
+                group.group_flags.includes('secondary_pipeline')
+            );
+        }
+
+        // Apply search
+        if (validationToolbarState.search) {
+            filteredGroups = filteredGroups.filter(group => {
+                const searchTerm = validationToolbarState.search;
+                return group.nhs_reference.toLowerCase().includes(searchTerm) ||
+                       group.mappings.some(m => 
+                           (m.original_mapping.exam_name || '').toLowerCase().includes(searchTerm) ||
+                           (m.original_mapping.data_source || '').toLowerCase().includes(searchTerm)
+                       );
+            });
+        }
+
+        // Apply sorting
+        switch (validationToolbarState.sort) {
+            case 'flagged-first':
+                filteredGroups.sort((a, b) => {
+                    if (a.flagged_count > 0 && b.flagged_count === 0) return -1;
+                    if (a.flagged_count === 0 && b.flagged_count > 0) return 1;
+                    return b.flagged_count - a.flagged_count;
+                });
+                break;
+            case 'group-size':
+                filteredGroups.sort((a, b) => b.total_mappings - a.total_mappings);
+                break;
+            case 'confidence':
+                filteredGroups.sort((a, b) => {
+                    const avgA = a.mappings.reduce((sum, m) => sum + (m.original_mapping.components?.confidence || 0), 0) / a.mappings.length;
+                    const avgB = b.mappings.reduce((sum, m) => sum + (m.original_mapping.components?.confidence || 0), 0) / b.mappings.length;
+                    return avgA - avgB;
+                });
+                break;
+            case 'alphabetical':
+                filteredGroups.sort((a, b) => a.nhs_reference.localeCompare(b.nhs_reference));
+                break;
+        }
+
+        // Update the display
+        const container = document.getElementById('validationGroups');
+        if (container) {
+            // Convert array back to object structure for renderValidationGroups
+            const filteredGroupsObj = {};
+            filteredGroups.forEach(group => {
+                filteredGroupsObj[group.nhs_reference] = group;
+            });
+            container.innerHTML = renderValidationGroups(filteredGroupsObj);
+        }
+
+        // Update next flagged button state
+        updateNextFlaggedButton(filteredGroups);
+    }
+
+    function updateNextFlaggedButton(filteredGroups) {
+        const nextFlaggedBtn = document.getElementById('nextFlaggedBtn');
+        if (!nextFlaggedBtn) return;
+
+        const flaggedGroups = filteredGroups.filter(group => group.flagged_count > 0);
+        nextFlaggedBtn.disabled = flaggedGroups.length === 0;
+    }
+
+    function jumpToNextFlaggedGroup() {
+        const flaggedGroups = document.querySelectorAll('.validation-group.validation-flagged');
+        if (flaggedGroups.length === 0) return;
+
+        let nextIndex = 0;
+        if (validationToolbarState.activeGroupIndex >= 0) {
+            const currentGroup = document.querySelector(`[data-group-id="group_${validationToolbarState.activeGroupIndex}"]`);
+            if (currentGroup) {
+                const allGroups = Array.from(document.querySelectorAll('.validation-group'));
+                const currentIdx = allGroups.indexOf(currentGroup);
+                
+                // Find next flagged group after current
+                for (let i = currentIdx + 1; i < allGroups.length; i++) {
+                    if (allGroups[i].classList.contains('validation-flagged')) {
+                        nextIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (flaggedGroups[nextIndex]) {
+            flaggedGroups[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Optionally expand the group
+            const groupId = flaggedGroups[nextIndex].getAttribute('data-group-id');
+            if (groupId) {
+                window.toggleValidationGroup(groupId);
+            }
+        }
+    }
+
+    function initializeKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Only handle shortcuts when not in input fields
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                // Allow specific shortcuts even in inputs
+                if (e.key === 'Escape') {
+                    e.target.blur();
+                }
+                return;
+            }
+
+            switch (e.key.toLowerCase()) {
+                case 'a':
+                    e.preventDefault();
+                    // Approve focused mapping or group
+                    console.log('Keyboard shortcut: Approve');
+                    break;
+                case 'r':
+                    e.preventDefault();
+                    // Reject focused mapping or group
+                    console.log('Keyboard shortcut: Reject');
+                    break;
+                case 's':
+                    e.preventDefault();
+                    // Skip focused mapping or group
+                    console.log('Keyboard shortcut: Skip');
+                    break;
+                case 'j':
+                    e.preventDefault();
+                    // Next mapping within group
+                    navigateMapping(1);
+                    break;
+                case 'k':
+                    e.preventDefault();
+                    // Previous mapping within group
+                    navigateMapping(-1);
+                    break;
+                case 'g':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        // Previous group
+                        navigateGroup(-1);
+                    } else {
+                        // Next group
+                        navigateGroup(1);
+                    }
+                    break;
+                case ' ':
+                case 'enter':
+                    e.preventDefault();
+                    // Toggle focused group
+                    toggleFocusedGroup();
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    // Toggle flagged filter
+                    const flaggedToggle = document.querySelector('[data-filter="flagged"]');
+                    if (flaggedToggle) flaggedToggle.click();
+                    break;
+                case '/':
+                    e.preventDefault();
+                    // Focus search box
+                    const searchInput = document.getElementById('searchInput');
+                    if (searchInput) searchInput.focus();
+                    break;
+                case '?':
+                    e.preventDefault();
+                    // Show shortcuts help
+                    showKeyboardShortcutsHelp();
+                    break;
+                case 'z':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        // Undo last action
+                        undoLastAction();
+                    }
+                    break;
+            }
+        });
+    }
+
+    function navigateMapping(direction) {
+        // Implementation for J/K navigation within groups
+        console.log('Navigate mapping:', direction);
+    }
+
+    function navigateGroup(direction) {
+        // Implementation for G/Shift+G navigation between groups
+        console.log('Navigate group:', direction);
+    }
+
+    function toggleFocusedGroup() {
+        // Implementation for Space/Enter to toggle group
+        console.log('Toggle focused group');
+    }
+
+    function showKeyboardShortcutsHelp() {
+        // Implementation for ? to show help overlay
+        alert(`Keyboard Shortcuts:
+        
+A - Approve focused mapping/group
+R - Reject focused mapping/group  
+S - Skip focused mapping/group
+J/K - Next/Previous mapping within group
+G/Shift+G - Next/Previous group
+Space/Enter - Expand/Collapse focused group
+F - Toggle "Flagged only" filter
+/ - Focus search box
+? - Show this help
+Ctrl+Z - Undo last action`);
+    }
+
+    function undoLastAction() {
+        // Implementation for Ctrl+Z undo
+        console.log('Undo last action');
     }
     
     function exportValidationState(validationState) {
@@ -2450,37 +2864,25 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-        window.toggleValidationGroup = function(groupId) {
-        const content = document.getElementById(`${groupId}_content`);
-        const toggle = document.querySelector(`[data-group-id="${groupId}"] .expand-icon`);
-        const header = document.querySelector(`[data-group-id="${groupId}"] .validation-header`);
-        
-        if (content) {
-            if (content.style.display === 'none' || content.style.display === '') {
-                content.style.display = 'block';
-                if (header) header.classList.add('expanded');
-                if (toggle) toggle.style.transform = 'rotate(90deg)';
-            } else {
-                content.style.display = 'none';
-                if (header) header.classList.remove('expanded');
-                if (toggle) toggle.style.transform = 'rotate(0deg)';
-            }
-        }
-    }
-    
     function toggleAllGroups(expand) {
         const groups = document.querySelectorAll('.validation-group');
-        groups.forEach((group, index) => {
-            const groupId = `group_${index}`;
+        groups.forEach((group) => {
+            // Get groupId from data attribute instead of using index
+            const groupId = group.getAttribute('data-group-id');
             const content = document.getElementById(`${groupId}_content`);
-            const toggle = group.querySelector('.group-toggle');
+            const toggle = group.querySelector('.expand-icon');
+            const header = group.querySelector('.validation-header');
             
-            if (expand) {
-                content.style.display = 'block';
-                toggle.style.transform = 'rotate(90deg)';
-            } else {
-                content.style.display = 'none';
-                toggle.style.transform = 'rotate(0deg)';
+            if (content) {
+                if (expand) {
+                    content.style.display = 'block';
+                    if (header) header.classList.add('expanded');
+                    if (toggle) toggle.style.transform = 'rotate(90deg)';
+                } else {
+                    content.style.display = 'none';
+                    if (header) header.classList.remove('expanded');
+                    if (toggle) toggle.style.transform = 'rotate(0deg)';
+                }
             }
         });
     }
@@ -2602,7 +3004,7 @@ window.addEventListener('DOMContentLoaded', function() {
                             <h4 style="margin: 0 0 8px 0; color: #333;">Attention Flags</h4>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                                 ${state.needs_attention_flags.map(flag => 
-                                    `<span style="background: #ffecb3; color: #e65100; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${flag.replace('_', ' ')}</span>`
+                                    `<span style="background: #ffecb3; color: #e65100; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${getFlagLabel(flag)}</span>`
                                 ).join('')}
                             </div>
                         </div>
@@ -2809,3 +3211,160 @@ window.addEventListener('pageshow', function(event) {
         }
     }
 });
+
+// =================================================================================
+// TESTING: Mock Validation Data (Development Only)
+// =================================================================================
+
+// Test function to create mock validation data for UI testing
+window.loadMockValidationData = function() {
+    console.log('Loading mock validation data for testing...');
+    
+    const mockValidationState = {
+        "mapping_1": {
+            unique_mapping_id: "mapping_1",
+            original_mapping: {
+                exam_name: "CT Chest without contrast",
+                clean_name: "CT CHEST",
+                data_source: "Test Hospital A",
+                components: {
+                    confidence: 0.95
+                },
+                snomed: {
+                    id: "169069000",
+                    fsn: "Computed tomography of chest"
+                },
+                all_candidates: [
+                    { primary_name: "CT CHEST", confidence: 0.95 },
+                    { primary_name: "CT THORAX", confidence: 0.82 }
+                ]
+            },
+            needs_attention_flags: [],
+            validator_decision: 'pending',
+            validation_notes: ''
+        },
+        "mapping_2": {
+            unique_mapping_id: "mapping_2",
+            original_mapping: {
+                exam_name: "Xray Chest PA",
+                clean_name: "X-RAY CHEST",
+                data_source: "Test Hospital B",
+                components: {
+                    confidence: 0.65
+                },
+                snomed: {
+                    id: "399208008",
+                    fsn: "Plain chest X-ray"
+                },
+                all_candidates: [
+                    { primary_name: "X-RAY CHEST", confidence: 0.65 },
+                    { primary_name: "CHEST RADIOGRAPH", confidence: 0.62 }
+                ]
+            },
+            needs_attention_flags: ['low_confidence', 'ambiguous'],
+            validator_decision: 'pending',
+            validation_notes: ''
+        },
+        "mapping_3": {
+            unique_mapping_id: "mapping_3",
+            original_mapping: {
+                exam_name: "CT Chest with contrast",
+                clean_name: "CT CHEST",
+                data_source: "Test Hospital C", 
+                components: {
+                    confidence: 0.88
+                },
+                snomed: {
+                    id: "169069000",
+                    fsn: "Computed tomography of chest"
+                },
+                all_candidates: [
+                    { primary_name: "CT CHEST", confidence: 0.88 }
+                ]
+            },
+            needs_attention_flags: [],
+            validator_decision: 'pending',
+            validation_notes: ''
+        },
+        "mapping_4": {
+            unique_mapping_id: "mapping_4",
+            original_mapping: {
+                exam_name: "MRI Brain",
+                clean_name: "MRI BRAIN",
+                data_source: "Test Hospital A",
+                components: {
+                    confidence: 0.45
+                },
+                snomed: {
+                    id: "278107002",
+                    fsn: "Magnetic resonance imaging of brain"
+                },
+                all_candidates: [
+                    { primary_name: "MRI BRAIN", confidence: 0.45 },
+                    { primary_name: "MRI HEAD", confidence: 0.43 },
+                    { primary_name: "BRAIN MRI", confidence: 0.41 }
+                ]
+            },
+            needs_attention_flags: ['low_confidence', 'singleton_mapping'],
+            validator_decision: 'pending',
+            validation_notes: ''
+        },
+        "mapping_5": {
+            unique_mapping_id: "mapping_5",
+            original_mapping: {
+                exam_name: "Ultrasound Abdomen",
+                clean_name: "US ABDOMEN",
+                data_source: "Test Hospital D",
+                components: {
+                    confidence: 0.78
+                },
+                snomed: {
+                    id: "241527001",
+                    fsn: "Ultrasonography of abdomen"
+                },
+                all_candidates: [
+                    { primary_name: "US ABDOMEN", confidence: 0.78 }
+                ]
+            },
+            needs_attention_flags: ['secondary_pipeline'],
+            validator_decision: 'pending',
+            validation_notes: ''
+        }
+    };
+    
+    // Load the validation interface with mock data
+    loadValidationInterface(mockValidationState);
+    
+    // Show the validation interface
+    const validationInterface = document.getElementById('validationInterface');
+    if (validationInterface) {
+        validationInterface.classList.remove('hidden');
+        validationInterface.style.display = 'block';
+    }
+    
+    // Hide other sections to focus on validation
+    const workflowSection = document.getElementById('workflowSection');
+    if (workflowSection) {
+        workflowSection.style.display = 'none';
+    }
+    
+    statusManager.show('✅ Mock validation data loaded for UI testing', 'success', 3000);
+};
+
+// Add test button to page when in development mode
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add test button after a delay to ensure other elements are loaded
+        setTimeout(() => {
+            const heroSection = document.querySelector('.hero-section');
+            if (heroSection) {
+                const testButton = document.createElement('button');
+                testButton.textContent = '🧪 Load Mock Validation Data (DEV)';
+                testButton.className = 'button button-primary';
+                testButton.style.cssText = 'margin: 20px auto; display: block; background: #e91e63; border-color: #e91e63;';
+                testButton.onclick = window.loadMockValidationData;
+                heroSection.appendChild(testButton);
+            }
+        }, 1000);
+    });
+}
