@@ -601,7 +601,7 @@ class NHSLookupEngine:
             # CRITICAL SAFETY FIX: Check for explicit contrast mismatch
             # Calculate contrast score to detect dangerous explicit contradictions
             input_contrast = extracted_input_components.get('contrast', [])
-            nhs_components = self._extract_components(entry.get('primary_source_name', ''))
+            nhs_components = entry.get('_parsed_components', {})
             nhs_contrast = nhs_components.get('contrast', [])
             contrast_mismatch_score = self.config.get('contrast_mismatch_score', 0.05)
             
