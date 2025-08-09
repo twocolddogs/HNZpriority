@@ -1734,15 +1734,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     
-    window.toggleValidationGroup = function(groupId) {
-        const content = document.getElementById(`${groupId}_content`);
-        const header = document.querySelector(`[data-group-id="${groupId}"] .validation-header`);
-        if (content) {
-            const isHidden = content.style.display === 'none' || content.style.display === '';
-            content.style.display = isHidden ? 'block' : 'none';
-            header?.classList.toggle('expanded', isHidden);
-        }
-    }
+    // This function is defined later in the file - removing duplicate
     
     
     window.updateGroupDecision = function(groupId, decision) {
@@ -1807,7 +1799,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div class="detail-section"><h4>Original Exam</h4><div class="detail-box"><strong>${mapping.exam_name || 'N/A'}</strong><br><small>Source: ${mapping.data_source || 'N/A'} | Code: ${mapping.exam_code || 'N/A'}</small></div></div>
                         <div class="detail-section"><h4>Matched NHS Reference</h4><div class="detail-box success"><strong>${mapping.clean_name || 'N/A'}</strong><br><small>Confidence: ${(mapping.components?.confidence || 0).toFixed(3)}</small></div></div>
                         ${mapping.components?.reasoning ? `<div class="detail-section"><h4>AI Reasoning</h4><div class="detail-box info">${mapping.components.reasoning}</div></div>` : ''}
-                        ${state.needs_attention_flags.length > 0 ? `<div class="detail-section"><h4>Attention Flags</h4><div class="flag-container">${state.needs_attention_flags.map(flag => `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`).join('')}</div></div>` : ''}
+                        ${state.needs_attention_flags.length > 0 ? `<div class="detail-section"><h4>Attention Flags</h4><div class="flag-container">${state.needs_attention_flags.map(flag => `<span class="flag-badge flag-${normalizeFlag(flag)}">${getFlagLabel(flag)}</span>`).join('')}</div></div>` : ''}
                         <div class="detail-section"><h4>Validation Notes</h4><textarea id="validationNotes" class="notes-textarea">${state.validation_notes || ''}</textarea></div>
                     </div>
                     <div class="modal-footer">
@@ -1894,7 +1886,7 @@ window.addEventListener('DOMContentLoaded', function() {
             };
             
             // Send to validation/batch_decisions endpoint
-            const response = await fetch('/validation/batch_decisions', {
+            const response = await fetch(`${apiConfig.baseUrl}/validation/batch_decisions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2270,18 +2262,41 @@ window.addEventListener('DOMContentLoaded', function() {
         return groups;
     }
     
+    // Simple hash function for stable group IDs
+    function hashString(str) {
+        let hash = 0;
+        if (str.length === 0) return hash;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return Math.abs(hash).toString(36);
+    }
+
+    // Normalize attention flag values to slug-safe CSS classnames
+    function normalizeFlag(flag) {
+        return flag.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    // Get human-friendly label for flag
+    function getFlagLabel(flag) {
+        return flag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
     function renderValidationGroups(consolidatedGroups) {
         let html = '';
         
         Object.values(consolidatedGroups).forEach((group, index) => {
-            const groupId = `group_${index}`;
+            // Use stable group ID based on NHS reference hash instead of array index
+            const groupId = `group_${hashString(group.nhs_reference)}`;
             const hasFlags = group.flagged_count > 0;
             const flagBadges = group.group_flags.map(flag => 
-                `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`
+                `<span class="flag-badge flag-${normalizeFlag(flag)}">${getFlagLabel(flag)}</span>`
             ).join('');
             
             // Get SNOMED-ID from first mapping in the group
-            const snomedId = group.mappings[0]?.original_mapping?.snomed_id || 'Unknown';
+            const snomedId = group.mappings[0]?.original_mapping?.snomed?.id || 'Unknown';
             const isSingleton = group.total_mappings === 1;
             
             html += `
@@ -2336,7 +2351,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             
             const flagBadges = state.needs_attention_flags.map(flag => 
-                `<span class="flag-badge flag-${flag}">${flag.replace('_', ' ')}</span>`
+                `<span class="flag-badge flag-${normalizeFlag(flag)}">${getFlagLabel(flag)}</span>`
             ).join('');
             
             html += `
@@ -2450,37 +2465,25 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-        window.toggleValidationGroup = function(groupId) {
-        const content = document.getElementById(`${groupId}_content`);
-        const toggle = document.querySelector(`[data-group-id="${groupId}"] .expand-icon`);
-        const header = document.querySelector(`[data-group-id="${groupId}"] .validation-header`);
-        
-        if (content) {
-            if (content.style.display === 'none' || content.style.display === '') {
-                content.style.display = 'block';
-                if (header) header.classList.add('expanded');
-                if (toggle) toggle.style.transform = 'rotate(90deg)';
-            } else {
-                content.style.display = 'none';
-                if (header) header.classList.remove('expanded');
-                if (toggle) toggle.style.transform = 'rotate(0deg)';
-            }
-        }
-    }
-    
     function toggleAllGroups(expand) {
         const groups = document.querySelectorAll('.validation-group');
-        groups.forEach((group, index) => {
-            const groupId = `group_${index}`;
+        groups.forEach((group) => {
+            // Get groupId from data attribute instead of using index
+            const groupId = group.getAttribute('data-group-id');
             const content = document.getElementById(`${groupId}_content`);
-            const toggle = group.querySelector('.group-toggle');
+            const toggle = group.querySelector('.expand-icon');
+            const header = group.querySelector('.validation-header');
             
-            if (expand) {
-                content.style.display = 'block';
-                toggle.style.transform = 'rotate(90deg)';
-            } else {
-                content.style.display = 'none';
-                toggle.style.transform = 'rotate(0deg)';
+            if (content) {
+                if (expand) {
+                    content.style.display = 'block';
+                    if (header) header.classList.add('expanded');
+                    if (toggle) toggle.style.transform = 'rotate(90deg)';
+                } else {
+                    content.style.display = 'none';
+                    if (header) header.classList.remove('expanded');
+                    if (toggle) toggle.style.transform = 'rotate(0deg)';
+                }
             }
         });
     }
@@ -2602,7 +2605,7 @@ window.addEventListener('DOMContentLoaded', function() {
                             <h4 style="margin: 0 0 8px 0; color: #333;">Attention Flags</h4>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                                 ${state.needs_attention_flags.map(flag => 
-                                    `<span style="background: #ffecb3; color: #e65100; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${flag.replace('_', ' ')}</span>`
+                                    `<span style="background: #ffecb3; color: #e65100; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${getFlagLabel(flag)}</span>`
                                 ).join('')}
                             </div>
                         </div>
