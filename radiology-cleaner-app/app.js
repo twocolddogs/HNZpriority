@@ -2197,6 +2197,84 @@ window.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             
+            <!-- Validation Toolbar -->
+            <div class="validation-toolbar">
+                <div class="validation-counters">
+                    <div class="counter-item approved">
+                        <i class="fas fa-check"></i>
+                        <span>Approved:</span>
+                        <span class="count" id="approvedCount">0</span>
+                    </div>
+                    <div class="counter-item rejected">
+                        <i class="fas fa-times"></i>
+                        <span>Rejected:</span>
+                        <span class="count" id="rejectedCount">0</span>
+                    </div>
+                    <div class="counter-item skipped">
+                        <i class="fas fa-clock"></i>
+                        <span>Skipped:</span>
+                        <span class="count" id="skippedCount">0</span>
+                    </div>
+                    <div class="counter-item pending">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span>Pending:</span>
+                        <span class="count" id="pendingCount">${mappingCount}</span>
+                    </div>
+                </div>
+                
+                <div class="validation-filters">
+                    <label class="filter-toggle" data-filter="flagged">
+                        <input type="checkbox" style="display: none;" />
+                        <i class="fas fa-flag"></i>
+                        <span>Flagged Only</span>
+                    </label>
+                    <label class="filter-toggle" data-filter="low-confidence">
+                        <input type="checkbox" style="display: none;" />
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Low Confidence</span>
+                    </label>
+                    <label class="filter-toggle" data-filter="ambiguous">
+                        <input type="checkbox" style="display: none;" />
+                        <i class="fas fa-question-circle"></i>
+                        <span>Ambiguous</span>
+                    </label>
+                    <label class="filter-toggle" data-filter="singleton">
+                        <input type="checkbox" style="display: none;" />
+                        <i class="fas fa-dot-circle"></i>
+                        <span>Singleton</span>
+                    </label>
+                    <label class="filter-toggle" data-filter="secondary">
+                        <input type="checkbox" style="display: none;" />
+                        <i class="fas fa-layers"></i>
+                        <span>Secondary Pipeline</span>
+                    </label>
+                    
+                    <div class="validation-sort">
+                        <label for="sortSelect" style="font-size: var(--font-size-sm); margin-right: var(--space-2);">Sort:</label>
+                        <select id="sortSelect" class="sort-select">
+                            <option value="flagged-first">Flagged First</option>
+                            <option value="group-size">Group Size (Desc)</option>
+                            <option value="confidence">Avg Confidence (Asc)</option>
+                            <option value="alphabetical">Alphabetical A-Z</option>
+                        </select>
+                    </div>
+                    
+                    <button class="next-flagged-btn" id="nextFlaggedBtn">
+                        <i class="fas fa-arrow-right"></i>
+                        Next Flagged
+                    </button>
+                </div>
+                
+                <div class="validation-search">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search groups by NHS reference, exam name, code, or source..." />
+                    <div class="threshold-slider-container">
+                        <span style="font-size: var(--font-size-sm);">Confidence Threshold:</span>
+                        <input type="range" id="confidenceThreshold" class="threshold-slider" min="0.5" max="0.95" step="0.01" value="0.7" />
+                        <span class="threshold-value" id="thresholdValue">0.70</span>
+                    </div>
+                </div>
+            </div>
+            
             <div id="validationGroups" class="validation-groups-container">
                 ${renderValidationGroups(consolidatedGroups)}
             </div>
@@ -2219,8 +2297,12 @@ window.addEventListener('DOMContentLoaded', function() {
         // Add event listeners for validation buttons
         setupValidationEventListeners(validationState);
         
+        // Initialize validation toolbar functionality
+        initializeValidationToolbar(validationState, consolidatedGroups);
+        
         // Store validation state globally for access by other functions
         window.currentValidationState = validationState;
+        window.currentConsolidatedGroups = consolidatedGroups;
     }
     
     function createConsolidatedValidationGroups(validationState) {
@@ -2428,6 +2510,323 @@ window.addEventListener('DOMContentLoaded', function() {
         if (exportBtn) {
             exportBtn.addEventListener('click', () => exportValidationState(validationState));
         }
+    }
+    
+    // Validation Toolbar State Management
+    let validationToolbarState = {
+        filters: {
+            flagged: false,
+            'low-confidence': false,
+            ambiguous: false,
+            singleton: false,
+            secondary: false
+        },
+        sort: 'flagged-first',
+        search: '',
+        confidenceThreshold: 0.7,
+        activeGroupIndex: -1,
+        activeMappingIndex: -1
+    };
+
+    function initializeValidationToolbar(validationState, consolidatedGroups) {
+        // Initialize filter toggles
+        const filterToggles = document.querySelectorAll('[data-filter]');
+        filterToggles.forEach(toggle => {
+            toggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const filter = toggle.getAttribute('data-filter');
+                validationToolbarState.filters[filter] = !validationToolbarState.filters[filter];
+                toggle.classList.toggle('active', validationToolbarState.filters[filter]);
+                filterAndDisplayGroups();
+            });
+        });
+
+        // Initialize sort dropdown
+        const sortSelect = document.getElementById('sortSelect');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                validationToolbarState.sort = e.target.value;
+                filterAndDisplayGroups();
+            });
+        }
+
+        // Initialize search input
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    validationToolbarState.search = e.target.value.toLowerCase();
+                    filterAndDisplayGroups();
+                }, 300); // Debounce search
+            });
+        }
+
+        // Initialize confidence threshold slider
+        const thresholdSlider = document.getElementById('confidenceThreshold');
+        const thresholdValue = document.getElementById('thresholdValue');
+        if (thresholdSlider && thresholdValue) {
+            thresholdSlider.addEventListener('input', (e) => {
+                validationToolbarState.confidenceThreshold = parseFloat(e.target.value);
+                thresholdValue.textContent = validationToolbarState.confidenceThreshold.toFixed(2);
+                filterAndDisplayGroups();
+            });
+        }
+
+        // Initialize next flagged button
+        const nextFlaggedBtn = document.getElementById('nextFlaggedBtn');
+        if (nextFlaggedBtn) {
+            nextFlaggedBtn.addEventListener('click', () => {
+                jumpToNextFlaggedGroup();
+            });
+        }
+
+        // Initialize keyboard shortcuts
+        initializeKeyboardShortcuts();
+
+        // Initial render
+        filterAndDisplayGroups();
+    }
+
+    function filterAndDisplayGroups() {
+        if (!window.currentConsolidatedGroups) return;
+        
+        const groups = window.currentConsolidatedGroups;
+        let filteredGroups = Object.values(groups);
+
+        // Apply filters
+        if (validationToolbarState.filters.flagged) {
+            filteredGroups = filteredGroups.filter(group => group.flagged_count > 0);
+        }
+
+        if (validationToolbarState.filters['low-confidence']) {
+            filteredGroups = filteredGroups.filter(group => 
+                group.mappings.some(m => (m.original_mapping.components?.confidence || 0) < validationToolbarState.confidenceThreshold)
+            );
+        }
+
+        if (validationToolbarState.filters.ambiguous) {
+            filteredGroups = filteredGroups.filter(group => 
+                group.group_flags.includes('ambiguous')
+            );
+        }
+
+        if (validationToolbarState.filters.singleton) {
+            filteredGroups = filteredGroups.filter(group => group.total_mappings === 1);
+        }
+
+        if (validationToolbarState.filters.secondary) {
+            filteredGroups = filteredGroups.filter(group => 
+                group.group_flags.includes('secondary_pipeline')
+            );
+        }
+
+        // Apply search
+        if (validationToolbarState.search) {
+            filteredGroups = filteredGroups.filter(group => {
+                const searchTerm = validationToolbarState.search;
+                return group.nhs_reference.toLowerCase().includes(searchTerm) ||
+                       group.mappings.some(m => 
+                           (m.original_mapping.exam_name || '').toLowerCase().includes(searchTerm) ||
+                           (m.original_mapping.data_source || '').toLowerCase().includes(searchTerm)
+                       );
+            });
+        }
+
+        // Apply sorting
+        switch (validationToolbarState.sort) {
+            case 'flagged-first':
+                filteredGroups.sort((a, b) => {
+                    if (a.flagged_count > 0 && b.flagged_count === 0) return -1;
+                    if (a.flagged_count === 0 && b.flagged_count > 0) return 1;
+                    return b.flagged_count - a.flagged_count;
+                });
+                break;
+            case 'group-size':
+                filteredGroups.sort((a, b) => b.total_mappings - a.total_mappings);
+                break;
+            case 'confidence':
+                filteredGroups.sort((a, b) => {
+                    const avgA = a.mappings.reduce((sum, m) => sum + (m.original_mapping.components?.confidence || 0), 0) / a.mappings.length;
+                    const avgB = b.mappings.reduce((sum, m) => sum + (m.original_mapping.components?.confidence || 0), 0) / b.mappings.length;
+                    return avgA - avgB;
+                });
+                break;
+            case 'alphabetical':
+                filteredGroups.sort((a, b) => a.nhs_reference.localeCompare(b.nhs_reference));
+                break;
+        }
+
+        // Update the display
+        const container = document.getElementById('validationGroups');
+        if (container) {
+            // Convert array back to object structure for renderValidationGroups
+            const filteredGroupsObj = {};
+            filteredGroups.forEach(group => {
+                filteredGroupsObj[group.nhs_reference] = group;
+            });
+            container.innerHTML = renderValidationGroups(filteredGroupsObj);
+        }
+
+        // Update next flagged button state
+        updateNextFlaggedButton(filteredGroups);
+    }
+
+    function updateNextFlaggedButton(filteredGroups) {
+        const nextFlaggedBtn = document.getElementById('nextFlaggedBtn');
+        if (!nextFlaggedBtn) return;
+
+        const flaggedGroups = filteredGroups.filter(group => group.flagged_count > 0);
+        nextFlaggedBtn.disabled = flaggedGroups.length === 0;
+    }
+
+    function jumpToNextFlaggedGroup() {
+        const flaggedGroups = document.querySelectorAll('.validation-group.validation-flagged');
+        if (flaggedGroups.length === 0) return;
+
+        let nextIndex = 0;
+        if (validationToolbarState.activeGroupIndex >= 0) {
+            const currentGroup = document.querySelector(`[data-group-id="group_${validationToolbarState.activeGroupIndex}"]`);
+            if (currentGroup) {
+                const allGroups = Array.from(document.querySelectorAll('.validation-group'));
+                const currentIdx = allGroups.indexOf(currentGroup);
+                
+                // Find next flagged group after current
+                for (let i = currentIdx + 1; i < allGroups.length; i++) {
+                    if (allGroups[i].classList.contains('validation-flagged')) {
+                        nextIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (flaggedGroups[nextIndex]) {
+            flaggedGroups[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Optionally expand the group
+            const groupId = flaggedGroups[nextIndex].getAttribute('data-group-id');
+            if (groupId) {
+                window.toggleValidationGroup(groupId);
+            }
+        }
+    }
+
+    function initializeKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Only handle shortcuts when not in input fields
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                // Allow specific shortcuts even in inputs
+                if (e.key === 'Escape') {
+                    e.target.blur();
+                }
+                return;
+            }
+
+            switch (e.key.toLowerCase()) {
+                case 'a':
+                    e.preventDefault();
+                    // Approve focused mapping or group
+                    console.log('Keyboard shortcut: Approve');
+                    break;
+                case 'r':
+                    e.preventDefault();
+                    // Reject focused mapping or group
+                    console.log('Keyboard shortcut: Reject');
+                    break;
+                case 's':
+                    e.preventDefault();
+                    // Skip focused mapping or group
+                    console.log('Keyboard shortcut: Skip');
+                    break;
+                case 'j':
+                    e.preventDefault();
+                    // Next mapping within group
+                    navigateMapping(1);
+                    break;
+                case 'k':
+                    e.preventDefault();
+                    // Previous mapping within group
+                    navigateMapping(-1);
+                    break;
+                case 'g':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        // Previous group
+                        navigateGroup(-1);
+                    } else {
+                        // Next group
+                        navigateGroup(1);
+                    }
+                    break;
+                case ' ':
+                case 'enter':
+                    e.preventDefault();
+                    // Toggle focused group
+                    toggleFocusedGroup();
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    // Toggle flagged filter
+                    const flaggedToggle = document.querySelector('[data-filter="flagged"]');
+                    if (flaggedToggle) flaggedToggle.click();
+                    break;
+                case '/':
+                    e.preventDefault();
+                    // Focus search box
+                    const searchInput = document.getElementById('searchInput');
+                    if (searchInput) searchInput.focus();
+                    break;
+                case '?':
+                    e.preventDefault();
+                    // Show shortcuts help
+                    showKeyboardShortcutsHelp();
+                    break;
+                case 'z':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        // Undo last action
+                        undoLastAction();
+                    }
+                    break;
+            }
+        });
+    }
+
+    function navigateMapping(direction) {
+        // Implementation for J/K navigation within groups
+        console.log('Navigate mapping:', direction);
+    }
+
+    function navigateGroup(direction) {
+        // Implementation for G/Shift+G navigation between groups
+        console.log('Navigate group:', direction);
+    }
+
+    function toggleFocusedGroup() {
+        // Implementation for Space/Enter to toggle group
+        console.log('Toggle focused group');
+    }
+
+    function showKeyboardShortcutsHelp() {
+        // Implementation for ? to show help overlay
+        alert(`Keyboard Shortcuts:
+        
+A - Approve focused mapping/group
+R - Reject focused mapping/group  
+S - Skip focused mapping/group
+J/K - Next/Previous mapping within group
+G/Shift+G - Next/Previous group
+Space/Enter - Expand/Collapse focused group
+F - Toggle "Flagged only" filter
+/ - Focus search box
+? - Show this help
+Ctrl+Z - Undo last action`);
+    }
+
+    function undoLastAction() {
+        // Implementation for Ctrl+Z undo
+        console.log('Undo last action');
     }
     
     function exportValidationState(validationState) {
