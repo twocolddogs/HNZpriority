@@ -597,6 +597,25 @@ class NHSLookupEngine:
             component_start = time.time()
             component_score = self._calculate_component_score(input_exam, extracted_input_components, entry)
             component_time = time.time() - component_start
+            
+            # CRITICAL SAFETY FIX: Check for explicit contrast mismatch
+            # Calculate contrast score to detect dangerous explicit contradictions
+            input_contrast = extracted_input_components.get('contrast', [])
+            nhs_components = self._extract_components(entry.get('primary_source_name', ''))
+            nhs_contrast = nhs_components.get('contrast', [])
+            contrast_mismatch_score = self.config.get('contrast_mismatch_score', 0.05)
+            
+            # If both input and NHS have explicit contrast info and they conflict (score = contrast_mismatch_score)
+            if (input_contrast and nhs_contrast and 
+                not set(input_contrast).intersection(set(nhs_contrast)) and
+                component_score == 0.0):  # Component score 0 indicates threshold violation
+                
+                logger.warning(f"[V3-PIPELINE] Rejecting '{candidate_name[:30]}' due to explicit contrast mismatch: input={input_contrast} vs NHS={nhs_contrast}")
+                component_scores.append(0.0)
+                final_scores.append(0.0) 
+                position_bonuses.append(0.0)
+                continue
+            
             component_scores.append(component_score)
             
             # Combine reranker score and component score
