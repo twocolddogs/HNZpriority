@@ -1885,64 +1885,95 @@ def submit_batch_validation_decisions():
             
             # Load existing approved mappings from R2 and merge with new ones
             if approved_mappings:
-                existing_approved = []
+                existing_approved_dict = {}
                 try:
                     import requests
-                    approved_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation_caches/approved_mappings.json"
+                    approved_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/approved_mappings_cache.json"
                     response = requests.get(approved_url, timeout=10)
                     if response.status_code == 200:
-                        existing_approved = response.json()
-                        logger.info(f"Loaded {len(existing_approved)} existing approved mappings from R2")
+                        existing_approved_dict = response.json()
+                        logger.info(f"Loaded {len(existing_approved_dict)} existing approved mappings from R2")
                 except Exception as e:
                     logger.warning(f"Could not load existing approved mappings: {e}")
                 
-                # Merge and save approved mappings
-                all_approved = existing_approved + approved_mappings
-                approved_json = json.dumps(all_approved, indent=2)
+                # Convert approved mappings to hash-keyed format for NHS engine compatibility
+                for decision in approved_mappings:
+                    mapping_id = decision['mapping_id']
+                    existing_approved_dict[mapping_id] = {
+                        'mapping_data': decision['original_mapping'],
+                        'validation_notes': decision.get('notes', ''),
+                        'approved_at': decision['timestamp_reviewed'],
+                        'decision_metadata': {
+                            'data_source': decision.get('data_source', ''),
+                            'exam_code': decision.get('exam_code', ''),
+                            'exam_name': decision.get('exam_name', '')
+                        }
+                    }
+                
+                approved_json = json.dumps(existing_approved_dict, indent=2)
                 
                 logger.info(f"Attempting to upload approved mappings: {len(approved_json)} bytes")
                 logger.info(f"R2 bucket: {r2_manager.bucket_name}, endpoint: {r2_manager.endpoint_url}")
                 
                 success = r2_manager.upload_object(
-                    object_key='validation_caches/approved_mappings.json',
+                    object_key='validation/approved_mappings_cache.json',
                     data=approved_json.encode('utf-8'),
                     content_type='application/json',
                     cors_headers=True
                 )
                 
                 if success:
-                    logger.info(f"Successfully saved {len(approved_mappings)} new approved mappings to R2 (total: {len(all_approved)})")
+                    logger.info(f"Successfully saved {len(approved_mappings)} new approved mappings to R2 (total: {len(existing_approved_dict)})")
                 else:
                     r2_success = False
                     logger.error("Failed to save approved mappings to R2 - upload_object returned False")
             
             # Load existing rejected mappings from R2 and merge with new ones
             if rejected_mappings:
-                existing_rejected = []
+                existing_rejected_dict = {}
                 try:
-                    rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation_caches/rejected_mappings.json"
+                    rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/rejected_mappings.json"
                     response = requests.get(rejected_url, timeout=10)
                     if response.status_code == 200:
-                        existing_rejected = response.json()
-                        logger.info(f"Loaded {len(existing_rejected)} existing rejected mappings from R2")
+                        existing_rejected_dict = response.json()
+                        logger.info(f"Loaded {len(existing_rejected_dict)} existing rejected mappings from R2")
                 except Exception as e:
                     logger.warning(f"Could not load existing rejected mappings: {e}")
                 
-                # Merge and save rejected mappings
-                all_rejected = existing_rejected + rejected_mappings
-                rejected_json = json.dumps(all_rejected, indent=2)
+                # Convert rejected mappings to hash-keyed format for NHS engine compatibility
+                for decision in rejected_mappings:
+                    mapping_id = decision['mapping_id']
+                    # Extract SNOMED IDs from the original mapping for rejection tracking
+                    original_mapping = decision.get('original_mapping', {})
+                    snomed_data = original_mapping.get('snomed', {})
+                    snomed_ids = []
+                    if snomed_data.get('concept_id'):
+                        snomed_ids.append(snomed_data['concept_id'])
+                    
+                    existing_rejected_dict[mapping_id] = {
+                        'rejected_snomed_ids': snomed_ids,
+                        'rejection_reason': decision.get('notes', ''),
+                        'rejected_at': decision['timestamp_reviewed'],
+                        'decision_metadata': {
+                            'data_source': decision.get('data_source', ''),
+                            'exam_code': decision.get('exam_code', ''),
+                            'exam_name': decision.get('exam_name', '')
+                        }
+                    }
+                
+                rejected_json = json.dumps(existing_rejected_dict, indent=2)
                 
                 logger.info(f"Attempting to upload rejected mappings: {len(rejected_json)} bytes")
                 
                 success = r2_manager.upload_object(
-                    object_key='validation_caches/rejected_mappings.json',
+                    object_key='validation/rejected_mappings.json',
                     data=rejected_json.encode('utf-8'),
                     content_type='application/json',
                     cors_headers=True
                 )
                 
                 if success:
-                    logger.info(f"Successfully saved {len(rejected_mappings)} new rejected mappings to R2 (total: {len(all_rejected)})")
+                    logger.info(f"Successfully saved {len(rejected_mappings)} new rejected mappings to R2 (total: {len(existing_rejected_dict)})")
                 else:
                     r2_success = False
                     logger.error("Failed to save rejected mappings to R2 - upload_object returned False")
