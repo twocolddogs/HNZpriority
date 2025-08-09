@@ -4,6 +4,8 @@ This repository contains multiple healthcare applications for New Zealand's Heal
 
 **Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
 
+**⚠️ CRITICAL: Do not open PRs to main. Always target develop.**
+
 ## Working Effectively
 
 ### Core Requirements
@@ -239,6 +241,10 @@ cd decision-support
 ### Branch Management
 - **CRITICAL**: Always work on `develop` branch
 - **NEVER**: Make changes directly to `main` branch (production)
+- **All feature work must branch from develop and open pull requests into develop (not main).**
+- **Do not open PRs to main under any circumstances.**
+- **Release PRs from develop to main are created and merged by maintainers only.**
+- **Main is a protected, production branch and deploys to production automatically. Develop is the integration branch.**
 - **Deployment**: main branch deploys to production automatically
 
 ## Time Expectations
@@ -265,7 +271,7 @@ cd decision-support
 This is a production healthcare system serving New Zealand's health professionals. Changes affect real clinical decision-making. Always:
 - Test thoroughly in development
 - Validate all functionality after changes
-- Follow proper branch management (develop → main via pull request)
+- Follow proper branch management (feature branches → develop via pull request; maintainer-only release PRs develop → main)
 - Document any changes that affect clinical workflows
 
 ### File Locations for Common Tasks
