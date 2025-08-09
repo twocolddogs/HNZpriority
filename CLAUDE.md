@@ -138,6 +138,8 @@ git pull origin develop
 
 ## Critical Branch Management Rules
 
+**⚠️ NEVER open PRs to main. Always target develop.**
+
 **NEVER make any code changes directly to the `main` branch. Always use the `develop` branch for all modifications.**
 
 ### Workflow Requirements:
@@ -146,8 +148,9 @@ git pull origin develop
 3. **Make all code changes on `develop` branch only**
 4. **Test changes thoroughly** on develop branch
 5. **Automatically push commits to develop branch** after committing
-6. **Create pull requests** from develop to main when changes are ready for production
-7. **Never commit directly to main** - this is a protected production branch
+6. **All feature work must branch from develop and open pull requests into develop (not main).**
+7. **Release PRs from develop to main are created and merged by maintainers only.**
+8. **Never commit directly to main** - this is a protected production branch
 
 ### Auto-Push Configuration:
 - **ALWAYS push commits immediately** after creating them on develop branch
