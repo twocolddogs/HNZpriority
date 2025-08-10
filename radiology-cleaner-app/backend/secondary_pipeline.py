@@ -19,7 +19,7 @@ import yaml
 import threading
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global cache for shared secondary pipeline instance
