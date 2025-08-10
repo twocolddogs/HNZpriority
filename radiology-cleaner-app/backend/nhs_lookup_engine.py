@@ -240,14 +240,16 @@ class NHSLookupEngine:
         
         # Load approved mappings cache from R2
         approved_data = self._fetch_json_from_r2('validation/approved_mappings_cache.json')
-        for hash_key, entry in approved_data.items():
+        approved_entries = approved_data.get('entries', {})
+        for hash_key, entry in approved_entries.items():
             if 'mapping_data' in entry:
                 self.approved_mappings[hash_key] = entry['mapping_data']
         logger.info(f"Loaded {len(self.approved_mappings)} approved mappings from R2 validation cache")
         
         # Load rejected mappings from R2  
-        rejected_data = self._fetch_json_from_r2('validation/rejected_mappings.json')
-        for hash_key, entry in rejected_data.items():
+        rejected_data = self._fetch_json_from_r2('validation/rejected_mappings_cache.json')
+        rejected_entries = rejected_data.get('entries', {})
+        for hash_key, entry in rejected_entries.items():
             if 'rejected_snomed_ids' in entry:
                 # Convert to set for O(1) lookup performance
                 self.rejected_mappings[hash_key] = set(entry['rejected_snomed_ids'])
