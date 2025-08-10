@@ -203,6 +203,125 @@ class NHSLookupEngine:
             fsn_complexity_score = self.complexity_scorer.calculate_fsn_total_complexity(snomed_fsn_clean)
             entry["_is_complex_fsn"] = fsn_complexity_score > 0.67
     
+    def _normalize_approved_cache(self, raw_data: dict) -> dict:
+        """
+        Normalize approved cache data to consistent internal structure.
+        
+        Supports multiple input schemas:
+        - {"entries": {hash: {mapping_data: {...}}}}
+        - {"entries": [{hash: "...", mapping_data: {...}}]}
+        - flat {hash: {mapping_data: {...}}}
+        - flat {hash: {...}} where value is the mapping itself
+        
+        Args:
+            raw_data: Raw JSON data from R2
+            
+        Returns:
+            dict: Normalized mapping as {hash: mapping_data}
+        """
+        if not raw_data:
+            return {}
+        
+        normalized = {}
+        
+        # Check if data has 'entries' wrapper
+        if 'entries' in raw_data:
+            entries = raw_data['entries']
+            
+            # Handle list format: [{"hash": "...", "mapping_data": {...}}]
+            if isinstance(entries, list):
+                for item in entries:
+                    if isinstance(item, dict) and 'hash' in item:
+                        hash_key = item['hash']
+                        if 'mapping_data' in item:
+                            normalized[hash_key] = item['mapping_data']
+                        else:
+                            # Treat the entire item (minus hash) as mapping data
+                            mapping_data = {k: v for k, v in item.items() if k != 'hash'}
+                            normalized[hash_key] = mapping_data
+            
+            # Handle dict format: {"hash": {"mapping_data": {...}}}
+            elif isinstance(entries, dict):
+                for hash_key, entry in entries.items():
+                    if isinstance(entry, dict):
+                        if 'mapping_data' in entry:
+                            normalized[hash_key] = entry['mapping_data']
+                        else:
+                            # Treat the entire entry as mapping data
+                            normalized[hash_key] = entry
+        
+        # Handle flat format without 'entries' wrapper
+        else:
+            for hash_key, entry in raw_data.items():
+                if isinstance(entry, dict):
+                    if 'mapping_data' in entry:
+                        normalized[hash_key] = entry['mapping_data']
+                    else:
+                        # Treat the entire entry as mapping data
+                        normalized[hash_key] = entry
+        
+        return normalized
+    
+    def _normalize_rejected_cache(self, raw_data: dict) -> dict:
+        """
+        Normalize rejected cache data to consistent internal structure.
+        
+        Supports multiple input schemas:
+        - {"entries": {hash: {rejected_snomed_ids: [...]}}}
+        - {"entries": [{hash: "...", rejected_snomed_ids: [...]}]}
+        - flat {hash: {rejected_snomed_ids: [...]}}
+        - flat {hash: [...]} where value is the rejection list itself
+        
+        Args:
+            raw_data: Raw JSON data from R2
+            
+        Returns:
+            dict: Normalized mapping as {hash: set(rejected_snomed_ids)}
+        """
+        if not raw_data:
+            return {}
+        
+        normalized = {}
+        
+        # Check if data has 'entries' wrapper
+        if 'entries' in raw_data:
+            entries = raw_data['entries']
+            
+            # Handle list format: [{"hash": "...", "rejected_snomed_ids": [...]}]
+            if isinstance(entries, list):
+                for item in entries:
+                    if isinstance(item, dict) and 'hash' in item:
+                        hash_key = item['hash']
+                        if 'rejected_snomed_ids' in item:
+                            rejected_ids = item['rejected_snomed_ids']
+                            if isinstance(rejected_ids, list):
+                                normalized[hash_key] = set(rejected_ids)
+            
+            # Handle dict format: {"hash": {"rejected_snomed_ids": [...]}}
+            elif isinstance(entries, dict):
+                for hash_key, entry in entries.items():
+                    if isinstance(entry, dict):
+                        if 'rejected_snomed_ids' in entry:
+                            rejected_ids = entry['rejected_snomed_ids']
+                            if isinstance(rejected_ids, list):
+                                normalized[hash_key] = set(rejected_ids)
+                    elif isinstance(entry, list):
+                        # Flat format where value is directly the list
+                        normalized[hash_key] = set(entry)
+        
+        # Handle flat format without 'entries' wrapper
+        else:
+            for hash_key, entry in raw_data.items():
+                if isinstance(entry, dict) and 'rejected_snomed_ids' in entry:
+                    rejected_ids = entry['rejected_snomed_ids']
+                    if isinstance(rejected_ids, list):
+                        normalized[hash_key] = set(rejected_ids)
+                elif isinstance(entry, list):
+                    # Flat format where value is directly the list
+                    normalized[hash_key] = set(entry)
+        
+        return normalized
+
     def _fetch_json_from_r2(self, object_key: str) -> dict:
         """Fetch and parse JSON data from R2 storage."""
         if not self.r2_manager.is_available():
@@ -231,27 +350,24 @@ class NHSLookupEngine:
         """
         Load validation caches from R2 cloud storage for human-in-the-loop feedback.
         
-        Loads:
+        Loads only the new cache filenames:
         - validation/approved_mappings_cache.json: Hash -> complete mapping data
-        - validation/rejected_mappings.json: Hash -> set of rejected SNOMED IDs  
+        - validation/rejected_mappings_cache.json: Hash -> set of rejected SNOMED IDs
+        
+        Normalizes the JSON payloads to robust internal structures regardless of schema format.
         """
         # Initialize validation caches
         self.approved_mappings = {}
         self.rejected_mappings = {}
         
-        # Load approved mappings cache from R2
+        # Load approved mappings cache from R2 using new filename
         approved_data = self._fetch_json_from_r2('validation/approved_mappings_cache.json')
-        for hash_key, entry in approved_data.items():
-            if 'mapping_data' in entry:
-                self.approved_mappings[hash_key] = entry['mapping_data']
+        self.approved_mappings = self._normalize_approved_cache(approved_data)
         logger.info(f"Loaded {len(self.approved_mappings)} approved mappings from R2 validation cache")
         
-        # Load rejected mappings from R2  
-        rejected_data = self._fetch_json_from_r2('validation/rejected_mappings.json')
-        for hash_key, entry in rejected_data.items():
-            if 'rejected_snomed_ids' in entry:
-                # Convert to set for O(1) lookup performance
-                self.rejected_mappings[hash_key] = set(entry['rejected_snomed_ids'])
+        # Load rejected mappings from R2 using new filename  
+        rejected_data = self._fetch_json_from_r2('validation/rejected_mappings_cache.json')
+        self.rejected_mappings = self._normalize_rejected_cache(rejected_data)
         logger.info(f"Loaded {len(self.rejected_mappings)} rejected mapping entries from R2 validation cache")
 
     def _generate_request_hash(self, exam_code: str = '', exam_name: str = '', data_source: str = '', clean_name: str = '') -> str:
