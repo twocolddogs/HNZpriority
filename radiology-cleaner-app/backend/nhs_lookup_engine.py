@@ -368,6 +368,7 @@ class NHSLookupEngine:
         # Load rejected mappings from R2 using new filename  
         rejected_data = self._fetch_json_from_r2('validation/rejected_mappings_cache.json')
         self.rejected_mappings = self._normalize_rejected_cache(rejected_data)
+
         logger.info(f"Loaded {len(self.rejected_mappings)} rejected mapping entries from R2 validation cache")
 
     def _generate_request_hash(self, exam_code: str = '', exam_name: str = '', data_source: str = '', clean_name: str = '') -> str:
