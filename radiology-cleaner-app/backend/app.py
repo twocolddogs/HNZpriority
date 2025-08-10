@@ -1145,7 +1145,7 @@ def _process_batch(data, start_time):
     progress_filename = f"batch_progress_{batch_id}.json"
     progress_filepath = os.path.join(output_dir, progress_filename)
     
-    logger.info(f"Starting batch processing for {len(exams_to_process)} exams using model: '{model_key}', reranker: '{reranker_key}'")
+    logger.info(f"Starting batch processing for {len(exams_to_process)} exams using model: '{model_key}', reranker: '{reranker_key}' (preflight checking enabled)")
     logger.info(f"Results will be streamed to: {results_filepath}")
     logger.info(f"Progress will be tracked at: {progress_filepath}")
     logger.info(f"RENDER_DISK_PATH environment variable: {os.environ.get('RENDER_DISK_PATH', 'NOT_SET')}")
@@ -1803,7 +1803,7 @@ def random_sample():
                         exam_entry['exam_code'] = exam_code
                 exams_for_batch.append(exam_entry)
 
-        logger.info(f"Passing {len(exams_for_batch)} exams to batch processor.")
+        logger.info(f"Passing {len(exams_for_batch)} exams to batch processor with preflight checking enabled.")
         batch_payload = {
             "exams": exams_for_batch,
             "model": model_key,
