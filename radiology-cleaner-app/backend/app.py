@@ -347,6 +347,24 @@ def _ensure_app_is_initialized():
             _initialize_app()
             _app_initialized = True
 
+def _refresh_validation_caches():
+    """
+    Refresh validation caches from R2 to ensure latest human-in-the-loop feedback is used.
+    Called at the start of every processing run to pick up new validation entries.
+    """
+    global nhs_lookup_engine
+    if nhs_lookup_engine:
+        try:
+            refresh_result = nhs_lookup_engine.reload_validation_caches()
+            if refresh_result.get('status') == 'success':
+                logger.info(f"[CACHE-REFRESH] Updated validation caches: approved={refresh_result.get('approved_count', 0)} (Δ{refresh_result.get('approved_delta', 0):+d}), rejected={refresh_result.get('rejected_count', 0)} (Δ{refresh_result.get('rejected_delta', 0):+d})")
+            else:
+                logger.warning(f"[CACHE-REFRESH] Validation cache refresh returned non-success status: {refresh_result}")
+        except Exception as e:
+            logger.error(f"[CACHE-REFRESH] Failed to refresh validation caches: {e}")
+    else:
+        logger.warning("[CACHE-REFRESH] NHS lookup engine not available for cache refresh")
+
 def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None, data_source: Optional[str] = None, exam_code: Optional[str] = None, run_secondary_inline: bool = True) -> Dict:
     """Central processing logic for a single exam."""
     if debug:
@@ -1002,6 +1020,7 @@ def _get_model_description(model_key: str) -> str:
 def parse_enhanced():
     """Enhanced parsing endpoint for single exam processing"""
     _ensure_app_is_initialized()
+    _refresh_validation_caches()  # Refresh validation caches for latest human feedback
     start_time = time.time()
     
     try:
@@ -1549,6 +1568,7 @@ def parse_batch():
         return '', 200
     
     _ensure_app_is_initialized()
+    _refresh_validation_caches()  # Refresh validation caches for latest human feedback
     start_time = time.time()
     
     try:
@@ -1747,6 +1767,7 @@ def random_sample():
     and passes them to the batch processing endpoint.
     """
     _ensure_app_is_initialized()
+    _refresh_validation_caches()  # Refresh validation caches for latest human feedback
     start_time = time.time()
     
     try:
