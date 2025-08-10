@@ -1781,9 +1781,16 @@ window.addEventListener('DOMContentLoaded', function() {
     
     function updateMappingDecisionInState(mappingId, decision) {
         if (window.currentValidationState && window.currentValidationState[mappingId]) {
-            window.currentValidationState[mappingId].validator_decision = decision;
-            window.currentValidationState[mappingId].validation_status = 'reviewed';
-            window.currentValidationState[mappingId].timestamp_reviewed = new Date().toISOString();
+            if (decision === 'unapprove') {
+                // Reset to pending state when unapproving
+                window.currentValidationState[mappingId].validator_decision = null;
+                window.currentValidationState[mappingId].validation_status = 'pending_review';
+                window.currentValidationState[mappingId].timestamp_reviewed = null;
+            } else {
+                window.currentValidationState[mappingId].validator_decision = decision;
+                window.currentValidationState[mappingId].validation_status = 'reviewed';
+                window.currentValidationState[mappingId].timestamp_reviewed = new Date().toISOString();
+            }
         }
     }
     
@@ -2035,38 +2042,38 @@ window.addEventListener('DOMContentLoaded', function() {
     async function initializeValidationFromMappings(mappings) {
         console.log(`🔧 Transforming ${mappings.length} mappings into validation state`);
         
-        // Filter out already approved mappings
-        const unapprovedMappings = mappings.filter(mapping => {
-            const isApproved = mapping.validation_status === 'approved_by_human';
-            if (isApproved) {
-                console.log(`📋 Skipping already approved mapping: ${mapping.exam_name} (${mapping.data_source})`);
-            }
-            return !isApproved;
-        });
-        
-        const approvedCount = mappings.length - unapprovedMappings.length;
-        if (approvedCount > 0) {
-            console.log(`📋 Filtered out ${approvedCount} already approved mappings, ${unapprovedMappings.length} remaining for validation`);
-            statusManager.show(`📋 ${approvedCount} mappings already approved, showing ${unapprovedMappings.length} for validation`, 'info', 3000);
-        }
-        
+        // Include approved mappings but note their status
         const validationState = {};
         const timestamp = new Date().toISOString();
+        let approvedCount = 0;
         
-        for (const mapping of unapprovedMappings) {
-            const mappingId = await generateMappingId(mapping);
+
+        for (const mapping of mappings) {
+            const mappingId = generateMappingId(mapping);
             const flags = applyAttentionFlags(mapping);
+            
+            // Check if mapping is already approved
+            const isApproved = mapping.validation_status === 'approved';
+            if (isApproved) {
+                approvedCount++;
+                console.log(`📋 Including already approved mapping: ${mapping.exam_name} (${mapping.data_source})`);
+            }
             
             validationState[mappingId] = {
                 unique_mapping_id: mappingId,
                 original_mapping: mapping,
-                validation_status: 'pending_review',
-                validator_decision: null,
-                validation_notes: null,
+                validation_status: isApproved ? 'approved' : 'pending_review',
+                validator_decision: isApproved ? 'approve' : null,
+                validation_notes: isApproved ? (mapping.validation_notes || 'Previously approved') : null,
                 needs_attention_flags: flags,
                 timestamp_created: timestamp,
-                timestamp_reviewed: null
+                timestamp_reviewed: isApproved ? (mapping.timestamp_reviewed || timestamp) : null
             };
+        }
+        
+        if (approvedCount > 0) {
+            console.log(`📋 Included ${approvedCount} already approved mappings, ${mappings.length - approvedCount} pending for validation`);
+            statusManager.show(`📋 ${approvedCount} mappings already approved, ${mappings.length - approvedCount} pending review`, 'info', 3000);
         }
         
         console.log(`✅ Created validation state for ${Object.keys(validationState).length} mappings`);
@@ -2440,22 +2447,44 @@ window.addEventListener('DOMContentLoaded', function() {
             const confidencePercent = Math.round(confidence * 100);
             const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
             
+            // Check validation status
+            const isApproved = state.validation_status === 'approved';
+            const isRejected = state.validation_status === 'rejected';
+            const isPending = state.validation_status === 'pending_review';
+            
             const flagBadges = state.needs_attention_flags.map(flag => 
                 `<span class="flag-badge flag-${window.normalizeFlag(flag)}">${window.getFlagLabel(flag)}</span>`
             ).join('');
             
+            // Status badge
+            let statusBadge = '';
+            if (isApproved) {
+                statusBadge = '<span class="status-badge status-approved"><i class="fas fa-check"></i> Approved</span>';
+            } else if (isRejected) {
+                statusBadge = '<span class="status-badge status-rejected"><i class="fas fa-times"></i> Rejected</span>';
+            }
+            
             html += `
-                <div class="validation-mapping-item ${hasFlags ? 'mapping-flagged' : ''}" data-mapping-id="${mappingId}">
+                <div class="validation-mapping-item ${hasFlags ? 'mapping-flagged' : ''} ${isApproved ? 'mapping-approved' : ''} ${isRejected ? 'mapping-rejected' : ''}" data-mapping-id="${mappingId}">
                     <div class="mapping-content">
                         <div class="mapping-header">
-                            <div class="mapping-title">${mapping.exam_name || 'Unknown Exam'}</div>
+                            <div class="mapping-title">
+                                ${mapping.exam_name || 'Unknown Exam'}
+                                ${statusBadge}
+                            </div>
                             <div class="mapping-actions">
-                                <button class="button button-sm button-success" onclick="updateMappingDecision('${mappingId}', 'approve')" title="Approve mapping" style="padding: 4px 8px;">
-                                    <i class="fas fa-check" style="font-size: 12px;"></i>
-                                </button>
-                                <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject mapping" style="padding: 4px 8px;">
-                                    <i class="fas fa-times" style="font-size: 12px;"></i>
-                                </button>
+                                ${isApproved ? `
+                                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unapprove')" title="Unapprove mapping" style="padding: 4px 8px;">
+                                        <i class="fas fa-undo" style="font-size: 12px;"></i>
+                                    </button>
+                                ` : `
+                                    <button class="button button-sm button-success" onclick="updateMappingDecision('${mappingId}', 'approve')" title="Approve mapping" style="padding: 4px 8px;">
+                                        <i class="fas fa-check" style="font-size: 12px;"></i>
+                                    </button>
+                                    <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject mapping" style="padding: 4px 8px;">
+                                        <i class="fas fa-times" style="font-size: 12px;"></i>
+                                    </button>
+                                `}
                                 <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
                                     <i class="fas fa-info-circle" style="font-size: 12px;"></i>
                                 </button>
@@ -2475,8 +2504,23 @@ window.addEventListener('DOMContentLoaded', function() {
                                     <i class="fas fa-chart-bar"></i> <strong>Confidence:</strong> 
                                     <span class="confidence-inline ${confidenceClass}">${confidencePercent}%</span>
                                 </span>
+                                ${isApproved && state.timestamp_reviewed ? `
+                                    <span class="meta-separator">•</span>
+                                    <span class="meta-item-inline">
+                                        <i class="fas fa-clock"></i> <strong>Approved:</strong> ${new Date(state.timestamp_reviewed).toLocaleDateString()}
+                                    </span>
+                                ` : ''}
                             </div>
                             ${flagBadges ? `<div class="mapping-flags">${flagBadges}</div>` : ''}
+                            ${state.validation_notes ? `
+                                <div class="mapping-notes">
+                                    <div class="notes-header">
+                                        <i class="fas fa-sticky-note"></i>
+                                        <strong>Validation Notes:</strong>
+                                    </div>
+                                    <div class="notes-content">${state.validation_notes}</div>
+                                </div>
+                            ` : ''}
                             ${mapping.components?.reasoning ? `
                                 <div class="mapping-reasoning">
                                     <div class="reasoning-header">
@@ -2953,15 +2997,34 @@ Ctrl+Z - Undo last action`);
                 approve: { border: '3px solid #4caf50', bg: '#e8f5e8' },
                 reject: { border: '3px solid #f44336', bg: '#ffebee' },
                 modify: { border: '3px solid #ff9800', bg: '#fff8e1' },
-                skip: { border: '3px solid #9c27b0', bg: '#f3e5f5' }
+                skip: { border: '3px solid #9c27b0', bg: '#f3e5f5' },
+                unapprove: { border: '', bg: '' } // Reset to default for unapprove
             };
+            
             if (styles[decision]) {
                 mappingElement.style.borderLeft = styles[decision].border;
                 mappingElement.style.background = styles[decision].bg;
+                
+                // Remove status-specific classes and add new ones
+                mappingElement.classList.remove('mapping-approved', 'mapping-rejected');
+                if (decision === 'approve') {
+                    mappingElement.classList.add('mapping-approved');
+                } else if (decision === 'reject') {
+                    mappingElement.classList.add('mapping-rejected');
+                } else if (decision === 'unapprove') {
+                    // For unapprove, refresh the entire validation interface to update UI
+                    if (window.currentValidationState && window.currentConsolidatedGroups) {
+                        const validationInterface = document.getElementById('validationInterface');
+                        if (validationInterface) {
+                            window.loadValidationInterface(window.currentValidationState);
+                        }
+                    }
+                }
             }
         }
         
-        statusManager.show(`✅ Mapping ${decision}d`, 'success', 1500);
+        const actionText = decision === 'unapprove' ? 'unapproved' : `${decision}d`;
+        statusManager.show(`✅ Mapping ${actionText}`, 'success', 1500);
     }
     
     window.showMappingDetails = function(mappingId) {
@@ -3337,6 +3400,124 @@ window.loadMockValidationData = function() {
         }
     };
     
+    // Demo function to test approval state fix
+    window.demoApprovalStateFix = function() {
+        console.log('🧪 Starting demo of approval state fix');
+        
+        // Create test validation state with both approved and pending mappings
+        const mockValidationState = {
+            "test_approved_123": {
+                "unique_mapping_id": "test_approved_123",
+                "original_mapping": {
+                    "data_source": "Central-Philips",
+                    "modality_code": "Mamm", 
+                    "exam_code": "BBMA",
+                    "exam_name": "BR Bilateral Mammogram",
+                    "clean_name": "MG Mammogram Both",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Bilateral mammography (procedure)",
+                        "id": 43204002
+                    },
+                    "components": {
+                        "anatomy": ["breast"],
+                        "laterality": ["bilateral"],
+                        "confidence": 0.85
+                    }
+                },
+                "validation_status": "approved",
+                "validator_decision": "approve",
+                "validation_notes": "Previously approved - mapping is correct and complete",
+                "needs_attention_flags": ["singleton_mapping"],
+                "timestamp_created": "2025-08-06T08:42:22.345330+00:00",
+                "timestamp_reviewed": "2025-08-06T08:51:39.571716Z"
+            },
+            "test_pending_456": {
+                "unique_mapping_id": "test_pending_456",
+                "original_mapping": {
+                    "data_source": "Central-PACS",
+                    "modality_code": "CT",
+                    "exam_code": "CTCH",
+                    "exam_name": "CT Chest with Contrast",
+                    "clean_name": "CT Chest Contrast",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Computed tomography of chest with contrast",
+                        "id": 169070004
+                    },
+                    "components": {
+                        "anatomy": ["chest"],
+                        "contrast": ["with contrast"],
+                        "confidence": 0.72
+                    }
+                },
+                "validation_status": "pending_review",
+                "validator_decision": null,
+                "validation_notes": null,
+                "needs_attention_flags": ["low_confidence"],
+                "timestamp_created": "2025-01-14T10:30:00.000Z",
+                "timestamp_reviewed": null
+            },
+            "test_pending_789": {
+                "unique_mapping_id": "test_pending_789",
+                "original_mapping": {
+                    "data_source": "Regional-GE",
+                    "modality_code": "MR",
+                    "exam_code": "MRBR",
+                    "exam_name": "MR Brain without Contrast",
+                    "clean_name": "MR Brain",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Magnetic resonance imaging of brain",
+                        "id": 698354004
+                    },
+                    "components": {
+                        "anatomy": ["brain"],
+                        "confidence": 0.92
+                    }
+                },
+                "validation_status": "pending_review",
+                "validator_decision": null,
+                "validation_notes": null,
+                "needs_attention_flags": [],
+                "timestamp_created": "2025-01-14T10:30:00.000Z",
+                "timestamp_reviewed": null
+            }
+        };
+
+        // Hide homepage sections and show validation interface
+        const workflowSection = document.getElementById('workflowSection');
+        const validationSection = document.getElementById('validationSection');
+        const resultsSection = document.getElementById('resultsSection');
+        
+        if (workflowSection) workflowSection.style.display = 'none';
+        if (resultsSection) resultsSection.style.display = 'none';
+        if (validationSection) {
+            validationSection.classList.remove('hidden');
+            validationSection.style.display = 'block';
+        }
+
+        // Load the validation interface with mock data
+        window.loadValidationInterface(mockValidationState);
+        
+        // Show the validation interface
+        const validationInterface = document.getElementById('validationInterface');
+        if (validationInterface) {
+            validationInterface.classList.remove('hidden');
+            validationInterface.style.display = 'block';
+        }
+        
+        statusManager.show('🧪 Demo loaded! Notice the approved mapping shows with green badge and approval date', 'info', 5000);
+    };
+
+    // Add event listener for demo button
+    document.addEventListener('DOMContentLoaded', function() {
+        const demoBtn = document.getElementById('demoValidationBtn');
+        if (demoBtn) {
+            demoBtn.addEventListener('click', window.demoApprovalStateFix);
+        }
+    });
+
     // Load the validation interface with mock data
     loadValidationInterface(mockValidationState);
     

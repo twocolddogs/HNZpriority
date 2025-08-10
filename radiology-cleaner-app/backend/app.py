@@ -1956,6 +1956,7 @@ def initialize_validation():
     """
     Initialize validation state from export mappings.
     Takes array of mapping objects and creates validation state.
+    Merges with existing approved mappings cache to maintain approval state.
     """
     try:
         data = request.get_json()
@@ -1968,14 +1969,42 @@ def initialize_validation():
             
         logger.info(f"Initializing validation for {len(mappings)} mappings")
         
-        # Transform mappings into validation state (similar to frontend logic)
+        # Load existing approved mappings cache
+        approved_cache = {}
+        try:
+            approved_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/approved_mappings_cache.json"
+            import requests
+            response = requests.get(approved_url, timeout=10)
+            if response.status_code == 200:
+                approved_data = response.json()
+                
+                # Handle both legacy flat structure and new entries structure
+                if 'entries' in approved_data and isinstance(approved_data['entries'], dict):
+                    approved_cache = approved_data['entries']
+                else:
+                    # Legacy flat structure - filter out meta keys
+                    approved_cache = {k: v for k, v in approved_data.items() 
+                                    if k not in ('meta', 'entries') and isinstance(v, dict)}
+                
+                logger.info(f"Loaded {len(approved_cache)} approved mappings from cache")
+            else:
+                logger.warning(f"Could not load approved cache: HTTP {response.status_code}")
+        except Exception as e:
+            logger.warning(f"Failed to load approved mappings cache: {e}")
+        
+        # Transform mappings into validation state
         validation_state = {}
         timestamp = datetime.utcnow().isoformat() + 'Z'
+        approved_count = 0
         
         for mapping in mappings:
-            # Generate mapping ID
-            key_string = f"{mapping.get('data_source', '')}-{mapping.get('exam_code', '')}-{mapping.get('exam_name', '')}-{mapping.get('clean_name', '')}"
-            mapping_id = key_string.replace(' ', '_').replace('/', '_')[:32]
+            # Generate mapping ID using the same hash function as batch decisions
+            req_hash, _ = compute_request_hash_with_preimage(
+                mapping.get('data_source', ''),
+                mapping.get('exam_code', ''),
+                mapping.get('exam_name', ''),
+                mapping.get('modality_code')
+            )
             
             # Apply attention flags
             flags = []
@@ -1998,18 +2027,36 @@ def initialize_validation():
             if mapping.get('secondary_pipeline_applied', False):
                 flags.append('secondary_pipeline')
             
-            validation_state[mapping_id] = {
-                'unique_mapping_id': mapping_id,
-                'original_mapping': mapping,
-                'validation_status': 'pending_review',
-                'validator_decision': None,
-                'validation_notes': None,
-                'needs_attention_flags': flags,
-                'timestamp_created': timestamp,
-                'timestamp_reviewed': None
-            }
+            # Check if this mapping is already approved
+            is_approved = req_hash in approved_cache
+            approved_entry = approved_cache.get(req_hash) if is_approved else None
+            
+            if is_approved:
+                approved_count += 1
+                validation_state[req_hash] = {
+                    'unique_mapping_id': req_hash,
+                    'original_mapping': mapping,
+                    'validation_status': 'approved',
+                    'validator_decision': 'approve',
+                    'validation_notes': approved_entry.get('validation_notes', ''),
+                    'needs_attention_flags': flags,
+                    'timestamp_created': timestamp,
+                    'timestamp_reviewed': approved_entry.get('approved_at', timestamp)
+                }
+                logger.debug(f"Merged approved mapping: {mapping.get('exam_name', 'Unknown')}")
+            else:
+                validation_state[req_hash] = {
+                    'unique_mapping_id': req_hash,
+                    'original_mapping': mapping,
+                    'validation_status': 'pending_review',
+                    'validator_decision': None,
+                    'validation_notes': None,
+                    'needs_attention_flags': flags,
+                    'timestamp_created': timestamp,
+                    'timestamp_reviewed': None
+                }
         
-        logger.info(f"Created validation state for {len(validation_state)} mappings")
+        logger.info(f"Created validation state for {len(validation_state)} mappings ({approved_count} already approved)")
         
         return jsonify({
             'success': True,
@@ -2017,6 +2064,8 @@ def initialize_validation():
             'validation_state': validation_state,
             'summary': {
                 'total_mappings': len(validation_state),
+                'approved_mappings': approved_count,
+                'pending_mappings': len(validation_state) - approved_count,
                 'flagged_mappings': len([v for v in validation_state.values() if v['needs_attention_flags']]),
                 'timestamp': timestamp
             }
