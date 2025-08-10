@@ -547,7 +547,7 @@ class NHSLookupEngine:
         
         # ### NEW LOGIC START ###
         # Check for the "clinically invalid" signal from the reranker (all scores are 0.0)
-        is_clinically_invalid = all(score == 0.0 for score in rerank_scores)
+        is_clinically_invalid = rerank_scores and all(score == 0.0 for score in rerank_scores)
 
         if is_clinically_invalid:
             logger.warning(f"[V4-PIPELINE] Input exam '{input_exam}' was flagged as clinically invalid by the reranker. Aborting match.")
