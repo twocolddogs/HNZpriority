@@ -3396,6 +3396,124 @@ window.loadMockValidationData = function() {
         }
     };
     
+    // Demo function to test approval state fix
+    window.demoApprovalStateFix = function() {
+        console.log('🧪 Starting demo of approval state fix');
+        
+        // Create test validation state with both approved and pending mappings
+        const mockValidationState = {
+            "test_approved_123": {
+                "unique_mapping_id": "test_approved_123",
+                "original_mapping": {
+                    "data_source": "Central-Philips",
+                    "modality_code": "Mamm", 
+                    "exam_code": "BBMA",
+                    "exam_name": "BR Bilateral Mammogram",
+                    "clean_name": "MG Mammogram Both",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Bilateral mammography (procedure)",
+                        "id": 43204002
+                    },
+                    "components": {
+                        "anatomy": ["breast"],
+                        "laterality": ["bilateral"],
+                        "confidence": 0.85
+                    }
+                },
+                "validation_status": "approved",
+                "validator_decision": "approve",
+                "validation_notes": "Previously approved - mapping is correct and complete",
+                "needs_attention_flags": ["singleton_mapping"],
+                "timestamp_created": "2025-08-06T08:42:22.345330+00:00",
+                "timestamp_reviewed": "2025-08-06T08:51:39.571716Z"
+            },
+            "test_pending_456": {
+                "unique_mapping_id": "test_pending_456",
+                "original_mapping": {
+                    "data_source": "Central-PACS",
+                    "modality_code": "CT",
+                    "exam_code": "CTCH",
+                    "exam_name": "CT Chest with Contrast",
+                    "clean_name": "CT Chest Contrast",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Computed tomography of chest with contrast",
+                        "id": 169070004
+                    },
+                    "components": {
+                        "anatomy": ["chest"],
+                        "contrast": ["with contrast"],
+                        "confidence": 0.72
+                    }
+                },
+                "validation_status": "pending_review",
+                "validator_decision": null,
+                "validation_notes": null,
+                "needs_attention_flags": ["low_confidence"],
+                "timestamp_created": "2025-01-14T10:30:00.000Z",
+                "timestamp_reviewed": null
+            },
+            "test_pending_789": {
+                "unique_mapping_id": "test_pending_789",
+                "original_mapping": {
+                    "data_source": "Regional-GE",
+                    "modality_code": "MR",
+                    "exam_code": "MRBR",
+                    "exam_name": "MR Brain without Contrast",
+                    "clean_name": "MR Brain",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Magnetic resonance imaging of brain",
+                        "id": 698354004
+                    },
+                    "components": {
+                        "anatomy": ["brain"],
+                        "confidence": 0.92
+                    }
+                },
+                "validation_status": "pending_review",
+                "validator_decision": null,
+                "validation_notes": null,
+                "needs_attention_flags": [],
+                "timestamp_created": "2025-01-14T10:30:00.000Z",
+                "timestamp_reviewed": null
+            }
+        };
+
+        // Hide homepage sections and show validation interface
+        const workflowSection = document.getElementById('workflowSection');
+        const validationSection = document.getElementById('validationSection');
+        const resultsSection = document.getElementById('resultsSection');
+        
+        if (workflowSection) workflowSection.style.display = 'none';
+        if (resultsSection) resultsSection.style.display = 'none';
+        if (validationSection) {
+            validationSection.classList.remove('hidden');
+            validationSection.style.display = 'block';
+        }
+
+        // Load the validation interface with mock data
+        window.loadValidationInterface(mockValidationState);
+        
+        // Show the validation interface
+        const validationInterface = document.getElementById('validationInterface');
+        if (validationInterface) {
+            validationInterface.classList.remove('hidden');
+            validationInterface.style.display = 'block';
+        }
+        
+        statusManager.show('🧪 Demo loaded! Notice the approved mapping shows with green badge and approval date', 'info', 5000);
+    };
+
+    // Add event listener for demo button
+    document.addEventListener('DOMContentLoaded', function() {
+        const demoBtn = document.getElementById('demoValidationBtn');
+        if (demoBtn) {
+            demoBtn.addEventListener('click', window.demoApprovalStateFix);
+        }
+    });
+
     // Load the validation interface with mock data
     loadValidationInterface(mockValidationState);
     
