@@ -329,7 +329,7 @@ def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_proce
     
     # Wrap the entire processing logic in a try...except block to prevent crashes from returning malformed data
     try:
-        nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key)
+        nhs_result = lookup_engine_to_use.standardize_exam(cleaned_exam_name, parsed_input_components, is_input_simple=is_input_simple, debug=debug, reranker_key=reranker_key, data_source=data_source, exam_code=exam_code)
 
         # =============================================================================
         # ### START OF REFACTORED SECONDARY PIPELINE LOGIC ###
@@ -634,6 +634,42 @@ def reload_config():
     except Exception as e:
         logger.error(f"Config reload endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Failed to reload configuration"}), 500
+
+@app.route('/admin/reload-validation-cache', methods=['POST'])
+def reload_validation_cache():
+    """
+    Admin endpoint to reload validation caches from R2 cloud storage.
+    
+    This allows administrators to refresh validation caches after updating
+    the validation files in R2 without restarting the backend service.
+    
+    Returns:
+        JSON response with detailed statistics and status
+    """
+    try:
+        if not nhs_lookup_engine:
+            return jsonify({
+                'status': 'error',
+                'error': 'NHS lookup engine not available',
+                'timestamp': time.time()
+            }), 500
+        
+        # Call the reload method on the NHS lookup engine
+        result = nhs_lookup_engine.reload_validation_caches()
+        
+        # Return appropriate HTTP status code based on result
+        if result.get('status') == 'success':
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Failed to reload validation cache via admin endpoint: {e}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': time.time()
+        }), 500
 
 @app.route('/config/status', methods=['GET'])
 def config_status():
@@ -1307,61 +1343,6 @@ def get_batch_progress(batch_id):
         logger.error(f"Error fetching batch progress: {e}")
         return jsonify({"error": "Failed to fetch progress"}), 500
 
-@app.route('/process_sanity_test', methods=['POST'])
-def process_sanity_test_endpoint():
-    """
-    Processes the entire sanity_test.json file using a user-specified model.
-    """
-    _ensure_app_is_initialized()
-    start_time = time.time()
-    
-    try:
-        data = request.json or {}
-        model_key = data.get('model', 'retriever')
-        reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
-        
-        logger.info(f"Processing sanity_test.json using model: '{model_key}', reranker: '{reranker_key}'")
-        selected_nlp_processor = _get_nlp_processor(model_key)
-        if not selected_nlp_processor:
-            return jsonify({"error": f"Model '{model_key}' not available"}), 400
-
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        sanity_test_path = os.path.join(base_dir, 'core', 'sanity_test.json')
-        
-        with open(sanity_test_path, 'r', encoding='utf-8') as f:
-            sanity_data = json.load(f)
-
-        total_exams = len(sanity_data)
-        logger.info(f"Starting sanity test processing for {total_exams} exams")
-        results = []
-        processed_count = 0
-        
-        for i, exam in enumerate(sanity_data):
-            exam_name = exam.get("EXAM_NAME")
-            modality_code = exam.get("MODALITY_CODE")
-            
-            if exam_name:
-                data_source = exam.get("DATA_SOURCE")
-                exam_code = exam.get("EXAM_CODE")
-                processed_result = process_exam_request(exam_name, modality_code, selected_nlp_processor, False, reranker_key, data_source, exam_code)
-                results.append(processed_result)
-                processed_count += 1
-                
-                if (i + 1) % 25 == 0 or (i + 1) == total_exams:
-                    progress_pct = ((i + 1) / total_exams) * 100
-                    elapsed_time = time.time() - start_time
-                    logger.info(f"Sanity test progress: {i + 1}/{total_exams} ({progress_pct:.1f}%) - Elapsed: {elapsed_time:.1f}s")
-        
-        processing_time_ms = int((time.time() - start_time) * 1000)
-        logger.info(f"Sanity test processing complete in {processing_time_ms}ms. Processed: {processed_count}/{total_exams} exams")
-        
-        return jsonify(results)
-
-    except FileNotFoundError:
-        return jsonify({"error": "sanity_test.json not found"}), 404
-    except Exception as e:
-        logger.error(f"Error processing sanity test: {e}", exc_info=True)
-        return jsonify({"error": "Internal Server Error"}), 500
 
 @app.route('/load_batch_chunk/<filename>', methods=['GET'])
 def load_batch_chunk(filename):
@@ -1515,10 +1496,10 @@ def list_batch_results():
         logger.error(f"Error listing batch results: {e}", exc_info=True)
         return jsonify({"error": "Failed to list batch results"}), 500
 
-@app.route('/demo_random_sample', methods=['POST'])
-def demo_random_sample():
+@app.route('/random_sample', methods=['POST'])
+def random_sample():
     """
-    Demo endpoint that downloads hnz_hdp_json from R2, takes a random sample of 100 codes,
+    Random sample endpoint that downloads hnz_hdp_json from R2, takes a random sample of codes,
     and passes them to the batch processing endpoint.
     """
     _ensure_app_is_initialized()
@@ -1539,7 +1520,7 @@ def demo_random_sample():
         except (ValueError, TypeError):
             return jsonify({"error": "Sample size must be a valid integer"}), 400
         
-        logger.info(f"Starting demo random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}, sample_size: {sample_size}")
+        logger.info(f"Starting random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}, sample_size: {sample_size}")
         
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
@@ -1632,8 +1613,8 @@ def demo_random_sample():
         return _process_batch(batch_payload, start_time)
 
     except Exception as e:
-        logger.error(f"Demo random sample endpoint error: {e}", exc_info=True)
-        return jsonify({"error": f"Demo failed: {str(e)}"}), 500
+        logger.error(f"Random sample endpoint error: {e}", exc_info=True)
+        return jsonify({"error": f"Random sample failed: {str(e)}"}), 500
 
 # =============================================================================
 # SECONDARY PIPELINE ROUTES
@@ -1697,6 +1678,413 @@ def test_secondary_pipeline():
     except Exception as e:
         logger.error(f"Secondary pipeline test error: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+# =============================================================================
+# VALIDATION API ENDPOINTS
+# =============================================================================
+# Human-in-the-Loop validation system endpoints for reviewing and correcting
+# mapping decisions from the radiology cleaner pipeline
+
+@app.route('/validation/initialize', methods=['POST'])
+def initialize_validation():
+    """
+    Initialize validation state from export mappings.
+    Takes array of mapping objects and creates validation state.
+    """
+    try:
+        data = request.get_json()
+        if not data or 'mappings' not in data:
+            return jsonify({'error': 'Missing mappings data'}), 400
+            
+        mappings = data['mappings']
+        if not isinstance(mappings, list):
+            return jsonify({'error': 'Mappings must be an array'}), 400
+            
+        logger.info(f"Initializing validation for {len(mappings)} mappings")
+        
+        # Transform mappings into validation state (similar to frontend logic)
+        validation_state = {}
+        timestamp = datetime.utcnow().isoformat() + 'Z'
+        
+        for mapping in mappings:
+            # Generate mapping ID
+            key_string = f"{mapping.get('data_source', '')}-{mapping.get('exam_code', '')}-{mapping.get('exam_name', '')}-{mapping.get('clean_name', '')}"
+            mapping_id = key_string.replace(' ', '_').replace('/', '_')[:32]
+            
+            # Apply attention flags
+            flags = []
+            confidence = mapping.get('components', {}).get('confidence', 0)
+            
+            if confidence < 0.85:
+                flags.append('low_confidence')
+            if mapping.get('ambiguous', False):
+                flags.append('ambiguous')
+                
+            candidates = mapping.get('all_candidates', [])
+            if len(candidates) == 1:
+                flags.append('singleton_mapping')
+            elif len(candidates) > 1:
+                top_conf = candidates[0].get('confidence', 0)
+                second_conf = candidates[1].get('confidence', 0)
+                if top_conf - second_conf > 0.15:
+                    flags.append('high_confidence_gap')
+                    
+            if mapping.get('secondary_pipeline_applied', False):
+                flags.append('secondary_pipeline')
+            
+            validation_state[mapping_id] = {
+                'unique_mapping_id': mapping_id,
+                'original_mapping': mapping,
+                'validation_status': 'pending_review',
+                'validator_decision': None,
+                'validation_notes': None,
+                'needs_attention_flags': flags,
+                'timestamp_created': timestamp,
+                'timestamp_reviewed': None
+            }
+        
+        logger.info(f"Created validation state for {len(validation_state)} mappings")
+        
+        return jsonify({
+            'success': True,
+            'mapping_count': len(validation_state),
+            'validation_state': validation_state,
+            'summary': {
+                'total_mappings': len(validation_state),
+                'flagged_mappings': len([v for v in validation_state.values() if v['needs_attention_flags']]),
+                'timestamp': timestamp
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize validation: {e}")
+        return jsonify({'error': f'Validation initialization failed: {str(e)}'}), 500
+
+
+@app.route('/validation/decision', methods=['POST'])
+def submit_validation_decision():
+    """
+    Submit a validation decision for a specific mapping.
+    Updates the validation state with reviewer decision and notes.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Missing request data'}), 400
+            
+        mapping_id = data.get('mapping_id')
+        decision = data.get('decision')  # 'approve', 'reject', 'modify'
+        notes = data.get('notes', '')
+        corrected_mapping = data.get('corrected_mapping')  # For 'modify' decisions
+        
+        if not mapping_id or not decision:
+            return jsonify({'error': 'Missing mapping_id or decision'}), 400
+            
+        if decision not in ['approve', 'reject', 'modify']:
+            return jsonify({'error': 'Invalid decision type'}), 400
+            
+        logger.info(f"Processing validation decision: {decision} for mapping {mapping_id}")
+        
+        # In a real implementation, this would update a database or validation store
+        # For now, return success with the decision data
+        validation_decision = {
+            'mapping_id': mapping_id,
+            'decision': decision,
+            'notes': notes,
+            'timestamp_reviewed': datetime.utcnow().isoformat() + 'Z',
+            'validation_status': 'reviewed' if decision == 'approve' else 'needs_correction'
+        }
+        
+        if decision == 'modify' and corrected_mapping:
+            validation_decision['corrected_mapping'] = corrected_mapping
+            
+        return jsonify({
+            'success': True,
+            'validation_decision': validation_decision,
+            'message': f'Decision "{decision}" recorded for mapping {mapping_id}'
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to submit validation decision: {e}")
+        return jsonify({'error': f'Decision submission failed: {str(e)}'}), 500
+
+
+@app.route('/validation/batch_decisions', methods=['POST'])
+def submit_batch_validation_decisions():
+    """
+    Submit multiple validation decisions in a single request.
+    Accepts array of decision objects and saves them to R2 validation caches.
+    """
+    try:
+        data = request.get_json()
+        if not data or 'decisions' not in data:
+            return jsonify({'error': 'Missing decisions data'}), 400
+            
+        decisions = data['decisions']
+        if not isinstance(decisions, list):
+            return jsonify({'error': 'Decisions must be an array'}), 400
+            
+        logger.info(f"Processing batch validation decisions: {len(decisions)} decisions")
+        
+        # Import R2CacheManager for saving validation caches
+        from r2_cache_manager import R2CacheManager
+        r2_manager = R2CacheManager()
+        
+        if not r2_manager.is_available():
+            logger.error("R2CacheManager not available - validation decisions cannot be saved")
+            return jsonify({'error': 'R2 storage not available - decisions cannot be persisted'}), 500
+        
+        processed_decisions = []
+        approved_mappings = []
+        rejected_mappings = []
+        errors = []
+        
+        for decision_data in decisions:
+            try:
+                mapping_id = decision_data.get('mapping_id')
+                decision = decision_data.get('decision')
+                notes = decision_data.get('notes', '')
+                
+                if not mapping_id or not decision:
+                    errors.append(f'Invalid decision data: missing mapping_id or decision')
+                    continue
+                    
+                processed_decision = {
+                    'mapping_id': mapping_id,
+                    'decision': decision,
+                    'notes': notes,
+                    'timestamp_reviewed': datetime.utcnow().isoformat() + 'Z',
+                    'original_mapping': decision_data.get('original_mapping', {}),
+                    'data_source': decision_data.get('data_source', ''),
+                    'exam_code': decision_data.get('exam_code', ''),
+                    'exam_name': decision_data.get('exam_name', '')
+                }
+                
+                processed_decisions.append(processed_decision)
+                
+                # Categorize decisions for R2 storage
+                if decision == 'approve':
+                    approved_mappings.append(processed_decision)
+                elif decision == 'reject':
+                    rejected_mappings.append(processed_decision)
+                
+            except Exception as e:
+                errors.append(f'Error processing decision: {str(e)}')
+        
+        # Save validation decisions to R2 cloud storage
+        r2_success = True
+        cache_reload_success = True
+        
+        # Add detailed logging for R2 operations
+        logger.info(f"Starting R2 save process: {len(approved_mappings)} approved, {len(rejected_mappings)} rejected mappings")
+        logger.info(f"R2 manager available: {r2_manager.is_available()}")
+        
+        try:
+            import json
+            
+            # Load existing approved mappings from R2 and merge with new ones
+            if approved_mappings:
+                existing_approved_dict = {}
+                try:
+                    import requests
+                    approved_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/approved_mappings_cache.json"
+                    response = requests.get(approved_url, timeout=10)
+                    if response.status_code == 200:
+                        existing_approved_dict = response.json()
+                        logger.info(f"Loaded {len(existing_approved_dict)} existing approved mappings from R2")
+                except Exception as e:
+                    logger.warning(f"Could not load existing approved mappings: {e}")
+                
+                # Convert approved mappings to hash-keyed format for NHS engine compatibility
+                for decision in approved_mappings:
+                    mapping_id = decision['mapping_id']
+                    existing_approved_dict[mapping_id] = {
+                        'mapping_data': decision['original_mapping'],
+                        'validation_notes': decision.get('notes', ''),
+                        'approved_at': decision['timestamp_reviewed'],
+                        'decision_metadata': {
+                            'data_source': decision.get('data_source', ''),
+                            'exam_code': decision.get('exam_code', ''),
+                            'exam_name': decision.get('exam_name', '')
+                        }
+                    }
+                
+                approved_json = json.dumps(existing_approved_dict, indent=2)
+                
+                logger.info(f"Attempting to upload approved mappings: {len(approved_json)} bytes")
+                logger.info(f"R2 bucket: {r2_manager.bucket_name}, endpoint: {r2_manager.endpoint_url}")
+                
+                success = r2_manager.upload_object(
+                    object_key='validation/approved_mappings_cache.json',
+                    data=approved_json.encode('utf-8'),
+                    content_type='application/json',
+                    cors_headers=True
+                )
+                
+                if success:
+                    logger.info(f"Successfully saved {len(approved_mappings)} new approved mappings to R2 (total: {len(existing_approved_dict)})")
+                else:
+                    r2_success = False
+                    logger.error("Failed to save approved mappings to R2 - upload_object returned False")
+            
+            # Load existing rejected mappings from R2 and merge with new ones
+            if rejected_mappings:
+                existing_rejected_dict = {}
+                try:
+                    rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/rejected_mappings.json"
+                    response = requests.get(rejected_url, timeout=10)
+                    if response.status_code == 200:
+                        existing_rejected_dict = response.json()
+                        logger.info(f"Loaded {len(existing_rejected_dict)} existing rejected mappings from R2")
+                except Exception as e:
+                    logger.warning(f"Could not load existing rejected mappings: {e}")
+                
+                # Convert rejected mappings to hash-keyed format for NHS engine compatibility
+                for decision in rejected_mappings:
+                    mapping_id = decision['mapping_id']
+                    # Extract SNOMED IDs from the original mapping for rejection tracking
+                    original_mapping = decision.get('original_mapping', {})
+                    snomed_data = original_mapping.get('snomed', {})
+                    snomed_ids = []
+                    if snomed_data.get('concept_id'):
+                        snomed_ids.append(snomed_data['concept_id'])
+                    
+                    existing_rejected_dict[mapping_id] = {
+                        'rejected_snomed_ids': snomed_ids,
+                        'rejection_reason': decision.get('notes', ''),
+                        'rejected_at': decision['timestamp_reviewed'],
+                        'decision_metadata': {
+                            'data_source': decision.get('data_source', ''),
+                            'exam_code': decision.get('exam_code', ''),
+                            'exam_name': decision.get('exam_name', '')
+                        }
+                    }
+                
+                rejected_json = json.dumps(existing_rejected_dict, indent=2)
+                
+                logger.info(f"Attempting to upload rejected mappings: {len(rejected_json)} bytes")
+                
+                success = r2_manager.upload_object(
+                    object_key='validation/rejected_mappings.json',
+                    data=rejected_json.encode('utf-8'),
+                    content_type='application/json',
+                    cors_headers=True
+                )
+                
+                if success:
+                    logger.info(f"Successfully saved {len(rejected_mappings)} new rejected mappings to R2 (total: {len(existing_rejected_dict)})")
+                else:
+                    r2_success = False
+                    logger.error("Failed to save rejected mappings to R2 - upload_object returned False")
+            
+        except Exception as e:
+            r2_success = False
+            logger.error(f"Exception saving validation caches to R2: {e}")
+            logger.error(f"Exception details: {type(e).__name__}: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+        
+        # Trigger cache reload in NHS lookup engine
+        try:
+            if nhs_lookup_engine and r2_success:
+                reload_result = nhs_lookup_engine.reload_validation_caches()
+                if reload_result.get('status') != 'success':
+                    cache_reload_success = False
+                    logger.error(f"Failed to reload validation caches: {reload_result}")
+                else:
+                    logger.info("Successfully reloaded validation caches in NHS lookup engine")
+        except Exception as e:
+            cache_reload_success = False
+            logger.error(f"Exception reloading validation caches: {e}")
+        
+        # Prepare response - fail if R2 storage fails since decisions must persist
+        response_data = {
+            'success': r2_success,  # Only successful if R2 storage succeeded
+            'processed_count': len(processed_decisions),
+            'approved_count': len(approved_mappings),
+            'rejected_count': len(rejected_mappings),
+            'error_count': len(errors),
+            'r2_storage_success': r2_success,
+            'cache_reload_success': cache_reload_success,
+            'cache_updated': cache_reload_success,  # For frontend compatibility
+            'decisions': processed_decisions,
+            'errors': errors if errors else None
+        }
+        
+        if not r2_success:
+            response_data['error'] = 'Validation decisions could not be saved to R2 storage - decisions not persisted'
+            logger.error("Validation batch failed: R2 storage unavailable or failed")
+        
+        if not cache_reload_success:
+            response_data['warning'] = 'Cache reload failed - restart may be needed for changes to take effect'
+        
+        # Return appropriate HTTP status code
+        if not r2_success:
+            return jsonify(response_data), 500
+        else:
+            return jsonify(response_data)
+        
+    except Exception as e:
+        logger.error(f"Failed to process batch validation decisions: {e}")
+        return jsonify({'error': f'Batch decision processing failed: {str(e)}'}), 500
+
+
+@app.route('/validation/export', methods=['POST'])
+def export_validation_results():
+    """
+    Export validation results in various formats.
+    Returns validation decisions and approved/rejected mappings.
+    """
+    try:
+        data = request.get_json()
+        validation_state = data.get('validation_state', {}) if data else {}
+        export_format = data.get('format', 'json') if data else 'json'
+        
+        logger.info(f"Exporting validation results in {export_format} format")
+        
+        # Process validation state to create export data
+        export_data = {
+            'export_timestamp': datetime.utcnow().isoformat() + 'Z',
+            'total_mappings': len(validation_state),
+            'approved_mappings': [],
+            'rejected_mappings': [],
+            'modified_mappings': [],
+            'pending_mappings': []
+        }
+        
+        for mapping_id, state in validation_state.items():
+            decision = state.get('validator_decision')
+            if decision == 'approve':
+                export_data['approved_mappings'].append(state)
+            elif decision == 'reject':
+                export_data['rejected_mappings'].append(state)
+            elif decision == 'modify':
+                export_data['modified_mappings'].append(state)
+            else:
+                export_data['pending_mappings'].append(state)
+        
+        # Add summary statistics
+        export_data['summary'] = {
+            'approved_count': len(export_data['approved_mappings']),
+            'rejected_count': len(export_data['rejected_mappings']),
+            'modified_count': len(export_data['modified_mappings']),
+            'pending_count': len(export_data['pending_mappings']),
+            'completion_rate': (len(export_data['approved_mappings']) + 
+                              len(export_data['rejected_mappings']) + 
+                              len(export_data['modified_mappings'])) / len(validation_state) * 100 if validation_state else 0
+        }
+        
+        return jsonify({
+            'success': True,
+            'export_data': export_data,
+            'format': export_format
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to export validation results: {e}")
+        return jsonify({'error': f'Export failed: {str(e)}'}), 500
+
 
 if __name__ == '__main__':
     logger.info("Running in local development mode, initializing app immediately.")
