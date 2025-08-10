@@ -3359,6 +3359,64 @@ a:focus-visible {
   gap: var(--space-2);
 }
 
+/* Status badges for approval state */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  margin-left: var(--space-2);
+}
+
+.status-badge.status-approved {
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+  border: 1px solid var(--color-success);
+}
+
+.status-badge.status-rejected {
+  background: var(--color-danger-light);
+  color: var(--color-danger-dark);
+  border: 1px solid var(--color-danger);
+}
+
+/* Mapping state styling */
+.validation-mapping-item.mapping-approved {
+  border-left: 4px solid var(--color-success);
+  background: var(--color-success-lighter);
+}
+
+.validation-mapping-item.mapping-rejected {
+  border-left: 4px solid var(--color-danger);
+  background: var(--color-danger-lighter);
+}
+
+/* Notes display */
+.mapping-notes {
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-base);
+  padding: var(--space-3);
+}
+
+.notes-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-700);
+}
+
+.notes-content {
+  color: var(--color-gray-600);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
 .mapping-reasoning {
   background: var(--color-blue-50);
   border: 1px solid var(--color-blue-200);
