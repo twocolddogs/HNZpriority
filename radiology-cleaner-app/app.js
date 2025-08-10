@@ -2189,26 +2189,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     <h3 class="validation-title">
                         <i class="fas fa-clipboard-check"></i> Validation Review
                     </h3>
-                    <p class="validation-subtitle">Review ${mappingCount} mappings grouped by NHS reference for efficient validation</p>
-                </div>
-                
-                <div class="validation-stats">
-                    <div class="stat-item stat-total">
-                        <div class="stat-number">${mappingCount}</div>
-                        <div class="stat-label">Total Mappings</div>
-                    </div>
-                    <div class="stat-item stat-groups">
-                        <div class="stat-number">${Object.keys(consolidatedGroups).length}</div>
-                        <div class="stat-label">NHS References</div>
-                    </div>
-                    <div class="stat-item stat-flagged">
-                        <div class="stat-number">${flagCounts.low_confidence}</div>
-                        <div class="stat-label">Low Confidence</div>
-                    </div>
-                    <div class="stat-item stat-ambiguous">
-                        <div class="stat-number">${flagCounts.ambiguous}</div>
-                        <div class="stat-label">Ambiguous</div>
-                    </div>
+                    
                 </div>
                 
                 <div class="validation-controls">
@@ -2220,10 +2201,7 @@ window.addEventListener('DOMContentLoaded', function() {
                             <i class="fas fa-compress-alt"></i> Collapse All
                         </button>
                     </div>
-                    <div class="control-info">
-                        <i class="fas fa-info-circle"></i>
-                        <span><strong>Consolidated View:</strong> Mappings are grouped by NHS reference for bulk approval. Individual mappings can be overridden within each group.</span>
-                    </div>
+                    
                 </div>
             </div>
             
