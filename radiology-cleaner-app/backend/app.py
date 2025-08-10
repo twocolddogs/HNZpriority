@@ -1048,6 +1048,83 @@ def parse_enhanced():
         logger.error(f"Parse enhanced endpoint error: {e}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
+def _perform_preflight_check(exam_dict, model_key, reranker_key, debug=False):
+    """
+    Perform preflight checking for a single exam using validation caches.
+    
+    Args:
+        exam_dict: Dictionary containing exam data (exam_name, modality_code, data_source, exam_code)
+        model_key: Model key for metadata
+        reranker_key: Reranker key for metadata  
+        debug: Whether to enable debug logging
+        
+    Returns:
+        Tuple of (cache_result, is_cache_hit, request_hash)
+        - cache_result: Complete result dict if cache hit, None if no cache hit
+        - is_cache_hit: Boolean indicating if cache was hit
+        - request_hash: The computed request hash for this exam
+    """
+    # Extract exam data with flexible field names
+    exam_name = exam_dict.get("EXAM_NAME") or exam_dict.get("exam_name")
+    modality_code = exam_dict.get("MODALITY_CODE") or exam_dict.get("modality_code")
+    data_source = exam_dict.get("DATA_SOURCE") or exam_dict.get("data_source")
+    exam_code = exam_dict.get("EXAM_CODE") or exam_dict.get("exam_code")
+    
+    if not exam_name:
+        return None, False, None
+        
+    # Compute request hash for preflight checking
+    request_hash, preimage = compute_request_hash_with_preimage(data_source, exam_code, exam_name, modality_code)
+    
+    if debug:
+        logger.info(f"[DEBUG-PREFLIGHT-BATCH] Request hash: {request_hash} for exam: {exam_name}")
+        logger.info(f"[DEBUG-PREFLIGHT-BATCH] Preimage: {preimage}")
+    
+    # Check validation caches
+    cached_approved = None
+    cached_rejected = None
+    if validation_cache_manager and validation_cache_manager.is_available():
+        cached_approved = validation_cache_manager.check_approved(request_hash)
+        cached_rejected = validation_cache_manager.check_rejected(request_hash)
+    
+    # Handle rejected cache (strict skip)
+    if cached_rejected:
+        logger.info(f"[PREFLIGHT-SKIP-BATCH] Request rejected from cache: {request_hash}")
+        result = {
+            'error': 'PREFLIGHT_REJECTED',
+            'message': cached_rejected['reason'],
+            'exam_name': exam_name,
+            'cached_skip': True,
+            'cache_type': 'rejected',
+            'request_hash': request_hash,
+            'metadata': {
+                'processing_time_ms': 0,  # Immediate rejection
+                'model_used': model_key,
+                'reranker_used': reranker_key,
+                'preflight_skipped': True
+            }
+        }
+        return result, True, request_hash
+    
+    # Handle approved cache (return cached result)
+    if cached_approved:
+        logger.info(f"[PREFLIGHT-SKIP-BATCH] Request approved from cache: {request_hash}")
+        result = cached_approved['result'].copy()
+        result['cached_skip'] = True
+        result['cache_type'] = 'approved'
+        result['request_hash'] = request_hash
+        result['metadata'] = {
+            'processing_time_ms': 0,  # Immediate cache hit
+            'model_used': model_key,
+            'reranker_used': reranker_key,
+            'preflight_skipped': True
+        }
+        return result, True, request_hash
+    
+    # No cache hit - return hash for transparent flagging
+    return None, False, request_hash
+
+
 def _process_batch(data, start_time):
     """Helper function to process a batch of exams."""
     if not data or 'exams' not in data:
@@ -1096,6 +1173,8 @@ def _process_batch(data, start_time):
 
     success_count = 0
     error_count = 0
+    cache_hits_count = 0
+    cache_rejects_count = 0
     
     # Pre-load config once for the entire batch to avoid repeated R2 fetches during secondary pipeline processing
     global _batch_preloaded_config
@@ -1127,56 +1206,111 @@ def _process_batch(data, start_time):
         for chunk_idx, chunk in enumerate(chunks):
             logger.info(f"Processing chunk {chunk_idx + 1}/{len(chunks)} ({len(chunk)} exams)")
             
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                future_to_exam = {
-                    executor.submit(
-                        process_exam_request, 
-                        exam.get("EXAM_NAME") or exam.get("exam_name"), 
-                        exam.get("MODALITY_CODE") or exam.get("modality_code"), 
-                        selected_nlp_processor, 
-                        False, 
-                        reranker_key, 
-                        exam.get("DATA_SOURCE") or exam.get("data_source"), 
-                        exam.get("EXAM_CODE") or exam.get("exam_code"),
-                        run_secondary_inline=False
-                    ): exam 
-                    for exam in chunk
-                }
+            # Perform preflight checking for all exams in this chunk
+            cached_results = []
+            exams_for_processing = []
+            exam_hash_map = {}  # Map original exam to its hash for transparent flagging
+            
+            for exam in chunk:
+                cache_result, is_cache_hit, request_hash = _perform_preflight_check(exam, model_key, reranker_key)
                 
-                chunk_completed = 0
-                per_future_timeout = 60
+                if is_cache_hit:
+                    # Handle cache hit immediately
+                    result_entry = {
+                        "input": exam,
+                        "output": cache_result,
+                        "status": "success"
+                    }
+                    cached_results.append(result_entry)
+                    success_count += 1
+                    cache_hits_count += 1
+                    
+                    # Track rejection vs approval caches
+                    if cache_result.get('error') == 'PREFLIGHT_REJECTED':
+                        cache_rejects_count += 1
+                else:
+                    # No cache hit - add to processing queue
+                    exams_for_processing.append(exam)
+                    if request_hash:
+                        exam_hash_map[id(exam)] = request_hash
+            
+            # Write all cached results first
+            for cached_entry in cached_results:
+                f_out.write(json.dumps(cached_entry) + '\n')
+                f_out.flush()
+            
+            logger.info(f"Chunk {chunk_idx + 1}: {len(cached_results)} cache hits, {len(exams_for_processing)} to process")
+            
+            # Only process exams that weren't cached
+            if exams_for_processing:
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    future_to_exam = {
+                        executor.submit(
+                            process_exam_request, 
+                            exam.get("EXAM_NAME") or exam.get("exam_name"), 
+                            exam.get("MODALITY_CODE") or exam.get("modality_code"), 
+                            selected_nlp_processor, 
+                            False, 
+                            reranker_key, 
+                            exam.get("DATA_SOURCE") or exam.get("data_source"), 
+                            exam.get("EXAM_CODE") or exam.get("exam_code"),
+                            run_secondary_inline=False
+                        ): exam 
+                        for exam in exams_for_processing
+                    }
+                    
+                    chunk_completed = 0
+                    per_future_timeout = 60
 
-                for future in as_completed(future_to_exam):
-                    original_exam = future_to_exam[future]
-                    try:
-                        processed_result = future.result(timeout=per_future_timeout)
-                        result_entry = {
-                            "input": original_exam,
-                            "output": processed_result,
-                            "status": "success"
-                        }
-                        f_out.write(json.dumps(result_entry) + '\n')
-                        f_out.flush()
-                        success_count += 1
-                    except Exception as e:
-                        logger.error(f"Error processing exam '{original_exam.get('exam_name')}': {e}", exc_info=True)
-                        error_entry = {
-                            "input": original_exam,
-                            "error": str(e),
-                            "status": "error"
-                        }
-                        f_out.write(json.dumps(error_entry) + '\n')
-                        f_out.flush()
-                        error_count += 1
-                    finally:
-                        chunk_completed += 1
-                        update_progress(success_count + error_count, total_exams, success_count, error_count)
-                
-                logger.info(f"Completed chunk {chunk_idx + 1}/{len(chunks)}: {chunk_completed} exams processed")
-                logger.info(f"Overall progress: {success_count + error_count}/{total_exams} exams processed")
+                    for future in as_completed(future_to_exam):
+                        original_exam = future_to_exam[future]
+                        try:
+                            processed_result = future.result(timeout=per_future_timeout)
+                            
+                            # Add transparent flags for non-cached results
+                            processed_result['cached_skip'] = False
+                            processed_result['cache_type'] = None
+                            request_hash = exam_hash_map.get(id(original_exam))
+                            if request_hash:
+                                processed_result['request_hash'] = request_hash
+                            if 'metadata' not in processed_result:
+                                processed_result['metadata'] = {}
+                            processed_result['metadata']['preflight_skipped'] = False
+                            
+                            result_entry = {
+                                "input": original_exam,
+                                "output": processed_result,
+                                "status": "success"
+                            }
+                            f_out.write(json.dumps(result_entry) + '\n')
+                            f_out.flush()
+                            success_count += 1
+                        except Exception as e:
+                            logger.error(f"Error processing exam '{original_exam.get('exam_name')}': {e}", exc_info=True)
+                            error_entry = {
+                                "input": original_exam,
+                                "error": str(e),
+                                "status": "error"
+                            }
+                            f_out.write(json.dumps(error_entry) + '\n')
+                            f_out.flush()
+                            error_count += 1
+                        finally:
+                            chunk_completed += 1
+                            update_progress(success_count + error_count, total_exams, success_count, error_count)
+            
+            # Update progress for the entire chunk (including cached results)
+            update_progress(success_count + error_count, total_exams, success_count, error_count)
+            
+            logger.info(f"Completed chunk {chunk_idx + 1}/{len(chunks)}: {len(cached_results)} cached, {len(exams_for_processing)} processed")
+            logger.info(f"Overall progress: {success_count + error_count}/{total_exams} exams processed")
 
     processing_time_ms = int((time.time() - start_time) * 1000)
     logger.info(f"Batch processing finished in {processing_time_ms}ms. Success: {success_count}, Errors: {error_count}")
+    logger.info(f"Cache performance: {cache_hits_count} total hits ({cache_rejects_count} rejects, {cache_hits_count - cache_rejects_count} approvals)")
+    
+    cache_hit_rate = (cache_hits_count / total_exams * 100) if total_exams > 0 else 0
+    logger.info(f"Cache hit rate: {cache_hit_rate:.1f}% ({cache_hits_count}/{total_exams})")
     
     try:
         if os.path.exists(progress_filepath):
@@ -1351,7 +1485,12 @@ def _process_batch(data, start_time):
             "processing_time_ms": processing_time_ms,
             "model_used": model_key,
             "reranker_used": reranker_key,
-            "secondary_pipeline_enabled": enable_secondary and SECONDARY_PIPELINE_AVAILABLE and secondary_integration and secondary_integration.is_enabled()
+            "secondary_pipeline_enabled": enable_secondary and SECONDARY_PIPELINE_AVAILABLE and secondary_integration and secondary_integration.is_enabled(),
+            "cache_hits": cache_hits_count,
+            "cache_rejects": cache_rejects_count,
+            "cache_approvals": cache_hits_count - cache_rejects_count,
+            "cache_hit_rate": (cache_hits_count / total_exams * 100) if total_exams > 0 else 0,
+            "preflight_enabled": True
         },
         "secondary_pipeline_summary": "Secondary pipeline processing handled inline per exam" if enable_secondary else None
     }
