@@ -1961,11 +1961,43 @@ window.addEventListener('DOMContentLoaded', function() {
         statusManager.show(`📋 Ready to validate ${allMappings.length} mappings`, 'info', 3000);
     }
     
+    // Helper function to normalize a mapping field for consistent hashing
+    function normalizeMappingKey(mapping) {
+        // Create canonical key string matching backend format: exam_code|exam_name|data_source|clean_name
+        const fields = [
+            (mapping.exam_code || '').toString().trim().toLowerCase(),
+            (mapping.exam_name || '').toString().trim().toLowerCase(),
+            (mapping.data_source || '').toString().trim().toLowerCase(),
+            (mapping.clean_name || '').toString().trim().toLowerCase()
+        ];
+        return fields.join('|');
+    }
+    
+    // Helper function to compute SHA-256 hash using Web Crypto API
+    async function sha256Hex(message) {
+        if (typeof crypto !== 'undefined' && crypto.subtle) {
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(message);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (error) {
+                console.warn('Web Crypto API failed, falling back to legacy method:', error);
+            }
+        } else {
+            console.warn('Web Crypto API not available, falling back to legacy method. Note: IDs may not match cache keys.');
+        }
+        
+        // Fallback to legacy base64/truncated approach to avoid breaking the UI
+        return btoa(message).replace(/[+/=]/g, '').substring(0, 32);
+    }
+    
     // JavaScript equivalent of load_mappings.py functionality
-    function generateMappingId(mapping) {
-        // Create a simple hash based on key mapping properties
-        const keyString = `${mapping.data_source}-${mapping.exam_code}-${mapping.exam_name}-${mapping.clean_name}`;
-        return btoa(keyString).replace(/[+/=]/g, '').substring(0, 32);
+    async function generateMappingId(mapping) {
+        // Generate SHA-256 hex hash matching backend validation cache format
+        const canonicalKey = normalizeMappingKey(mapping);
+        return await sha256Hex(canonicalKey);
     }
     
     function applyAttentionFlags(mapping) {
@@ -2024,7 +2056,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const timestamp = new Date().toISOString();
         
         for (const mapping of unapprovedMappings) {
-            const mappingId = generateMappingId(mapping);
+            const mappingId = await generateMappingId(mapping);
             const flags = applyAttentionFlags(mapping);
             
             validationState[mappingId] = {
