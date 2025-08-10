@@ -1,3 +1,6 @@
 # Backup Files - Do Not Commit
 backupappjs.js
 compare_js.py
+
+# Test files - Do Not Commit
+backend/test_*.py
