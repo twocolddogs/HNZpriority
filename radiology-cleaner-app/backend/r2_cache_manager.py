@@ -6,6 +6,7 @@ import pickle
 import boto3
 import gzip
 import time
+import json
 from botocore.exceptions import ClientError
 from typing import Optional, Dict
 
@@ -130,6 +131,39 @@ class R2CacheManager:
         except ClientError as e:
             logger.error(f"Failed to list R2 objects with prefix '{prefix}': {e}")
             return []
+
+    def fetch_json(self, object_key: str) -> dict:
+        """
+        Fetch and parse JSON data from R2 storage with consistent fallback.
+        
+        Args:
+            object_key: The R2 object key to fetch
+            
+        Returns:
+            dict: Parsed JSON data, or {} if not available or error
+        """
+        if not self.is_available():
+            logger.warning(f"R2 not available, cannot fetch {object_key}")
+            return {}
+        
+        try:
+            response = self.client.get_object(Bucket=self.bucket_name, Key=object_key)
+            content = response['Body'].read().decode('utf-8')
+            data = json.loads(content) if content.strip() else {}
+            logger.info(f"Successfully fetched JSON from R2: {object_key}")
+            return data
+        except ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                logger.info(f"Object not found in R2: {object_key}")
+            else:
+                logger.warning(f"AWS/R2 error fetching {object_key}: {e}")
+            return {}
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            logger.error(f"JSON parsing error for {object_key}: {e}")
+            return {}
+        except Exception as e:
+            logger.error(f"Unexpected error fetching JSON from R2 {object_key}: {e}")
+            return {}
 
     def cleanup_old_caches(self, model_key: str, keep_latest: int = 3):
         """Removes old cache files for a model, keeping only the latest N versions."""
