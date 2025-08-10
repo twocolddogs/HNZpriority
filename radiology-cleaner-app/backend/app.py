@@ -30,6 +30,8 @@ from context_detection import detect_all_contexts
 from preprocessing import initialize_preprocessor, preprocess_exam_name, get_preprocessor
 from cache_version import get_current_cache_version, format_cache_key
 from r2_cache_manager import R2CacheManager
+from validation_cache_manager import ValidationCacheManager
+from common.hash_keys import compute_request_hash_with_preimage
 
 # Secondary Pipeline Integration
 try:
@@ -124,6 +126,7 @@ _app_initialized = False
 db_manager = None
 cache_manager = None
 r2_manager = R2CacheManager()
+validation_cache_manager = None
 
 # Secondary Pipeline Configuration
 app.config.setdefault('OPENROUTER_API_KEY', os.getenv('OPENROUTER_API_KEY'))
@@ -173,7 +176,7 @@ def _get_nlp_processor(model: str = 'retriever') -> Optional[NLPProcessor]:
 
 def _initialize_app():
     """Initializes all application components in the correct dependency order."""
-    global semantic_parser, nlp_processor, model_processors, nhs_lookup_engine, cache_manager, reranker_manager
+    global semantic_parser, nlp_processor, model_processors, nhs_lookup_engine, cache_manager, reranker_manager, validation_cache_manager
     logger.info("--- Performing first-time application initialization... ---")
     start_time = time.time()
     
@@ -285,6 +288,11 @@ def _initialize_app():
     )
     
     nhs_lookup_engine.validate_consistency()
+    
+    # Initialize validation cache manager for preflight checking
+    validation_cache_manager = ValidationCacheManager(r2_manager)
+    logger.info(f"Validation cache manager initialized: {validation_cache_manager.is_available()}")
+    
     logger.info(f"Initialization complete in {time.time() - start_time:.2f} seconds.")
 
 def _ensure_app_is_initialized():
@@ -972,12 +980,66 @@ def parse_enhanced():
         
         logger.info(f"Using model '{model}' for exam: {exam_name}")
         
+        # Perform preflight checking using validation caches
+        request_hash, preimage = compute_request_hash_with_preimage(data_source, exam_code, exam_name, modality_code)
+        
+        if debug:
+            logger.info(f"[DEBUG-PREFLIGHT] Request hash: {request_hash}")
+            logger.info(f"[DEBUG-PREFLIGHT] Preimage: {preimage}")
+        
+        # Check if this request has been cached
+        cached_approved = None
+        cached_rejected = None
+        if validation_cache_manager and validation_cache_manager.is_available():
+            cached_approved = validation_cache_manager.check_approved(request_hash)
+            cached_rejected = validation_cache_manager.check_rejected(request_hash)
+        
+        # Handle rejected cache (strict skip)
+        if cached_rejected:
+            logger.info(f"[PREFLIGHT-SKIP] Request rejected from cache: {request_hash}")
+            result = {
+                'error': 'PREFLIGHT_REJECTED',
+                'message': cached_rejected['reason'],
+                'exam_name': exam_name,
+                'cached_skip': True,
+                'cache_type': 'rejected',
+                'request_hash': request_hash
+            }
+            result['metadata'] = {
+                'processing_time_ms': int((time.time() - start_time) * 1000),
+                'model_used': model,
+                'reranker_used': reranker_key,
+                'preflight_skipped': True
+            }
+            return jsonify(result)
+        
+        # Handle approved cache (return cached result with confidence unchanged)
+        if cached_approved:
+            logger.info(f"[PREFLIGHT-SKIP] Request approved from cache: {request_hash}")
+            result = cached_approved['result'].copy()
+            result['cached_skip'] = True
+            result['cache_type'] = 'approved'
+            result['request_hash'] = request_hash
+            result['metadata'] = {
+                'processing_time_ms': int((time.time() - start_time) * 1000),
+                'model_used': model,
+                'reranker_used': reranker_key,
+                'preflight_skipped': True
+            }
+            return jsonify(result)
+        
         result = process_exam_request(exam_name, modality_code, selected_nlp_processor, debug=debug, reranker_key=reranker_key, data_source=data_source, exam_code=exam_code)
+        
+        # Add transparent flags to indicate this was NOT a cached result
+        result['cached_skip'] = False
+        result['cache_type'] = None
+        result['request_hash'] = request_hash
         
         result['metadata'] = {
             'processing_time_ms': int((time.time() - start_time) * 1000),
             'model_used': model,
-            'reranker_used': reranker_key
+            'reranker_used': reranker_key,
+            'preflight_skipped': False
         }
         
         return jsonify(result)

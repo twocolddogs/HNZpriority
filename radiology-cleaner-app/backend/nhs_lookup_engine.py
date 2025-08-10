@@ -44,6 +44,7 @@ from context_detection import detect_interventional_procedure_terms
 from preprocessing import get_preprocessor
 from complexity import ComplexityScorer
 from r2_cache_manager import R2CacheManager
+from common.hash_keys import compute_request_hash_with_preimage
 
 if TYPE_CHECKING:
     from parser import RadiologySemanticParser
@@ -410,6 +411,17 @@ class NHSLookupEngine:
         """
         if debug:
             logger.info(f"[DEBUG] Debug mode enabled for input: {input_exam}, is_input_simple: {is_input_simple}")
+        
+        # === REQUEST HASH LOGGING ===
+        # Compute canonical hash for consistent logging across components
+        # Extract modality from parsed components or fallback to parsed modality list
+        input_modality = extracted_input_components.get('modality', [])
+        modality_code_for_hash = input_modality[0] if input_modality else None
+        
+        request_hash, preimage = compute_request_hash_with_preimage(data_source, exam_code, input_exam, modality_code_for_hash)
+        if debug:
+            logger.info(f"[DEBUG-HASH] Request hash: {request_hash}")
+            logger.info(f"[DEBUG-HASH] Preimage: {preimage}")
         
         # === VALIDATION ===
         if not self.retriever_processor or not self.retriever_processor.is_available():
