@@ -1944,11 +1944,7 @@ window.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Switch to validation mode
-        const validationCard = document.querySelector('.validation-path');
-        if (validationCard) {
-            validationCard.click();
-        }
+        // Validation pipeline has been deprecated
         
         // Auto-select "Validate Current Results" option
         setTimeout(() => {
@@ -3116,10 +3112,7 @@ Ctrl+Z - Undo last action`);
         
         document.querySelector('.advanced-path')?.addEventListener('click', () => openConfigEditor());
         
-        document.querySelector('.validation-path')?.addEventListener('click', () => {
-            if (buttonsDisabledForLoading) return;
-            selectPath('validation');
-        });
+
         
         document.getElementById('validateCurrentResultsBtn')?.addEventListener('click', handleValidateCurrentResults);
         document.getElementById('uploadValidationFileBtn')?.addEventListener('click', handleUploadValidationFile);
@@ -3164,11 +3157,11 @@ Ctrl+Z - Undo last action`);
                 card?.classList.add('selected');
                 resetWorkflowSteps();
             } else if (path === 'validation') {
+                // Validation pipeline has been deprecated
                 if (validationSection) {
                     validationSection.style.display = 'block';
                     setTimeout(() => validationSection.scrollIntoView({ behavior: 'smooth' }), 100);
                 }
-                document.querySelector('.validation-path')?.classList.add('selected');
             }
         }
         
