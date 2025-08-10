@@ -1835,7 +1835,6 @@ window.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Count decisions
         const decisions = Object.values(window.currentValidationState);
         const approved = decisions.filter(d => d.validator_decision === 'approve').length;
         const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
@@ -1847,7 +1846,6 @@ window.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Confirm with user
         const message = `Commit ${approved} approved, ${rejected} rejected, and ${skipped} skipped decisions?${pending > 0 ? ` (${pending} will remain pending)` : ''}`;
         if (!confirm(message)) {
             return;
@@ -1860,14 +1858,18 @@ window.addEventListener('DOMContentLoaded', function() {
             const decisionsArray = [];
             for (const [mappingId, state] of Object.entries(window.currentValidationState)) {
                 if (state.validator_decision && state.validator_decision !== 'pending') {
+                    const om = state.original_mapping || {};
+                    // Ensure a single modality code for consistent request_hash computation on server
+                    const modality_code = Array.isArray(om.modality_code) ? (om.modality_code[0] || null) : (typeof om.modality_code === 'string' ? om.modality_code : null);
                     decisionsArray.push({
                         mapping_id: mappingId,
                         decision: state.validator_decision,
                         notes: state.validation_notes || '',
-                        original_mapping: state.original_mapping || {},
-                        data_source: state.original_mapping?.data_source || '',
-                        exam_code: state.original_mapping?.exam_code || '',
-                        exam_name: state.original_mapping?.exam_name || ''
+                        original_mapping: om,
+                        data_source: om.data_source || '',
+                        exam_code: om.exam_code || '',
+                        exam_name: om.exam_name || '',
+                        modality_code: modality_code || (Array.isArray(om.components?.modality) ? om.components.modality[0] : undefined)
                     });
                 }
             }

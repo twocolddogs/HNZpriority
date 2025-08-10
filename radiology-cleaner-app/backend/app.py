@@ -6,10 +6,10 @@
 # This Flask application provides a unified processing pipeline for standardizing
 # radiology exam names against NHS reference data using NLP and semantic matching.
 
-import time, json, logging, threading, os, sys, re, math
+import time, json, logging, threading, os, sys, re, math, hashlib
 from flask import Flask, request, jsonify, send_file, make_response
 from flask_cors import CORS
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from pathlib import Path
@@ -118,6 +118,32 @@ nhs_lookup_engine: Optional[NHSLookupEngine] = None
 model_processors: Dict[str, NLPProcessor] = {}
 reranker_manager: Optional[RerankerManager] = None
 _batch_preloaded_config = None  # Shared config for secondary pipeline to avoid repeated R2 fetches
+
+def compute_request_hash_with_preimage(data_source: str, exam_code: str, exam_name: str, modality_code: Optional[str]) -> Tuple[str, str]:
+    """
+    Generate SHA-256 hash for request matching validation system with consistent preimage.
+    
+    Args:
+        data_source: Data source identifier
+        exam_code: Exam code from input
+        exam_name: Original exam name  
+        modality_code: Modality code (can be None)
+        
+    Returns:
+        Tuple of (hash_string, preimage_string) for validation cache lookup
+    """
+    # Use same key fields as expected by ValidationCacheManager
+    key_fields = [
+        str(data_source or '').strip().lower(),
+        str(exam_code or '').strip().lower(),
+        str(exam_name or '').strip().lower(), 
+        str(modality_code or '').strip().lower()
+    ]
+    
+    # Create hash from concatenated fields with consistent separator
+    preimage = '|'.join(key_fields)
+    hash_value = hashlib.sha256(preimage.encode('utf-8')).hexdigest()
+    return hash_value, preimage
 _init_lock = threading.Lock()
 _app_initialized = False
 # DB/Cache managers would be initialized here in a full app
@@ -1815,42 +1841,90 @@ def submit_batch_validation_decisions():
     """
     Submit multiple validation decisions in a single request.
     Accepts array of decision objects and saves them to R2 validation caches.
+
+    Changes:
+    - Cache files now have a top-level {"entries": {...}, "meta": {...}} structure.
+    - Entries are keyed by request_hash (computed from data_source, exam_code, exam_name, modality_code).
+    - Approved entries store 'result' (the full mapping), 'validation_notes', 'approved_at', 'decision_metadata'.
+    - Rejected entries store 'reason', 'rejected_at', 'decision_metadata' (and optional 'rejected_snomed_ids').
+    - Legacy flat caches from R2 are migrated into the new structure on write.
     """
     try:
         data = request.get_json()
         if not data or 'decisions' not in data:
             return jsonify({'error': 'Missing decisions data'}), 400
-            
+
         decisions = data['decisions']
         if not isinstance(decisions, list):
             return jsonify({'error': 'Decisions must be an array'}), 400
-            
+
         logger.info(f"Processing batch validation decisions: {len(decisions)} decisions")
-        
-        # Import R2CacheManager for saving validation caches
+
         from r2_cache_manager import R2CacheManager
         r2_manager = R2CacheManager()
-        
+
         if not r2_manager.is_available():
             logger.error("R2CacheManager not available - validation decisions cannot be saved")
             return jsonify({'error': 'R2 storage not available - decisions cannot be persisted'}), 500
-        
+
         processed_decisions = []
-        approved_mappings = []
-        rejected_mappings = []
+        approved_items = []
+        rejected_items = []
         errors = []
-        
+
+        # Helpers
+        def _first_modality(val):
+            if isinstance(val, list) and val:
+                return val[0]
+            return val
+
+        def _compute_request_hash(decision_obj):
+            # Prefer explicit fields from decision; fall back to original_mapping when needed
+            ds = decision_obj.get('data_source') or decision_obj.get('original_mapping', {}).get('data_source') or ''
+            ex_code = decision_obj.get('exam_code') or decision_obj.get('original_mapping', {}).get('exam_code') or ''
+            ex_name = decision_obj.get('exam_name') or decision_obj.get('original_mapping', {}).get('exam_name') or ''
+            modality = (
+                decision_obj.get('modality_code')
+                or _first_modality(decision_obj.get('original_mapping', {}).get('modality_code'))
+                or _first_modality(decision_obj.get('original_mapping', {}).get('modality'))
+                or None
+            )
+            req_hash, _preimage = compute_request_hash_with_preimage(ds, ex_code, ex_name, modality)
+            return req_hash, ds, ex_code, ex_name
+
+        def _load_existing_cache(url, default_schema):
+            import requests
+            entries = {}
+            meta = {'version': 1, 'schema': default_schema, 'last_updated': datetime.utcnow().isoformat() + 'Z'}
+            try:
+                resp = requests.get(url, timeout=10)
+                if resp.status_code == 200 and resp.text.strip():
+                    data = resp.json()
+                    if isinstance(data, dict) and 'entries' in data and isinstance(data['entries'], dict):
+                        entries = data['entries']
+                        if isinstance(data.get('meta'), dict):
+                            meta.update(data['meta'])
+                    elif isinstance(data, dict):
+                        # Legacy flat dict: treat keys as entries
+                        entries = data
+                    logger.info(f"Loaded existing cache from R2: {len(entries)} entries")
+                else:
+                    logger.info("No existing cache found at R2; starting fresh.")
+            except Exception as e:
+                logger.warning(f"Could not load existing cache from R2 ({url}): {e}")
+            return {'entries': entries, 'meta': meta}
+
         for decision_data in decisions:
             try:
                 mapping_id = decision_data.get('mapping_id')
                 decision = decision_data.get('decision')
                 notes = decision_data.get('notes', '')
-                
+
                 if not mapping_id or not decision:
-                    errors.append(f'Invalid decision data: missing mapping_id or decision')
+                    errors.append('Invalid decision data: missing mapping_id or decision')
                     continue
-                    
-                processed_decision = {
+
+                processed = {
                     'mapping_id': mapping_id,
                     'decision': decision,
                     'notes': notes,
@@ -1858,134 +1932,135 @@ def submit_batch_validation_decisions():
                     'original_mapping': decision_data.get('original_mapping', {}),
                     'data_source': decision_data.get('data_source', ''),
                     'exam_code': decision_data.get('exam_code', ''),
-                    'exam_name': decision_data.get('exam_name', '')
+                    'exam_name': decision_data.get('exam_name', ''),
+                    'modality_code': decision_data.get('modality_code')
                 }
-                
-                processed_decisions.append(processed_decision)
-                
-                # Categorize decisions for R2 storage
+                processed_decisions.append(processed)
+
                 if decision == 'approve':
-                    approved_mappings.append(processed_decision)
+                    approved_items.append(processed)
                 elif decision == 'reject':
-                    rejected_mappings.append(processed_decision)
-                
+                    rejected_items.append(processed)
+
             except Exception as e:
                 errors.append(f'Error processing decision: {str(e)}')
-        
-        # Save validation decisions to R2 cloud storage
+
         r2_success = True
         cache_reload_success = True
-        
-        # Add detailed logging for R2 operations
-        logger.info(f"Starting R2 save process: {len(approved_mappings)} approved, {len(rejected_mappings)} rejected mappings")
-        logger.info(f"R2 manager available: {r2_manager.is_available()}")
-        
+
+        logger.info(f"Starting R2 save process: {len(approved_items)} approved, {len(rejected_items)} rejected")
+
         try:
             import json
-            
-            # Load existing approved mappings from R2 and merge with new ones
-            if approved_mappings:
-                existing_approved_dict = {}
-                try:
-                    import requests
-                    approved_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/approved_mappings_cache.json"
-                    response = requests.get(approved_url, timeout=10)
-                    if response.status_code == 200:
-                        existing_approved_dict = response.json()
-                        logger.info(f"Loaded {len(existing_approved_dict)} existing approved mappings from R2")
-                except Exception as e:
-                    logger.warning(f"Could not load existing approved mappings: {e}")
-                
-                # Convert approved mappings to hash-keyed format for NHS engine compatibility
-                for decision in approved_mappings:
-                    mapping_id = decision['mapping_id']
-                    existing_approved_dict[mapping_id] = {
-                        'mapping_data': decision['original_mapping'],
-                        'validation_notes': decision.get('notes', ''),
-                        'approved_at': decision['timestamp_reviewed'],
-                        'decision_metadata': {
-                            'data_source': decision.get('data_source', ''),
-                            'exam_code': decision.get('exam_code', ''),
-                            'exam_name': decision.get('exam_name', '')
+
+            # Approved cache
+            if approved_items:
+                approved_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/approved_mappings_cache.json"
+                approved_cache = _load_existing_cache(
+                    approved_url,
+                    default_schema="approved_mappings_cache.v1"
+                )
+
+                # If legacy flat shape, migrate to entries
+                if 'entries' not in approved_cache or not isinstance(approved_cache['entries'], dict):
+                    approved_cache['entries'] = {}
+                # Move any top-level hashed keys into entries
+                for k in list(approved_cache.keys()):
+                    if k not in ('entries', 'meta') and isinstance(approved_cache[k], dict):
+                        approved_cache['entries'][k] = approved_cache.pop(k)
+
+                for item in approved_items:
+                    try:
+                        req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
+                        entry = {
+                            'result': item.get('original_mapping', {}),
+                            'validation_notes': item.get('notes', ''),
+                            'approved_at': item.get('timestamp_reviewed'),
+                            'decision_metadata': {
+                                'data_source': ds,
+                                'exam_code': ex_code,
+                                'exam_name': ex_name
+                            }
                         }
-                    }
-                
-                approved_json = json.dumps(existing_approved_dict, indent=2)
-                
-                logger.info(f"Attempting to upload approved mappings: {len(approved_json)} bytes")
-                logger.info(f"R2 bucket: {r2_manager.bucket_name}, endpoint: {r2_manager.endpoint_url}")
-                
+                        approved_cache['entries'][req_hash] = entry
+                    except Exception as e:
+                        errors.append(f"Failed to build approved entry for {item.get('mapping_id')}: {e}")
+
+                approved_cache['meta']['last_updated'] = datetime.utcnow().isoformat() + 'Z'
+
+                approved_json = json.dumps(approved_cache, indent=2)
                 success = r2_manager.upload_object(
                     object_key='validation/approved_mappings_cache.json',
                     data=approved_json.encode('utf-8'),
                     content_type='application/json',
                     cors_headers=True
                 )
-                
                 if success:
-                    logger.info(f"Successfully saved {len(approved_mappings)} new approved mappings to R2 (total: {len(existing_approved_dict)})")
+                    logger.info(f"Saved approved cache to R2 (total entries: {len(approved_cache['entries'])})")
                 else:
                     r2_success = False
-                    logger.error("Failed to save approved mappings to R2 - upload_object returned False")
-            
-            # Load existing rejected mappings from R2 and merge with new ones
-            if rejected_mappings:
-                existing_rejected_dict = {}
-                try:
-                    rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/rejected_mappings.json"
-                    response = requests.get(rejected_url, timeout=10)
-                    if response.status_code == 200:
-                        existing_rejected_dict = response.json()
-                        logger.info(f"Loaded {len(existing_rejected_dict)} existing rejected mappings from R2")
-                except Exception as e:
-                    logger.warning(f"Could not load existing rejected mappings: {e}")
-                
-                # Convert rejected mappings to hash-keyed format for NHS engine compatibility
-                for decision in rejected_mappings:
-                    mapping_id = decision['mapping_id']
-                    # Extract SNOMED IDs from the original mapping for rejection tracking
-                    original_mapping = decision.get('original_mapping', {})
-                    snomed_data = original_mapping.get('snomed', {})
-                    snomed_ids = []
-                    if snomed_data.get('concept_id'):
-                        snomed_ids.append(snomed_data['concept_id'])
-                    
-                    existing_rejected_dict[mapping_id] = {
-                        'rejected_snomed_ids': snomed_ids,
-                        'rejection_reason': decision.get('notes', ''),
-                        'rejected_at': decision['timestamp_reviewed'],
-                        'decision_metadata': {
-                            'data_source': decision.get('data_source', ''),
-                            'exam_code': decision.get('exam_code', ''),
-                            'exam_name': decision.get('exam_name', '')
+                    logger.error("Failed to save approved mappings cache to R2")
+
+            # Rejected cache
+            if rejected_items:
+                rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/rejected_mappings.json"
+                rejected_cache = _load_existing_cache(
+                    rejected_url,
+                    default_schema="rejected_mappings_cache.v1"
+                )
+
+                if 'entries' not in rejected_cache or not isinstance(rejected_cache['entries'], dict):
+                    rejected_cache['entries'] = {}
+                for k in list(rejected_cache.keys()):
+                    if k not in ('entries', 'meta') and isinstance(rejected_cache[k], dict):
+                        rejected_cache['entries'][k] = rejected_cache.pop(k)
+
+                for item in rejected_items:
+                    try:
+                        req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
+                        snomed_ids = []
+                        snomed_obj = item.get('original_mapping', {}).get('snomed', {})
+                        for key in ('id', 'concept_id', 'snomed_id'):
+                            if snomed_obj.get(key):
+                                snomed_ids.append(snomed_obj[key])
+                                break
+
+                        entry = {
+                            'reason': item.get('notes', ''),
+                            'rejected_at': item.get('timestamp_reviewed'),
+                            'decision_metadata': {
+                                'data_source': ds,
+                                'exam_code': ex_code,
+                                'exam_name': ex_name
+                            }
                         }
-                    }
-                
-                rejected_json = json.dumps(existing_rejected_dict, indent=2)
-                
-                logger.info(f"Attempting to upload rejected mappings: {len(rejected_json)} bytes")
-                
+                        if snomed_ids:
+                            entry['rejected_snomed_ids'] = snomed_ids
+
+                        rejected_cache['entries'][req_hash] = entry
+                    except Exception as e:
+                        errors.append(f"Failed to build rejected entry for {item.get('mapping_id')}: {e}")
+
+                rejected_cache['meta']['last_updated'] = datetime.utcnow().isoformat() + 'Z'
+
+                rejected_json = json.dumps(rejected_cache, indent=2)
                 success = r2_manager.upload_object(
                     object_key='validation/rejected_mappings.json',
                     data=rejected_json.encode('utf-8'),
                     content_type='application/json',
                     cors_headers=True
                 )
-                
                 if success:
-                    logger.info(f"Successfully saved {len(rejected_mappings)} new rejected mappings to R2 (total: {len(existing_rejected_dict)})")
+                    logger.info(f"Saved rejected cache to R2 (total entries: {len(rejected_cache['entries'])})")
                 else:
                     r2_success = False
-                    logger.error("Failed to save rejected mappings to R2 - upload_object returned False")
-            
+                    logger.error("Failed to save rejected mappings cache to R2")
+
         except Exception as e:
             r2_success = False
-            logger.error(f"Exception saving validation caches to R2: {e}")
-            logger.error(f"Exception details: {type(e).__name__}: {str(e)}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
-        
-        # Trigger cache reload in NHS lookup engine
+            logger.error(f"Exception saving validation caches to R2: {e}", exc_info=True)
+
+        # Reload in-engine caches if we saved successfully
         try:
             if nhs_lookup_engine and r2_success:
                 reload_result = nhs_lookup_engine.reload_validation_caches()
@@ -1997,36 +2072,31 @@ def submit_batch_validation_decisions():
         except Exception as e:
             cache_reload_success = False
             logger.error(f"Exception reloading validation caches: {e}")
-        
-        # Prepare response - fail if R2 storage fails since decisions must persist
+
         response_data = {
-            'success': r2_success,  # Only successful if R2 storage succeeded
+            'success': r2_success,
             'processed_count': len(processed_decisions),
-            'approved_count': len(approved_mappings),
-            'rejected_count': len(rejected_mappings),
+            'approved_count': len(approved_items),
+            'rejected_count': len(rejected_items),
             'error_count': len(errors),
             'r2_storage_success': r2_success,
             'cache_reload_success': cache_reload_success,
-            'cache_updated': cache_reload_success,  # For frontend compatibility
+            'cache_updated': cache_reload_success,
             'decisions': processed_decisions,
             'errors': errors if errors else None
         }
-        
+
         if not r2_success:
             response_data['error'] = 'Validation decisions could not be saved to R2 storage - decisions not persisted'
-            logger.error("Validation batch failed: R2 storage unavailable or failed")
-        
+            return jsonify(response_data), 500
+
         if not cache_reload_success:
             response_data['warning'] = 'Cache reload failed - restart may be needed for changes to take effect'
-        
-        # Return appropriate HTTP status code
-        if not r2_success:
-            return jsonify(response_data), 500
-        else:
-            return jsonify(response_data)
-        
+
+        return jsonify(response_data)
+
     except Exception as e:
-        logger.error(f"Failed to process batch validation decisions: {e}")
+        logger.error(f"Failed to process batch validation decisions: {e}", exc_info=True)
         return jsonify({'error': f'Batch decision processing failed: {str(e)}'}), 500
 
 
