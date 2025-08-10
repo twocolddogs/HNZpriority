@@ -45,6 +45,23 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Reduce third-party library debug noise
+logging.getLogger('botocore').setLevel(logging.CRITICAL)
+logging.getLogger('botocore.hooks').setLevel(logging.CRITICAL)
+logging.getLogger('botocore.loaders').setLevel(logging.CRITICAL)
+logging.getLogger('botocore.client').setLevel(logging.CRITICAL)
+logging.getLogger('botocore.endpoint').setLevel(logging.CRITICAL)
+logging.getLogger('botocore.regions').setLevel(logging.CRITICAL)
+logging.getLogger('botocore.utils').setLevel(logging.CRITICAL)
+logging.getLogger('boto3').setLevel(logging.CRITICAL)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
+logging.getLogger('charset_normalizer').setLevel(logging.WARNING)
+logging.getLogger('faiss').setLevel(logging.WARNING)
+# Complete silence for AWS/HTTP libraries
+logging.getLogger('requests').setLevel(logging.WARNING)
+logging.getLogger('requests.packages.urllib3').setLevel(logging.WARNING)
+
 app = Flask(__name__)
 CORS(app, 
      origins=[
