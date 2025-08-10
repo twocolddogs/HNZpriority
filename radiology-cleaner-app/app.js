@@ -2584,9 +2584,12 @@ window.addEventListener('DOMContentLoaded', function() {
         // Initialize filter toggles
         const filterToggles = document.querySelectorAll('[data-filter]');
         filterToggles.forEach(toggle => {
+            const filter = toggle.getAttribute('data-filter');
+            // Set initial UI state to match filter state
+            toggle.classList.toggle('active', validationToolbarState.filters[filter]);
+            
             toggle.addEventListener('click', (e) => {
                 e.preventDefault();
-                const filter = toggle.getAttribute('data-filter');
                 validationToolbarState.filters[filter] = !validationToolbarState.filters[filter];
                 toggle.classList.toggle('active', validationToolbarState.filters[filter]);
                 filterAndDisplayGroups();
