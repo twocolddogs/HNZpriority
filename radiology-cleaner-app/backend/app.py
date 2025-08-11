@@ -2133,7 +2133,7 @@ def submit_batch_validation_decisions():
     Changes:
     - Cache files now have a top-level {"entries": {...}, "meta": {...}} structure.
     - Entries are keyed by request_hash (computed from data_source, exam_code, exam_name, modality_code).
-    - Approved entries store 'result' (the full mapping), 'validation_notes', 'approved_at', 'decision_metadata'.
+    - Approved entries store 'mapping_data' (the full mapping), 'validation_notes', 'approved_at', 'decision_metadata'.
     - Rejected entries store 'reason', 'rejected_at', 'decision_metadata' (and optional 'rejected_snomed_ids').
     - Legacy flat caches from R2 are migrated into the new structure on write.
     """
@@ -2261,7 +2261,7 @@ def submit_batch_validation_decisions():
                     try:
                         req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
                         entry = {
-                            'result': item.get('original_mapping', {}),
+                            'mapping_data': item.get('original_mapping', {}),
                             'validation_notes': item.get('notes', ''),
                             'approved_at': item.get('timestamp_reviewed'),
                             'decision_metadata': {

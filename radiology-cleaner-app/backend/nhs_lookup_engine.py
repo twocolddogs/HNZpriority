@@ -207,11 +207,12 @@ class NHSLookupEngine:
         """
         Normalize approved cache data to consistent internal structure.
         
-        Supports multiple input schemas:
-        - {"entries": {hash: {mapping_data: {...}}}}
-        - {"entries": [{hash: "...", mapping_data: {...}}]}
-        - flat {hash: {mapping_data: {...}}}
-        - flat {hash: {...}} where value is the mapping itself
+        Expects canonical schema but supports legacy formats:
+        - Canonical: {"entries": {hash: {"mapping_data": {...}}}}
+        - Legacy: {"entries": {hash: {"result": {...}}}} (backward compatibility)
+        - Legacy: {"entries": [{hash: "...", "mapping_data": {...}}]}
+        - Legacy: flat {hash: {"mapping_data": {...}}}
+        - Legacy: flat {hash: {...}} where value is the mapping itself
         
         Args:
             raw_data: Raw JSON data from R2
@@ -235,27 +236,36 @@ class NHSLookupEngine:
                         hash_key = item['hash']
                         if 'mapping_data' in item:
                             normalized[hash_key] = item['mapping_data']
+                        elif 'result' in item:
+                            # Legacy support: 'result' key instead of 'mapping_data'
+                            normalized[hash_key] = item['result']
                         else:
                             # Treat the entire item (minus hash) as mapping data
                             mapping_data = {k: v for k, v in item.items() if k != 'hash'}
                             normalized[hash_key] = mapping_data
             
-            # Handle dict format: {"hash": {"mapping_data": {...}}}
+            # Handle dict format: {"hash": {"mapping_data": {...}}} or {"hash": {"result": {...}}}
             elif isinstance(entries, dict):
                 for hash_key, entry in entries.items():
                     if isinstance(entry, dict):
                         if 'mapping_data' in entry:
                             normalized[hash_key] = entry['mapping_data']
+                        elif 'result' in entry:
+                            # Legacy support: 'result' key instead of 'mapping_data'
+                            normalized[hash_key] = entry['result']
                         else:
                             # Treat the entire entry as mapping data
                             normalized[hash_key] = entry
         
-        # Handle flat format without 'entries' wrapper
+        # Handle flat format without 'entries' wrapper (legacy)
         else:
             for hash_key, entry in raw_data.items():
                 if isinstance(entry, dict):
                     if 'mapping_data' in entry:
                         normalized[hash_key] = entry['mapping_data']
+                    elif 'result' in entry:
+                        # Legacy support: 'result' key instead of 'mapping_data'
+                        normalized[hash_key] = entry['result']
                     else:
                         # Treat the entire entry as mapping data
                         normalized[hash_key] = entry

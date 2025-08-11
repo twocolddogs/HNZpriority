@@ -58,19 +58,37 @@ class ValidationUIDataPreparer:
             approved_file = self.validation_dir / 'approved_mappings_cache.json'
             if approved_file.exists():
                 with open(approved_file, 'r') as f:
-                    self.approved_mappings = json.load(f)
+                    approved_data = json.load(f)
+                    
+                # Handle canonical schema with entries wrapper
+                if isinstance(approved_data, dict) and 'entries' in approved_data:
+                    self.approved_mappings = approved_data['entries']
+                else:
+                    # Legacy flat structure or other format
+                    self.approved_mappings = approved_data
+                    
                 logger.info(f"Loaded {len(self.approved_mappings)} approved mappings")
             else:
                 logger.info("approved_mappings_cache.json not found or empty")
+                self.approved_mappings = {}
                 
             # Load rejected mappings
             rejected_file = self.validation_dir / 'rejected_mappings.json'
             if rejected_file.exists():
                 with open(rejected_file, 'r') as f:
-                    self.rejected_mappings = json.load(f)
+                    rejected_data = json.load(f)
+                    
+                # Handle canonical schema with entries wrapper  
+                if isinstance(rejected_data, dict) and 'entries' in rejected_data:
+                    self.rejected_mappings = rejected_data['entries']
+                else:
+                    # Legacy flat structure or other format
+                    self.rejected_mappings = rejected_data
+                    
                 logger.info(f"Loaded {len(self.rejected_mappings)} rejected mappings")
             else:
                 logger.info("rejected_mappings.json not found or empty")
+                self.rejected_mappings = {}
                 
             return True
             
