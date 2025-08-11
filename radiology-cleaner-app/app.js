@@ -2417,10 +2417,17 @@ window.addEventListener('DOMContentLoaded', function() {
                                 ${(() => {
                                     const approvedCount = group.mappings.filter(m => m.validation_status === 'approved').length;
                                     const pendingCount = group.total_mappings - approvedCount;
-                                    const parts = [];
-                                    if (approvedCount > 0) parts.push(`${approvedCount} approved mapping${approvedCount !== 1 ? 's' : ''}`);
-                                    if (pendingCount > 0) parts.push(`${pendingCount} pending mapping${pendingCount !== 1 ? 's' : ''}`);
-                                    return `<span class="consolidated-count" style="color: #666; font-size: 12px;">${parts.join(', ') || '0 mappings'}</span>`;
+                                    const badges = [];
+                                    
+                                    // Create separate badges for approved and pending mappings
+                                    if (approvedCount > 0) {
+                                        badges.push(`<span class="status-badge status-approved" style="margin-left: 0;">${approvedCount} Approved Mapping${approvedCount !== 1 ? 's' : ''}</span>`);
+                                    }
+                                    if (pendingCount > 0) {
+                                        badges.push(`<span class="status-badge status-pending">${pendingCount} Pending Mapping${pendingCount !== 1 ? 's' : ''}</span>`);
+                                    }
+                                    
+                                    return badges.join('') || '<span class="consolidated-count" style="color: #666; font-size: 12px;">0 mappings</span>';
                                 })()}
                                 ${group.flagged_count > 0 ? `<span class="flagged-count" style="color: #ff9800; font-size: 12px;"><i class="fas fa-exclamation-triangle"></i> ${group.flagged_count} flagged</span>` : ''}
                             </div>
