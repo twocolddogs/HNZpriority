@@ -401,8 +401,7 @@ class NHSLookupEngine:
         key_fields = [
             str(exam_code).strip().lower(),
             str(exam_name).strip().lower(), 
-            str(data_source).strip().lower(),
-            str(clean_name).strip().lower()
+            str(data_source).strip().lower()
         ]
         
         # Create hash from concatenated fields (matching validation logic exactly)
@@ -422,8 +421,7 @@ class NHSLookupEngine:
         return self._generate_request_hash(
             exam_code=mapping.get('exam_code', ''),
             exam_name=mapping.get('exam_name', ''), 
-            data_source=mapping.get('data_source', ''),
-            clean_name=mapping.get('clean_name', '')
+            data_source=mapping.get('data_source', '')
         )
 
     def reload_validation_caches(self) -> Dict[str, any]:

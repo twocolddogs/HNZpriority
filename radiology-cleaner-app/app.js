@@ -700,7 +700,7 @@ window.addEventListener('DOMContentLoaded', function() {
         };
         availableRerankers = {
             'medcpt': { name: 'MedCPT (HuggingFace)', status: 'available', description: 'NCBI Medical Clinical Practice Text cross-encoder', type: 'huggingface' },
-            'gpt-4o-mini': { name: 'GPT-4o Mini', status: 'unknown', description: 'Fast and cost-effective OpenAI model', type: 'openrouter' },
+            'gpt-5-nano': { name: 'GPT-5-nano', status: 'unknown', description: 'Fast and cost-effective OpenAI model', type: 'openrouter' },
             'claude-3-haiku': { name: 'Claude 3 Haiku', status: 'unknown', description: 'Fast Anthropic model optimized for speed', type: 'openrouter' },
             'gemini-2.5-flash-lite': { name: 'Gemini 2.5 Flash Lite', status: 'unknown', description: 'Google\'s lightweight Gemini model', type: 'openrouter' }
         };

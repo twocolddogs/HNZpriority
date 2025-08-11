@@ -22,9 +22,9 @@ class OpenRouterReranker:
     
     # Available reranker models via OpenRouter
     SUPPORTED_MODELS = {
-        'gpt-4o-mini': {
-            'name': 'GPT-4o Mini',
-            'model_id': 'openai/gpt-4o-mini',
+        'gpt-5-nano': {
+            'name': 'GPT-5-nano',
+            'model_id': 'openai/gpt-5-nano',
             'description': 'Fast and cost-effective OpenAI model',
             'cost_per_1k_tokens': 0.00015
         },

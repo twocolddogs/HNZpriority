@@ -29,8 +29,7 @@ def generate_unique_mapping_id(mapping: Dict[str, Any]) -> str:
     key_fields = [
         mapping.get('exam_code', ''),
         mapping.get('exam_name', ''), 
-        mapping.get('data_source', ''),
-        mapping.get('clean_name', '')
+        mapping.get('data_source', '')
     ]
     
     # Create hash from concatenated fields
