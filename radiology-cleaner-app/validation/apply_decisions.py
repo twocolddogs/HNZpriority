@@ -63,15 +63,35 @@ class ValidationDecisionApplicator:
             approved_file = self.validation_dir / 'approved_mappings_cache.json'
             if approved_file.exists():
                 with open(approved_file, 'r') as f:
-                    self.approved_mappings = json.load(f)
+                    approved_data = json.load(f)
+                    
+                # Handle canonical schema with entries wrapper
+                if isinstance(approved_data, dict) and 'entries' in approved_data:
+                    self.approved_mappings = approved_data['entries']
+                else:
+                    # Legacy flat structure or other format
+                    self.approved_mappings = approved_data
+                    
                 logger.info(f"Loaded {len(self.approved_mappings)} existing approved mappings")
+            else:
+                self.approved_mappings = {}
                 
             # Load existing rejected mappings
             rejected_file = self.validation_dir / 'rejected_mappings.json'
             if rejected_file.exists():
                 with open(rejected_file, 'r') as f:
-                    self.rejected_mappings = json.load(f)
+                    rejected_data = json.load(f)
+                    
+                # Handle canonical schema with entries wrapper  
+                if isinstance(rejected_data, dict) and 'entries' in rejected_data:
+                    self.rejected_mappings = rejected_data['entries']
+                else:
+                    # Legacy flat structure or other format
+                    self.rejected_mappings = rejected_data
+                    
                 logger.info(f"Loaded {len(self.rejected_mappings)} existing rejected mappings")
+            else:
+                self.rejected_mappings = {}
                 
             return True
             
@@ -205,16 +225,32 @@ class ValidationDecisionApplicator:
                 json.dump(self.validation_state, f, indent=2)
             logger.info(f"Updated validation state saved to {state_file}")
             
-            # Save approved mappings
+            # Save approved mappings in canonical schema format
             approved_file = self.validation_dir / 'approved_mappings_cache.json'
+            approved_cache_data = {
+                "meta": {
+                    "version": 1,
+                    "last_updated": datetime.utcnow().isoformat() + 'Z',
+                    "schema": "approved_mappings_cache.v1"
+                },
+                "entries": self.approved_mappings
+            }
             with open(approved_file, 'w') as f:
-                json.dump(self.approved_mappings, f, indent=2)
+                json.dump(approved_cache_data, f, indent=2)
             logger.info(f"Approved mappings saved to {approved_file}")
             
-            # Save rejected mappings
+            # Save rejected mappings in canonical schema format
             rejected_file = self.validation_dir / 'rejected_mappings.json'
+            rejected_cache_data = {
+                "meta": {
+                    "version": 1,
+                    "last_updated": datetime.utcnow().isoformat() + 'Z',
+                    "schema": "rejected_mappings_cache.v1"
+                },
+                "entries": self.rejected_mappings
+            }
             with open(rejected_file, 'w') as f:
-                json.dump(self.rejected_mappings, f, indent=2)
+                json.dump(rejected_cache_data, f, indent=2)
             logger.info(f"Rejected mappings saved to {rejected_file}")
             
             # Save decision log
