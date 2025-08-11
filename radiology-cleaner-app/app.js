@@ -2191,6 +2191,15 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+
+        // Calculate actual validation counts from validation state
+        const decisions = Object.values(validationState);
+        const approvedCount = decisions.filter(d => d.validator_decision === 'approve').length;
+        const rejectedCount = decisions.filter(d => d.validator_decision === 'reject').length;
+        const skippedCount = decisions.filter(d => d.validator_decision === 'skip').length;
+        const pendingCount = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
+        
+        console.log(`📊 Validation counts - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Pending: ${pendingCount}`);
         
         // Group mappings by NHS reference (consolidated view)
         const consolidatedGroups = window.createConsolidatedValidationGroups(validationState);
@@ -2219,22 +2228,22 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div class="counter-item approved">
                             <i class="fas fa-check"></i>
                             <span>Approved:</span>
-                            <span class="count" id="approvedCount">0</span>
+                            <span class="count" id="approvedCount">${approvedCount}</span>
                         </div>
                         <div class="counter-item rejected">
                             <i class="fas fa-times"></i>
                             <span>Rejected:</span>
-                            <span class="count" id="rejectedCount">0</span>
+                            <span class="count" id="rejectedCount">${rejectedCount}</span>
                         </div>
                         <div class="counter-item skipped">
                             <i class="fas fa-clock"></i>
                             <span>Skipped:</span>
-                            <span class="count" id="skippedCount">0</span>
+                            <span class="count" id="skippedCount">${skippedCount}</span>
                         </div>
                         <div class="counter-item pending">
                             <i class="fas fa-hourglass-half"></i>
                             <span>Pending:</span>
-                            <span class="count" id="pendingCount">${mappingCount}</span>
+                            <span class="count" id="pendingCount">${pendingCount}</span>
                         </div>
                     </div>
                     
@@ -2312,7 +2321,9 @@ window.addEventListener('DOMContentLoaded', function() {
         initializeValidationToolbar(validationState, consolidatedGroups);
         
         // Clear the initializing message now that validation interface is ready
-        statusManager.clear();
+        if (statusManager && typeof statusManager.clear === 'function') {
+            statusManager.clear();
+        }
         
         // Store validation state globally for access by other functions
         window.currentValidationState = validationState;
@@ -2970,6 +2981,9 @@ Ctrl+Z - Undo last action`);
             });
         }
         
+        // Update validation counters after group decision change
+        updateValidationCounters();
+        
         statusManager.show(`✅ Group decision: ${decision}`, 'success', 2000);
     }
     
@@ -2986,6 +3000,9 @@ Ctrl+Z - Undo last action`);
         console.log(`📝 Updating mapping ${mappingId} decision to: ${decision}`);
         
         updateMappingDecisionInState(mappingId, decision);
+        
+        // Update validation counters after decision change
+        updateValidationCounters();
         
         const mappingElement = document.querySelector(`[data-mapping-id="${mappingId}"]`);
         if (mappingElement) {
@@ -3022,6 +3039,30 @@ Ctrl+Z - Undo last action`);
         
         const actionText = decision === 'unapprove' ? 'unapproved' : `${decision}d`;
         statusManager.show(`✅ Mapping ${actionText}`, 'success', 1500);
+    }
+
+    // Function to update validation counters dynamically
+    function updateValidationCounters() {
+        if (!window.currentValidationState) return;
+        
+        const decisions = Object.values(window.currentValidationState);
+        const approvedCount = decisions.filter(d => d.validator_decision === 'approve').length;
+        const rejectedCount = decisions.filter(d => d.validator_decision === 'reject').length;
+        const skippedCount = decisions.filter(d => d.validator_decision === 'skip').length;
+        const pendingCount = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
+        
+        // Update counter elements
+        const approvedElement = document.getElementById('approvedCount');
+        const rejectedElement = document.getElementById('rejectedCount');
+        const skippedElement = document.getElementById('skippedCount');
+        const pendingElement = document.getElementById('pendingCount');
+        
+        if (approvedElement) approvedElement.textContent = approvedCount;
+        if (rejectedElement) rejectedElement.textContent = rejectedCount;
+        if (skippedElement) skippedElement.textContent = skippedCount;
+        if (pendingElement) pendingElement.textContent = pendingCount;
+        
+        console.log(`📊 Updated validation counters - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Pending: ${pendingCount}`);
     }
     
     window.showMappingDetails = function(mappingId) {
@@ -3305,8 +3346,11 @@ window.loadMockValidationData = function() {
                 ]
             },
             needs_attention_flags: [],
-            validator_decision: 'pending',
-            validation_notes: ''
+            validation_status: 'approved',
+            validator_decision: 'approve',
+            validation_notes: 'Previously approved - mapping is accurate',
+            timestamp_created: "2025-08-06T08:42:22.345330+00:00",
+            timestamp_reviewed: "2025-08-06T08:51:39.571716Z"
         },
         "mapping_2": {
             unique_mapping_id: "mapping_2",
@@ -3327,8 +3371,11 @@ window.loadMockValidationData = function() {
                 ]
             },
             needs_attention_flags: ['low_confidence', 'ambiguous'],
-            validator_decision: 'pending',
-            validation_notes: ''
+            validation_status: 'pending_review',
+            validator_decision: null,
+            validation_notes: '',
+            timestamp_created: "2025-01-14T10:30:00.000Z",
+            timestamp_reviewed: null
         },
         "mapping_3": {
             unique_mapping_id: "mapping_3",
@@ -3348,8 +3395,11 @@ window.loadMockValidationData = function() {
                 ]
             },
             needs_attention_flags: [],
-            validator_decision: 'pending',
-            validation_notes: ''
+            validation_status: 'approved',
+            validator_decision: 'approve',
+            validation_notes: 'Previously approved - confident match',
+            timestamp_created: "2025-08-05T14:20:10.123456+00:00",
+            timestamp_reviewed: "2025-08-05T14:22:15.987654Z"
         },
         "mapping_4": {
             unique_mapping_id: "mapping_4",
@@ -3371,8 +3421,11 @@ window.loadMockValidationData = function() {
                 ]
             },
             needs_attention_flags: ['low_confidence', 'singleton_mapping'],
-            validator_decision: 'pending',
-            validation_notes: ''
+            validation_status: 'pending_review',
+            validator_decision: null,
+            validation_notes: '',
+            timestamp_created: "2025-01-14T10:30:00.000Z",
+            timestamp_reviewed: null
         },
         "mapping_5": {
             unique_mapping_id: "mapping_5",
@@ -3392,10 +3445,38 @@ window.loadMockValidationData = function() {
                 ]
             },
             needs_attention_flags: ['secondary_pipeline'],
-            validator_decision: 'pending',
-            validation_notes: ''
+            validation_status: 'pending_review',
+            validator_decision: null,
+            validation_notes: '',
+            timestamp_created: "2025-01-14T10:30:00.000Z",
+            timestamp_reviewed: null
         }
     };
+    
+    // Hide homepage sections and show validation interface
+    const workflowSection = document.getElementById('workflowSection');
+    const validationSection = document.getElementById('validationSection');
+    const resultsSection = document.getElementById('resultsSection');
+    
+    if (workflowSection) workflowSection.style.display = 'none';
+    if (resultsSection) resultsSection.style.display = 'none';
+    if (validationSection) {
+        validationSection.classList.remove('hidden');
+        validationSection.style.display = 'block';
+    }
+
+    // Load the validation interface with mock data
+    window.loadValidationInterface(mockValidationState);
+    
+    // Show the validation interface
+    const validationInterface = document.getElementById('validationInterface');
+    if (validationInterface) {
+        validationInterface.classList.remove('hidden');
+        validationInterface.style.display = 'block';
+    }
+    
+    statusManager.show('✅ Mock validation data loaded for UI testing', 'success', 3000);
+};
     
     // Demo function to test approval state fix
     window.demoApprovalStateFix = function() {
@@ -3514,25 +3595,6 @@ window.loadMockValidationData = function() {
             demoBtn.addEventListener('click', window.demoApprovalStateFix);
         }
     });
-
-    // Load the validation interface with mock data
-    loadValidationInterface(mockValidationState);
-    
-    // Show the validation interface
-    const validationInterface = document.getElementById('validationInterface');
-    if (validationInterface) {
-        validationInterface.classList.remove('hidden');
-        validationInterface.style.display = 'block';
-    }
-    
-    // Hide other sections to focus on validation
-    const workflowSection = document.getElementById('workflowSection');
-    if (workflowSection) {
-        workflowSection.style.display = 'none';
-    }
-    
-    statusManager.show('✅ Mock validation data loaded for UI testing', 'success', 3000);
-};
 
 // Add test button to page when in development mode
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
