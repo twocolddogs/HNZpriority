@@ -92,6 +92,8 @@ class EnsembleResult:
         """Convert dataclass to dictionary"""
         return asdict(self)
 
+import httpx
+
 class OpenRouterEnsemble:
     """Ensemble system using multiple OpenRouter models"""
     
@@ -102,9 +104,13 @@ class OpenRouterEnsemble:
         if not self.api_key:
             raise ValueError("OPENROUTER_API_KEY environment variable not set.")
 
+        # Create a custom httpx client without the proxies argument
+        httpx_client = httpx.AsyncClient()
+
         self.client = openai.AsyncOpenAI(
             api_key=self.api_key,
-            base_url="https://openrouter.ai/api/v1"
+            base_url="https://openrouter.ai/api/v1",
+            http_client=httpx_client
         )
         
         self.models = self.config.get('models', [
@@ -175,6 +181,9 @@ class OpenRouterEnsemble:
             processing_time = asyncio.get_event_loop().time() - start_time
             
             # The JSON is now in a different place in the response object
+            if not response.choices or not response.choices[0].message.tool_calls:
+                raise ValueError("Model did not return a tool call, despite being forced.")
+
             tool_call = response.choices[0].message.tool_calls[0]
             if tool_call.function.name == "select_best_match":
                 content = tool_call.function.arguments # This is a guaranteed JSON string
