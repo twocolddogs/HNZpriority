@@ -2426,16 +2426,6 @@ window.addEventListener('DOMContentLoaded', function() {
                                 <div class="consolidated-title" style="font-weight: 600; font-size: 14px;">${group.nhs_reference}</div>
                                 ${snomedId && snomedId !== 'Unknown' ? `<span class="snomed-inline" style="color: #666; font-size: 12px; margin-left: 8px;">SNOMED: ${snomedId}</span>` : ''}
                             </div>
-                            <div class="validation-controls-inline" style="display: flex; gap: 4px;">
-                                <button class="button button-sm button-success" onclick="event.stopPropagation(); quickApproveGroup('${groupId}')" title="Quick approve" style="padding: 4px 8px;">
-                                    <i class="fas fa-check" style="font-size: 12px;"></i>
-                                </button>
-                                ${isSingleton ? `
-                                    <button class="button button-sm button-secondary" onclick="event.stopPropagation(); skipSingletonGroup('${groupId}')" title="Skip for later review" style="padding: 4px 8px;">
-                                        Skip
-                                    </button>
-                                ` : ''}
-                            </div>
                             <span class="expand-icon" style="margin-left: 8px;"></span>
                         </div>
                         <div class="validation-header-row-2" style="display: flex; justify-content: space-between; align-items: center;">
@@ -2519,6 +2509,9 @@ window.addEventListener('DOMContentLoaded', function() {
                                     </button>
                                     <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject mapping" style="padding: 4px 8px;">
                                         <i class="fas fa-times" style="font-size: 12px;"></i>
+                                    </button>
+                                    <button class="button button-sm button-secondary" onclick="updateMappingDecision('${mappingId}', 'skip')" title="Skip mapping for later review" style="padding: 4px 8px;">
+                                        <i class="fas fa-clock" style="font-size: 12px;"></i>
                                     </button>
                                 `}
                                 <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
@@ -3064,6 +3057,9 @@ Ctrl+Z - Undo last action`);
                     </button>
                     <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject mapping" style="padding: 4px 8px;">
                         <i class="fas fa-times" style="font-size: 12px;"></i>
+                    </button>
+                    <button class="button button-sm button-secondary" onclick="updateMappingDecision('${mappingId}', 'skip')" title="Skip mapping for later review" style="padding: 4px 8px;">
+                        <i class="fas fa-clock" style="font-size: 12px;"></i>
                     </button>
                 `}
                 <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
