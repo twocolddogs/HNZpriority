@@ -1921,7 +1921,9 @@ a:focus-visible {
 }
 
 /* ==========================================================================
-   13. Consolidated Results
+   13. [DEPRECATED] Consolidated Results - styles left for compatibility
+   Note: Consolidated Results view removed in issue #137 but styles kept
+   to avoid breaking other components. These can be safely removed in future.
    ========================================================================== */
 
 .consolidated-group {
@@ -3269,7 +3271,7 @@ a:focus-visible {
   align-items: center;
 }
 
-/* Right-align validation controls in consolidated headers */
+/* [DEPRECATED] Right-align validation controls (consolidated headers removed) */
 .validation-header .validation-controls-inline {
   margin-left: auto;
 }

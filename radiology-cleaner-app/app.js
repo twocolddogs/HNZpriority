@@ -856,8 +856,6 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
         document.getElementById('consolidationModal')?.addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
         document.getElementById('viewToggleBtn')?.addEventListener('click', toggleView);
-        document.getElementById('consolidatedSearch')?.addEventListener('input', filterConsolidatedResults);
-        document.getElementById('consolidatedSort')?.addEventListener('change', sortConsolidatedResults);
         document.getElementById('prevPageBtn')?.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
@@ -1376,7 +1374,6 @@ window.addEventListener('DOMContentLoaded', function() {
         updateResultsTitle();
         sortedMappings = [...mappings];
         sortAndDisplayResults();
-        generateConsolidatedResults(mappings);
         generateSourceLegend(mappings);
         resultsSection.style.display = 'block';
         const heroSection = document.querySelector('.hero-section');
@@ -1607,57 +1604,40 @@ window.addEventListener('DOMContentLoaded', function() {
     window.closeModal = closeModal;
 
     // -----------------------------------------------------------------------------
-    // 5.12. Consolidated View Logic
+    // 5.12. Toggle between Full View and Validation View
     // -----------------------------------------------------------------------------
-    let consolidatedData = [];
-    let filteredConsolidatedData = [];
-
-    function generateConsolidatedResults(mappings) {
-        const consolidatedGroups = {};
-        mappings.forEach(m => {
-            if (!m.clean_name || m.clean_name.startsWith('ERROR')) return;
-            const group = consolidatedGroups[m.clean_name] || {
-                cleanName: m.clean_name,
-                snomed: m.snomed,
-                sourceCodes: [],
-                totalCount: 0,
-                components: m.components,
-                dataSources: new Set(),
-                modalities: new Set(),
-                secondaryPipelineCount: 0
-            };
-            group.sourceCodes.push(m);
-            group.totalCount++;
-            group.dataSources.add(m.data_source);
-            group.modalities.add(m.modality_code);
-            if (m.secondary_pipeline_applied && m.secondary_pipeline_details?.improved) {
-                group.secondaryPipelineCount++;
-            }
-            consolidatedGroups[m.clean_name] = group;
-        });
-        consolidatedData = Object.values(consolidatedGroups).map(group => {
-            const totalConfidence = group.sourceCodes.reduce((sum, code) => sum + (code.components?.confidence || 0), 0);
-            group.avgConfidence = group.sourceCodes.length > 0 ? totalConfidence / group.sourceCodes.length : 0;
-            return group;
-        });
-        filteredConsolidatedData = [...consolidatedData];
-        sortConsolidatedResults();
-    }
     
     let isFullView = true;
     function toggleView() {
         isFullView = !isFullView;
         document.getElementById('fullView').style.display = isFullView ? 'block' : 'none';
-        document.getElementById('consolidatedView').style.display = isFullView ? 'none' : 'block';
+        document.getElementById('validationView').style.display = isFullView ? 'none' : 'block';
         const toggleBtn = document.getElementById('viewToggleBtn');
-        toggleBtn.textContent = isFullView ? 'Switch to Consolidated View' : 'Switch to Full View';
+        toggleBtn.textContent = isFullView ? 'Switch to Validation View' : 'Switch to Results View';
         if (isFullView) {
             toggleBtn.classList.remove('secondary');
             toggleBtn.classList.add('active');
         } else {
             toggleBtn.classList.remove('active');
             toggleBtn.classList.add('secondary');
-            displayConsolidatedResults();
+            // Load validation content if available
+            loadValidationViewContent();
+        }
+    }
+
+    function loadValidationViewContent() {
+        const validationContent = document.getElementById('validationContent');
+        const validationInterface = document.getElementById('validationInterface');
+        
+        if (validationInterface && !validationInterface.classList.contains('hidden')) {
+            // If validation interface is already loaded, display it in validation view
+            validationContent.innerHTML = '';
+            const clonedInterface = validationInterface.cloneNode(true);
+            clonedInterface.style.display = 'block';
+            clonedInterface.classList.remove('hidden');
+            validationContent.appendChild(clonedInterface);
+        } else {
+            validationContent.innerHTML = '<p>Click "Validate Results" to load the validation interface.</p>';
         }
     }
 
@@ -3360,7 +3340,7 @@ Ctrl+Z - Undo last action`);
         loadAvailableModels();
         setupEventListeners();
         document.getElementById('fullView').style.display = 'block';
-        document.getElementById('consolidatedView').style.display = 'none';
+        document.getElementById('validationView').style.display = 'none';
     }
 
     initApp();
