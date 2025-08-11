@@ -855,7 +855,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
         document.getElementById('consolidationModal')?.addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
-        document.getElementById('viewToggleBtn')?.addEventListener('click', toggleView);
         document.getElementById('prevPageBtn')?.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
@@ -1613,15 +1612,38 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('fullView').style.display = isFullView ? 'block' : 'none';
         document.getElementById('validationView').style.display = isFullView ? 'none' : 'block';
         const toggleBtn = document.getElementById('viewToggleBtn');
-        toggleBtn.textContent = isFullView ? 'Switch to Validation View' : 'Switch to Results View';
-        if (isFullView) {
-            toggleBtn.classList.remove('secondary');
-            toggleBtn.classList.add('active');
-        } else {
-            toggleBtn.classList.remove('active');
-            toggleBtn.classList.add('secondary');
+        if (toggleBtn) {
+            toggleBtn.textContent = isFullView ? 'Switch to Validation View' : 'Switch to Results View';
+            if (isFullView) {
+                toggleBtn.classList.remove('secondary');
+                toggleBtn.classList.add('active');
+            } else {
+                toggleBtn.classList.remove('active');
+                toggleBtn.classList.add('secondary');
+                // Load validation content if available
+                loadValidationViewContent();
+            }
+        }
+        if (!isFullView) {
             // Load validation content if available
             loadValidationViewContent();
+        }
+    }
+
+    function switchToResultsView() {
+        isFullView = true;
+        document.getElementById('fullView').style.display = 'block';
+        document.getElementById('validationView').style.display = 'none';
+        
+        // Show the main results section and hide validation workflow
+        const resultsSection = document.getElementById('resultsSection');
+        const validationSection = document.getElementById('validationSection');
+        
+        if (resultsSection) {
+            resultsSection.style.display = 'block';
+        }
+        if (validationSection) {
+            validationSection.style.display = 'none';
         }
     }
 
@@ -1651,6 +1673,7 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     window.toggleOriginalCodes = toggleOriginalCodes;
+    window.switchToResultsView = switchToResultsView;
 
     function displayConsolidatedResults() {
         const container = document.getElementById('consolidatedResults');
@@ -1971,6 +1994,12 @@ window.addEventListener('DOMContentLoaded', function() {
             statusManager.show('❌ No results to validate. Please run a sample or process data first.', 'error', 5000);
             return;
         }
+        
+        // Switch to validation view
+        isFullView = false;
+        document.getElementById('fullView').style.display = 'none';
+        document.getElementById('validationView').style.display = 'block';
+        loadValidationViewContent();
         
         // Validation pipeline has been deprecated
         
@@ -2295,6 +2324,9 @@ window.addEventListener('DOMContentLoaded', function() {
         validationInterface.innerHTML = interfaceHTML + `
             <div class="validation-actions">
                 <div class="action-group">
+                    <button id="switchToResultsBtn" class="button button-secondary">
+                        <i class="fas fa-arrow-left"></i> Switch to Results View
+                    </button>
                     <button id="exportValidationStateBtn" class="button button-primary">
                         <i class="fas fa-download"></i> Export Validation State
                     </button>
@@ -2559,6 +2591,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const collapseAllBtn = document.getElementById('collapseAllBtn');
         const commitBtn = document.getElementById('commitDecisionsBtn');
         const exportBtn = document.getElementById('exportValidationStateBtn');
+        const switchToResultsBtn = document.getElementById('switchToResultsBtn');
         
         if (expandAllBtn) {
             expandAllBtn.addEventListener('click', () => toggleAllGroups(true));
@@ -2574,6 +2607,10 @@ window.addEventListener('DOMContentLoaded', function() {
         
         if (exportBtn) {
             exportBtn.addEventListener('click', () => exportValidationState(validationState));
+        }
+        
+        if (switchToResultsBtn) {
+            switchToResultsBtn.addEventListener('click', switchToResultsView);
         }
     }
     
