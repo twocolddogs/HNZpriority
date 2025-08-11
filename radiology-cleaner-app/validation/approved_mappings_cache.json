@@ -1,0 +1,32 @@
+{
+  "d6639b7fa0f443ff3666992732790dd603afea8d5ac4d6d4ec50c16fbec7a887": {
+    "mapping_data": {
+      "data_source": "Central-Philips",
+      "modality_code": "Mamm", 
+      "exam_code": "BBMA",
+      "exam_name": "BR Bilateral Mammogram",
+      "clean_name": "MG Mammogram Both",
+      "snomed": {
+        "found": true,
+        "fsn": "Bilateral mammography (procedure)",
+        "id": 43204002,
+        "laterality_concept_id": 51440002,
+        "laterality_fsn": "Right and left (qualifier value)"
+      },
+      "components": {
+        "anatomy": ["breast"],
+        "laterality": ["bilateral"],
+        "contrast": [],
+        "technique": [],
+        "modality": [],
+        "confidence": 0.8512500000000001,
+        "gender_context": "female",
+        "age_context": null,
+        "clinical_context": []
+      }
+    },
+    "validation_notes": "Mapping looks correct. Good confidence score and appropriate SNOMED match for bilateral mammogram.",
+    "approved_at": "2025-08-06T08:51:39.571716Z",
+    "original_flags": ["singleton_mapping"]
+  }
+}
