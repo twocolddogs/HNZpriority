@@ -3239,6 +3239,11 @@ a:focus-visible {
   gap: var(--space-2);
 }
 
+/* Right-align validation controls in consolidated headers */
+.validation-header .validation-controls-inline {
+  margin-left: auto;
+}
+
 .group-decision-select {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
