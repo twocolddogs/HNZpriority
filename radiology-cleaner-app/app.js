@@ -2051,7 +2051,7 @@ window.addEventListener('DOMContentLoaded', function() {
         
 
         for (const mapping of mappings) {
-            const mappingId = generateMappingId(mapping);
+            const mappingId = await generateMappingId(mapping);
             const flags = applyAttentionFlags(mapping);
             
             // Check if mapping is already approved
@@ -2086,7 +2086,11 @@ window.addEventListener('DOMContentLoaded', function() {
         console.log('📋 Loading current results for validation');
         console.log('🔍 handleValidateCurrentResults called, allMappings:', allMappings?.length || 'undefined');
         
-        if (!allMappings || allMappings.length === 0) {
+        // Check both module-scoped and global allMappings to handle different scenarios
+        const currentMappings = allMappings && allMappings.length > 0 ? allMappings : window.allMappings;
+        console.log('🔍 Using mappings from:', allMappings && allMappings.length > 0 ? 'module scope' : 'global scope', 'length:', currentMappings?.length || 'undefined');
+        
+        if (!currentMappings || currentMappings.length === 0) {
             statusManager.show('❌ No current results found to validate', 'error', 5000);
             return;
         }
@@ -2094,8 +2098,8 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
             statusManager.show('🔄 Initializing validation state...', 'info');
             
-            // Transform allMappings into validation state
-            const validationState = await initializeValidationFromMappings(allMappings);
+            // Transform currentMappings into validation state
+            const validationState = await initializeValidationFromMappings(currentMappings);
             
             // Hide mode selection and results display, show validation interface
             const modeSelection = document.getElementById('validationModeSelection');
