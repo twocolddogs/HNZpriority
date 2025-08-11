@@ -118,44 +118,6 @@
   box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
-.threshold-slider-container {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-  margin-left: auto;
-}
-
-.threshold-slider {
-  width: 120px;
-}
-
-.threshold-value {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  min-width: 4ch;
-}
-
-.next-flagged-btn {
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-warning);
-  color: var(--color-white);
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  transition: background 0.2s ease;
-}
-
-.next-flagged-btn:hover {
-  background: var(--color-warning-dark);
-}
-
-.next-flagged-btn:disabled {
-  background: var(--color-gray-400);
-  cursor: not-allowed;
-}
-
 /* Validation Group Headers with enhanced state */
 .validation-group-header {
   cursor: pointer;
@@ -3298,26 +3260,13 @@ a:focus-visible {
   margin-bottom: var(--space-6);
 }
 
-/* Validation Group Styling */
-.validation-group.validation-flagged {
-  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.15);
-}
-
-.validation-header.flagged-header {
-  background: var(--color-warning-light) !important;
-  box-shadow: 0 3px 6px rgba(255, 152, 0, 0.2);
-}
-
-.validation-header.flagged-header:hover {
-  background: var(--color-warning-lighter) !important;
-}
-
 /* Validation Group Controls */
 .validation-controls-inline {
   display: flex;
-  gap: 4px;
-  flex-grow: 1; /* Allow it to take up available space */
-  justify-content: flex-end; /* Push content to the right */
+  gap: 8px;
+  flex-grow: 1;
+  justify-content: space-between; /* Spread icons across container */
+  align-items: center;
 }
 
 /* Right-align validation controls in consolidated headers */
