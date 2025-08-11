@@ -3474,6 +3474,12 @@ a:focus-visible {
   border: 1px solid var(--color-danger);
 }
 
+.status-badge.status-pending {
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-gray-300);
+}
+
 /* Mapping state styling */
 .validation-mapping-item.mapping-approved {
   border-color: var(--color-success);
