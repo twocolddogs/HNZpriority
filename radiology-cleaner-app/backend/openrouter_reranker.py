@@ -42,7 +42,7 @@ class OpenRouterReranker:
         }
     }
     
-    def __init__(self, model_key: str = 'gpt-4o-mini', api_key: Optional[str] = None, timeout: int = 30):
+    def __init__(self, model_key: str = 'gpt-5-nano', api_key: Optional[str] = None, timeout: int = 30):
         """
         Initialize OpenRouter reranker.
         
