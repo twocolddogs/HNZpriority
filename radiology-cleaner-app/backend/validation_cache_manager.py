@@ -149,7 +149,7 @@ class ValidationCacheManager:
         self._load_caches()
         
         cache_entry = {
-            "result": result,
+            "mapping_data": result,
             "cached_at": datetime.utcnow().isoformat() + "Z",
             "preimage": preimage
         }
