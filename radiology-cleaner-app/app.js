@@ -1806,7 +1806,11 @@ window.addEventListener('DOMContentLoaded', function() {
                         <div class="detail-section"><h4>Original Exam</h4><div class="detail-box"><strong>${mapping.exam_name || 'N/A'}</strong><br><small>Source: ${mapping.data_source || 'N/A'} | Code: ${mapping.exam_code || 'N/A'}</small></div></div>
                         <div class="detail-section"><h4>Matched NHS Reference</h4><div class="detail-box success"><strong>${mapping.clean_name || 'N/A'}</strong><br><small>Confidence: ${(mapping.components?.confidence || 0).toFixed(3)}</small></div></div>
                         ${mapping.components?.reasoning ? `<div class="detail-section"><h4>AI Reasoning</h4><div class="detail-box info">${mapping.components.reasoning}</div></div>` : ''}
-                        ${state.needs_attention_flags.length > 0 ? `<div class="detail-section"><h4>Attention Flags</h4><div class="flag-container">${state.needs_attention_flags.map(flag => `<span class="flag-badge flag-${normalizeFlag(flag)}">${getFlagLabel(flag)}</span>`).join('')}</div></div>` : ''}
+                        ${state.needs_attention_flags.filter(flag => 
+                            !['low_confidence', 'ambiguous', 'secondary_pipeline'].includes(flag)
+                        ).length > 0 ? `<div class="detail-section"><h4>Attention Flags</h4><div class="flag-container">${state.needs_attention_flags.filter(flag => 
+                            !['low_confidence', 'ambiguous', 'secondary_pipeline'].includes(flag)
+                        ).map(flag => `<span class="flag-badge flag-${normalizeFlag(flag)}">${getFlagLabel(flag)}</span>`).join('')}</div></div>` : ''}
                         <div class="detail-section"><h4>Validation Notes</h4><textarea id="validationNotes" class="notes-textarea">${state.validation_notes || ''}</textarea></div>
                     </div>
                     <div class="modal-footer">
@@ -2209,59 +2213,49 @@ window.addEventListener('DOMContentLoaded', function() {
                         </button>
                     </div>
                     
+                    <div class="validation-counters">
+                        <div class="counter-item approved">
+                            <i class="fas fa-check"></i>
+                            <span>Approved:</span>
+                            <span class="count" id="approvedCount">0</span>
+                        </div>
+                        <div class="counter-item rejected">
+                            <i class="fas fa-times"></i>
+                            <span>Rejected:</span>
+                            <span class="count" id="rejectedCount">0</span>
+                        </div>
+                        <div class="counter-item skipped">
+                            <i class="fas fa-clock"></i>
+                            <span>Skipped:</span>
+                            <span class="count" id="skippedCount">0</span>
+                        </div>
+                        <div class="counter-item pending">
+                            <i class="fas fa-hourglass-half"></i>
+                            <span>Pending:</span>
+                            <span class="count" id="pendingCount">${mappingCount}</span>
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
             
             <!-- Validation Toolbar -->
             <div class="validation-toolbar">
-                <div class="validation-counters">
-                    <div class="counter-item approved">
-                        <i class="fas fa-check"></i>
-                        <span>Approved:</span>
-                        <span class="count" id="approvedCount">0</span>
-                    </div>
-                    <div class="counter-item rejected">
-                        <i class="fas fa-times"></i>
-                        <span>Rejected:</span>
-                        <span class="count" id="rejectedCount">0</span>
-                    </div>
-                    <div class="counter-item skipped">
-                        <i class="fas fa-clock"></i>
-                        <span>Skipped:</span>
-                        <span class="count" id="skippedCount">0</span>
-                    </div>
-                    <div class="counter-item pending">
-                        <i class="fas fa-hourglass-half"></i>
-                        <span>Pending:</span>
-                        <span class="count" id="pendingCount">${mappingCount}</span>
-                    </div>
-                </div>
-                
                 <div class="validation-filters">
                     <label class="filter-toggle" data-filter="flagged">
                         <input type="checkbox" style="display: none;" />
                         <i class="fas fa-flag"></i>
-                        <span>Flagged Only</span>
+                        <span>Flagged</span>
                     </label>
-                    <label class="filter-toggle" data-filter="low-confidence">
+                    <label class="filter-toggle" data-filter="approved">
                         <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>Low Confidence</span>
-                    </label>
-                    <label class="filter-toggle" data-filter="ambiguous">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-question-circle"></i>
-                        <span>Ambiguous</span>
+                        <i class="fas fa-check"></i>
+                        <span>Approved</span>
                     </label>
                     <label class="filter-toggle" data-filter="singleton">
                         <input type="checkbox" style="display: none;" />
                         <i class="fas fa-dot-circle"></i>
                         <span>Singleton</span>
-                    </label>
-                    <label class="filter-toggle" data-filter="secondary">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-layers"></i>
-                        <span>Secondary Pipeline</span>
                     </label>
                     
                     <div class="validation-sort">
@@ -2388,7 +2382,12 @@ window.addEventListener('DOMContentLoaded', function() {
             // Use stable group ID based on NHS reference hash instead of array index
             const groupId = `group_${window.hashString(group.nhs_reference)}`;
             const hasFlags = group.flagged_count > 0;
-            const flagBadges = group.group_flags.map(flag => 
+            
+            // Filter group flags to only show relevant ones (exclude removed filters)
+            const relevantFlags = group.group_flags.filter(flag => 
+                !['low_confidence', 'ambiguous', 'secondary_pipeline'].includes(flag)
+            );
+            const flagBadges = relevantFlags.map(flag => 
                 `<span class="flag-badge flag-${window.normalizeFlag(flag)}">${window.getFlagLabel(flag)}</span>`
             ).join('');
             
@@ -2452,7 +2451,11 @@ window.addEventListener('DOMContentLoaded', function() {
             const isRejected = state.validation_status === 'rejected';
             const isPending = state.validation_status === 'pending_review';
             
-            const flagBadges = state.needs_attention_flags.map(flag => 
+            // Filter attention flags to only show relevant ones (exclude removed filters)
+            const relevantFlags = state.needs_attention_flags.filter(flag => 
+                !['low_confidence', 'ambiguous', 'secondary_pipeline'].includes(flag)
+            );
+            const flagBadges = relevantFlags.map(flag => 
                 `<span class="flag-badge flag-${window.normalizeFlag(flag)}">${window.getFlagLabel(flag)}</span>`
             ).join('');
             
@@ -2568,10 +2571,8 @@ window.addEventListener('DOMContentLoaded', function() {
     let validationToolbarState = {
         filters: {
             flagged: false,
-            'low-confidence': false,
-            ambiguous: false,
-            singleton: false,
-            secondary: false
+            approved: false,
+            singleton: false
         },
         sort: 'flagged-first',
         search: '',
@@ -2655,26 +2656,14 @@ window.addEventListener('DOMContentLoaded', function() {
             filteredGroups = filteredGroups.filter(group => group.flagged_count > 0);
         }
 
-        if (validationToolbarState.filters['low-confidence']) {
+        if (validationToolbarState.filters.approved) {
             filteredGroups = filteredGroups.filter(group => 
-                group.mappings.some(m => (m.original_mapping.components?.confidence || 0) < validationToolbarState.confidenceThreshold)
-            );
-        }
-
-        if (validationToolbarState.filters.ambiguous) {
-            filteredGroups = filteredGroups.filter(group => 
-                group.group_flags.includes('ambiguous')
+                group.mappings.some(m => m.validation_status === 'approved')
             );
         }
 
         if (validationToolbarState.filters.singleton) {
             filteredGroups = filteredGroups.filter(group => group.total_mappings === 1);
-        }
-
-        if (validationToolbarState.filters.secondary) {
-            filteredGroups = filteredGroups.filter(group => 
-                group.group_flags.includes('secondary_pipeline')
-            );
         }
 
         // Apply search
