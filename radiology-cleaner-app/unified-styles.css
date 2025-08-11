@@ -308,17 +308,17 @@
 
 .confidence-inline.confidence-high {
   background-color: #e8f5e8;
-  color: #2e7d32;
+  color: white;
 }
 
 .confidence-inline.confidence-medium {
   background-color: #fff3e0;
-  color: #f57c00;
+  color: white;
 }
 
 .confidence-inline.confidence-low {
   background-color: #ffebee;
-  color: #d32f2f;
+  color: white;
 }
 
 /* Smaller validation buttons */
@@ -1909,11 +1909,11 @@ a:focus-visible {
 }
 
 .confidence-low {
-  background: var(--color-warning) !important;
+  background: var(--color-danger) !important;
 }
 
 .confidence-medium {
-  background: #ffeb3b !important;
+  background: var(--color-warning) !important;
 }
 
 .confidence-high {
