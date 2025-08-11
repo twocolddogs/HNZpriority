@@ -2224,22 +2224,8 @@ window.addEventListener('DOMContentLoaded', function() {
         // Create validation interface with statistics and consolidated groups
         const interfaceHTML = `
             <div class="validation-header">
-                <div class="validation-title-container">
-                    <h3 class="validation-title">
-                        <i class="fas fa-clipboard-check"></i> Validation Review
-                    </h3>
-                    
-                </div>
                 
                 <div class="validation-controls">
-                    <div class="control-group">
-                        <button id="expandAllBtn" class="button button-primary">
-                            <i class="fas fa-expand-alt"></i> Expand All
-                        </button>
-                        <button id="collapseAllBtn" class="button button-secondary">
-                            <i class="fas fa-compress-alt"></i> Collapse All
-                        </button>
-                    </div>
                     
                     <div class="validation-counters">
                         <div class="counter-item approved">
@@ -2297,9 +2283,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 
-                <div class="validation-search">
-                    <input type="text" id="searchInput" class="search-input" placeholder="Search groups by NHS reference, exam name, code, or source..." />
-                </div>
+                
             </div>
             
             <div id="validationGroups" class="validation-groups-container">
