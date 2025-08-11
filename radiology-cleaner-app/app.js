@@ -856,8 +856,28 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
         document.getElementById('consolidationModal')?.addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
         document.getElementById('viewToggleBtn')?.addEventListener('click', toggleView);
-        document.getElementById('consolidatedSearch')?.addEventListener('input', filterConsolidatedResults);
-        document.getElementById('consolidatedSort')?.addEventListener('change', sortConsolidatedResults);
+        // Consolidated view event listeners
+        const consolidatedSearch = document.getElementById('consolidatedSearch');
+        const consolidatedSort = document.getElementById('consolidatedSort');
+        const confidenceFilter = document.getElementById('confidenceFilter');
+        const sourceFilter = document.getElementById('sourceFilter');
+        const clearSearchBtn = document.getElementById('clearConsolidatedSearch');
+        const expandAllBtn = document.getElementById('expandAllBtn');
+        const collapseAllBtn = document.getElementById('collapseAllBtn');
+        
+        if (consolidatedSearch) consolidatedSearch.addEventListener('input', filterConsolidatedResults);
+        if (consolidatedSort) consolidatedSort.addEventListener('change', sortConsolidatedResults);
+        if (confidenceFilter) confidenceFilter.addEventListener('change', (e) => {
+            consolidatedFilters.confidence = e.target.value;
+            applyConsolidatedFilters();
+        });
+        if (sourceFilter) sourceFilter.addEventListener('change', (e) => {
+            consolidatedFilters.source = e.target.value;
+            applyConsolidatedFilters();
+        });
+        if (clearSearchBtn) clearSearchBtn.addEventListener('click', clearConsolidatedSearch);
+        if (expandAllBtn) expandAllBtn.addEventListener('click', expandAllGroups);
+        if (collapseAllBtn) collapseAllBtn.addEventListener('click', collapseAllGroups);
         document.getElementById('prevPageBtn')?.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;

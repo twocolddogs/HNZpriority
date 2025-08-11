@@ -273,16 +273,60 @@
                 
                 <!-- Consolidated View -->
                 <div id="consolidatedView" style="display: none;">
-                    <h3>Consolidated Results</h3>
-                    <div class="consolidated-controls" style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
-                        <input type="text" id="consolidatedSearch" placeholder="Search consolidated names..." style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; width: 300px; max-width: 100%;">
-                        <select id="consolidatedSort" style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
-                            <option value="count">Sort by Count</option>
-                            <option value="name">Sort by Name</option>
-                            <option value="confidence">Sort by Confidence</option>
-                        </select>
+                    <div class="consolidated-view-header">
+                        <div class="header-content">
+                            <div class="header-title">
+                                <i class="fas fa-layer-group"></i>
+                                <h3>Consolidated Results</h3>
+                                <span class="consolidated-count-badge" id="consolidatedCountBadge">0 groups</span>
+                            </div>
+                            <div class="view-description">
+                                <p>Grouped by NHS standard name showing consolidation opportunities and mapping patterns</p>
+                            </div>
+                        </div>
                     </div>
-                    <div id="consolidatedResults"></div>
+                    
+                    <div class="consolidated-controls">
+                        <div class="search-container">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="consolidatedSearch" placeholder="Search consolidated names, SNOMED codes, or original names...">
+                            <button class="clear-search" id="clearConsolidatedSearch" style="display: none;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="filter-controls">
+                            <select id="consolidatedSort" class="sort-select">
+                                <option value="count">📊 Sort by Count</option>
+                                <option value="name">🔤 Sort by Name</option>
+                                <option value="confidence">⭐ Sort by Confidence</option>
+                                <option value="improvement">🤖 Sort by AI Improvements</option>
+                            </select>
+                            <select id="confidenceFilter" class="filter-select">
+                                <option value="all">All Confidence Levels</option>
+                                <option value="high">High Confidence (≥80%)</option>
+                                <option value="medium">Medium Confidence (60-79%)</option>
+                                <option value="low">Low Confidence (<60%)</option>
+                            </select>
+                            <select id="sourceFilter" class="filter-select">
+                                <option value="all">All Sources</option>
+                                <!-- Dynamically populated -->
+                            </select>
+                        </div>
+                        <div class="view-options">
+                            <button class="toggle-button" id="expandAllBtn">
+                                <i class="fas fa-expand-alt"></i> Expand All
+                            </button>
+                            <button class="toggle-button" id="collapseAllBtn">
+                                <i class="fas fa-compress-alt"></i> Collapse All
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="consolidated-stats" id="consolidatedStats" style="display: none;">
+                        <!-- Stats will be populated dynamically -->
+                    </div>
+                    
+                    <div id="consolidatedResults" class="consolidated-results-container"></div>
                 </div>
             </div>
         </div>
