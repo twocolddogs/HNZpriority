@@ -1048,7 +1048,14 @@ window.addEventListener('DOMContentLoaded', function() {
                                 all_candidates: item.status === 'success' ? item.output?.all_candidates || [] : [],
                                 ambiguous: item.status === 'success' ? item.output?.ambiguous : false,
                                 secondary_pipeline_applied: item.status === 'success' ? item.output?.secondary_pipeline_applied || false : false,
-                                secondary_pipeline_details: item.status === 'success' ? item.output?.secondary_pipeline_details : undefined
+                                secondary_pipeline_details: item.status === 'success' ? item.output?.secondary_pipeline_details : undefined,
+                                // Handle cache hits - set validation_status for cached entries
+                                validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                                  (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                                validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                                 (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                                timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                                   (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
                             }));
                             allMappings = mappedResults;
                             updatePageTitle(`Random Sample (${result.processing_stats.sample_size || result.processing_stats.total_processed} items)`);
@@ -1157,7 +1164,14 @@ window.addEventListener('DOMContentLoaded', function() {
                                 all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
                                 ambiguous: item.status === 'success' ? item.output.ambiguous : false,
                                 secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
-                                secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
+                                secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined,
+                                // Handle cache hits - set validation_status for cached entries
+                                validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                                  (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                                validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                                 (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                                timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                                   (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
                             }));
                             allMappings.push(...chunkMappings);
                         } else {
@@ -1182,7 +1196,14 @@ window.addEventListener('DOMContentLoaded', function() {
                     all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
                     ambiguous: item.status === 'success' ? item.output.ambiguous : false,
                     secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
-                    secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
+                    secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined,
+                    // Handle cache hits - set validation_status for cached entries
+                    validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                      (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                    validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                     (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                    timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                       (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
                 }));
                 allMappings.push(...chunkMappings);
             } else {
@@ -1242,7 +1263,14 @@ window.addEventListener('DOMContentLoaded', function() {
                 all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
                 ambiguous: item.status === 'success' ? item.output.ambiguous : false,
                 secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
-                secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
+                secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined,
+                // Handle cache hits - set validation_status for cached entries
+                validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                  (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                 (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                   (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
             }));
             allMappings.push(...chunkMappings);
             statusManager.show(`Successfully processed ${processedCount} records. ${errorCount > 0 ? `${errorCount} errors.` : ''}`, errorCount > 0 ? 'warning' : 'success', 5000);
@@ -3695,6 +3723,175 @@ window.loadMockValidationData = function() {
             demoBtn.addEventListener('click', window.demoApprovalStateFix);
         }
     });
+
+    // Demo function to test cache hit approval detection
+    window.testCacheHitApproval = function() {
+        console.log('🧪 Testing cache hit approval detection');
+        
+        // Simulate raw API results with cache hits (what comes from R2)
+        const mockApiResults = [
+            {
+                "status": "success",
+                "input": {
+                    "DATA_SOURCE": "Auckland Metro-Agfa",
+                    "EXAM_CODE": "FORR", 
+                    "EXAM_NAME": "Forearm R",
+                    "MODALITY_CODE": "XR"
+                },
+                "output": {
+                    "data_source": "Auckland Metro-Agfa",
+                    "modality_code": "XR",
+                    "exam_code": "FORR",
+                    "exam_name": "Forearm R",
+                    "clean_name": "XR Radius and Ulna Right",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Plain X-ray of right forearm (procedure)",
+                        "id": 3591000087109
+                    },
+                    "components": {
+                        "confidence": 0.95,
+                        "anatomy": ["forearm"],
+                        "laterality": ["right"]
+                    },
+                    "cached_skip": true,
+                    "cache_type": "approved",
+                    "cached_at": "2025-08-11T08:02:40.832468Z"
+                }
+            },
+            {
+                "status": "success", 
+                "input": {
+                    "DATA_SOURCE": "Auckland Metro-Agfa",
+                    "EXAM_CODE": "C1",
+                    "EXAM_NAME": "Chest PA", 
+                    "MODALITY_CODE": "XR"
+                },
+                "output": {
+                    "data_source": "Auckland Metro-Agfa",
+                    "modality_code": "XR",
+                    "exam_code": "C1",
+                    "exam_name": "Chest PA",
+                    "clean_name": "XR Chest",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Plain chest X-ray (procedure)",
+                        "id": 399208008
+                    },
+                    "components": {
+                        "confidence": 0.94,
+                        "anatomy": ["chest"]
+                    },
+                    "cached_skip": true,
+                    "cache_type": "approved", 
+                    "cached_at": "2025-08-11T09:45:35.662514Z"
+                }
+            },
+            {
+                "status": "success",
+                "input": {
+                    "DATA_SOURCE": "Test Hospital",
+                    "EXAM_CODE": "MRI1",
+                    "EXAM_NAME": "MRI Brain",
+                    "MODALITY_CODE": "MR"
+                },
+                "output": {
+                    "data_source": "Test Hospital",
+                    "modality_code": "MR",
+                    "exam_code": "MRI1", 
+                    "exam_name": "MRI Brain",
+                    "clean_name": "MRI Brain",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Magnetic resonance imaging of brain (procedure)",
+                        "id": 278107002
+                    },
+                    "components": {
+                        "confidence": 0.87
+                    }
+                    // No cache hit fields - this should be pending
+                }
+            }
+        ];
+        
+        console.log('🔄 Transforming mock API results with cache hit detection...');
+        
+        // Apply the mapping transformation that should detect cache hits
+        const transformedMappings = mockApiResults.map(item => ({
+            data_source: item.input?.DATA_SOURCE || item.input?.data_source || item.output?.data_source,
+            modality_code: item.input?.MODALITY_CODE || item.input?.modality_code || item.output?.modality_code,
+            exam_code: item.input?.EXAM_CODE || item.input?.exam_code || item.output?.exam_code,
+            exam_name: item.input?.EXAM_NAME || item.input?.exam_name || item.output?.exam_name,
+            clean_name: item.status === 'success' ? item.output?.clean_name : `ERROR: ${item.error}`,
+            snomed: item.status === 'success' ? item.output?.snomed || {} : {},
+            components: item.status === 'success' ? item.output?.components || {} : {},
+            all_candidates: item.status === 'success' ? item.output?.all_candidates || [] : [],
+            ambiguous: item.status === 'success' ? item.output?.ambiguous : false,
+            secondary_pipeline_applied: item.status === 'success' ? item.output?.secondary_pipeline_applied || false : false,
+            secondary_pipeline_details: item.status === 'success' ? item.output?.secondary_pipeline_details : undefined,
+            // Handle cache hits - set validation_status for cached entries
+            validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                              (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+            validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                             (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+            timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                               (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
+        }));
+        
+        console.log('📊 Transformed mappings:', transformedMappings);
+        console.log('✅ Checking for correctly detected cache hits:');
+        transformedMappings.forEach((mapping, index) => {
+            const status = mapping.validation_status || 'pending';
+            console.log(`  ${index + 1}. ${mapping.exam_name}: ${status} ${mapping.validation_notes ? `(${mapping.validation_notes})` : ''}`);
+        });
+        
+        // Set as global mappings and initialize validation
+        window.allMappings = transformedMappings;
+        
+        // Call the validation interface directly instead of handleValidateCurrentResults
+        initializeValidationFromMappings(transformedMappings).then(validationState => {
+            window.loadValidationInterface(validationState);
+            
+            // Show the validation interface
+            const workflowSection = document.getElementById('workflowSection');
+            const validationSection = document.getElementById('validationSection');
+            const resultsSection = document.getElementById('resultsSection');
+            
+            if (workflowSection) workflowSection.style.display = 'none';
+            if (resultsSection) resultsSection.style.display = 'none';
+            if (validationSection) {
+                validationSection.classList.remove('hidden');
+                validationSection.style.display = 'block';
+            }
+            
+            const validationInterface = document.getElementById('validationInterface');
+            if (validationInterface) {
+                validationInterface.classList.remove('hidden');
+                validationInterface.style.display = 'block';
+            }
+        }).catch(error => {
+            console.error('Failed to initialize validation:', error);
+        });
+        
+        statusManager.show('🧪 Cache hit test loaded! Check console for cache detection results', 'info', 5000);
+    };
+    
+    // Add cache hit test button when in development mode
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const heroSection = document.querySelector('.hero-section');
+                if (heroSection) {
+                    const cacheTestBtn = document.createElement('button');
+                    cacheTestBtn.innerHTML = '🧪 Test Cache Hit Detection (DEV)';
+                    cacheTestBtn.className = 'button button-primary test-button';
+                    cacheTestBtn.style.marginLeft = '10px';
+                    cacheTestBtn.onclick = window.testCacheHitApproval;
+                    heroSection.appendChild(cacheTestBtn);
+                }
+            }, 1000);
+        });
+    }
 
 // Add test button to page when in development mode
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
