@@ -1666,25 +1666,23 @@ window.addEventListener('DOMContentLoaded', function() {
                  </div>` : '';
 
             groupElement.innerHTML = `
-                <div class="consolidated-group-header" onclick="toggleOriginalCodes(this)">
-                    <div class="header-main-content">
-                        <div class="header-title-section">
-                            <div class="consolidated-name">${group.cleanName}</div>
-                            <div class="consolidated-snomed">${group.snomed?.fsn || 'No SNOMED mapping'}</div>
-                        </div>
-                        <div class="header-meta-section">
-                            <div class="consolidated-count" title="${group.totalCount} original codes">${group.totalCount} codes</div>
-                            <div class="consolidated-sources">${sourcesHTML}</div>
-                            ${secondaryPipelineHTML}
-                            <div class="consolidated-confidence">
-                                <div class="confidence-bar-small">
-                                    <div class="confidence-fill-small ${confidenceClass}" style="width: ${confidencePercent}%"></div>
-                                </div>
-                                <small>${confidencePercent}%</small>
+                <div class="consolidated-header" onclick="toggleOriginalCodes(this)">
+                    <div class="consolidated-title-container">
+                        <div class="consolidated-title">${group.cleanName}</div>
+                        <div class="consolidated-snomed">${group.snomed?.fsn || 'No SNOMED mapping'}</div>
+                    </div>
+                    <div class="consolidated-count-container">
+                        <div class="consolidated-count" title="${group.totalCount} original codes">${group.totalCount} codes</div>
+                        <div class="consolidated-sources">${sourcesHTML}</div>
+                        ${secondaryPipelineHTML}
+                        <div class="consolidated-confidence">
+                            <div class="confidence-bar">
+                                <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
                             </div>
+                            <small>${confidencePercent}%</small>
                         </div>
                     </div>
-                    <div class="expand-indicator">›</div>
+                    <div class="expand-icon">›</div>
                 </div>
                 <div class="original-codes-container" style="display: none;">
                     <table>
