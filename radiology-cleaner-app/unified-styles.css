@@ -1967,9 +1967,11 @@ a:focus-visible {
 }
 
 .consolidated-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
   color: var(--color-primary);
+  margin: 0;
+  line-height: 1.2;
 }
 
 .snomed-code {
@@ -3262,6 +3264,34 @@ a:focus-visible {
   margin-bottom: var(--space-6);
 }
 
+/* Validation Group - Primary container */
+.validation-group {
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-200);
+  background: var(--color-white);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.validation-group:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-gray-300);
+}
+
+.validation-group.validation-flagged {
+  border-left: 4px solid var(--color-warning);
+  background: var(--color-warning-lighter);
+}
+
+/* Validation Body - Container for child mappings */
+.validation-body {
+  border-top: 1px solid var(--color-gray-200);
+  background: var(--color-gray-50);
+  padding: var(--space-4);
+  margin: 0;
+}
+
 /* Validation Group Controls */
 .validation-controls-inline {
   display: flex;
@@ -3326,15 +3356,34 @@ a:focus-visible {
 
 .validation-mapping-item {
   background: var(--color-white);
-  border-radius: var(--radius-base);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-gray-200);
   margin-bottom: var(--space-3);
+  margin-left: var(--space-4);
+  position: relative;
   transition: all 0.2s ease;
+}
+
+/* Add visual connection line for child mappings */
+.validation-mapping-item::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-4));
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-primary-200);
+  border-radius: 0 2px 2px 0;
 }
 
 .validation-mapping-item:hover {
   box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
+  border-color: var(--color-primary-300);
+}
+
+.validation-mapping-item:hover::before {
+  background: var(--color-primary);
 }
 
 .validation-mapping-item.mapping-flagged {
@@ -3342,22 +3391,27 @@ a:focus-visible {
   background: var(--color-warning-lighter);
 }
 
+.validation-mapping-item.mapping-flagged::before {
+  background: var(--color-warning);
+}
+
 .mapping-content {
-  padding: var(--space-4);
+  padding: var(--space-3) var(--space-4);
 }
 
 .mapping-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-3);
+  align-items: flex-start;
+  margin-bottom: var(--space-2);
 }
 
 .mapping-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
   margin: 0;
+  line-height: 1.3;
 }
 
 .mapping-actions {
@@ -3422,13 +3476,21 @@ a:focus-visible {
 
 /* Mapping state styling */
 .validation-mapping-item.mapping-approved {
-  border-left: 4px solid var(--color-success);
+  border-color: var(--color-success);
   background: var(--color-success-lighter);
 }
 
+.validation-mapping-item.mapping-approved::before {
+  background: var(--color-success);
+}
+
 .validation-mapping-item.mapping-rejected {
-  border-left: 4px solid var(--color-danger);
+  border-color: var(--color-danger);
   background: var(--color-danger-lighter);
+}
+
+.validation-mapping-item.mapping-rejected::before {
+  background: var(--color-danger);
 }
 
 /* Notes display */
