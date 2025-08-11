@@ -73,7 +73,7 @@ class ValidationUIDataPreparer:
                 self.approved_mappings = {}
                 
             # Load rejected mappings
-            rejected_file = self.validation_dir / 'rejected_mappings.json'
+            rejected_file = self.validation_dir / 'rejected_mappings_cache.json'
             if rejected_file.exists():
                 with open(rejected_file, 'r') as f:
                     rejected_data = json.load(f)

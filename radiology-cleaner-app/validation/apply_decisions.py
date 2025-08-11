@@ -240,7 +240,7 @@ class ValidationDecisionApplicator:
             logger.info(f"Approved mappings saved to {approved_file}")
             
             # Save rejected mappings in canonical schema format
-            rejected_file = self.validation_dir / 'rejected_mappings.json'
+            rejected_file = self.validation_dir / 'rejected_mappings_cache.json'
             rejected_cache_data = {
                 "meta": {
                     "version": 1,
