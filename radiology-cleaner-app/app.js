@@ -2315,20 +2315,10 @@ window.addEventListener('DOMContentLoaded', function() {
                             <option value="alphabetical">Alphabetical A-Z</option>
                         </select>
                     </div>
-                    
-                    <button class="next-flagged-btn" id="nextFlaggedBtn">
-                        <i class="fas fa-arrow-right"></i>
-                        Next Flagged
-                    </button>
                 </div>
                 
                 <div class="validation-search">
                     <input type="text" id="searchInput" class="search-input" placeholder="Search groups by NHS reference, exam name, code, or source..." />
-                    <div class="threshold-slider-container">
-                        <span style="font-size: var(--font-size-sm);">Confidence Threshold:</span>
-                        <input type="range" id="confidenceThreshold" class="threshold-slider" min="0.5" max="0.95" step="0.01" value="0.7" />
-                        <span class="threshold-value" id="thresholdValue">0.70</span>
-                    </div>
                 </div>
             </div>
             
@@ -2470,7 +2460,14 @@ window.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="validation-header-row-2" style="display: flex; justify-content: space-between; align-items: center;">
                             <div class="validation-meta-info" style="display: flex; gap: 12px; align-items: center;">
-                                <span class="consolidated-count" style="color: #666; font-size: 12px;">${group.total_mappings} mapping${group.total_mappings !== 1 ? 's' : ''}</span>
+                                ${(() => {
+                                    const approvedCount = group.mappings.filter(m => m.validation_status === 'approved').length;
+                                    const pendingCount = group.total_mappings - approvedCount;
+                                    const parts = [];
+                                    if (approvedCount > 0) parts.push(`${approvedCount} approved mapping${approvedCount !== 1 ? 's' : ''}`);
+                                    if (pendingCount > 0) parts.push(`${pendingCount} pending mapping${pendingCount !== 1 ? 's' : ''}`);
+                                    return `<span class="consolidated-count" style="color: #666; font-size: 12px;">${parts.join(', ') || '0 mappings'}</span>`;
+                                })()}
                                 ${group.flagged_count > 0 ? `<span class="flagged-count" style="color: #ff9800; font-size: 12px;"><i class="fas fa-exclamation-triangle"></i> ${group.flagged_count} flagged</span>` : ''}
                             </div>
                             <div class="validation-flags" style="display: flex; gap: 4px;">
@@ -2675,25 +2672,6 @@ window.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Initialize confidence threshold slider
-        const thresholdSlider = document.getElementById('confidenceThreshold');
-        const thresholdValue = document.getElementById('thresholdValue');
-        if (thresholdSlider && thresholdValue) {
-            thresholdSlider.addEventListener('input', (e) => {
-                validationToolbarState.confidenceThreshold = parseFloat(e.target.value);
-                thresholdValue.textContent = validationToolbarState.confidenceThreshold.toFixed(2);
-                filterAndDisplayGroups();
-            });
-        }
-
-        // Initialize next flagged button
-        const nextFlaggedBtn = document.getElementById('nextFlaggedBtn');
-        if (nextFlaggedBtn) {
-            nextFlaggedBtn.addEventListener('click', () => {
-                jumpToNextFlaggedGroup();
-            });
-        }
-
         // Initialize keyboard shortcuts
         initializeKeyboardShortcuts();
 
@@ -2767,48 +2745,6 @@ window.addEventListener('DOMContentLoaded', function() {
                 filteredGroupsObj[group.nhs_reference] = group;
             });
             container.innerHTML = renderValidationGroups(filteredGroupsObj);
-        }
-
-        // Update next flagged button state
-        updateNextFlaggedButton(filteredGroups);
-    }
-
-    function updateNextFlaggedButton(filteredGroups) {
-        const nextFlaggedBtn = document.getElementById('nextFlaggedBtn');
-        if (!nextFlaggedBtn) return;
-
-        const flaggedGroups = filteredGroups.filter(group => group.flagged_count > 0);
-        nextFlaggedBtn.disabled = flaggedGroups.length === 0;
-    }
-
-    function jumpToNextFlaggedGroup() {
-        const flaggedGroups = document.querySelectorAll('.validation-group.validation-flagged');
-        if (flaggedGroups.length === 0) return;
-
-        let nextIndex = 0;
-        if (validationToolbarState.activeGroupIndex >= 0) {
-            const currentGroup = document.querySelector(`[data-group-id="group_${validationToolbarState.activeGroupIndex}"]`);
-            if (currentGroup) {
-                const allGroups = Array.from(document.querySelectorAll('.validation-group'));
-                const currentIdx = allGroups.indexOf(currentGroup);
-                
-                // Find next flagged group after current
-                for (let i = currentIdx + 1; i < allGroups.length; i++) {
-                    if (allGroups[i].classList.contains('validation-flagged')) {
-                        nextIndex = i;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (flaggedGroups[nextIndex]) {
-            flaggedGroups[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Optionally expand the group
-            const groupId = flaggedGroups[nextIndex].getAttribute('data-group-id');
-            if (groupId) {
-                window.toggleValidationGroup(groupId);
-            }
         }
     }
 
