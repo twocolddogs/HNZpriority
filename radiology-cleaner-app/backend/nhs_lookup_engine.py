@@ -548,6 +548,35 @@ class NHSLookupEngine:
             logger.info(f"[DEBUG-HASH] Request hash: {request_hash}")
             logger.info(f"[DEBUG-HASH] Preimage: {preimage}")
         
+        # === EARLY APPROVAL CHECK ===
+        # Check if this exact input has already been approved to skip expensive processing
+        if data_source and exam_code and input_exam:
+            validation_hash = self._generate_request_hash(
+                exam_code=exam_code or '',
+                exam_name=input_exam,
+                data_source=data_source or ''
+            )
+            
+            # Early return for approved mappings
+            if validation_hash in self.approved_mappings:
+                approved_mapping = self.approved_mappings[validation_hash]
+                logger.info(f"[EARLY-APPROVAL] Skipping processing for pre-approved mapping: {input_exam} (hash: {validation_hash[:12]}...)")
+                
+                # Return approved mapping with validation metadata
+                result = approved_mapping.copy()
+                result.update({
+                    'validation_status': 'approved_by_human',
+                    'confidence': 1.0,  # Human approval = max confidence
+                    'early_approval_skip': True,
+                    'validation_hash': validation_hash
+                })
+                
+                if debug:
+                    result['debug_early_approval'] = True
+                    result['debug_skipped_processing'] = 'Full pipeline skipped due to pre-approved mapping'
+                
+                return result
+        
         # === VALIDATION ===
         if not self.retriever_processor or not self.retriever_processor.is_available():
             result = {'error': 'Retriever processor not available', 'confidence': 0.0}
