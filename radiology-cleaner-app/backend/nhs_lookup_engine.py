@@ -625,6 +625,38 @@ class NHSLookupEngine:
         candidate_snomed_ids = [self.index_to_snomed_id[i] for i in indices[0] if i < len(self.index_to_snomed_id)]
         candidate_entries = [self.snomed_lookup[str(sid)] for sid in candidate_snomed_ids if str(sid) in self.snomed_lookup]
         
+        # REJECTED CANDIDATE FILTERING: Remove previously rejected SNOMED IDs for this input
+        if data_source and exam_code and input_exam:
+            validation_hash = self._generate_request_hash(
+                exam_code=exam_code or '',
+                exam_name=input_exam, 
+                data_source=data_source or ''
+            )
+            
+            if validation_hash in self.rejected_mappings:
+                rejected_snomed_ids = self.rejected_mappings[validation_hash]
+                original_count = len(candidate_entries)
+                
+                filtered_candidates = []
+                filtered_count = 0
+                for entry in candidate_entries:
+                    snomed_id = entry.get('snomed_id')
+                    if snomed_id not in rejected_snomed_ids:
+                        filtered_candidates.append(entry)
+                    else:
+                        filtered_count += 1
+                        logger.debug(f"[REJECTION-FILTER] Filtered previously rejected candidate: {entry.get('primary_source_name', '')} (SNOMED: {snomed_id})")
+                
+                candidate_entries = filtered_candidates
+                
+                if filtered_count > 0:
+                    logger.info(f"[REJECTION-FILTER] Removed {filtered_count} previously rejected candidates ({original_count} → {len(candidate_entries)})")
+                
+                # Check if all candidates were filtered out by rejection
+                if not candidate_entries:
+                    logger.warning(f"[REJECTION-FILTER] All candidates were previously rejected for input: {input_exam}")
+                    return {'error': 'All candidates were previously rejected by human validation.', 'confidence': 0.0}
+        
         # HARD MODALITY FILTERING: Block candidates with mismatched modalities if input modality is provided
         input_modality = extracted_input_components.get('modality')
         if input_modality and len(input_modality) > 0:
