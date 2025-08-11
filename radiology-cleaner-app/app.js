@@ -1786,7 +1786,16 @@ window.addEventListener('DOMContentLoaded', function() {
                 window.currentValidationState[mappingId].timestamp_reviewed = null;
             } else {
                 window.currentValidationState[mappingId].validator_decision = decision;
-                window.currentValidationState[mappingId].validation_status = 'reviewed';
+                // Set validation_status to match the decision for consistent display
+                if (decision === 'approve') {
+                    window.currentValidationState[mappingId].validation_status = 'approved';
+                } else if (decision === 'reject') {
+                    window.currentValidationState[mappingId].validation_status = 'rejected';
+                } else if (decision === 'skip') {
+                    window.currentValidationState[mappingId].validation_status = 'skipped';
+                } else {
+                    window.currentValidationState[mappingId].validation_status = 'reviewed';
+                }
                 window.currentValidationState[mappingId].timestamp_reviewed = new Date().toISOString();
             }
         }
@@ -2465,6 +2474,7 @@ window.addEventListener('DOMContentLoaded', function() {
             // Check validation status
             const isApproved = state.validation_status === 'approved';
             const isRejected = state.validation_status === 'rejected';
+            const isSkipped = state.validation_status === 'skipped';
             const isPending = state.validation_status === 'pending_review';
             
             // Filter attention flags to only show relevant ones (exclude removed filters)
@@ -2481,10 +2491,12 @@ window.addEventListener('DOMContentLoaded', function() {
                 statusBadge = '<span class="status-badge status-approved"><i class="fas fa-check"></i> Approved</span>';
             } else if (isRejected) {
                 statusBadge = '<span class="status-badge status-rejected"><i class="fas fa-times"></i> Rejected</span>';
+            } else if (isSkipped) {
+                statusBadge = '<span class="status-badge status-skipped"><i class="fas fa-clock"></i> Skipped</span>';
             }
             
             html += `
-                <div class="validation-mapping-item ${hasFlags ? 'mapping-flagged' : ''} ${isApproved ? 'mapping-approved' : ''} ${isRejected ? 'mapping-rejected' : ''}" data-mapping-id="${mappingId}">
+                <div class="validation-mapping-item ${hasFlags ? 'mapping-flagged' : ''} ${isApproved ? 'mapping-approved' : ''} ${isRejected ? 'mapping-rejected' : ''} ${isSkipped ? 'mapping-skipped' : ''}" data-mapping-id="${mappingId}">
                     <div class="mapping-content">
                         <div class="mapping-header">
                             <div class="mapping-title">
@@ -3019,21 +3031,18 @@ Ctrl+Z - Undo last action`);
                 mappingElement.style.borderLeft = styles[decision].border;
                 mappingElement.style.background = styles[decision].bg;
                 
-                // Remove status-specific classes and add new ones
-                mappingElement.classList.remove('mapping-approved', 'mapping-rejected');
+                // Remove all status-specific classes and add new ones
+                mappingElement.classList.remove('mapping-approved', 'mapping-rejected', 'mapping-skipped');
                 if (decision === 'approve') {
                     mappingElement.classList.add('mapping-approved');
                 } else if (decision === 'reject') {
                     mappingElement.classList.add('mapping-rejected');
-                } else if (decision === 'unapprove') {
-                    // For unapprove, refresh the entire validation interface to update UI
-                    if (window.currentValidationState && window.currentConsolidatedGroups) {
-                        const validationInterface = document.getElementById('validationInterface');
-                        if (validationInterface) {
-                            window.loadValidationInterface(window.currentValidationState);
-                        }
-                    }
+                } else if (decision === 'skip') {
+                    mappingElement.classList.add('mapping-skipped');
                 }
+                
+                // Update status badge and action buttons
+                updateMappingElementVisuals(mappingElement, mappingId, decision);
             }
         }
         
@@ -3063,6 +3072,97 @@ Ctrl+Z - Undo last action`);
         if (pendingElement) pendingElement.textContent = pendingCount;
         
         console.log(`📊 Updated validation counters - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Pending: ${pendingCount}`);
+    }
+
+    // Function to update the visual elements (status badge and buttons) of a mapping item
+    function updateMappingElementVisuals(mappingElement, mappingId, decision) {
+        const state = window.currentValidationState?.[mappingId];
+        if (!state) return;
+        
+        // Update status badge
+        const titleElement = mappingElement.querySelector('.mapping-title');
+        if (titleElement) {
+            // Remove existing status badge
+            const existingBadge = titleElement.querySelector('.status-badge');
+            if (existingBadge) {
+                existingBadge.remove();
+            }
+            
+            // Add new status badge based on decision
+            let statusBadge = '';
+            if (decision === 'approve') {
+                statusBadge = '<span class="status-badge status-approved"><i class="fas fa-check"></i> Approved</span>';
+            } else if (decision === 'reject') {
+                statusBadge = '<span class="status-badge status-rejected"><i class="fas fa-times"></i> Rejected</span>';
+            } else if (decision === 'skip') {
+                statusBadge = '<span class="status-badge status-skipped"><i class="fas fa-clock"></i> Skipped</span>';
+            }
+            
+            if (statusBadge) {
+                titleElement.insertAdjacentHTML('beforeend', ' ' + statusBadge);
+            }
+        }
+        
+        // Update action buttons
+        const actionsElement = mappingElement.querySelector('.mapping-actions');
+        if (actionsElement) {
+            const isApproved = (decision === 'approve');
+            const isRejected = (decision === 'reject');
+            
+            const newButtonsHTML = `
+                ${isApproved ? `
+                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unapprove')" title="Unapprove mapping" style="padding: 4px 8px;">
+                        <i class="fas fa-undo" style="font-size: 12px;"></i>
+                    </button>
+                ` : `
+                    <button class="button button-sm button-success" onclick="updateMappingDecision('${mappingId}', 'approve')" title="Approve mapping" style="padding: 4px 8px;">
+                        <i class="fas fa-check" style="font-size: 12px;"></i>
+                    </button>
+                    <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject mapping" style="padding: 4px 8px;">
+                        <i class="fas fa-times" style="font-size: 12px;"></i>
+                    </button>
+                `}
+                <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
+                    <i class="fas fa-info-circle" style="font-size: 12px;"></i>
+                </button>
+            `;
+            
+            actionsElement.innerHTML = newButtonsHTML;
+        }
+        
+        // Update approval timestamp if approved and element exists
+        if (decision === 'approve' && state.timestamp_reviewed) {
+            const metaInline = mappingElement.querySelector('.mapping-meta-inline');
+            if (metaInline) {
+                // Remove existing timestamp if any
+                const existingTimestamp = metaInline.querySelector('.meta-timestamp');
+                if (existingTimestamp) {
+                    existingTimestamp.remove();
+                }
+                
+                // Add new timestamp
+                const timestampHTML = `
+                    <span class="meta-separator">•</span>
+                    <span class="meta-item-inline meta-timestamp">
+                        <i class="fas fa-clock"></i> <strong>Approved:</strong> ${new Date(state.timestamp_reviewed).toLocaleDateString()}
+                    </span>
+                `;
+                metaInline.insertAdjacentHTML('beforeend', timestampHTML);
+            }
+        } else if (decision === 'unapprove') {
+            // Remove timestamp when unapproving
+            const metaInline = mappingElement.querySelector('.mapping-meta-inline');
+            if (metaInline) {
+                const timestampElement = metaInline.querySelector('.meta-timestamp');
+                if (timestampElement) {
+                    const separator = timestampElement.previousElementSibling;
+                    if (separator && separator.classList.contains('meta-separator')) {
+                        separator.remove();
+                    }
+                    timestampElement.remove();
+                }
+            }
+        }
     }
     
     window.showMappingDetails = function(mappingId) {
