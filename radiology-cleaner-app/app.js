@@ -1796,22 +1796,43 @@ window.addEventListener('DOMContentLoaded', function() {
         updateMappingDecisionInState(mappingId, decision);
         const mappingElement = document.querySelector(`[data-mapping-id="${mappingId}"]`);
         if (mappingElement) {
-            const decisionStyles = { 
-                approve: { border: '3px solid #4caf50', bg: '#e8f5e8' },
-                reject: { border: '3px solid #f44336', bg: '#ffebee' },
-                modify: { border: '3px solid #ff9800', bg: '#fff8e1' },
-                skip: { border: '3px solid #9c27b0', bg: '#f3e5f5' }
-            };
-            mappingElement.style.borderLeft = decisionStyles[decision].border;
-            mappingElement.style.background = decisionStyles[decision].bg;
+            // Handle undo actions
+            if (decision === 'unapprove' || decision === 'unreject' || decision === 'unskip') {
+                // Reset to default styling for pending state
+                mappingElement.style.borderLeft = '';
+                mappingElement.style.background = '';
+                
+                // Update status text based on undo action
+                let actionText = '';
+                if (decision === 'unapprove') actionText = 'unapproved';
+                else if (decision === 'unreject') actionText = 'un-rejected';
+                else if (decision === 'unskip') actionText = 'un-skipped';
+                
+                statusManager.show(`Mapping ${actionText}`, 'success', 1500);
+            } else {
+                // Apply styling for new decisions
+                const decisionStyles = { 
+                    approve: { border: '3px solid #4caf50', bg: '#e8f5e8' },
+                    reject: { border: '3px solid #f44336', bg: '#ffebee' },
+                    modify: { border: '3px solid #ff9800', bg: '#fff8e1' },
+                    skip: { border: '3px solid #9c27b0', bg: '#f3e5f5' }
+                };
+                if (decisionStyles[decision]) {
+                    mappingElement.style.borderLeft = decisionStyles[decision].border;
+                    mappingElement.style.background = decisionStyles[decision].bg;
+                }
+                statusManager.show(`Mapping ${decision}d`, 'success', 1500);
+            }
         }
-        statusManager.show(`Mapping ${decision}d`, 'success', 1500);
+        
+        // Update the action buttons after the decision
+        updateMappingElementVisuals(mappingElement, mappingId, decision);
     }
     
     function updateMappingDecisionInState(mappingId, decision) {
         if (window.currentValidationState && window.currentValidationState[mappingId]) {
-            if (decision === 'unapprove') {
-                // Reset to pending state when unapproving
+            if (decision === 'unapprove' || decision === 'unreject' || decision === 'unskip') {
+                // Reset to pending state when undoing any decision
                 window.currentValidationState[mappingId].validator_decision = null;
                 window.currentValidationState[mappingId].validation_status = 'pending_review';
                 window.currentValidationState[mappingId].timestamp_reviewed = null;
@@ -3044,6 +3065,12 @@ Ctrl+Z - Undo last action`);
         const state = window.currentValidationState?.[mappingId];
         if (!state) return;
         
+        // For undo decisions, determine the actual current state
+        let currentDecision = decision;
+        if (decision === 'unapprove' || decision === 'unreject' || decision === 'unskip') {
+            currentDecision = state.validator_decision; // Should be null for pending
+        }
+        
         // Update status badge
         const titleElement = mappingElement.querySelector('.mapping-title');
         if (titleElement) {
@@ -3053,15 +3080,16 @@ Ctrl+Z - Undo last action`);
                 existingBadge.remove();
             }
             
-            // Add new status badge based on decision
+            // Add new status badge based on current decision
             let statusBadge = '';
-            if (decision === 'approve') {
+            if (currentDecision === 'approve') {
                 statusBadge = '<span class="status-badge status-approved"><i class="fas fa-check"></i> Approved</span>';
-            } else if (decision === 'reject') {
+            } else if (currentDecision === 'reject') {
                 statusBadge = '<span class="status-badge status-rejected"><i class="fas fa-times"></i> Rejected</span>';
-            } else if (decision === 'skip') {
+            } else if (currentDecision === 'skip') {
                 statusBadge = '<span class="status-badge status-skipped"><i class="fas fa-clock"></i> Skipped</span>';
             }
+            // If currentDecision is null (after undo), don't add any status badge
             
             if (statusBadge) {
                 titleElement.insertAdjacentHTML('beforeend', ' ' + statusBadge);
@@ -3071,12 +3099,21 @@ Ctrl+Z - Undo last action`);
         // Update action buttons
         const actionsElement = mappingElement.querySelector('.mapping-actions');
         if (actionsElement) {
-            const isApproved = (decision === 'approve');
-            const isRejected = (decision === 'reject');
+            const isApproved = (currentDecision === 'approve');
+            const isRejected = (currentDecision === 'reject');
+            const isSkipped = (currentDecision === 'skip');
             
             const newButtonsHTML = `
                 ${isApproved ? `
-                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unapprove')" title="Unapprove mapping" style="padding: 4px 8px;">
+                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unapprove')" title="Undo approve" style="padding: 4px 8px;">
+                        <i class="fas fa-undo" style="font-size: 12px;"></i>
+                    </button>
+                ` : isRejected ? `
+                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unreject')" title="Undo reject" style="padding: 4px 8px;">
+                        <i class="fas fa-undo" style="font-size: 12px;"></i>
+                    </button>
+                ` : isSkipped ? `
+                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unskip')" title="Undo skip" style="padding: 4px 8px;">
                         <i class="fas fa-undo" style="font-size: 12px;"></i>
                     </button>
                 ` : `
@@ -3090,7 +3127,7 @@ Ctrl+Z - Undo last action`);
                         <i class="fas fa-clock" style="font-size: 12px;"></i>
                     </button>
                 `}
-                <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
+                <button class="button button-sm button-secondary" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
                     <i class="fas fa-info-circle" style="font-size: 12px;"></i>
                 </button>
             `;
