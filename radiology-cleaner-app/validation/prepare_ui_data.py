@@ -54,41 +54,56 @@ class ValidationUIDataPreparer:
             else:
                 logger.warning("validation_state.json not found")
                 
-            # Load approved mappings cache
-            approved_file = self.validation_dir / 'approved_mappings_cache.json'
-            if approved_file.exists():
-                with open(approved_file, 'r') as f:
-                    approved_data = json.load(f)
-                    
-                # Handle canonical schema with entries wrapper
-                if isinstance(approved_data, dict) and 'entries' in approved_data:
-                    self.approved_mappings = approved_data['entries']
-                else:
-                    # Legacy flat structure or other format
-                    self.approved_mappings = approved_data
-                    
-                logger.info(f"Loaded {len(self.approved_mappings)} approved mappings")
-            else:
-                logger.info("approved_mappings_cache.json not found or empty")
-                self.approved_mappings = {}
+            # Load approved mappings cache from R2
+            self.approved_mappings = {}
+            try:
+                import requests
+                approved_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/approved_mappings_cache.json"
+                response = requests.get(approved_url, timeout=10)
                 
-            # Load rejected mappings
-            rejected_file = self.validation_dir / 'rejected_mappings_cache.json'
-            if rejected_file.exists():
-                with open(rejected_file, 'r') as f:
-                    rejected_data = json.load(f)
+                if response.status_code == 200:
+                    approved_data = response.json()
                     
-                # Handle canonical schema with entries wrapper  
-                if isinstance(rejected_data, dict) and 'entries' in rejected_data:
-                    self.rejected_mappings = rejected_data['entries']
+                    # Handle canonical schema with entries wrapper
+                    if isinstance(approved_data, dict) and 'entries' in approved_data:
+                        self.approved_mappings = approved_data['entries']
+                    else:
+                        # Legacy flat structure or other format
+                        self.approved_mappings = approved_data
+                        
+                    logger.info(f"Loaded {len(self.approved_mappings)} approved mappings from R2")
                 else:
-                    # Legacy flat structure or other format
-                    self.rejected_mappings = rejected_data
+                    logger.warning(f"Could not load approved cache from R2: HTTP {response.status_code}")
                     
-                logger.info(f"Loaded {len(self.rejected_mappings)} rejected mappings")
-            else:
-                logger.info("rejected_mappings.json not found or empty")
-                self.rejected_mappings = {}
+            except Exception as e:
+                logger.error(f"Failed to load approved mappings cache from R2: {e}")
+                
+            # Load rejected mappings from R2
+            self.rejected_mappings = {}
+            try:
+                import requests
+                rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/rejected_mappings_cache.json"
+                response = requests.get(rejected_url, timeout=10)
+                
+                if response.status_code == 200:
+                    rejected_data = response.json()
+                    
+                    # Handle canonical schema with entries wrapper  
+                    if isinstance(rejected_data, dict) and 'entries' in rejected_data:
+                        self.rejected_mappings = rejected_data['entries']
+                    else:
+                        # Legacy flat structure or other format
+                        self.rejected_mappings = rejected_data
+                        
+                    logger.info(f"Loaded {len(self.rejected_mappings)} rejected mappings from R2")
+                else:
+                    logger.info(f"Rejected mappings cache not found in R2: HTTP {response.status_code}")
+                    
+            except Exception as e:
+                logger.warning(f"Failed to load rejected mappings cache from R2: {e}")
+                
+            # Update validation state with approved/rejected status from caches
+            self._update_validation_status_from_caches()
                 
             return True
             
