@@ -1943,7 +1943,7 @@ a:focus-visible {
   background: var(--color-gray-50);
   color: var(--color-gray-800);
   padding: var(--space-3) var(--space-4);
-  display: flex;
+  display: block;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;

@@ -22,12 +22,6 @@ class OpenRouterReranker:
     
     # Available reranker models via OpenRouter
     SUPPORTED_MODELS = {
-        'gpt-5-nano': {
-            'name': 'GPT-5-nano',
-            'model_id': 'openai/gpt-5-nano',
-            'description': 'Fast and cost-effective OpenAI model',
-            'cost_per_1k_tokens': 0.00015
-        },
         'claude-3-haiku': {
             'name': 'Claude 3 Haiku',
             'model_id': 'anthropic/claude-3-haiku',
@@ -42,7 +36,7 @@ class OpenRouterReranker:
         }
     }
     
-    def __init__(self, model_key: str = 'gpt-5-nano', api_key: Optional[str] = None, timeout: int = 30):
+    def __init__(self, model_key: str = 'gemini-2.5-flash-lite', api_key: Optional[str] = None, timeout: int = 30):
         """
         Initialize OpenRouter reranker.
         

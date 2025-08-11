@@ -59,9 +59,9 @@ def get_secondary_pipeline(preloaded_config=None):
 
 class ModelType(Enum):
     """Available OpenRouter models for ensemble processing"""
-    CLAUDE_SONNET = "anthropic/claude-sonnet-4"
-    GPT4_TURBO = "openai/gpt-4-turbo"
-    GPT4_MINI = "openai/gpt-4.1-mini"
+    CLAUDE_OPUS = "anthropic/claude-opus-4.1"
+    GPT4 = "openai/gpt-4o"
+    CLAUDE_SONNET = "anthropic/claude-3.5-sonnet"
 
 @dataclass
 class ModelResponse:
@@ -115,8 +115,8 @@ class OpenRouterEnsemble:
         
         self.models = self.config.get('models', [
             ModelType.CLAUDE_SONNET.value,
-            ModelType.GPT4_TURBO.value, 
-            ModelType.GPT4_MINI.value
+            ModelType.GPT4.value, 
+            ModelType.CLAUDE_OPUS.value
         ])
     
     async def query_model(self, model: str, exam_name: str, context: Dict) -> ModelResponse:

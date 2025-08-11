@@ -2419,8 +2419,8 @@ window.addEventListener('DOMContentLoaded', function() {
             const isSingleton = group.total_mappings === 1;
             
             html += `
-                <div class="validation-group consolidated-group ${hasFlags ? 'validation-flagged' : ''}" data-group-id="${groupId}">
-                    <div class="validation-header consolidated-header ${hasFlags ? 'flagged-header' : ''}" onclick="toggleValidationGroup('${groupId}')" style="display: grid; grid-template-rows: auto auto; gap: 8px;">
+                <div class="validation-group ${hasFlags ? 'validation-flagged' : ''}" data-group-id="${groupId}">
+                    <div class="validation-header ${hasFlags ? 'flagged-header' : ''}" onclick="toggleValidationGroup('${groupId}')" style="display: grid; grid-template-rows: auto auto; gap: 8px;">
                         <div class="validation-header-row-1" style="display: flex; justify-content: space-between; align-items: center;">
                             <div class="consolidated-title-container" style="flex: 1;">
                                 <div class="consolidated-title" style="font-weight: 600; font-size: 14px;">${group.nhs_reference}</div>
@@ -2455,7 +2455,7 @@ window.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     </div>
-                    <div class="validation-body consolidated-body" id="${groupId}_content" style="display: none;">
+                    <div class="validation-body" id="${groupId}_content" style="display: none;">
                         ${window.renderGroupMappings(group.mappings, groupId)}
                     </div>
                 </div>
