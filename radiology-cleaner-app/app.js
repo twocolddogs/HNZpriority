@@ -2311,6 +2311,9 @@ window.addEventListener('DOMContentLoaded', function() {
         // Initialize validation toolbar functionality
         initializeValidationToolbar(validationState, consolidatedGroups);
         
+        // Clear the initializing message now that validation interface is ready
+        statusManager.clear();
+        
         // Store validation state globally for access by other functions
         window.currentValidationState = validationState;
         window.currentConsolidatedGroups = consolidatedGroups;

@@ -160,19 +160,19 @@
 .validation-group-header {
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid var(--color-gray-200);
+  border: none;
   border-radius: var(--radius-md);
   margin-bottom: var(--space-2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .validation-group-header:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 90, 156, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 90, 156, 0.15);
 }
 
 .validation-group-header.expanded {
   background-color: var(--color-primary-light);
-  border-color: var(--color-primary);
+  box-shadow: 0 4px 8px rgba(0, 90, 156, 0.2);
 }
 
 .expand-icon {
@@ -1967,7 +1967,7 @@ a:focus-visible {
   border-radius: var(--radius-base);
   box-shadow: var(--shadow-base);
   margin-bottom: var(--space-4);
-  border: 1px solid var(--color-gray-200);
+  border: none;
   transition: box-shadow var(--transition-fast);
 }
 
@@ -1983,7 +1983,9 @@ a:focus-visible {
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  border-bottom: 1px solid var(--color-gray-200);
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
 .consolidated-header:hover {
@@ -3148,7 +3150,7 @@ a:focus-visible {
   border-radius: var(--radius-base);
   box-shadow: var(--shadow-base);
   margin-bottom: var(--space-6);
-  border: 1px solid var(--color-gray-200);
+  border: none;
   padding: var(--space-6);
 }
 
@@ -3237,12 +3239,12 @@ a:focus-visible {
 
 /* Validation Group Styling */
 .validation-group.validation-flagged {
-  border-color: var(--color-warning);
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.15);
 }
 
 .validation-header.flagged-header {
   background: var(--color-warning-light) !important;
-  border-bottom-color: var(--color-warning);
+  box-shadow: 0 3px 6px rgba(255, 152, 0, 0.2);
 }
 
 .validation-header.flagged-header:hover {
