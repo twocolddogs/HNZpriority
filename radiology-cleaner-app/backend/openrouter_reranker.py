@@ -318,7 +318,7 @@ The ideal candidate has the **same level of clinical detail** as the input. Your
             
             # This regex is more robust and finds a JSON object containing the "ranking" key,
             # even if it's surrounded by other text or markdown.
-            json_match = re.search(r'\{.*"ranking"\s*:\s*\[.*?\][^}]*\}', response, re.DOTALL)
+            json_match = re.search(r'(\{.*?"ranking"\s*:\s*\[.*?\]\s*\})', response, re.DOTALL)
             
             if not json_match:
                 logger.warning(f"[OPENROUTER] Could not parse a valid JSON object with a 'ranking' key from response: {response[:200]}...")
