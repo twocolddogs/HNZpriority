@@ -64,13 +64,13 @@ class ValidationUIDataPreparer:
                 logger.info("approved_mappings_cache.json not found or empty")
                 
             # Load rejected mappings
-            rejected_file = self.validation_dir / 'rejected_mappings.json'
+            rejected_file = self.validation_dir / 'rejected_mappings_cache.json'
             if rejected_file.exists():
                 with open(rejected_file, 'r') as f:
                     self.rejected_mappings = json.load(f)
                 logger.info(f"Loaded {len(self.rejected_mappings)} rejected mappings")
             else:
-                logger.info("rejected_mappings.json not found or empty")
+                logger.info("rejected_mappings_cache.json not found or empty")
                 
             return True
             

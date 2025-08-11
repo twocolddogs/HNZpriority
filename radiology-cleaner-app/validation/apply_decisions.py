@@ -4,7 +4,7 @@ Validation Decision Application Script
 
 This script applies human validation decisions back to the system by:
 1. Processing validation decisions from the UI or import files
-2. Updating approved_mappings_cache.json and rejected_mappings.json
+2. Updating approved_mappings_cache.json and rejected_mappings_cache.json
 3. Generating final export mappings with corrections applied
 4. Creating audit trail and decision logs
 5. Preparing data for system integration or R2 upload
@@ -67,7 +67,7 @@ class ValidationDecisionApplicator:
                 logger.info(f"Loaded {len(self.approved_mappings)} existing approved mappings")
                 
             # Load existing rejected mappings
-            rejected_file = self.validation_dir / 'rejected_mappings.json'
+            rejected_file = self.validation_dir / 'rejected_mappings_cache.json'
             if rejected_file.exists():
                 with open(rejected_file, 'r') as f:
                     self.rejected_mappings = json.load(f)
@@ -212,7 +212,7 @@ class ValidationDecisionApplicator:
             logger.info(f"Approved mappings saved to {approved_file}")
             
             # Save rejected mappings
-            rejected_file = self.validation_dir / 'rejected_mappings.json'
+            rejected_file = self.validation_dir / 'rejected_mappings_cache.json'
             with open(rejected_file, 'w') as f:
                 json.dump(self.rejected_mappings, f, indent=2)
             logger.info(f"Rejected mappings saved to {rejected_file}")
