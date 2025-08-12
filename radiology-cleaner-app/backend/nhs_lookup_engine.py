@@ -44,10 +44,29 @@ from context_detection import detect_interventional_procedure_terms
 from preprocessing import get_preprocessor
 from complexity import ComplexityScorer
 from r2_cache_manager import R2CacheManager
-from common.hash_keys import compute_request_hash_with_preimage
+from common.hash_keys import compute_request_hash_with_preimage, compute_request_hash_with_laterality_and_preimage
 
 if TYPE_CHECKING:
     from parser import RadiologySemanticParser
+
+# SNOMED CT Laterality Concept ID Constants
+SNOMED_LATERALITY_BILATERAL = 51440002  # "Right and left (qualifier value)"
+SNOMED_LATERALITY_RIGHT = 24028007       # "Right (qualifier value)"
+SNOMED_LATERALITY_LEFT = 7771000         # "Left (qualifier value)"
+
+# Mapping from parsed laterality terms to SNOMED concept IDs
+PARSED_TO_SNOMED_LATERALITY = {
+    'bilateral': SNOMED_LATERALITY_BILATERAL,
+    'right': SNOMED_LATERALITY_RIGHT,
+    'left': SNOMED_LATERALITY_LEFT
+}
+
+# Mapping from SNOMED concept IDs to parsed laterality terms
+SNOMED_TO_PARSED_LATERALITY = {
+    SNOMED_LATERALITY_BILATERAL: 'bilateral',
+    SNOMED_LATERALITY_RIGHT: 'right',
+    SNOMED_LATERALITY_LEFT: 'left'
+}
 
 logger = logging.getLogger(__name__)
 
@@ -543,7 +562,19 @@ class NHSLookupEngine:
         input_modality = extracted_input_components.get('modality', [])
         modality_code_for_hash = input_modality[0] if input_modality else None
         
-        request_hash, preimage = compute_request_hash_with_preimage(data_source, exam_code, input_exam, modality_code_for_hash)
+        # Extract laterality for hash computation to ensure cache keys include laterality
+        input_laterality_for_hash = (extracted_input_components.get('laterality') or [None])[0]
+        
+        if input_laterality_for_hash:
+            # Use laterality-aware hash when laterality is present
+            request_hash, preimage = compute_request_hash_with_laterality_and_preimage(
+                data_source, exam_code, input_exam, modality_code_for_hash, input_laterality_for_hash
+            )
+        else:
+            # Use standard hash when no laterality
+            request_hash, preimage = compute_request_hash_with_preimage(
+                data_source, exam_code, input_exam, modality_code_for_hash
+            )
         if debug:
             logger.info(f"[DEBUG-HASH] Request hash: {request_hash}")
             logger.info(f"[DEBUG-HASH] Preimage: {preimage}")
@@ -876,11 +907,33 @@ class NHSLookupEngine:
             logger.info(f"[V3-PIPELINE] Best match: '{best_match.get('primary_source_name', '')}' (confidence={highest_confidence:.3f})")
             logger.info(f"[V3-PIPELINE] SNOMED: {best_match.get('snomed_concept_id', 'Unknown')}")
             
-            # Handle laterality logic
+            # Handle laterality logic using SNOMED concept IDs
             input_laterality = (extracted_input_components.get('laterality') or [None])[0]
+            match_laterality_concept_id = best_match.get('snomed_laterality_concept_id')
             match_laterality = (best_match.get('_parsed_components', {}).get('laterality') or [None])[0]
-            strip_laterality = (not input_laterality and match_laterality in ['left', 'right', 'bilateral'])
-            laterally_ambiguous = (not input_laterality and match_laterality in ['left', 'right', 'bilateral'])
+            
+            # Check if we need to find a bilateral peer based on SNOMED laterality concept ID or parsed laterality
+            should_find_bilateral_peer = False
+            laterally_ambiguous = False
+            
+            if not input_laterality:
+                # No input laterality specified - check if match has laterality
+                if match_laterality_concept_id in [SNOMED_LATERALITY_LEFT, SNOMED_LATERALITY_RIGHT, SNOMED_LATERALITY_BILATERAL]:
+                    should_find_bilateral_peer = True
+                    laterally_ambiguous = True
+                elif not match_laterality_concept_id or match_laterality_concept_id == "":
+                    # Fallback to parsed laterality if SNOMED laterality is missing
+                    if match_laterality in ['left', 'right', 'bilateral']:
+                        should_find_bilateral_peer = True
+                        laterally_ambiguous = True
+            else:
+                # Input has laterality - check for bilateral match preference
+                if input_laterality == 'bilateral':
+                    # Input wants bilateral - prefer bilateral SNOMED laterality
+                    if match_laterality_concept_id != SNOMED_LATERALITY_BILATERAL:
+                        should_find_bilateral_peer = True
+            
+            strip_laterality = should_find_bilateral_peer
             
             if strip_laterality:
                 if bilateral_peer := self.find_bilateral_peer_in_candidates(best_match, candidate_entries):
@@ -1824,7 +1877,7 @@ class NHSLookupEngine:
         return None
 
     def find_bilateral_peer_in_candidates(self, specific_entry: Dict, candidate_entries: List[Dict]) -> Optional[Dict]:
-        """Find bilateral peer within the filtered candidate entries (respects complexity filtering)."""
+        """Find bilateral peer within the filtered candidate entries using SNOMED laterality concept IDs."""
         specific_components = specific_entry.get('_parsed_components')
         if not specific_components:
             return None
@@ -1833,21 +1886,37 @@ class NHSLookupEngine:
         target_anatomy = set(specific_components.get('anatomy', []))
         target_contrasts = set(specific_components.get('contrast', []))
         target_techniques = set(specific_components.get('technique', []))
+        target_snomed_concept_id = specific_entry.get('snomed_concept_id')
 
-        # Search within our filtered candidates first (respects complexity filtering)
+        # Search within our filtered candidates for bilateral entries with same SNOMED concept
         for entry in candidate_entries:
             entry_components = entry.get('_parsed_components')
             if not entry_components:
                 continue
-            entry_laterality = (entry_components.get('laterality') or [None])[0]
-            if entry_laterality not in [None, 'bilateral']:
+                
+            # Check if this entry has the same SNOMED concept ID
+            if entry.get('snomed_concept_id') != target_snomed_concept_id:
                 continue
-
-            if (set(entry_components.get('modality', [])) == target_modalities and
-                    set(entry_components.get('anatomy', [])) == target_anatomy and
-                    set(entry_components.get('contrast', [])) == target_contrasts and
-                    set(entry_components.get('technique', [])) == target_techniques):
-                return entry
+                
+            # Prioritize SNOMED laterality concept ID over parsed laterality
+            entry_laterality_concept_id = entry.get('snomed_laterality_concept_id')
+            if entry_laterality_concept_id == SNOMED_LATERALITY_BILATERAL:
+                # Found bilateral peer with same SNOMED concept - check component match
+                if (set(entry_components.get('modality', [])) == target_modalities and
+                        set(entry_components.get('anatomy', [])) == target_anatomy and
+                        set(entry_components.get('contrast', [])) == target_contrasts and
+                        set(entry_components.get('technique', [])) == target_techniques):
+                    return entry
+            
+            # Fallback: check parsed laterality if SNOMED laterality is missing/empty
+            elif not entry_laterality_concept_id or entry_laterality_concept_id == "":
+                entry_laterality = (entry_components.get('laterality') or [None])[0]
+                if entry_laterality in [None, 'bilateral']:
+                    if (set(entry_components.get('modality', [])) == target_modalities and
+                            set(entry_components.get('anatomy', [])) == target_anatomy and
+                            set(entry_components.get('contrast', [])) == target_contrasts and
+                            set(entry_components.get('technique', [])) == target_techniques):
+                        return entry
 
         # No fallback - only return results from candidate_entries to maintain consistency
         return None
