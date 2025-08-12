@@ -70,9 +70,9 @@ class ValidationCacheManager:
             ]
         elif cache_type == "rejected":
             possible_paths = [
-                Path("../validation/rejected_mappings.json"),
-                Path("validation/rejected_mappings.json"),
-                Path("../radiology-cleaner-app/validation/rejected_mappings.json")
+                Path("../validation/rejected_mappings_cache.json"),
+                Path("validation/rejected_mappings_cache.json"),
+                Path("../radiology-cleaner-app/validation/rejected_mappings_cache.json")
             ]
         else:
             possible_paths = []

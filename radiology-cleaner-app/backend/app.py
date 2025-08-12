@@ -2309,7 +2309,7 @@ def submit_batch_validation_decisions():
 
             # Rejected cache
             if rejected_items:
-                rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/rejected_mappings.json"
+                rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/rejected_mappings_cache.json"
                 rejected_cache = _load_existing_cache(
                     rejected_url,
                     default_schema="rejected_mappings_cache.v1"
@@ -2351,7 +2351,7 @@ def submit_batch_validation_decisions():
 
                 rejected_json = json.dumps(rejected_cache, indent=2)
                 success = r2_manager.upload_object(
-                    object_key='validation/rejected_mappings.json',
+                    object_key='validation/rejected_mappings_cache.json',
                     data=rejected_json.encode('utf-8'),
                     content_type='application/json',
                     cors_headers=True
