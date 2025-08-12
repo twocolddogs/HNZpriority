@@ -228,14 +228,6 @@
                     <div class="stat-card"><div class="stat-value" id="avgConfidence">0</div><div class="stat-label">Avg Confidence</div></div>
                 </div>
                 
-                <!-- Combined Action Buttons - Reorganized Order -->
-                <div class="action-buttons view-toggle">
-                    <button class="button" style="background: #3f51b5; color: white;" id="validateResultsBtn">
-                        <i class="fas fa-check-double"></i> Validate Results
-                    </button>
-                    <button class="button primary new-upload" id="newUploadBtn">Start Over</button>
-                    <button class="button success" id="exportMappingsBtn">Export Mappings</button>
-                </div>
                 
                 <!-- Full View -->
                 <div id="fullView">
@@ -248,6 +240,10 @@
                             <option value="name-asc">Clean Name: A to Z</option>
                             <option value="name-desc">Clean Name: Z to A</option>
                         </select>
+                        <label style="margin-left: 15px; display: flex; align-items: center; cursor: pointer; font-size: 0.9em;">
+                            <input type="checkbox" id="prioritizeUnvalidated" checked style="margin-right: 6px;">
+                            Prioritize unvalidated
+                        </label>
                         <span id="tableInfo" class="table-info"></span>
                     </div>
                     <div class="table-container">
@@ -267,6 +263,18 @@
                             <option value="100" selected>100 per page</option>
                             <option value="200">200 per page</option>
                         </select>
+                    </div>
+                    
+                    <!-- Combined Action Buttons - Moved Below Results Table -->
+                    <div class="action-buttons view-toggle" style="margin-top: 20px;">
+                        <button class="button" style="background: #3f51b5; color: white; display: none;" id="validateResultsBtn">
+                            <i class="fas fa-check-double"></i> Validate Results
+                        </button>
+                        <button class="button primary new-upload" id="newUploadBtn">Start Over</button>
+                        <button class="button success" id="exportMappingsBtn">Export Mappings</button>
+                        <button class="button" style="background: #3f51b5; color: white;" id="commitValidationsBtn">
+                            <i class="fas fa-cloud-upload-alt"></i> Commit Validations
+                        </button>
                     </div>
                 </div>
                 

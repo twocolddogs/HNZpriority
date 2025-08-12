@@ -878,6 +878,10 @@ window.addEventListener('DOMContentLoaded', function() {
             currentPage = 1; 
             sortAndDisplayResults();
         });
+        document.getElementById('prioritizeUnvalidated')?.addEventListener('change', (e) => {
+            currentPage = 1;
+            sortAndDisplayResults();
+        });
     }
 
     // -----------------------------------------------------------------------------
@@ -1387,9 +1391,8 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function updateResultsTitle() {
         const titleElement = document.getElementById('resultsTitle');
-        const modelDisplayName = formatModelName(currentModel);
         const rerankerDisplayName = formatRerankerName(currentReranker);
-        titleElement.textContent = `Cleaning Results with ${modelDisplayName} → ${rerankerDisplayName}`;
+        titleElement.textContent = `Cleaning Results with ${rerankerDisplayName}`;
     }
     
     function updatePageTitle(title) {
@@ -1460,6 +1463,20 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function applySortToMappings() {
+        const prioritizeUnvalidated = document.getElementById('prioritizeUnvalidated')?.checked ?? true;
+        
+        // Helper function to check if an item has been validated
+        function isValidated(item) {
+            const mappingId = item.mapping_id || item.id;
+            if (window.currentValidationState && mappingId) {
+                const validationState = window.currentValidationState[mappingId];
+                return validationState && validationState.validator_decision && 
+                       ['approve', 'reject', 'skip', 'unapprove'].includes(validationState.validator_decision);
+            }
+            return false;
+        }
+        
+        // First apply the requested sorting
         switch (sortBy) {
             case 'confidence-desc':
                 sortedMappings.sort((a, b) => (b.components?.confidence || 0) - (a.components?.confidence || 0));
@@ -1475,6 +1492,19 @@ window.addEventListener('DOMContentLoaded', function() {
                 break;
             default:
                 sortedMappings = [...allMappings];
+        }
+        
+        // Then apply validation priority if enabled
+        if (prioritizeUnvalidated) {
+            sortedMappings.sort((a, b) => {
+                const aValidated = isValidated(a);
+                const bValidated = isValidated(b);
+                
+                // Prioritize unvalidated (return negative if a is unvalidated and b is validated)
+                if (!aValidated && bValidated) return -1;
+                if (aValidated && !bValidated) return 1;
+                return 0; // Keep original sort order for items with same validation status
+            });
         }
     }
 
