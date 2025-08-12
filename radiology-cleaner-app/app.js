@@ -1796,22 +1796,43 @@ window.addEventListener('DOMContentLoaded', function() {
         updateMappingDecisionInState(mappingId, decision);
         const mappingElement = document.querySelector(`[data-mapping-id="${mappingId}"]`);
         if (mappingElement) {
-            const decisionStyles = { 
-                approve: { border: '3px solid #4caf50', bg: '#e8f5e8' },
-                reject: { border: '3px solid #f44336', bg: '#ffebee' },
-                modify: { border: '3px solid #ff9800', bg: '#fff8e1' },
-                skip: { border: '3px solid #9c27b0', bg: '#f3e5f5' }
-            };
-            mappingElement.style.borderLeft = decisionStyles[decision].border;
-            mappingElement.style.background = decisionStyles[decision].bg;
+            // Handle undo actions
+            if (decision === 'unapprove' || decision === 'unreject' || decision === 'unskip') {
+                // Reset to default styling for pending state
+                mappingElement.style.borderLeft = '';
+                mappingElement.style.background = '';
+                
+                // Update status text based on undo action
+                let actionText = '';
+                if (decision === 'unapprove') actionText = 'unapproved';
+                else if (decision === 'unreject') actionText = 'un-rejected';
+                else if (decision === 'unskip') actionText = 'un-skipped';
+                
+                statusManager.show(`Mapping ${actionText}`, 'success', 1500);
+            } else {
+                // Apply styling for new decisions
+                const decisionStyles = { 
+                    approve: { border: '3px solid #4caf50', bg: '#e8f5e8' },
+                    reject: { border: '3px solid #f44336', bg: '#ffebee' },
+                    modify: { border: '3px solid #ff9800', bg: '#fff8e1' },
+                    skip: { border: '3px solid #9c27b0', bg: '#f3e5f5' }
+                };
+                if (decisionStyles[decision]) {
+                    mappingElement.style.borderLeft = decisionStyles[decision].border;
+                    mappingElement.style.background = decisionStyles[decision].bg;
+                }
+                statusManager.show(`Mapping ${decision}d`, 'success', 1500);
+            }
         }
-        statusManager.show(`Mapping ${decision}d`, 'success', 1500);
+        
+        // Update the action buttons after the decision
+        updateMappingElementVisuals(mappingElement, mappingId, decision);
     }
     
     function updateMappingDecisionInState(mappingId, decision) {
         if (window.currentValidationState && window.currentValidationState[mappingId]) {
-            if (decision === 'unapprove') {
-                // Reset to pending state when unapproving
+            if (decision === 'unapprove' || decision === 'unreject' || decision === 'unskip') {
+                // Reset to pending state when undoing any decision
                 window.currentValidationState[mappingId].validator_decision = null;
                 window.currentValidationState[mappingId].validation_status = 'pending_review';
                 window.currentValidationState[mappingId].timestamp_reviewed = null;
@@ -2121,7 +2142,6 @@ window.addEventListener('DOMContentLoaded', function() {
         
         if (approvedCount > 0) {
             console.log(`📋 Included ${approvedCount} already approved mappings, ${mappings.length - approvedCount} pending for validation`);
-            statusManager.show(`📋 ${approvedCount} mappings already approved, ${mappings.length - approvedCount} pending review`, 'info', 3000);
         }
         
         console.log(`✅ Created validation state for ${Object.keys(validationState).length} mappings`);
@@ -2142,8 +2162,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            statusManager.show('🔄 Initializing validation state...', 'info');
-            
             // Transform currentMappings into validation state
             const validationState = await initializeValidationFromMappings(currentMappings);
             
@@ -2185,8 +2203,6 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Load mappings into validation interface with validation state
             loadValidationInterface(validationState);
-            
-            statusManager.show(`✅ Initialized validation for ${Object.keys(validationState).length} mappings`, 'success', 3000);
         } catch (error) {
             console.error('Failed to initialize validation:', error);
             statusManager.show('❌ Failed to initialize validation', 'error', 5000);
@@ -2256,67 +2272,74 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 <div class="validation-controls">
                     
-                    <div class="validation-counters">
-                        <div class="counter-item approved">
-                            <i class="fas fa-check"></i>
-                            <span>Approved:</span>
-                            <span class="count" id="approvedCount">${approvedCount}</span>
+                    <!-- Filters Section - Now First -->
+                    <div class="validation-toolbar">
+                        <h4 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Filters</h4>
+                        <div class="validation-filters">
+                            <label class="filter-toggle" data-filter="flagged">
+                                <input type="checkbox" style="display: none;" />
+                                <i class="fas fa-flag"></i>
+                                <span>Flagged</span>
+                            </label>
+                            <label class="filter-toggle" data-filter="approved">
+                                <input type="checkbox" style="display: none;" />
+                                <i class="fas fa-check"></i>
+                                <span>Approved</span>
+                            </label>
+                            <label class="filter-toggle" data-filter="singleton">
+                                <input type="checkbox" style="display: none;" />
+                                <i class="fas fa-dot-circle"></i>
+                                <span>Singleton</span>
+                            </label>
+                            
+                            <div class="validation-sort">
+                                <label for="sortSelect" style="font-size: var(--font-size-sm); margin-right: var(--space-2);">Sort:</label>
+                                <select id="sortSelect" class="sort-select">
+                                    <option value="flagged-first">Flagged First</option>
+                                    <option value="group-size">Group Size (Desc)</option>
+                                    <option value="confidence">Avg Confidence (Asc)</option>
+                                    <option value="alphabetical">Alphabetical A-Z</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="counter-item rejected">
-                            <i class="fas fa-times"></i>
-                            <span>Rejected:</span>
-                            <span class="count" id="rejectedCount">${rejectedCount}</span>
-                        </div>
-                        <div class="counter-item skipped">
-                            <i class="fas fa-clock"></i>
-                            <span>Skipped:</span>
-                            <span class="count" id="skippedCount">${skippedCount}</span>
-                        </div>
-                        <div class="counter-item pending">
-                            <i class="fas fa-hourglass-half"></i>
-                            <span>Pending:</span>
-                            <span class="count" id="pendingCount">${pendingCount}</span>
+                    </div>
+                    
+                    <!-- Status Counts Section - Now Second -->
+                    <div class="validation-counters-section">
+                        <h4 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Status</h4>
+                        <div class="validation-counters">
+                            <div class="counter-item approved">
+                                <i class="fas fa-check"></i>
+                                <span>Approved:</span>
+                                <span class="count" id="approvedCount">${approvedCount}</span>
+                            </div>
+                            <div class="counter-item rejected">
+                                <i class="fas fa-times"></i>
+                                <span>Rejected:</span>
+                                <span class="count" id="rejectedCount">${rejectedCount}</span>
+                            </div>
+                            <div class="counter-item skipped">
+                                <i class="fas fa-clock"></i>
+                                <span>Skipped:</span>
+                                <span class="count" id="skippedCount">${skippedCount}</span>
+                            </div>
+                            <div class="counter-item pending">
+                                <i class="fas fa-hourglass-half"></i>
+                                <span>Pending:</span>
+                                <span class="count" id="pendingCount">${pendingCount}</span>
+                            </div>
                         </div>
                     </div>
                     
                 </div>
             </div>
             
-            <!-- Validation Toolbar -->
-            <div class="validation-toolbar">
-                <div class="validation-filters">
-                    <label class="filter-toggle" data-filter="flagged">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-flag"></i>
-                        <span>Flagged</span>
-                    </label>
-                    <label class="filter-toggle" data-filter="approved">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-check"></i>
-                        <span>Approved</span>
-                    </label>
-                    <label class="filter-toggle" data-filter="singleton">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-dot-circle"></i>
-                        <span>Singleton</span>
-                    </label>
-                    
-                    <div class="validation-sort">
-                        <label for="sortSelect" style="font-size: var(--font-size-sm); margin-right: var(--space-2);">Sort:</label>
-                        <select id="sortSelect" class="sort-select">
-                            <option value="flagged-first">Flagged First</option>
-                            <option value="group-size">Group Size (Desc)</option>
-                            <option value="confidence">Avg Confidence (Asc)</option>
-                            <option value="alphabetical">Alphabetical A-Z</option>
-                        </select>
-                    </div>
+            <!-- Mappings to Review Section -->
+            <div class="mappings-review-section">
+                <h4 style="margin: 20px 0 15px 0; color: #333; font-size: 16px;">Mappings to Review</h4>
+                <div id="validationGroups" class="validation-groups-container">
+                    ${window.renderValidationGroups(consolidatedGroups)}
                 </div>
-                
-                
-            </div>
-            
-            <div id="validationGroups" class="validation-groups-container">
-                ${window.renderValidationGroups(consolidatedGroups)}
             </div>
         `;
         
@@ -2327,8 +2350,8 @@ window.addEventListener('DOMContentLoaded', function() {
                     <button id="switchToResultsBtn" class="button button-secondary">
                         <i class="fas fa-arrow-left"></i> Switch to Results View
                     </button>
-                    <button id="exportValidationStateBtn" class="button button-primary">
-                        <i class="fas fa-download"></i> Export Validation State
+                    <button id="startNewProcessingBtn" class="button button-primary">
+                        <i class="fas fa-rocket"></i> Start New Processing Run
                     </button>
                     <button id="commitDecisionsBtn" class="button button-success">
                         <i class="fas fa-cloud-upload-alt"></i> Commit Validated Decisions
@@ -2597,7 +2620,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const expandAllBtn = document.getElementById('expandAllBtn');
         const collapseAllBtn = document.getElementById('collapseAllBtn');
         const commitBtn = document.getElementById('commitDecisionsBtn');
-        const exportBtn = document.getElementById('exportValidationStateBtn');
+        const startNewProcessingBtn = document.getElementById('startNewProcessingBtn');
         const switchToResultsBtn = document.getElementById('switchToResultsBtn');
         
         if (expandAllBtn) {
@@ -2612,8 +2635,8 @@ window.addEventListener('DOMContentLoaded', function() {
             commitBtn.addEventListener('click', commitValidatedDecisions);
         }
         
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => exportValidationState(validationState));
+        if (startNewProcessingBtn) {
+            startNewProcessingBtn.addEventListener('click', startNewUpload);
         }
         
         if (switchToResultsBtn) {
@@ -3044,6 +3067,12 @@ Ctrl+Z - Undo last action`);
         const state = window.currentValidationState?.[mappingId];
         if (!state) return;
         
+        // For undo decisions, determine the actual current state
+        let currentDecision = decision;
+        if (decision === 'unapprove' || decision === 'unreject' || decision === 'unskip') {
+            currentDecision = state.validator_decision; // Should be null for pending
+        }
+        
         // Update status badge
         const titleElement = mappingElement.querySelector('.mapping-title');
         if (titleElement) {
@@ -3053,15 +3082,16 @@ Ctrl+Z - Undo last action`);
                 existingBadge.remove();
             }
             
-            // Add new status badge based on decision
+            // Add new status badge based on current decision
             let statusBadge = '';
-            if (decision === 'approve') {
+            if (currentDecision === 'approve') {
                 statusBadge = '<span class="status-badge status-approved"><i class="fas fa-check"></i> Approved</span>';
-            } else if (decision === 'reject') {
+            } else if (currentDecision === 'reject') {
                 statusBadge = '<span class="status-badge status-rejected"><i class="fas fa-times"></i> Rejected</span>';
-            } else if (decision === 'skip') {
+            } else if (currentDecision === 'skip') {
                 statusBadge = '<span class="status-badge status-skipped"><i class="fas fa-clock"></i> Skipped</span>';
             }
+            // If currentDecision is null (after undo), don't add any status badge
             
             if (statusBadge) {
                 titleElement.insertAdjacentHTML('beforeend', ' ' + statusBadge);
@@ -3071,12 +3101,21 @@ Ctrl+Z - Undo last action`);
         // Update action buttons
         const actionsElement = mappingElement.querySelector('.mapping-actions');
         if (actionsElement) {
-            const isApproved = (decision === 'approve');
-            const isRejected = (decision === 'reject');
+            const isApproved = (currentDecision === 'approve');
+            const isRejected = (currentDecision === 'reject');
+            const isSkipped = (currentDecision === 'skip');
             
             const newButtonsHTML = `
                 ${isApproved ? `
-                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unapprove')" title="Unapprove mapping" style="padding: 4px 8px;">
+                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unapprove')" title="Undo approve" style="padding: 4px 8px;">
+                        <i class="fas fa-undo" style="font-size: 12px;"></i>
+                    </button>
+                ` : isRejected ? `
+                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unreject')" title="Undo reject" style="padding: 4px 8px;">
+                        <i class="fas fa-undo" style="font-size: 12px;"></i>
+                    </button>
+                ` : isSkipped ? `
+                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unskip')" title="Undo skip" style="padding: 4px 8px;">
                         <i class="fas fa-undo" style="font-size: 12px;"></i>
                     </button>
                 ` : `
@@ -3090,7 +3129,7 @@ Ctrl+Z - Undo last action`);
                         <i class="fas fa-clock" style="font-size: 12px;"></i>
                     </button>
                 `}
-                <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
+                <button class="button button-sm button-secondary" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
                     <i class="fas fa-info-circle" style="font-size: 12px;"></i>
                 </button>
             `;
