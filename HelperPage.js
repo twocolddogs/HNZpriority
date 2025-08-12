@@ -65,9 +65,6 @@ export function HelperPage() {
             )
           )
         ),
-        e('div', { className: 'rtt-helper-note' },
-          e('p', null, '*For community referred radiology the maximum reasonable wait is shorter - use 4 weeks instead of 6 weeks.')
-        )
       )
     ),
 
