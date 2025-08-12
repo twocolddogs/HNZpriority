@@ -339,6 +339,44 @@
         </div>
     </div>
 
+    <!-- User Name Input Modal -->
+    <div class="modal" id="userNameModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Processing Run - User Information</h2>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px; color: #666;">
+                    Before starting the processing run, please enter your name. This will be recorded with any validation decisions you make during this session.
+                </p>
+                <div style="margin-bottom: 20px;">
+                    <label for="userNameInput" style="display: block; margin-bottom: 8px; font-weight: 500;">
+                        Your Name: <span style="color: #f44336;">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="userNameInput" 
+                        class="text-input" 
+                        placeholder="Enter your full name"
+                        style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px;"
+                        required
+                    />
+                    <div id="userNameError" style="color: #f44336; font-size: 14px; margin-top: 5px; display: none;">
+                        Please enter your name to continue.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelUserNameBtn" class="button secondary" style="margin-right: 10px;">
+                    Cancel
+                </button>
+                <button id="confirmUserNameBtn" class="button primary">
+                    Start Processing
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <script type="module" src="./app.js"></script>
 </body>
