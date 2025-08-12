@@ -1593,7 +1593,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 sortedMappings.sort((a, b) => (b.clean_name || '').localeCompare(a.clean_name || ''));
                 break;
             default:
-                sortedMappings = [...allMappings];
+                sortedMappings = [...(window.allMappings || allMappings)];
         }
         
         // Then apply validation priority if enabled
@@ -2040,6 +2040,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 incrementUncommittedValidations();
             }
         }
+        
+        // Update validation counters whenever decision state changes
+        updateValidationCounters();
     }
     
     window.showMappingDetails = function(mappingId) {
@@ -2092,6 +2095,16 @@ window.addEventListener('DOMContentLoaded', function() {
         if (!window.currentValidationState) {
             statusManager.show('❌ No validation state found', 'error', 3000);
             return;
+        }
+        
+        // Ensure user name is provided before committing
+        if (!currentValidationAuthor) {
+            try {
+                await showUserNameModal();
+            } catch (error) {
+                // User cancelled - don't proceed with commit
+                return;
+            }
         }
         
         const decisions = Object.values(window.currentValidationState);
@@ -3921,6 +3934,9 @@ window.loadMockValidationData = function() {
         };
     });
 
+    // Initialize sortedMappings for the results table sorting
+    sortedMappings = [...window.allMappings];
+
     // Store validation state globally for access by other functions
     window.currentValidationState = mockValidationState;
 
@@ -4299,6 +4315,9 @@ window.loadMockValidationData = function() {
         
         // Set as global mappings and initialize validation
         window.allMappings = transformedMappings;
+        
+        // Initialize sortedMappings for the results table sorting
+        sortedMappings = [...window.allMappings];
         
         // Call the validation interface directly instead of handleValidateCurrentResults
         initializeValidationFromMappings(transformedMappings).then(validationState => {
