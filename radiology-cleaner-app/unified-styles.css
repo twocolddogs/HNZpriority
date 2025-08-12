@@ -47,6 +47,7 @@
 .counter-item.approved { border-color: var(--color-success); background: var(--color-success-light); }
 .counter-item.rejected { border-color: var(--color-danger); background: var(--color-danger-light); }
 .counter-item.skipped { border-color: var(--color-warning); background: var(--color-warning-light); }
+.counter-item.unapproved { border-color: var(--color-warning); background: var(--color-warning-light); }
 .counter-item.pending { border-color: var(--color-info); background: var(--color-info-light); }
 
 .validation-filters {
@@ -118,61 +119,23 @@
   box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
-.threshold-slider-container {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-  margin-left: auto;
-}
-
-.threshold-slider {
-  width: 120px;
-}
-
-.threshold-value {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  min-width: 4ch;
-}
-
-.next-flagged-btn {
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-warning);
-  color: var(--color-white);
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  transition: background 0.2s ease;
-}
-
-.next-flagged-btn:hover {
-  background: var(--color-warning-dark);
-}
-
-.next-flagged-btn:disabled {
-  background: var(--color-gray-400);
-  cursor: not-allowed;
-}
-
 /* Validation Group Headers with enhanced state */
 .validation-group-header {
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid var(--color-gray-200);
+  border: none;
   border-radius: var(--radius-md);
   margin-bottom: var(--space-2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .validation-group-header:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 90, 156, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 90, 156, 0.15);
 }
 
 .validation-group-header.expanded {
   background-color: var(--color-primary-light);
-  border-color: var(--color-primary);
+  box-shadow: 0 4px 8px rgba(0, 90, 156, 0.2);
 }
 
 .expand-icon {
@@ -346,17 +309,17 @@
 
 .confidence-inline.confidence-high {
   background-color: #e8f5e8;
-  color: #2e7d32;
+  color: white;
 }
 
 .confidence-inline.confidence-medium {
   background-color: #fff3e0;
-  color: #f57c00;
+  color: white;
 }
 
 .confidence-inline.confidence-low {
   background-color: #ffebee;
-  color: #d32f2f;
+  color: white;
 }
 
 /* Smaller validation buttons */
@@ -1542,6 +1505,51 @@ a:focus-visible {
   border-color: var(--color-success-hover);
 }
 
+/* Button variant styles for mapping actions */
+.button-success {
+  color: var(--color-white);
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.button-success:hover:not(:disabled) {
+  background-color: var(--color-success-hover);
+  border-color: var(--color-success-hover);
+}
+
+.button-danger {
+  color: var(--color-white);
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.button-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
+}
+
+.button-warning {
+  color: var(--color-white);
+  background-color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.button-warning:hover:not(:disabled) {
+  background-color: var(--color-warning-hover);
+  border-color: var(--color-warning-hover);
+}
+
+.button-secondary {
+  color: var(--color-white);
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+.button-secondary:hover:not(:disabled) {
+  background-color: var(--color-secondary-hover);
+  border-color: var(--color-secondary-hover);
+}
+
 /* New Upload Button - Distinctive Orange/Coral Tint */
 .button.new-upload {
   background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
@@ -1947,11 +1955,11 @@ a:focus-visible {
 }
 
 .confidence-low {
-  background: var(--color-warning) !important;
+  background: var(--color-danger) !important;
 }
 
 .confidence-medium {
-  background: #ffeb3b !important;
+  background: var(--color-warning) !important;
 }
 
 .confidence-high {
@@ -1959,7 +1967,9 @@ a:focus-visible {
 }
 
 /* ==========================================================================
-   13. Consolidated Results
+   13. [DEPRECATED] Consolidated Results - styles left for compatibility
+   Note: Consolidated Results view removed in issue #137 but styles kept
+   to avoid breaking other components. These can be safely removed in future.
    ========================================================================== */
 
 .consolidated-group {
@@ -1967,7 +1977,7 @@ a:focus-visible {
   border-radius: var(--radius-base);
   box-shadow: var(--shadow-base);
   margin-bottom: var(--space-4);
-  border: 1px solid var(--color-gray-200);
+  border: none;
   transition: box-shadow var(--transition-fast);
 }
 
@@ -1979,15 +1989,20 @@ a:focus-visible {
   background: var(--color-gray-50);
   color: var(--color-gray-800);
   padding: var(--space-3) var(--space-4);
-  display: flex;
+  display: block;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  border-bottom: 1px solid var(--color-gray-200);
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .consolidated-header:hover {
   background: var(--color-gray-100);
+  box-shadow: 0 4px 8px rgba(0, 90, 156, 0.15);
+  border: 1px solid var(--color-primary-200);
 }
 
 .consolidated-title-container {
@@ -1998,9 +2013,11 @@ a:focus-visible {
 }
 
 .consolidated-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
   color: var(--color-primary);
+  margin: 0;
+  line-height: 1.2;
 }
 
 .snomed-code {
@@ -2047,13 +2064,63 @@ a:focus-visible {
 }
 
 .expand-icon {
-  width: 16px;
-  height: 16px;
-  transition: transform var(--transition-fast);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236C757D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  width: 18px;
+  height: 18px;
+  transition: all var(--transition-fast);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23005A9C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  opacity: 0.7;
+  position: relative;
+}
+
+.expand-icon::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  bottom: -8px;
+  left: -8px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all var(--transition-fast);
+}
+
+.consolidated-header:hover .expand-icon {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.consolidated-header:hover .expand-icon::after {
+  background: rgba(0, 90, 156, 0.08);
+}
+
+/* Add subtle "click to expand" hint */
+
+.consolidated-header::before {
+  content: 'Click to expand';
+  position: absolute;
+  top: -30px;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+}
+
+.consolidated-header.expanded::before {
+  content: 'Click to collapse';
+}
+
+.consolidated-header:hover::before {
+  opacity: 1;
 }
 
 .consolidated-header.expanded .expand-icon {
@@ -3148,8 +3215,16 @@ a:focus-visible {
   border-radius: var(--radius-base);
   box-shadow: var(--shadow-base);
   margin-bottom: var(--space-6);
-  border: 1px solid var(--color-gray-200);
+  border: none;
   padding: var(--space-6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.validation-header:hover {
+  box-shadow: 0 4px 12px rgba(0, 90, 156, 0.15);
+  border: 1px solid var(--color-primary-200);
 }
 
 .validation-title-container {
@@ -3235,28 +3310,44 @@ a:focus-visible {
   margin-bottom: var(--space-6);
 }
 
-/* Validation Group Styling */
+/* Validation Group - Primary container */
+.validation-group {
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-200);
+  background: var(--color-white);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.validation-group:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-gray-300);
+}
+
 .validation-group.validation-flagged {
-  border-color: var(--color-warning);
+  border-left: 4px solid var(--color-warning);
+  background: var(--color-warning-lighter);
 }
 
-.validation-header.flagged-header {
-  background: var(--color-warning-light) !important;
-  border-bottom-color: var(--color-warning);
-}
-
-.validation-header.flagged-header:hover {
-  background: var(--color-warning-lighter) !important;
+/* Validation Body - Container for child mappings */
+.validation-body {
+  border-top: 1px solid var(--color-gray-200);
+  background: var(--color-gray-50);
+  padding: var(--space-4);
+  margin: 0;
 }
 
 /* Validation Group Controls */
 .validation-controls-inline {
   display: flex;
+  gap: 8px;
+  flex-grow: 1;
+  justify-content: space-between; /* Spread icons across container */
   align-items: center;
-  gap: var(--space-2);
 }
 
-/* Right-align validation controls in consolidated headers */
+/* [DEPRECATED] Right-align validation controls (consolidated headers removed) */
 .validation-header .validation-controls-inline {
   margin-left: auto;
 }
@@ -3311,15 +3402,34 @@ a:focus-visible {
 
 .validation-mapping-item {
   background: var(--color-white);
-  border-radius: var(--radius-base);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-gray-200);
   margin-bottom: var(--space-3);
+  margin-left: var(--space-4);
+  position: relative;
   transition: all 0.2s ease;
+}
+
+/* Add visual connection line for child mappings */
+.validation-mapping-item::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-4));
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-primary-200);
+  border-radius: 0 2px 2px 0;
 }
 
 .validation-mapping-item:hover {
   box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
+  border-color: var(--color-primary-300);
+}
+
+.validation-mapping-item:hover::before {
+  background: var(--color-primary);
 }
 
 .validation-mapping-item.mapping-flagged {
@@ -3327,22 +3437,27 @@ a:focus-visible {
   background: var(--color-warning-lighter);
 }
 
+.validation-mapping-item.mapping-flagged::before {
+  background: var(--color-warning);
+}
+
 .mapping-content {
-  padding: var(--space-4);
+  padding: var(--space-3) var(--space-4);
 }
 
 .mapping-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-3);
+  align-items: flex-start;
+  margin-bottom: var(--space-2);
 }
 
 .mapping-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
   margin: 0;
+  line-height: 1.3;
 }
 
 .mapping-actions {
@@ -3405,15 +3520,41 @@ a:focus-visible {
   border: 1px solid var(--color-danger);
 }
 
+.status-badge.status-pending {
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-gray-300);
+}
+
+.status-badge.status-unapproved {
+  background: var(--color-warning-light);
+  color: var(--color-warning-dark);
+  border: 1px solid var(--color-warning);
+}
+
+.status-badge.status-skipped {
+  background: var(--color-info-light);
+  color: var(--color-info-dark);
+  border: 1px solid var(--color-info);
+}
+
 /* Mapping state styling */
 .validation-mapping-item.mapping-approved {
-  border-left: 4px solid var(--color-success);
+  border-color: var(--color-success);
   background: var(--color-success-lighter);
 }
 
+.validation-mapping-item.mapping-approved::before {
+  background: var(--color-success);
+}
+
 .validation-mapping-item.mapping-rejected {
-  border-left: 4px solid var(--color-danger);
+  border-color: var(--color-danger);
   background: var(--color-danger-lighter);
+}
+
+.validation-mapping-item.mapping-rejected::before {
+  background: var(--color-danger);
 }
 
 /* Notes display */
@@ -3556,6 +3697,116 @@ a:focus-visible {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   Quick Validation Buttons for Results Table
+   ========================================================================== */
+
+.quick-validation-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.validation-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.status-approved {
+  color: #4caf50;
+  background: #e8f5e8;
+  border: 1px solid #4caf50;
+}
+
+.status-rejected {
+  color: #f44336;
+  background: #ffebee;
+  border: 1px solid #f44336;
+}
+
+.quick-validation-cell .button {
+  padding: 4px 8px;
+  font-size: 12px;
+  min-width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-validation-cell .button-success {
+  background: #4caf50;
+  border-color: #4caf50;
+  color: white;
+}
+
+.quick-validation-cell .button-success:hover {
+  background: #45a049;
+  border-color: #45a049;
+}
+
+.quick-validation-cell .button-danger {
+  background: #f44336;
+  border-color: #f44336;
+  color: white;
+}
+
+.quick-validation-cell .button-danger:hover {
+  background: #da190b;
+  border-color: #da190b;
+}
+
+.quick-validation-cell .button-warning {
+  background: #ff9800;
+  border-color: #ff9800;
+  color: white;
+}
+
+.quick-validation-cell .button-warning:hover {
+  background: #e68900;
+  border-color: #e68900;
+}
+
+/* Quick validation row highlighting */
+.results-table tr.validated-approved {
+  background-color: #e8f5e8 !important;
+  border-left: 3px solid #4caf50 !important;
+}
+
+.results-table tr.validated-rejected {
+  background-color: #ffebee !important;
+  border-left: 3px solid #f44336 !important;
+}
+
+/* Responsive handling for mobile */
+@media (max-width: 768px) {
+  .quick-validation-cell {
+    flex-direction: column;
+    gap: 4px;
+    min-width: 100px;
+  }
+  
+  .validation-status {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+  
+  .quick-validation-cell .button {
+    padding: 3px 6px;
+    font-size: 10px;
+    min-width: 24px;
+    height: 24px;
   }
 }
 

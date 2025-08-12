@@ -2158,6 +2158,7 @@ def submit_batch_validation_decisions():
         processed_decisions = []
         approved_items = []
         rejected_items = []
+        unapprove_items = []
         errors = []
 
         # Helpers
@@ -2229,6 +2230,9 @@ def submit_batch_validation_decisions():
                     approved_items.append(processed)
                 elif decision == 'reject':
                     rejected_items.append(processed)
+                elif decision == 'unapprove':
+                    # For unapprove, we need to remove from approved cache
+                    unapprove_items.append(processed)
 
             except Exception as e:
                 errors.append(f'Error processing decision: {str(e)}')
@@ -2236,13 +2240,13 @@ def submit_batch_validation_decisions():
         r2_success = True
         cache_reload_success = True
 
-        logger.info(f"Starting R2 save process: {len(approved_items)} approved, {len(rejected_items)} rejected")
+        logger.info(f"Starting R2 save process: {len(approved_items)} approved, {len(rejected_items)} rejected, {len(unapprove_items)} unapproved")
 
         try:
             import json
 
-            # Approved cache
-            if approved_items:
+            # Approved cache - handle both new approvals and unapprovals
+            if approved_items or unapprove_items:
                 approved_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/approved_mappings_cache.json"
                 approved_cache = _load_existing_cache(
                     approved_url,
@@ -2257,6 +2261,7 @@ def submit_batch_validation_decisions():
                     if k not in ('entries', 'meta') and isinstance(approved_cache[k], dict):
                         approved_cache['entries'][k] = approved_cache.pop(k)
 
+                # Process new approvals - add to cache
                 for item in approved_items:
                     try:
                         req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
@@ -2271,8 +2276,21 @@ def submit_batch_validation_decisions():
                             }
                         }
                         approved_cache['entries'][req_hash] = entry
+                        logger.info(f"Added approved mapping to cache: {req_hash}")
                     except Exception as e:
                         errors.append(f"Failed to build approved entry for {item.get('mapping_id')}: {e}")
+
+                # Process unapprovals - remove from cache
+                for item in unapprove_items:
+                    try:
+                        req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
+                        if req_hash in approved_cache['entries']:
+                            del approved_cache['entries'][req_hash]
+                            logger.info(f"Removed unapproved mapping from cache: {req_hash}")
+                        else:
+                            logger.warning(f"Unapproved mapping not found in cache: {req_hash}")
+                    except Exception as e:
+                        errors.append(f"Failed to remove unapproved entry for {item.get('mapping_id')}: {e}")
 
                 approved_cache['meta']['last_updated'] = datetime.utcnow().isoformat() + 'Z'
 
@@ -2291,7 +2309,7 @@ def submit_batch_validation_decisions():
 
             # Rejected cache
             if rejected_items:
-                rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/rejected_mappings.json"
+                rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/rejected_mappings_cache.json"
                 rejected_cache = _load_existing_cache(
                     rejected_url,
                     default_schema="rejected_mappings_cache.v1"
@@ -2333,7 +2351,7 @@ def submit_batch_validation_decisions():
 
                 rejected_json = json.dumps(rejected_cache, indent=2)
                 success = r2_manager.upload_object(
-                    object_key='validation/rejected_mappings.json',
+                    object_key='validation/rejected_mappings_cache.json',
                     data=rejected_json.encode('utf-8'),
                     content_type='application/json',
                     cors_headers=True
@@ -2366,6 +2384,7 @@ def submit_batch_validation_decisions():
             'processed_count': len(processed_decisions),
             'approved_count': len(approved_items),
             'rejected_count': len(rejected_items),
+            'unapproved_count': len(unapprove_items),
             'error_count': len(errors),
             'r2_storage_success': r2_success,
             'cache_reload_success': cache_reload_success,

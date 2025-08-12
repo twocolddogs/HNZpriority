@@ -776,13 +776,13 @@ secondary_pipeline:
 
   # Model configuration
   models:
-    - "anthropic/claude-sonnet-4"
-    - "openai/gpt-4-turbo"
-    - "openai/gpt-4.1-mini"
+    - "anthropic/claude-3.5-sonnet"
+    - "openai/gpt-4o"
+    - "anthropic/claude-opus-4.1"
   
   # API settings
   temperature: 0.0 # Set to 0 for maximum determinism and adherence to instructions
-  max_tokens: 600
+  max_tokens: 800
   
   # Pipeline settings
   confidence_threshold: 0.8

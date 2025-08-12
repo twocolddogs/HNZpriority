@@ -111,3 +111,83 @@ def compute_request_hash_with_preimage(data_source: Optional[str], exam_code: Op
     preimage = build_preimage(data_source, exam_code, exam_name, modality_code)
     hash_bytes = hashlib.sha256(preimage.encode('utf-8')).digest()
     return hash_bytes.hex(), preimage
+
+
+def build_preimage_with_laterality(data_source: Optional[str], exam_code: Optional[str], 
+                                 exam_name: Optional[str], modality_code: Optional[str],
+                                 laterality: Optional[str] = None) -> str:
+    """
+    Build the canonical preimage string for hashing including laterality.
+    
+    Format: "v2|ds:{DATA_SOURCE}|ec:{EXAM_CODE}|en:{EXAM_NAME}|mc:{MODALITY_CODE}|lat:{LATERALITY}"
+    
+    Args:
+        data_source: The data source identifier
+        exam_code: The exam code
+        exam_name: The exam name (required field)
+        modality_code: The modality code
+        laterality: The laterality (optional)
+        
+    Returns:
+        Formatted preimage string with escaped pipe characters
+    """
+    # Normalize all fields
+    ds = normalize_field(data_source)
+    ec = normalize_field(exam_code)
+    en = normalize_field(exam_name)
+    mc = normalize_field(modality_code)
+    lat = normalize_field(laterality)
+    
+    # Escape any pipe characters in the values as %7C
+    ds = ds.replace('|', '%7C')
+    ec = ec.replace('|', '%7C')
+    en = en.replace('|', '%7C')
+    mc = mc.replace('|', '%7C')
+    lat = lat.replace('|', '%7C')
+    
+    # Build the canonical preimage (v2 format includes laterality)
+    preimage = f"v2|ds:{ds}|ec:{ec}|en:{en}|mc:{mc}|lat:{lat}"
+    
+    return preimage
+
+
+def compute_request_hash_with_laterality(data_source: Optional[str], exam_code: Optional[str],
+                                       exam_name: Optional[str], modality_code: Optional[str],
+                                       laterality: Optional[str] = None) -> str:
+    """
+    Compute SHA-256 hash of the request parameters including laterality.
+    
+    Args:
+        data_source: The data source identifier
+        exam_code: The exam code
+        exam_name: The exam name (required field)  
+        modality_code: The modality code
+        laterality: The laterality (optional)
+        
+    Returns:
+        SHA-256 hash as lowercase hexadecimal string
+    """
+    preimage = build_preimage_with_laterality(data_source, exam_code, exam_name, modality_code, laterality)
+    hash_bytes = hashlib.sha256(preimage.encode('utf-8')).digest()
+    return hash_bytes.hex()
+
+
+def compute_request_hash_with_laterality_and_preimage(data_source: Optional[str], exam_code: Optional[str],
+                                                    exam_name: Optional[str], modality_code: Optional[str],
+                                                    laterality: Optional[str] = None) -> Tuple[str, str]:
+    """
+    Compute both the hash and preimage including laterality for debugging/logging.
+    
+    Args:
+        data_source: The data source identifier
+        exam_code: The exam code
+        exam_name: The exam name (required field)
+        modality_code: The modality code
+        laterality: The laterality (optional)
+        
+    Returns:
+        Tuple of (hash_hex, preimage_string)
+    """
+    preimage = build_preimage_with_laterality(data_source, exam_code, exam_name, modality_code, laterality)
+    hash_bytes = hashlib.sha256(preimage.encode('utf-8')).digest()
+    return hash_bytes.hex(), preimage

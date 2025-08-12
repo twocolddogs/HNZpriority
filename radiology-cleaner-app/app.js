@@ -198,7 +198,7 @@ class StatusManager {
     }
     
     updateProgress(id, current, total, message = null) {
-        const messageElement = document.getElementById(id);
+        const messageElement = this.activeMessages.get(id);
         if (!messageElement) return false;
         
         const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
@@ -213,7 +213,10 @@ class StatusManager {
                 <div class="progress-bar"><div class="progress-fill" style="width: ${percentage}%"></div></div>
             </div>`;
         
-        messageElement.innerHTML = progressContent;
+        const textElement = messageElement.querySelector('.status-text');
+        if (textElement) {
+            textElement.innerHTML = progressContent;
+        }
         return true;
     }
     
@@ -700,7 +703,7 @@ window.addEventListener('DOMContentLoaded', function() {
         };
         availableRerankers = {
             'medcpt': { name: 'MedCPT (HuggingFace)', status: 'available', description: 'NCBI Medical Clinical Practice Text cross-encoder', type: 'huggingface' },
-            'gpt-4o-mini': { name: 'GPT-4o Mini', status: 'unknown', description: 'Fast and cost-effective OpenAI model', type: 'openrouter' },
+            'gpt-5-nano': { name: 'GPT-5-nano', status: 'unknown', description: 'Fast and cost-effective OpenAI model', type: 'openrouter' },
             'claude-3-haiku': { name: 'Claude 3 Haiku', status: 'unknown', description: 'Fast Anthropic model optimized for speed', type: 'openrouter' },
             'gemini-2.5-flash-lite': { name: 'Gemini 2.5 Flash Lite', status: 'unknown', description: 'Google\'s lightweight Gemini model', type: 'openrouter' }
         };
@@ -855,9 +858,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
         document.getElementById('consolidationModal')?.addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
-        document.getElementById('viewToggleBtn')?.addEventListener('click', toggleView);
-        document.getElementById('consolidatedSearch')?.addEventListener('input', filterConsolidatedResults);
-        document.getElementById('consolidatedSort')?.addEventListener('change', sortConsolidatedResults);
         document.getElementById('prevPageBtn')?.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
@@ -879,6 +879,10 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('tableSortBy')?.addEventListener('change', (e) => {
             sortBy = e.target.value;
             currentPage = 1; 
+            sortAndDisplayResults();
+        });
+        document.getElementById('prioritizeUnvalidated')?.addEventListener('change', (e) => {
+            currentPage = 1;
             sortAndDisplayResults();
         });
     }
@@ -908,6 +912,9 @@ window.addEventListener('DOMContentLoaded', function() {
         document.getElementById('paginationControls').style.display = 'none';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    // Expose startNewUpload globally for use in inline onclick handlers
+    window.startNewUpload = startNewUpload;
 
     function scrollToModelSelection() {
         if (window.innerWidth <= 768) {
@@ -1048,7 +1055,14 @@ window.addEventListener('DOMContentLoaded', function() {
                                 all_candidates: item.status === 'success' ? item.output?.all_candidates || [] : [],
                                 ambiguous: item.status === 'success' ? item.output?.ambiguous : false,
                                 secondary_pipeline_applied: item.status === 'success' ? item.output?.secondary_pipeline_applied || false : false,
-                                secondary_pipeline_details: item.status === 'success' ? item.output?.secondary_pipeline_details : undefined
+                                secondary_pipeline_details: item.status === 'success' ? item.output?.secondary_pipeline_details : undefined,
+                                // Handle cache hits - set validation_status for cached entries
+                                validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                                  (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                                validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                                 (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                                timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                                   (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
                             }));
                             allMappings = mappedResults;
                             updatePageTitle(`Random Sample (${result.processing_stats.sample_size || result.processing_stats.total_processed} items)`);
@@ -1157,7 +1171,14 @@ window.addEventListener('DOMContentLoaded', function() {
                                 all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
                                 ambiguous: item.status === 'success' ? item.output.ambiguous : false,
                                 secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
-                                secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
+                                secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined,
+                                // Handle cache hits - set validation_status for cached entries
+                                validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                                  (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                                validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                                 (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                                timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                                   (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
                             }));
                             allMappings.push(...chunkMappings);
                         } else {
@@ -1182,7 +1203,14 @@ window.addEventListener('DOMContentLoaded', function() {
                     all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
                     ambiguous: item.status === 'success' ? item.output.ambiguous : false,
                     secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
-                    secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
+                    secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined,
+                    // Handle cache hits - set validation_status for cached entries
+                    validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                      (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                    validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                     (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                    timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                       (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
                 }));
                 allMappings.push(...chunkMappings);
             } else {
@@ -1242,7 +1270,14 @@ window.addEventListener('DOMContentLoaded', function() {
                 all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
                 ambiguous: item.status === 'success' ? item.output.ambiguous : false,
                 secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
-                secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined
+                secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined,
+                // Handle cache hits - set validation_status for cached entries
+                validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                  (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                 (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                   (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
             }));
             allMappings.push(...chunkMappings);
             statusManager.show(`Successfully processed ${processedCount} records. ${errorCount > 0 ? `${errorCount} errors.` : ''}`, errorCount > 0 ? 'warning' : 'success', 5000);
@@ -1348,7 +1383,6 @@ window.addEventListener('DOMContentLoaded', function() {
         updateResultsTitle();
         sortedMappings = [...mappings];
         sortAndDisplayResults();
-        generateConsolidatedResults(mappings);
         generateSourceLegend(mappings);
         resultsSection.style.display = 'block';
         const heroSection = document.querySelector('.hero-section');
@@ -1360,9 +1394,8 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function updateResultsTitle() {
         const titleElement = document.getElementById('resultsTitle');
-        const modelDisplayName = formatModelName(currentModel);
         const rerankerDisplayName = formatRerankerName(currentReranker);
-        titleElement.textContent = `Cleaning Results with ${modelDisplayName} → ${rerankerDisplayName}`;
+        titleElement.textContent = `Cleaning Results with ${rerankerDisplayName}`;
     }
     
     function updatePageTitle(title) {
@@ -1433,6 +1466,20 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     function applySortToMappings() {
+        const prioritizeUnvalidated = document.getElementById('prioritizeUnvalidated')?.checked ?? true;
+        
+        // Helper function to check if an item has been validated
+        function isValidated(item) {
+            const mappingId = item.mapping_id || item.id;
+            if (window.currentValidationState && mappingId) {
+                const validationState = window.currentValidationState[mappingId];
+                return validationState && validationState.validator_decision && 
+                       ['approve', 'reject', 'skip', 'unapprove'].includes(validationState.validator_decision);
+            }
+            return false;
+        }
+        
+        // First apply the requested sorting
         switch (sortBy) {
             case 'confidence-desc':
                 sortedMappings.sort((a, b) => (b.components?.confidence || 0) - (a.components?.confidence || 0));
@@ -1448,6 +1495,19 @@ window.addEventListener('DOMContentLoaded', function() {
                 break;
             default:
                 sortedMappings = [...allMappings];
+        }
+        
+        // Then apply validation priority if enabled
+        if (prioritizeUnvalidated) {
+            sortedMappings.sort((a, b) => {
+                const aValidated = isValidated(a);
+                const bValidated = isValidated(b);
+                
+                // Prioritize unvalidated (return negative if a is unvalidated and b is validated)
+                if (!aValidated && bValidated) return -1;
+                if (aValidated && !bValidated) return 1;
+                return 0; // Keep original sort order for items with same validation status
+            });
         }
     }
 
@@ -1522,6 +1582,53 @@ window.addEventListener('DOMContentLoaded', function() {
             const isSecondaryPipelineImproved = item.secondary_pipeline_applied && item.secondary_pipeline_details?.improved;
             const secondaryPipelineTag = isSecondaryPipelineImproved ? '<div class="secondary-pipeline-tag" title="Improved by Secondary Pipeline"><i class="fas fa-robot"></i> Super AI Mapped</div>' : '';
             confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>${secondaryPipelineTag}`;
+            
+            // Add quick approve/reject buttons column
+            const actionsCell = row.insertCell();
+            const mappingId = `mapping_${item.exam_code}_${item.exam_name}_${item.data_source}`.replace(/[^a-zA-Z0-9_]/g, '_');
+            const validationStatus = item.validation_status;
+            
+            // Show current validation status and appropriate buttons
+            let actionsHTML = '';
+            if (validationStatus === 'approved') {
+                actionsHTML = `
+                    <div class="quick-validation-cell approved-status">
+                        <span class="validation-status status-approved"><i class="fas fa-check"></i> Approved</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+            } else if (validationStatus === 'rejected') {
+                actionsHTML = `
+                    <div class="quick-validation-cell rejected-status">
+                        <span class="validation-status status-rejected"><i class="fas fa-times"></i> Rejected</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unreject')" title="Undo rejection">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                actionsHTML = `
+                    <div class="quick-validation-cell pending-status">
+                        <button class="button button-sm button-success" onclick="quickValidationAction('${mappingId}', 'approve')" title="Quick approve">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            actionsCell.innerHTML = actionsHTML;
+            actionsCell.style.minWidth = '120px';
+            actionsCell.dataset.mappingId = mappingId;
+            
+            // Store mapping data for validation
+            if (!window.quickValidationData) {
+                window.quickValidationData = {};
+            }
+            window.quickValidationData[mappingId] = item;
             if (resultsMobile) {
                 const card = document.createElement('div');
                 card.className = 'result-card';
@@ -1579,57 +1686,63 @@ window.addEventListener('DOMContentLoaded', function() {
     window.closeModal = closeModal;
 
     // -----------------------------------------------------------------------------
-    // 5.12. Consolidated View Logic
+    // 5.12. Toggle between Full View and Validation View
     // -----------------------------------------------------------------------------
-    let consolidatedData = [];
-    let filteredConsolidatedData = [];
-
-    function generateConsolidatedResults(mappings) {
-        const consolidatedGroups = {};
-        mappings.forEach(m => {
-            if (!m.clean_name || m.clean_name.startsWith('ERROR')) return;
-            const group = consolidatedGroups[m.clean_name] || {
-                cleanName: m.clean_name,
-                snomed: m.snomed,
-                sourceCodes: [],
-                totalCount: 0,
-                components: m.components,
-                dataSources: new Set(),
-                modalities: new Set(),
-                secondaryPipelineCount: 0
-            };
-            group.sourceCodes.push(m);
-            group.totalCount++;
-            group.dataSources.add(m.data_source);
-            group.modalities.add(m.modality_code);
-            if (m.secondary_pipeline_applied && m.secondary_pipeline_details?.improved) {
-                group.secondaryPipelineCount++;
-            }
-            consolidatedGroups[m.clean_name] = group;
-        });
-        consolidatedData = Object.values(consolidatedGroups).map(group => {
-            const totalConfidence = group.sourceCodes.reduce((sum, code) => sum + (code.components?.confidence || 0), 0);
-            group.avgConfidence = group.sourceCodes.length > 0 ? totalConfidence / group.sourceCodes.length : 0;
-            return group;
-        });
-        filteredConsolidatedData = [...consolidatedData];
-        sortConsolidatedResults();
-    }
     
     let isFullView = true;
     function toggleView() {
         isFullView = !isFullView;
         document.getElementById('fullView').style.display = isFullView ? 'block' : 'none';
-        document.getElementById('consolidatedView').style.display = isFullView ? 'none' : 'block';
+        document.getElementById('validationView').style.display = isFullView ? 'none' : 'block';
         const toggleBtn = document.getElementById('viewToggleBtn');
-        toggleBtn.textContent = isFullView ? 'Switch to Consolidated View' : 'Switch to Full View';
-        if (isFullView) {
-            toggleBtn.classList.remove('secondary');
-            toggleBtn.classList.add('active');
+        if (toggleBtn) {
+            toggleBtn.textContent = isFullView ? 'Switch to Validation View' : 'Switch to Results View';
+            if (isFullView) {
+                toggleBtn.classList.remove('secondary');
+                toggleBtn.classList.add('active');
+            } else {
+                toggleBtn.classList.remove('active');
+                toggleBtn.classList.add('secondary');
+                // Load validation content if available
+                loadValidationViewContent();
+            }
+        }
+        if (!isFullView) {
+            // Load validation content if available
+            loadValidationViewContent();
+        }
+    }
+
+    function switchToResultsView() {
+        isFullView = true;
+        document.getElementById('fullView').style.display = 'block';
+        document.getElementById('validationView').style.display = 'none';
+        
+        // Show the main results section and hide validation workflow
+        const resultsSection = document.getElementById('resultsSection');
+        const validationSection = document.getElementById('validationSection');
+        
+        if (resultsSection) {
+            resultsSection.style.display = 'block';
+        }
+        if (validationSection) {
+            validationSection.style.display = 'none';
+        }
+    }
+
+    function loadValidationViewContent() {
+        const validationContent = document.getElementById('validationContent');
+        const validationInterface = document.getElementById('validationInterface');
+        
+        if (validationInterface && !validationInterface.classList.contains('hidden')) {
+            // If validation interface is already loaded, display it in validation view
+            validationContent.innerHTML = '';
+            const clonedInterface = validationInterface.cloneNode(true);
+            clonedInterface.style.display = 'block';
+            clonedInterface.classList.remove('hidden');
+            validationContent.appendChild(clonedInterface);
         } else {
-            toggleBtn.classList.remove('active');
-            toggleBtn.classList.add('secondary');
-            displayConsolidatedResults();
+            validationContent.innerHTML = '<p>Click "Validate Results" to load the validation interface.</p>';
         }
     }
 
@@ -1643,6 +1756,7 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
     window.toggleOriginalCodes = toggleOriginalCodes;
+    window.switchToResultsView = switchToResultsView;
 
     function displayConsolidatedResults() {
         const container = document.getElementById('consolidatedResults');
@@ -1765,28 +1879,63 @@ window.addEventListener('DOMContentLoaded', function() {
         updateMappingDecisionInState(mappingId, decision);
         const mappingElement = document.querySelector(`[data-mapping-id="${mappingId}"]`);
         if (mappingElement) {
-            const decisionStyles = { 
-                approve: { border: '3px solid #4caf50', bg: '#e8f5e8' },
-                reject: { border: '3px solid #f44336', bg: '#ffebee' },
-                modify: { border: '3px solid #ff9800', bg: '#fff8e1' },
-                skip: { border: '3px solid #9c27b0', bg: '#f3e5f5' }
-            };
-            mappingElement.style.borderLeft = decisionStyles[decision].border;
-            mappingElement.style.background = decisionStyles[decision].bg;
+            // Handle undo actions
+            if (decision === 'unapprove' || decision === 'unreject' || decision === 'unskip') {
+                // Reset to default styling for pending state
+                mappingElement.style.borderLeft = '';
+                mappingElement.style.background = '';
+                
+                // Update status text based on undo action
+                let actionText = '';
+                if (decision === 'unapprove') actionText = 'unapproved';
+                else if (decision === 'unreject') actionText = 'un-rejected';
+                else if (decision === 'unskip') actionText = 'un-skipped';
+                
+                statusManager.show(`Mapping ${actionText}`, 'success', 1500);
+            } else {
+                // Apply styling for new decisions
+                const decisionStyles = { 
+                    approve: { border: '3px solid #4caf50', bg: '#e8f5e8' },
+                    reject: { border: '3px solid #f44336', bg: '#ffebee' },
+                    modify: { border: '3px solid #ff9800', bg: '#fff8e1' },
+                    skip: { border: '3px solid #9c27b0', bg: '#f3e5f5' }
+                };
+                if (decisionStyles[decision]) {
+                    mappingElement.style.borderLeft = decisionStyles[decision].border;
+                    mappingElement.style.background = decisionStyles[decision].bg;
+                }
+                statusManager.show(`Mapping ${decision}d`, 'success', 1500);
+            }
         }
-        statusManager.show(`Mapping ${decision}d`, 'success', 1500);
+        
+        // Update the action buttons after the decision
+        updateMappingElementVisuals(mappingElement, mappingId, decision);
     }
     
     function updateMappingDecisionInState(mappingId, decision) {
         if (window.currentValidationState && window.currentValidationState[mappingId]) {
-            if (decision === 'unapprove') {
-                // Reset to pending state when unapproving
+            if (decision === 'unreject' || decision === 'unskip') {
+                // Reset to pending state when undoing reject/skip decisions
                 window.currentValidationState[mappingId].validator_decision = null;
                 window.currentValidationState[mappingId].validation_status = 'pending_review';
                 window.currentValidationState[mappingId].timestamp_reviewed = null;
+            } else if (decision === 'unapprove') {
+                // Unapprove is a distinct decision that can be committed
+                window.currentValidationState[mappingId].validator_decision = 'unapprove';
+                window.currentValidationState[mappingId].validation_status = 'unapproved';
+                window.currentValidationState[mappingId].timestamp_reviewed = new Date().toISOString();
             } else {
                 window.currentValidationState[mappingId].validator_decision = decision;
-                window.currentValidationState[mappingId].validation_status = 'reviewed';
+                // Set validation_status to match the decision for consistent display
+                if (decision === 'approve') {
+                    window.currentValidationState[mappingId].validation_status = 'approved';
+                } else if (decision === 'reject') {
+                    window.currentValidationState[mappingId].validation_status = 'rejected';
+                } else if (decision === 'skip') {
+                    window.currentValidationState[mappingId].validation_status = 'skipped';
+                } else {
+                    window.currentValidationState[mappingId].validation_status = 'reviewed';
+                }
                 window.currentValidationState[mappingId].timestamp_reviewed = new Date().toISOString();
             }
         }
@@ -1848,14 +1997,15 @@ window.addEventListener('DOMContentLoaded', function() {
         const approved = decisions.filter(d => d.validator_decision === 'approve').length;
         const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
         const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
+        const unapproved = decisions.filter(d => d.validator_decision === 'unapprove').length;
         const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
         
-        if (approved === 0 && rejected === 0 && skipped === 0) {
+        if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0) {
             statusManager.show('⚠️ No decisions made yet', 'warning', 3000);
             return;
         }
         
-        const message = `Commit ${approved} approved, ${rejected} rejected, and ${skipped} skipped decisions?${pending > 0 ? ` (${pending} will remain pending)` : ''}`;
+        const message = `Commit ${approved} approved, ${rejected} rejected, ${skipped} skipped, and ${unapproved} unapproved decisions?${pending > 0 ? ` (${pending} will remain pending)` : ''}`;
         if (!confirm(message)) {
             return;
         }
@@ -1890,6 +2040,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     approved_count: approved,
                     rejected_count: rejected,
                     skipped_count: skipped,
+                    unapproved_count: unapproved,
                     pending_count: pending,
                     total_count: decisions.length,
                     timestamp: new Date().toISOString()
@@ -1913,7 +2064,7 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Success - clear the validation state and provide feedback
             window.currentValidationState = {};
-            statusManager.show(`✅ Successfully committed ${approved + rejected + skipped} validation decisions`, 'success', 5000);
+            statusManager.show(`✅ Successfully committed ${approved + rejected + skipped + unapproved} validation decisions`, 'success', 5000);
             
             // Optionally clear the validation interface
             const validationInterface = document.getElementById('validationInterface');
@@ -1922,13 +2073,19 @@ window.addEventListener('DOMContentLoaded', function() {
                     <div style="text-align: center; padding: 40px; color: #666;">
                         <i class="fas fa-check-circle" style="font-size: 48px; color: #4CAF50; margin-bottom: 16px;"></i>
                         <h3>Validation Decisions Committed</h3>
-                        <p>Successfully processed ${approved + rejected + skipped} validation decisions.</p>
+                        <p>Successfully processed ${approved + rejected + skipped + unapproved} validation decisions.</p>
                         <p style="margin-top: 20px;">
                             <strong>Approved:</strong> ${approved} &nbsp;|&nbsp; 
                             <strong>Rejected:</strong> ${rejected} &nbsp;|&nbsp; 
                             <strong>Skipped:</strong> ${skipped}
+                            ${unapproved > 0 ? ` &nbsp;|&nbsp; <strong>Unapproved:</strong> ${unapproved}` : ''}
                         </p>
                         ${result.cache_updated ? '<p style="color: #4CAF50;"><i class="fas fa-sync"></i> Validation caches updated successfully</p>' : ''}
+                        <div style="margin-top: 30px;">
+                            <button onclick="startNewUpload()" class="button primary" style="padding: 12px 24px; font-size: 16px; font-weight: 600;">
+                                <i class="fas fa-rocket"></i> Start New Processing Run
+                            </button>
+                        </div>
                     </div>
                 `;
             }
@@ -1954,6 +2111,12 @@ window.addEventListener('DOMContentLoaded', function() {
             statusManager.show('❌ No results to validate. Please run a sample or process data first.', 'error', 5000);
             return;
         }
+        
+        // Switch to validation view
+        isFullView = false;
+        document.getElementById('fullView').style.display = 'none';
+        document.getElementById('validationView').style.display = 'block';
+        loadValidationViewContent();
         
         // Validation pipeline has been deprecated
         
@@ -2075,7 +2238,6 @@ window.addEventListener('DOMContentLoaded', function() {
         
         if (approvedCount > 0) {
             console.log(`📋 Included ${approvedCount} already approved mappings, ${mappings.length - approvedCount} pending for validation`);
-            statusManager.show(`📋 ${approvedCount} mappings already approved, ${mappings.length - approvedCount} pending review`, 'info', 3000);
         }
         
         console.log(`✅ Created validation state for ${Object.keys(validationState).length} mappings`);
@@ -2096,8 +2258,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            statusManager.show('🔄 Initializing validation state...', 'info');
-            
             // Transform currentMappings into validation state
             const validationState = await initializeValidationFromMappings(currentMappings);
             
@@ -2139,8 +2299,6 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Load mappings into validation interface with validation state
             loadValidationInterface(validationState);
-            
-            statusManager.show(`✅ Initialized validation for ${Object.keys(validationState).length} mappings`, 'success', 3000);
         } catch (error) {
             console.error('Failed to initialize validation:', error);
             statusManager.show('❌ Failed to initialize validation', 'error', 5000);
@@ -2191,6 +2349,16 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+
+        // Calculate actual validation counts from validation state
+        const decisions = Object.values(validationState);
+        const approvedCount = decisions.filter(d => d.validator_decision === 'approve').length;
+        const rejectedCount = decisions.filter(d => d.validator_decision === 'reject').length;
+        const skippedCount = decisions.filter(d => d.validator_decision === 'skip').length;
+        const unapprovedCount = decisions.filter(d => d.validator_decision === 'unapprove').length;
+        const pendingCount = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
+        
+        console.log(`📊 Validation counts - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Pending: ${pendingCount}`);
         
         // Group mappings by NHS reference (consolidated view)
         const consolidatedGroups = window.createConsolidatedValidationGroups(validationState);
@@ -2198,96 +2366,82 @@ window.addEventListener('DOMContentLoaded', function() {
         // Create validation interface with statistics and consolidated groups
         const interfaceHTML = `
             <div class="validation-header">
-                <div class="validation-title-container">
-                    <h3 class="validation-title">
-                        <i class="fas fa-clipboard-check"></i> Validation Review
-                    </h3>
-                    
-                </div>
                 
                 <div class="validation-controls">
-                    <div class="control-group">
-                        <button id="expandAllBtn" class="button button-primary">
-                            <i class="fas fa-expand-alt"></i> Expand All
-                        </button>
-                        <button id="collapseAllBtn" class="button button-secondary">
-                            <i class="fas fa-compress-alt"></i> Collapse All
-                        </button>
+                    
+                    <!-- Filters Section - Now First -->
+                    <div class="validation-toolbar">
+                        <h4 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Filters</h4>
+                        <div class="validation-filters">
+                            <label class="filter-toggle" data-filter="flagged">
+                                <input type="checkbox" style="display: none;" />
+                                <i class="fas fa-flag"></i>
+                                <span>Flagged</span>
+                            </label>
+                            <label class="filter-toggle" data-filter="approved">
+                                <input type="checkbox" style="display: none;" />
+                                <i class="fas fa-check"></i>
+                                <span>Approved</span>
+                            </label>
+                            <label class="filter-toggle" data-filter="singleton">
+                                <input type="checkbox" style="display: none;" />
+                                <i class="fas fa-dot-circle"></i>
+                                <span>Singleton</span>
+                            </label>
+                            
+                            <div class="validation-sort">
+                                <label for="sortSelect" style="font-size: var(--font-size-sm); margin-right: var(--space-2);">Sort:</label>
+                                <select id="sortSelect" class="sort-select">
+                                    <option value="flagged-first">Flagged First</option>
+                                    <option value="group-size">Group Size (Desc)</option>
+                                    <option value="confidence">Avg Confidence (Asc)</option>
+                                    <option value="alphabetical">Alphabetical A-Z</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="validation-counters">
-                        <div class="counter-item approved">
-                            <i class="fas fa-check"></i>
-                            <span>Approved:</span>
-                            <span class="count" id="approvedCount">0</span>
-                        </div>
-                        <div class="counter-item rejected">
-                            <i class="fas fa-times"></i>
-                            <span>Rejected:</span>
-                            <span class="count" id="rejectedCount">0</span>
-                        </div>
-                        <div class="counter-item skipped">
-                            <i class="fas fa-clock"></i>
-                            <span>Skipped:</span>
-                            <span class="count" id="skippedCount">0</span>
-                        </div>
-                        <div class="counter-item pending">
-                            <i class="fas fa-hourglass-half"></i>
-                            <span>Pending:</span>
-                            <span class="count" id="pendingCount">${mappingCount}</span>
+                    <!-- Status Counts Section - Now Second -->
+                    <div class="validation-counters-section">
+                        <h4 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Status</h4>
+                        <div class="validation-counters">
+                            <div class="counter-item approved">
+                                <i class="fas fa-check"></i>
+                                <span>Approved:</span>
+                                <span class="count" id="approvedCount">${approvedCount}</span>
+                            </div>
+                            <div class="counter-item rejected">
+                                <i class="fas fa-times"></i>
+                                <span>Rejected:</span>
+                                <span class="count" id="rejectedCount">${rejectedCount}</span>
+                            </div>
+                            <div class="counter-item skipped">
+                                <i class="fas fa-clock"></i>
+                                <span>Skipped:</span>
+                                <span class="count" id="skippedCount">${skippedCount}</span>
+                            </div>
+                            <div class="counter-item unapproved">
+                                <i class="fas fa-undo"></i>
+                                <span>Unapproved:</span>
+                                <span class="count" id="unapprovedCount">${unapprovedCount}</span>
+                            </div>
+                            <div class="counter-item pending">
+                                <i class="fas fa-hourglass-half"></i>
+                                <span>Pending:</span>
+                                <span class="count" id="pendingCount">${pendingCount}</span>
+                            </div>
                         </div>
                     </div>
                     
                 </div>
             </div>
             
-            <!-- Validation Toolbar -->
-            <div class="validation-toolbar">
-                <div class="validation-filters">
-                    <label class="filter-toggle" data-filter="flagged">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-flag"></i>
-                        <span>Flagged</span>
-                    </label>
-                    <label class="filter-toggle" data-filter="approved">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-check"></i>
-                        <span>Approved</span>
-                    </label>
-                    <label class="filter-toggle" data-filter="singleton">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-dot-circle"></i>
-                        <span>Singleton</span>
-                    </label>
-                    
-                    <div class="validation-sort">
-                        <label for="sortSelect" style="font-size: var(--font-size-sm); margin-right: var(--space-2);">Sort:</label>
-                        <select id="sortSelect" class="sort-select">
-                            <option value="flagged-first">Flagged First</option>
-                            <option value="group-size">Group Size (Desc)</option>
-                            <option value="confidence">Avg Confidence (Asc)</option>
-                            <option value="alphabetical">Alphabetical A-Z</option>
-                        </select>
-                    </div>
-                    
-                    <button class="next-flagged-btn" id="nextFlaggedBtn">
-                        <i class="fas fa-arrow-right"></i>
-                        Next Flagged
-                    </button>
+            <!-- Mappings to Review Section -->
+            <div class="mappings-review-section">
+                <h4 style="margin: 20px 0 15px 0; color: #333; font-size: 16px;">Mappings to Review</h4>
+                <div id="validationGroups" class="validation-groups-container">
+                    ${window.renderValidationGroups(consolidatedGroups)}
                 </div>
-                
-                <div class="validation-search">
-                    <input type="text" id="searchInput" class="search-input" placeholder="Search groups by NHS reference, exam name, code, or source..." />
-                    <div class="threshold-slider-container">
-                        <span style="font-size: var(--font-size-sm);">Confidence Threshold:</span>
-                        <input type="range" id="confidenceThreshold" class="threshold-slider" min="0.5" max="0.95" step="0.01" value="0.7" />
-                        <span class="threshold-value" id="thresholdValue">0.70</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="validationGroups" class="validation-groups-container">
-                ${window.renderValidationGroups(consolidatedGroups)}
             </div>
         `;
         
@@ -2295,8 +2449,11 @@ window.addEventListener('DOMContentLoaded', function() {
         validationInterface.innerHTML = interfaceHTML + `
             <div class="validation-actions">
                 <div class="action-group">
-                    <button id="exportValidationStateBtn" class="button button-primary">
-                        <i class="fas fa-download"></i> Export Validation State
+                    <button id="switchToResultsBtn" class="button button-secondary">
+                        <i class="fas fa-arrow-left"></i> Switch to Results View
+                    </button>
+                    <button id="startNewProcessingBtn" class="button button-primary">
+                        <i class="fas fa-rocket"></i> Start New Processing Run
                     </button>
                     <button id="commitDecisionsBtn" class="button button-success">
                         <i class="fas fa-cloud-upload-alt"></i> Commit Validated Decisions
@@ -2310,6 +2467,11 @@ window.addEventListener('DOMContentLoaded', function() {
         
         // Initialize validation toolbar functionality
         initializeValidationToolbar(validationState, consolidatedGroups);
+        
+        // Clear the initializing message now that validation interface is ready
+        if (statusManager && typeof statusManager.clear === 'function') {
+            statusManager.clear();
+        }
         
         // Store validation state globally for access by other functions
         window.currentValidationState = validationState;
@@ -2398,28 +2560,32 @@ window.addEventListener('DOMContentLoaded', function() {
             const isSingleton = group.total_mappings === 1;
             
             html += `
-                <div class="validation-group consolidated-group ${hasFlags ? 'validation-flagged' : ''}" data-group-id="${groupId}">
-                    <div class="validation-header consolidated-header ${hasFlags ? 'flagged-header' : ''}" onclick="toggleValidationGroup('${groupId}')" style="display: grid; grid-template-rows: auto auto; gap: 8px;">
+                <div class="validation-group ${hasFlags ? 'validation-flagged' : ''}" data-group-id="${groupId}">
+                    <div class="validation-header ${hasFlags ? 'flagged-header' : ''}" onclick="toggleValidationGroup('${groupId}')" style="display: grid; grid-template-rows: auto auto; gap: 8px;">
                         <div class="validation-header-row-1" style="display: flex; justify-content: space-between; align-items: center;">
                             <div class="consolidated-title-container" style="flex: 1;">
                                 <div class="consolidated-title" style="font-weight: 600; font-size: 14px;">${group.nhs_reference}</div>
                                 ${snomedId && snomedId !== 'Unknown' ? `<span class="snomed-inline" style="color: #666; font-size: 12px; margin-left: 8px;">SNOMED: ${snomedId}</span>` : ''}
                             </div>
-                            <div class="validation-controls-inline" style="display: flex; gap: 4px;">
-                                <button class="button button-sm button-success" onclick="event.stopPropagation(); quickApproveGroup('${groupId}')" title="Quick approve" style="padding: 4px 8px;">
-                                    <i class="fas fa-check" style="font-size: 12px;"></i>
-                                </button>
-                                ${isSingleton ? `
-                                    <button class="button button-sm button-secondary" onclick="event.stopPropagation(); skipSingletonGroup('${groupId}')" title="Skip for later review" style="padding: 4px 8px;">
-                                        Skip
-                                    </button>
-                                ` : ''}
-                            </div>
                             <span class="expand-icon" style="margin-left: 8px;"></span>
                         </div>
                         <div class="validation-header-row-2" style="display: flex; justify-content: space-between; align-items: center;">
                             <div class="validation-meta-info" style="display: flex; gap: 12px; align-items: center;">
-                                <span class="consolidated-count" style="color: #666; font-size: 12px;">${group.total_mappings} mapping${group.total_mappings !== 1 ? 's' : ''}</span>
+                                ${(() => {
+                                    const approvedCount = group.mappings.filter(m => m.validation_status === 'approved').length;
+                                    const pendingCount = group.total_mappings - approvedCount;
+                                    const badges = [];
+                                    
+                                    // Create separate badges for approved and pending mappings
+                                    if (approvedCount > 0) {
+                                        badges.push(`<span class="status-badge status-approved" style="margin-left: 0;">${approvedCount} Approved Mapping${approvedCount !== 1 ? 's' : ''}</span>`);
+                                    }
+                                    if (pendingCount > 0) {
+                                        badges.push(`<span class="status-badge status-pending">${pendingCount} Pending Mapping${pendingCount !== 1 ? 's' : ''}</span>`);
+                                    }
+                                    
+                                    return badges.join('') || '<span class="consolidated-count" style="color: #666; font-size: 12px;">0 mappings</span>';
+                                })()}
                                 ${group.flagged_count > 0 ? `<span class="flagged-count" style="color: #ff9800; font-size: 12px;"><i class="fas fa-exclamation-triangle"></i> ${group.flagged_count} flagged</span>` : ''}
                             </div>
                             <div class="validation-flags" style="display: flex; gap: 4px;">
@@ -2427,7 +2593,7 @@ window.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     </div>
-                    <div class="validation-body consolidated-body" id="${groupId}_content" style="display: none;">
+                    <div class="validation-body" id="${groupId}_content" style="display: none;">
                         ${window.renderGroupMappings(group.mappings, groupId)}
                     </div>
                 </div>
@@ -2451,6 +2617,7 @@ window.addEventListener('DOMContentLoaded', function() {
             // Check validation status
             const isApproved = state.validation_status === 'approved';
             const isRejected = state.validation_status === 'rejected';
+            const isSkipped = state.validation_status === 'skipped';
             const isPending = state.validation_status === 'pending_review';
             
             // Filter attention flags to only show relevant ones (exclude removed filters)
@@ -2467,10 +2634,12 @@ window.addEventListener('DOMContentLoaded', function() {
                 statusBadge = '<span class="status-badge status-approved"><i class="fas fa-check"></i> Approved</span>';
             } else if (isRejected) {
                 statusBadge = '<span class="status-badge status-rejected"><i class="fas fa-times"></i> Rejected</span>';
+            } else if (isSkipped) {
+                statusBadge = '<span class="status-badge status-skipped"><i class="fas fa-clock"></i> Skipped</span>';
             }
             
             html += `
-                <div class="validation-mapping-item ${hasFlags ? 'mapping-flagged' : ''} ${isApproved ? 'mapping-approved' : ''} ${isRejected ? 'mapping-rejected' : ''}" data-mapping-id="${mappingId}">
+                <div class="validation-mapping-item ${hasFlags ? 'mapping-flagged' : ''} ${isApproved ? 'mapping-approved' : ''} ${isRejected ? 'mapping-rejected' : ''} ${isSkipped ? 'mapping-skipped' : ''}" data-mapping-id="${mappingId}">
                     <div class="mapping-content">
                         <div class="mapping-header">
                             <div class="mapping-title">
@@ -2488,6 +2657,9 @@ window.addEventListener('DOMContentLoaded', function() {
                                     </button>
                                     <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject mapping" style="padding: 4px 8px;">
                                         <i class="fas fa-times" style="font-size: 12px;"></i>
+                                    </button>
+                                    <button class="button button-sm button-secondary" onclick="updateMappingDecision('${mappingId}', 'skip')" title="Skip mapping for later review" style="padding: 4px 8px;">
+                                        <i class="fas fa-clock" style="font-size: 12px;"></i>
                                     </button>
                                 `}
                                 <button class="button button-sm button-warning" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
@@ -2545,12 +2717,141 @@ window.addEventListener('DOMContentLoaded', function() {
         return html;
     }
     
+    // Quick validation actions for results table
+    window.quickValidationAction = function(mappingId, decision) {
+        console.log(`🚀 Quick validation action: ${decision} for mapping ${mappingId}`);
+        
+        // Get the mapping data
+        const mappingData = window.quickValidationData?.[mappingId];
+        if (!mappingData) {
+            console.error('Mapping data not found for ID:', mappingId);
+            return;
+        }
+        
+        // Initialize validation state if needed
+        if (!window.currentValidationState) {
+            window.currentValidationState = {};
+        }
+        
+        // Initialize validation state for this mapping if it doesn't exist
+        if (!window.currentValidationState[mappingId]) {
+            window.currentValidationState[mappingId] = {
+                unique_mapping_id: mappingId,
+                original_mapping: mappingData,
+                validation_status: 'pending_review',
+                validator_decision: null,
+                timestamp_created: new Date().toISOString(),
+                timestamp_reviewed: null,
+                needs_attention_flags: []
+            };
+        }
+        
+        // Update the decision in the validation state
+        updateMappingDecisionInState(mappingId, decision);
+        
+        // Update the UI for this row
+        const actionsCell = document.querySelector(`[data-mapping-id="${mappingId}"]`);
+        if (actionsCell) {
+            let newHTML = '';
+            if (decision === 'approve') {
+                newHTML = `
+                    <div class="quick-validation-cell approved-status">
+                        <span class="validation-status status-approved"><i class="fas fa-check"></i> Approved</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+                // Add visual feedback for approval
+                const row = actionsCell.closest('tr');
+                if (row) {
+                    row.style.backgroundColor = '#e8f5e8';
+                    row.style.borderLeft = '3px solid #4caf50';
+                }
+            } else if (decision === 'reject') {
+                newHTML = `
+                    <div class="quick-validation-cell rejected-status">
+                        <span class="validation-status status-rejected"><i class="fas fa-times"></i> Rejected</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unreject')" title="Undo rejection">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+                // Add visual feedback for rejection
+                const row = actionsCell.closest('tr');
+                if (row) {
+                    row.style.backgroundColor = '#ffebee';
+                    row.style.borderLeft = '3px solid #f44336';
+                }
+            } else if (decision === 'unapprove' || decision === 'unreject') {
+                newHTML = `
+                    <div class="quick-validation-cell pending-status">
+                        <button class="button button-sm button-success" onclick="quickValidationAction('${mappingId}', 'approve')" title="Quick approve">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                // Reset visual feedback
+                const row = actionsCell.closest('tr');
+                if (row) {
+                    row.style.backgroundColor = '';
+                    row.style.borderLeft = '';
+                }
+            }
+            actionsCell.innerHTML = newHTML;
+        }
+        
+        // Show the commit validations button if any decisions have been made
+        showCommitValidationsButton();
+        
+        // Show success message
+        const actionText = decision === 'approve' ? 'approved' : 
+                          decision === 'reject' ? 'rejected' : 
+                          decision === 'unapprove' ? 'unapproved' : 'un-rejected';
+        statusManager.show(`✅ Mapping ${actionText}`, 'success', 2000);
+    };
+    
+    function showCommitValidationsButton() {
+        // Check if any quick validation decisions have been made
+        if (!window.currentValidationState) return;
+        
+        const hasDecisions = Object.values(window.currentValidationState).some(state => 
+            state.validator_decision && state.validator_decision !== 'pending'
+        );
+        
+        if (hasDecisions) {
+            let commitBtn = document.getElementById('quickCommitValidationsBtn');
+            if (!commitBtn) {
+                // Create the commit button if it doesn't exist
+                const actionButtons = document.querySelector('.action-buttons.view-toggle');
+                if (actionButtons) {
+                    commitBtn = document.createElement('button');
+                    commitBtn.id = 'quickCommitValidationsBtn';
+                    commitBtn.className = 'button primary';
+                    commitBtn.style.cssText = 'background: #3f51b5; color: white; margin-left: 10px;';
+                    commitBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Commit Validations';
+                    commitBtn.onclick = function() {
+                        commitValidatedDecisions();
+                    };
+                    actionButtons.appendChild(commitBtn);
+                }
+            }
+            if (commitBtn) {
+                commitBtn.style.display = 'inline-block';
+            }
+        }
+    }
+    
     window.setupValidationEventListeners = function(validationState) {
         // Bulk action buttons
         const expandAllBtn = document.getElementById('expandAllBtn');
         const collapseAllBtn = document.getElementById('collapseAllBtn');
         const commitBtn = document.getElementById('commitDecisionsBtn');
-        const exportBtn = document.getElementById('exportValidationStateBtn');
+        const startNewProcessingBtn = document.getElementById('startNewProcessingBtn');
+        const switchToResultsBtn = document.getElementById('switchToResultsBtn');
         
         if (expandAllBtn) {
             expandAllBtn.addEventListener('click', () => toggleAllGroups(true));
@@ -2564,8 +2865,12 @@ window.addEventListener('DOMContentLoaded', function() {
             commitBtn.addEventListener('click', commitValidatedDecisions);
         }
         
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => exportValidationState(validationState));
+        if (startNewProcessingBtn) {
+            startNewProcessingBtn.addEventListener('click', startNewUpload);
+        }
+        
+        if (switchToResultsBtn) {
+            switchToResultsBtn.addEventListener('click', switchToResultsView);
         }
     }
     
@@ -2618,25 +2923,6 @@ window.addEventListener('DOMContentLoaded', function() {
                     validationToolbarState.search = e.target.value.toLowerCase();
                     filterAndDisplayGroups();
                 }, 300); // Debounce search
-            });
-        }
-
-        // Initialize confidence threshold slider
-        const thresholdSlider = document.getElementById('confidenceThreshold');
-        const thresholdValue = document.getElementById('thresholdValue');
-        if (thresholdSlider && thresholdValue) {
-            thresholdSlider.addEventListener('input', (e) => {
-                validationToolbarState.confidenceThreshold = parseFloat(e.target.value);
-                thresholdValue.textContent = validationToolbarState.confidenceThreshold.toFixed(2);
-                filterAndDisplayGroups();
-            });
-        }
-
-        // Initialize next flagged button
-        const nextFlaggedBtn = document.getElementById('nextFlaggedBtn');
-        if (nextFlaggedBtn) {
-            nextFlaggedBtn.addEventListener('click', () => {
-                jumpToNextFlaggedGroup();
             });
         }
 
@@ -2713,48 +2999,6 @@ window.addEventListener('DOMContentLoaded', function() {
                 filteredGroupsObj[group.nhs_reference] = group;
             });
             container.innerHTML = renderValidationGroups(filteredGroupsObj);
-        }
-
-        // Update next flagged button state
-        updateNextFlaggedButton(filteredGroups);
-    }
-
-    function updateNextFlaggedButton(filteredGroups) {
-        const nextFlaggedBtn = document.getElementById('nextFlaggedBtn');
-        if (!nextFlaggedBtn) return;
-
-        const flaggedGroups = filteredGroups.filter(group => group.flagged_count > 0);
-        nextFlaggedBtn.disabled = flaggedGroups.length === 0;
-    }
-
-    function jumpToNextFlaggedGroup() {
-        const flaggedGroups = document.querySelectorAll('.validation-group.validation-flagged');
-        if (flaggedGroups.length === 0) return;
-
-        let nextIndex = 0;
-        if (validationToolbarState.activeGroupIndex >= 0) {
-            const currentGroup = document.querySelector(`[data-group-id="group_${validationToolbarState.activeGroupIndex}"]`);
-            if (currentGroup) {
-                const allGroups = Array.from(document.querySelectorAll('.validation-group'));
-                const currentIdx = allGroups.indexOf(currentGroup);
-                
-                // Find next flagged group after current
-                for (let i = currentIdx + 1; i < allGroups.length; i++) {
-                    if (allGroups[i].classList.contains('validation-flagged')) {
-                        nextIndex = i;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (flaggedGroups[nextIndex]) {
-            flaggedGroups[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Optionally expand the group
-            const groupId = flaggedGroups[nextIndex].getAttribute('data-group-id');
-            if (groupId) {
-                window.toggleValidationGroup(groupId);
-            }
         }
     }
 
@@ -2967,6 +3211,9 @@ Ctrl+Z - Undo last action`);
             });
         }
         
+        // Update validation counters after group decision change
+        updateValidationCounters();
+        
         statusManager.show(`✅ Group decision: ${decision}`, 'success', 2000);
     }
     
@@ -2984,6 +3231,9 @@ Ctrl+Z - Undo last action`);
         
         updateMappingDecisionInState(mappingId, decision);
         
+        // Update validation counters after decision change
+        updateValidationCounters();
+        
         const mappingElement = document.querySelector(`[data-mapping-id="${mappingId}"]`);
         if (mappingElement) {
             // Update visual state
@@ -2999,26 +3249,162 @@ Ctrl+Z - Undo last action`);
                 mappingElement.style.borderLeft = styles[decision].border;
                 mappingElement.style.background = styles[decision].bg;
                 
-                // Remove status-specific classes and add new ones
-                mappingElement.classList.remove('mapping-approved', 'mapping-rejected');
+                // Remove all status-specific classes and add new ones
+                mappingElement.classList.remove('mapping-approved', 'mapping-rejected', 'mapping-skipped');
                 if (decision === 'approve') {
                     mappingElement.classList.add('mapping-approved');
                 } else if (decision === 'reject') {
                     mappingElement.classList.add('mapping-rejected');
-                } else if (decision === 'unapprove') {
-                    // For unapprove, refresh the entire validation interface to update UI
-                    if (window.currentValidationState && window.currentConsolidatedGroups) {
-                        const validationInterface = document.getElementById('validationInterface');
-                        if (validationInterface) {
-                            window.loadValidationInterface(window.currentValidationState);
-                        }
-                    }
+                } else if (decision === 'skip') {
+                    mappingElement.classList.add('mapping-skipped');
                 }
+                
+                // Update status badge and action buttons
+                updateMappingElementVisuals(mappingElement, mappingId, decision);
             }
         }
         
         const actionText = decision === 'unapprove' ? 'unapproved' : `${decision}d`;
         statusManager.show(`✅ Mapping ${actionText}`, 'success', 1500);
+    }
+
+    // Function to update validation counters dynamically
+    function updateValidationCounters() {
+        if (!window.currentValidationState) return;
+        
+        const decisions = Object.values(window.currentValidationState);
+        const approvedCount = decisions.filter(d => d.validator_decision === 'approve').length;
+        const rejectedCount = decisions.filter(d => d.validator_decision === 'reject').length;
+        const skippedCount = decisions.filter(d => d.validator_decision === 'skip').length;
+        const unapprovedCount = decisions.filter(d => d.validator_decision === 'unapprove').length;
+        const pendingCount = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
+        
+        // Update counter elements
+        const approvedElement = document.getElementById('approvedCount');
+        const rejectedElement = document.getElementById('rejectedCount');
+        const skippedElement = document.getElementById('skippedCount');
+        const unapprovedElement = document.getElementById('unapprovedCount');
+        const pendingElement = document.getElementById('pendingCount');
+        
+        if (approvedElement) approvedElement.textContent = approvedCount;
+        if (rejectedElement) rejectedElement.textContent = rejectedCount;
+        if (skippedElement) skippedElement.textContent = skippedCount;
+        if (unapprovedElement) unapprovedElement.textContent = unapprovedCount;
+        if (pendingElement) pendingElement.textContent = pendingCount;
+        
+        console.log(`📊 Updated validation counters - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Unapproved: ${unapprovedCount}, Pending: ${pendingCount}`);
+    }
+
+    // Function to update the visual elements (status badge and buttons) of a mapping item
+    function updateMappingElementVisuals(mappingElement, mappingId, decision) {
+        const state = window.currentValidationState?.[mappingId];
+        if (!state) return;
+        
+        // For undo decisions, determine the actual current state
+        let currentDecision = decision;
+        if (decision === 'unapprove' || decision === 'unreject' || decision === 'unskip') {
+            currentDecision = state.validator_decision; // Should be null for pending
+        }
+        
+        // Update status badge
+        const titleElement = mappingElement.querySelector('.mapping-title');
+        if (titleElement) {
+            // Remove existing status badge
+            const existingBadge = titleElement.querySelector('.status-badge');
+            if (existingBadge) {
+                existingBadge.remove();
+            }
+            
+            // Add new status badge based on current decision
+            let statusBadge = '';
+            if (currentDecision === 'approve') {
+                statusBadge = '<span class="status-badge status-approved"><i class="fas fa-check"></i> Approved</span>';
+            } else if (currentDecision === 'reject') {
+                statusBadge = '<span class="status-badge status-rejected"><i class="fas fa-times"></i> Rejected</span>';
+            } else if (currentDecision === 'skip') {
+                statusBadge = '<span class="status-badge status-skipped"><i class="fas fa-clock"></i> Skipped</span>';
+            } else if (currentDecision === 'unapprove') {
+                statusBadge = '<span class="status-badge status-unapproved"><i class="fas fa-undo"></i> Unapproved</span>';
+            }
+            // If currentDecision is null (after undo), don't add any status badge
+            
+            if (statusBadge) {
+                titleElement.insertAdjacentHTML('beforeend', ' ' + statusBadge);
+            }
+        }
+        
+        // Update action buttons
+        const actionsElement = mappingElement.querySelector('.mapping-actions');
+        if (actionsElement) {
+            const isApproved = (currentDecision === 'approve');
+            const isRejected = (currentDecision === 'reject');
+            const isSkipped = (currentDecision === 'skip');
+            
+            const newButtonsHTML = `
+                ${isApproved ? `
+                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unapprove')" title="Undo approve" style="padding: 4px 8px;">
+                        <i class="fas fa-undo" style="font-size: 12px;"></i>
+                    </button>
+                ` : isRejected ? `
+                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unreject')" title="Undo reject" style="padding: 4px 8px;">
+                        <i class="fas fa-undo" style="font-size: 12px;"></i>
+                    </button>
+                ` : isSkipped ? `
+                    <button class="button button-sm button-warning" onclick="updateMappingDecision('${mappingId}', 'unskip')" title="Undo skip" style="padding: 4px 8px;">
+                        <i class="fas fa-undo" style="font-size: 12px;"></i>
+                    </button>
+                ` : `
+                    <button class="button button-sm button-success" onclick="updateMappingDecision('${mappingId}', 'approve')" title="Approve mapping" style="padding: 4px 8px;">
+                        <i class="fas fa-check" style="font-size: 12px;"></i>
+                    </button>
+                    <button class="button button-sm button-danger" onclick="updateMappingDecision('${mappingId}', 'reject')" title="Reject mapping" style="padding: 4px 8px;">
+                        <i class="fas fa-times" style="font-size: 12px;"></i>
+                    </button>
+                    <button class="button button-sm button-secondary" onclick="updateMappingDecision('${mappingId}', 'skip')" title="Skip mapping for later review" style="padding: 4px 8px;">
+                        <i class="fas fa-clock" style="font-size: 12px;"></i>
+                    </button>
+                `}
+                <button class="button button-sm button-secondary" onclick="showMappingDetails('${mappingId}')" title="View details" style="padding: 4px 8px;">
+                    <i class="fas fa-info-circle" style="font-size: 12px;"></i>
+                </button>
+            `;
+            
+            actionsElement.innerHTML = newButtonsHTML;
+        }
+        
+        // Update approval timestamp if approved and element exists
+        if (decision === 'approve' && state.timestamp_reviewed) {
+            const metaInline = mappingElement.querySelector('.mapping-meta-inline');
+            if (metaInline) {
+                // Remove existing timestamp if any
+                const existingTimestamp = metaInline.querySelector('.meta-timestamp');
+                if (existingTimestamp) {
+                    existingTimestamp.remove();
+                }
+                
+                // Add new timestamp
+                const timestampHTML = `
+                    <span class="meta-separator">•</span>
+                    <span class="meta-item-inline meta-timestamp">
+                        <i class="fas fa-clock"></i> <strong>Approved:</strong> ${new Date(state.timestamp_reviewed).toLocaleDateString()}
+                    </span>
+                `;
+                metaInline.insertAdjacentHTML('beforeend', timestampHTML);
+            }
+        } else if (decision === 'unapprove') {
+            // Remove timestamp when unapproving
+            const metaInline = mappingElement.querySelector('.mapping-meta-inline');
+            if (metaInline) {
+                const timestampElement = metaInline.querySelector('.meta-timestamp');
+                if (timestampElement) {
+                    const separator = timestampElement.previousElementSibling;
+                    if (separator && separator.classList.contains('meta-separator')) {
+                        separator.remove();
+                    }
+                    timestampElement.remove();
+                }
+            }
+        }
     }
     
     window.showMappingDetails = function(mappingId) {
@@ -3252,7 +3638,7 @@ Ctrl+Z - Undo last action`);
         loadAvailableModels();
         setupEventListeners();
         document.getElementById('fullView').style.display = 'block';
-        document.getElementById('consolidatedView').style.display = 'none';
+        document.getElementById('validationView').style.display = 'none';
     }
 
     initApp();
@@ -3287,10 +3673,13 @@ window.loadMockValidationData = function() {
             unique_mapping_id: "mapping_1",
             original_mapping: {
                 exam_name: "CT Chest without contrast",
+                exam_code: "CT001",
                 clean_name: "CT CHEST",
                 data_source: "Test Hospital A",
                 components: {
-                    confidence: 0.95
+                    confidence: 0.95,
+                    anatomy: ["chest"],
+                    modality: "CT"
                 },
                 snomed: {
                     id: "169069000",
@@ -3302,97 +3691,269 @@ window.loadMockValidationData = function() {
                 ]
             },
             needs_attention_flags: [],
-            validator_decision: 'pending',
-            validation_notes: ''
+            validation_status: 'approved',
+            validator_decision: 'approve',
+            validation_notes: 'Previously approved - mapping is accurate',
+            timestamp_created: "2025-08-06T08:42:22.345330+00:00",
+            timestamp_reviewed: "2025-08-06T08:51:39.571716Z"
         },
         "mapping_2": {
             unique_mapping_id: "mapping_2",
             original_mapping: {
-                exam_name: "Xray Chest PA",
-                clean_name: "X-RAY CHEST",
-                data_source: "Test Hospital B",
-                components: {
-                    confidence: 0.65
-                },
-                snomed: {
-                    id: "399208008",
-                    fsn: "Plain chest X-ray"
-                },
-                all_candidates: [
-                    { primary_name: "X-RAY CHEST", confidence: 0.65 },
-                    { primary_name: "CHEST RADIOGRAPH", confidence: 0.62 }
-                ]
-            },
-            needs_attention_flags: ['low_confidence', 'ambiguous'],
-            validator_decision: 'pending',
-            validation_notes: ''
-        },
-        "mapping_3": {
-            unique_mapping_id: "mapping_3",
-            original_mapping: {
                 exam_name: "CT Chest with contrast",
+                exam_code: "CT002", 
                 clean_name: "CT CHEST",
-                data_source: "Test Hospital C", 
+                data_source: "Test Hospital A",
                 components: {
-                    confidence: 0.88
+                    confidence: 0.92,
+                    anatomy: ["chest"],
+                    modality: "CT"
                 },
                 snomed: {
                     id: "169069000",
                     fsn: "Computed tomography of chest"
                 },
                 all_candidates: [
-                    { primary_name: "CT CHEST", confidence: 0.88 }
+                    { primary_name: "CT CHEST", confidence: 0.92 }
                 ]
             },
             needs_attention_flags: [],
-            validator_decision: 'pending',
-            validation_notes: ''
+            validation_status: 'approved',
+            validator_decision: 'approve',
+            validation_notes: 'Auto-approved based on high confidence',
+            timestamp_created: "2025-08-06T08:42:22.345330+00:00",
+            timestamp_reviewed: "2025-08-06T08:52:11.234567Z"
+        },
+        "mapping_3": {
+            unique_mapping_id: "mapping_3",
+            original_mapping: {
+                exam_name: "Chest X-ray PA view",
+                exam_code: "XR001",
+                clean_name: "X-RAY CHEST",
+                data_source: "Test Hospital B",
+                components: {
+                    confidence: 0.76,
+                    anatomy: ["chest"],
+                    modality: "XR"
+                },
+                snomed: {
+                    id: "399208008",
+                    fsn: "Plain chest X-ray"
+                },
+                all_candidates: [
+                    { primary_name: "X-RAY CHEST", confidence: 0.76 },
+                    { primary_name: "CHEST RADIOGRAPH", confidence: 0.65 }
+                ]
+            },
+            needs_attention_flags: ['low_confidence'],
+            validation_status: 'pending_review',
+            validator_decision: null,
+            timestamp_created: "2025-08-06T08:42:22.345330+00:00",
+            timestamp_reviewed: null
         },
         "mapping_4": {
             unique_mapping_id: "mapping_4",
             original_mapping: {
-                exam_name: "MRI Brain",
+                exam_name: "Brain MRI",
+                exam_code: "MRI001",
                 clean_name: "MRI BRAIN",
-                data_source: "Test Hospital A",
+                data_source: "Test Hospital C",
                 components: {
-                    confidence: 0.45
+                    confidence: 0.65,
+                    anatomy: ["brain"],
+                    modality: "MRI"
                 },
                 snomed: {
                     id: "278107002",
                     fsn: "Magnetic resonance imaging of brain"
                 },
                 all_candidates: [
-                    { primary_name: "MRI BRAIN", confidence: 0.45 },
-                    { primary_name: "MRI HEAD", confidence: 0.43 },
-                    { primary_name: "BRAIN MRI", confidence: 0.41 }
+                    { primary_name: "MRI BRAIN", confidence: 0.65 }
                 ]
             },
-            needs_attention_flags: ['low_confidence', 'singleton_mapping'],
-            validator_decision: 'pending',
-            validation_notes: ''
+            needs_attention_flags: ['singleton_mapping', 'low_confidence'],
+            validation_status: 'pending_review',
+            validator_decision: null,
+            timestamp_created: "2025-08-06T08:42:22.345330+00:00",
+            timestamp_reviewed: null
         },
         "mapping_5": {
             unique_mapping_id: "mapping_5",
             original_mapping: {
-                exam_name: "Ultrasound Abdomen",
+                exam_name: "Abdominal ultrasound",
+                exam_code: "US001",
                 clean_name: "US ABDOMEN",
                 data_source: "Test Hospital D",
                 components: {
-                    confidence: 0.78
+                    confidence: 0.88,
+                    anatomy: ["abdomen"],
+                    modality: "US"
                 },
                 snomed: {
                     id: "241527001",
                     fsn: "Ultrasonography of abdomen"
                 },
                 all_candidates: [
-                    { primary_name: "US ABDOMEN", confidence: 0.78 }
+                    { primary_name: "US ABDOMEN", confidence: 0.88 },
+                    { primary_name: "ABDOMINAL ULTRASOUND", confidence: 0.75 }
                 ]
             },
-            needs_attention_flags: ['secondary_pipeline'],
-            validator_decision: 'pending',
-            validation_notes: ''
+            needs_attention_flags: [],
+            validation_status: 'pending_review',
+            validator_decision: null,
+            timestamp_created: "2025-08-06T08:42:22.345330+00:00",
+            timestamp_reviewed: null
         }
     };
+
+    // Also populate allMappings for the results table
+    window.allMappings = Object.values(mockValidationState).map(state => {
+        const mapping = state.original_mapping;
+        return {
+            ...mapping,
+            validation_status: state.validation_status,
+            validator_decision: state.validator_decision,
+            validation_notes: state.validation_notes,
+            timestamp_reviewed: state.timestamp_reviewed
+        };
+    });
+
+    // Store validation state globally for access by other functions
+    window.currentValidationState = mockValidationState;
+
+    // Directly populate the results table
+    const resultsBody = document.getElementById('resultsBody');
+    if (resultsBody) {
+        resultsBody.innerHTML = '';
+        window.allMappings.forEach(item => {
+            const row = resultsBody.insertRow();
+            
+            // Source cell (color indicator)
+            const sourceCell = row.insertCell();
+            sourceCell.style.cssText = `width: 12px; padding: 0; background-color: #4CAF50; border-right: none; position: relative;`;
+            sourceCell.title = item.data_source;
+            
+            // Original Code
+            row.insertCell().textContent = item.exam_code;
+            
+            // Original Name  
+            row.insertCell().textContent = item.exam_name;
+            
+            // Clean Name
+            const cleanNameCell = row.insertCell();
+            cleanNameCell.innerHTML = `<strong>${item.clean_name || 'Unknown'}</strong>`;
+            
+            // SNOMED FSN
+            const snomedFsnCell = row.insertCell();
+            snomedFsnCell.innerHTML = item.snomed?.fsn ? `<div>${item.snomed.fsn}</div>` + (item.snomed.id ? `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.id}</div>` : '') : '<span style="color: #999;">-</span>';
+            
+            // Tags
+            const tagsCell = row.insertCell();
+            let tagsHTML = '';
+            const { anatomy, modality } = item.components || {};
+            if (anatomy) tagsHTML += `<span class="tag anatomy">${Array.isArray(anatomy) ? anatomy.join(', ') : anatomy}</span>`;
+            if (modality) tagsHTML += `<span class="tag modality">${modality}</span>`;
+            tagsCell.innerHTML = tagsHTML;
+            
+            // Confidence
+            const confidenceCell = row.insertCell();
+            const confidence = item.components?.confidence || 0;
+            const confidencePercent = Math.round(confidence * 100);
+            const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
+            confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>`;
+            
+            // Actions cell with quick approve/reject buttons
+            const actionsCell = row.insertCell();
+            const mappingId = `mapping_${item.exam_code}_${item.exam_name}_${item.data_source}`.replace(/[^a-zA-Z0-9_]/g, '_');
+            const validationStatus = item.validation_status;
+            
+            let actionsHTML = '';
+            if (validationStatus === 'approved') {
+                actionsHTML = `
+                    <div class="quick-validation-cell approved-status">
+                        <span class="validation-status status-approved"><i class="fas fa-check"></i> Approved</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+                // Add visual feedback for approval
+                row.style.backgroundColor = '#e8f5e8';
+                row.style.borderLeft = '3px solid #4caf50';
+            } else if (validationStatus === 'rejected') {
+                actionsHTML = `
+                    <div class="quick-validation-cell rejected-status">
+                        <span class="validation-status status-rejected"><i class="fas fa-times"></i> Rejected</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unreject')" title="Undo rejection">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+                row.style.backgroundColor = '#ffebee';
+                row.style.borderLeft = '3px solid #f44336';
+            } else {
+                actionsHTML = `
+                    <div class="quick-validation-cell pending-status">
+                        <button class="button button-sm button-success" onclick="quickValidationAction('${mappingId}', 'approve')" title="Quick approve">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            actionsCell.innerHTML = actionsHTML;
+            actionsCell.style.minWidth = '120px';
+            actionsCell.dataset.mappingId = mappingId;
+            
+            // Store mapping data for validation
+            if (!window.quickValidationData) {
+                window.quickValidationData = {};
+            }
+            window.quickValidationData[mappingId] = item;
+        });
+    }
+
+    // Show results section and stats
+    const resultsSection = document.getElementById('resultsSection');
+    if (resultsSection) {
+        resultsSection.style.display = 'block';
+        
+        // Update stats
+        const originalCount = document.getElementById('originalCount');
+        const cleanCount = document.getElementById('cleanCount');
+        const avgConfidence = document.getElementById('avgConfidence');
+        
+        if (originalCount) originalCount.textContent = window.allMappings.length;
+        if (cleanCount) cleanCount.textContent = new Set(window.allMappings.map(m => m.clean_name)).size;
+        if (avgConfidence) {
+            const avgConf = window.allMappings.reduce((sum, m) => sum + (m.components?.confidence || 0), 0) / window.allMappings.length;
+            avgConfidence.textContent = Math.round(avgConf * 100) + '%';
+        }
+    }
+
+    // Load the validation interface with mock data
+    window.loadValidationInterface(mockValidationState);
+    // Hide homepage sections and show validation interface
+    const workflowSection = document.getElementById('workflowSection');
+    const validationSection = document.getElementById('validationSection');
+    
+    if (workflowSection) workflowSection.style.display = 'none';
+    if (validationSection) {
+        validationSection.classList.remove('hidden');
+        validationSection.style.display = 'block';
+    }
+
+    // Show the validation interface
+    const validationInterface = document.getElementById('validationInterface');
+    if (validationInterface) {
+        validationInterface.classList.remove('hidden');
+        validationInterface.style.display = 'block';
+    }
+    
+    statusManager.show('✅ Mock validation data loaded for UI testing', 'success', 3000);
+};
     
     // Demo function to test approval state fix
     window.demoApprovalStateFix = function() {
@@ -3512,24 +4073,174 @@ window.loadMockValidationData = function() {
         }
     });
 
-    // Load the validation interface with mock data
-    loadValidationInterface(mockValidationState);
+    // Demo function to test cache hit approval detection
+    window.testCacheHitApproval = function() {
+        console.log('🧪 Testing cache hit approval detection');
+        
+        // Simulate raw API results with cache hits (what comes from R2)
+        const mockApiResults = [
+            {
+                "status": "success",
+                "input": {
+                    "DATA_SOURCE": "Auckland Metro-Agfa",
+                    "EXAM_CODE": "FORR", 
+                    "EXAM_NAME": "Forearm R",
+                    "MODALITY_CODE": "XR"
+                },
+                "output": {
+                    "data_source": "Auckland Metro-Agfa",
+                    "modality_code": "XR",
+                    "exam_code": "FORR",
+                    "exam_name": "Forearm R",
+                    "clean_name": "XR Radius and Ulna Right",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Plain X-ray of right forearm (procedure)",
+                        "id": 3591000087109
+                    },
+                    "components": {
+                        "confidence": 0.95,
+                        "anatomy": ["forearm"],
+                        "laterality": ["right"]
+                    },
+                    "cached_skip": true,
+                    "cache_type": "approved",
+                    "cached_at": "2025-08-11T08:02:40.832468Z"
+                }
+            },
+            {
+                "status": "success", 
+                "input": {
+                    "DATA_SOURCE": "Auckland Metro-Agfa",
+                    "EXAM_CODE": "C1",
+                    "EXAM_NAME": "Chest PA", 
+                    "MODALITY_CODE": "XR"
+                },
+                "output": {
+                    "data_source": "Auckland Metro-Agfa",
+                    "modality_code": "XR",
+                    "exam_code": "C1",
+                    "exam_name": "Chest PA",
+                    "clean_name": "XR Chest",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Plain chest X-ray (procedure)",
+                        "id": 399208008
+                    },
+                    "components": {
+                        "confidence": 0.94,
+                        "anatomy": ["chest"]
+                    },
+                    "cached_skip": true,
+                    "cache_type": "approved", 
+                    "cached_at": "2025-08-11T09:45:35.662514Z"
+                }
+            },
+            {
+                "status": "success",
+                "input": {
+                    "DATA_SOURCE": "Test Hospital",
+                    "EXAM_CODE": "MRI1",
+                    "EXAM_NAME": "MRI Brain",
+                    "MODALITY_CODE": "MR"
+                },
+                "output": {
+                    "data_source": "Test Hospital",
+                    "modality_code": "MR",
+                    "exam_code": "MRI1", 
+                    "exam_name": "MRI Brain",
+                    "clean_name": "MRI Brain",
+                    "snomed": {
+                        "found": true,
+                        "fsn": "Magnetic resonance imaging of brain (procedure)",
+                        "id": 278107002
+                    },
+                    "components": {
+                        "confidence": 0.87
+                    }
+                    // No cache hit fields - this should be pending
+                }
+            }
+        ];
+        
+        console.log('🔄 Transforming mock API results with cache hit detection...');
+        
+        // Apply the mapping transformation that should detect cache hits
+        const transformedMappings = mockApiResults.map(item => ({
+            data_source: item.input?.DATA_SOURCE || item.input?.data_source || item.output?.data_source,
+            modality_code: item.input?.MODALITY_CODE || item.input?.modality_code || item.output?.modality_code,
+            exam_code: item.input?.EXAM_CODE || item.input?.exam_code || item.output?.exam_code,
+            exam_name: item.input?.EXAM_NAME || item.input?.exam_name || item.output?.exam_name,
+            clean_name: item.status === 'success' ? item.output?.clean_name : `ERROR: ${item.error}`,
+            snomed: item.status === 'success' ? item.output?.snomed || {} : {},
+            components: item.status === 'success' ? item.output?.components || {} : {},
+            all_candidates: item.status === 'success' ? item.output?.all_candidates || [] : [],
+            ambiguous: item.status === 'success' ? item.output?.ambiguous : false,
+            secondary_pipeline_applied: item.status === 'success' ? item.output?.secondary_pipeline_applied || false : false,
+            secondary_pipeline_details: item.status === 'success' ? item.output?.secondary_pipeline_details : undefined,
+            // Handle cache hits - set validation_status for cached entries
+            validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                              (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+            validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                             (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+            timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                               (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
+        }));
+        
+        console.log('📊 Transformed mappings:', transformedMappings);
+        console.log('✅ Checking for correctly detected cache hits:');
+        transformedMappings.forEach((mapping, index) => {
+            const status = mapping.validation_status || 'pending';
+            console.log(`  ${index + 1}. ${mapping.exam_name}: ${status} ${mapping.validation_notes ? `(${mapping.validation_notes})` : ''}`);
+        });
+        
+        // Set as global mappings and initialize validation
+        window.allMappings = transformedMappings;
+        
+        // Call the validation interface directly instead of handleValidateCurrentResults
+        initializeValidationFromMappings(transformedMappings).then(validationState => {
+            window.loadValidationInterface(validationState);
+            
+            // Show the validation interface
+            const workflowSection = document.getElementById('workflowSection');
+            const validationSection = document.getElementById('validationSection');
+            const resultsSection = document.getElementById('resultsSection');
+            
+            if (workflowSection) workflowSection.style.display = 'none';
+            if (resultsSection) resultsSection.style.display = 'none';
+            if (validationSection) {
+                validationSection.classList.remove('hidden');
+                validationSection.style.display = 'block';
+            }
+            
+            const validationInterface = document.getElementById('validationInterface');
+            if (validationInterface) {
+                validationInterface.classList.remove('hidden');
+                validationInterface.style.display = 'block';
+            }
+        }).catch(error => {
+            console.error('Failed to initialize validation:', error);
+        });
+        
+        statusManager.show('🧪 Cache hit test loaded! Check console for cache detection results', 'info', 5000);
+    };
     
-    // Show the validation interface
-    const validationInterface = document.getElementById('validationInterface');
-    if (validationInterface) {
-        validationInterface.classList.remove('hidden');
-        validationInterface.style.display = 'block';
+    // Add cache hit test button when in development mode
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const heroSection = document.querySelector('.hero-section');
+                if (heroSection) {
+                    const cacheTestBtn = document.createElement('button');
+                    cacheTestBtn.innerHTML = '🧪 Test Cache Hit Detection (DEV)';
+                    cacheTestBtn.className = 'button button-primary test-button';
+                    cacheTestBtn.style.marginLeft = '10px';
+                    cacheTestBtn.onclick = window.testCacheHitApproval;
+                    heroSection.appendChild(cacheTestBtn);
+                }
+            }, 1000);
+        });
     }
-    
-    // Hide other sections to focus on validation
-    const workflowSection = document.getElementById('workflowSection');
-    if (workflowSection) {
-        workflowSection.style.display = 'none';
-    }
-    
-    statusManager.show('✅ Mock validation data loaded for UI testing', 'success', 3000);
-};
 
 // Add test button to page when in development mode
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {

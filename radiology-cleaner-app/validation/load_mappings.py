@@ -29,8 +29,7 @@ def generate_unique_mapping_id(mapping: Dict[str, Any]) -> str:
     key_fields = [
         mapping.get('exam_code', ''),
         mapping.get('exam_name', ''), 
-        mapping.get('data_source', ''),
-        mapping.get('clean_name', '')
+        mapping.get('data_source', '')
     ]
     
     # Create hash from concatenated fields
@@ -145,9 +144,52 @@ def load_mappings_from_stdin() -> List[Dict[str, Any]]:
         sys.exit(1)
 
 
+def load_existing_caches() -> tuple[Dict[str, Any], Dict[str, Any]]:
+    """Load existing approved and rejected mappings caches."""
+    approved_mappings = {}
+    rejected_mappings = {}
+    
+    # Load approved mappings cache
+    approved_file = Path('validation/approved_mappings_cache.json')
+    if approved_file.exists():
+        try:
+            with open(approved_file, 'r') as f:
+                approved_data = json.load(f)
+            
+            # Handle canonical schema with entries wrapper
+            if isinstance(approved_data, dict) and 'entries' in approved_data:
+                approved_mappings = approved_data['entries']
+            else:
+                approved_mappings = approved_data
+            print(f"Loaded {len(approved_mappings)} approved mappings from cache")
+        except Exception as e:
+            print(f"Warning: Could not load approved mappings cache: {e}")
+    
+    # Load rejected mappings cache
+    rejected_file = Path('validation/rejected_mappings_cache.json')
+    if rejected_file.exists():
+        try:
+            with open(rejected_file, 'r') as f:
+                rejected_data = json.load(f)
+                
+            # Handle canonical schema with entries wrapper
+            if isinstance(rejected_data, dict) and 'entries' in rejected_data:
+                rejected_mappings = rejected_data['entries']
+            else:
+                rejected_mappings = rejected_data
+            print(f"Loaded {len(rejected_mappings)} rejected mappings from cache")
+        except Exception as e:
+            print(f"Warning: Could not load rejected mappings cache: {e}")
+    
+    return approved_mappings, rejected_mappings
+
+
 def initialize_validation_state(mappings: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Initialize validation state from mappings."""
     print(f"Processing {len(mappings)} mappings...")
+    
+    # Load existing cache data
+    approved_cache, rejected_cache = load_existing_caches()
     
     # Detect singletons
     clean_name_counts = detect_singletons(mappings)
@@ -162,7 +204,9 @@ def initialize_validation_state(mappings: List[Dict[str, Any]]) -> Dict[str, Any
         'ambiguous': 0,
         'snomed_not_found': 0,
         'secondary_pipeline_used': 0,
-        'multiple_high_confidence': 0
+        'multiple_high_confidence': 0,
+        'already_approved': 0,
+        'already_rejected': 0
     }
     
     for mapping in mappings:
@@ -173,9 +217,22 @@ def initialize_validation_state(mappings: List[Dict[str, Any]]) -> Dict[str, Any
         clean_name = mapping.get('clean_name', '')
         is_singleton = clean_name_counts.get(clean_name, 0) == 1
         
-        # Create validation entry
+        # Generate unique ID to check against existing caches
+        unique_id = generate_unique_mapping_id(mapping)
+        
+        # Check if this mapping is already in approved or rejected cache
+        validation_status = "pending_review"
+        if unique_id in approved_cache:
+            validation_status = "approved"
+            stats['already_approved'] += 1
+        elif unique_id in rejected_cache:
+            validation_status = "rejected"
+            stats['already_rejected'] += 1
+        
+        # Create validation entry with proper status
         entry = create_validation_state_entry(mapping, flags, is_singleton)
-        unique_id = entry['unique_mapping_id']
+        entry['validation_status'] = validation_status  # Override default status
+        entry['unique_mapping_id'] = unique_id  # Ensure consistency
         validation_state[unique_id] = entry
         
         # Update statistics
@@ -214,6 +271,8 @@ def print_summary_report(stats: Dict[str, Any]):
     print("VALIDATION INITIALIZATION SUMMARY")
     print("="*60)
     print(f"Total mappings processed: {stats['total_mappings']}")
+    print(f"Already approved: {stats['already_approved']}")
+    print(f"Already rejected: {stats['already_rejected']}")
     print(f"Flagged for attention: {stats['flagged_for_attention']}")
     print(f"  - Low confidence (<85%): {stats['low_confidence']}")
     print(f"  - Ambiguous mappings: {stats['ambiguous']}")  
@@ -221,11 +280,16 @@ def print_summary_report(stats: Dict[str, Any]):
     print(f"  - SNOMED not found: {stats['snomed_not_found']}")
     print(f"  - Secondary pipeline used: {stats['secondary_pipeline_used']}")
     print(f"  - Multiple high-confidence candidates: {stats['multiple_high_confidence']}")
-    print(f"Ready for review: {stats['total_mappings'] - stats['flagged_for_attention']}")
+    
+    new_for_review = stats['total_mappings'] - stats['already_approved'] - stats['already_rejected']
+    print(f"New mappings requiring review: {new_for_review}")
     
     if stats['total_mappings'] > 0:
-        attention_percentage = (stats['flagged_for_attention'] / stats['total_mappings']) * 100
-        print(f"\nAttention required: {attention_percentage:.1f}% of mappings")
+        approved_percentage = (stats['already_approved'] / stats['total_mappings']) * 100
+        print(f"\nAlready completed: {approved_percentage + (stats['already_rejected'] / stats['total_mappings'] * 100):.1f}% of mappings")
+        if new_for_review > 0:
+            attention_percentage = (stats['flagged_for_attention'] / new_for_review) * 100
+            print(f"Of new mappings, attention required: {attention_percentage:.1f}%")
     print("="*60)
 
 

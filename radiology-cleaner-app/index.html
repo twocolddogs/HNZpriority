@@ -228,15 +228,6 @@
                     <div class="stat-card"><div class="stat-value" id="avgConfidence">0</div><div class="stat-label">Avg Confidence</div></div>
                 </div>
                 
-                <!-- Combined Action Buttons - Reorganized Order -->
-                <div class="action-buttons view-toggle">
-                    <button class="button" style="background: #3f51b5; color: white;" id="validateResultsBtn">
-                        <i class="fas fa-check-double"></i> Validate Results
-                    </button>
-                    <button class="button active" id="viewToggleBtn">Switch to Consolidated View</button>
-                    <button class="button primary new-upload" id="newUploadBtn">Start Over</button>
-                    <button class="button success" id="exportMappingsBtn">Export Mappings</button>
-                </div>
                 
                 <!-- Full View -->
                 <div id="fullView">
@@ -249,11 +240,15 @@
                             <option value="name-asc">Clean Name: A to Z</option>
                             <option value="name-desc">Clean Name: Z to A</option>
                         </select>
+                        <label style="margin-left: 15px; display: flex; align-items: center; cursor: pointer; font-size: 0.9em;">
+                            <input type="checkbox" id="prioritizeUnvalidated" checked style="margin-right: 6px;">
+                            Prioritize unvalidated
+                        </label>
                         <span id="tableInfo" class="table-info"></span>
                     </div>
                     <div class="table-container">
                         <table class="results-table" id="resultsTable">
-                            <thead><tr><th style="width: 12px; padding: 0;"></th><th>Original Code</th><th>Original Name</th><th>Clean Name</th><th>SNOMED FSN</th><th>Tags</th><th>Confidence</th></tr></thead>
+                            <thead><tr><th style="width: 12px; padding: 0;"></th><th>Original Code</th><th>Original Name</th><th>Clean Name</th><th>SNOMED FSN</th><th>Tags</th><th>Confidence</th><th>Actions</th></tr></thead>
                             <tbody id="resultsBody"></tbody>
                         </table>
                     </div>
@@ -269,20 +264,26 @@
                             <option value="200">200 per page</option>
                         </select>
                     </div>
+                    
+                    <!-- Combined Action Buttons - Moved Below Results Table -->
+                    <div class="action-buttons view-toggle" style="margin-top: 20px;">
+                        <button class="button" style="background: #3f51b5; color: white; display: none;" id="validateResultsBtn">
+                            <i class="fas fa-check-double"></i> Validate Results
+                        </button>
+                        <button class="button primary new-upload" id="newUploadBtn">Start Over</button>
+                        <button class="button success" id="exportMappingsBtn">Export Mappings</button>
+                        <button class="button" style="background: #3f51b5; color: white;" id="commitValidationsBtn">
+                            <i class="fas fa-cloud-upload-alt"></i> Commit Validations
+                        </button>
+                    </div>
                 </div>
                 
-                <!-- Consolidated View -->
-                <div id="consolidatedView" style="display: none;">
-                    <h3>Consolidated Results</h3>
-                    <div class="consolidated-controls" style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
-                        <input type="text" id="consolidatedSearch" placeholder="Search consolidated names..." style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; width: 300px; max-width: 100%;">
-                        <select id="consolidatedSort" style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px;">
-                            <option value="count">Sort by Count</option>
-                            <option value="name">Sort by Name</option>
-                            <option value="confidence">Sort by Confidence</option>
-                        </select>
+                <!-- Validation View -->
+                <div id="validationView" style="display: none;">
+                    <h3>Validation Interface</h3>
+                    <div id="validationContent">
+                        <p>Click "Validate Results" to load the validation interface.</p>
                     </div>
-                    <div id="consolidatedResults"></div>
                 </div>
             </div>
         </div>
