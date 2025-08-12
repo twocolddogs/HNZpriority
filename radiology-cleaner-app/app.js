@@ -2313,8 +2313,12 @@ window.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             
-            <div id="validationGroups" class="validation-groups-container">
-                ${window.renderValidationGroups(consolidatedGroups)}
+            <!-- Mappings to Review Section -->
+            <div class="mappings-review-section">
+                <h4 style="margin: 20px 0 15px 0; color: #333; font-size: 16px;">Mappings to Review</h4>
+                <div id="validationGroups" class="validation-groups-container">
+                    ${window.renderValidationGroups(consolidatedGroups)}
+                </div>
             </div>
         `;
         
