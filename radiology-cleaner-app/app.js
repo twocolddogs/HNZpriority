@@ -1549,6 +1549,53 @@ window.addEventListener('DOMContentLoaded', function() {
             const isSecondaryPipelineImproved = item.secondary_pipeline_applied && item.secondary_pipeline_details?.improved;
             const secondaryPipelineTag = isSecondaryPipelineImproved ? '<div class="secondary-pipeline-tag" title="Improved by Secondary Pipeline"><i class="fas fa-robot"></i> Super AI Mapped</div>' : '';
             confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>${secondaryPipelineTag}`;
+            
+            // Add quick approve/reject buttons column
+            const actionsCell = row.insertCell();
+            const mappingId = `mapping_${item.exam_code}_${item.exam_name}_${item.data_source}`.replace(/[^a-zA-Z0-9_]/g, '_');
+            const validationStatus = item.validation_status;
+            
+            // Show current validation status and appropriate buttons
+            let actionsHTML = '';
+            if (validationStatus === 'approved') {
+                actionsHTML = `
+                    <div class="quick-validation-cell approved-status">
+                        <span class="validation-status status-approved"><i class="fas fa-check"></i> Approved</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+            } else if (validationStatus === 'rejected') {
+                actionsHTML = `
+                    <div class="quick-validation-cell rejected-status">
+                        <span class="validation-status status-rejected"><i class="fas fa-times"></i> Rejected</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unreject')" title="Undo rejection">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                actionsHTML = `
+                    <div class="quick-validation-cell pending-status">
+                        <button class="button button-sm button-success" onclick="quickValidationAction('${mappingId}', 'approve')" title="Quick approve">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            actionsCell.innerHTML = actionsHTML;
+            actionsCell.style.minWidth = '120px';
+            actionsCell.dataset.mappingId = mappingId;
+            
+            // Store mapping data for validation
+            if (!window.quickValidationData) {
+                window.quickValidationData = {};
+            }
+            window.quickValidationData[mappingId] = item;
             if (resultsMobile) {
                 const card = document.createElement('div');
                 card.className = 'result-card';
@@ -2637,6 +2684,134 @@ window.addEventListener('DOMContentLoaded', function() {
         return html;
     }
     
+    // Quick validation actions for results table
+    window.quickValidationAction = function(mappingId, decision) {
+        console.log(`🚀 Quick validation action: ${decision} for mapping ${mappingId}`);
+        
+        // Get the mapping data
+        const mappingData = window.quickValidationData?.[mappingId];
+        if (!mappingData) {
+            console.error('Mapping data not found for ID:', mappingId);
+            return;
+        }
+        
+        // Initialize validation state if needed
+        if (!window.currentValidationState) {
+            window.currentValidationState = {};
+        }
+        
+        // Initialize validation state for this mapping if it doesn't exist
+        if (!window.currentValidationState[mappingId]) {
+            window.currentValidationState[mappingId] = {
+                unique_mapping_id: mappingId,
+                original_mapping: mappingData,
+                validation_status: 'pending_review',
+                validator_decision: null,
+                timestamp_created: new Date().toISOString(),
+                timestamp_reviewed: null,
+                needs_attention_flags: []
+            };
+        }
+        
+        // Update the decision in the validation state
+        updateMappingDecisionInState(mappingId, decision);
+        
+        // Update the UI for this row
+        const actionsCell = document.querySelector(`[data-mapping-id="${mappingId}"]`);
+        if (actionsCell) {
+            let newHTML = '';
+            if (decision === 'approve') {
+                newHTML = `
+                    <div class="quick-validation-cell approved-status">
+                        <span class="validation-status status-approved"><i class="fas fa-check"></i> Approved</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+                // Add visual feedback for approval
+                const row = actionsCell.closest('tr');
+                if (row) {
+                    row.style.backgroundColor = '#e8f5e8';
+                    row.style.borderLeft = '3px solid #4caf50';
+                }
+            } else if (decision === 'reject') {
+                newHTML = `
+                    <div class="quick-validation-cell rejected-status">
+                        <span class="validation-status status-rejected"><i class="fas fa-times"></i> Rejected</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unreject')" title="Undo rejection">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+                // Add visual feedback for rejection
+                const row = actionsCell.closest('tr');
+                if (row) {
+                    row.style.backgroundColor = '#ffebee';
+                    row.style.borderLeft = '3px solid #f44336';
+                }
+            } else if (decision === 'unapprove' || decision === 'unreject') {
+                newHTML = `
+                    <div class="quick-validation-cell pending-status">
+                        <button class="button button-sm button-success" onclick="quickValidationAction('${mappingId}', 'approve')" title="Quick approve">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                // Reset visual feedback
+                const row = actionsCell.closest('tr');
+                if (row) {
+                    row.style.backgroundColor = '';
+                    row.style.borderLeft = '';
+                }
+            }
+            actionsCell.innerHTML = newHTML;
+        }
+        
+        // Show the commit validations button if any decisions have been made
+        showCommitValidationsButton();
+        
+        // Show success message
+        const actionText = decision === 'approve' ? 'approved' : 
+                          decision === 'reject' ? 'rejected' : 
+                          decision === 'unapprove' ? 'unapproved' : 'un-rejected';
+        statusManager.show(`✅ Mapping ${actionText}`, 'success', 2000);
+    };
+    
+    function showCommitValidationsButton() {
+        // Check if any quick validation decisions have been made
+        if (!window.currentValidationState) return;
+        
+        const hasDecisions = Object.values(window.currentValidationState).some(state => 
+            state.validator_decision && state.validator_decision !== 'pending'
+        );
+        
+        if (hasDecisions) {
+            let commitBtn = document.getElementById('quickCommitValidationsBtn');
+            if (!commitBtn) {
+                // Create the commit button if it doesn't exist
+                const actionButtons = document.querySelector('.action-buttons.view-toggle');
+                if (actionButtons) {
+                    commitBtn = document.createElement('button');
+                    commitBtn.id = 'quickCommitValidationsBtn';
+                    commitBtn.className = 'button primary';
+                    commitBtn.style.cssText = 'background: #3f51b5; color: white; margin-left: 10px;';
+                    commitBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Commit Validations';
+                    commitBtn.onclick = function() {
+                        commitValidatedDecisions();
+                    };
+                    actionButtons.appendChild(commitBtn);
+                }
+            }
+            if (commitBtn) {
+                commitBtn.style.display = 'inline-block';
+            }
+        }
+    }
+    
     window.setupValidationEventListeners = function(validationState) {
         // Bulk action buttons
         const expandAllBtn = document.getElementById('expandAllBtn');
@@ -3465,10 +3640,13 @@ window.loadMockValidationData = function() {
             unique_mapping_id: "mapping_1",
             original_mapping: {
                 exam_name: "CT Chest without contrast",
+                exam_code: "CT001",
                 clean_name: "CT CHEST",
                 data_source: "Test Hospital A",
                 components: {
-                    confidence: 0.95
+                    confidence: 0.95,
+                    anatomy: ["chest"],
+                    modality: "CT"
                 },
                 snomed: {
                     id: "169069000",
@@ -3489,119 +3667,251 @@ window.loadMockValidationData = function() {
         "mapping_2": {
             unique_mapping_id: "mapping_2",
             original_mapping: {
-                exam_name: "Xray Chest PA",
-                clean_name: "X-RAY CHEST",
-                data_source: "Test Hospital B",
-                components: {
-                    confidence: 0.65
-                },
-                snomed: {
-                    id: "399208008",
-                    fsn: "Plain chest X-ray"
-                },
-                all_candidates: [
-                    { primary_name: "X-RAY CHEST", confidence: 0.65 },
-                    { primary_name: "CHEST RADIOGRAPH", confidence: 0.62 }
-                ]
-            },
-            needs_attention_flags: ['low_confidence', 'ambiguous'],
-            validation_status: 'pending_review',
-            validator_decision: null,
-            validation_notes: '',
-            timestamp_created: "2025-01-14T10:30:00.000Z",
-            timestamp_reviewed: null
-        },
-        "mapping_3": {
-            unique_mapping_id: "mapping_3",
-            original_mapping: {
                 exam_name: "CT Chest with contrast",
+                exam_code: "CT002", 
                 clean_name: "CT CHEST",
-                data_source: "Test Hospital C", 
+                data_source: "Test Hospital A",
                 components: {
-                    confidence: 0.88
+                    confidence: 0.92,
+                    anatomy: ["chest"],
+                    modality: "CT"
                 },
                 snomed: {
                     id: "169069000",
                     fsn: "Computed tomography of chest"
                 },
                 all_candidates: [
-                    { primary_name: "CT CHEST", confidence: 0.88 }
+                    { primary_name: "CT CHEST", confidence: 0.92 }
                 ]
             },
             needs_attention_flags: [],
             validation_status: 'approved',
             validator_decision: 'approve',
-            validation_notes: 'Previously approved - confident match',
-            timestamp_created: "2025-08-05T14:20:10.123456+00:00",
-            timestamp_reviewed: "2025-08-05T14:22:15.987654Z"
+            validation_notes: 'Auto-approved based on high confidence',
+            timestamp_created: "2025-08-06T08:42:22.345330+00:00",
+            timestamp_reviewed: "2025-08-06T08:52:11.234567Z"
+        },
+        "mapping_3": {
+            unique_mapping_id: "mapping_3",
+            original_mapping: {
+                exam_name: "Chest X-ray PA view",
+                exam_code: "XR001",
+                clean_name: "X-RAY CHEST",
+                data_source: "Test Hospital B",
+                components: {
+                    confidence: 0.76,
+                    anatomy: ["chest"],
+                    modality: "XR"
+                },
+                snomed: {
+                    id: "399208008",
+                    fsn: "Plain chest X-ray"
+                },
+                all_candidates: [
+                    { primary_name: "X-RAY CHEST", confidence: 0.76 },
+                    { primary_name: "CHEST RADIOGRAPH", confidence: 0.65 }
+                ]
+            },
+            needs_attention_flags: ['low_confidence'],
+            validation_status: 'pending_review',
+            validator_decision: null,
+            timestamp_created: "2025-08-06T08:42:22.345330+00:00",
+            timestamp_reviewed: null
         },
         "mapping_4": {
             unique_mapping_id: "mapping_4",
             original_mapping: {
-                exam_name: "MRI Brain",
+                exam_name: "Brain MRI",
+                exam_code: "MRI001",
                 clean_name: "MRI BRAIN",
-                data_source: "Test Hospital A",
+                data_source: "Test Hospital C",
                 components: {
-                    confidence: 0.45
+                    confidence: 0.65,
+                    anatomy: ["brain"],
+                    modality: "MRI"
                 },
                 snomed: {
                     id: "278107002",
                     fsn: "Magnetic resonance imaging of brain"
                 },
                 all_candidates: [
-                    { primary_name: "MRI BRAIN", confidence: 0.45 },
-                    { primary_name: "MRI HEAD", confidence: 0.43 },
-                    { primary_name: "BRAIN MRI", confidence: 0.41 }
+                    { primary_name: "MRI BRAIN", confidence: 0.65 }
                 ]
             },
-            needs_attention_flags: ['low_confidence', 'singleton_mapping'],
+            needs_attention_flags: ['singleton_mapping', 'low_confidence'],
             validation_status: 'pending_review',
             validator_decision: null,
-            validation_notes: '',
-            timestamp_created: "2025-01-14T10:30:00.000Z",
+            timestamp_created: "2025-08-06T08:42:22.345330+00:00",
             timestamp_reviewed: null
         },
         "mapping_5": {
             unique_mapping_id: "mapping_5",
             original_mapping: {
-                exam_name: "Ultrasound Abdomen",
+                exam_name: "Abdominal ultrasound",
+                exam_code: "US001",
                 clean_name: "US ABDOMEN",
                 data_source: "Test Hospital D",
                 components: {
-                    confidence: 0.78
+                    confidence: 0.88,
+                    anatomy: ["abdomen"],
+                    modality: "US"
                 },
                 snomed: {
                     id: "241527001",
                     fsn: "Ultrasonography of abdomen"
                 },
                 all_candidates: [
-                    { primary_name: "US ABDOMEN", confidence: 0.78 }
+                    { primary_name: "US ABDOMEN", confidence: 0.88 },
+                    { primary_name: "ABDOMINAL ULTRASOUND", confidence: 0.75 }
                 ]
             },
-            needs_attention_flags: ['secondary_pipeline'],
+            needs_attention_flags: [],
             validation_status: 'pending_review',
             validator_decision: null,
-            validation_notes: '',
-            timestamp_created: "2025-01-14T10:30:00.000Z",
+            timestamp_created: "2025-08-06T08:42:22.345330+00:00",
             timestamp_reviewed: null
         }
     };
-    
+
+    // Also populate allMappings for the results table
+    window.allMappings = Object.values(mockValidationState).map(state => {
+        const mapping = state.original_mapping;
+        return {
+            ...mapping,
+            validation_status: state.validation_status,
+            validator_decision: state.validator_decision,
+            validation_notes: state.validation_notes,
+            timestamp_reviewed: state.timestamp_reviewed
+        };
+    });
+
+    // Store validation state globally for access by other functions
+    window.currentValidationState = mockValidationState;
+
+    // Directly populate the results table
+    const resultsBody = document.getElementById('resultsBody');
+    if (resultsBody) {
+        resultsBody.innerHTML = '';
+        window.allMappings.forEach(item => {
+            const row = resultsBody.insertRow();
+            
+            // Source cell (color indicator)
+            const sourceCell = row.insertCell();
+            sourceCell.style.cssText = `width: 12px; padding: 0; background-color: #4CAF50; border-right: none; position: relative;`;
+            sourceCell.title = item.data_source;
+            
+            // Original Code
+            row.insertCell().textContent = item.exam_code;
+            
+            // Original Name  
+            row.insertCell().textContent = item.exam_name;
+            
+            // Clean Name
+            const cleanNameCell = row.insertCell();
+            cleanNameCell.innerHTML = `<strong>${item.clean_name || 'Unknown'}</strong>`;
+            
+            // SNOMED FSN
+            const snomedFsnCell = row.insertCell();
+            snomedFsnCell.innerHTML = item.snomed?.fsn ? `<div>${item.snomed.fsn}</div>` + (item.snomed.id ? `<div style="font-size: 0.8em; color: #666; margin-top: 2px;">${item.snomed.id}</div>` : '') : '<span style="color: #999;">-</span>';
+            
+            // Tags
+            const tagsCell = row.insertCell();
+            let tagsHTML = '';
+            const { anatomy, modality } = item.components || {};
+            if (anatomy) tagsHTML += `<span class="tag anatomy">${Array.isArray(anatomy) ? anatomy.join(', ') : anatomy}</span>`;
+            if (modality) tagsHTML += `<span class="tag modality">${modality}</span>`;
+            tagsCell.innerHTML = tagsHTML;
+            
+            // Confidence
+            const confidenceCell = row.insertCell();
+            const confidence = item.components?.confidence || 0;
+            const confidencePercent = Math.round(confidence * 100);
+            const confidenceClass = confidence >= 0.8 ? 'confidence-high' : confidence >= 0.6 ? 'confidence-medium' : 'confidence-low';
+            confidenceCell.innerHTML = `<div class="confidence-bar"><div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div></div><small>${confidencePercent}%</small>`;
+            
+            // Actions cell with quick approve/reject buttons
+            const actionsCell = row.insertCell();
+            const mappingId = `mapping_${item.exam_code}_${item.exam_name}_${item.data_source}`.replace(/[^a-zA-Z0-9_]/g, '_');
+            const validationStatus = item.validation_status;
+            
+            let actionsHTML = '';
+            if (validationStatus === 'approved') {
+                actionsHTML = `
+                    <div class="quick-validation-cell approved-status">
+                        <span class="validation-status status-approved"><i class="fas fa-check"></i> Approved</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+                // Add visual feedback for approval
+                row.style.backgroundColor = '#e8f5e8';
+                row.style.borderLeft = '3px solid #4caf50';
+            } else if (validationStatus === 'rejected') {
+                actionsHTML = `
+                    <div class="quick-validation-cell rejected-status">
+                        <span class="validation-status status-rejected"><i class="fas fa-times"></i> Rejected</span>
+                        <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unreject')" title="Undo rejection">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `;
+                row.style.backgroundColor = '#ffebee';
+                row.style.borderLeft = '3px solid #f44336';
+            } else {
+                actionsHTML = `
+                    <div class="quick-validation-cell pending-status">
+                        <button class="button button-sm button-success" onclick="quickValidationAction('${mappingId}', 'approve')" title="Quick approve">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            actionsCell.innerHTML = actionsHTML;
+            actionsCell.style.minWidth = '120px';
+            actionsCell.dataset.mappingId = mappingId;
+            
+            // Store mapping data for validation
+            if (!window.quickValidationData) {
+                window.quickValidationData = {};
+            }
+            window.quickValidationData[mappingId] = item;
+        });
+    }
+
+    // Show results section and stats
+    const resultsSection = document.getElementById('resultsSection');
+    if (resultsSection) {
+        resultsSection.style.display = 'block';
+        
+        // Update stats
+        const originalCount = document.getElementById('originalCount');
+        const cleanCount = document.getElementById('cleanCount');
+        const avgConfidence = document.getElementById('avgConfidence');
+        
+        if (originalCount) originalCount.textContent = window.allMappings.length;
+        if (cleanCount) cleanCount.textContent = new Set(window.allMappings.map(m => m.clean_name)).size;
+        if (avgConfidence) {
+            const avgConf = window.allMappings.reduce((sum, m) => sum + (m.components?.confidence || 0), 0) / window.allMappings.length;
+            avgConfidence.textContent = Math.round(avgConf * 100) + '%';
+        }
+    }
+
+    // Load the validation interface with mock data
+    window.loadValidationInterface(mockValidationState);
     // Hide homepage sections and show validation interface
     const workflowSection = document.getElementById('workflowSection');
     const validationSection = document.getElementById('validationSection');
-    const resultsSection = document.getElementById('resultsSection');
     
     if (workflowSection) workflowSection.style.display = 'none';
-    if (resultsSection) resultsSection.style.display = 'none';
     if (validationSection) {
         validationSection.classList.remove('hidden');
         validationSection.style.display = 'block';
     }
 
-    // Load the validation interface with mock data
-    window.loadValidationInterface(mockValidationState);
-    
     // Show the validation interface
     const validationInterface = document.getElementById('validationInterface');
     if (validationInterface) {
