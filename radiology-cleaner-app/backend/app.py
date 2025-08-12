@@ -2269,6 +2269,7 @@ def submit_batch_validation_decisions():
                             'mapping_data': item.get('original_mapping', {}),
                             'validation_notes': item.get('notes', ''),
                             'approved_at': item.get('timestamp_reviewed'),
+                            'validation_author': item.get('validation_author', ''),
                             'decision_metadata': {
                                 'data_source': ds,
                                 'exam_code': ex_code,
@@ -2334,6 +2335,7 @@ def submit_batch_validation_decisions():
                         entry = {
                             'reason': item.get('notes', ''),
                             'rejected_at': item.get('timestamp_reviewed'),
+                            'validation_author': item.get('validation_author', ''),
                             'decision_metadata': {
                                 'data_source': ds,
                                 'exam_code': ex_code,
