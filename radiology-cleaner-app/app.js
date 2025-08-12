@@ -504,6 +504,89 @@ function downloadJSON(data, filename) {
 window.addEventListener('DOMContentLoaded', function() {
 
     // -----------------------------------------------------------------------------
+    // 5.0. User Session Management
+    // -----------------------------------------------------------------------------
+    let currentValidationAuthor = null;
+    let uncommittedValidations = 0;
+    
+    // User name modal management
+    function showUserNameModal() {
+        return new Promise((resolve, reject) => {
+            const modal = document.getElementById('userNameModal');
+            const input = document.getElementById('userNameInput');
+            const confirmBtn = document.getElementById('confirmUserNameBtn');
+            const cancelBtn = document.getElementById('cancelUserNameBtn');
+            const errorDiv = document.getElementById('userNameError');
+            
+            // Reset modal state
+            input.value = '';
+            errorDiv.style.display = 'none';
+            
+            // Show modal
+            modal.style.display = 'block';
+            input.focus();
+            
+            function cleanup() {
+                modal.style.display = 'none';
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                input.removeEventListener('keypress', handleKeypress);
+            }
+            
+            function handleConfirm() {
+                const userName = input.value.trim();
+                if (!userName) {
+                    errorDiv.style.display = 'block';
+                    input.focus();
+                    return;
+                }
+                currentValidationAuthor = userName;
+                cleanup();
+                resolve(userName);
+            }
+            
+            function handleCancel() {
+                cleanup();
+                reject(new Error('User cancelled'));
+            }
+            
+            function handleKeypress(e) {
+                if (e.key === 'Enter') {
+                    handleConfirm();
+                } else if (e.key === 'Escape') {
+                    handleCancel();
+                }
+            }
+            
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+            input.addEventListener('keypress', handleKeypress);
+        });
+    }
+    
+    // Protection against accidental page navigation
+    function setupNavigationProtection() {
+        window.addEventListener('beforeunload', function(e) {
+            if (uncommittedValidations > 0) {
+                e.preventDefault();
+                e.returnValue = 'You have uncommitted validations. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+    }
+    
+    function incrementUncommittedValidations() {
+        uncommittedValidations++;
+    }
+    
+    function resetUncommittedValidations() {
+        uncommittedValidations = 0;
+    }
+    
+    // Initialize navigation protection
+    setupNavigationProtection();
+
+    // -----------------------------------------------------------------------------
     // 5.1. Centralized Source Names
     // -----------------------------------------------------------------------------
     function getSourceNames() {
@@ -942,6 +1025,14 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     async function processFile(file) {
+        // Show user name modal before processing
+        try {
+            await showUserNameModal();
+        } catch (error) {
+            // User cancelled - don't proceed with processing
+            return;
+        }
+        
         disableActionButtons('Processing uploaded file...');
         if (!file.name.endsWith('.json')) {
             statusManager.show('Please upload a valid JSON file.', 'error', 5000);
@@ -970,6 +1061,14 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     async function runRandomSample() {
+        // Show user name modal before processing
+        try {
+            await showUserNameModal();
+        } catch (error) {
+            // User cancelled - don't proceed with processing
+            return;
+        }
+        
         disableActionButtons('Processing random sample...');
         let statusId = null;
         try {
@@ -1924,6 +2023,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 window.currentValidationState[mappingId].validator_decision = 'unapprove';
                 window.currentValidationState[mappingId].validation_status = 'unapproved';
                 window.currentValidationState[mappingId].timestamp_reviewed = new Date().toISOString();
+                incrementUncommittedValidations();
             } else {
                 window.currentValidationState[mappingId].validator_decision = decision;
                 // Set validation_status to match the decision for consistent display
@@ -1937,6 +2037,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     window.currentValidationState[mappingId].validation_status = 'reviewed';
                 }
                 window.currentValidationState[mappingId].timestamp_reviewed = new Date().toISOString();
+                incrementUncommittedValidations();
             }
         }
     }
@@ -2024,6 +2125,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         mapping_id: mappingId,
                         decision: state.validator_decision,
                         notes: state.validation_notes || '',
+                        validation_author: currentValidationAuthor || '',
                         original_mapping: om,
                         data_source: om.data_source || '',
                         exam_code: om.exam_code || '',
@@ -2064,6 +2166,7 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Success - clear the validation state and provide feedback
             window.currentValidationState = {};
+            resetUncommittedValidations();
             statusManager.show(`✅ Successfully committed ${approved + rejected + skipped + unapproved} validation decisions`, 'success', 5000);
             
             // Optionally clear the validation interface
