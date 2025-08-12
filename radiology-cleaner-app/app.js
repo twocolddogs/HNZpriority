@@ -1831,11 +1831,16 @@ window.addEventListener('DOMContentLoaded', function() {
     
     function updateMappingDecisionInState(mappingId, decision) {
         if (window.currentValidationState && window.currentValidationState[mappingId]) {
-            if (decision === 'unapprove' || decision === 'unreject' || decision === 'unskip') {
-                // Reset to pending state when undoing any decision
+            if (decision === 'unreject' || decision === 'unskip') {
+                // Reset to pending state when undoing reject/skip decisions
                 window.currentValidationState[mappingId].validator_decision = null;
                 window.currentValidationState[mappingId].validation_status = 'pending_review';
                 window.currentValidationState[mappingId].timestamp_reviewed = null;
+            } else if (decision === 'unapprove') {
+                // Unapprove is a distinct decision that can be committed
+                window.currentValidationState[mappingId].validator_decision = 'unapprove';
+                window.currentValidationState[mappingId].validation_status = 'unapproved';
+                window.currentValidationState[mappingId].timestamp_reviewed = new Date().toISOString();
             } else {
                 window.currentValidationState[mappingId].validator_decision = decision;
                 // Set validation_status to match the decision for consistent display
@@ -1909,14 +1914,15 @@ window.addEventListener('DOMContentLoaded', function() {
         const approved = decisions.filter(d => d.validator_decision === 'approve').length;
         const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
         const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
+        const unapproved = decisions.filter(d => d.validator_decision === 'unapprove').length;
         const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
         
-        if (approved === 0 && rejected === 0 && skipped === 0) {
+        if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0) {
             statusManager.show('⚠️ No decisions made yet', 'warning', 3000);
             return;
         }
         
-        const message = `Commit ${approved} approved, ${rejected} rejected, and ${skipped} skipped decisions?${pending > 0 ? ` (${pending} will remain pending)` : ''}`;
+        const message = `Commit ${approved} approved, ${rejected} rejected, ${skipped} skipped, and ${unapproved} unapproved decisions?${pending > 0 ? ` (${pending} will remain pending)` : ''}`;
         if (!confirm(message)) {
             return;
         }
@@ -1951,6 +1957,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     approved_count: approved,
                     rejected_count: rejected,
                     skipped_count: skipped,
+                    unapproved_count: unapproved,
                     pending_count: pending,
                     total_count: decisions.length,
                     timestamp: new Date().toISOString()
@@ -1974,7 +1981,7 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Success - clear the validation state and provide feedback
             window.currentValidationState = {};
-            statusManager.show(`✅ Successfully committed ${approved + rejected + skipped} validation decisions`, 'success', 5000);
+            statusManager.show(`✅ Successfully committed ${approved + rejected + skipped + unapproved} validation decisions`, 'success', 5000);
             
             // Optionally clear the validation interface
             const validationInterface = document.getElementById('validationInterface');
@@ -1983,11 +1990,12 @@ window.addEventListener('DOMContentLoaded', function() {
                     <div style="text-align: center; padding: 40px; color: #666;">
                         <i class="fas fa-check-circle" style="font-size: 48px; color: #4CAF50; margin-bottom: 16px;"></i>
                         <h3>Validation Decisions Committed</h3>
-                        <p>Successfully processed ${approved + rejected + skipped} validation decisions.</p>
+                        <p>Successfully processed ${approved + rejected + skipped + unapproved} validation decisions.</p>
                         <p style="margin-top: 20px;">
                             <strong>Approved:</strong> ${approved} &nbsp;|&nbsp; 
                             <strong>Rejected:</strong> ${rejected} &nbsp;|&nbsp; 
                             <strong>Skipped:</strong> ${skipped}
+                            ${unapproved > 0 ? ` &nbsp;|&nbsp; <strong>Unapproved:</strong> ${unapproved}` : ''}
                         </p>
                         ${result.cache_updated ? '<p style="color: #4CAF50;"><i class="fas fa-sync"></i> Validation caches updated successfully</p>' : ''}
                     </div>
@@ -2259,6 +2267,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const approvedCount = decisions.filter(d => d.validator_decision === 'approve').length;
         const rejectedCount = decisions.filter(d => d.validator_decision === 'reject').length;
         const skippedCount = decisions.filter(d => d.validator_decision === 'skip').length;
+        const unapprovedCount = decisions.filter(d => d.validator_decision === 'unapprove').length;
         const pendingCount = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
         
         console.log(`📊 Validation counts - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Pending: ${pendingCount}`);
@@ -2322,6 +2331,11 @@ window.addEventListener('DOMContentLoaded', function() {
                                 <i class="fas fa-clock"></i>
                                 <span>Skipped:</span>
                                 <span class="count" id="skippedCount">${skippedCount}</span>
+                            </div>
+                            <div class="counter-item unapproved">
+                                <i class="fas fa-undo"></i>
+                                <span>Unapproved:</span>
+                                <span class="count" id="unapprovedCount">${unapprovedCount}</span>
                             </div>
                             <div class="counter-item pending">
                                 <i class="fas fa-hourglass-half"></i>
@@ -3046,20 +3060,26 @@ Ctrl+Z - Undo last action`);
         const approvedCount = decisions.filter(d => d.validator_decision === 'approve').length;
         const rejectedCount = decisions.filter(d => d.validator_decision === 'reject').length;
         const skippedCount = decisions.filter(d => d.validator_decision === 'skip').length;
+        const unapprovedCount = decisions.filter(d => d.validator_decision === 'unapprove').length;
         const pendingCount = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
         
         // Update counter elements
         const approvedElement = document.getElementById('approvedCount');
         const rejectedElement = document.getElementById('rejectedCount');
         const skippedElement = document.getElementById('skippedCount');
+        const unapprovedElement = document.getElementById('unapprovedCount');
         const pendingElement = document.getElementById('pendingCount');
         
         if (approvedElement) approvedElement.textContent = approvedCount;
         if (rejectedElement) rejectedElement.textContent = rejectedCount;
         if (skippedElement) skippedElement.textContent = skippedCount;
+        if (unapprovedElement) unapprovedElement.textContent = unapprovedCount;
         if (pendingElement) pendingElement.textContent = pendingCount;
         
-        console.log(`📊 Updated validation counters - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Pending: ${pendingCount}`);
+        console.log(`📊 Updated validation counters - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Unapproved: ${unapprovedCount}, Pending: ${pendingCount}`);
+    }
+        
+        console.log(`📊 Updated validation counters - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Unapproved: ${unapprovedCount}, Pending: ${pendingCount}`);
     }
 
     // Function to update the visual elements (status badge and buttons) of a mapping item
@@ -3090,6 +3110,8 @@ Ctrl+Z - Undo last action`);
                 statusBadge = '<span class="status-badge status-rejected"><i class="fas fa-times"></i> Rejected</span>';
             } else if (currentDecision === 'skip') {
                 statusBadge = '<span class="status-badge status-skipped"><i class="fas fa-clock"></i> Skipped</span>';
+            } else if (currentDecision === 'unapprove') {
+                statusBadge = '<span class="status-badge status-unapproved"><i class="fas fa-undo"></i> Unapproved</span>';
             }
             // If currentDecision is null (after undo), don't add any status badge
             
