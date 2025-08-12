@@ -170,11 +170,14 @@ First, analyze the `input_exam` for keywords that indicate it is NOT a diagnosti
 **If and ONLY IF the `input_exam` passes this triage step, proceed to the ranking methodology below.**
 ### ### NEW SECTION END ### ###
 
-**Guiding Principle: Sufficient Specificity (FAVOR SIMPLICITY)**
-The ideal candidate has the **same level of clinical detail** as the input. Your goal is to find the match that is "just right"—not too generic, not too specific. **When in doubt, always choose the SIMPLER option.**
+**Guiding Principle: Parsimony (STRONGLY FAVOR SIMPLICITY)**
+The ideal candidate has **NO MORE clinical detail** than explicitly stated in the input. **When in doubt between two reasonable matches, ALWAYS choose the SIMPLER option.** This is a core principle of clinical coding - avoid assumptions and over-interpretation.
+
 - **Generic Input → Generic Candidate:** If the input is simple (e.g., "XR Chest"), the best match is the simplest canonical name ("XR Chest"), not a more detailed one ("XR Chest PA View").
-- **Specific Input → Specific Candidate:** If the input contains details (e.g., "XR Chest PA View"), those details **must** be present in the best match.
-- **CRITICAL**: Avoid adding imaging techniques, clinical details, or procedural specifics not explicitly mentioned in the input. Simple, direct matches are almost always better than complex ones.
+- **Specific Input → Specific Candidate:** If the input contains explicit details (e.g., "XR Chest PA View"), those details **must** be present in the best match.
+- **CRITICAL PARSIMONY RULE**: **Never add specificity not explicitly in the input.** If the input says "C+" (generic contrast), prefer "CT with contrast" over "CT with oral contrast" unless "oral" is explicitly mentioned.
+- **Ambiguity Resolution**: When input terms are ambiguous (like "C+", "contrast", "guided"), default to the **simplest interpretation** that captures the core procedure without adding assumptions.
+- **Confidence Gap Override**: A simpler match should be preferred over a more complex match **even if the complex match has slightly higher confidence** (up to 0.15 difference). Parsimony trumps minor confidence differences.
 
 **RANKING METHODOLOGY - Apply in priority order:**
 
@@ -189,8 +192,11 @@ The ideal candidate has the **same level of clinical detail** as the input. Your
   - **CRITICAL**: If the input contains diagnostic terms like "standard", "routine", or "plain film", it **must not** be matched to a candidate that is clearly interventional (e.g., contains "biopsy", "guided", "insertion"). This is a **BLOCKING FAILURE**.
   - GOOD: Input "US Guided Biopsy Liver" → Candidate "US Guided Biopsy of Liver"
   - BAD: Input "US Guided Biopsy Liver" → Candidate "US Liver" (Missing intervention)
-- **Contrast Status**: Match contrast requirements exactly
-  - CRITICAL: "with contrast" ≠ "without contrast" (Different clinical information)
+- **Contrast Status**: Handle contrast intelligently with parsimony
+  - **Explicit contrast**: "with IV contrast" or "oral contrast only" → Match exactly
+  - **Ambiguous contrast**: "C+", "contrast", "with contrast" → Prefer simpler "with contrast" over specific types ("oral only", "IV only") unless explicitly stated
+  - **No contrast specified**: Prefer non-contrast procedures
+  - **PARSIMONY OVERRIDE**: When contrast type is ambiguous, choose the **simpler base procedure** over specific contrast assumptions
 - **Laterality Logic**:
   - Input specifies side → Candidate MUST match that side
   - Input non-specific → Prefer bilateral/non-specific over single-sided candidates
@@ -198,24 +204,35 @@ The ideal candidate has the **same level of clinical detail** as the input. Your
   - If the input uses a generic term like "Angiography", "Angio", "CTA", or "MRA", you **must** prioritize candidates that specify **arteries** (e.g., "CT Angiography of Aorta").
   - Penalize or rank lower any candidates that specify **veins** (e.g., "CT Venography").
 
-**Priority 3: Complexity & Specificity Matching (Final Tie-breaker)**
-- **Apply the Guiding Principle:** Use the "Sufficient Specificity" principle to rank candidates that have passed the above checks.
+**Priority 3: Parsimony Enforcement (CRITICAL - Often Most Important)**
+- **Apply Parsimony Principle:** Use the **"Parsimony"** principle aggressively to rank candidates that have passed the above checks.
 - **IGNORE administrative terms**: "portable", "ward", "stat", "single view" (not clinically relevant)
-- **STRONGLY PENALIZE over-specification**: Don't add clinical details not in input. **This is CRITICAL - simpler matches are almost always better.**
-  - **MAJOR PENALTY**: Input "MRI Brain" → Candidate "MRI Brain with Spectroscopy" (adds a new technique).
-  - **MAJOR PENALTY**: Input "US DVT upper limb" → Candidate "US Doppler Vein Map Upper Limb" (adds "flow mapping" technique).
-  - **PREFERRED**: Input "US DVT upper limb" → Candidate "US Doppler Upper Limb Veins" (simpler, more direct).
-- **REWARD specific matches**: When input has specific terms, find the candidate that also has them.
-  - EXCELLENT: Input "MRI Brain with Diffusion" → Candidate "MRI Brain with Diffusion".
-- **Simplicity wins**: If two candidates match equally well but one is simpler, always prefer the simpler one.
+- **HEAVILY PENALIZE over-specification**: Adding clinical details not in input is a **MAJOR ERROR**. **This is the most common mistake - simpler matches are almost always better.**
+  - **SEVERE PENALTY**: Input "CT Chest C+" → Candidate "CT Chest oral contrast only" (assumes specific contrast type)
+  - **PREFERRED**: Input "CT Chest C+" → Candidate "CT Chest with contrast" (doesn't assume type)
+  - **SEVERE PENALTY**: Input "MRI Brain" → Candidate "MRI Brain with Spectroscopy" (adds technique)
+  - **SEVERE PENALTY**: Input "US upper limb" → Candidate "US Doppler Vein Map Upper Limb" (adds flow mapping)
+  - **PREFERRED**: Input "US upper limb" → Candidate "US Upper Limb" (simple and direct)
+- **REWARD explicit specificity**: When input has explicit specific terms, find the candidate that also has them.
+  - EXCELLENT: Input "MRI Brain with Diffusion" → Candidate "MRI Brain with Diffusion"
+- **PARSIMONY ALWAYS WINS**: If two candidates are clinically equivalent but one is simpler, **always rank the simpler one higher**. This is not negotiable.
+- **Confidence Override Rule**: Prefer a simpler match even if a more complex match has up to 15% higher confidence. Parsimony is more important than minor confidence differences.
 
 ---
+**CRITICAL PARSING EXAMPLES FOR AMBIGUOUS INPUTS:**
+
+- **"CT Chest C+"** → PREFER "CT Chest" or "CT Chest with contrast" over "CT Chest oral contrast only" or "CT Chest IV contrast only"
+- **"MRI Brain with contrast"** → PREFER "MRI Brain with contrast" over "MRI Brain with gadolinium"
+- **"US guided biopsy"** → PREFER "US guided biopsy" over "US guided core biopsy" (unless "core" explicitly stated)
+- **"XR chest portable"** → PREFER "XR Chest" (ignore administrative "portable")
+
 **FINAL INSTRUCTIONS:**
 
 1. **Perform Triage First**: This is the most important step.
-2. **Apply ranking priorities in order**: If triage passes, use Modality -> Clinical Specifiers -> Complexity.
+2. **Apply ranking priorities in order**: If triage passes, use Modality -> Clinical Specifiers -> **PARSIMONY ENFORCEMENT**.
 3. **Rank ALL {len(documents)} candidates**: If the input is valid, even poor matches must be ranked.
-4. **Preserve clinical intent**: The best match captures the same clinical procedure as the input.
+4. **Preserve clinical intent**: The best match captures the **core clinical procedure** as the input without adding assumptions.
+5. **When in doubt, go simpler**: This is the most important rule for healthcare coding accuracy.
 
 **RESPONSE FORMAT & CONSTRAINTS:**
 
