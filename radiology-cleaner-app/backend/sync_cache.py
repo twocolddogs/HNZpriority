@@ -2,6 +2,8 @@
 
 import os
 import logging
+import time
+from datetime import datetime
 from r2_cache_manager import R2CacheManager
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [CacheSync] - %(message)s')
@@ -43,13 +45,49 @@ def sync_cache_from_r2():
 
         local_file_path = os.path.join(persistent_disk_path, latest_r2_filename)
         
-        if os.path.exists(local_file_path):
-            logging.info("Local cache is already the latest version. Sync not needed.")
-        else:
-            logging.info("Newer version found in R2. Starting download...")
+        # Find existing local cache files for this model
+        local_cache_files = []
+        if os.path.exists(persistent_disk_path):
+            for filename in os.listdir(persistent_disk_path):
+                if filename.startswith(f"{model_key}_") and filename.endswith('.cache'):
+                    local_cache_files.append(filename)
+        
+        # Compare timestamps to determine if R2 version is actually newer
+        needs_download = True
+        
+        if local_cache_files:
+            # Find the newest local file by modification time
+            newest_local_file = None
+            newest_local_mtime = 0
+            
+            for filename in local_cache_files:
+                filepath = os.path.join(persistent_disk_path, filename)
+                mtime = os.path.getmtime(filepath)
+                if mtime > newest_local_mtime:
+                    newest_local_mtime = mtime
+                    newest_local_file = filename
+            
+            # Get R2 object timestamp
+            r2_timestamp = r2_objects[0].get('LastModified')
+            if r2_timestamp:
+                # Convert R2 timestamp to epoch time for comparison
+                if hasattr(r2_timestamp, 'timestamp'):  # boto3 datetime object
+                    r2_epoch = r2_timestamp.timestamp()
+                else:  # string timestamp
+                    r2_epoch = datetime.fromisoformat(r2_timestamp.replace('Z', '+00:00')).timestamp()
+                
+                if newest_local_mtime >= r2_epoch:
+                    needs_download = False
+                    logging.info(f"Local cache '{newest_local_file}' is up to date (local: {datetime.fromtimestamp(newest_local_mtime)}, R2: {r2_timestamp})")
+                else:
+                    logging.info(f"R2 cache is newer (local: {datetime.fromtimestamp(newest_local_mtime)}, R2: {r2_timestamp})")
+        
+        if needs_download:
+            logging.info("Downloading newer version from R2...")
             download_success = r2_manager.download_object(latest_r2_object_key, local_file_path) # <-- USES NEW GENERIC METHOD
             
             if download_success:
+                # Remove old local cache files after successful download
                 for filename in os.listdir(persistent_disk_path):
                     if filename.startswith(f"{model_key}_") and filename != latest_r2_filename:
                         old_file_path = os.path.join(persistent_disk_path, filename)
@@ -57,6 +95,8 @@ def sync_cache_from_r2():
                         os.remove(old_file_path)
             else:
                 logging.error(f"Failed to download latest cache {latest_r2_filename} from R2.")
+        else:
+            logging.info("Local cache is up to date. No download needed.")
 
     logging.info("Cache synchronization complete.")
 
