@@ -2097,6 +2097,16 @@ window.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Ensure user name is provided before committing
+        if (!currentValidationAuthor) {
+            try {
+                await showUserNameModal();
+            } catch (error) {
+                // User cancelled - don't proceed with commit
+                return;
+            }
+        }
+        
         const decisions = Object.values(window.currentValidationState);
         const approved = decisions.filter(d => d.validator_decision === 'approve').length;
         const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
