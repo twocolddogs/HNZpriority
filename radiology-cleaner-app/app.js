@@ -198,7 +198,7 @@ class StatusManager {
     }
     
     updateProgress(id, current, total, message = null) {
-        const messageElement = document.getElementById(id);
+        const messageElement = this.activeMessages.get(id);
         if (!messageElement) return false;
         
         const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
@@ -213,7 +213,10 @@ class StatusManager {
                 <div class="progress-bar"><div class="progress-fill" style="width: ${percentage}%"></div></div>
             </div>`;
         
-        messageElement.innerHTML = progressContent;
+        const textElement = messageElement.querySelector('.status-text');
+        if (textElement) {
+            textElement.innerHTML = progressContent;
+        }
         return true;
     }
     
