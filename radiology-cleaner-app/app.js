@@ -906,6 +906,9 @@ window.addEventListener('DOMContentLoaded', function() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // Expose startNewUpload globally for use in inline onclick handlers
+    window.startNewUpload = startNewUpload;
+
     function scrollToModelSelection() {
         if (window.innerWidth <= 768) {
             setTimeout(() => {
@@ -1998,6 +2001,11 @@ window.addEventListener('DOMContentLoaded', function() {
                             ${unapproved > 0 ? ` &nbsp;|&nbsp; <strong>Unapproved:</strong> ${unapproved}` : ''}
                         </p>
                         ${result.cache_updated ? '<p style="color: #4CAF50;"><i class="fas fa-sync"></i> Validation caches updated successfully</p>' : ''}
+                        <div style="margin-top: 30px;">
+                            <button onclick="startNewUpload()" class="button primary" style="padding: 12px 24px; font-size: 16px; font-weight: 600;">
+                                <i class="fas fa-rocket"></i> Start New Processing Run
+                            </button>
+                        </div>
                     </div>
                 `;
             }
