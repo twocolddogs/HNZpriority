@@ -68,10 +68,12 @@ const getBadgeClass = (category) => {
 
 /* ---------- AuthorPopOver Component ---------- */
 function AuthorPopover({ content, position, onClose, isEdit, onSave }) {
-  const [localAuthors, setLocalAuthors] = React.useState(content.authors || {});
+  const [localAuthors, setLocalAuthors] = React.useState(() => content.authors || {});
+  
   React.useEffect(() => {
+    // Reset local authors whenever content changes (including section change)
     setLocalAuthors(content.authors || {});
-  }, [content.authors]);
+  }, [content.authors, content._sectionName]);
 
   const handleFieldChange = (group, idx, field, value) => {
     setLocalAuthors((prev) => {
@@ -1068,8 +1070,14 @@ function App() {
         // top: rect.bottom + window.scrollY + 5, // Position below the icon
         // left: rect.left + window.scrollX - 100, // Adjust as needed
       });
+      // Ensure we have a stable structure for authors
+      const sectionAuthors = data[sectionName]?.authors;
+      const authorsContent = sectionAuthors ? sectionAuthors : {
+        "Radiology Leads": [],
+        "Clinical Leads": []
+      };
       setAuthorPopoverContent({
-        authors: data[sectionName]?.authors || {},
+        authors: authorsContent,
         _sectionName: sectionName,
       });
     }
