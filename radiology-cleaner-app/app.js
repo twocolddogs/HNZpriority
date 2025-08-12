@@ -2121,7 +2121,6 @@ window.addEventListener('DOMContentLoaded', function() {
         
         if (approvedCount > 0) {
             console.log(`📋 Included ${approvedCount} already approved mappings, ${mappings.length - approvedCount} pending for validation`);
-            statusManager.show(`📋 ${approvedCount} mappings already approved, ${mappings.length - approvedCount} pending review`, 'info', 3000);
         }
         
         console.log(`✅ Created validation state for ${Object.keys(validationState).length} mappings`);
@@ -2142,8 +2141,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            statusManager.show('🔄 Initializing validation state...', 'info');
-            
             // Transform currentMappings into validation state
             const validationState = await initializeValidationFromMappings(currentMappings);
             
@@ -2185,8 +2182,6 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Load mappings into validation interface with validation state
             loadValidationInterface(validationState);
-            
-            statusManager.show(`✅ Initialized validation for ${Object.keys(validationState).length} mappings`, 'success', 3000);
         } catch (error) {
             console.error('Failed to initialize validation:', error);
             statusManager.show('❌ Failed to initialize validation', 'error', 5000);
@@ -2256,63 +2251,66 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 <div class="validation-controls">
                     
-                    <div class="validation-counters">
-                        <div class="counter-item approved">
-                            <i class="fas fa-check"></i>
-                            <span>Approved:</span>
-                            <span class="count" id="approvedCount">${approvedCount}</span>
+                    <!-- Filters Section - Now First -->
+                    <div class="validation-toolbar">
+                        <h4 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Filters</h4>
+                        <div class="validation-filters">
+                            <label class="filter-toggle" data-filter="flagged">
+                                <input type="checkbox" style="display: none;" />
+                                <i class="fas fa-flag"></i>
+                                <span>Flagged</span>
+                            </label>
+                            <label class="filter-toggle" data-filter="approved">
+                                <input type="checkbox" style="display: none;" />
+                                <i class="fas fa-check"></i>
+                                <span>Approved</span>
+                            </label>
+                            <label class="filter-toggle" data-filter="singleton">
+                                <input type="checkbox" style="display: none;" />
+                                <i class="fas fa-dot-circle"></i>
+                                <span>Singleton</span>
+                            </label>
+                            
+                            <div class="validation-sort">
+                                <label for="sortSelect" style="font-size: var(--font-size-sm); margin-right: var(--space-2);">Sort:</label>
+                                <select id="sortSelect" class="sort-select">
+                                    <option value="flagged-first">Flagged First</option>
+                                    <option value="group-size">Group Size (Desc)</option>
+                                    <option value="confidence">Avg Confidence (Asc)</option>
+                                    <option value="alphabetical">Alphabetical A-Z</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="counter-item rejected">
-                            <i class="fas fa-times"></i>
-                            <span>Rejected:</span>
-                            <span class="count" id="rejectedCount">${rejectedCount}</span>
-                        </div>
-                        <div class="counter-item skipped">
-                            <i class="fas fa-clock"></i>
-                            <span>Skipped:</span>
-                            <span class="count" id="skippedCount">${skippedCount}</span>
-                        </div>
-                        <div class="counter-item pending">
-                            <i class="fas fa-hourglass-half"></i>
-                            <span>Pending:</span>
-                            <span class="count" id="pendingCount">${pendingCount}</span>
+                    </div>
+                    
+                    <!-- Status Counts Section - Now Second -->
+                    <div class="validation-counters-section">
+                        <h4 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">Status</h4>
+                        <div class="validation-counters">
+                            <div class="counter-item approved">
+                                <i class="fas fa-check"></i>
+                                <span>Approved:</span>
+                                <span class="count" id="approvedCount">${approvedCount}</span>
+                            </div>
+                            <div class="counter-item rejected">
+                                <i class="fas fa-times"></i>
+                                <span>Rejected:</span>
+                                <span class="count" id="rejectedCount">${rejectedCount}</span>
+                            </div>
+                            <div class="counter-item skipped">
+                                <i class="fas fa-clock"></i>
+                                <span>Skipped:</span>
+                                <span class="count" id="skippedCount">${skippedCount}</span>
+                            </div>
+                            <div class="counter-item pending">
+                                <i class="fas fa-hourglass-half"></i>
+                                <span>Pending:</span>
+                                <span class="count" id="pendingCount">${pendingCount}</span>
+                            </div>
                         </div>
                     </div>
                     
                 </div>
-            </div>
-            
-            <!-- Validation Toolbar -->
-            <div class="validation-toolbar">
-                <div class="validation-filters">
-                    <label class="filter-toggle" data-filter="flagged">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-flag"></i>
-                        <span>Flagged</span>
-                    </label>
-                    <label class="filter-toggle" data-filter="approved">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-check"></i>
-                        <span>Approved</span>
-                    </label>
-                    <label class="filter-toggle" data-filter="singleton">
-                        <input type="checkbox" style="display: none;" />
-                        <i class="fas fa-dot-circle"></i>
-                        <span>Singleton</span>
-                    </label>
-                    
-                    <div class="validation-sort">
-                        <label for="sortSelect" style="font-size: var(--font-size-sm); margin-right: var(--space-2);">Sort:</label>
-                        <select id="sortSelect" class="sort-select">
-                            <option value="flagged-first">Flagged First</option>
-                            <option value="group-size">Group Size (Desc)</option>
-                            <option value="confidence">Avg Confidence (Asc)</option>
-                            <option value="alphabetical">Alphabetical A-Z</option>
-                        </select>
-                    </div>
-                </div>
-                
-                
             </div>
             
             <div id="validationGroups" class="validation-groups-container">
@@ -2327,8 +2325,8 @@ window.addEventListener('DOMContentLoaded', function() {
                     <button id="switchToResultsBtn" class="button button-secondary">
                         <i class="fas fa-arrow-left"></i> Switch to Results View
                     </button>
-                    <button id="exportValidationStateBtn" class="button button-primary">
-                        <i class="fas fa-download"></i> Export Validation State
+                    <button id="startNewProcessingBtn" class="button button-primary">
+                        <i class="fas fa-rocket"></i> Start New Processing Run
                     </button>
                     <button id="commitDecisionsBtn" class="button button-success">
                         <i class="fas fa-cloud-upload-alt"></i> Commit Validated Decisions
@@ -2597,7 +2595,7 @@ window.addEventListener('DOMContentLoaded', function() {
         const expandAllBtn = document.getElementById('expandAllBtn');
         const collapseAllBtn = document.getElementById('collapseAllBtn');
         const commitBtn = document.getElementById('commitDecisionsBtn');
-        const exportBtn = document.getElementById('exportValidationStateBtn');
+        const startNewProcessingBtn = document.getElementById('startNewProcessingBtn');
         const switchToResultsBtn = document.getElementById('switchToResultsBtn');
         
         if (expandAllBtn) {
@@ -2612,8 +2610,8 @@ window.addEventListener('DOMContentLoaded', function() {
             commitBtn.addEventListener('click', commitValidatedDecisions);
         }
         
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => exportValidationState(validationState));
+        if (startNewProcessingBtn) {
+            startNewProcessingBtn.addEventListener('click', startNewUpload);
         }
         
         if (switchToResultsBtn) {
