@@ -89,7 +89,7 @@ class NHSLookupEngine:
         """Initialize the NHS lookup engine with required processors and data."""
         # Core data structures
         self.nhs_data = []
-        self.snomed_lookup = {}
+        self.snomed_lookup = {}  # Will be changed to defaultdict(list) in _build_lookup_tables
         self.index_to_snomed_id: List[str] = []
         self.vector_index: Optional[faiss.Index] = None
         
@@ -176,11 +176,32 @@ class NHSLookupEngine:
         """
         Build SNOMED ID → NHS entry lookup table for fast access.
         Used during candidate retrieval to convert FAISS indices to NHS entries.
+        
+        CRITICAL: Preserves ALL laterality variants by storing multiple entries per SNOMED concept ID.
+        Previously this was overwriting entries with the same SNOMED concept ID, causing
+        bilateral/left/right variants to be lost.
         """
+        from collections import defaultdict
+        self.snomed_lookup = defaultdict(list)  # Change to store list of entries per SNOMED ID
+        
+        entry_count = 0
         for entry in self.nhs_data:
             if snomed_id := entry.get("snomed_concept_id"):
-                self.snomed_lookup[str(snomed_id)] = entry
-        logger.info(f"Built SNOMED lookup table with {len(self.snomed_lookup)} entries")
+                self.snomed_lookup[str(snomed_id)].append(entry)
+                entry_count += 1
+                
+        unique_snomed_count = len(self.snomed_lookup)
+        logger.info(f"Built SNOMED lookup table with {entry_count} total entries across {unique_snomed_count} unique SNOMED concept IDs")
+        
+        # Log any SNOMED IDs with multiple laterality variants for debugging
+        multi_laterality_count = 0
+        for snomed_id, entries in self.snomed_lookup.items():
+            if len(entries) > 1:
+                multi_laterality_count += 1
+                laterality_info = [f"{e.get('primary_source_name', 'unknown')}({e.get('snomed_laterality_concept_id', 'none')})" for e in entries]
+                logger.debug(f"SNOMED {snomed_id} has {len(entries)} laterality variants: {laterality_info}")
+                
+        logger.info(f"Found {multi_laterality_count} SNOMED concept IDs with multiple laterality variants")
 
     def _preprocess_and_parse_nhs_data(self):
         """
@@ -652,9 +673,26 @@ class NHSLookupEngine:
         top_k = self.config['retriever_top_k']
         distances, indices = self.vector_index.search(input_ensemble_embedding.reshape(1, -1), top_k)
         
-        # Get candidate entries
+        # Get candidate entries - flatten the lists since snomed_lookup now stores lists of entries
         candidate_snomed_ids = [self.index_to_snomed_id[i] for i in indices[0] if i < len(self.index_to_snomed_id)]
-        candidate_entries = [self.snomed_lookup[str(sid)] for sid in candidate_snomed_ids if str(sid) in self.snomed_lookup]
+        candidate_entries = []
+        for sid in candidate_snomed_ids:
+            if str(sid) in self.snomed_lookup:
+                # snomed_lookup now stores lists of entries (to preserve laterality variants)
+                entries_for_snomed = self.snomed_lookup[str(sid)]
+                candidate_entries.extend(entries_for_snomed)  # Flatten the list
+        
+        # Log retrieval results for debugging laterality issues
+        if debug:
+            logger.info(f"[DEBUG-RETRIEVAL] FAISS retrieved {len(candidate_snomed_ids)} unique SNOMED IDs")
+            logger.info(f"[DEBUG-RETRIEVAL] Expanded to {len(candidate_entries)} total candidate entries (including laterality variants)")
+            snomed_counts = {}
+            for entry in candidate_entries:
+                snomed_id = entry.get('snomed_concept_id')
+                laterality_id = entry.get('snomed_laterality_concept_id', 'none')
+                key = f"{snomed_id}({laterality_id})"
+                snomed_counts[key] = snomed_counts.get(key, 0) + 1
+            logger.info(f"[DEBUG-RETRIEVAL] Laterality breakdown: {snomed_counts}")
         
         # REJECTED CANDIDATE FILTERING: Remove previously rejected SNOMED IDs for this input
         if data_source and exam_code and input_exam:
