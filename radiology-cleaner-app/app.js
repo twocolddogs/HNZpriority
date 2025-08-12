@@ -3078,9 +3078,6 @@ Ctrl+Z - Undo last action`);
         
         console.log(`📊 Updated validation counters - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Unapproved: ${unapprovedCount}, Pending: ${pendingCount}`);
     }
-        
-        console.log(`📊 Updated validation counters - Approved: ${approvedCount}, Rejected: ${rejectedCount}, Skipped: ${skippedCount}, Unapproved: ${unapprovedCount}, Pending: ${pendingCount}`);
-    }
 
     // Function to update the visual elements (status badge and buttons) of a mapping item
     function updateMappingElementVisuals(mappingElement, mappingId, decision) {
