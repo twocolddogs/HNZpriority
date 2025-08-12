@@ -617,7 +617,7 @@ function App() {
 
   useEffect(() => { // Fetch initial data
     console.log("[useEffect fetchInitialData] Firing");
-    fetch("https://hnzradtools.nz/priority_data_set.json")
+    fetch("priority_data_set.json")
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
         return r.json();
