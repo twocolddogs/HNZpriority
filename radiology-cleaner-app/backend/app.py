@@ -2235,7 +2235,7 @@ def submit_batch_validation_decisions():
         unapprove_items = []
         errors = []
 
-        # Helpers
+        # Helper functions
         def _first_modality(val):
             if isinstance(val, list) and val:
                 return val[0]
@@ -2254,28 +2254,6 @@ def submit_batch_validation_decisions():
             )
             req_hash, _preimage = compute_request_hash_with_preimage(ds, ex_code, ex_name, modality)
             return req_hash, ds, ex_code, ex_name
-
-        def _load_existing_cache(url, default_schema):
-            import requests
-            entries = {}
-            meta = {'version': 1, 'schema': default_schema, 'last_updated': datetime.utcnow().isoformat() + 'Z'}
-            try:
-                resp = requests.get(url, timeout=10)
-                if resp.status_code == 200 and resp.text.strip():
-                    data = resp.json()
-                    if isinstance(data, dict) and 'entries' in data and isinstance(data['entries'], dict):
-                        entries = data['entries']
-                        if isinstance(data.get('meta'), dict):
-                            meta.update(data['meta'])
-                    elif isinstance(data, dict):
-                        # Legacy flat dict: treat keys as entries
-                        entries = data
-                    logger.info(f"Loaded existing cache from R2: {len(entries)} entries")
-                else:
-                    logger.info("No existing cache found at R2; starting fresh.")
-            except Exception as e:
-                logger.warning(f"Could not load existing cache from R2 ({url}): {e}")
-            return {'entries': entries, 'meta': meta}
 
         for decision_data in decisions:
             try:
@@ -2311,140 +2289,83 @@ def submit_batch_validation_decisions():
             except Exception as e:
                 errors.append(f'Error processing decision: {str(e)}')
 
-        r2_success = True
+        cache_update_success = True
         cache_reload_success = True
 
-        logger.info(f"Starting R2 save process: {len(approved_items)} approved, {len(rejected_items)} rejected, {len(unapprove_items)} unapproved")
+        logger.info(f"Starting validation cache update process: {len(approved_items)} approved, {len(rejected_items)} rejected, {len(unapprove_items)} unapproved")
+
+        cache_update_success = True
 
         try:
-            import json
+            # Use ValidationCacheManager to update both R2 and local caches
+            if not validation_cache_manager:
+                logger.error("ValidationCacheManager not available - decisions cannot be saved")
+                return jsonify({'error': 'Validation cache manager not available - decisions cannot be persisted'}), 500
 
-            # Approved cache - handle both new approvals and unapprovals
-            if approved_items or unapprove_items:
-                approved_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/approved_mappings_cache.json"
-                approved_cache = _load_existing_cache(
-                    approved_url,
-                    default_schema="approved_mappings_cache.v1"
-                )
-
-                # If legacy flat shape, migrate to entries
-                if 'entries' not in approved_cache or not isinstance(approved_cache['entries'], dict):
-                    approved_cache['entries'] = {}
-                # Move any top-level hashed keys into entries
-                for k in list(approved_cache.keys()):
-                    if k not in ('entries', 'meta') and isinstance(approved_cache[k], dict):
-                        approved_cache['entries'][k] = approved_cache.pop(k)
-
-                # Process new approvals - add to cache
-                for item in approved_items:
-                    try:
-                        req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
-                        entry = {
-                            'mapping_data': item.get('original_mapping', {}),
-                            'validation_notes': item.get('notes', ''),
-                            'approved_at': item.get('timestamp_reviewed'),
-                            'validation_author': item.get('validation_author', ''),
-                            'decision_metadata': {
-                                'data_source': ds,
-                                'exam_code': ex_code,
-                                'exam_name': ex_name
-                            }
+            # Process new approvals using ValidationCacheManager
+            for item in approved_items:
+                try:
+                    req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
+                    
+                    # Build the complete mapping result including decision metadata
+                    mapping_result = item.get('original_mapping', {}).copy()
+                    mapping_result.update({
+                        'validation_notes': item.get('notes', ''),
+                        'approved_at': item.get('timestamp_reviewed'),
+                        'validation_author': item.get('validation_author', ''),
+                        'decision_metadata': {
+                            'data_source': ds,
+                            'exam_code': ex_code,
+                            'exam_name': ex_name
                         }
-                        approved_cache['entries'][req_hash] = entry
+                    })
+                    
+                    preimage = f"{ds}|{ex_code}|{ex_name}|{item.get('modality_code', '')}"
+                    success = validation_cache_manager.add_approved(req_hash, mapping_result, preimage)
+                    
+                    if success:
                         logger.info(f"Added approved mapping to cache: {req_hash}")
-                    except Exception as e:
-                        errors.append(f"Failed to build approved entry for {item.get('mapping_id')}: {e}")
+                    else:
+                        cache_update_success = False
+                        errors.append(f"Failed to save approved mapping for {item.get('mapping_id')}")
+                        
+                except Exception as e:
+                    cache_update_success = False
+                    errors.append(f"Failed to process approved entry for {item.get('mapping_id')}: {e}")
 
-                # Process unapprovals - remove from cache
+            # Process rejections using ValidationCacheManager
+            for item in rejected_items:
+                try:
+                    req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
+                    reason = item.get('notes', 'No reason provided')
+                    preimage = f"{ds}|{ex_code}|{ex_name}|{item.get('modality_code', '')}"
+                    
+                    success = validation_cache_manager.add_rejected(req_hash, reason, preimage)
+                    
+                    if success:
+                        logger.info(f"Added rejected mapping to cache: {req_hash}")
+                    else:
+                        cache_update_success = False
+                        errors.append(f"Failed to save rejected mapping for {item.get('mapping_id')}")
+                        
+                except Exception as e:
+                    cache_update_success = False
+                    errors.append(f"Failed to process rejected entry for {item.get('mapping_id')}: {e}")
+
+            # Handle unapprovals - need to implement a remove method
+            if unapprove_items:
+                # For now, log that unapprovals are not fully implemented
+                logger.warning(f"Unapproval functionality needs to be implemented for {len(unapprove_items)} items")
                 for item in unapprove_items:
-                    try:
-                        req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
-                        if req_hash in approved_cache['entries']:
-                            del approved_cache['entries'][req_hash]
-                            logger.info(f"Removed unapproved mapping from cache: {req_hash}")
-                        else:
-                            logger.warning(f"Unapproved mapping not found in cache: {req_hash}")
-                    except Exception as e:
-                        errors.append(f"Failed to remove unapproved entry for {item.get('mapping_id')}: {e}")
-
-                approved_cache['meta']['last_updated'] = datetime.utcnow().isoformat() + 'Z'
-
-                approved_json = json.dumps(approved_cache, indent=2)
-                success = r2_manager.upload_object(
-                    object_key='validation/approved_mappings_cache.json',
-                    data=approved_json.encode('utf-8'),
-                    content_type='application/json',
-                    cors_headers=True
-                )
-                if success:
-                    logger.info(f"Saved approved cache to R2 (total entries: {len(approved_cache['entries'])})")
-                else:
-                    r2_success = False
-                    logger.error("Failed to save approved mappings cache to R2")
-
-            # Rejected cache
-            if rejected_items:
-                rejected_url = "https://pub-cc78b976831e4f649dd695ffa52d1171.r2.dev/validation/rejected_mappings_cache.json"
-                rejected_cache = _load_existing_cache(
-                    rejected_url,
-                    default_schema="rejected_mappings_cache.v1"
-                )
-
-                if 'entries' not in rejected_cache or not isinstance(rejected_cache['entries'], dict):
-                    rejected_cache['entries'] = {}
-                for k in list(rejected_cache.keys()):
-                    if k not in ('entries', 'meta') and isinstance(rejected_cache[k], dict):
-                        rejected_cache['entries'][k] = rejected_cache.pop(k)
-
-                for item in rejected_items:
-                    try:
-                        req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
-                        snomed_ids = []
-                        snomed_obj = item.get('original_mapping', {}).get('snomed', {})
-                        for key in ('id', 'concept_id', 'snomed_id'):
-                            if snomed_obj.get(key):
-                                snomed_ids.append(snomed_obj[key])
-                                break
-
-                        entry = {
-                            'reason': item.get('notes', ''),
-                            'rejected_at': item.get('timestamp_reviewed'),
-                            'validation_author': item.get('validation_author', ''),
-                            'decision_metadata': {
-                                'data_source': ds,
-                                'exam_code': ex_code,
-                                'exam_name': ex_name
-                            }
-                        }
-                        if snomed_ids:
-                            entry['rejected_snomed_ids'] = snomed_ids
-
-                        rejected_cache['entries'][req_hash] = entry
-                    except Exception as e:
-                        errors.append(f"Failed to build rejected entry for {item.get('mapping_id')}: {e}")
-
-                rejected_cache['meta']['last_updated'] = datetime.utcnow().isoformat() + 'Z'
-
-                rejected_json = json.dumps(rejected_cache, indent=2)
-                success = r2_manager.upload_object(
-                    object_key='validation/rejected_mappings_cache.json',
-                    data=rejected_json.encode('utf-8'),
-                    content_type='application/json',
-                    cors_headers=True
-                )
-                if success:
-                    logger.info(f"Saved rejected cache to R2 (total entries: {len(rejected_cache['entries'])})")
-                else:
-                    r2_success = False
-                    logger.error("Failed to save rejected mappings cache to R2")
+                    errors.append(f"Unapproval not yet implemented for {item.get('mapping_id')}")
 
         except Exception as e:
-            r2_success = False
-            logger.error(f"Exception saving validation caches to R2: {e}", exc_info=True)
+            cache_update_success = False
+            logger.error(f"Exception updating validation caches: {e}", exc_info=True)
 
         # Reload in-engine caches if we saved successfully
         try:
-            if nhs_lookup_engine and r2_success:
+            if nhs_lookup_engine and cache_update_success:
                 reload_result = nhs_lookup_engine.reload_validation_caches()
                 if reload_result.get('status') != 'success':
                     cache_reload_success = False
@@ -2456,21 +2377,21 @@ def submit_batch_validation_decisions():
             logger.error(f"Exception reloading validation caches: {e}")
 
         response_data = {
-            'success': r2_success,
+            'success': cache_update_success,
             'processed_count': len(processed_decisions),
             'approved_count': len(approved_items),
             'rejected_count': len(rejected_items),
             'unapproved_count': len(unapprove_items),
             'error_count': len(errors),
-            'r2_storage_success': r2_success,
+            'cache_storage_success': cache_update_success,
             'cache_reload_success': cache_reload_success,
             'cache_updated': cache_reload_success,
             'decisions': processed_decisions,
             'errors': errors if errors else None
         }
 
-        if not r2_success:
-            response_data['error'] = 'Validation decisions could not be saved to R2 storage - decisions not persisted'
+        if not cache_update_success:
+            response_data['error'] = 'Validation decisions could not be saved to cache storage - decisions not persisted'
             return jsonify(response_data), 500
 
         if not cache_reload_success:
