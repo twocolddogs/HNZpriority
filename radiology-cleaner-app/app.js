@@ -1062,9 +1062,11 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
             if (mainCard) mainCard.style.display = 'none';
             statusManager.clearAll();
+            const enableSecondary = document.getElementById('enableSecondaryPipeline')?.checked || false;
+            const sampleSize = parseInt(document.getElementById('sampleSizeInput').value) || 100;
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
-            statusId = statusManager.showProgress(`Running random sample with ${modelDisplayName} → ${rerankerDisplayName}`, 0, 100);
+            statusId = statusManager.showProgress(`Running random sample with ${modelDisplayName} → ${rerankerDisplayName}`, 0, sampleSize);
             let pollingActive = true;
             let batchId = null;
             const pollProgress = async () => {
@@ -1076,7 +1078,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchId}`);
                     if (progressResponse.ok && pollingActive) {
                         const progressData = await progressResponse.json();
-                        const { percentage = 0, processed = 0, total = 100, success = 0, errors = 0 } = progressData;
+                        const { percentage = 0, processed = 0, total = sampleSize, success = 0, errors = 0 } = progressData;
                         if (statusId) {
                             statusManager.updateProgress(statusId, processed, total, `Random sample (${percentage}% - ${success} success, ${errors} errors)`);
                         }
@@ -1094,9 +1096,6 @@ window.addEventListener('DOMContentLoaded', function() {
             };
             setTimeout(pollProgress, 100);
             setTimeout(() => { pollingActive = false; }, 120000);
-
-            const enableSecondary = document.getElementById('enableSecondaryPipeline')?.checked || false;
-            const sampleSize = parseInt(document.getElementById('sampleSizeInput').value) || 100;
             const response = await fetch(`${apiConfig.baseUrl}/random_sample`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
