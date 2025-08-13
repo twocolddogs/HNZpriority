@@ -3680,6 +3680,57 @@ a:focus-visible {
   border-left: 3px solid #ff9800 !important;
 }
 
+/* Action option styles for post-commit modal */
+.action-option {
+  transition: all 0.2s ease;
+}
+
+.action-option:hover {
+  border-color: #4CAF50 !important;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+  transform: translateY(-1px);
+}
+
+.action-option.selected {
+  border-color: #4CAF50 !important;
+  background: #f8fff8 !important;
+}
+
+/* Validation summary styles */
+.validation-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.summary-stat {
+  text-align: center;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.summary-stat.approved { background: #e8f5e8; border-color: #4CAF50; }
+.summary-stat.rejected { background: #ffebee; border-color: #f44336; }
+.summary-stat.skipped { background: #fff8e1; border-color: #ff9800; }
+.summary-stat.unapproved { background: #fff8e1; border-color: #ff9800; }
+.summary-stat.flagged { background: #fff3e0; border-color: #ff9800; }
+
+.summary-stat .count {
+  font-size: 1.5em;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.summary-stat .label {
+  font-size: 0.85em;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* Modal styles */
 #mappingDetailsModal {
   backdrop-filter: blur(2px);
@@ -3776,6 +3827,40 @@ a:focus-visible {
 .quick-validation-cell .button-warning:hover {
   background: #e68900;
   border-color: #e68900;
+}
+
+/* Flag button styles */
+.quick-validation-cell .button-info {
+  background: #2196f3;
+  border-color: #2196f3;
+  color: white;
+  font-size: 0.85em;
+}
+
+.quick-validation-cell .button-info:hover {
+  background: #1976d2;
+  border-color: #1976d2;
+}
+
+/* Flag indicator styles */
+.flag-indicator {
+  display: inline-block;
+  margin-left: 5px;
+}
+
+.flag-indicator i {
+  color: #ff9800;
+  animation: flag-pulse 2s infinite;
+}
+
+@keyframes flag-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Flagged row highlighting */
+.results-table tr.flagged-row {
+  box-shadow: inset 4px 0 0 #ff9800 !important;
 }
 
 /* Quick validation row highlighting */

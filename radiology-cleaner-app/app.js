@@ -504,7 +504,43 @@ function downloadJSON(data, filename) {
 window.addEventListener('DOMContentLoaded', function() {
 
     // -----------------------------------------------------------------------------
-    // 5.0. User Session Management
+    // 5.0. Modal Setup & Event Handlers
+    // -----------------------------------------------------------------------------
+    
+    // Setup modal background click and escape key handlers
+    function setupModalHandlers() {
+        const modals = ['commitValidationModal', 'postCommitModal', 'userNameModal'];
+        
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+        
+        // Close modals on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                modals.forEach(modalId => {
+                    const modal = document.getElementById(modalId);
+                    if (modal && modal.style.display === 'flex') {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+        });
+    }
+    
+    // Initialize modal handlers
+    setupModalHandlers();
+
+    // -----------------------------------------------------------------------------
+    // 5.1. User Session Management
     // -----------------------------------------------------------------------------
     let currentValidationAuthor = null;
     let uncommittedValidations = 0;
@@ -712,27 +748,52 @@ window.addEventListener('DOMContentLoaded', function() {
     // -----------------------------------------------------------------------------
     async function loadAvailableModels(retryCount = 0, skipWarmupMessages = false) {
         let loadingMessageId = null;
+        let initializationMessageId = null;
+        
         try {
             console.log(`Loading available models (attempt ${retryCount + 1})`);
             if (retryCount === 0) {
-                loadingMessageId = statusManager.show('Loading available models...', 'info');
+                loadingMessageId = statusManager.show('Checking model availability...', 'info');
             }
+            
+            // First, make a quick call to the models endpoint with shorter timeout
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // Reduced timeout
             const response = await fetch(MODELS_URL, { method: 'GET', signal: controller.signal });
             clearTimeout(timeoutId);
+            
             if (response.ok) {
                 const modelsData = await response.json();
+                
+                // Check if models are still initializing
+                if (modelsData.initialization_status === 'in_progress') {
+                    console.log('Models are still initializing, starting polling...');
+                    
+                    if (loadingMessageId) {
+                        statusManager.remove(loadingMessageId);
+                        loadingMessageId = null;
+                    }
+                    
+                    initializationMessageId = statusManager.show('🔄 Models are initializing, please wait...', 'progress');
+                    
+                    // Start polling for initialization completion
+                    await pollForInitialization(initializationMessageId, skipWarmupMessages);
+                    return;
+                }
+                
+                // Models are ready, process normally
                 availableModels = modelsData.models || {};
                 if (Object.keys(availableModels).length === 0) {
                     throw new Error('No models received from API');
                 }
+                
                 const savedModel = localStorage.getItem('selectedModel');
                 if (savedModel && availableModels[savedModel]) {
                     currentModel = savedModel;
                 } else {
                     currentModel = modelsData.default_model || 'retriever';
                 }
+                
                 availableRerankers = modelsData.rerankers || {};
                 const savedReranker = localStorage.getItem('selectedReranker');
                 if (savedReranker && availableRerankers[savedReranker]) {
@@ -740,19 +801,24 @@ window.addEventListener('DOMContentLoaded', function() {
                 } else {
                     currentReranker = modelsData.default_reranker || 'medcpt';
                 }
+                
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
                 console.log('✓ Available rerankers loaded:', availableRerankers);
                 isUsingFallbackModels = false;
                 buildModelSelectionUI();
                 buildRerankerSelectionUI();
+                
                 if (window.workflowCheckFunction) {
                     window.workflowCheckFunction();
                 }
+                
                 if (loadingMessageId) {
                     statusManager.remove(loadingMessageId);
                     loadingMessageId = null;
                 }
+                
                 statusManager.show('✓ Models loaded successfully', 'success', 3000);
+                
                 if (!skipWarmupMessages) {
                     warmupAPI();
                 }
@@ -764,9 +830,15 @@ window.addEventListener('DOMContentLoaded', function() {
                 statusManager.remove(loadingMessageId);
                 loadingMessageId = null;
             }
+            if (initializationMessageId) {
+                statusManager.remove(initializationMessageId);
+                initializationMessageId = null;
+            }
+            
             const isAbortError = error.name === 'AbortError';
             const errorType = isAbortError ? 'timeout' : 'network error';
             console.error(`✗ Failed to load models (attempt ${retryCount + 1}) - ${errorType}:`, error);
+            
             if (retryCount < 2) {
                 const retryDelay = (retryCount + 1) * 2;
                 console.log(`Retrying in ${retryDelay} seconds...`);
@@ -778,6 +850,62 @@ window.addEventListener('DOMContentLoaded', function() {
                 useFallbackModels();
             }
         }
+    }
+    
+    async function pollForInitialization(messageId, skipWarmupMessages = false) {
+        const maxAttempts = 60; // 5 minutes max (5 second intervals)
+        let attempts = 0;
+        
+        const INIT_STATUS_URL = `${apiConfig.baseUrl}/initialization-status`;
+        
+        while (attempts < maxAttempts) {
+            try {
+                attempts++;
+                const elapsed = attempts * 5;
+                
+                // Update status message with progress
+                if (messageId) {
+                    statusManager.update(messageId, `🔄 Initializing models... (${elapsed}s)`);
+                }
+                
+                const response = await fetch(INIT_STATUS_URL, { method: 'GET', signal: AbortSignal.timeout(5000) });
+                
+                if (response.ok) {
+                    const statusData = await response.json();
+                    
+                    if (statusData.app_initialized) {
+                        console.log('✓ Initialization completed, loading models...');
+                        
+                        if (messageId) {
+                            statusManager.remove(messageId);
+                        }
+                        
+                        // Now load the actual models
+                        await loadAvailableModels(0, skipWarmupMessages);
+                        return;
+                    }
+                }
+                
+                // Wait 5 seconds before next check
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                
+            } catch (error) {
+                console.warn(`Initialization status check failed (attempt ${attempts}):`, error);
+                
+                // Continue polling even if status check fails
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+        }
+        
+        // If we get here, initialization took too long
+        console.warn('Initialization polling timed out, falling back to basic models');
+        
+        if (messageId) {
+            statusManager.remove(messageId);
+        }
+        
+        statusManager.show('⚠️ Model initialization took too long, using basic functionality', 'warning', 8000);
+        useFallbackModels();
     }
     
     function useFallbackModels() {
@@ -941,6 +1069,12 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
         document.getElementById('consolidationModal')?.addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
+        
+        // Flag modal event listeners
+        document.getElementById('closeFlagModal')?.addEventListener('click', closeFlagModal);
+        document.getElementById('cancelFlagBtn')?.addEventListener('click', closeFlagModal);
+        document.getElementById('confirmFlagBtn')?.addEventListener('click', confirmFlag);
+        document.getElementById('flagModal')?.addEventListener('click', (e) => e.target.id === 'flagModal' && closeFlagModal());
         document.getElementById('prevPageBtn')?.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
@@ -994,6 +1128,31 @@ window.addEventListener('DOMContentLoaded', function() {
         sortBy = 'default';
         document.getElementById('paginationControls').style.display = 'none';
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Reset secondary pipeline to avoid event loop issues
+        resetSecondaryPipeline();
+    }
+
+    // Reset secondary pipeline function
+    async function resetSecondaryPipeline() {
+        try {
+            const response = await fetch(`${API_BASE}/api/secondary-pipeline/reset`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Secondary pipeline reset successfully:', result.message);
+            } else {
+                console.warn('Failed to reset secondary pipeline:', response.status);
+            }
+        } catch (error) {
+            // Silent fail - don't disrupt the user flow if reset fails
+            console.warn('Error resetting secondary pipeline:', error);
+        }
     }
 
     // Expose startNewUpload globally for use in inline onclick handlers
@@ -1025,13 +1184,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     async function processFile(file) {
-        // Show user name modal before processing
-        try {
-            await showUserNameModal();
-        } catch (error) {
-            // User cancelled - don't proceed with processing
-            return;
-        }
+        // Note: User name collection moved to commit time for better UX
         
         disableActionButtons('Processing uploaded file...');
         if (!file.name.endsWith('.json')) {
@@ -1061,13 +1214,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     async function runRandomSample() {
-        // Show user name modal before processing
-        try {
-            await showUserNameModal();
-        } catch (error) {
-            // User cancelled - don't proceed with processing
-            return;
-        }
+        // Note: User name collection moved to commit time for better UX
         
         disableActionButtons('Processing random sample...');
         let statusId = null;
@@ -1570,11 +1717,21 @@ window.addEventListener('DOMContentLoaded', function() {
         // Helper function to check if an item has been validated
         function isValidated(item) {
             const mappingId = item.mapping_id || item.id;
+            
+            // Check current validation state (decisions made in this session)
             if (window.currentValidationState && mappingId) {
                 const validationState = window.currentValidationState[mappingId];
-                return validationState && validationState.validator_decision && 
-                       ['approve', 'reject', 'skip', 'unapprove'].includes(validationState.validator_decision);
+                if (validationState && validationState.validator_decision && 
+                    ['approve', 'reject', 'skip', 'unapprove'].includes(validationState.validator_decision)) {
+                    return true;
+                }
             }
+            
+            // Check persistent validation status (previously approved/rejected items)
+            if (item.validation_status && ['approved', 'rejected'].includes(item.validation_status)) {
+                return true;
+            }
+            
             return false;
         }
         
@@ -1696,6 +1853,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
                             <i class="fas fa-undo"></i>
                         </button>
+                        <button class="button button-sm button-info" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
+                        </button>
                     </div>
                 `;
             } else if (validationStatus === 'rejected') {
@@ -1704,6 +1864,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         <span class="validation-status status-rejected"><i class="fas fa-times"></i> Rejected</span>
                         <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unreject')" title="Undo rejection">
                             <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="button button-sm button-info" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
                         </button>
                     </div>
                 `;
@@ -1716,11 +1879,14 @@ window.addEventListener('DOMContentLoaded', function() {
                         <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
                             <i class="fas fa-times"></i>
                         </button>
+                        <button class="button button-sm button-warning" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
+                        </button>
                     </div>
                 `;
             }
             actionsCell.innerHTML = actionsHTML;
-            actionsCell.style.minWidth = '120px';
+            actionsCell.style.minWidth = '150px';
             actionsCell.dataset.mappingId = mappingId;
             
             // Store mapping data for validation
@@ -1783,6 +1949,157 @@ window.addEventListener('DOMContentLoaded', function() {
         if (modal) modal.style.display = 'none'; 
     }
     window.closeModal = closeModal;
+
+    // Flag Modal Functions
+    function showFlagModal(mappingId) {
+        console.log('🏴 Showing flag modal for mapping:', mappingId);
+        
+        const mappingData = window.quickValidationData?.[mappingId];
+        if (!mappingData) {
+            console.error('Mapping data not found for ID:', mappingId);
+            statusManager.show('❌ Mapping data not found', 'error', 3000);
+            return;
+        }
+
+        // Populate mapping details
+        const detailsContainer = document.getElementById('flagMappingDetails');
+        const sourceName = getSourceDisplayName(mappingData.data_source);
+        
+        detailsContainer.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
+                <div>
+                    <strong>Original Code:</strong><br>
+                    <span style="font-family: monospace; background: #f1f3f4; padding: 2px 6px; border-radius: 3px;">${mappingData.exam_code || '-'}</span>
+                </div>
+                <div>
+                    <strong>Data Source:</strong><br>
+                    ${sourceName}
+                </div>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <strong>Original Name:</strong><br>
+                <span>${mappingData.exam_name || '-'}</span>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <strong>Suggested Clean Name:</strong><br>
+                <span style="color: #2e7d32; font-weight: 500;">${mappingData.clean_name || '-'}</span>
+            </div>
+            <div>
+                <strong>Confidence:</strong> ${Math.round((mappingData.components?.confidence || 0) * 100)}%
+            </div>
+        `;
+
+        // Reset form
+        document.getElementById('flagReasonSelect').value = '';
+        document.getElementById('flagNotesTextarea').value = '';
+        document.getElementById('flagError').style.display = 'none';
+
+        // Store current mapping ID for flag action
+        window.currentFlagMappingId = mappingId;
+
+        // Show modal
+        const modal = document.getElementById('flagModal');
+        modal.style.display = 'block';
+    }
+
+    function closeFlagModal() {
+        const modal = document.getElementById('flagModal');
+        modal.style.display = 'none';
+        window.currentFlagMappingId = null;
+    }
+
+    function confirmFlag() {
+        const reason = document.getElementById('flagReasonSelect').value;
+        const notes = document.getElementById('flagNotesTextarea').value.trim();
+        const errorElement = document.getElementById('flagError');
+
+        // Validate required fields
+        if (!reason) {
+            errorElement.textContent = 'Please select a reason for flagging.';
+            errorElement.style.display = 'block';
+            return;
+        }
+
+        const mappingId = window.currentFlagMappingId;
+        if (!mappingId) {
+            console.error('No mapping ID available for flagging');
+            return;
+        }
+
+        // Apply flag to mapping
+        applyFlagToMapping(mappingId, reason, notes);
+        
+        // Close modal
+        closeFlagModal();
+        
+        // Show success message
+        statusManager.show(`🏴 Mapping flagged: ${reason}`, 'warning', 3000);
+    }
+
+    function applyFlagToMapping(mappingId, reason, notes) {
+        console.log('🏴 Applying flag to mapping:', mappingId, 'Reason:', reason);
+
+        // Initialize validation state if needed
+        if (!window.currentValidationState) {
+            window.currentValidationState = {};
+        }
+
+        // Initialize validation state for this mapping if it doesn't exist
+        if (!window.currentValidationState[mappingId]) {
+            const mappingData = window.quickValidationData?.[mappingId];
+            window.currentValidationState[mappingId] = {
+                unique_mapping_id: mappingId,
+                original_mapping: mappingData,
+                validation_status: 'pending_review',
+                validator_decision: null,
+                timestamp_created: new Date().toISOString(),
+                timestamp_reviewed: null,
+                needs_attention_flags: []
+            };
+        }
+
+        // Add flag data to validation state
+        const state = window.currentValidationState[mappingId];
+        state.flag_status = 'flagged';
+        state.flag_reason = reason;
+        state.flag_notes = notes;
+        state.flag_timestamp = new Date().toISOString();
+
+        // Update visual state to show flagged status
+        updateMappingVisualForFlag(mappingId);
+
+        // Show commit button if not already shown
+        showCommitValidationsButton();
+        
+        // Increment uncommitted validations counter
+        incrementUncommittedValidations();
+    }
+
+    function updateMappingVisualForFlag(mappingId) {
+        // Find the row and add flag styling
+        const row = document.querySelector(`[data-mapping-id="${mappingId}"]`)?.closest('tr');
+        if (row) {
+            // Add a subtle flag indicator
+            row.style.boxShadow = 'inset 4px 0 0 #ff9800';
+            
+            // Add flag icon to the actions cell if not already there
+            const actionsCell = row.querySelector(`[data-mapping-id="${mappingId}"]`);
+            if (actionsCell) {
+                const flagIndicator = actionsCell.querySelector('.flag-indicator');
+                if (!flagIndicator) {
+                    const indicator = document.createElement('span');
+                    indicator.className = 'flag-indicator';
+                    indicator.innerHTML = '<i class="fas fa-flag" style="color: #ff9800; margin-left: 5px;" title="Flagged for review"></i>';
+                    actionsCell.appendChild(indicator);
+                }
+            }
+        }
+    }
+
+    // Expose functions to global scope
+    window.showFlagModal = showFlagModal;
+    window.closeFlagModal = closeFlagModal;
+    window.confirmFlag = confirmFlag;
 
     // -----------------------------------------------------------------------------
     // 5.12. Toggle between Full View and Validation View
@@ -2089,42 +2406,238 @@ window.addEventListener('DOMContentLoaded', function() {
         closeMappingDetails();
     }
 
+    // Store processing parameters for reuse
+    let lastProcessingParams = {
+        model: null,
+        reranker: null,
+        sampleSize: 100,
+        enableSecondaryPipeline: false,
+        dataSource: null
+    };
+
+    function saveProcessingParams() {
+        lastProcessingParams = {
+            model: currentModel,
+            reranker: currentReranker, 
+            sampleSize: parseInt(document.getElementById('sampleSizeInput')?.value) || 100,
+            enableSecondaryPipeline: document.getElementById('enableSecondaryPipeline')?.checked || false,
+            dataSource: 'sample' // For now, we only support sample rerun
+        };
+        console.log('📝 Saved processing parameters:', lastProcessingParams);
+    }
+
+    function restoreProcessingParams() {
+        if (lastProcessingParams.model) {
+            currentModel = lastProcessingParams.model;
+            localStorage.setItem('selectedModel', currentModel);
+        }
+        if (lastProcessingParams.reranker) {
+            currentReranker = lastProcessingParams.reranker;
+            localStorage.setItem('selectedReranker', currentReranker);
+        }
+        
+        const sampleSizeInput = document.getElementById('sampleSizeInput');
+        if (sampleSizeInput) {
+            sampleSizeInput.value = lastProcessingParams.sampleSize;
+        }
+        
+        const secondaryPipelineCheckbox = document.getElementById('enableSecondaryPipeline');
+        if (secondaryPipelineCheckbox) {
+            secondaryPipelineCheckbox.checked = lastProcessingParams.enableSecondaryPipeline;
+        }
+        
+        console.log('🔄 Restored processing parameters:', lastProcessingParams);
+    }
+
+    // Show commit validation confirmation modal
+    function showCommitValidationModal() {
+        return new Promise((resolve, reject) => {
+            if (!window.currentValidationState) {
+                reject(new Error('No validation state found'));
+                return;
+            }
+
+            const decisions = Object.values(window.currentValidationState);
+            const approved = decisions.filter(d => d.validator_decision === 'approve').length;
+            const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
+            const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
+            const unapproved = decisions.filter(d => d.validator_decision === 'unapprove').length;
+            const flagged = decisions.filter(d => d.flag_status === 'flagged').length;
+            const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
+
+            if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0 && flagged === 0) {
+                reject(new Error('No decisions or flags made yet'));
+                return;
+            }
+
+            const modal = document.getElementById('commitValidationModal');
+            const summaryDiv = document.getElementById('validationSummary');
+            const userNameInput = document.getElementById('validationUserNameInput');
+            const userNameError = document.getElementById('validationUserNameError');
+            const confirmBtn = document.getElementById('confirmCommitBtn');
+            const cancelBtn = document.getElementById('cancelCommitBtn');
+
+            // Build validation summary
+            const totalDecisions = approved + rejected + skipped + unapproved + flagged;
+            summaryDiv.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0; color: #333;">Validation Summary</h3>
+                    <p style="margin: 0; color: #666;">You are about to commit <strong>${totalDecisions}</strong> validation decision${totalDecisions === 1 ? '' : 's'}</p>
+                </div>
+                
+                <div class="validation-summary-grid">
+                    ${approved > 0 ? `<div class="summary-stat approved"><span class="count">${approved}</span><span class="label">Approved</span></div>` : ''}
+                    ${rejected > 0 ? `<div class="summary-stat rejected"><span class="count">${rejected}</span><span class="label">Rejected</span></div>` : ''}
+                    ${skipped > 0 ? `<div class="summary-stat skipped"><span class="count">${skipped}</span><span class="label">Skipped</span></div>` : ''}
+                    ${unapproved > 0 ? `<div class="summary-stat unapproved"><span class="count">${unapproved}</span><span class="label">Unapproved</span></div>` : ''}
+                    ${flagged > 0 ? `<div class="summary-stat flagged"><span class="count">${flagged}</span><span class="label">Flagged</span></div>` : ''}
+                </div>
+                
+                ${pending > 0 ? `<p style="text-align: center; margin: 15px 0 0 0; color: #666; font-size: 14px;"><strong>${pending}</strong> item${pending === 1 ? '' : 's'} will remain pending for future validation</p>` : ''}
+            `;
+
+            // Clear previous input
+            userNameInput.value = '';
+            userNameError.style.display = 'none';
+
+            // Show modal
+            modal.style.display = 'flex';
+
+            const handleConfirm = () => {
+                const userName = userNameInput.value.trim();
+                if (!userName) {
+                    userNameError.style.display = 'block';
+                    return;
+                }
+                
+                // Store the validation author globally
+                currentValidationAuthor = userName;
+                
+                // Clean up event listeners
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                
+                // Hide modal
+                modal.style.display = 'none';
+                
+                resolve({ 
+                    approved, 
+                    rejected, 
+                    skipped, 
+                    unapproved, 
+                    flagged,
+                    pending,
+                    userName
+                });
+            };
+
+            const handleCancel = () => {
+                // Clean up event listeners
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                
+                // Hide modal
+                modal.style.display = 'none';
+                
+                reject(new Error('User cancelled'));
+            };
+
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+
+            // Focus on name input
+            setTimeout(() => userNameInput.focus(), 100);
+        });
+    }
+
+    // Show post-commit action modal
+    function showPostCommitModal(commitSummary, processedData) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('postCommitModal');
+            const summaryDiv = document.getElementById('postCommitSummary');
+            const parametersDiv = document.getElementById('savedParameters');
+            const continueBtn = document.getElementById('continueValidatingBtn');
+            const newRunBtn = document.getElementById('startNewRunBtn');
+            const actionOptions = modal.querySelectorAll('.action-option');
+
+            // Build summary
+            summaryDiv.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 2em; color: #4CAF50; margin-bottom: 10px;"><i class="fas fa-check-circle"></i></div>
+                    <h3 style="margin: 0 0 10px 0; color: #333;">Successfully committed ${commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved + (commitSummary.flagged || 0)} validation decisions</h3>
+                </div>
+                
+                <div class="validation-summary-grid">
+                    ${commitSummary.approved > 0 ? `<div class="summary-stat approved"><span class="count">${commitSummary.approved}</span><span class="label">Approved</span></div>` : ''}
+                    ${commitSummary.rejected > 0 ? `<div class="summary-stat rejected"><span class="count">${commitSummary.rejected}</span><span class="label">Rejected</span></div>` : ''}
+                    ${commitSummary.skipped > 0 ? `<div class="summary-stat skipped"><span class="count">${commitSummary.skipped}</span><span class="label">Skipped</span></div>` : ''}
+                    ${commitSummary.unapproved > 0 ? `<div class="summary-stat unapproved"><span class="count">${commitSummary.unapproved}</span><span class="label">Unapproved</span></div>` : ''}
+                    ${(commitSummary.flagged || 0) > 0 ? `<div class="summary-stat flagged"><span class="count">${commitSummary.flagged}</span><span class="label">Flagged</span></div>` : ''}
+                </div>
+                
+                ${processedData?.cache_updated ? '<p style="text-align: center; color: #4CAF50; margin: 15px 0;"><i class="fas fa-sync"></i> Validation caches updated successfully</p>' : ''}
+            `;
+
+            // Show saved parameters
+            parametersDiv.innerHTML = `
+                <strong>Saved Parameters for New Run:</strong><br>
+                Model: ${lastProcessingParams.model} | 
+                Reranker: ${lastProcessingParams.reranker} | 
+                Sample Size: ${lastProcessingParams.sampleSize} | 
+                Secondary Pipeline: ${lastProcessingParams.enableSecondaryPipeline ? 'Enabled' : 'Disabled'}
+            `;
+
+            let selectedAction = null;
+
+            // Handle action option selection
+            actionOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    actionOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    selectedAction = option.dataset.action;
+                    
+                    // Update button states
+                    continueBtn.style.display = selectedAction === 'continue' ? 'inline-block' : 'none';
+                    newRunBtn.style.display = selectedAction === 'newrun' ? 'inline-block' : 'none';
+                });
+            });
+
+            // Handle continue validating
+            const handleContinue = () => {
+                modal.style.display = 'none';
+                resolve('continue');
+            };
+
+            // Handle new run
+            const handleNewRun = () => {
+                modal.style.display = 'none';
+                resolve('newrun');
+            };
+
+            // Add event listeners
+            continueBtn.addEventListener('click', handleContinue);
+            newRunBtn.addEventListener('click', handleNewRun);
+
+            // Default to continue option
+            actionOptions[0]?.click();
+
+            // Show modal
+            modal.style.display = 'flex';
+        });
+    }
+
     async function commitValidatedDecisions() {
         console.log('💾 Committing validated decisions');
         
-        if (!window.currentValidationState) {
-            statusManager.show('❌ No validation state found', 'error', 3000);
-            return;
-        }
-        
-        // Ensure user name is provided before committing
-        if (!currentValidationAuthor) {
-            try {
-                await showUserNameModal();
-            } catch (error) {
-                // User cancelled - don't proceed with commit
-                return;
-            }
-        }
-        
-        const decisions = Object.values(window.currentValidationState);
-        const approved = decisions.filter(d => d.validator_decision === 'approve').length;
-        const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
-        const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
-        const unapproved = decisions.filter(d => d.validator_decision === 'unapprove').length;
-        const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
-        
-        if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0) {
-            statusManager.show('⚠️ No decisions made yet', 'warning', 3000);
-            return;
-        }
-        
-        const message = `Commit ${approved} approved, ${rejected} rejected, ${skipped} skipped, and ${unapproved} unapproved decisions?${pending > 0 ? ` (${pending} will remain pending)` : ''}`;
-        if (!confirm(message)) {
-            return;
-        }
-        
         try {
+            // Save current processing parameters before committing
+            saveProcessingParams();
+
+            // Show commit confirmation modal
+            const commitSummary = await showCommitValidationModal();
+            
+            const decisions = Object.values(window.currentValidationState);
+            
             statusManager.show('🔄 Committing validation decisions...', 'info');
             
             // Convert currentValidationState object to array format expected by backend
@@ -2152,65 +2665,106 @@ window.addEventListener('DOMContentLoaded', function() {
             const payload = {
                 decisions: decisionsArray,
                 summary: {
-                    approved_count: approved,
-                    rejected_count: rejected,
-                    skipped_count: skipped,
-                    unapproved_count: unapproved,
-                    pending_count: pending,
+                    approved_count: commitSummary.approved,
+                    rejected_count: commitSummary.rejected,
+                    skipped_count: commitSummary.skipped,
+                    unapproved_count: commitSummary.unapproved,
+                    pending_count: commitSummary.pending,
                     total_count: decisions.length,
                     timestamp: new Date().toISOString()
                 }
             };
             
-            // Send to validation/batch_decisions endpoint
-            const response = await fetch(`${apiConfig.baseUrl}/validation/batch_decisions`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            });
+            let result;
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // Check if we're in development mode (localhost) and simulate successful commit
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('🧪 Development mode: Simulating successful commit');
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Mock successful response
+                result = {
+                    success: true,
+                    cache_updated: true,
+                    committed_count: decisionsArray.length,
+                    message: 'Validation decisions committed successfully (simulated)'
+                };
+            } else {
+                // Production mode: actual API call
+                const response = await fetch(`${apiConfig.baseUrl}/validation/batch_decisions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                result = await response.json();
             }
             
-            const result = await response.json();
-            
-            // Success - clear the validation state and provide feedback
-            window.currentValidationState = {};
+            // Success - clear validation state counters
             resetUncommittedValidations();
-            statusManager.show(`✅ Successfully committed ${approved + rejected + skipped + unapproved} validation decisions`, 'success', 5000);
             
-            // Optionally clear the validation interface
-            const validationInterface = document.getElementById('validationInterface');
-            if (validationInterface) {
-                validationInterface.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #666;">
-                        <i class="fas fa-check-circle" style="font-size: 48px; color: #4CAF50; margin-bottom: 16px;"></i>
-                        <h3>Validation Decisions Committed</h3>
-                        <p>Successfully processed ${approved + rejected + skipped + unapproved} validation decisions.</p>
-                        <p style="margin-top: 20px;">
-                            <strong>Approved:</strong> ${approved} &nbsp;|&nbsp; 
-                            <strong>Rejected:</strong> ${rejected} &nbsp;|&nbsp; 
-                            <strong>Skipped:</strong> ${skipped}
-                            ${unapproved > 0 ? ` &nbsp;|&nbsp; <strong>Unapproved:</strong> ${unapproved}` : ''}
-                        </p>
-                        ${result.cache_updated ? '<p style="color: #4CAF50;"><i class="fas fa-sync"></i> Validation caches updated successfully</p>' : ''}
-                        <div style="margin-top: 30px;">
-                            <button onclick="startNewUpload()" class="button primary" style="padding: 12px 24px; font-size: 16px; font-weight: 600;">
-                                <i class="fas fa-rocket"></i> Start New Processing Run
-                            </button>
-                        </div>
-                    </div>
-                `;
+            // Include flagged decisions in the total count
+            const totalCommitted = commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved + commitSummary.flagged;
+            statusManager.show(`✅ Successfully committed ${totalCommitted} validation decisions`, 'success', 3000);
+            
+            // Show post-commit action modal
+            const userChoice = await showPostCommitModal(commitSummary, result);
+            
+            if (userChoice === 'continue') {
+                // Continue validating - keep current validation state and interface
+                statusManager.show('📋 Continuing validation session...', 'info', 2000);
+                // Hide any commit buttons since we just committed
+                const commitBtn = document.getElementById('quickCommitValidationsBtn');
+                if (commitBtn) {
+                    commitBtn.style.display = 'none';
+                }
+            } else if (userChoice === 'newrun') {
+                // Start new run with same parameters
+                statusManager.show('🚀 Starting new processing run with saved parameters...', 'info', 2000);
+                
+                // Clear the validation state
+                window.currentValidationState = {};
+                
+                // Reset UI to workflow state and restore parameters
+                restoreProcessingParams();
+                startNewUpload();
+                
+                // Auto-trigger the sample run after a short delay to let UI settle
+                setTimeout(async () => {
+                    try {
+                        await runRandomSample();
+                    } catch (error) {
+                        console.error('Error auto-starting new run:', error);
+                        statusManager.show('❌ Failed to auto-start new run. Please start manually.', 'error', 5000);
+                    }
+                }, 1000);
             }
             
         } catch (error) {
+            if (error.message === 'User cancelled') {
+                // User cancelled - do nothing
+                return;
+            } else if (error.message === 'No validation state found') {
+                statusManager.show('❌ No validation state found', 'error', 3000);
+                return;
+            } else if (error.message === 'No decisions made yet') {
+                statusManager.show('⚠️ No decisions made yet', 'warning', 3000);
+                return;
+            }
+            
             console.error('Error committing validation decisions:', error);
             statusManager.show(`❌ Failed to commit decisions: ${error.message}`, 'error', 5000);
         }
     }
+
+
 
     // -----------------------------------------------------------------------------
     // 5.13. Validation Workflow
@@ -2876,6 +3430,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
                             <i class="fas fa-undo"></i>
                         </button>
+                        <button class="button button-sm button-info" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
+                        </button>
                     </div>
                 `;
                 // Add visual feedback for approval
@@ -2907,6 +3464,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         </button>
                         <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
                             <i class="fas fa-times"></i>
+                        </button>
+                        <button class="button button-sm button-warning" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
                         </button>
                     </div>
                 `;
@@ -3749,7 +4309,7 @@ Ctrl+Z - Undo last action`);
     // 5.15. Final Initialization Call
     // -----------------------------------------------------------------------------
     function initApp() {
-        disableActionButtons('Models are loading...');
+        disableActionButtons('Initializing processing engine...');
         testApiConnectivity();
         loadAvailableModels();
         setupEventListeners();
@@ -3994,6 +4554,9 @@ window.loadMockValidationData = function() {
                         <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
                             <i class="fas fa-undo"></i>
                         </button>
+                        <button class="button button-sm button-info" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
+                        </button>
                     </div>
                 `;
                 // Add visual feedback for approval
@@ -4005,6 +4568,9 @@ window.loadMockValidationData = function() {
                         <span class="validation-status status-rejected"><i class="fas fa-times"></i> Rejected</span>
                         <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unreject')" title="Undo rejection">
                             <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="button button-sm button-info" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
                         </button>
                     </div>
                 `;
@@ -4019,11 +4585,14 @@ window.loadMockValidationData = function() {
                         <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
                             <i class="fas fa-times"></i>
                         </button>
+                        <button class="button button-sm button-warning" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
+                        </button>
                     </div>
                 `;
             }
             actionsCell.innerHTML = actionsHTML;
-            actionsCell.style.minWidth = '120px';
+            actionsCell.style.minWidth = '150px';
             actionsCell.dataset.mappingId = mappingId;
             
             // Store mapping data for validation
