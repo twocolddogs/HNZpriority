@@ -3715,6 +3715,7 @@ a:focus-visible {
 .summary-stat.rejected { background: #ffebee; border-color: #f44336; }
 .summary-stat.skipped { background: #fff8e1; border-color: #ff9800; }
 .summary-stat.unapproved { background: #fff8e1; border-color: #ff9800; }
+.summary-stat.flagged { background: #fff3e0; border-color: #ff9800; }
 
 .summary-stat .count {
   font-size: 1.5em;

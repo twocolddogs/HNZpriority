@@ -2296,10 +2296,11 @@ window.addEventListener('DOMContentLoaded', function() {
             const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
             const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
             const unapproved = decisions.filter(d => d.validator_decision === 'unapprove').length;
+            const flagged = decisions.filter(d => d.flag_status === 'flagged').length;
             const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
 
-            if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0) {
-                reject(new Error('No decisions made yet'));
+            if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0 && flagged === 0) {
+                reject(new Error('No decisions or flags made yet'));
                 return;
             }
 
@@ -2311,7 +2312,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const cancelBtn = document.getElementById('cancelCommitBtn');
 
             // Build validation summary
-            const totalDecisions = approved + rejected + skipped + unapproved;
+            const totalDecisions = approved + rejected + skipped + unapproved + flagged;
             summaryDiv.innerHTML = `
                 <div style="text-align: center; margin-bottom: 20px;">
                     <h3 style="margin: 0 0 10px 0; color: #333;">Validation Summary</h3>
@@ -2323,6 +2324,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     ${rejected > 0 ? `<div class="summary-stat rejected"><span class="count">${rejected}</span><span class="label">Rejected</span></div>` : ''}
                     ${skipped > 0 ? `<div class="summary-stat skipped"><span class="count">${skipped}</span><span class="label">Skipped</span></div>` : ''}
                     ${unapproved > 0 ? `<div class="summary-stat unapproved"><span class="count">${unapproved}</span><span class="label">Unapproved</span></div>` : ''}
+                    ${flagged > 0 ? `<div class="summary-stat flagged"><span class="count">${flagged}</span><span class="label">Flagged</span></div>` : ''}
                 </div>
                 
                 ${pending > 0 ? `<p style="text-align: center; margin: 15px 0 0 0; color: #666; font-size: 14px;"><strong>${pending}</strong> item${pending === 1 ? '' : 's'} will remain pending for future validation</p>` : ''}
@@ -2357,6 +2359,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     rejected, 
                     skipped, 
                     unapproved, 
+                    flagged,
                     pending,
                     userName
                 });
@@ -2395,7 +2398,7 @@ window.addEventListener('DOMContentLoaded', function() {
             summaryDiv.innerHTML = `
                 <div style="text-align: center; margin-bottom: 20px;">
                     <div style="font-size: 2em; color: #4CAF50; margin-bottom: 10px;"><i class="fas fa-check-circle"></i></div>
-                    <h3 style="margin: 0 0 10px 0; color: #333;">Successfully committed ${commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved} validation decisions</h3>
+                    <h3 style="margin: 0 0 10px 0; color: #333;">Successfully committed ${commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved + (commitSummary.flagged || 0)} validation decisions</h3>
                 </div>
                 
                 <div class="validation-summary-grid">
@@ -2403,6 +2406,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     ${commitSummary.rejected > 0 ? `<div class="summary-stat rejected"><span class="count">${commitSummary.rejected}</span><span class="label">Rejected</span></div>` : ''}
                     ${commitSummary.skipped > 0 ? `<div class="summary-stat skipped"><span class="count">${commitSummary.skipped}</span><span class="label">Skipped</span></div>` : ''}
                     ${commitSummary.unapproved > 0 ? `<div class="summary-stat unapproved"><span class="count">${commitSummary.unapproved}</span><span class="label">Unapproved</span></div>` : ''}
+                    ${(commitSummary.flagged || 0) > 0 ? `<div class="summary-stat flagged"><span class="count">${commitSummary.flagged}</span><span class="label">Flagged</span></div>` : ''}
                 </div>
                 
                 ${processedData?.cache_updated ? '<p style="text-align: center; color: #4CAF50; margin: 15px 0;"><i class="fas fa-sync"></i> Validation caches updated successfully</p>' : ''}
