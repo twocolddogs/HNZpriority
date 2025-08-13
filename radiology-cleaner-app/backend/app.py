@@ -35,7 +35,7 @@ from common.hash_keys import compute_request_hash_with_preimage
 
 # Secondary Pipeline Integration
 try:
-    from secondary_pipeline import SecondaryPipeline, get_secondary_pipeline
+    from secondary_pipeline import SecondaryPipeline, get_secondary_pipeline, reset_shared_secondary_pipeline
     from pipeline_integration import PipelineIntegration, BatchResultProcessor
     import asyncio
     SECONDARY_PIPELINE_AVAILABLE = True
@@ -1943,6 +1943,23 @@ def test_secondary_pipeline():
     except Exception as e:
         logger.error(f"Secondary pipeline test error: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/secondary-pipeline/reset', methods=['POST'])
+def reset_secondary_pipeline():
+    """Reset the shared secondary pipeline instance to force re-initialization"""
+    if not SECONDARY_PIPELINE_AVAILABLE:
+        return jsonify({'error': 'Secondary pipeline not available'}), 400
+    
+    try:
+        reset_shared_secondary_pipeline()
+        return jsonify({
+            'success': True,
+            'message': 'Secondary pipeline reset successfully'
+        })
+    except Exception as e:
+        logger.error(f"Failed to reset secondary pipeline: {e}")
+        return jsonify({'error': f'Reset failed: {str(e)}'}), 500
 
 
 # =============================================================================
