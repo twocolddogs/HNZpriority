@@ -594,6 +594,35 @@ def health_check():
         'app_initialized': _app_initialized
     })
 
+@app.route('/initialization-status', methods=['GET'])
+def initialization_status():
+    """Check the current initialization status without triggering initialization"""
+    global model_processors, nhs_lookup_engine, semantic_parser, reranker_manager
+    
+    status = {
+        'app_initialized': _app_initialized,
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    if _app_initialized:
+        status.update({
+            'status': 'completed',
+            'model_processors': len(model_processors) if model_processors else 0,
+            'nhs_lookup_engine': nhs_lookup_engine is not None,
+            'semantic_parser': semantic_parser is not None,
+            'reranker_manager': reranker_manager is not None
+        })
+        
+        if reranker_manager:
+            status['available_rerankers'] = len(reranker_manager.get_available_rerankers())
+    else:
+        status.update({
+            'status': 'initializing',
+            'message': 'Application components are still initializing'
+        })
+    
+    return jsonify(status)
+
 @app.route('/warmup', methods=['POST', 'GET'])
 def warmup_api():
     """Warm up the API by initializing all components without processing data"""
@@ -635,8 +664,36 @@ def warmup_api():
 
 @app.route('/models', methods=['GET'])
 def list_available_models():
-    """List available NLP models and their status (lightweight, no initialization required)"""
-    _ensure_app_is_initialized() # Ensure components are initialized
+    """List available NLP models and their status"""
+    # Check if initialization is required but don't block on it
+    if not _app_initialized:
+        # Start initialization in background if not already running
+        if not hasattr(list_available_models, '_init_started'):
+            list_available_models._init_started = True
+            threading.Thread(target=_ensure_app_is_initialized, daemon=True).start()
+        
+        # Return basic model info without full initialization
+        available_models = NLPProcessor.get_available_models()
+        model_info = {}
+        for model_key, model_config in available_models.items():
+            model_info[model_key] = {
+                'name': model_config['hf_name'],
+                'status': 'initializing',
+                'description': model_config['description'],
+                'embeddings_loaded': False
+            }
+        
+        return jsonify({
+            'models': model_info,
+            'default_model': 'retriever',
+            'rerankers': {},
+            'default_reranker': 'medcpt',
+            'usage': 'Models are currently initializing',
+            'app_initialized': False,
+            'initialization_status': 'in_progress'
+        })
+    
+    # App is initialized, return full info
     try:
         available_models = NLPProcessor.get_available_models()
         model_info = {}

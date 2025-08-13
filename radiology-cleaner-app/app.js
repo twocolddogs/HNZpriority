@@ -712,27 +712,52 @@ window.addEventListener('DOMContentLoaded', function() {
     // -----------------------------------------------------------------------------
     async function loadAvailableModels(retryCount = 0, skipWarmupMessages = false) {
         let loadingMessageId = null;
+        let initializationMessageId = null;
+        
         try {
             console.log(`Loading available models (attempt ${retryCount + 1})`);
             if (retryCount === 0) {
-                loadingMessageId = statusManager.show('Loading available models...', 'info');
+                loadingMessageId = statusManager.show('Checking model availability...', 'info');
             }
+            
+            // First, make a quick call to the models endpoint with shorter timeout
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // Reduced timeout
             const response = await fetch(MODELS_URL, { method: 'GET', signal: controller.signal });
             clearTimeout(timeoutId);
+            
             if (response.ok) {
                 const modelsData = await response.json();
+                
+                // Check if models are still initializing
+                if (modelsData.initialization_status === 'in_progress') {
+                    console.log('Models are still initializing, starting polling...');
+                    
+                    if (loadingMessageId) {
+                        statusManager.remove(loadingMessageId);
+                        loadingMessageId = null;
+                    }
+                    
+                    initializationMessageId = statusManager.show('🔄 Models are initializing, please wait...', 'progress');
+                    
+                    // Start polling for initialization completion
+                    await pollForInitialization(initializationMessageId, skipWarmupMessages);
+                    return;
+                }
+                
+                // Models are ready, process normally
                 availableModels = modelsData.models || {};
                 if (Object.keys(availableModels).length === 0) {
                     throw new Error('No models received from API');
                 }
+                
                 const savedModel = localStorage.getItem('selectedModel');
                 if (savedModel && availableModels[savedModel]) {
                     currentModel = savedModel;
                 } else {
                     currentModel = modelsData.default_model || 'retriever';
                 }
+                
                 availableRerankers = modelsData.rerankers || {};
                 const savedReranker = localStorage.getItem('selectedReranker');
                 if (savedReranker && availableRerankers[savedReranker]) {
@@ -740,19 +765,24 @@ window.addEventListener('DOMContentLoaded', function() {
                 } else {
                     currentReranker = modelsData.default_reranker || 'medcpt';
                 }
+                
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
                 console.log('✓ Available rerankers loaded:', availableRerankers);
                 isUsingFallbackModels = false;
                 buildModelSelectionUI();
                 buildRerankerSelectionUI();
+                
                 if (window.workflowCheckFunction) {
                     window.workflowCheckFunction();
                 }
+                
                 if (loadingMessageId) {
                     statusManager.remove(loadingMessageId);
                     loadingMessageId = null;
                 }
+                
                 statusManager.show('✓ Models loaded successfully', 'success', 3000);
+                
                 if (!skipWarmupMessages) {
                     warmupAPI();
                 }
@@ -764,9 +794,15 @@ window.addEventListener('DOMContentLoaded', function() {
                 statusManager.remove(loadingMessageId);
                 loadingMessageId = null;
             }
+            if (initializationMessageId) {
+                statusManager.remove(initializationMessageId);
+                initializationMessageId = null;
+            }
+            
             const isAbortError = error.name === 'AbortError';
             const errorType = isAbortError ? 'timeout' : 'network error';
             console.error(`✗ Failed to load models (attempt ${retryCount + 1}) - ${errorType}:`, error);
+            
             if (retryCount < 2) {
                 const retryDelay = (retryCount + 1) * 2;
                 console.log(`Retrying in ${retryDelay} seconds...`);
@@ -778,6 +814,62 @@ window.addEventListener('DOMContentLoaded', function() {
                 useFallbackModels();
             }
         }
+    }
+    
+    async function pollForInitialization(messageId, skipWarmupMessages = false) {
+        const maxAttempts = 60; // 5 minutes max (5 second intervals)
+        let attempts = 0;
+        
+        const INIT_STATUS_URL = `${apiConfig.baseUrl}/initialization-status`;
+        
+        while (attempts < maxAttempts) {
+            try {
+                attempts++;
+                const elapsed = attempts * 5;
+                
+                // Update status message with progress
+                if (messageId) {
+                    statusManager.update(messageId, `🔄 Initializing models... (${elapsed}s)`);
+                }
+                
+                const response = await fetch(INIT_STATUS_URL, { method: 'GET', signal: AbortSignal.timeout(5000) });
+                
+                if (response.ok) {
+                    const statusData = await response.json();
+                    
+                    if (statusData.app_initialized) {
+                        console.log('✓ Initialization completed, loading models...');
+                        
+                        if (messageId) {
+                            statusManager.remove(messageId);
+                        }
+                        
+                        // Now load the actual models
+                        await loadAvailableModels(0, skipWarmupMessages);
+                        return;
+                    }
+                }
+                
+                // Wait 5 seconds before next check
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                
+            } catch (error) {
+                console.warn(`Initialization status check failed (attempt ${attempts}):`, error);
+                
+                // Continue polling even if status check fails
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+        }
+        
+        // If we get here, initialization took too long
+        console.warn('Initialization polling timed out, falling back to basic models');
+        
+        if (messageId) {
+            statusManager.remove(messageId);
+        }
+        
+        statusManager.show('⚠️ Model initialization took too long, using basic functionality', 'warning', 8000);
+        useFallbackModels();
     }
     
     function useFallbackModels() {
@@ -3770,7 +3862,7 @@ Ctrl+Z - Undo last action`);
     // 5.15. Final Initialization Call
     // -----------------------------------------------------------------------------
     function initApp() {
-        disableActionButtons('Models are loading...');
+        disableActionButtons('Initializing processing engine...');
         testApiConnectivity();
         loadAvailableModels();
         setupEventListeners();
