@@ -1,27 +1,46 @@
 {
   "entries": {
-    "4fac15fa3ee6459b4876ed091f53646443b21be364b15cd0a081cadb53b9f392": {
-      "cached_at": "2025-08-13T22:02:34.919049Z",
+    "10ac8c75749eed8bbe4631c67976e74c1f977b5a7aae90d47fd1376852f522fa": {
+      "cached_at": "2025-08-13T22:04:23.993339Z",
       "mapping_data": {
-        "approved_at": "2025-08-13T22:02:34.918820Z",
-        "clean_name": "CT of head without contrast",
-        "confidence": 0.95,
-        "data_source": "TEST_HOSPITAL",
+        "approved_at": "2025-08-13T22:04:23.993239Z",
+        "clean_name": "Standardized ct head without contrast",
+        "data_source": "EXAMPLE_HOSPITAL",
         "decision_metadata": {
-          "data_source": "TEST_HOSPITAL",
-          "exam_code": "CTH001",
+          "data_source": "EXAMPLE_HOSPITAL",
+          "exam_code": "CT001",
           "exam_name": "CT Head without contrast"
         },
-        "exam_code": "CTH001",
+        "exam_code": "CT001",
         "exam_name": "CT Head without contrast",
+        "flag_reason": "high_confidence_review",
+        "flagged_status": true,
         "modality_code": "CT",
-        "snomed": {
-          "id": "12345"
-        },
-        "validation_author": "test_validator",
-        "validation_notes": "Mapping is correct and appropriate"
+        "validation_author": "Dr. Smith",
+        "validation_notes": "High confidence mapping verified by clinical expert"
       },
-      "preimage": "TEST_HOSPITAL|CTH001|CT Head without contrast|CT"
+      "preimage": "EXAMPLE_HOSPITAL|CT001|CT Head without contrast|CT"
+    },
+    "9554f70c25bce9cf77e94d23140cae0c3a473ad2c05a3e61031150190743cf92": {
+      "cached_at": "2025-08-13T22:04:23.993647Z",
+      "mapping_data": {
+        "approved_at": "2025-08-13T22:04:23.993636Z",
+        "clean_name": "Standardized mri brain with gadolinium",
+        "data_source": "EXAMPLE_HOSPITAL",
+        "decision_metadata": {
+          "data_source": "EXAMPLE_HOSPITAL",
+          "exam_code": "MR002",
+          "exam_name": "MRI Brain with gadolinium"
+        },
+        "exam_code": "MR002",
+        "exam_name": "MRI Brain with gadolinium",
+        "flag_reason": "low_confidence",
+        "flagged_status": true,
+        "modality_code": "MR",
+        "validation_author": "Dr. Johnson",
+        "validation_notes": "Reviewed and approved despite low confidence"
+      },
+      "preimage": "EXAMPLE_HOSPITAL|MR002|MRI Brain with gadolinium|MR"
     }
   },
   "version": "v1"

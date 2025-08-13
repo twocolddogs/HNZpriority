@@ -1,9 +1,9 @@
 {
   "entries": {
-    "355bd90fc2ebac290ec95e18d4139896073e0fcf212f135515cef8d7a52af6e6": {
-      "cached_at": "2025-08-13T22:02:34.919395Z",
-      "preimage": "TEST_HOSPITAL|CTA001|CT Abdomen|CT",
-      "reason": "Incorrect mapping - should be abdomen not head"
+    "6376b76702ea11f71473b74382957d42f1a457957389cf64e87afed01e85f8e2": {
+      "cached_at": "2025-08-13T22:04:23.994025Z",
+      "preimage": "EXAMPLE_HOSPITAL|US003|Ultrasound Abdomen|US",
+      "reason": "Mapping error - anatomy mismatch detected (Author: Dr. Wilson, Flagged: anatomy_mismatch)"
     }
   },
   "version": "v1"
