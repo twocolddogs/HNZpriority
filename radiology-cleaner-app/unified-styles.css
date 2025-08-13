@@ -3778,6 +3778,40 @@ a:focus-visible {
   border-color: #e68900;
 }
 
+/* Flag button styles */
+.quick-validation-cell .button-info {
+  background: #2196f3;
+  border-color: #2196f3;
+  color: white;
+  font-size: 0.85em;
+}
+
+.quick-validation-cell .button-info:hover {
+  background: #1976d2;
+  border-color: #1976d2;
+}
+
+/* Flag indicator styles */
+.flag-indicator {
+  display: inline-block;
+  margin-left: 5px;
+}
+
+.flag-indicator i {
+  color: #ff9800;
+  animation: flag-pulse 2s infinite;
+}
+
+@keyframes flag-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Flagged row highlighting */
+.results-table tr.flagged-row {
+  box-shadow: inset 4px 0 0 #ff9800 !important;
+}
+
 /* Quick validation row highlighting */
 .results-table tr.validated-approved {
   background-color: #e8f5e8 !important;
