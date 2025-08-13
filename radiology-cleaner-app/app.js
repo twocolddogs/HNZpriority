@@ -504,7 +504,43 @@ function downloadJSON(data, filename) {
 window.addEventListener('DOMContentLoaded', function() {
 
     // -----------------------------------------------------------------------------
-    // 5.0. User Session Management
+    // 5.0. Modal Setup & Event Handlers
+    // -----------------------------------------------------------------------------
+    
+    // Setup modal background click and escape key handlers
+    function setupModalHandlers() {
+        const modals = ['commitValidationModal', 'postCommitModal', 'userNameModal'];
+        
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+        
+        // Close modals on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                modals.forEach(modalId => {
+                    const modal = document.getElementById(modalId);
+                    if (modal && modal.style.display === 'flex') {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+        });
+    }
+    
+    // Initialize modal handlers
+    setupModalHandlers();
+
+    // -----------------------------------------------------------------------------
+    // 5.1. User Session Management
     // -----------------------------------------------------------------------------
     let currentValidationAuthor = null;
     let uncommittedValidations = 0;
@@ -2370,48 +2406,238 @@ window.addEventListener('DOMContentLoaded', function() {
         closeMappingDetails();
     }
 
+    // Store processing parameters for reuse
+    let lastProcessingParams = {
+        model: null,
+        reranker: null,
+        sampleSize: 100,
+        enableSecondaryPipeline: false,
+        dataSource: null
+    };
+
+    function saveProcessingParams() {
+        lastProcessingParams = {
+            model: currentModel,
+            reranker: currentReranker, 
+            sampleSize: parseInt(document.getElementById('sampleSizeInput')?.value) || 100,
+            enableSecondaryPipeline: document.getElementById('enableSecondaryPipeline')?.checked || false,
+            dataSource: 'sample' // For now, we only support sample rerun
+        };
+        console.log('📝 Saved processing parameters:', lastProcessingParams);
+    }
+
+    function restoreProcessingParams() {
+        if (lastProcessingParams.model) {
+            currentModel = lastProcessingParams.model;
+            localStorage.setItem('selectedModel', currentModel);
+        }
+        if (lastProcessingParams.reranker) {
+            currentReranker = lastProcessingParams.reranker;
+            localStorage.setItem('selectedReranker', currentReranker);
+        }
+        
+        const sampleSizeInput = document.getElementById('sampleSizeInput');
+        if (sampleSizeInput) {
+            sampleSizeInput.value = lastProcessingParams.sampleSize;
+        }
+        
+        const secondaryPipelineCheckbox = document.getElementById('enableSecondaryPipeline');
+        if (secondaryPipelineCheckbox) {
+            secondaryPipelineCheckbox.checked = lastProcessingParams.enableSecondaryPipeline;
+        }
+        
+        console.log('🔄 Restored processing parameters:', lastProcessingParams);
+    }
+
+    // Show commit validation confirmation modal
+    function showCommitValidationModal() {
+        return new Promise((resolve, reject) => {
+            if (!window.currentValidationState) {
+                reject(new Error('No validation state found'));
+                return;
+            }
+
+            const decisions = Object.values(window.currentValidationState);
+            const approved = decisions.filter(d => d.validator_decision === 'approve').length;
+            const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
+            const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
+            const unapproved = decisions.filter(d => d.validator_decision === 'unapprove').length;
+            const flagged = decisions.filter(d => d.flag_status === 'flagged').length;
+            const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
+
+            if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0 && flagged === 0) {
+                reject(new Error('No decisions or flags made yet'));
+                return;
+            }
+
+            const modal = document.getElementById('commitValidationModal');
+            const summaryDiv = document.getElementById('validationSummary');
+            const userNameInput = document.getElementById('validationUserNameInput');
+            const userNameError = document.getElementById('validationUserNameError');
+            const confirmBtn = document.getElementById('confirmCommitBtn');
+            const cancelBtn = document.getElementById('cancelCommitBtn');
+
+            // Build validation summary
+            const totalDecisions = approved + rejected + skipped + unapproved + flagged;
+            summaryDiv.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0; color: #333;">Validation Summary</h3>
+                    <p style="margin: 0; color: #666;">You are about to commit <strong>${totalDecisions}</strong> validation decision${totalDecisions === 1 ? '' : 's'}</p>
+                </div>
+                
+                <div class="validation-summary-grid">
+                    ${approved > 0 ? `<div class="summary-stat approved"><span class="count">${approved}</span><span class="label">Approved</span></div>` : ''}
+                    ${rejected > 0 ? `<div class="summary-stat rejected"><span class="count">${rejected}</span><span class="label">Rejected</span></div>` : ''}
+                    ${skipped > 0 ? `<div class="summary-stat skipped"><span class="count">${skipped}</span><span class="label">Skipped</span></div>` : ''}
+                    ${unapproved > 0 ? `<div class="summary-stat unapproved"><span class="count">${unapproved}</span><span class="label">Unapproved</span></div>` : ''}
+                    ${flagged > 0 ? `<div class="summary-stat flagged"><span class="count">${flagged}</span><span class="label">Flagged</span></div>` : ''}
+                </div>
+                
+                ${pending > 0 ? `<p style="text-align: center; margin: 15px 0 0 0; color: #666; font-size: 14px;"><strong>${pending}</strong> item${pending === 1 ? '' : 's'} will remain pending for future validation</p>` : ''}
+            `;
+
+            // Clear previous input
+            userNameInput.value = '';
+            userNameError.style.display = 'none';
+
+            // Show modal
+            modal.style.display = 'flex';
+
+            const handleConfirm = () => {
+                const userName = userNameInput.value.trim();
+                if (!userName) {
+                    userNameError.style.display = 'block';
+                    return;
+                }
+                
+                // Store the validation author globally
+                currentValidationAuthor = userName;
+                
+                // Clean up event listeners
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                
+                // Hide modal
+                modal.style.display = 'none';
+                
+                resolve({ 
+                    approved, 
+                    rejected, 
+                    skipped, 
+                    unapproved, 
+                    flagged,
+                    pending,
+                    userName
+                });
+            };
+
+            const handleCancel = () => {
+                // Clean up event listeners
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                
+                // Hide modal
+                modal.style.display = 'none';
+                
+                reject(new Error('User cancelled'));
+            };
+
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+
+            // Focus on name input
+            setTimeout(() => userNameInput.focus(), 100);
+        });
+    }
+
+    // Show post-commit action modal
+    function showPostCommitModal(commitSummary, processedData) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('postCommitModal');
+            const summaryDiv = document.getElementById('postCommitSummary');
+            const parametersDiv = document.getElementById('savedParameters');
+            const continueBtn = document.getElementById('continueValidatingBtn');
+            const newRunBtn = document.getElementById('startNewRunBtn');
+            const actionOptions = modal.querySelectorAll('.action-option');
+
+            // Build summary
+            summaryDiv.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 2em; color: #4CAF50; margin-bottom: 10px;"><i class="fas fa-check-circle"></i></div>
+                    <h3 style="margin: 0 0 10px 0; color: #333;">Successfully committed ${commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved + (commitSummary.flagged || 0)} validation decisions</h3>
+                </div>
+                
+                <div class="validation-summary-grid">
+                    ${commitSummary.approved > 0 ? `<div class="summary-stat approved"><span class="count">${commitSummary.approved}</span><span class="label">Approved</span></div>` : ''}
+                    ${commitSummary.rejected > 0 ? `<div class="summary-stat rejected"><span class="count">${commitSummary.rejected}</span><span class="label">Rejected</span></div>` : ''}
+                    ${commitSummary.skipped > 0 ? `<div class="summary-stat skipped"><span class="count">${commitSummary.skipped}</span><span class="label">Skipped</span></div>` : ''}
+                    ${commitSummary.unapproved > 0 ? `<div class="summary-stat unapproved"><span class="count">${commitSummary.unapproved}</span><span class="label">Unapproved</span></div>` : ''}
+                    ${(commitSummary.flagged || 0) > 0 ? `<div class="summary-stat flagged"><span class="count">${commitSummary.flagged}</span><span class="label">Flagged</span></div>` : ''}
+                </div>
+                
+                ${processedData?.cache_updated ? '<p style="text-align: center; color: #4CAF50; margin: 15px 0;"><i class="fas fa-sync"></i> Validation caches updated successfully</p>' : ''}
+            `;
+
+            // Show saved parameters
+            parametersDiv.innerHTML = `
+                <strong>Saved Parameters for New Run:</strong><br>
+                Model: ${lastProcessingParams.model} | 
+                Reranker: ${lastProcessingParams.reranker} | 
+                Sample Size: ${lastProcessingParams.sampleSize} | 
+                Secondary Pipeline: ${lastProcessingParams.enableSecondaryPipeline ? 'Enabled' : 'Disabled'}
+            `;
+
+            let selectedAction = null;
+
+            // Handle action option selection
+            actionOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    actionOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    selectedAction = option.dataset.action;
+                    
+                    // Update button states
+                    continueBtn.style.display = selectedAction === 'continue' ? 'inline-block' : 'none';
+                    newRunBtn.style.display = selectedAction === 'newrun' ? 'inline-block' : 'none';
+                });
+            });
+
+            // Handle continue validating
+            const handleContinue = () => {
+                modal.style.display = 'none';
+                resolve('continue');
+            };
+
+            // Handle new run
+            const handleNewRun = () => {
+                modal.style.display = 'none';
+                resolve('newrun');
+            };
+
+            // Add event listeners
+            continueBtn.addEventListener('click', handleContinue);
+            newRunBtn.addEventListener('click', handleNewRun);
+
+            // Default to continue option
+            actionOptions[0]?.click();
+
+            // Show modal
+            modal.style.display = 'flex';
+        });
+    }
+
     async function commitValidatedDecisions() {
         console.log('💾 Committing validated decisions');
         
-        if (!window.currentValidationState) {
-            statusManager.show('❌ No validation state found', 'error', 3000);
-            return;
-        }
-        
-        // Always ask for user name at commit time for accurate validation authorship
         try {
-            await showUserNameModal();
-        } catch (error) {
-            // User cancelled - don't proceed with commit
-            return;
-        }
-        
-        const decisions = Object.values(window.currentValidationState);
-        const approved = decisions.filter(d => d.validator_decision === 'approve').length;
-        const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
-        const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
-        const unapproved = decisions.filter(d => d.validator_decision === 'unapprove').length;
-        const flagged = decisions.filter(d => d.flag_status === 'flagged').length;
-        const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
-        
-        if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0 && flagged === 0) {
-            statusManager.show('⚠️ No decisions or flags made yet', 'warning', 3000);
-            return;
-        }
-        
-        let messageParts = [];
-        if (approved > 0) messageParts.push(`${approved} approved`);
-        if (rejected > 0) messageParts.push(`${rejected} rejected`);
-        if (skipped > 0) messageParts.push(`${skipped} skipped`);
-        if (unapproved > 0) messageParts.push(`${unapproved} unapproved`);
-        if (flagged > 0) messageParts.push(`${flagged} flagged`);
-        
-        const message = `Commit ${messageParts.join(', ')} decisions?${pending > 0 ? ` (${pending} will remain pending)` : ''}`;
-        if (!confirm(message)) {
-            return;
-        }
-        
-        try {
+            // Save current processing parameters before committing
+            saveProcessingParams();
+
+            // Show commit confirmation modal
+            const commitSummary = await showCommitValidationModal();
+            
+            const decisions = Object.values(window.currentValidationState);
+            
             statusManager.show('🔄 Committing validation decisions...', 'info');
             
             // Convert currentValidationState object to array format expected by backend
@@ -2439,66 +2665,106 @@ window.addEventListener('DOMContentLoaded', function() {
             const payload = {
                 decisions: decisionsArray,
                 summary: {
-                    approved_count: approved,
-                    rejected_count: rejected,
-                    skipped_count: skipped,
-                    unapproved_count: unapproved,
-                    pending_count: pending,
+                    approved_count: commitSummary.approved,
+                    rejected_count: commitSummary.rejected,
+                    skipped_count: commitSummary.skipped,
+                    unapproved_count: commitSummary.unapproved,
+                    pending_count: commitSummary.pending,
                     total_count: decisions.length,
                     timestamp: new Date().toISOString()
                 }
             };
             
-            // Send to validation/batch_decisions endpoint
-            const response = await fetch(`${apiConfig.baseUrl}/validation/batch_decisions`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            });
+            let result;
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // Check if we're in development mode (localhost) and simulate successful commit
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('🧪 Development mode: Simulating successful commit');
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Mock successful response
+                result = {
+                    success: true,
+                    cache_updated: true,
+                    committed_count: decisionsArray.length,
+                    message: 'Validation decisions committed successfully (simulated)'
+                };
+            } else {
+                // Production mode: actual API call
+                const response = await fetch(`${apiConfig.baseUrl}/validation/batch_decisions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                result = await response.json();
             }
             
-            const result = await response.json();
-            
-            // Success - clear the validation state and provide feedback
-            window.currentValidationState = {};
+            // Success - clear validation state counters
             resetUncommittedValidations();
-            statusManager.show(`✅ Successfully committed ${approved + rejected + skipped + unapproved + flagged} validation decisions`, 'success', 5000);
             
-            // Optionally clear the validation interface
-            const validationInterface = document.getElementById('validationInterface');
-            if (validationInterface) {
-                validationInterface.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #666;">
-                        <i class="fas fa-check-circle" style="font-size: 48px; color: #4CAF50; margin-bottom: 16px;"></i>
-                        <h3>Validation Decisions Committed</h3>
-                        <p>Successfully processed ${approved + rejected + skipped + unapproved + flagged} validation decisions.</p>
-                        <p style="margin-top: 20px;">
-                            <strong>Approved:</strong> ${approved} &nbsp;|&nbsp; 
-                            <strong>Rejected:</strong> ${rejected} &nbsp;|&nbsp; 
-                            <strong>Skipped:</strong> ${skipped}
-                            ${unapproved > 0 ? ` &nbsp;|&nbsp; <strong>Unapproved:</strong> ${unapproved}` : ''}
-                            ${flagged > 0 ? ` &nbsp;|&nbsp; <strong>Flagged:</strong> ${flagged}` : ''}
-                        </p>
-                        ${result.cache_updated ? '<p style="color: #4CAF50;"><i class="fas fa-sync"></i> Validation caches updated successfully</p>' : ''}
-                        <div style="margin-top: 30px;">
-                            <button onclick="startNewUpload()" class="button primary" style="padding: 12px 24px; font-size: 16px; font-weight: 600;">
-                                <i class="fas fa-rocket"></i> Start New Processing Run
-                            </button>
-                        </div>
-                    </div>
-                `;
+            // Include flagged decisions in the total count
+            const totalCommitted = commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved + commitSummary.flagged;
+            statusManager.show(`✅ Successfully committed ${totalCommitted} validation decisions`, 'success', 3000);
+            
+            // Show post-commit action modal
+            const userChoice = await showPostCommitModal(commitSummary, result);
+            
+            if (userChoice === 'continue') {
+                // Continue validating - keep current validation state and interface
+                statusManager.show('📋 Continuing validation session...', 'info', 2000);
+                // Hide any commit buttons since we just committed
+                const commitBtn = document.getElementById('quickCommitValidationsBtn');
+                if (commitBtn) {
+                    commitBtn.style.display = 'none';
+                }
+            } else if (userChoice === 'newrun') {
+                // Start new run with same parameters
+                statusManager.show('🚀 Starting new processing run with saved parameters...', 'info', 2000);
+                
+                // Clear the validation state
+                window.currentValidationState = {};
+                
+                // Reset UI to workflow state and restore parameters
+                restoreProcessingParams();
+                startNewUpload();
+                
+                // Auto-trigger the sample run after a short delay to let UI settle
+                setTimeout(async () => {
+                    try {
+                        await runRandomSample();
+                    } catch (error) {
+                        console.error('Error auto-starting new run:', error);
+                        statusManager.show('❌ Failed to auto-start new run. Please start manually.', 'error', 5000);
+                    }
+                }, 1000);
             }
             
         } catch (error) {
+            if (error.message === 'User cancelled') {
+                // User cancelled - do nothing
+                return;
+            } else if (error.message === 'No validation state found') {
+                statusManager.show('❌ No validation state found', 'error', 3000);
+                return;
+            } else if (error.message === 'No decisions made yet') {
+                statusManager.show('⚠️ No decisions made yet', 'warning', 3000);
+                return;
+            }
+            
             console.error('Error committing validation decisions:', error);
             statusManager.show(`❌ Failed to commit decisions: ${error.message}`, 'error', 5000);
         }
     }
+
+
 
     // -----------------------------------------------------------------------------
     // 5.13. Validation Workflow

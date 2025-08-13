@@ -336,6 +336,100 @@
         </div>
     </div>
 
+    <!-- Commit Validation Confirmation Modal -->
+    <div class="modal" id="commitValidationModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-cloud-upload-alt"></i> Commit Validation Decisions</h2>
+            </div>
+            <div class="modal-body">
+                <div id="validationSummary" style="margin-bottom: 25px;">
+                    <!-- Summary will be populated by JavaScript -->
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4CAF50;">
+                    <h4 style="margin: 0 0 10px 0; color: #333;"><i class="fas fa-info-circle"></i> What happens next?</h4>
+                    <p style="margin: 0; color: #666; font-size: 14px;">
+                        Your validation decisions will be saved to the system. After committing, you can choose to continue validating remaining items or start a new processing run with the same parameters.
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label for="validationUserNameInput" style="display: block; margin-bottom: 8px; font-weight: 500;">
+                        Your Name (Validator): <span style="color: #f44336;">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="validationUserNameInput" 
+                        class="text-input" 
+                        placeholder="Enter your full name"
+                        style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px;"
+                        required
+                    />
+                    <div id="validationUserNameError" style="color: #f44336; font-size: 14px; margin-top: 5px; display: none;">
+                        Please enter your name to continue.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelCommitBtn" class="button secondary" style="margin-right: 10px;">
+                    Cancel
+                </button>
+                <button id="confirmCommitBtn" class="button primary">
+                    <i class="fas fa-check"></i> Commit Decisions
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post-Commit Action Modal -->
+    <div class="modal" id="postCommitModal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-check-circle" style="color: #4CAF50;"></i> Validation Decisions Committed</h2>
+            </div>
+            <div class="modal-body">
+                <div id="postCommitSummary" style="margin-bottom: 25px;">
+                    <!-- Summary will be populated by JavaScript -->
+                </div>
+                
+                <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e3f2fd;">
+                    <h4 style="margin: 0 0 15px 0; color: #1976d2;"><i class="fas fa-question-circle"></i> What would you like to do next?</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="action-option" style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #e0e0e0; cursor: pointer; transition: all 0.2s;" data-action="continue">
+                            <div style="text-align: center;">
+                                <div style="font-size: 2em; margin-bottom: 8px; color: #4CAF50;"><i class="fas fa-clipboard-check"></i></div>
+                                <h5 style="margin: 0 0 5px 0; color: #333;">Continue Validating</h5>
+                                <p style="margin: 0; font-size: 12px; color: #666;">Keep validating remaining items in the current session</p>
+                            </div>
+                        </div>
+                        
+                        <div class="action-option" style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #e0e0e0; cursor: pointer; transition: all 0.2s;" data-action="newrun">
+                            <div style="text-align: center;">
+                                <div style="font-size: 2em; margin-bottom: 8px; color: #2196F3;"><i class="fas fa-rocket"></i></div>
+                                <h5 style="margin: 0 0 5px 0; color: #333;">New Processing Run</h5>
+                                <p style="margin: 0; font-size: 12px; color: #666;">Start fresh with the same parameters</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="savedParameters" style="background: #f9f9f9; padding: 12px; border-radius: 6px; font-size: 13px; color: #666;">
+                    <!-- Parameters will be shown here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="continueValidatingBtn" class="button secondary" style="margin-right: 10px;">
+                    <i class="fas fa-clipboard-check"></i> Continue Validating
+                </button>
+                <button id="startNewRunBtn" class="button primary">
+                    <i class="fas fa-rocket"></i> Start New Run
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- User Name Input Modal -->
     <div class="modal" id="userNameModal">
         <div class="modal-content" style="max-width: 500px;">
