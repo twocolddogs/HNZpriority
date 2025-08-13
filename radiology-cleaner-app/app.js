@@ -2459,13 +2459,15 @@ window.addEventListener('DOMContentLoaded', function() {
 
             const decisions = Object.values(window.currentValidationState);
             const approved = decisions.filter(d => d.validator_decision === 'approve').length;
-            const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
+            const explicitlyRejected = decisions.filter(d => d.validator_decision === 'reject').length;
+            const flaggedWithoutDecision = decisions.filter(d => d.flag_status === 'flagged' && (!d.validator_decision || d.validator_decision === 'pending')).length;
+            const rejected = explicitlyRejected + flaggedWithoutDecision;
             const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
             const unapproved = decisions.filter(d => d.validator_decision === 'unapprove').length;
             const flagged = decisions.filter(d => d.flag_status === 'flagged').length;
-            const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
+            const pending = decisions.filter(d => (!d.validator_decision || d.validator_decision === 'pending') && d.flag_status !== 'flagged').length;
 
-            if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0 && flagged === 0) {
+            if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0) {
                 reject(new Error('No decisions or flags made yet'));
                 return;
             }
@@ -2478,7 +2480,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const cancelBtn = document.getElementById('cancelCommitBtn');
 
             // Build validation summary
-            const totalDecisions = approved + rejected + skipped + unapproved + flagged;
+            const totalDecisions = approved + rejected + skipped + unapproved;
             summaryDiv.innerHTML = `
                 <div style="text-align: center; margin-bottom: 20px;">
                     <h3 style="margin: 0 0 10px 0; color: #333;">Validation Summary</h3>
@@ -2487,10 +2489,9 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 <div class="validation-summary-grid">
                     ${approved > 0 ? `<div class="summary-stat approved"><span class="count">${approved}</span><span class="label">Approved</span></div>` : ''}
-                    ${rejected > 0 ? `<div class="summary-stat rejected"><span class="count">${rejected}</span><span class="label">Rejected</span></div>` : ''}
+                    ${rejected > 0 ? `<div class="summary-stat rejected"><span class="count">${rejected}</span><span class="label">Rejected${flaggedWithoutDecision > 0 ? ` (${flaggedWithoutDecision} flagged)` : ''}</span></div>` : ''}
                     ${skipped > 0 ? `<div class="summary-stat skipped"><span class="count">${skipped}</span><span class="label">Skipped</span></div>` : ''}
                     ${unapproved > 0 ? `<div class="summary-stat unapproved"><span class="count">${unapproved}</span><span class="label">Unapproved</span></div>` : ''}
-                    ${flagged > 0 ? `<div class="summary-stat flagged"><span class="count">${flagged}</span><span class="label">Flagged</span></div>` : ''}
                 </div>
                 
                 ${pending > 0 ? `<p style="text-align: center; margin: 15px 0 0 0; color: #666; font-size: 14px;"><strong>${pending}</strong> item${pending === 1 ? '' : 's'} will remain pending for future validation</p>` : ''}
@@ -2525,7 +2526,6 @@ window.addEventListener('DOMContentLoaded', function() {
                     rejected, 
                     skipped, 
                     unapproved, 
-                    flagged,
                     pending,
                     userName
                 });
@@ -2564,7 +2564,7 @@ window.addEventListener('DOMContentLoaded', function() {
             summaryDiv.innerHTML = `
                 <div style="text-align: center; margin-bottom: 20px;">
                     <div style="font-size: 2em; color: #4CAF50; margin-bottom: 10px;"><i class="fas fa-check-circle"></i></div>
-                    <h3 style="margin: 0 0 10px 0; color: #333;">Successfully committed ${commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved + (commitSummary.flagged || 0)} validation decisions</h3>
+                    <h3 style="margin: 0 0 10px 0; color: #333;">Successfully committed ${commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved} validation decisions</h3>
                 </div>
                 
                 <div class="validation-summary-grid">
@@ -2643,14 +2643,27 @@ window.addEventListener('DOMContentLoaded', function() {
             // Convert currentValidationState object to array format expected by backend
             const decisionsArray = [];
             for (const [mappingId, state] of Object.entries(window.currentValidationState)) {
-                if (state.validator_decision && state.validator_decision !== 'pending') {
+                // Include items with validator decisions or flagged items without decisions
+                const hasDecision = state.validator_decision && state.validator_decision !== 'pending';
+                const isFlagged = state.flag_status === 'flagged' && !hasDecision;
+                
+                if (hasDecision || isFlagged) {
                     const om = state.original_mapping || {};
                     // Ensure a single modality code for consistent request_hash computation on server
                     const modality_code = Array.isArray(om.modality_code) ? (om.modality_code[0] || null) : (typeof om.modality_code === 'string' ? om.modality_code : null);
+                    
+                    // For flagged items without decisions, treat as reject with flag information
+                    let decision = state.validator_decision;
+                    let notes = state.validation_notes || '';
+                    if (isFlagged) {
+                        decision = 'reject';
+                        notes = `FLAGGED: ${state.flag_reason || 'Unknown reason'}${state.flag_notes ? ' - ' + state.flag_notes : ''}${notes ? ' | ' + notes : ''}`;
+                    }
+                    
                     decisionsArray.push({
                         mapping_id: mappingId,
-                        decision: state.validator_decision,
-                        notes: state.validation_notes || '',
+                        decision: decision,
+                        notes: notes,
                         validation_author: currentValidationAuthor || '',
                         original_mapping: om,
                         data_source: om.data_source || '',
