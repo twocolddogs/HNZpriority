@@ -1069,6 +1069,12 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
         document.getElementById('consolidationModal')?.addEventListener('click', (e) => e.target.id === 'consolidationModal' && closeModal());
+        
+        // Flag modal event listeners
+        document.getElementById('closeFlagModal')?.addEventListener('click', closeFlagModal);
+        document.getElementById('cancelFlagBtn')?.addEventListener('click', closeFlagModal);
+        document.getElementById('confirmFlagBtn')?.addEventListener('click', confirmFlag);
+        document.getElementById('flagModal')?.addEventListener('click', (e) => e.target.id === 'flagModal' && closeFlagModal());
         document.getElementById('prevPageBtn')?.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
@@ -1847,6 +1853,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
                             <i class="fas fa-undo"></i>
                         </button>
+                        <button class="button button-sm button-info" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
+                        </button>
                     </div>
                 `;
             } else if (validationStatus === 'rejected') {
@@ -1855,6 +1864,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         <span class="validation-status status-rejected"><i class="fas fa-times"></i> Rejected</span>
                         <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unreject')" title="Undo rejection">
                             <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="button button-sm button-info" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
                         </button>
                     </div>
                 `;
@@ -1867,11 +1879,14 @@ window.addEventListener('DOMContentLoaded', function() {
                         <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
                             <i class="fas fa-times"></i>
                         </button>
+                        <button class="button button-sm button-warning" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
+                        </button>
                     </div>
                 `;
             }
             actionsCell.innerHTML = actionsHTML;
-            actionsCell.style.minWidth = '120px';
+            actionsCell.style.minWidth = '150px';
             actionsCell.dataset.mappingId = mappingId;
             
             // Store mapping data for validation
@@ -1934,6 +1949,157 @@ window.addEventListener('DOMContentLoaded', function() {
         if (modal) modal.style.display = 'none'; 
     }
     window.closeModal = closeModal;
+
+    // Flag Modal Functions
+    function showFlagModal(mappingId) {
+        console.log('🏴 Showing flag modal for mapping:', mappingId);
+        
+        const mappingData = window.quickValidationData?.[mappingId];
+        if (!mappingData) {
+            console.error('Mapping data not found for ID:', mappingId);
+            statusManager.show('❌ Mapping data not found', 'error', 3000);
+            return;
+        }
+
+        // Populate mapping details
+        const detailsContainer = document.getElementById('flagMappingDetails');
+        const sourceName = getSourceDisplayName(mappingData.data_source);
+        
+        detailsContainer.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
+                <div>
+                    <strong>Original Code:</strong><br>
+                    <span style="font-family: monospace; background: #f1f3f4; padding: 2px 6px; border-radius: 3px;">${mappingData.exam_code || '-'}</span>
+                </div>
+                <div>
+                    <strong>Data Source:</strong><br>
+                    ${sourceName}
+                </div>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <strong>Original Name:</strong><br>
+                <span>${mappingData.exam_name || '-'}</span>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <strong>Suggested Clean Name:</strong><br>
+                <span style="color: #2e7d32; font-weight: 500;">${mappingData.clean_name || '-'}</span>
+            </div>
+            <div>
+                <strong>Confidence:</strong> ${Math.round((mappingData.components?.confidence || 0) * 100)}%
+            </div>
+        `;
+
+        // Reset form
+        document.getElementById('flagReasonSelect').value = '';
+        document.getElementById('flagNotesTextarea').value = '';
+        document.getElementById('flagError').style.display = 'none';
+
+        // Store current mapping ID for flag action
+        window.currentFlagMappingId = mappingId;
+
+        // Show modal
+        const modal = document.getElementById('flagModal');
+        modal.style.display = 'block';
+    }
+
+    function closeFlagModal() {
+        const modal = document.getElementById('flagModal');
+        modal.style.display = 'none';
+        window.currentFlagMappingId = null;
+    }
+
+    function confirmFlag() {
+        const reason = document.getElementById('flagReasonSelect').value;
+        const notes = document.getElementById('flagNotesTextarea').value.trim();
+        const errorElement = document.getElementById('flagError');
+
+        // Validate required fields
+        if (!reason) {
+            errorElement.textContent = 'Please select a reason for flagging.';
+            errorElement.style.display = 'block';
+            return;
+        }
+
+        const mappingId = window.currentFlagMappingId;
+        if (!mappingId) {
+            console.error('No mapping ID available for flagging');
+            return;
+        }
+
+        // Apply flag to mapping
+        applyFlagToMapping(mappingId, reason, notes);
+        
+        // Close modal
+        closeFlagModal();
+        
+        // Show success message
+        statusManager.show(`🏴 Mapping flagged: ${reason}`, 'warning', 3000);
+    }
+
+    function applyFlagToMapping(mappingId, reason, notes) {
+        console.log('🏴 Applying flag to mapping:', mappingId, 'Reason:', reason);
+
+        // Initialize validation state if needed
+        if (!window.currentValidationState) {
+            window.currentValidationState = {};
+        }
+
+        // Initialize validation state for this mapping if it doesn't exist
+        if (!window.currentValidationState[mappingId]) {
+            const mappingData = window.quickValidationData?.[mappingId];
+            window.currentValidationState[mappingId] = {
+                unique_mapping_id: mappingId,
+                original_mapping: mappingData,
+                validation_status: 'pending_review',
+                validator_decision: null,
+                timestamp_created: new Date().toISOString(),
+                timestamp_reviewed: null,
+                needs_attention_flags: []
+            };
+        }
+
+        // Add flag data to validation state
+        const state = window.currentValidationState[mappingId];
+        state.flag_status = 'flagged';
+        state.flag_reason = reason;
+        state.flag_notes = notes;
+        state.flag_timestamp = new Date().toISOString();
+
+        // Update visual state to show flagged status
+        updateMappingVisualForFlag(mappingId);
+
+        // Show commit button if not already shown
+        showCommitValidationsButton();
+        
+        // Increment uncommitted validations counter
+        incrementUncommittedValidations();
+    }
+
+    function updateMappingVisualForFlag(mappingId) {
+        // Find the row and add flag styling
+        const row = document.querySelector(`[data-mapping-id="${mappingId}"]`)?.closest('tr');
+        if (row) {
+            // Add a subtle flag indicator
+            row.style.boxShadow = 'inset 4px 0 0 #ff9800';
+            
+            // Add flag icon to the actions cell if not already there
+            const actionsCell = row.querySelector(`[data-mapping-id="${mappingId}"]`);
+            if (actionsCell) {
+                const flagIndicator = actionsCell.querySelector('.flag-indicator');
+                if (!flagIndicator) {
+                    const indicator = document.createElement('span');
+                    indicator.className = 'flag-indicator';
+                    indicator.innerHTML = '<i class="fas fa-flag" style="color: #ff9800; margin-left: 5px;" title="Flagged for review"></i>';
+                    actionsCell.appendChild(indicator);
+                }
+            }
+        }
+    }
+
+    // Expose functions to global scope
+    window.showFlagModal = showFlagModal;
+    window.closeFlagModal = closeFlagModal;
+    window.confirmFlag = confirmFlag;
 
     // -----------------------------------------------------------------------------
     // 5.12. Toggle between Full View and Validation View
@@ -2463,6 +2629,47 @@ window.addEventListener('DOMContentLoaded', function() {
     async function commitValidatedDecisions() {
         console.log('💾 Committing validated decisions');
         
+<<<<<<< HEAD
+=======
+        if (!window.currentValidationState) {
+            statusManager.show('❌ No validation state found', 'error', 3000);
+            return;
+        }
+        
+        // Always ask for user name at commit time for accurate validation authorship
+        try {
+            await showUserNameModal();
+        } catch (error) {
+            // User cancelled - don't proceed with commit
+            return;
+        }
+        
+        const decisions = Object.values(window.currentValidationState);
+        const approved = decisions.filter(d => d.validator_decision === 'approve').length;
+        const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
+        const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
+        const unapproved = decisions.filter(d => d.validator_decision === 'unapprove').length;
+        const flagged = decisions.filter(d => d.flag_status === 'flagged').length;
+        const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
+        
+        if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0 && flagged === 0) {
+            statusManager.show('⚠️ No decisions or flags made yet', 'warning', 3000);
+            return;
+        }
+        
+        let messageParts = [];
+        if (approved > 0) messageParts.push(`${approved} approved`);
+        if (rejected > 0) messageParts.push(`${rejected} rejected`);
+        if (skipped > 0) messageParts.push(`${skipped} skipped`);
+        if (unapproved > 0) messageParts.push(`${unapproved} unapproved`);
+        if (flagged > 0) messageParts.push(`${flagged} flagged`);
+        
+        const message = `Commit ${messageParts.join(', ')} decisions?${pending > 0 ? ` (${pending} will remain pending)` : ''}`;
+        if (!confirm(message)) {
+            return;
+        }
+        
+>>>>>>> develop
         try {
             // Save current processing parameters before committing
             saveProcessingParams();
@@ -2543,7 +2750,10 @@ window.addEventListener('DOMContentLoaded', function() {
             
             // Success - clear validation state counters
             resetUncommittedValidations();
-            statusManager.show(`✅ Successfully committed ${commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved} validation decisions`, 'success', 3000);
+            
+            // Include flagged decisions in the total count
+            const totalCommitted = commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved + commitSummary.flagged;
+            statusManager.show(`✅ Successfully committed ${totalCommitted} validation decisions`, 'success', 3000);
             
             // Show post-commit action modal
             const userChoice = await showPostCommitModal(commitSummary, result);
@@ -3261,6 +3471,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
                             <i class="fas fa-undo"></i>
                         </button>
+                        <button class="button button-sm button-info" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
+                        </button>
                     </div>
                 `;
                 // Add visual feedback for approval
@@ -3292,6 +3505,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         </button>
                         <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
                             <i class="fas fa-times"></i>
+                        </button>
+                        <button class="button button-sm button-warning" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
                         </button>
                     </div>
                 `;
@@ -4379,6 +4595,9 @@ window.loadMockValidationData = function() {
                         <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unapprove')" title="Undo approval">
                             <i class="fas fa-undo"></i>
                         </button>
+                        <button class="button button-sm button-info" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
+                        </button>
                     </div>
                 `;
                 // Add visual feedback for approval
@@ -4390,6 +4609,9 @@ window.loadMockValidationData = function() {
                         <span class="validation-status status-rejected"><i class="fas fa-times"></i> Rejected</span>
                         <button class="button button-sm button-warning" onclick="quickValidationAction('${mappingId}', 'unreject')" title="Undo rejection">
                             <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="button button-sm button-info" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
                         </button>
                     </div>
                 `;
@@ -4404,11 +4626,14 @@ window.loadMockValidationData = function() {
                         <button class="button button-sm button-danger" onclick="quickValidationAction('${mappingId}', 'reject')" title="Quick reject">
                             <i class="fas fa-times"></i>
                         </button>
+                        <button class="button button-sm button-warning" onclick="showFlagModal('${mappingId}')" title="Flag for review">
+                            <i class="fas fa-flag"></i>
+                        </button>
                     </div>
                 `;
             }
             actionsCell.innerHTML = actionsHTML;
-            actionsCell.style.minWidth = '120px';
+            actionsCell.style.minWidth = '150px';
             actionsCell.dataset.mappingId = mappingId;
             
             // Store mapping data for validation
