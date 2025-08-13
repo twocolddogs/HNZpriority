@@ -1,7 +1,28 @@
 {
-  "meta": {
-    "version": 1,
-    "last_updated": "2025-08-11T00:37:05Z"
+  "entries": {
+    "4fac15fa3ee6459b4876ed091f53646443b21be364b15cd0a081cadb53b9f392": {
+      "cached_at": "2025-08-13T22:02:34.919049Z",
+      "mapping_data": {
+        "approved_at": "2025-08-13T22:02:34.918820Z",
+        "clean_name": "CT of head without contrast",
+        "confidence": 0.95,
+        "data_source": "TEST_HOSPITAL",
+        "decision_metadata": {
+          "data_source": "TEST_HOSPITAL",
+          "exam_code": "CTH001",
+          "exam_name": "CT Head without contrast"
+        },
+        "exam_code": "CTH001",
+        "exam_name": "CT Head without contrast",
+        "modality_code": "CT",
+        "snomed": {
+          "id": "12345"
+        },
+        "validation_author": "test_validator",
+        "validation_notes": "Mapping is correct and appropriate"
+      },
+      "preimage": "TEST_HOSPITAL|CTH001|CT Head without contrast|CT"
+    }
   },
-  "entries": {}
+  "version": "v1"
 }

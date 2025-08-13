@@ -87,10 +87,17 @@ class ValidationCacheManager:
                 with open(local_cache_path, 'r') as f:
                     local_data = json.load(f)
                     if isinstance(local_data, dict):
-                        # Convert flat dictionary to cache format
-                        cache_data["entries"] = local_data
-                        logger.info(f"Loaded {cache_type} cache from local validation directory: {len(local_data)} entries ({local_cache_path})")
-                        return cache_data
+                        # Handle canonical schema with entries wrapper
+                        if "entries" in local_data and isinstance(local_data["entries"], dict):
+                            # New canonical format
+                            cache_data = local_data
+                            logger.info(f"Loaded {cache_type} cache from local validation directory: {len(local_data['entries'])} entries ({local_cache_path})")
+                            return cache_data
+                        else:
+                            # Legacy flat dictionary format - convert to cache format
+                            cache_data["entries"] = local_data
+                            logger.info(f"Loaded {cache_type} cache from local validation directory (legacy format): {len(local_data)} entries ({local_cache_path})")
+                            return cache_data
             except Exception as e:
                 logger.warning(f"Failed to load {cache_type} cache from local file: {e}")
         
@@ -115,31 +122,85 @@ class ValidationCacheManager:
         return cache_data
     
     def _save_cache_file(self, cache_data: Dict, cache_key: str, cache_type: str) -> bool:
-        """Save a cache file to R2."""
-        if not self.is_available():
-            logger.warning(f"Cannot save {cache_type} cache - R2 not available")
-            return False
-            
-        try:
-            cache_json = json.dumps(cache_data, indent=2, sort_keys=True)
-            cache_bytes = cache_json.encode('utf-8')
-            
-            success = self.r2_manager.upload_object(
-                object_key=cache_key,
-                data=cache_bytes,
-                content_type='application/json'
-            )
-            
-            if success:
-                logger.info(f"Saved {cache_type} cache to R2: {len(cache_data.get('entries', {}))} entries")
-            else:
-                logger.error(f"Failed to save {cache_type} cache to R2")
+        """Save a cache file to both R2 and local validation directory."""
+        r2_success = True
+        local_success = True
+        
+        # Save to R2 if available
+        if self.is_available():
+            try:
+                cache_json = json.dumps(cache_data, indent=2, sort_keys=True)
+                cache_bytes = cache_json.encode('utf-8')
                 
-            return success
+                r2_success = self.r2_manager.upload_object(
+                    object_key=cache_key,
+                    data=cache_bytes,
+                    content_type='application/json'
+                )
+                
+                if r2_success:
+                    logger.info(f"Saved {cache_type} cache to R2: {len(cache_data.get('entries', {}))} entries")
+                else:
+                    logger.error(f"Failed to save {cache_type} cache to R2")
+                    
+            except Exception as e:
+                logger.error(f"Error saving {cache_type} cache to R2: {e}")
+                r2_success = False
+        else:
+            logger.warning(f"R2 not available - skipping R2 save for {cache_type} cache")
+            r2_success = False
+        
+        # Save to local validation directory
+        try:
+            local_cache_path = None
+            if cache_type == "approved":
+                # Try multiple possible locations, prefer the validation/validation/ directory
+                possible_paths = [
+                    Path("../validation/validation/approved_mappings_cache.json"),
+                    Path("validation/validation/approved_mappings_cache.json"),
+                    Path("../validation/approved_mappings_cache.json"),
+                    Path("validation/approved_mappings_cache.json")
+                ]
+            elif cache_type == "rejected":
+                possible_paths = [
+                    Path("../validation/validation/rejected_mappings_cache.json"),
+                    Path("validation/validation/rejected_mappings_cache.json"),
+                    Path("../validation/rejected_mappings_cache.json"),
+                    Path("validation/rejected_mappings_cache.json")
+                ]
+            else:
+                possible_paths = []
             
+            # Find an existing file to update, or use the first path for new files
+            for path in possible_paths:
+                if path.exists():
+                    local_cache_path = path
+                    break
+            
+            if not local_cache_path:
+                # No existing file found, create in the preferred location
+                local_cache_path = possible_paths[0] if possible_paths else None
+                
+            if local_cache_path:
+                # Ensure the directory exists
+                local_cache_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                cache_json = json.dumps(cache_data, indent=2, sort_keys=True)
+                with open(local_cache_path, 'w') as f:
+                    f.write(cache_json)
+                
+                logger.info(f"Saved {cache_type} cache to local file: {len(cache_data.get('entries', {}))} entries ({local_cache_path})")
+                local_success = True
+            else:
+                logger.error(f"Could not determine local path for {cache_type} cache")
+                local_success = False
+                
         except Exception as e:
-            logger.error(f"Error saving {cache_type} cache: {e}")
-            return False
+            logger.error(f"Error saving {cache_type} cache to local file: {e}")
+            local_success = False
+        
+        # Return True if at least one save method succeeded
+        return r2_success or local_success
     
     def check_approved(self, request_hash: str) -> Optional[Dict]:
         """
