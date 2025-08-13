@@ -2629,47 +2629,6 @@ window.addEventListener('DOMContentLoaded', function() {
     async function commitValidatedDecisions() {
         console.log('💾 Committing validated decisions');
         
-<<<<<<< HEAD
-=======
-        if (!window.currentValidationState) {
-            statusManager.show('❌ No validation state found', 'error', 3000);
-            return;
-        }
-        
-        // Always ask for user name at commit time for accurate validation authorship
-        try {
-            await showUserNameModal();
-        } catch (error) {
-            // User cancelled - don't proceed with commit
-            return;
-        }
-        
-        const decisions = Object.values(window.currentValidationState);
-        const approved = decisions.filter(d => d.validator_decision === 'approve').length;
-        const rejected = decisions.filter(d => d.validator_decision === 'reject').length;
-        const skipped = decisions.filter(d => d.validator_decision === 'skip').length;
-        const unapproved = decisions.filter(d => d.validator_decision === 'unapprove').length;
-        const flagged = decisions.filter(d => d.flag_status === 'flagged').length;
-        const pending = decisions.filter(d => !d.validator_decision || d.validator_decision === 'pending').length;
-        
-        if (approved === 0 && rejected === 0 && skipped === 0 && unapproved === 0 && flagged === 0) {
-            statusManager.show('⚠️ No decisions or flags made yet', 'warning', 3000);
-            return;
-        }
-        
-        let messageParts = [];
-        if (approved > 0) messageParts.push(`${approved} approved`);
-        if (rejected > 0) messageParts.push(`${rejected} rejected`);
-        if (skipped > 0) messageParts.push(`${skipped} skipped`);
-        if (unapproved > 0) messageParts.push(`${unapproved} unapproved`);
-        if (flagged > 0) messageParts.push(`${flagged} flagged`);
-        
-        const message = `Commit ${messageParts.join(', ')} decisions?${pending > 0 ? ` (${pending} will remain pending)` : ''}`;
-        if (!confirm(message)) {
-            return;
-        }
-        
->>>>>>> develop
         try {
             // Save current processing parameters before committing
             saveProcessingParams();
