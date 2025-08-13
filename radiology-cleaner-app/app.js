@@ -994,6 +994,31 @@ window.addEventListener('DOMContentLoaded', function() {
         sortBy = 'default';
         document.getElementById('paginationControls').style.display = 'none';
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Reset secondary pipeline to avoid event loop issues
+        resetSecondaryPipeline();
+    }
+
+    // Reset secondary pipeline function
+    async function resetSecondaryPipeline() {
+        try {
+            const response = await fetch(`${API_BASE}/api/secondary-pipeline/reset`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Secondary pipeline reset successfully:', result.message);
+            } else {
+                console.warn('Failed to reset secondary pipeline:', response.status);
+            }
+        } catch (error) {
+            // Silent fail - don't disrupt the user flow if reset fails
+            console.warn('Error resetting secondary pipeline:', error);
+        }
     }
 
     // Expose startNewUpload globally for use in inline onclick handlers

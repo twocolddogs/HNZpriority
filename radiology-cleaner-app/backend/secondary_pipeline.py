@@ -57,6 +57,28 @@ def get_secondary_pipeline(preloaded_config=None):
         
         return _shared_secondary_pipeline
 
+def reset_shared_secondary_pipeline():
+    """
+    Reset the shared secondary pipeline instance to force re-initialization.
+    This is useful when the event loop has been closed or corrupted.
+    Thread-safe.
+    """
+    global _shared_secondary_pipeline, _shared_config
+    
+    with _pipeline_lock:
+        if _shared_secondary_pipeline is not None:
+            logger.info("Resetting shared SecondaryPipeline instance")
+            # Close the existing client if it has one
+            try:
+                if hasattr(_shared_secondary_pipeline, 'ensemble') and hasattr(_shared_secondary_pipeline.ensemble, 'client'):
+                    asyncio.create_task(_shared_secondary_pipeline.ensemble.client.close())
+            except Exception as e:
+                logger.warning(f"Error closing existing secondary pipeline client: {e}")
+            
+        _shared_secondary_pipeline = None
+        _shared_config = None
+        logger.info("Shared SecondaryPipeline instance reset successfully")
+
 class ModelType(Enum):
     """Available OpenRouter models for ensemble processing"""
     CLAUDE_OPUS = "anthropic/claude-opus-4.1"
