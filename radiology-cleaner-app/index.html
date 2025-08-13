@@ -374,6 +374,57 @@
         </div>
     </div>
 
+    <!-- Flag Mapping Modal -->
+    <div class="modal" id="flagModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-flag"></i> Flag Mapping for Review</h2>
+                <button id="closeFlagModal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="flagMappingDetails" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;">
+                    <!-- Mapping details will be populated here -->
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label for="flagReasonSelect" style="display: block; margin-bottom: 8px; font-weight: 500;">
+                        Reason for flagging: <span style="color: #f44336;">*</span>
+                    </label>
+                    <select id="flagReasonSelect" class="text-input" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px;">
+                        <option value="">Select a reason...</option>
+                        <option value="uncertain_mapping">Uncertain about this mapping</option>
+                        <option value="needs_review">Needs expert review</option>
+                        <option value="complex_case">Complex case requiring discussion</option>
+                        <option value="low_confidence">Low confidence in result</option>
+                        <option value="ambiguous_terminology">Ambiguous terminology</option>
+                        <option value="other">Other (please specify in notes)</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label for="flagNotesTextarea" style="display: block; margin-bottom: 8px; font-weight: 500;">
+                        Additional notes (optional):
+                    </label>
+                    <textarea 
+                        id="flagNotesTextarea" 
+                        class="text-input" 
+                        placeholder="Add any additional details about why this mapping is flagged..."
+                        style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; resize: vertical;"
+                    ></textarea>
+                </div>
+                <div id="flagError" style="color: #f44336; font-size: 14px; margin-top: 5px; display: none;">
+                    Please select a reason for flagging.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelFlagBtn" class="button secondary" style="margin-right: 10px;">
+                    Cancel
+                </button>
+                <button id="confirmFlagBtn" class="button warning">
+                    <i class="fas fa-flag"></i> Flag Mapping
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <script type="module" src="./app.js"></script>
 </body>
