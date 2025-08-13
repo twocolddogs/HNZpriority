@@ -1025,13 +1025,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 
     async function processFile(file) {
-        // Show user name modal before processing
-        try {
-            await showUserNameModal();
-        } catch (error) {
-            // User cancelled - don't proceed with processing
-            return;
-        }
+        // Note: User name collection moved to commit time for better UX
         
         disableActionButtons('Processing uploaded file...');
         if (!file.name.endsWith('.json')) {
@@ -1061,13 +1055,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     async function runRandomSample() {
-        // Show user name modal before processing
-        try {
-            await showUserNameModal();
-        } catch (error) {
-            // User cancelled - don't proceed with processing
-            return;
-        }
+        // Note: User name collection moved to commit time for better UX
         
         disableActionButtons('Processing random sample...');
         let statusId = null;
@@ -1570,11 +1558,21 @@ window.addEventListener('DOMContentLoaded', function() {
         // Helper function to check if an item has been validated
         function isValidated(item) {
             const mappingId = item.mapping_id || item.id;
+            
+            // Check current validation state (decisions made in this session)
             if (window.currentValidationState && mappingId) {
                 const validationState = window.currentValidationState[mappingId];
-                return validationState && validationState.validator_decision && 
-                       ['approve', 'reject', 'skip', 'unapprove'].includes(validationState.validator_decision);
+                if (validationState && validationState.validator_decision && 
+                    ['approve', 'reject', 'skip', 'unapprove'].includes(validationState.validator_decision)) {
+                    return true;
+                }
             }
+            
+            // Check persistent validation status (previously approved/rejected items)
+            if (item.validation_status && ['approved', 'rejected'].includes(item.validation_status)) {
+                return true;
+            }
+            
             return false;
         }
         
@@ -2097,14 +2095,12 @@ window.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Ensure user name is provided before committing
-        if (!currentValidationAuthor) {
-            try {
-                await showUserNameModal();
-            } catch (error) {
-                // User cancelled - don't proceed with commit
-                return;
-            }
+        // Always ask for user name at commit time for accurate validation authorship
+        try {
+            await showUserNameModal();
+        } catch (error) {
+            // User cancelled - don't proceed with commit
+            return;
         }
         
         const decisions = Object.values(window.currentValidationState);
