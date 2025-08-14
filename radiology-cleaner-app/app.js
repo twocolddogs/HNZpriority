@@ -1259,6 +1259,10 @@ window.addEventListener('DOMContentLoaded', function() {
         try {
             if (mainCard) mainCard.style.display = 'none';
             statusManager.clearAll();
+            
+            // Get sample size early so it can be used throughout the function
+            const sampleSize = parseInt(document.getElementById('sampleSizeInput').value) || 100;
+            
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
             statusId = statusManager.showProgress(`Running random sample with ${modelDisplayName} → ${rerankerDisplayName}`, 0, sampleSize);
@@ -1317,7 +1321,6 @@ window.addEventListener('DOMContentLoaded', function() {
             }, 300000);
 
             const enableSecondary = document.getElementById('enableSecondaryPipeline')?.checked || false;
-            const sampleSize = parseInt(document.getElementById('sampleSizeInput').value) || 100;
             const selectedDataSources = getSelectedDataSources();
             const response = await fetch(`${apiConfig.baseUrl}/random_sample`, {
                 method: 'POST',
