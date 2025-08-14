@@ -1457,30 +1457,93 @@ window.addEventListener('DOMContentLoaded', function() {
             }
             const batchResult = await response.json();
             if (batchResult.batch_id && progressId) {
+                let processingComplete = false;
+                let finalResults = null;
+                
                 const pollProgress = async () => {
                     try {
                         const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchResult.batch_id}`);
                         if (progressResponse.ok) {
                             const progressData = await progressResponse.json();
-                            const { percentage = 0, processed = 0, total = totalCodes, success = 0, errors = 0 } = progressData;
+                            const { percentage = 0, processed = 0, total = totalCodes, success = 0, errors = 0, status } = progressData;
                             statusManager.updateProgress(progressId, processed, total, `Processing ${jobName} (${percentage}% - ${success} success, ${errors} errors)`);
-                            if (percentage < 100 && processed < total) {
-                                setTimeout(pollProgress, 1000);
-                            } else {
+                            
+                            if (status === 'completed' || (percentage >= 100 && processed >= total)) {
                                 statusManager.updateProgress(progressId, total, total, `Completed processing ${jobName} (${success} success, ${errors} errors)`);
+                                processingComplete = true;
+                                
+                                // Try to fetch results from the batch processing
+                                try {
+                                    const resultsResponse = await fetch(`${apiConfig.baseUrl}/get_batch_results/batch_results_${batchResult.batch_id}.jsonl`);
+                                    if (resultsResponse.ok) {
+                                        const resultsData = await resultsResponse.json();
+                                        finalResults = resultsData.results || [];
+                                    }
+                                } catch (resultsError) {
+                                    console.warn('Could not fetch batch results:', resultsError);
+                                    // Try alternative approaches or show completion message
+                                }
+                                
+                                return; // Stop polling
+                            } else if (status === 'failed') {
+                                statusManager.updateProgress(progressId, processed, total, `Processing failed: ${progressData.error || 'Unknown error'}`);
+                                processingComplete = true;
+                                return;
                             }
+                            
+                            // Continue polling if still processing
+                            setTimeout(pollProgress, 1000);
                         } else {
                             statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
+                            processingComplete = true;
                         }
                     } catch (progressError) {
                         statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
+                        processingComplete = true;
                     }
                 };
+                
+                // Start polling
                 setTimeout(pollProgress, 500);
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Wait for processing to complete
+                while (!processingComplete) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                // Process final results if available
+                if (finalResults && finalResults.length > 0) {
+                    const chunkMappings = finalResults.map(item => ({
+                        data_source: item.input.DATA_SOURCE || item.input.data_source || item.output.data_source,
+                        modality_code: item.input.MODALITY_CODE || item.input.modality_code || item.output.modality_code,
+                        exam_code: item.input.EXAM_CODE || item.input.exam_code || item.output.exam_code,
+                        exam_name: item.input.EXAM_NAME || item.input.exam_name || item.output.exam_name,
+                        clean_name: item.status === 'success' ? item.output.clean_name : `ERROR: ${item.error}`,
+                        snomed: item.status === 'success' ? item.output.snomed || {} : {},
+                        components: item.status === 'success' ? item.output.components || {} : {},
+                        all_candidates: item.status === 'success' ? item.output.all_candidates || [] : [],
+                        ambiguous: item.status === 'success' ? item.output.ambiguous : false,
+                        secondary_pipeline_applied: item.status === 'success' ? item.output.secondary_pipeline_applied || false : false,
+                        secondary_pipeline_details: item.status === 'success' ? item.output.secondary_pipeline_details : undefined,
+                        validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                          (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                        validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                         (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                        timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                           (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
+                    }));
+                    allMappings.push(...chunkMappings);
+                    statusManager.show(`Successfully processed ${allMappings.length} records from ${jobName}.`, 'success', 5000);
+                    runAnalysis(allMappings);
+                } else {
+                    statusManager.show(`Processing completed but no results could be retrieved. Batch ID: ${batchResult.batch_id}`, 'warning', 10000);
+                }
+                
             } else if (progressId) {
                 statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
             }
+            
+            // Legacy handling for backwards compatibility (if batch_id is not provided)
             if (batchResult.r2_url) {
                 try {
                     const r2Response = await fetch(batchResult.r2_url);
