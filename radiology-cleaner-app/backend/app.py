@@ -1247,7 +1247,7 @@ def _perform_preflight_check(exam_dict, model_key, reranker_key, debug=False):
 def _process_batch_background(data, start_time, batch_id):
     """Background function to process a batch of exams."""
     try:
-        _process_batch(data, start_time, batch_id)
+        _process_batch(data, start_time, batch_id, background_mode=True)
     except Exception as e:
         logger.error(f"Background batch processing failed: {e}", exc_info=True)
         # Write error to progress file
@@ -1270,10 +1270,10 @@ def _process_batch_background(data, start_time, batch_id):
         except Exception as progress_error:
             logger.error(f"Failed to write error progress: {progress_error}")
 
-def _process_batch(data, start_time, batch_id=None):
+def _process_batch(data, start_time, batch_id=None, background_mode=False):
     """Helper function to process a batch of exams."""
     if not data or 'exams' not in data:
-        if batch_id:  # If running in background, log error instead of returning
+        if background_mode:  # If running in background, log error instead of returning
             logger.error("Missing 'exams' list in request data")
             return
         return jsonify({"error": "Missing 'exams' list in request data"}), 400
@@ -1684,12 +1684,12 @@ def _process_batch(data, start_time, batch_id=None):
     except Exception as e:
         logger.error(f"Failed to write final progress: {e}")
     
-    # If running in background (batch_id provided), don't return response
-    if batch_id:
+    # If running in background (background_mode=True), don't return response
+    if background_mode:
         logger.info(f"Background batch processing completed for batch_id: {batch_id}")
         return
     
-    # For backwards compatibility, return response if not running in background
+    # For synchronous calls, return response
     return jsonify(response_data)
 
 @app.route('/parse_batch', methods=['POST', 'OPTIONS'])
