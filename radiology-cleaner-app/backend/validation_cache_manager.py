@@ -14,8 +14,42 @@ from typing import Dict, Optional, Tuple
 from datetime import datetime
 from pathlib import Path
 from r2_cache_manager import R2CacheManager
+import hashlib
 
 logger = logging.getLogger(__name__)
+
+
+def get_validation_cache_version() -> str:
+    """
+    Get validation cache version based on validation_cache_manager.py file hash.
+    This is more lightweight than the full cache versioning system and doesn't 
+    require R2 config access.
+    
+    Returns:
+        8-character validation cache version hash
+    """
+    try:
+        # Get the hash of this file to detect changes in validation logic
+        import os
+        file_path = os.path.abspath(__file__)
+        
+        hasher = hashlib.sha256()
+        with open(file_path, 'rb') as f:
+            hasher.update(f.read())
+        
+        # Also include nhs_lookup_engine.py since it handles cache normalization
+        nhs_engine_path = os.path.join(os.path.dirname(file_path), 'nhs_lookup_engine.py')
+        if os.path.exists(nhs_engine_path):
+            with open(nhs_engine_path, 'rb') as f:
+                hasher.update(f.read())
+        
+        # Return first 8 characters for consistency with main cache versioning
+        return hasher.hexdigest()[:8]
+        
+    except Exception as e:
+        logger.warning(f"Failed to calculate validation cache version: {e}")
+        # Fallback to a static version that changes when code is updated
+        return "fallback"
 
 
 class ValidationCacheManager:
@@ -94,7 +128,12 @@ class ValidationCacheManager:
     
     def _load_cache_file(self, cache_key: str, cache_type: str) -> Dict:
         """Load a single cache file from R2 ONLY - no local file usage."""
-        cache_data = {"version": "v1", "entries": {}}
+        current_version = get_validation_cache_version()
+        cache_data = {
+            "version": "v1", 
+            "cache_version": current_version,
+            "entries": {}
+        }
         
         # Load from R2 if available (ignore local files completely)
         try:
@@ -104,7 +143,14 @@ class ValidationCacheManager:
                     Key=cache_key
                 )
                 r2_cache_data = json.loads(response['Body'].read().decode('utf-8'))
-                logger.info(f"Loaded {cache_type} cache from R2: {len(r2_cache_data.get('entries', {}))} entries")
+                
+                # Check cache version compatibility
+                r2_cache_version = r2_cache_data.get('cache_version', 'unknown')
+                if r2_cache_version != current_version:
+                    logger.warning(f"Cache version mismatch for {cache_type}: R2={r2_cache_version}, current={current_version}. Using R2 data but marking as potentially stale.")
+                    # Still use the data but log the version mismatch
+                
+                logger.info(f"Loaded {cache_type} cache from R2: {len(r2_cache_data.get('entries', {}))} entries (version: {r2_cache_version})")
                 return r2_cache_data
         except Exception as e:
             if "NoSuchKey" in str(e) or "404" in str(e):
@@ -113,11 +159,16 @@ class ValidationCacheManager:
                 logger.warning(f"Failed to load {cache_type} cache from R2: {e}")
         
         # Return empty cache structure if nothing found in R2
-        logger.info(f"No {cache_type} cache found in R2, creating empty cache")
+        logger.info(f"No {cache_type} cache found in R2, creating empty cache with version {current_version}")
         return cache_data
     
     def _save_cache_file(self, cache_data: Dict, cache_key: str, cache_type: str) -> bool:
         """Save a cache file to R2 ONLY - no local file usage."""
+        # Ensure cache data includes current version
+        current_version = get_validation_cache_version()
+        cache_data['cache_version'] = current_version
+        cache_data['last_updated'] = datetime.utcnow().isoformat() + "Z"
+        
         # Save to R2 if available
         if self.is_available():
             try:
@@ -131,7 +182,7 @@ class ValidationCacheManager:
                 )
                 
                 if r2_success:
-                    logger.info(f"Saved {cache_type} cache to R2: {len(cache_data.get('entries', {}))} entries")
+                    logger.info(f"Saved {cache_type} cache to R2: {len(cache_data.get('entries', {}))} entries (version: {current_version})")
                     return True
                 else:
                     logger.error(f"Failed to save {cache_type} cache to R2")
@@ -277,7 +328,9 @@ class ValidationCacheManager:
             "new_format_approved": len(approved_entries) - approved_legacy,
             "new_format_rejected": len(rejected_entries) - rejected_legacy,
             "r2_available": self.is_available(),
-            "cache_version": self._approved_cache.get('version', 'unknown')
+            "cache_version": self._approved_cache.get('version', 'unknown'),
+            "cache_code_version": self._approved_cache.get('cache_version', 'unknown'),
+            "current_code_version": get_validation_cache_version()
         }
     
     def get_detailed_cache_info(self) -> Dict:

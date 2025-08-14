@@ -29,6 +29,9 @@ CRITICAL_FILES = [
     'config.yaml',
     'preprocessing.py',
     
+    # Validation logic files
+    'validation_cache_manager.py',
+    
     # Data files
     'core/NHS.json',
  
