@@ -1340,7 +1340,20 @@ window.addEventListener('DOMContentLoaded', function() {
                 pollingActive = false;
                 throw new Error(result.error);
             }
-            if (result.batch_id) {
+            
+            // Check if processing is already complete (synchronous mode)
+            if (result.r2_url && result.processing_stats) {
+                // Processing completed synchronously, skip polling
+                pollingActive = false;
+                batchId = result.batch_id;
+                console.log(`Synchronous processing completed with batch ID: ${batchId}`);
+                // Update progress to show completion
+                if (statusId) {
+                    const { successful = 0, total_processed = 0 } = result.processing_stats;
+                    statusManager.updateProgress(statusId, total_processed, total_processed, `Processing completed (${successful} successful)`);
+                }
+            } else if (result.batch_id) {
+                // Async processing started, begin polling
                 batchId = result.batch_id;
                 console.log(`Batch started with ID: ${batchId}`);
                 // Update progress to show batch has started
