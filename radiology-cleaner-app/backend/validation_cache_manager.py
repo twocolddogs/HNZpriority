@@ -275,10 +275,14 @@ class ValidationCacheManager:
         """
         self._load_caches()
         
+        # Extract validation_author from result for consistent top-level storage
+        validation_author = result.get('validation_author', '')
+        
         cache_entry = {
             "mapping_data": result,
             "cached_at": datetime.utcnow().isoformat() + "Z",
-            "preimage": preimage
+            "preimage": preimage,
+            "validation_author": validation_author
         }
         
         self._approved_cache['entries'][request_hash] = cache_entry
