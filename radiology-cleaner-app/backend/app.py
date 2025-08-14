@@ -1244,9 +1244,38 @@ def _perform_preflight_check(exam_dict, model_key, reranker_key, debug=False):
     return None, False, request_hash
 
 
-def _process_batch(data, start_time):
+def _process_batch_background(data, start_time, batch_id):
+    """Background function to process a batch of exams."""
+    try:
+        _process_batch(data, start_time, batch_id)
+    except Exception as e:
+        logger.error(f"Background batch processing failed: {e}", exc_info=True)
+        # Write error to progress file
+        try:
+            output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
+            progress_filename = f"batch_progress_{batch_id}.json"
+            progress_filepath = os.path.join(output_dir, progress_filename)
+            error_progress = {
+                "processed": 0,
+                "total": 0,
+                "success": 0,
+                "errors": 1,
+                "percentage": 0,
+                "timestamp": datetime.now().isoformat(),
+                "error": str(e),
+                "status": "failed"
+            }
+            with open(progress_filepath, 'w') as pf:
+                json.dump(error_progress, pf)
+        except Exception as progress_error:
+            logger.error(f"Failed to write error progress: {progress_error}")
+
+def _process_batch(data, start_time, batch_id=None):
     """Helper function to process a batch of exams."""
     if not data or 'exams' not in data:
+        if batch_id:  # If running in background, log error instead of returning
+            logger.error("Missing 'exams' list in request data")
+            return
         return jsonify({"error": "Missing 'exams' list in request data"}), 400
     
     exams_to_process = data['exams']
@@ -1254,11 +1283,14 @@ def _process_batch(data, start_time):
     reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
     enable_secondary = data.get('enable_secondary_pipeline', False)
     
-    import uuid
+    # Use provided batch_id or generate new one (for backwards compatibility)
+    if batch_id is None:
+        import uuid
+        batch_id = uuid.uuid4().hex
+        
     # Use persistent disk if available, otherwise fall back to local directory
     output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
     os.makedirs(output_dir, exist_ok=True)
-    batch_id = uuid.uuid4().hex
     results_filename = f"batch_results_{batch_id}.jsonl"
     results_filepath = os.path.join(output_dir, results_filename)
     progress_filename = f"batch_progress_{batch_id}.json"
@@ -1278,7 +1310,8 @@ def _process_batch(data, start_time):
             "success": success,
             "errors": errors,
             "percentage": round((processed / total) * 100, 1) if total > 0 else 0,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "status": "processing" if processed < total else "completed"
         }
         try:
             with open(progress_filepath, 'w') as pf:
@@ -1288,7 +1321,28 @@ def _process_batch(data, start_time):
 
     selected_nlp_processor = _get_nlp_processor(model_key)
     if not selected_nlp_processor:
-        return jsonify({"error": f"Model '{model_key}' not available"}), 400
+        error_msg = f"Model '{model_key}' not available"
+        if batch_id:  # Running in background
+            logger.error(error_msg)
+            # Write error to progress file
+            try:
+                error_progress = {
+                    "processed": 0,
+                    "total": len(exams_to_process),
+                    "success": 0,
+                    "errors": 1,
+                    "percentage": 0,
+                    "timestamp": datetime.now().isoformat(),
+                    "error": error_msg,
+                    "status": "failed"
+                }
+                with open(progress_filepath, 'w') as pf:
+                    json.dump(error_progress, pf)
+            except Exception as e:
+                logger.error(f"Failed to write error progress: {e}")
+            return
+        else:  # Synchronous call, return error response
+            return jsonify({"error": error_msg}), 400
 
     success_count = 0
     error_count = 0
@@ -1614,25 +1668,70 @@ def _process_batch(data, start_time):
         "secondary_pipeline_summary": "Secondary pipeline processing handled inline per exam" if enable_secondary else None
     }
     
+    # Mark processing as complete in progress file
+    final_progress = {
+        "processed": total_exams,
+        "total": total_exams,
+        "success": success_count,
+        "errors": error_count,
+        "percentage": 100,
+        "timestamp": datetime.now().isoformat(),
+        "status": "completed"
+    }
+    try:
+        with open(progress_filepath, 'w') as pf:
+            json.dump(final_progress, pf)
+    except Exception as e:
+        logger.error(f"Failed to write final progress: {e}")
+    
+    # If running in background (batch_id provided), don't return response
+    if batch_id:
+        logger.info(f"Background batch processing completed for batch_id: {batch_id}")
+        return
+    
+    # For backwards compatibility, return response if not running in background
     return jsonify(response_data)
 
 @app.route('/parse_batch', methods=['POST', 'OPTIONS'])
 def parse_batch():
     """
-    Processes a batch of exam names concurrently with streaming output to disk.
+    Initiates batch processing and returns immediately with batch_id for progress tracking.
+    Processing continues in background thread.
     """
     if request.method == 'OPTIONS':
         return '', 200
     
     _ensure_app_is_initialized()
     _refresh_validation_caches()  # Refresh validation caches for latest human feedback
-    start_time = time.time()
     
     try:
-        return _process_batch(request.json, start_time)
+        data = request.json
+        if not data or 'exams' not in data:
+            return jsonify({"error": "Missing 'exams' list in request data"}), 400
+        
+        # Generate batch_id immediately
+        import uuid
+        batch_id = uuid.uuid4().hex
+        
+        # Start background processing
+        start_time = time.time()
+        thread = threading.Thread(
+            target=_process_batch_background,
+            args=(data, start_time, batch_id),
+            daemon=True
+        )
+        thread.start()
+        
+        # Return immediately with batch_id
+        return jsonify({
+            "batch_id": batch_id,
+            "message": "Batch processing started",
+            "status": "processing"
+        })
+        
     except Exception as e:
-        logger.error(f"Batch endpoint failed with a critical error: {e}", exc_info=True)
-        return jsonify({"error": "An internal server error occurred during batch processing"}), 500
+        logger.error(f"Batch endpoint failed to start: {e}", exc_info=True)
+        return jsonify({"error": "Failed to start batch processing"}), 500
 
 @app.route('/batch_progress/<batch_id>', methods=['GET'])
 def get_batch_progress(batch_id):
