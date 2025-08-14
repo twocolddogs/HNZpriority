@@ -1,9 +1,10 @@
 {
   "entries": {
-    "6376b76702ea11f71473b74382957d42f1a457957389cf64e87afed01e85f8e2": {
-      "cached_at": "2025-08-13T22:04:23.994025Z",
-      "preimage": "EXAMPLE_HOSPITAL|US003|Ultrasound Abdomen|US",
-      "reason": "Mapping error - anatomy mismatch detected (Author: Dr. Wilson, Flagged: anatomy_mismatch)"
+    "a896351037d3b9b1c0ae856e7bed653e9a9243459a65045b649409dc85688ebe": {
+      "cached_at": "2025-08-14T02:08:06.582417Z",
+      "preimage": "v1|ds:test_sys|ec:test_code|en:invalid exam|mc:ct",
+      "reason": "Invalid exam name format",
+      "validation_author": "Dr. Jane Smith"
     }
   },
   "version": "v1"
