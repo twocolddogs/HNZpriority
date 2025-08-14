@@ -2413,6 +2413,7 @@ def submit_batch_validation_decisions():
                     'decision': decision,
                     'notes': notes,
                     'timestamp_reviewed': datetime.utcnow().isoformat() + 'Z',
+                    'validation_author': decision_data.get('validation_author', ''),
                     'original_mapping': decision_data.get('original_mapping', {}),
                     'data_source': decision_data.get('data_source', ''),
                     'exam_code': decision_data.get('exam_code', ''),
@@ -2457,9 +2458,9 @@ def submit_batch_validation_decisions():
                         'approved_at': item.get('timestamp_reviewed'),
                         'validation_author': item.get('validation_author', ''),
                         'decision_metadata': {
-                            'data_source': ds,
-                            'exam_code': ex_code,
-                            'exam_name': ex_name
+                            # Store decision process metadata, not duplicate exam fields
+                            'timestamp_reviewed': item.get('timestamp_reviewed'),
+                            'decision_type': item.get('decision')
                         }
                     })
                     
