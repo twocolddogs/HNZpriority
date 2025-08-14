@@ -2339,8 +2339,9 @@ def submit_batch_validation_decisions():
                     req_hash, ds, ex_code, ex_name = _compute_request_hash(item)
                     reason = item.get('notes', 'No reason provided')
                     preimage = f"{ds}|{ex_code}|{ex_name}|{item.get('modality_code', '')}"
+                    validation_author = item.get('validation_author', '')
                     
-                    success = validation_cache_manager.add_rejected(req_hash, reason, preimage)
+                    success = validation_cache_manager.add_rejected(req_hash, reason, preimage, validation_author)
                     
                     if success:
                         logger.info(f"Added rejected mapping to cache: {req_hash}")

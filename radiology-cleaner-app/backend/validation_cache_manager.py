@@ -275,16 +275,20 @@ class ValidationCacheManager:
         """
         self._load_caches()
         
+        # Extract validation_author from result for consistent top-level storage
+        validation_author = result.get('validation_author', '')
+        
         cache_entry = {
             "mapping_data": result,
             "cached_at": datetime.utcnow().isoformat() + "Z",
-            "preimage": preimage
+            "preimage": preimage,
+            "validation_author": validation_author
         }
         
         self._approved_cache['entries'][request_hash] = cache_entry
         return self._save_cache_file(self._approved_cache, self.approved_cache_key, "approved")
     
-    def add_rejected(self, request_hash: str, reason: str, preimage: str) -> bool:
+    def add_rejected(self, request_hash: str, reason: str, preimage: str, validation_author: str = '') -> bool:
         """
         Add a rejected mapping to the cache.
         
@@ -292,6 +296,7 @@ class ValidationCacheManager:
             request_hash: The SHA-256 hash of the request
             reason: The rejection reason
             preimage: The original preimage for debugging
+            validation_author: The author who made the validation decision
             
         Returns:
             True if successfully saved, False otherwise
@@ -301,7 +306,8 @@ class ValidationCacheManager:
         cache_entry = {
             "reason": reason,
             "cached_at": datetime.utcnow().isoformat() + "Z", 
-            "preimage": preimage
+            "preimage": preimage,
+            "validation_author": validation_author
         }
         
         self._rejected_cache['entries'][request_hash] = cache_entry
