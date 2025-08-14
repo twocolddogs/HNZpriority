@@ -324,7 +324,7 @@ const statusManager = new StatusManager();
 
 let currentModel = localStorage.getItem('selectedModel') || 'retriever';
 let availableModels = {};
-let currentReranker = localStorage.getItem('selectedReranker') || 'medcpt';
+let currentReranker = localStorage.getItem('selectedReranker') || 'gemini-2.5-flash-lite';
 let availableRerankers = {};
 let allMappings = [];
 let isUsingFallbackModels = false;
@@ -640,6 +640,40 @@ window.addEventListener('DOMContentLoaded', function() {
         return sourceNames[source] || source;
     }
 
+    function populateDataSourceCheckboxes() {
+        const container = document.getElementById('dataSourceCheckboxes');
+        if (!container) return;
+        
+        const sourceNames = getSourceNames();
+        container.innerHTML = '';
+        
+        Object.entries(sourceNames).forEach(([sourceKey, displayName]) => {
+            const checkboxWrapper = document.createElement('div');
+            checkboxWrapper.style.cssText = 'display: flex; align-items: center; padding: 4px;';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `dataSource_${sourceKey.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            checkbox.value = sourceKey;
+            checkbox.checked = true;  // Default all sources to selected
+            checkbox.style.cssText = 'margin-right: 6px;';
+            
+            const label = document.createElement('label');
+            label.htmlFor = checkbox.id;
+            label.textContent = displayName;
+            label.style.cssText = 'font-size: 0.85em; cursor: pointer; user-select: none;';
+            
+            checkboxWrapper.appendChild(checkbox);
+            checkboxWrapper.appendChild(label);
+            container.appendChild(checkboxWrapper);
+        });
+    }
+
+    function getSelectedDataSources() {
+        const checkboxes = document.querySelectorAll('#dataSourceCheckboxes input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(checkbox => checkbox.value);
+    }
+
     // -----------------------------------------------------------------------------
     // 5.2. API & Configuration
     // -----------------------------------------------------------------------------
@@ -799,7 +833,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 if (savedReranker && availableRerankers[savedReranker]) {
                     currentReranker = savedReranker;
                 } else {
-                    currentReranker = modelsData.default_reranker || 'medcpt';
+                    currentReranker = modelsData.default_reranker || 'gemini-2.5-flash-lite';
                 }
                 
                 console.log('✓ Available models loaded:', Object.keys(availableModels));
@@ -913,13 +947,12 @@ window.addEventListener('DOMContentLoaded', function() {
             'retriever': { name: 'BioLORD', status: 'available', description: 'Advanced biomedical language model for retrieval' }
         };
         availableRerankers = {
-            'medcpt': { name: 'MedCPT (HuggingFace)', status: 'available', description: 'NCBI Medical Clinical Practice Text cross-encoder', type: 'huggingface' },
             'gpt-5-nano': { name: 'GPT-5-nano', status: 'unknown', description: 'Fast and cost-effective OpenAI model', type: 'openrouter' },
             'claude-3-haiku': { name: 'Claude 3 Haiku', status: 'unknown', description: 'Fast Anthropic model optimized for speed', type: 'openrouter' },
             'gemini-2.5-flash-lite': { name: 'Gemini 2.5 Flash Lite', status: 'unknown', description: 'Google\'s lightweight Gemini model', type: 'openrouter' }
         };
         currentModel = 'retriever';
-        currentReranker = 'medcpt';
+        currentReranker = 'gemini-2.5-flash-lite';
         isUsingFallbackModels = true;
         console.log('Using fallback models with all reranker options');
         buildModelSelectionUI();
@@ -991,11 +1024,13 @@ window.addEventListener('DOMContentLoaded', function() {
             return;
         }
         rerankerContainer.innerHTML = '';
-        const sortedRerankers = Object.entries(availableRerankers).sort(([keyA], [keyB]) => {
-            if (keyA === 'medcpt') return -1;
-            if (keyB === 'medcpt') return 1;
-            return keyA.localeCompare(keyB);
-        });
+        const sortedRerankers = Object.entries(availableRerankers)
+            .filter(([rerankerKey]) => rerankerKey !== 'medcpt')  // Filter out MedCPT
+            .sort(([keyA], [keyB]) => {
+                if (keyA === 'gemini-2.5-flash-lite') return -1;
+                if (keyB === 'gemini-2.5-flash-lite') return 1;
+                return keyA.localeCompare(keyB);
+            });
         sortedRerankers.forEach(([rerankerKey, rerankerInfo]) => {
             const rerankerWrapper = document.createElement('div');
             rerankerWrapper.className = 'reranker-wrapper';
@@ -1284,10 +1319,17 @@ window.addEventListener('DOMContentLoaded', function() {
 
             const enableSecondary = document.getElementById('enableSecondaryPipeline')?.checked || false;
             const sampleSize = parseInt(document.getElementById('sampleSizeInput').value) || 100;
+            const selectedDataSources = getSelectedDataSources();
             const response = await fetch(`${apiConfig.baseUrl}/random_sample`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: currentModel, reranker: currentReranker, enable_secondary_pipeline: enableSecondary, sample_size: sampleSize })
+                body: JSON.stringify({ 
+                    model: currentModel, 
+                    reranker: currentReranker, 
+                    enable_secondary_pipeline: enableSecondary, 
+                    sample_size: sampleSize,
+                    data_sources: selectedDataSources
+                })
             });
             
             if (!response.ok) {
@@ -4328,6 +4370,7 @@ Ctrl+Z - Undo last action`);
 
             if (path === 'sample' || path === 'upload') {
                 if (workflowSection) workflowSection.style.display = 'block';
+                populateDataSourceCheckboxes();  // Populate data source checkboxes when workflow is shown
                 const card = path === 'sample' ? document.querySelector('.sample-path') : document.querySelector('.upload-path');
                 card?.classList.add('selected');
                 resetWorkflowSteps();

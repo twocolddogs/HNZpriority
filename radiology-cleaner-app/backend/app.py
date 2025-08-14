@@ -1833,6 +1833,7 @@ def random_sample():
         reranker_key = data.get('reranker', reranker_manager.get_default_reranker_key() if reranker_manager else 'medcpt')
         enable_secondary = data.get('enable_secondary_pipeline', False)
         sample_size = data.get('sample_size', 100)  # Default to 100 if not provided
+        data_sources = data.get('data_sources', [])  # List of data sources to filter by
         
         # Validate sample_size
         try:
@@ -1842,7 +1843,11 @@ def random_sample():
         except (ValueError, TypeError):
             return jsonify({"error": "Sample size must be a valid integer"}), 400
         
-        logger.info(f"Starting random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}, sample_size: {sample_size}")
+        # Validate data_sources
+        if data_sources and not isinstance(data_sources, list):
+            return jsonify({"error": "data_sources must be a list"}), 400
+        
+        logger.info(f"Starting random sample with model: '{model_key}', reranker: '{reranker_key}', secondary pipeline: {enable_secondary}, sample_size: {sample_size}, data_sources: {data_sources}")
         
         selected_nlp_processor = _get_nlp_processor(model_key)
         if not selected_nlp_processor:
@@ -1886,9 +1891,19 @@ def random_sample():
         if not isinstance(input_data, list):
             return jsonify({"error": "Input file must contain a JSON array"}), 400
         
+        # Filter by data sources if specified
+        if data_sources:
+            original_count = len(input_data)
+            input_data = [item for item in input_data if isinstance(item, dict) and 
+                         (item.get('DATA_SOURCE') in data_sources or item.get('data_source') in data_sources)]
+            logger.info(f"Filtered data from {original_count} to {len(input_data)} items based on data sources: {data_sources}")
+        
+        if not input_data:
+            return jsonify({"error": "No data found for the selected data sources"}), 400
+        
         # Use sample_size from request parameter (already extracted above)
         if len(input_data) < sample_size:
-            logger.warning(f"Input file contains only {len(input_data)} items, using all")
+            logger.warning(f"Filtered data contains only {len(input_data)} items, using all")
             sample_size = len(input_data)
         
         random_sample = random.sample(input_data, sample_size)
