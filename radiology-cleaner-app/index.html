@@ -146,6 +146,18 @@
                             </div>
                             <small style="display: block; margin-top: 4px; font-size: 0.8em; color: #6c757d;">Number of random codes to sample from the live dataset</small>
                         </div>
+                        
+                        <!-- Data Source Selection -->
+                        <div style="margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
+                            <label style="display: block; font-size: 0.9em; font-weight: 600; color: #495057; margin-bottom: 8px;">
+                                Select Data Sources:
+                            </label>
+                            <div id="dataSourceCheckboxes" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+                                <!-- Data source checkboxes will be populated by JavaScript -->
+                            </div>
+                            <small style="display: block; margin-top: 6px; font-size: 0.8em; color: #6c757d;">Choose which hospital systems to include in your sample</small>
+                        </div>
+                        
                         <div style="display: flex; justify-content: center;">
                             <button class="button primary large" id="runRandomSampleBtn" style="padding: 15px 20px; font-size: 1.0em; font-weight: 600;" disabled>
                                 <i class="fas fa-dice"></i> Random Sample
@@ -156,7 +168,7 @@
                         <!-- Secondary Pipeline Option -->
                         <div id="secondaryPipelineOption" style="display: none; margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 5px;">
                             <label style="display: flex; align-items: center; font-size: 0.9em; cursor: pointer;">
-                                <input type="checkbox" id="enableSecondaryPipeline" style="margin-right: 8px;">
+                                <input type="checkbox" id="enableSecondaryPipeline" checked style="margin-right: 8px;">
                                 <div>
                                     <strong>Enable Secondary Pipeline</strong>
                                     <div style="font-size: 0.8em; color: #666; margin-top: 2px;">
