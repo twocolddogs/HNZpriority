@@ -2038,6 +2038,9 @@ def random_sample():
                         exam_entry['exam_code'] = exam_code
                 exams_for_batch.append(exam_entry)
 
+        if not exams_for_batch:
+            return jsonify({"error": "No valid exams found in the random sample"}), 400
+
         logger.info(f"Passing {len(exams_for_batch)} exams to batch processor with preflight checking enabled.")
         batch_payload = {
             "exams": exams_for_batch,

@@ -628,7 +628,6 @@ window.addEventListener('DOMContentLoaded', function() {
     function getSourceNames() {
         return {
             'SouthIsland-SIRS COMRAD': 'SIRS (Mid-Upper Sth Island)',
-            'Central-Phillips': 'Central',
             'Southern-Karisma': 'Southern District',
             'Auckland Metro-Agfa': 'Auckland Metro',
             'Central-Philips': 'Central'
