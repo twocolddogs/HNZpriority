@@ -55,53 +55,48 @@ class ValidationCacheManager:
         self._cache_loaded = True
         logger.info(f"Loaded validation caches: {len(self._approved_cache['entries'])} approved, {len(self._rejected_cache['entries'])} rejected")
     
+    def reload_caches(self) -> Dict:
+        """
+        Force reload validation caches from R2, clearing any cached data.
+        
+        Returns:
+            Dict with reload statistics
+        """
+        logger.info("Force reloading validation caches from R2...")
+        
+        # Clear existing caches and force reload
+        old_approved_count = len(self._approved_cache['entries']) if self._approved_cache else 0
+        old_rejected_count = len(self._rejected_cache['entries']) if self._rejected_cache else 0
+        
+        self._approved_cache = None
+        self._rejected_cache = None
+        self._cache_loaded = False
+        
+        # Reload from R2
+        self._load_caches()
+        
+        new_approved_count = len(self._approved_cache['entries'])
+        new_rejected_count = len(self._rejected_cache['entries'])
+        
+        result = {
+            'status': 'success',
+            'approved_count': new_approved_count,
+            'rejected_count': new_rejected_count,
+            'previous_approved_count': old_approved_count,
+            'previous_rejected_count': old_rejected_count,
+            'approved_delta': new_approved_count - old_approved_count,
+            'rejected_delta': new_rejected_count - old_rejected_count,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        logger.info(f"Validation cache reload complete: approved={new_approved_count} (Δ{result['approved_delta']:+d}), rejected={new_rejected_count} (Δ{result['rejected_delta']:+d})")
+        return result
+    
     def _load_cache_file(self, cache_key: str, cache_type: str) -> Dict:
-        """Load a single cache file from R2 or local validation directory."""
+        """Load a single cache file from R2 ONLY - no local file usage."""
         cache_data = {"version": "v1", "entries": {}}
         
-        # First, try to load from local validation directory (used by validation UI)
-        local_cache_path = None
-        if cache_type == "approved":
-            # Try multiple possible locations
-            possible_paths = [
-                Path("../validation/approved_mappings_cache.json"),
-                Path("validation/approved_mappings_cache.json"),
-                Path("../radiology-cleaner-app/validation/approved_mappings_cache.json")
-            ]
-        elif cache_type == "rejected":
-            possible_paths = [
-                Path("../validation/rejected_mappings_cache.json"),
-                Path("validation/rejected_mappings_cache.json"),
-                Path("../radiology-cleaner-app/validation/rejected_mappings_cache.json")
-            ]
-        else:
-            possible_paths = []
-            
-        for path in possible_paths:
-            if path.exists():
-                local_cache_path = path
-                break
-            
-        if local_cache_path and local_cache_path.exists():
-            try:
-                with open(local_cache_path, 'r') as f:
-                    local_data = json.load(f)
-                    if isinstance(local_data, dict):
-                        # Handle canonical schema with entries wrapper
-                        if "entries" in local_data and isinstance(local_data["entries"], dict):
-                            # New canonical format
-                            cache_data = local_data
-                            logger.info(f"Loaded {cache_type} cache from local validation directory: {len(local_data['entries'])} entries ({local_cache_path})")
-                            return cache_data
-                        else:
-                            # Legacy flat dictionary format - convert to cache format
-                            cache_data["entries"] = local_data
-                            logger.info(f"Loaded {cache_type} cache from local validation directory (legacy format): {len(local_data)} entries ({local_cache_path})")
-                            return cache_data
-            except Exception as e:
-                logger.warning(f"Failed to load {cache_type} cache from local file: {e}")
-        
-        # Then try R2 if available
+        # Load from R2 if available (ignore local files completely)
         try:
             if self.r2_manager.client:
                 response = self.r2_manager.client.get_object(
@@ -117,15 +112,12 @@ class ValidationCacheManager:
             else:
                 logger.warning(f"Failed to load {cache_type} cache from R2: {e}")
         
-        # Return empty cache structure if nothing found
-        logger.info(f"No {cache_type} cache found, creating empty cache")
+        # Return empty cache structure if nothing found in R2
+        logger.info(f"No {cache_type} cache found in R2, creating empty cache")
         return cache_data
     
     def _save_cache_file(self, cache_data: Dict, cache_key: str, cache_type: str) -> bool:
-        """Save a cache file to both R2 and local validation directory."""
-        r2_success = True
-        local_success = True
-        
+        """Save a cache file to R2 ONLY - no local file usage."""
         # Save to R2 if available
         if self.is_available():
             try:
@@ -140,67 +132,17 @@ class ValidationCacheManager:
                 
                 if r2_success:
                     logger.info(f"Saved {cache_type} cache to R2: {len(cache_data.get('entries', {}))} entries")
+                    return True
                 else:
                     logger.error(f"Failed to save {cache_type} cache to R2")
+                    return False
                     
             except Exception as e:
                 logger.error(f"Error saving {cache_type} cache to R2: {e}")
-                r2_success = False
+                return False
         else:
-            logger.warning(f"R2 not available - skipping R2 save for {cache_type} cache")
-            r2_success = False
-        
-        # Save to local validation directory
-        try:
-            local_cache_path = None
-            if cache_type == "approved":
-                # Try multiple possible locations, prefer the validation/validation/ directory
-                possible_paths = [
-                    Path("../validation/validation/approved_mappings_cache.json"),
-                    Path("validation/validation/approved_mappings_cache.json"),
-                    Path("../validation/approved_mappings_cache.json"),
-                    Path("validation/approved_mappings_cache.json")
-                ]
-            elif cache_type == "rejected":
-                possible_paths = [
-                    Path("../validation/validation/rejected_mappings_cache.json"),
-                    Path("validation/validation/rejected_mappings_cache.json"),
-                    Path("../validation/rejected_mappings_cache.json"),
-                    Path("validation/rejected_mappings_cache.json")
-                ]
-            else:
-                possible_paths = []
-            
-            # Find an existing file to update, or use the first path for new files
-            for path in possible_paths:
-                if path.exists():
-                    local_cache_path = path
-                    break
-            
-            if not local_cache_path:
-                # No existing file found, create in the preferred location
-                local_cache_path = possible_paths[0] if possible_paths else None
-                
-            if local_cache_path:
-                # Ensure the directory exists
-                local_cache_path.parent.mkdir(parents=True, exist_ok=True)
-                
-                cache_json = json.dumps(cache_data, indent=2, sort_keys=True)
-                with open(local_cache_path, 'w') as f:
-                    f.write(cache_json)
-                
-                logger.info(f"Saved {cache_type} cache to local file: {len(cache_data.get('entries', {}))} entries ({local_cache_path})")
-                local_success = True
-            else:
-                logger.error(f"Could not determine local path for {cache_type} cache")
-                local_success = False
-                
-        except Exception as e:
-            logger.error(f"Error saving {cache_type} cache to local file: {e}")
-            local_success = False
-        
-        # Return True if at least one save method succeeded
-        return r2_success or local_success
+            logger.error(f"R2 not available - cannot save {cache_type} cache")
+            return False
     
     def check_approved(self, request_hash: str) -> Optional[Dict]:
         """

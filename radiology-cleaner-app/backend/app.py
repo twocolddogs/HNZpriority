@@ -352,18 +352,33 @@ def _refresh_validation_caches():
     Refresh validation caches from R2 to ensure latest human-in-the-loop feedback is used.
     Called at the start of every processing run to pick up new validation entries.
     """
-    global nhs_lookup_engine
+    global nhs_lookup_engine, validation_cache_manager
+    
+    # Refresh NHS lookup engine validation caches
     if nhs_lookup_engine:
         try:
-            refresh_result = nhs_lookup_engine.reload_validation_caches()
-            if refresh_result.get('status') == 'success':
-                logger.info(f"[CACHE-REFRESH] Updated validation caches: approved={refresh_result.get('approved_count', 0)} (Δ{refresh_result.get('approved_delta', 0):+d}), rejected={refresh_result.get('rejected_count', 0)} (Δ{refresh_result.get('rejected_delta', 0):+d})")
+            nhs_refresh_result = nhs_lookup_engine.reload_validation_caches()
+            if nhs_refresh_result.get('status') == 'success':
+                logger.info(f"[CACHE-REFRESH] Updated NHS lookup engine validation caches: approved={nhs_refresh_result.get('approved_count', 0)} (Δ{nhs_refresh_result.get('approved_delta', 0):+d}), rejected={nhs_refresh_result.get('rejected_count', 0)} (Δ{nhs_refresh_result.get('rejected_delta', 0):+d})")
             else:
-                logger.warning(f"[CACHE-REFRESH] Validation cache refresh returned non-success status: {refresh_result}")
+                logger.warning(f"[CACHE-REFRESH] NHS lookup engine validation cache refresh returned non-success status: {nhs_refresh_result}")
         except Exception as e:
-            logger.error(f"[CACHE-REFRESH] Failed to refresh validation caches: {e}")
+            logger.error(f"[CACHE-REFRESH] Failed to refresh NHS lookup engine validation caches: {e}")
     else:
         logger.warning("[CACHE-REFRESH] NHS lookup engine not available for cache refresh")
+    
+    # Refresh ValidationCacheManager validation caches
+    if validation_cache_manager and validation_cache_manager.is_available():
+        try:
+            vcm_refresh_result = validation_cache_manager.reload_caches()
+            if vcm_refresh_result.get('status') == 'success':
+                logger.info(f"[CACHE-REFRESH] Updated ValidationCacheManager caches: approved={vcm_refresh_result.get('approved_count', 0)} (Δ{vcm_refresh_result.get('approved_delta', 0):+d}), rejected={vcm_refresh_result.get('rejected_count', 0)} (Δ{vcm_refresh_result.get('rejected_delta', 0):+d})")
+            else:
+                logger.warning(f"[CACHE-REFRESH] ValidationCacheManager cache refresh returned non-success status: {vcm_refresh_result}")
+        except Exception as e:
+            logger.error(f"[CACHE-REFRESH] Failed to refresh ValidationCacheManager caches: {e}")
+    else:
+        logger.warning("[CACHE-REFRESH] ValidationCacheManager not available for cache refresh")
 
 def process_exam_request(exam_name: str, modality_code: Optional[str], nlp_processor: NLPProcessor, debug: bool = False, reranker_key: Optional[str] = None, data_source: Optional[str] = None, exam_code: Optional[str] = None, run_secondary_inline: bool = True) -> Dict:
     """Central processing logic for a single exam."""
@@ -780,14 +795,22 @@ def reload_validation_cache():
                 'timestamp': time.time()
             }), 500
         
-        # Call the reload method on the NHS lookup engine
-        result = nhs_lookup_engine.reload_validation_caches()
+        # Reload both validation cache systems
+        nhs_result = nhs_lookup_engine.reload_validation_caches()
         
-        # Return appropriate HTTP status code based on result
-        if result.get('status') == 'success':
-            return jsonify(result), 200
-        else:
-            return jsonify(result), 500
+        validation_cache_result = None
+        if validation_cache_manager and validation_cache_manager.is_available():
+            validation_cache_result = validation_cache_manager.reload_caches()
+        
+        # Combine results
+        combined_result = {
+            'status': 'success',
+            'nhs_lookup_engine': nhs_result,
+            'validation_cache_manager': validation_cache_result,
+            'timestamp': time.time()
+        }
+        
+        return jsonify(combined_result), 200
             
     except Exception as e:
         logger.error(f"Failed to reload validation cache via admin endpoint: {e}")
