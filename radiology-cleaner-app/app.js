@@ -1261,7 +1261,7 @@ window.addEventListener('DOMContentLoaded', function() {
             statusManager.clearAll();
             const modelDisplayName = formatModelName(currentModel);
             const rerankerDisplayName = formatRerankerName(currentReranker);
-            statusId = statusManager.showProgress(`Running random sample with ${modelDisplayName} → ${rerankerDisplayName}`, 0, 100);
+            statusId = statusManager.showProgress(`Running random sample with ${modelDisplayName} → ${rerankerDisplayName}`, 0, sampleSize);
             let pollingActive = true;
             let batchId = null;
             let progressCheckCount = 0;
@@ -1274,7 +1274,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     progressCheckCount++;
                     // Show progress that we're waiting for batch to start
                     if (statusId && progressCheckCount % 10 === 0) {
-                        statusManager.updateProgress(statusId, 0, 100, `Initializing batch processing... (${Math.floor(progressCheckCount/10)}s)`);
+                        statusManager.updateProgress(statusId, 0, sampleSize, `Initializing batch processing... (${Math.floor(progressCheckCount/10)}s)`);
                     }
                     if (pollingActive && progressCheckCount < 300) { // Wait up to 30 seconds for batch to start
                         setTimeout(pollProgress, 100);
@@ -1289,7 +1289,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchId}`);
                     if (progressResponse.ok && pollingActive) {
                         const progressData = await progressResponse.json();
-                        const { percentage = 0, processed = 0, total = 100, success = 0, errors = 0 } = progressData;
+                        const { percentage = 0, processed = 0, total = sampleSize, success = 0, errors = 0 } = progressData;
                         if (statusId) {
                             statusManager.updateProgress(statusId, processed, total, `Random sample (${percentage}% - ${success} success, ${errors} errors)`);
                         }
@@ -1358,7 +1358,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 console.log(`Batch started with ID: ${batchId}`);
                 // Update progress to show batch has started
                 if (statusId) {
-                    statusManager.updateProgress(statusId, 0, 100, `Batch processing started (ID: ${batchId})`);
+                    statusManager.updateProgress(statusId, 0, sampleSize, `Batch processing started (ID: ${batchId})`);
                 }
             }
             

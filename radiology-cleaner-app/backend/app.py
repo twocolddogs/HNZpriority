@@ -1272,8 +1272,11 @@ def _process_batch_background(data, start_time, batch_id):
 
 def _process_batch(data, start_time, batch_id=None, background_mode=False):
     """Helper function to process a batch of exams."""
+    # Use the explicit background_mode parameter to determine mode
+    is_background_mode = background_mode
+    
     if not data or 'exams' not in data:
-        if background_mode:  # If running in background, log error instead of returning
+        if is_background_mode:  # If running in background, log error instead of returning
             logger.error("Missing 'exams' list in request data")
             return
         return jsonify({"error": "Missing 'exams' list in request data"}), 400
@@ -1322,7 +1325,7 @@ def _process_batch(data, start_time, batch_id=None, background_mode=False):
     selected_nlp_processor = _get_nlp_processor(model_key)
     if not selected_nlp_processor:
         error_msg = f"Model '{model_key}' not available"
-        if batch_id:  # Running in background
+        if is_background_mode:  # Running in background
             logger.error(error_msg)
             # Write error to progress file
             try:
@@ -1684,8 +1687,8 @@ def _process_batch(data, start_time, batch_id=None, background_mode=False):
     except Exception as e:
         logger.error(f"Failed to write final progress: {e}")
     
-    # If running in background (background_mode=True), don't return response
-    if background_mode:
+    # If running in background (batch_id provided), don't return response
+    if is_background_mode:
         logger.info(f"Background batch processing completed for batch_id: {batch_id}")
         return
     
