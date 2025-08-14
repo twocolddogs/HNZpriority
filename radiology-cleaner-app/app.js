@@ -1127,6 +1127,10 @@ window.addEventListener('DOMContentLoaded', function() {
         pageSize = 100;
         sortBy = 'default';
         document.getElementById('paginationControls').style.display = 'none';
+        
+        // Ensure action buttons are properly enabled for new run
+        enableActionButtons();
+        
         window.scrollTo({ top: 0, behavior: 'smooth' });
         
         // Reset secondary pipeline to avoid event loop issues
@@ -1226,11 +1230,27 @@ window.addEventListener('DOMContentLoaded', function() {
             statusId = statusManager.showProgress(`Running random sample with ${modelDisplayName} → ${rerankerDisplayName}`, 0, 100);
             let pollingActive = true;
             let batchId = null;
+            let progressCheckCount = 0;
+            
             const pollProgress = async () => {
-                if (!pollingActive || !batchId) {
-                    if (pollingActive) setTimeout(pollProgress, 100);
+                if (!pollingActive) return;
+                
+                // If we don't have batchId yet, wait and retry
+                if (!batchId) {
+                    progressCheckCount++;
+                    // Show progress that we're waiting for batch to start
+                    if (statusId && progressCheckCount % 10 === 0) {
+                        statusManager.updateProgress(statusId, 0, 100, `Initializing batch processing... (${Math.floor(progressCheckCount/10)}s)`);
+                    }
+                    if (pollingActive && progressCheckCount < 300) { // Wait up to 30 seconds for batch to start
+                        setTimeout(pollProgress, 100);
+                    } else if (progressCheckCount >= 300) {
+                        console.warn('Batch initialization timeout - stopping progress polling');
+                        pollingActive = false;
+                    }
                     return;
                 }
+                
                 try {
                     const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchId}`);
                     if (progressResponse.ok && pollingActive) {
@@ -1245,14 +1265,22 @@ window.addEventListener('DOMContentLoaded', function() {
                             pollingActive = false;
                         }
                     } else if (progressResponse.status === 404 && pollingActive) {
+                        // Batch not ready yet, wait and retry
                         setTimeout(pollProgress, 500);
                     }
                 } catch (progressError) {
+                    console.warn('Progress polling error:', progressError);
                     if (pollingActive) setTimeout(pollProgress, 1000);
                 }
             };
+            
+            // Start progress polling immediately
             setTimeout(pollProgress, 100);
-            setTimeout(() => { pollingActive = false; }, 120000);
+            // Extended timeout for larger processing runs (5 minutes)
+            setTimeout(() => { 
+                pollingActive = false;
+                console.log('Progress polling timeout reached (5 minutes)'); 
+            }, 300000);
 
             const enableSecondary = document.getElementById('enableSecondaryPipeline')?.checked || false;
             const sampleSize = parseInt(document.getElementById('sampleSizeInput').value) || 100;
@@ -1273,7 +1301,18 @@ window.addEventListener('DOMContentLoaded', function() {
             }
             if (result.batch_id) {
                 batchId = result.batch_id;
+                console.log(`Batch started with ID: ${batchId}`);
+                // Update progress to show batch has started
+                if (statusId) {
+                    statusManager.updateProgress(statusId, 0, 100, `Batch processing started (ID: ${batchId})`);
+                }
             }
+            
+            // Wait for polling to complete before proceeding
+            while (pollingActive && batchId) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
             pollingActive = false;
             if (statusId) statusManager.remove(statusId);
             statusId = statusManager.show(`✅ Processing completed! ${result.processing_stats.successful || result.processing_stats.processed_successfully || 'Unknown'} items processed`, 'success', 2000);
@@ -2610,8 +2649,17 @@ window.addEventListener('DOMContentLoaded', function() {
 
             // Handle new run
             const handleNewRun = () => {
-                modal.style.display = 'none';
-                resolve('newrun');
+                // Show immediate feedback on the button
+                const originalHTML = newRunBtn.innerHTML;
+                newRunBtn.innerHTML = '<i class="spinner"></i> Starting...';
+                newRunBtn.disabled = true;
+                newRunBtn.style.cursor = 'wait';
+                
+                // Hide modal after a brief delay to show the feedback
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    resolve('newrun');
+                }, 500);
             };
 
             // Add event listeners
@@ -2629,12 +2677,24 @@ window.addEventListener('DOMContentLoaded', function() {
     async function commitValidatedDecisions() {
         console.log('💾 Committing validated decisions');
         
+        // Get the commit button to update its state
+        const commitBtn = document.getElementById('quickCommitValidationsBtn');
+        const originalHTML = commitBtn ? commitBtn.innerHTML : '';
+        const originalDisabled = commitBtn ? commitBtn.disabled : false;
+        
         try {
             // Save current processing parameters before committing
             saveProcessingParams();
 
             // Show commit confirmation modal
             const commitSummary = await showCommitValidationModal();
+            
+            // Update button to show spinner and disable it
+            if (commitBtn) {
+                commitBtn.innerHTML = '<i class="spinner"></i> Committing...';
+                commitBtn.disabled = true;
+                commitBtn.style.cursor = 'wait';
+            }
             
             const decisions = Object.values(window.currentValidationState);
             
@@ -2714,6 +2774,13 @@ window.addEventListener('DOMContentLoaded', function() {
             const totalCommitted = commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved + commitSummary.flagged;
             statusManager.show(`✅ Successfully committed ${totalCommitted} validation decisions`, 'success', 3000);
             
+            // Restore button state on success
+            if (commitBtn) {
+                commitBtn.innerHTML = originalHTML;
+                commitBtn.disabled = originalDisabled;
+                commitBtn.style.cursor = '';
+            }
+            
             // Show post-commit action modal
             const userChoice = await showPostCommitModal(commitSummary, result);
             
@@ -2727,7 +2794,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
             } else if (userChoice === 'newrun') {
                 // Start new run with same parameters
-                statusManager.show('🚀 Starting new processing run with saved parameters...', 'info', 2000);
+                statusManager.show('🚀 Starting new processing run with saved parameters...', 'info', 3000);
                 
                 // Clear the validation state
                 window.currentValidationState = {};
@@ -2739,6 +2806,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 // Auto-trigger the sample run after a short delay to let UI settle
                 setTimeout(async () => {
                     try {
+                        // Show immediate feedback that processing is starting
+                        statusManager.show('⏳ Initializing new processing run...', 'progress');
                         await runRandomSample();
                     } catch (error) {
                         console.error('Error auto-starting new run:', error);
@@ -2748,6 +2817,13 @@ window.addEventListener('DOMContentLoaded', function() {
             }
             
         } catch (error) {
+            // Restore button state on error
+            if (commitBtn) {
+                commitBtn.innerHTML = originalHTML;
+                commitBtn.disabled = originalDisabled;
+                commitBtn.style.cursor = '';
+            }
+            
             if (error.message === 'User cancelled') {
                 // User cancelled - do nothing
                 return;
