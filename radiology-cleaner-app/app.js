@@ -2629,12 +2629,24 @@ window.addEventListener('DOMContentLoaded', function() {
     async function commitValidatedDecisions() {
         console.log('💾 Committing validated decisions');
         
+        // Get the commit button to update its state
+        const commitBtn = document.getElementById('quickCommitValidationsBtn');
+        const originalHTML = commitBtn ? commitBtn.innerHTML : '';
+        const originalDisabled = commitBtn ? commitBtn.disabled : false;
+        
         try {
             // Save current processing parameters before committing
             saveProcessingParams();
 
             // Show commit confirmation modal
             const commitSummary = await showCommitValidationModal();
+            
+            // Update button to show spinner and disable it
+            if (commitBtn) {
+                commitBtn.innerHTML = '<i class="spinner"></i> Committing...';
+                commitBtn.disabled = true;
+                commitBtn.style.cursor = 'wait';
+            }
             
             const decisions = Object.values(window.currentValidationState);
             
@@ -2714,6 +2726,13 @@ window.addEventListener('DOMContentLoaded', function() {
             const totalCommitted = commitSummary.approved + commitSummary.rejected + commitSummary.skipped + commitSummary.unapproved + commitSummary.flagged;
             statusManager.show(`✅ Successfully committed ${totalCommitted} validation decisions`, 'success', 3000);
             
+            // Restore button state on success
+            if (commitBtn) {
+                commitBtn.innerHTML = originalHTML;
+                commitBtn.disabled = originalDisabled;
+                commitBtn.style.cursor = '';
+            }
+            
             // Show post-commit action modal
             const userChoice = await showPostCommitModal(commitSummary, result);
             
@@ -2748,6 +2767,13 @@ window.addEventListener('DOMContentLoaded', function() {
             }
             
         } catch (error) {
+            // Restore button state on error
+            if (commitBtn) {
+                commitBtn.innerHTML = originalHTML;
+                commitBtn.disabled = originalDisabled;
+                commitBtn.style.cursor = '';
+            }
+            
             if (error.message === 'User cancelled') {
                 // User cancelled - do nothing
                 return;
