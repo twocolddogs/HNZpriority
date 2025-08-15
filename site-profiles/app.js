@@ -388,7 +388,17 @@ function ProfileModal({ profile, closeModal, exportProfile, editMode }) {
         { id: 'performance', label: 'Performance' }
     ];
 
-    return e('div', { className: 'modal-overlay' },
+    const handleOverlayClick = (event) => {
+        // Only close modal if clicking on the overlay itself, not the modal content
+        if (event.target === event.currentTarget) {
+            closeModal();
+        }
+    };
+
+    return e('div', { 
+            className: 'modal-overlay',
+            onClick: handleOverlayClick
+        },
         e('div', { className: 'modal-container', style: { maxWidth: '900px', maxHeight: '90vh', overflow: 'auto' } },
             e('div', { className: 'modal-title' }, data.site_name),
             
@@ -930,7 +940,17 @@ function PasswordModal({ closeModal, onPasswordSubmit, regionName, currentAuthRe
         closeModal();
     };
 
-    return e('div', { className: 'modal-overlay' },
+    const handleOverlayClick = (event) => {
+        // Only close modal if clicking on the overlay itself, not the modal content
+        if (event.target === event.currentTarget) {
+            closeModal();
+        }
+    };
+
+    return e('div', { 
+            className: 'modal-overlay',
+            onClick: handleOverlayClick
+        },
         e('div', { className: 'modal-container', style: { maxWidth: '500px' } },
             e('div', { className: 'modal-title' }, 'Authentication Required'),
             e('form', { onSubmit: handleSubmit },
