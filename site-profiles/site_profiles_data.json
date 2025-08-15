@@ -1,0 +1,544 @@
+{
+  "northern": {
+    "region_name": "Northern Region",
+    "sites": {
+      "auckland_city": {
+        "site_name": "Auckland City Hospital",
+        "site_code": "ACH",
+        "location": "Auckland",
+        "contact": {
+          "manager": "Dr. Sarah Johnson",
+          "email": "sarah.johnson@health.nz",
+          "phone": "+64 9 123 4567"
+        },
+        "equipment": {
+          "mri": {
+            "count": 3,
+            "models": ["Siemens 3T", "GE 1.5T", "Philips 3T"],
+            "routine_hours_per_day": 16,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "ct": {
+            "count": 4,
+            "models": ["Siemens SOMATOM", "GE Revolution", "Philips iCT"],
+            "routine_hours_per_day": 24,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "ultrasound": {
+            "count": 8,
+            "models": ["GE Logiq", "Philips EPIQ", "Siemens Acuson"],
+            "routine_hours_per_day": 12,
+            "routine_days_per_week": 6,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 2
+          },
+          "xray": {
+            "count": 6,
+            "models": ["Canon", "Fujifilm", "Siemens"],
+            "routine_hours_per_day": 16,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "mammography": {
+            "count": 2,
+            "models": ["Hologic Selenia", "GE Senographe"],
+            "routine_hours_per_day": 8,
+            "routine_days_per_week": 5,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          }
+        },
+        "staffing": {
+          "radiologists": {
+            "total_fte": 15.5,
+            "current_vacancies": 2.0,
+            "breakdown": {
+              "consultant": 12.0,
+              "registrar": 3.5
+            }
+          },
+          "radiographers": {
+            "total_fte": 32.0,
+            "current_vacancies": 4.0,
+            "breakdown": {
+              "senior": 8.0,
+              "standard": 20.0,
+              "junior": 4.0
+            }
+          },
+          "support_staff": {
+            "total_fte": 12.0,
+            "current_vacancies": 1.0,
+            "breakdown": {
+              "admin": 6.0,
+              "technical": 4.0,
+              "porter": 2.0
+            }
+          }
+        },
+        "performance_metrics": {
+          "annual_examinations": 145000,
+          "average_wait_time_days": 14,
+          "urgent_cases_24h_target": 95.2,
+          "routine_cases_30_day_target": 87.5
+        },
+        "last_updated": "2025-01-15"
+      },
+      "north_shore": {
+        "site_name": "North Shore Hospital",
+        "site_code": "NSH",
+        "location": "Auckland",
+        "contact": {
+          "manager": "Dr. Michael Chen",
+          "email": "michael.chen@health.nz",
+          "phone": "+64 9 234 5678"
+        },
+        "equipment": {
+          "mri": {
+            "count": 2,
+            "models": ["Siemens 3T", "GE 1.5T"],
+            "routine_hours_per_day": 14,
+            "routine_days_per_week": 6,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 2
+          },
+          "ct": {
+            "count": 3,
+            "models": ["Siemens SOMATOM", "GE Revolution"],
+            "routine_hours_per_day": 20,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "ultrasound": {
+            "count": 6,
+            "models": ["GE Logiq", "Philips EPIQ"],
+            "routine_hours_per_day": 10,
+            "routine_days_per_week": 5,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          },
+          "xray": {
+            "count": 4,
+            "models": ["Canon", "Fujifilm"],
+            "routine_hours_per_day": 14,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "mammography": {
+            "count": 1,
+            "models": ["Hologic Selenia"],
+            "routine_hours_per_day": 6,
+            "routine_days_per_week": 3,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          }
+        },
+        "staffing": {
+          "radiologists": {
+            "total_fte": 8.0,
+            "current_vacancies": 1.0,
+            "breakdown": {
+              "consultant": 6.5,
+              "registrar": 1.5
+            }
+          },
+          "radiographers": {
+            "total_fte": 18.0,
+            "current_vacancies": 2.0,
+            "breakdown": {
+              "senior": 4.0,
+              "standard": 12.0,
+              "junior": 2.0
+            }
+          },
+          "support_staff": {
+            "total_fte": 7.0,
+            "current_vacancies": 0.5,
+            "breakdown": {
+              "admin": 3.0,
+              "technical": 2.5,
+              "porter": 1.5
+            }
+          }
+        },
+        "performance_metrics": {
+          "annual_examinations": 78000,
+          "average_wait_time_days": 18,
+          "urgent_cases_24h_target": 92.1,
+          "routine_cases_30_day_target": 81.3
+        },
+        "last_updated": "2025-01-15"
+      }
+    }
+  },
+  "midland": {
+    "region_name": "Midland Region",
+    "sites": {
+      "waikato": {
+        "site_name": "Waikato Hospital",
+        "site_code": "WKH",
+        "location": "Hamilton",
+        "contact": {
+          "manager": "Dr. Emma Thompson",
+          "email": "emma.thompson@health.nz",
+          "phone": "+64 7 345 6789"
+        },
+        "equipment": {
+          "mri": {
+            "count": 2,
+            "models": ["Siemens 3T", "Philips 1.5T"],
+            "routine_hours_per_day": 12,
+            "routine_days_per_week": 6,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 1
+          },
+          "ct": {
+            "count": 3,
+            "models": ["Siemens SOMATOM", "GE Revolution"],
+            "routine_hours_per_day": 18,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "ultrasound": {
+            "count": 5,
+            "models": ["GE Logiq", "Philips EPIQ"],
+            "routine_hours_per_day": 10,
+            "routine_days_per_week": 5,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          },
+          "xray": {
+            "count": 4,
+            "models": ["Canon", "Siemens"],
+            "routine_hours_per_day": 12,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "mammography": {
+            "count": 1,
+            "models": ["GE Senographe"],
+            "routine_hours_per_day": 8,
+            "routine_days_per_week": 5,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          }
+        },
+        "staffing": {
+          "radiologists": {
+            "total_fte": 10.0,
+            "current_vacancies": 1.5,
+            "breakdown": {
+              "consultant": 8.0,
+              "registrar": 2.0
+            }
+          },
+          "radiographers": {
+            "total_fte": 22.0,
+            "current_vacancies": 3.0,
+            "breakdown": {
+              "senior": 5.0,
+              "standard": 14.0,
+              "junior": 3.0
+            }
+          },
+          "support_staff": {
+            "total_fte": 8.0,
+            "current_vacancies": 1.0,
+            "breakdown": {
+              "admin": 4.0,
+              "technical": 3.0,
+              "porter": 1.0
+            }
+          }
+        },
+        "performance_metrics": {
+          "annual_examinations": 89000,
+          "average_wait_time_days": 21,
+          "urgent_cases_24h_target": 88.7,
+          "routine_cases_30_day_target": 79.2
+        },
+        "last_updated": "2025-01-15"
+      }
+    }
+  },
+  "central": {
+    "region_name": "Central Region",
+    "sites": {
+      "wellington": {
+        "site_name": "Wellington Hospital",
+        "site_code": "WGH",
+        "location": "Wellington",
+        "contact": {
+          "manager": "Dr. James Wilson",
+          "email": "james.wilson@health.nz",
+          "phone": "+64 4 456 7890"
+        },
+        "equipment": {
+          "mri": {
+            "count": 2,
+            "models": ["Siemens 3T", "GE 1.5T"],
+            "routine_hours_per_day": 14,
+            "routine_days_per_week": 6,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 2
+          },
+          "ct": {
+            "count": 3,
+            "models": ["Siemens SOMATOM", "Philips iCT"],
+            "routine_hours_per_day": 20,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "ultrasound": {
+            "count": 6,
+            "models": ["GE Logiq", "Philips EPIQ"],
+            "routine_hours_per_day": 11,
+            "routine_days_per_week": 5,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 1
+          },
+          "xray": {
+            "count": 5,
+            "models": ["Canon", "Fujifilm"],
+            "routine_hours_per_day": 14,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "mammography": {
+            "count": 2,
+            "models": ["Hologic Selenia", "GE Senographe"],
+            "routine_hours_per_day": 8,
+            "routine_days_per_week": 5,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          }
+        },
+        "staffing": {
+          "radiologists": {
+            "total_fte": 12.0,
+            "current_vacancies": 2.0,
+            "breakdown": {
+              "consultant": 9.5,
+              "registrar": 2.5
+            }
+          },
+          "radiographers": {
+            "total_fte": 26.0,
+            "current_vacancies": 3.5,
+            "breakdown": {
+              "senior": 6.0,
+              "standard": 16.0,
+              "junior": 4.0
+            }
+          },
+          "support_staff": {
+            "total_fte": 9.0,
+            "current_vacancies": 0.5,
+            "breakdown": {
+              "admin": 4.5,
+              "technical": 3.0,
+              "porter": 1.5
+            }
+          }
+        },
+        "performance_metrics": {
+          "annual_examinations": 95000,
+          "average_wait_time_days": 16,
+          "urgent_cases_24h_target": 91.8,
+          "routine_cases_30_day_target": 84.1
+        },
+        "last_updated": "2025-01-15"
+      }
+    }
+  },
+  "southern": {
+    "region_name": "Southern Region",
+    "sites": {
+      "christchurch": {
+        "site_name": "Christchurch Hospital",
+        "site_code": "CCH",
+        "location": "Christchurch",
+        "contact": {
+          "manager": "Dr. Lisa Anderson",
+          "email": "lisa.anderson@health.nz",
+          "phone": "+64 3 567 8901"
+        },
+        "equipment": {
+          "mri": {
+            "count": 2,
+            "models": ["Siemens 3T", "Philips 1.5T"],
+            "routine_hours_per_day": 13,
+            "routine_days_per_week": 6,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 1
+          },
+          "ct": {
+            "count": 3,
+            "models": ["Siemens SOMATOM", "GE Revolution"],
+            "routine_hours_per_day": 22,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "ultrasound": {
+            "count": 5,
+            "models": ["GE Logiq", "Siemens Acuson"],
+            "routine_hours_per_day": 9,
+            "routine_days_per_week": 5,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          },
+          "xray": {
+            "count": 4,
+            "models": ["Canon", "Fujifilm"],
+            "routine_hours_per_day": 15,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "mammography": {
+            "count": 1,
+            "models": ["Hologic Selenia"],
+            "routine_hours_per_day": 7,
+            "routine_days_per_week": 5,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          }
+        },
+        "staffing": {
+          "radiologists": {
+            "total_fte": 11.0,
+            "current_vacancies": 1.5,
+            "breakdown": {
+              "consultant": 8.5,
+              "registrar": 2.5
+            }
+          },
+          "radiographers": {
+            "total_fte": 24.0,
+            "current_vacancies": 2.5,
+            "breakdown": {
+              "senior": 5.5,
+              "standard": 15.0,
+              "junior": 3.5
+            }
+          },
+          "support_staff": {
+            "total_fte": 8.5,
+            "current_vacancies": 1.0,
+            "breakdown": {
+              "admin": 4.0,
+              "technical": 3.0,
+              "porter": 1.5
+            }
+          }
+        },
+        "performance_metrics": {
+          "annual_examinations": 87000,
+          "average_wait_time_days": 19,
+          "urgent_cases_24h_target": 89.4,
+          "routine_cases_30_day_target": 80.7
+        },
+        "last_updated": "2025-01-15"
+      },
+      "dunedin": {
+        "site_name": "Dunedin Hospital",
+        "site_code": "DNH",
+        "location": "Dunedin",
+        "contact": {
+          "manager": "Dr. Robert Taylor",
+          "email": "robert.taylor@health.nz",
+          "phone": "+64 3 678 9012"
+        },
+        "equipment": {
+          "mri": {
+            "count": 1,
+            "models": ["Siemens 1.5T"],
+            "routine_hours_per_day": 10,
+            "routine_days_per_week": 5,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          },
+          "ct": {
+            "count": 2,
+            "models": ["Siemens SOMATOM", "GE Revolution"],
+            "routine_hours_per_day": 16,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "ultrasound": {
+            "count": 3,
+            "models": ["GE Logiq", "Philips EPIQ"],
+            "routine_hours_per_day": 8,
+            "routine_days_per_week": 5,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          },
+          "xray": {
+            "count": 3,
+            "models": ["Canon", "Siemens"],
+            "routine_hours_per_day": 12,
+            "routine_days_per_week": 7,
+            "out_of_hours_available": true,
+            "out_of_hours_days_per_week": 7
+          },
+          "mammography": {
+            "count": 1,
+            "models": ["GE Senographe"],
+            "routine_hours_per_day": 6,
+            "routine_days_per_week": 3,
+            "out_of_hours_available": false,
+            "out_of_hours_days_per_week": 0
+          }
+        },
+        "staffing": {
+          "radiologists": {
+            "total_fte": 6.0,
+            "current_vacancies": 1.0,
+            "breakdown": {
+              "consultant": 5.0,
+              "registrar": 1.0
+            }
+          },
+          "radiographers": {
+            "total_fte": 14.0,
+            "current_vacancies": 2.0,
+            "breakdown": {
+              "senior": 3.0,
+              "standard": 9.0,
+              "junior": 2.0
+            }
+          },
+          "support_staff": {
+            "total_fte": 5.5,
+            "current_vacancies": 0.5,
+            "breakdown": {
+              "admin": 2.5,
+              "technical": 2.0,
+              "porter": 1.0
+            }
+          }
+        },
+        "performance_metrics": {
+          "annual_examinations": 42000,
+          "average_wait_time_days": 25,
+          "urgent_cases_24h_target": 85.2,
+          "routine_cases_30_day_target": 75.8
+        },
+        "last_updated": "2025-01-15"
+      }
+    }
+  }
+}
