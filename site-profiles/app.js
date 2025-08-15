@@ -633,7 +633,6 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                 )
             })
         )
-        )
     );
 
     const renderStaffingTab = () => (
