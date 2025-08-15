@@ -1702,7 +1702,23 @@ def _process_batch(data, start_time, batch_id=None, background_mode=False):
         "errors": error_count,
         "percentage": 100,
         "timestamp": datetime.now().isoformat(),
-        "status": "completed"
+        "status": "completed",
+        # Include final results for frontend retrieval
+        "r2_url": r2_url,
+        "processing_stats": {
+            "total_processed": total_exams,
+            "successful": success_count,
+            "errors": error_count,
+            "processing_time_ms": processing_time_ms,
+            "model_used": model_key,
+            "reranker_used": reranker_key,
+            "secondary_pipeline_enabled": enable_secondary and SECONDARY_PIPELINE_AVAILABLE and secondary_integration and secondary_integration.is_enabled(),
+            "cache_hits": cache_hits_count,
+            "cache_rejects": cache_rejects_count,
+            "cache_approvals": cache_hits_count - cache_rejects_count,
+            "cache_hit_rate": (cache_hits_count / total_exams * 100) if total_exams > 0 else 0,
+            "preflight_enabled": True
+        }
     }
     try:
         with open(progress_filepath, 'w') as pf:
@@ -2075,7 +2091,24 @@ def random_sample():
             "enable_secondary_pipeline": enable_secondary
         }
 
-        return _process_batch(batch_payload, start_time)
+        # Generate batch_id for background processing
+        import uuid
+        batch_id = uuid.uuid4().hex
+        
+        # Start background processing like parse_batch does
+        thread = threading.Thread(
+            target=_process_batch_background,
+            args=(batch_payload, start_time, batch_id),
+            daemon=True
+        )
+        thread.start()
+        
+        # Return immediately with batch_id for progress tracking
+        return jsonify({
+            "batch_id": batch_id,
+            "message": "Random sample processing started",
+            "status": "processing"
+        })
 
     except Exception as e:
         logger.error(f"Random sample endpoint error: {e}", exc_info=True)
