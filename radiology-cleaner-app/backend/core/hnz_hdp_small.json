@@ -1,0 +1,56 @@
+[
+    {
+        "EXAM_NAME": "Chest PA",
+        "MODALITY_CODE": "XR",
+        "DATA_SOURCE": "Auckland Metro-Agfa",
+        "EXAM_CODE": "C1"
+    },
+    {
+        "EXAM_NAME": "CT Abdo/Pelvis C+",
+        "MODALITY_CODE": "CT",
+        "DATA_SOURCE": "Auckland Metro-Agfa",
+        "EXAM_CODE": "CAB+"
+    },
+    {
+        "EXAM_NAME": "MRI Did Not Arrive",
+        "MODALITY_CODE": "MR",
+        "DATA_SOURCE": "Auckland Metro-Agfa",
+        "EXAM_CODE": "MRDNA"
+    },
+    {
+        "EXAM_NAME": "US Obstetric Growth - Single",
+        "MODALITY_CODE": "US",
+        "DATA_SOURCE": "Auckland Metro-Agfa",
+        "EXAM_CODE": "UOBS1"
+    },
+    {
+        "EXAM_NAME": "CT Abdomen & Pelvis C+",
+        "MODALITY_CODE": "CT",
+        "DATA_SOURCE": "Auckland Metro-Agfa",
+        "EXAM_CODE": "CAB+"
+    },
+    {
+        "EXAM_NAME": "Great Toe Left",
+        "MODALITY_CODE": "XR",
+        "DATA_SOURCE": "Auckland Metro-Agfa",
+        "EXAM_CODE": "GTL"
+    },
+    {
+        "EXAM_NAME": "Forearm R",
+        "MODALITY_CODE": "XR",
+        "DATA_SOURCE": "Auckland Metro-Agfa",
+        "EXAM_CODE": "FORR"
+    },
+    {
+        "EXAM_NAME": "Little Finger Left",
+        "MODALITY_CODE": "XR",
+        "DATA_SOURCE": "Auckland Metro-Agfa",
+        "EXAM_CODE": "LFL"
+    },
+    {
+        "EXAM_NAME": "Long Legs Bilateral",
+        "MODALITY_CODE": "XR",
+        "DATA_SOURCE": "Auckland Metro-Agfa",
+        "EXAM_CODE": "LLB"
+    }
+]
