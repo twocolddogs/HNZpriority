@@ -629,7 +629,7 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                                 )
                         )
                     )
-                );
+                )
             })
         )
     );
