@@ -595,6 +595,7 @@ function ProfileDetails({ profile, editMode }) {
                                         ].filter(Boolean)
                                     )
                                 )
+                            )
                         )
                     )
                 );
