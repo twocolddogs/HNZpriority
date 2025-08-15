@@ -1328,7 +1328,7 @@ def _process_batch(data, start_time, batch_id=None, background_mode=False):
     logger.info(f"RENDER_DISK_PATH environment variable: {os.environ.get('RENDER_DISK_PATH', 'NOT_SET')}")
     logger.info(f"Using output directory: {output_dir}")
     
-    def update_progress(processed, total, success, errors):
+    def update_progress(processed, total, success, errors, is_final=False):
         """Update progress file with current status"""
         progress_data = {
             "processed": processed,
@@ -1337,7 +1337,7 @@ def _process_batch(data, start_time, batch_id=None, background_mode=False):
             "errors": errors,
             "percentage": round((processed / total) * 100, 1) if total > 0 else 0,
             "timestamp": datetime.now().isoformat(),
-            "status": "processing" if processed < total else "completed"
+            "status": "completed" if (processed >= total or is_final) else "processing"
         }
         try:
             with open(progress_filepath, 'w') as pf:
@@ -1511,10 +1511,13 @@ def _process_batch(data, start_time, batch_id=None, background_mode=False):
     cache_hit_rate = (cache_hits_count / total_exams * 100) if total_exams > 0 else 0
     logger.info(f"Cache hit rate: {cache_hit_rate:.1f}% ({cache_hits_count}/{total_exams})")
     
+    # Write final completion status to progress file
+    update_progress(success_count + error_count, total_exams, success_count, error_count, is_final=True)
+    
     try:
-        # Add delay before cleanup to ensure frontend has time to detect completion
-        # Longer delay for batch processing to prevent polling 404 errors
-        delay_seconds = 5 if total_exams <= 50 else 3
+        # Extended delay before cleanup to ensure frontend can reliably detect completion
+        # This prevents race conditions between polling and file deletion
+        delay_seconds = 30
         logger.info(f"Waiting {delay_seconds} seconds before cleaning up progress file to allow frontend completion detection")
         time.sleep(delay_seconds)
             

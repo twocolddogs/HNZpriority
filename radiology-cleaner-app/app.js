@@ -1296,18 +1296,31 @@ window.addEventListener('DOMContentLoaded', function() {
                     if (progressResponse.ok && pollingActive) {
                         pollFailures = 0; // Reset on success
                         const progressData = await progressResponse.json();
-                        const { percentage = 0, processed = 0, total = sampleSize, success = 0, errors = 0 } = progressData;
+                        const { percentage = 0, processed = 0, total = sampleSize, success = 0, errors = 0, status } = progressData;
                         hasSeenProgress = true; // Mark that we've seen progress data
-                        console.log(`Progress update: ${processed}/${total} (${percentage}%) - ${success} success, ${errors} errors`);
+                        console.log(`Progress update: ${processed}/${total} (${percentage}%) - ${success} success, ${errors} errors, status: ${status}`);
                         if (statusId) {
                             statusManager.updateProgress(statusId, processed, total, `Random sample (${percentage}% - ${success} success, ${errors} errors)`);
                         }
-                        if (percentage < 100 && processed < total && pollingActive) {
-                            // Use more frequent polling for smaller samples to catch progress updates
+                        
+                        // Check for completion using status field
+                        if (status === 'completed' || (percentage >= 100 && processed >= total)) {
+                            console.log('Processing completed - stopping polling');
+                            pollingActive = false;
+                            return;
+                        } else if (status === 'failed') {
+                            console.log('Processing failed - stopping polling');
+                            pollingActive = false;
+                            if (statusId) {
+                                statusManager.updateProgress(statusId, processed, total, `Processing failed: ${progressData.error || 'Unknown error'}`);
+                            }
+                            return;
+                        }
+                        
+                        // Continue polling if still processing
+                        if (pollingActive) {
                             const pollInterval = sampleSize <= 50 ? 200 : 500;
                             setTimeout(pollProgress, pollInterval);
-                        } else {
-                            pollingActive = false;
                         }
                     } else if (progressResponse.status === 404 && pollingActive) {
                         pollFailures++;
@@ -1317,12 +1330,13 @@ window.addEventListener('DOMContentLoaded', function() {
                             console.log('Progress file not found after seeing progress - assuming completion');
                             pollingActive = false;
                             return;
-                        } else if (pollFailures > 150) { // Timeout after ~30-75s
+                        } else if (pollFailures > 60) { // Reduced timeout: ~30s for batch initialization
                             pollingActive = false;
                             console.error('Polling for progress file timed out.');
                             if (statusId) statusManager.remove(statusId);
                             statusManager.show('Error: Polling for progress file timed out.', 'error', 0);
                             enableActionButtons();
+                            return;
                         } else {
                             // Batch not ready yet, wait and retry
                             console.log('Batch progress not available yet, retrying...');
