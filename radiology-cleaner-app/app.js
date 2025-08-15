@@ -1371,20 +1371,70 @@ window.addEventListener('DOMContentLoaded', function() {
             }
             
             // Wait for polling to complete before proceeding
+            let finalProgressData = null;
             while (pollingActive && batchId) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Try to get the final progress data one more time to ensure we have the complete info
+                if (!pollingActive) {
+                    try {
+                        const finalProgressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchId}`);
+                        if (finalProgressResponse.ok) {
+                            finalProgressData = await finalProgressResponse.json();
+                        }
+                    } catch (error) {
+                        console.warn('Could not fetch final progress data:', error);
+                    }
+                }
             }
             
             pollingActive = false;
+            
+            // For async processing, use the final progress data if available
+            let finalResult = result;
+            if (finalProgressData && finalProgressData.status === 'completed') {
+                finalResult = {
+                    batch_id: batchId,
+                    r2_url: finalProgressData.r2_url,
+                    processing_stats: finalProgressData.processing_stats
+                };
+                console.log('Using final progress data for results');
+            } else if (batchId && !result.r2_url) {
+                if (statusId) statusManager.remove(statusId);
+                statusId = statusManager.show('Fetching final results...', 'progress');
+                
+                try {
+                    // Try to get the final results from the batch results endpoint as fallback
+                    const resultsResponse = await fetch(`${apiConfig.baseUrl}/get_batch_results/batch_results_${batchId}.jsonl`);
+                    if (resultsResponse.ok) {
+                        const resultsData = await resultsResponse.json();
+                        // Construct a result object similar to what synchronous processing would return
+                        finalResult = {
+                            batch_id: batchId,
+                            r2_url: resultsData.r2_url,
+                            processing_stats: resultsData.processing_stats || {
+                                total_processed: resultsData.results?.length || 0,
+                                successful: resultsData.results?.filter(r => r.status === 'success').length || 0
+                            }
+                        };
+                        console.log('Successfully fetched final batch results as fallback');
+                    } else {
+                        console.warn('Could not fetch batch results, continuing with basic completion message');
+                    }
+                } catch (fetchError) {
+                    console.warn('Error fetching batch results:', fetchError);
+                }
+            }
+            
             if (statusId) statusManager.remove(statusId);
-            statusId = statusManager.show(`✅ Processing completed! ${result.processing_stats.successful || result.processing_stats.processed_successfully || 'Unknown'} items processed`, 'success', 2000);
+            statusId = statusManager.show(`✅ Processing completed! ${finalResult.processing_stats?.successful || finalResult.processing_stats?.processed_successfully || 'Unknown'} items processed`, 'success', 2000);
             await new Promise(resolve => setTimeout(resolve, 2000));
             if (statusId) statusManager.remove(statusId);
             statusId = statusManager.show('Fetching results for display...', 'progress');
             
-            if (result.r2_url) {
+            if (finalResult.r2_url) {
                 try {
-                    const resultsResponse = await fetch(result.r2_url);
+                    const resultsResponse = await fetch(finalResult.r2_url);
                     if (resultsResponse.ok) {
                         const resultsData = await resultsResponse.json();
                         const results = resultsData.results || resultsData;
@@ -1412,10 +1462,10 @@ window.addEventListener('DOMContentLoaded', function() {
                                                    (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
                             }));
                             allMappings = mappedResults;
-                            updatePageTitle(`Random Sample (${result.processing_stats.sample_size || result.processing_stats.total_processed} items)`);
+                            updatePageTitle(`Random Sample (${finalResult.processing_stats?.sample_size || finalResult.processing_stats?.total_processed} items)`);
                             try {
                                 runAnalysis(allMappings);
-                                const successMessage = `✅ Random sample completed! ${result.processing_stats?.processed_successfully || result.processing_stats.successful || 'Unknown'} items processed`;
+                                const successMessage = `✅ Random sample completed! ${finalResult.processing_stats?.processed_successfully || finalResult.processing_stats?.successful || 'Unknown'} items processed`;
                                 statusManager.show(successMessage, 'success', 5000);
                                 if (mainCard) mainCard.style.display = 'block';
                             } catch (analysisError) {
@@ -1432,8 +1482,8 @@ window.addEventListener('DOMContentLoaded', function() {
                 } catch (fetchError) {
                     console.error('Failed to fetch results from R2:', fetchError);
                     if (statusId) statusManager.remove(statusId);
-                    const successMessage = `✅ Random sample completed! ${result.processing_stats.successful} items processed`;
-                    const urlMessage = `<br><a href="${result.r2_url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
+                    const successMessage = `✅ Random sample completed! ${finalResult.processing_stats?.successful} items processed`;
+                    const urlMessage = `<br><a href="${finalResult.r2_url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
                     statusManager.show(successMessage + urlMessage, 'success', 10000);
                 }
             } else {
