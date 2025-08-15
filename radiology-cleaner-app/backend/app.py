@@ -1512,6 +1512,10 @@ def _process_batch(data, start_time, batch_id=None, background_mode=False):
     logger.info(f"Cache hit rate: {cache_hit_rate:.1f}% ({cache_hits_count}/{total_exams})")
     
     try:
+        # For small batches, add a brief delay before cleanup to ensure frontend sees completion
+        if total_exams <= 50:
+            time.sleep(2)  # 2 second delay for small batches
+            
         if os.path.exists(progress_filepath):
             os.remove(progress_filepath)
             logger.info(f"Cleaned up progress file: {progress_filename}")

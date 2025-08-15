@@ -1269,6 +1269,7 @@ window.addEventListener('DOMContentLoaded', function() {
             let pollingActive = true;
             let batchId = null;
             let progressCheckCount = 0;
+            let hasSeenProgress = false; // Track if we've seen any progress data
             
             const pollProgress = async () => {
                 if (!pollingActive) return;
@@ -1294,19 +1295,32 @@ window.addEventListener('DOMContentLoaded', function() {
                     if (progressResponse.ok && pollingActive) {
                         const progressData = await progressResponse.json();
                         const { percentage = 0, processed = 0, total = sampleSize, success = 0, errors = 0 } = progressData;
+                        hasSeenProgress = true; // Mark that we've seen progress data
                         console.log(`Progress update: ${processed}/${total} (${percentage}%) - ${success} success, ${errors} errors`);
                         if (statusId) {
                             statusManager.updateProgress(statusId, processed, total, `Random sample (${percentage}% - ${success} success, ${errors} errors)`);
                         }
                         if (percentage < 100 && processed < total && pollingActive) {
-                            setTimeout(pollProgress, 500);
+                            // Use more frequent polling for smaller samples to catch progress updates
+                            const pollInterval = sampleSize <= 50 ? 200 : 500;
+                            setTimeout(pollProgress, pollInterval);
                         } else {
                             pollingActive = false;
                         }
                     } else if (progressResponse.status === 404 && pollingActive) {
-                        // Batch not ready yet, wait and retry
-                        console.log('Batch progress not available yet, retrying...');
-                        setTimeout(pollProgress, 500);
+                        // Progress file not found - could mean batch not ready OR processing completed
+                        if (hasSeenProgress) {
+                            // We've seen progress before, so 404 now likely means completion
+                            console.log('Progress file not found after seeing progress - assuming completion');
+                            pollingActive = false;
+                            return;
+                        } else {
+                            // Batch not ready yet, wait and retry
+                            console.log('Batch progress not available yet, retrying...');
+                            // Use more frequent polling for smaller samples to catch initialization faster
+                            const pollInterval = sampleSize <= 50 ? 200 : 500;
+                            setTimeout(pollProgress, pollInterval);
+                        }
                     } else if (!progressResponse.ok && pollingActive) {
                         console.warn(`Progress response not OK: ${progressResponse.status} ${progressResponse.statusText}`);
                         setTimeout(pollProgress, 1000);
@@ -1562,14 +1576,18 @@ window.addEventListener('DOMContentLoaded', function() {
                             }
                             
                             // Continue polling if still processing
-                            setTimeout(pollProgress, 1000);
+                            // Use more frequent polling for smaller batches to catch progress updates
+                            const pollInterval = totalCodes <= 50 ? 200 : 1000;
+                            setTimeout(pollProgress, pollInterval);
                         } else {
                             statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
                             processingComplete = true;
+                            return; // Stop polling when progress file not found (indicates completion)
                         }
                     } catch (progressError) {
                         statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
                         processingComplete = true;
+                        return; // Stop polling on error
                     }
                 };
                 
