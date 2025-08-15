@@ -1270,6 +1270,7 @@ window.addEventListener('DOMContentLoaded', function() {
             let batchId = null;
             let progressCheckCount = 0;
             let hasSeenProgress = false; // Track if we've seen any progress data
+            let pollFailures = 0;
             
             const pollProgress = async () => {
                 if (!pollingActive) return;
@@ -1293,6 +1294,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 try {
                     const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchId}`);
                     if (progressResponse.ok && pollingActive) {
+                        pollFailures = 0; // Reset on success
                         const progressData = await progressResponse.json();
                         const { percentage = 0, processed = 0, total = sampleSize, success = 0, errors = 0 } = progressData;
                         hasSeenProgress = true; // Mark that we've seen progress data
@@ -1308,12 +1310,19 @@ window.addEventListener('DOMContentLoaded', function() {
                             pollingActive = false;
                         }
                     } else if (progressResponse.status === 404 && pollingActive) {
+                        pollFailures++;
                         // Progress file not found - could mean batch not ready OR processing completed
                         if (hasSeenProgress) {
                             // We've seen progress before, so 404 now likely means completion
                             console.log('Progress file not found after seeing progress - assuming completion');
                             pollingActive = false;
                             return;
+                        } else if (pollFailures > 150) { // Timeout after ~30-75s
+                            pollingActive = false;
+                            console.error('Polling for progress file timed out.');
+                            if (statusId) statusManager.remove(statusId);
+                            statusManager.show('Error: Polling for progress file timed out.', 'error', 0);
+                            enableActionButtons();
                         } else {
                             // Batch not ready yet, wait and retry
                             console.log('Batch progress not available yet, retrying...');
@@ -1543,11 +1552,18 @@ window.addEventListener('DOMContentLoaded', function() {
             if (batchResult.batch_id && progressId) {
                 let processingComplete = false;
                 let finalResults = null;
+                let hasSeenProgress = false;
+                let pollAttempts = 0;
                 
                 const pollProgress = async () => {
+                    if (processingComplete) return;
+                    pollAttempts++;
+
                     try {
                         const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchResult.batch_id}`);
                         if (progressResponse.ok) {
+                            hasSeenProgress = true;
+                            pollAttempts = 0; // Reset on success
                             const progressData = await progressResponse.json();
                             const { percentage = 0, processed = 0, total = totalCodes, success = 0, errors = 0, status } = progressData;
                             statusManager.updateProgress(progressId, processed, total, `Processing ${jobName} (${percentage}% - ${success} success, ${errors} errors)`);
@@ -1565,7 +1581,6 @@ window.addEventListener('DOMContentLoaded', function() {
                                     }
                                 } catch (resultsError) {
                                     console.warn('Could not fetch batch results:', resultsError);
-                                    // Try alternative approaches or show completion message
                                 }
                                 
                                 return; // Stop polling
@@ -1575,17 +1590,27 @@ window.addEventListener('DOMContentLoaded', function() {
                                 return;
                             }
                             
-                            // Continue polling if still processing
-                            // Use more frequent polling for smaller batches to catch progress updates
                             const pollInterval = totalCodes <= 50 ? 200 : 1000;
                             setTimeout(pollProgress, pollInterval);
+
+                        } else if (progressResponse.status === 404) {
+                            if (hasSeenProgress) {
+                                statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
+                                processingComplete = true;
+                                return;
+                            } else if (pollAttempts > 60) { // ~1 minute timeout
+                                throw new Error("Polling timed out waiting for progress file to be created.");
+                            } else {
+                                // Progress file not ready yet, retry
+                                const pollInterval = totalCodes <= 50 ? 200 : 1000;
+                                setTimeout(pollProgress, pollInterval);
+                            }
                         } else {
-                            statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
-                            processingComplete = true;
-                            return; // Stop polling when progress file not found (indicates completion)
+                            throw new Error(`Progress check failed with status ${progressResponse.status}`);
                         }
                     } catch (progressError) {
-                        statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
+                        statusManager.show(`Processing failed: ${progressError.message}`, 'error', 0);
+                        console.error('Polling error in processBatch:', progressError);
                         processingComplete = true;
                         return; // Stop polling on error
                     }
