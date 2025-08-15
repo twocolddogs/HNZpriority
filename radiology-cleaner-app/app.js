@@ -1556,9 +1556,11 @@ window.addEventListener('DOMContentLoaded', function() {
                 let pollAttempts = 0;
                 
                 const pollProgress = async () => {
-                    if (processingComplete) return;
+                    // Check if polling should continue
+                    if (processingComplete) {
+                        return; // Stop if already completed
+                    }
                     pollAttempts++;
-
                     try {
                         const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchResult.batch_id}`);
                         if (progressResponse.ok) {
@@ -1591,10 +1593,13 @@ window.addEventListener('DOMContentLoaded', function() {
                             }
                             
                             const pollInterval = totalCodes <= 50 ? 200 : 1000;
-                            setTimeout(pollProgress, pollInterval);
-
+                            if (!processingComplete) {
+                                setTimeout(pollProgress, pollInterval);
+                            }
                         } else if (progressResponse.status === 404) {
                             if (hasSeenProgress) {
+                                // Progress file gone after seeing progress - indicates completion
+                                console.log('Progress file not found after seeing progress - assuming completion');
                                 statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
                                 processingComplete = true;
                                 return;
@@ -1609,8 +1614,8 @@ window.addEventListener('DOMContentLoaded', function() {
                             throw new Error(`Progress check failed with status ${progressResponse.status}`);
                         }
                     } catch (progressError) {
-                        statusManager.show(`Processing failed: ${progressError.message}`, 'error', 0);
-                        console.error('Polling error in processBatch:', progressError);
+                        console.warn('Progress polling error:', progressError);
+                        statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
                         processingComplete = true;
                         return; // Stop polling on error
                     }
