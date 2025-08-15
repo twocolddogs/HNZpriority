@@ -324,7 +324,15 @@ function ProfilesContainer({ siteData, currentRegion, openProfileModal }) {
 
 // Profile Card Component
 function ProfileCard({ siteKey, siteData, onClick }) {
-    const totalEquipment = Object.values(siteData.equipment).reduce((sum, eq) => sum + eq.machines.length, 0);
+    const totalEquipment = Object.values(siteData.equipment).reduce((sum, eq) => {
+        // Handle both new machines array and legacy count structure
+        if (eq.machines) {
+            return sum + eq.machines.length;
+        } else if (eq.count) {
+            return sum + eq.count;
+        }
+        return sum;
+    }, 0);
     const totalStaff = Object.values(siteData.staffing).reduce((sum, staff) => sum + staff.total_fte, 0);
     const totalVacancies = Object.values(siteData.staffing).reduce((sum, staff) => sum + staff.current_vacancies, 0);
 
@@ -490,8 +498,42 @@ function ProfileDetails({ profile, editMode }) {
         // Equipment
         e('section', { className: 'profile-detail-section' },
             e('h4', null, 'Equipment'),
-            Object.entries(editedProfile.equipment).map(([modalityKey, modalityData]) =>
-                e('div', { key: modalityKey, style: { marginBottom: '2rem' } },
+            Object.entries(editedProfile.equipment).map(([modalityKey, modalityData]) => {
+                // Handle legacy data structure
+                if (!modalityData.machines) {
+                    return e('div', { key: modalityKey, style: { marginBottom: '2rem' } },
+                        e('h5', null, `${modalityKey.replace('_', ' ').toUpperCase()} (${modalityData.count || 0} machines)`),
+                        e('div', { className: 'table-container' },
+                            e('table', { className: 'equipment-table' },
+                                e('thead', null,
+                                    e('tr', null,
+                                        e('th', null, 'Count'),
+                                        e('th', null, 'Models'),
+                                        e('th', null, 'Routine Hours/Day'),
+                                        e('th', null, 'Routine Days/Week'),
+                                        e('th', null, 'Out of Hours Available'),
+                                        e('th', null, 'Out of Hours Days/Week')
+                                    )
+                                ),
+                                e('tbody', null,
+                                    e('tr', null,
+                                        e('td', null, renderEditableNumber(modalityData.count, `equipment.${modalityKey}.count`)),
+                                        e('td', null, modalityData.models ? modalityData.models.join(', ') : ''),
+                                        e('td', null, renderEditableNumber(modalityData.routine_hours_per_day, `equipment.${modalityKey}.routine_hours_per_day`)),
+                                        e('td', null, renderEditableNumber(modalityData.routine_days_per_week, `equipment.${modalityKey}.routine_days_per_week`)),
+                                        e('td', { className: modalityData.out_of_hours_available ? 'available-yes' : 'available-no' }, 
+                                            renderEditableBoolean(modalityData.out_of_hours_available, `equipment.${modalityKey}.out_of_hours_available`)
+                                        ),
+                                        e('td', null, renderEditableNumber(modalityData.out_of_hours_days_per_week, `equipment.${modalityKey}.out_of_hours_days_per_week`))
+                                    )
+                                )
+                            )
+                        )
+                    );
+                }
+
+                // New machines array structure
+                return e('div', { key: modalityKey, style: { marginBottom: '2rem' } },
                     e('h5', null, `${modalityKey.replace('_', ' ').toUpperCase()} (${modalityData.machines.length} machines)`),
                     e('div', { className: 'table-container' },
                         e('table', { className: 'equipment-table' },
@@ -552,8 +594,8 @@ function ProfileDetails({ profile, editMode }) {
                             )
                         )
                     )
-                )
-            )
+                );
+            })
         ),
 
         // Staffing
