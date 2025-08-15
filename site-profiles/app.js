@@ -530,8 +530,7 @@ function ProfileDetails({ profile, editMode, activeTab }) {
     const renderEquipmentTab = () => (
     e('section', { className: 'profile-detail-section' },
         e('h4', null, 'Equipment'),
-        // FIX: Spread the array of elements returned by .map()
-        ...Object.entries(editedProfile.equipment).map(([modalityKey, modalityData]) => {
+        Object.entries(editedProfile.equipment).map(([modalityKey, modalityData]) => {
             // Handle legacy data structure
             if (!modalityData.machines) {
                 return e('div', { key: modalityKey, style: { marginBottom: '2rem' } },
