@@ -910,6 +910,46 @@ input:checked + .toggle-slider:before {
   background-color: #E5E7EB;
 }
 
+/* Modal Tab Styles */
+.modal-tabs {
+  display: flex;
+  border-bottom: 1px solid #D1D5DB;
+  margin-bottom: 1.5rem;
+  background-color: #F9FAFB;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+.modal-tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background-color: transparent;
+  color: #6B7280;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+}
+
+.modal-tab:hover {
+  background-color: #F3F4F6;
+  color: #374151;
+}
+
+.modal-tab.active {
+  background-color: #FFFFFF;
+  color: #1F2937;
+  font-weight: 600;
+  border-bottom-color: var(--color-primary);
+}
+
+.modal-tab-content {
+  min-height: 400px;
+}
+
 /* ==========================================================================
    8. Profile Grid & Custom Styles
    ========================================================================== */

@@ -617,6 +617,7 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                                         ].filter(Boolean)
                                     )
                                 )
+                            )
                         )
                     )
                 );
@@ -717,10 +718,8 @@ function ProfileDetails({ profile, editMode, activeTab }) {
     };
 
     return e('div', null, renderTabContent());
-}
 
-// Password Modal Component
-function PasswordModal({ closeModal, onPasswordSubmit, regionName, currentAuthRegion }) {
+            e('h4', null, 'Equipment'),
             Object.entries(editedProfile.equipment).map(([modalityKey, modalityData]) => {
                 // Handle legacy data structure
                 if (!modalityData.machines) {
@@ -817,15 +816,14 @@ function PasswordModal({ closeModal, onPasswordSubmit, regionName, currentAuthRe
                                             )
                                         ].filter(Boolean)
                                     )
-                            )
+                                )
                         )
                     )
                 );
             })
-        )
-    );
+        ),
 
-    const renderStaffingTab = () => (
+        // Staffing
         e('section', { className: 'profile-detail-section' },
             e('h4', null, 'Staffing'),
             e('div', { className: 'table-container' },
