@@ -528,105 +528,106 @@ function ProfileDetails({ profile, editMode, activeTab }) {
     );
 
     const renderEquipmentTab = () => (
-        e('section', { className: 'profile-detail-section' },
-            e('h4', null, 'Equipment'),
-            Object.entries(editedProfile.equipment).map(([modalityKey, modalityData]) => {
-                // Handle legacy data structure
-                if (!modalityData.machines) {
-                    return e('div', { key: modalityKey, style: { marginBottom: '2rem' } },
-                        e('h5', null, `${modalityKey.replace('_', ' ').toUpperCase()} (${modalityData.count || 0} machines)`),
-                        e('div', { className: 'table-container' },
-                            e('table', { className: 'equipment-table' },
-                                e('thead', null,
-                                    e('tr', null,
-                                        e('th', null, 'Count'),
-                                        e('th', null, 'Models'),
-                                        e('th', null, 'Routine Hours/Day'),
-                                        e('th', null, 'Routine Days/Week'),
-                                        e('th', null, 'Out of Hours Available'),
-                                        e('th', null, 'Out of Hours Days/Week')
-                                    )
-                                ),
-                                e('tbody', null,
-                                    e('tr', null,
-                                        e('td', null, renderEditableNumber(modalityData.count, `equipment.${modalityKey}.count`)),
-                                        e('td', null, modalityData.models ? modalityData.models.join(', ') : ''),
-                                        e('td', null, renderEditableNumber(modalityData.routine_hours_per_day, `equipment.${modalityKey}.routine_hours_per_day`)),
-                                        e('td', null, renderEditableNumber(modalityData.routine_days_per_week, `equipment.${modalityKey}.routine_days_per_week`)),
-                                        e('td', { className: modalityData.out_of_hours_available ? 'available-yes' : 'available-no' }, 
-                                            renderEditableBoolean(modalityData.out_of_hours_available, `equipment.${modalityKey}.out_of_hours_available`)
-                                        ),
-                                        e('td', null, renderEditableNumber(modalityData.out_of_hours_days_per_week, `equipment.${modalityKey}.out_of_hours_days_per_week`))
-                                    )
-                                )
-                            )
-                        )
-                    );
-                }
-
-                // New machines array structure
+    e('section', { className: 'profile-detail-section' },
+        e('h4', null, 'Equipment'),
+        // FIX: Spread the array of elements returned by .map()
+        ...Object.entries(editedProfile.equipment).map(([modalityKey, modalityData]) => {
+            // Handle legacy data structure
+            if (!modalityData.machines) {
                 return e('div', { key: modalityKey, style: { marginBottom: '2rem' } },
-                    e('h5', null, `${modalityKey.replace('_', ' ').toUpperCase()} (${modalityData.machines.length} machines)`),
+                    e('h5', null, `${modalityKey.replace('_', ' ').toUpperCase()} (${modalityData.count || 0} machines)`),
                     e('div', { className: 'table-container' },
                         e('table', { className: 'equipment-table' },
                             e('thead', null,
                                 e('tr', null,
-                                    ...[
-                                        e('th', null, 'Machine Name'),
-                                        e('th', null, 'Model'),
-                                        e('th', null, 'Routine Hours/Day'),
-                                        e('th', null, 'Routine Days/Week'),
-                                        e('th', null, 'Out of Hours Available'),
-                                        e('th', null, 'Out of Hours Days/Week'),
-                                        modalityKey === 'ct' && e('th', null, 'Interventional Only')
-                                    ].filter(Boolean)
+                                    e('th', null, 'Count'),
+                                    e('th', null, 'Models'),
+                                    e('th', null, 'Routine Hours/Day'),
+                                    e('th', null, 'Routine Days/Week'),
+                                    e('th', null, 'Out of Hours Available'),
+                                    e('th', null, 'Out of Hours Days/Week')
                                 )
                             ),
                             e('tbody', null,
-                                modalityData.machines.map((machine, index) =>
-                                    e('tr', { 
-                                        key: machine.id || index,
-                                        className: modalityKey === 'ct' && machine.interventional_only ? 'interventional-row' : ''
-                                    },
-                                        ...[
-                                            e('td', { className: 'equipment-type' }, 
-                                                editMode ? 
-                                                    e('input', {
-                                                        type: 'text',
-                                                        value: machine.name || '',
-                                                        placeholder: 'Machine name (optional)',
-                                                        onChange: (event) => updateField(`equipment.${modalityKey}.machines.${index}.name`, event.target.value)
-                                                    }) :
-                                                    (machine.name || `${modalityKey.toUpperCase()} ${index + 1}`)
-                                            ),
-                                            e('td', null, 
-                                                editMode ? 
-                                                    e('input', {
-                                                        type: 'text',
-                                                        value: machine.model || '',
-                                                        placeholder: 'Enter model',
-                                                        onChange: (event) => updateField(`equipment.${modalityKey}.machines.${index}.model`, event.target.value)
-                                                    }) :
-                                                    machine.model
-                                            ),
-                                            e('td', null, 
-                                                renderEditableNumber(machine.routine_hours_per_day, `equipment.${modalityKey}.machines.${index}.routine_hours_per_day`)
-                                            ),
-                                            e('td', null, 
-                                                renderEditableNumber(machine.routine_days_per_week, `equipment.${modalityKey}.machines.${index}.routine_days_per_week`)
-                                            ),
-                                            e('td', { className: machine.out_of_hours_available ? 'available-yes' : 'available-no' }, 
-                                                renderEditableBoolean(machine.out_of_hours_available, `equipment.${modalityKey}.machines.${index}.out_of_hours_available`)
-                                            ),
-                                            e('td', null, 
-                                                renderEditableNumber(machine.out_of_hours_days_per_week, `equipment.${modalityKey}.machines.${index}.out_of_hours_days_per_week`)
-                                            ),
-                                            modalityKey === 'ct' && e('td', { className: machine.interventional_only ? 'available-yes' : 'available-no' }, 
-                                                renderEditableBoolean(machine.interventional_only, `equipment.${modalityKey}.machines.${index}.interventional_only`)
-                                            )
-                                        ].filter(Boolean)
-                                    )
+                                e('tr', null,
+                                    e('td', null, renderEditableNumber(modalityData.count, `equipment.${modalityKey}.count`)),
+                                    e('td', null, modalityData.models ? modalityData.models.join(', ') : ''),
+                                    e('td', null, renderEditableNumber(modalityData.routine_hours_per_day, `equipment.${modalityKey}.routine_hours_per_day`)),
+                                    e('td', null, renderEditableNumber(modalityData.routine_days_per_week, `equipment.${modalityKey}.routine_days_per_week`)),
+                                    e('td', { className: modalityData.out_of_hours_available ? 'available-yes' : 'available-no' }, 
+                                        renderEditableBoolean(modalityData.out_of_hours_available, `equipment.${modalityKey}.out_of_hours_available`)
+                                    ),
+                                    e('td', null, renderEditableNumber(modalityData.out_of_hours_days_per_week, `equipment.${modalityKey}.out_of_hours_days_per_week`))
                                 )
+                            )
+                        )
+                    )
+                );
+            }
+
+            // New machines array structure
+            return e('div', { key: modalityKey, style: { marginBottom: '2rem' } },
+                e('h5', null, `${modalityKey.replace('_', ' ').toUpperCase()} (${modalityData.machines.length} machines)`),
+                e('div', { className: 'table-container' },
+                    e('table', { className: 'equipment-table' },
+                        e('thead', null,
+                            e('tr', null,
+                                ...[
+                                    e('th', null, 'Machine Name'),
+                                    e('th', null, 'Model'),
+                                    e('th', null, 'Routine Hours/Day'),
+                                    e('th', null, 'Routine Days/Week'),
+                                    e('th', null, 'Out of Hours Available'),
+                                    e('th', null, 'Out of Hours Days/Week'),
+                                    modalityKey === 'ct' && e('th', null, 'Interventional Only')
+                                ].filter(Boolean)
+                            )
+                        ),
+                        e('tbody', null,
+                            modalityData.machines.map((machine, index) =>
+                                e('tr', { 
+                                    key: machine.id || index,
+                                    className: modalityKey === 'ct' && machine.interventional_only ? 'interventional-row' : ''
+                                },
+                                    ...[
+                                        e('td', { className: 'equipment-type' }, 
+                                            editMode ? 
+                                                e('input', {
+                                                    type: 'text',
+                                                    value: machine.name || '',
+                                                    placeholder: 'Machine name (optional)',
+                                                    onChange: (event) => updateField(`equipment.${modalityKey}.machines.${index}.name`, event.target.value)
+                                                }) :
+                                                (machine.name || `${modalityKey.toUpperCase()} ${index + 1}`)
+                                        ),
+                                        e('td', null, 
+                                            editMode ? 
+                                                e('input', {
+                                                    type: 'text',
+                                                    value: machine.model || '',
+                                                    placeholder: 'Enter model',
+                                                    onChange: (event) => updateField(`equipment.${modalityKey}.machines.${index}.model`, event.target.value)
+                                                }) :
+                                                machine.model
+                                        ),
+                                        e('td', null, 
+                                            renderEditableNumber(machine.routine_hours_per_day, `equipment.${modalityKey}.machines.${index}.routine_hours_per_day`)
+                                        ),
+                                        e('td', null, 
+                                            renderEditableNumber(machine.routine_days_per_week, `equipment.${modalityKey}.machines.${index}.routine_days_per_week`)
+                                        ),
+                                        e('td', { className: machine.out_of_hours_available ? 'available-yes' : 'available-no' }, 
+                                            renderEditableBoolean(machine.out_of_hours_available, `equipment.${modalityKey}.machines.${index}.out_of_hours_available`)
+                                        ),
+                                        e('td', null, 
+                                            renderEditableNumber(machine.out_of_hours_days_per_week, `equipment.${modalityKey}.machines.${index}.out_of_hours_days_per_week`)
+                                        ),
+                                        modalityKey === 'ct' && e('td', { className: machine.interventional_only ? 'available-yes' : 'available-no' }, 
+                                            renderEditableBoolean(machine.interventional_only, `equipment.${modalityKey}.machines.${index}.interventional_only`)
+                                        )
+                                    ].filter(Boolean)
+                                )
+                            )
                         )
                     )
                 )
