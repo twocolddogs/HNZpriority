@@ -1294,6 +1294,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     if (progressResponse.ok && pollingActive) {
                         const progressData = await progressResponse.json();
                         const { percentage = 0, processed = 0, total = sampleSize, success = 0, errors = 0 } = progressData;
+                        console.log(`Progress update: ${processed}/${total} (${percentage}%) - ${success} success, ${errors} errors`);
                         if (statusId) {
                             statusManager.updateProgress(statusId, processed, total, `Random sample (${percentage}% - ${success} success, ${errors} errors)`);
                         }
@@ -1304,7 +1305,11 @@ window.addEventListener('DOMContentLoaded', function() {
                         }
                     } else if (progressResponse.status === 404 && pollingActive) {
                         // Batch not ready yet, wait and retry
+                        console.log('Batch progress not available yet, retrying...');
                         setTimeout(pollProgress, 500);
+                    } else if (!progressResponse.ok && pollingActive) {
+                        console.warn(`Progress response not OK: ${progressResponse.status} ${progressResponse.statusText}`);
+                        setTimeout(pollProgress, 1000);
                     }
                 } catch (progressError) {
                     console.warn('Progress polling error:', progressError);
@@ -2717,6 +2722,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const parametersDiv = document.getElementById('savedParameters');
             const continueBtn = document.getElementById('continueValidatingBtn');
             const newRunBtn = document.getElementById('startNewRunBtn');
+            const startOverBtn = document.getElementById('startOverBtn');
             const actionOptions = modal.querySelectorAll('.action-option');
 
             // Build summary
@@ -2758,6 +2764,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     // Update button states
                     continueBtn.style.display = selectedAction === 'continue' ? 'inline-block' : 'none';
                     newRunBtn.style.display = selectedAction === 'newrun' ? 'inline-block' : 'none';
+                    startOverBtn.style.display = selectedAction === 'startover' ? 'inline-block' : 'none';
                 });
             });
 
@@ -2782,9 +2789,25 @@ window.addEventListener('DOMContentLoaded', function() {
                 }, 500);
             };
 
+            // Handle start over
+            const handleStartOver = () => {
+                // Show immediate feedback on the button
+                const originalHTML = startOverBtn.innerHTML;
+                startOverBtn.innerHTML = '<i class="spinner"></i> Starting Over...';
+                startOverBtn.disabled = true;
+                startOverBtn.style.cursor = 'wait';
+                
+                // Hide modal after a brief delay to show the feedback
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    resolve('startover');
+                }, 500);
+            };
+
             // Add event listeners
             continueBtn.addEventListener('click', handleContinue);
             newRunBtn.addEventListener('click', handleNewRun);
+            startOverBtn.addEventListener('click', handleStartOver);
 
             // Default to continue option
             actionOptions[0]?.click();
@@ -2934,6 +2957,24 @@ window.addEventListener('DOMContentLoaded', function() {
                         statusManager.show('❌ Failed to auto-start new run. Please start manually.', 'error', 5000);
                     }
                 }, 1000);
+            } else if (userChoice === 'startover') {
+                // Start over completely - reset to homepage with fresh state
+                statusManager.show('🏠 Starting over with fresh parameters...', 'info', 3000);
+                
+                // Clear all state
+                window.currentValidationState = {};
+                allMappings = [];
+                
+                // Reset to homepage/initial state
+                startNewUpload();
+                
+                // Clear saved parameters to force user to set new ones
+                lastProcessingParams = {
+                    model: 'retriever',
+                    reranker: 'medcpt', 
+                    sampleSize: 100,
+                    enableSecondaryPipeline: false
+                };
             }
             
         } catch (error) {
