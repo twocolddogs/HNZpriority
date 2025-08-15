@@ -1566,10 +1566,12 @@ window.addEventListener('DOMContentLoaded', function() {
                         } else {
                             statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
                             processingComplete = true;
+                            return; // Stop polling when progress file not found (indicates completion)
                         }
                     } catch (progressError) {
                         statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
                         processingComplete = true;
+                        return; // Stop polling on error
                     }
                 };
                 
