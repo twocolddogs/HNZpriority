@@ -13,44 +13,235 @@
         },
         "equipment": {
           "mri": {
-            "count": 3,
-            "models": ["Siemens 3T", "GE 1.5T", "Philips 3T"],
-            "routine_hours_per_day": 16,
-            "routine_days_per_week": 7,
-            "out_of_hours_available": true,
-            "out_of_hours_days_per_week": 7
+            "machines": [
+              {
+                "id": "mri_1",
+                "name": "MRI Suite 1",
+                "model": "Siemens 3T",
+                "routine_hours_per_day": 16,
+                "routine_days_per_week": 7,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7
+              },
+              {
+                "id": "mri_2",
+                "name": "MRI Suite 2",
+                "model": "GE 1.5T",
+                "routine_hours_per_day": 14,
+                "routine_days_per_week": 6,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 2
+              },
+              {
+                "id": "mri_3",
+                "name": "MRI Suite 3",
+                "model": "Philips 3T",
+                "routine_hours_per_day": 16,
+                "routine_days_per_week": 7,
+                "out_of_hours_available": false,
+                "out_of_hours_days_per_week": 0
+              }
+            ]
           },
           "ct": {
-            "count": 4,
-            "models": ["Siemens SOMATOM", "GE Revolution", "Philips iCT"],
-            "routine_hours_per_day": 24,
-            "routine_days_per_week": 7,
-            "out_of_hours_available": true,
-            "out_of_hours_days_per_week": 7
+            "machines": [
+              {
+                "id": "ct_1",
+                "name": "CT Scanner 1",
+                "model": "Siemens SOMATOM",
+                "routine_hours_per_day": 24,
+                "routine_days_per_week": 7,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7,
+                "interventional_only": false
+              },
+              {
+                "id": "ct_2",
+                "name": "CT Scanner 2",
+                "model": "GE Revolution",
+                "routine_hours_per_day": 20,
+                "routine_days_per_week": 7,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7,
+                "interventional_only": false
+              },
+              {
+                "id": "ct_3",
+                "name": "CT Scanner 3",
+                "model": "Philips iCT",
+                "routine_hours_per_day": 16,
+                "routine_days_per_week": 6,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 2,
+                "interventional_only": false
+              },
+              {
+                "id": "ct_4",
+                "name": "Interventional CT",
+                "model": "Siemens SOMATOM Force",
+                "routine_hours_per_day": 8,
+                "routine_days_per_week": 5,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7,
+                "interventional_only": true
+              }
+            ]
           },
           "ultrasound": {
-            "count": 8,
-            "models": ["GE Logiq", "Philips EPIQ", "Siemens Acuson"],
-            "routine_hours_per_day": 12,
-            "routine_days_per_week": 6,
-            "out_of_hours_available": true,
-            "out_of_hours_days_per_week": 2
+            "machines": [
+              {
+                "id": "us_1",
+                "name": "Ultrasound Room 1",
+                "model": "GE Logiq",
+                "routine_hours_per_day": 10,
+                "routine_days_per_week": 5,
+                "out_of_hours_available": false,
+                "out_of_hours_days_per_week": 0
+              },
+              {
+                "id": "us_2",
+                "name": "Ultrasound Room 2",
+                "model": "Philips EPIQ",
+                "routine_hours_per_day": 12,
+                "routine_days_per_week": 6,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 2
+              },
+              {
+                "id": "us_3",
+                "name": "Ultrasound Room 3",
+                "model": "Siemens Acuson",
+                "routine_hours_per_day": 8,
+                "routine_days_per_week": 5,
+                "out_of_hours_available": false,
+                "out_of_hours_days_per_week": 0
+              },
+              {
+                "id": "us_4",
+                "name": "Portable US 1",
+                "model": "GE Logiq Portable",
+                "routine_hours_per_day": 6,
+                "routine_days_per_week": 7,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7
+              },
+              {
+                "id": "us_5",
+                "name": "Portable US 2",
+                "model": "Philips Lumify",
+                "routine_hours_per_day": 4,
+                "routine_days_per_week": 5,
+                "out_of_hours_available": false,
+                "out_of_hours_days_per_week": 0
+              },
+              {
+                "id": "us_6",
+                "name": "Emergency US",
+                "model": "Butterfly iQ",
+                "routine_hours_per_day": 8,
+                "routine_days_per_week": 7,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7
+              },
+              {
+                "id": "us_7",
+                "name": "Obstetric US",
+                "model": "GE Voluson",
+                "routine_hours_per_day": 10,
+                "routine_days_per_week": 5,
+                "out_of_hours_available": false,
+                "out_of_hours_days_per_week": 0
+              },
+              {
+                "id": "us_8",
+                "name": "Vascular US",
+                "model": "Philips ClearVue",
+                "routine_hours_per_day": 8,
+                "routine_days_per_week": 5,
+                "out_of_hours_available": false,
+                "out_of_hours_days_per_week": 0
+              }
+            ]
           },
           "xray": {
-            "count": 6,
-            "models": ["Canon", "Fujifilm", "Siemens"],
-            "routine_hours_per_day": 16,
-            "routine_days_per_week": 7,
-            "out_of_hours_available": true,
-            "out_of_hours_days_per_week": 7
+            "machines": [
+              {
+                "id": "xr_1",
+                "name": "X-ray Room 1",
+                "model": "Canon CXDI",
+                "routine_hours_per_day": 12,
+                "routine_days_per_week": 7,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7
+              },
+              {
+                "id": "xr_2",
+                "name": "X-ray Room 2",
+                "model": "Fujifilm FCR",
+                "routine_hours_per_day": 10,
+                "routine_days_per_week": 6,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7
+              },
+              {
+                "id": "xr_3",
+                "name": "X-ray Room 3",
+                "model": "Siemens Ysio",
+                "routine_hours_per_day": 8,
+                "routine_days_per_week": 5,
+                "out_of_hours_available": false,
+                "out_of_hours_days_per_week": 0
+              },
+              {
+                "id": "xr_4",
+                "name": "Mobile X-ray 1",
+                "model": "Canon MobileDaRt",
+                "routine_hours_per_day": 6,
+                "routine_days_per_week": 7,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7
+              },
+              {
+                "id": "xr_5",
+                "name": "Mobile X-ray 2",
+                "model": "Fujifilm FDR Go",
+                "routine_hours_per_day": 4,
+                "routine_days_per_week": 7,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7
+              },
+              {
+                "id": "xr_6",
+                "name": "Emergency X-ray",
+                "model": "Siemens Mobilett",
+                "routine_hours_per_day": 24,
+                "routine_days_per_week": 7,
+                "out_of_hours_available": true,
+                "out_of_hours_days_per_week": 7
+              }
+            ]
           },
           "mammography": {
-            "count": 2,
-            "models": ["Hologic Selenia", "GE Senographe"],
-            "routine_hours_per_day": 8,
-            "routine_days_per_week": 5,
-            "out_of_hours_available": false,
-            "out_of_hours_days_per_week": 0
+            "machines": [
+              {
+                "id": "mammo_1",
+                "name": "Mammography Suite 1",
+                "model": "Hologic Selenia",
+                "routine_hours_per_day": 8,
+                "routine_days_per_week": 5,
+                "out_of_hours_available": false,
+                "out_of_hours_days_per_week": 0
+              },
+              {
+                "id": "mammo_2",
+                "name": "Mammography Suite 2",
+                "model": "GE Senographe",
+                "routine_hours_per_day": 6,
+                "routine_days_per_week": 4,
+                "out_of_hours_available": false,
+                "out_of_hours_days_per_week": 0
+              }
+            ]
           }
         },
         "staffing": {

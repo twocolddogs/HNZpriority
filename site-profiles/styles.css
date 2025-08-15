@@ -1114,6 +1114,48 @@ input:checked + .toggle-slider:before {
   text-transform: capitalize;
 }
 
+/* Equipment modality section headers */
+.profile-detail-section h5 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 1rem 0 0.5rem 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #E0E6ED;
+  background: linear-gradient(90deg, #143345 2px, transparent 2px);
+  padding-left: 0.75rem;
+}
+
+/* Machine input styling */
+.equipment-table input[type="text"] {
+  width: 100%;
+  min-width: 120px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  box-sizing: border-box;
+}
+
+.equipment-table input[type="text"]:focus {
+  outline: none;
+  border-color: #007A86;
+  box-shadow: 0 0 0 2px rgba(0, 122, 134, 0.15);
+}
+
+/* Interventional CT highlighting */
+.equipment-table tr.interventional-row {
+  background-color: #FFF7E6;
+}
+
+.equipment-table tr.interventional-row .equipment-type::after {
+  content: ' ⚕️';
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
 .available-yes {
   color: #2E7D2E;
   font-weight: var(--font-weight-semibold);
