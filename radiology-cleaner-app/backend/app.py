@@ -1791,8 +1791,8 @@ def get_batch_progress(batch_id):
     Returns progress information from the progress file.
     """
     try:
-        # Use the same dedicated directory as batch processing for temporary files
-        output_dir = 'batch_outputs'
+        # Use the same directory logic as batch processing to ensure consistency
+        output_dir = os.environ.get('RENDER_DISK_PATH', 'batch_outputs')
         progress_filename = f"batch_progress_{batch_id}.json"
         progress_filepath = os.path.join(output_dir, progress_filename)
         
