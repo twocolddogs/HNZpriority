@@ -1545,6 +1545,11 @@ window.addEventListener('DOMContentLoaded', function() {
                 let finalResults = null;
                 
                 const pollProgress = async () => {
+                    // Check if polling should continue
+                    if (processingComplete) {
+                        return; // Stop if already completed
+                    }
+                    
                     try {
                         const progressResponse = await fetch(`${apiConfig.baseUrl}/batch_progress/${batchResult.batch_id}`);
                         if (progressResponse.ok) {
@@ -1578,13 +1583,18 @@ window.addEventListener('DOMContentLoaded', function() {
                             // Continue polling if still processing
                             // Use more frequent polling for smaller batches to catch progress updates
                             const pollInterval = totalCodes <= 50 ? 200 : 1000;
-                            setTimeout(pollProgress, pollInterval);
+                            if (!processingComplete) {
+                                setTimeout(pollProgress, pollInterval);
+                            }
                         } else {
+                            // 404 or other error indicates completion
+                            console.log('Progress file not found - assuming completion');
                             statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
                             processingComplete = true;
                             return; // Stop polling when progress file not found (indicates completion)
                         }
                     } catch (progressError) {
+                        console.warn('Progress polling error:', progressError);
                         statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
                         processingComplete = true;
                         return; // Stop polling on error
