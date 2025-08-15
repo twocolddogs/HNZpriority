@@ -1301,7 +1301,9 @@ window.addEventListener('DOMContentLoaded', function() {
                             statusManager.updateProgress(statusId, processed, total, `Random sample (${percentage}% - ${success} success, ${errors} errors)`);
                         }
                         if (percentage < 100 && processed < total && pollingActive) {
-                            setTimeout(pollProgress, 500);
+                            // Use more frequent polling for smaller samples to catch progress updates
+                            const pollInterval = sampleSize <= 50 ? 200 : 500;
+                            setTimeout(pollProgress, pollInterval);
                         } else {
                             pollingActive = false;
                         }
@@ -1315,7 +1317,9 @@ window.addEventListener('DOMContentLoaded', function() {
                         } else {
                             // Batch not ready yet, wait and retry
                             console.log('Batch progress not available yet, retrying...');
-                            setTimeout(pollProgress, 500);
+                            // Use more frequent polling for smaller samples to catch initialization faster
+                            const pollInterval = sampleSize <= 50 ? 200 : 500;
+                            setTimeout(pollProgress, pollInterval);
                         }
                     } else if (!progressResponse.ok && pollingActive) {
                         console.warn(`Progress response not OK: ${progressResponse.status} ${progressResponse.statusText}`);
@@ -1572,7 +1576,9 @@ window.addEventListener('DOMContentLoaded', function() {
                             }
                             
                             // Continue polling if still processing
-                            setTimeout(pollProgress, 1000);
+                            // Use more frequent polling for smaller batches to catch progress updates
+                            const pollInterval = totalCodes <= 50 ? 200 : 1000;
+                            setTimeout(pollProgress, pollInterval);
                         } else {
                             statusManager.updateProgress(progressId, totalCodes, totalCodes, `Completed processing ${jobName}`);
                             processingComplete = true;
