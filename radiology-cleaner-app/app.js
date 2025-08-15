@@ -1269,6 +1269,7 @@ window.addEventListener('DOMContentLoaded', function() {
             let pollingActive = true;
             let batchId = null;
             let progressCheckCount = 0;
+            let hasSeenProgress = false; // Track if we've seen any progress data
             
             const pollProgress = async () => {
                 if (!pollingActive) return;
@@ -1294,6 +1295,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     if (progressResponse.ok && pollingActive) {
                         const progressData = await progressResponse.json();
                         const { percentage = 0, processed = 0, total = sampleSize, success = 0, errors = 0 } = progressData;
+                        hasSeenProgress = true; // Mark that we've seen progress data
                         console.log(`Progress update: ${processed}/${total} (${percentage}%) - ${success} success, ${errors} errors`);
                         if (statusId) {
                             statusManager.updateProgress(statusId, processed, total, `Random sample (${percentage}% - ${success} success, ${errors} errors)`);
@@ -1304,9 +1306,17 @@ window.addEventListener('DOMContentLoaded', function() {
                             pollingActive = false;
                         }
                     } else if (progressResponse.status === 404 && pollingActive) {
-                        // Batch not ready yet, wait and retry
-                        console.log('Batch progress not available yet, retrying...');
-                        setTimeout(pollProgress, 500);
+                        // Progress file not found - could mean batch not ready OR processing completed
+                        if (hasSeenProgress) {
+                            // We've seen progress before, so 404 now likely means completion
+                            console.log('Progress file not found after seeing progress - assuming completion');
+                            pollingActive = false;
+                            return;
+                        } else {
+                            // Batch not ready yet, wait and retry
+                            console.log('Batch progress not available yet, retrying...');
+                            setTimeout(pollProgress, 500);
+                        }
                     } else if (!progressResponse.ok && pollingActive) {
                         console.warn(`Progress response not OK: ${progressResponse.status} ${progressResponse.statusText}`);
                         setTimeout(pollProgress, 1000);
