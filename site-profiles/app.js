@@ -593,7 +593,7 @@ function ProfileDetails({ profile, editMode }) {
                                                 renderEditableBoolean(machine.interventional_only, `equipment.${modalityKey}.machines.${index}.interventional_only`)
                                             )
                                         ].filter(Boolean)
-                                )
+                                    )
                             )
                         )
                     )
