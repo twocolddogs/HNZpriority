@@ -189,7 +189,7 @@ class StatusManager {
             <div class="progress-container">
                 <div class="progress-header">
                     <span class="progress-message">${message}</span>
-                    <span class="progress-counter">${current}/${total} (${percentage}%)</span>
+                    <span class="progress-counter">${current}/${total}</span>
                 </div>
                 <div class="progress-bar"><div class="progress-fill" style="width: ${percentage}%"></div></div>
             </div>`;
@@ -208,7 +208,7 @@ class StatusManager {
             <div class="progress-container">
                 <div class="progress-header">
                     <span class="progress-message">${progressMessage}</span>
-                    <span class="progress-counter">${current}/${total} (${percentage}%)</span>
+                    <span class="progress-counter">${current}/${total}</span>
                 </div>
                 <div class="progress-bar"><div class="progress-fill" style="width: ${percentage}%"></div></div>
             </div>`;
