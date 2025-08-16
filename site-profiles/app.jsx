@@ -1,6 +1,5 @@
 
-import React, { useState, useEffect } from 'https://esm.sh/react@18';
-import { createRoot } from 'https://esm.sh/react-dom@18/client';
+const { useState, useEffect } = React;
 
 // Main App Component
 function App() {
@@ -867,5 +866,5 @@ function PasswordModal({ closeModal, onPasswordSubmit, regionName, currentAuthRe
 
 // Initialize the application
 const container = document.querySelector('.lora-container');
-const root = createRoot(container);
+const root = ReactDOM.createRoot(container);
 root.render(<App />);
