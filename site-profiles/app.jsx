@@ -358,10 +358,11 @@ function ProfileCard({ siteKey, siteData, onClick }) {
     const staffVacancyData = keyStaffingCategories.map(category => {
         const staff = siteData.staffing[category.key];
         if (staff && staff.total_fte > 0) {
-            const vacancyRate = (staff.current_vacancies / staff.total_fte) * 100;
+            const filledFTE = staff.total_fte - staff.current_vacancies;
+            const filledPercentage = (filledFTE / staff.total_fte) * 100;
             return {
                 label: category.label,
-                vacancyRate: vacancyRate,
+                filledPercentage: filledPercentage,
                 totalFTE: staff.total_fte,
                 vacancies: staff.current_vacancies
             };
@@ -369,11 +370,10 @@ function ProfileCard({ siteKey, siteData, onClick }) {
         return null;
     }).filter(Boolean);
 
-    // Helper function to get color based on vacancy rate
-    const getVacancyColor = (rate) => {
-        const filledRate = 100 - rate;
-        if (filledRate >= 80) return '#28a745'; // Green
-        if (filledRate >= 60) return '#ffc107'; // Orange/Yellow
+    // Helper function to get color based on filled percentage
+    const getStaffingColor = (filledPercentage) => {
+        if (filledPercentage >= 80) return '#28a745'; // Green
+        if (filledPercentage >= 60) return '#ffc107'; // Orange/Yellow
         return '#dc3545'; // Red
     };
 
@@ -404,63 +404,66 @@ function ProfileCard({ siteKey, siteData, onClick }) {
                 </p>
             </div>
             <div className='name-card-content'>
-                <div>
-                    <strong><i className="fas fa-x-ray" style={{ marginRight: '0.5rem' }}></i>Equipment:</strong>
-                    <div style={{ marginTop: '0.25rem', lineHeight: '1.4' }}>
-                        {Object.entries(equipmentBreakdown).length > 0 ? 
-                            Object.entries(equipmentBreakdown)
-                                .map(([modality, count], index) => (
-                                    <div key={index}>{`${modality}: ${count}`}</div>
-                                )) :
-                            '0 machines'
-                        }
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '0.75rem' }}>
+                    {/* Equipment Section */}
+                    <div>
+                        <strong style={{ fontSize: '0.9rem' }}><i className="fas fa-x-ray" style={{ marginRight: '0.5rem' }}></i>Equipment:</strong>
+                        <div style={{ marginTop: '0.25rem', lineHeight: '1.4' }}>
+                            {Object.entries(equipmentBreakdown).length > 0 ? 
+                                Object.entries(equipmentBreakdown)
+                                    .map(([modality, count], index) => (
+                                        <div key={index} style={{ fontSize: '0.85rem' }}>{`${modality}: ${count}`}</div>
+                                    )) :
+                                <div style={{ fontSize: '0.85rem' }}>0 machines</div>
+                            }
+                        </div>
                     </div>
-                </div>
-                
-                {/* Clinical Workforce Section */}
-                <div style={{ marginTop: '1rem' }}>
-                    <strong><i className="fas fa-user-md" style={{ marginRight: '0.5rem' }}></i>Clinical Workforce:</strong>
-                    <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {staffVacancyData.map((staff, index) => {
-                            const vacancyColor = getVacancyColor(staff.vacancyRate);
-                            return (
-                                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ minWidth: '80px', fontSize: '0.9rem' }}>{staff.label}:</span>
-                                    <div style={{ 
-                                        flex: 1, 
-                                        height: '20px', 
-                                        backgroundColor: '#f0f0f0', 
-                                        borderRadius: '10px',
-                                        position: 'relative',
-                                        overflow: 'hidden'
-                                    }}>
-                                        <div style={{
-                                            height: '100%',
-                                            width: `${Math.max(0, 100 - staff.vacancyRate)}%`,
-                                            backgroundColor: vacancyColor,
-                                            borderRadius: '10px',
-                                            transition: 'width 0.3s ease'
-                                        }}></div>
-                                        <span style={{
-                                            position: 'absolute',
-                                            left: '50%',
-                                            top: '50%',
-                                            transform: 'translate(-50%, -50%)',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 'bold',
-                                            color: staff.vacancyRate > 50 ? '#333' : '#fff',
-                                            textShadow: staff.vacancyRate > 50 ? 'none' : '1px 1px 1px rgba(0,0,0,0.3)'
+                    
+                    {/* Clinical Workforce Section */}
+                    <div>
+                        <strong style={{ fontSize: '0.9rem' }}><i className="fas fa-user-md" style={{ marginRight: '0.5rem' }}></i>Clinical Workforce:</strong>
+                        <div style={{ marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            {staffVacancyData.map((staff, index) => {
+                                const staffingColor = getStaffingColor(staff.filledPercentage);
+                                return (
+                                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <span style={{ minWidth: '45px', fontSize: '0.85rem', fontWeight: '500' }}>{staff.label}:</span>
+                                        <div style={{ 
+                                            width: '80px',
+                                            height: '16px', 
+                                            backgroundColor: '#f0f0f0', 
+                                            borderRadius: '8px',
+                                            position: 'relative',
+                                            overflow: 'hidden'
                                         }}>
-                                            {staff.vacancyRate.toFixed(1)}%
-                                        </span>
+                                            <div style={{
+                                                height: '100%',
+                                                width: `${Math.max(0, staff.filledPercentage)}%`,
+                                                backgroundColor: staffingColor,
+                                                borderRadius: '8px',
+                                                transition: 'width 0.3s ease'
+                                            }}></div>
+                                            <span style={{
+                                                position: 'absolute',
+                                                left: '50%',
+                                                top: '50%',
+                                                transform: 'translate(-50%, -50%)',
+                                                fontSize: '0.7rem',
+                                                fontWeight: 'bold',
+                                                color: staff.filledPercentage < 50 ? '#333' : '#fff',
+                                                textShadow: staff.filledPercentage < 50 ? 'none' : '1px 1px 1px rgba(0,0,0,0.3)'
+                                            }}>
+                                                {staff.filledPercentage.toFixed(1)}%
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
                 
-                <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#666' }}>
+                <div style={{ fontSize: '0.8rem', color: '#666', borderTop: '1px solid #eee', paddingTop: '0.5rem' }}>
                     {`Ops/Service Manager: ${siteData.contact.ops_service_manager || siteData.contact.manager}`}
                 </div>
             </div>
