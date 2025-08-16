@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProfileCard Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .name-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 1rem 0;
+            max-width: 600px;
+        }
+        .name-card-header h2 { margin: 0 0 0.5rem 0; color: #333; }
+        .name-card-header p { margin: 0; font-size: 0.9rem; opacity: 0.8; }
+        .name-card-content { margin-top: 1rem; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .grid > div { padding: 0.5rem 0; }
+        .manager-info { margin-top: 0.5rem; font-size: 0.8rem; color: #666; }
+    </style>
+</head>
+<body>
+    <h1>ProfileCard Enhancement Test Results</h1>
+    
+    <div class="name-card">
+        <div class="name-card-header">
+            <h2>Auckland City Hospital</h2>
+            <p>ACH • Auckland</p>
+        </div>
+        <div class="name-card-content">
+            <div class="grid">
+                <div>
+                    <strong>Equipment: </strong>
+                    CT: 4, MRI: 3, ULTRASOUND: 8
+                </div>
+                <div>
+                    <strong>Key Staff: </strong>
+                    59.5 FTE (SMO/MIT/RA)
+                </div>
+                <div>
+                    <strong>Vacancy Rate: </strong>
+                    <span style="color: #28a745; font-weight: bold; background-color: #28a74520; padding: 2px 6px; border-radius: 3px;">
+                        11.8%
+                    </span>
+                </div>
+                <div>
+                    <strong>Annual Exams: </strong>
+                    125,000
+                </div>
+            </div>
+            <div class="manager-info">
+                Ops/Service Manager: Dr. Sarah Johnson
+            </div>
+        </div>
+    </div>
+
+    <div class="name-card">
+        <div class="name-card-header">
+            <h2>Sample Hospital - Orange Zone</h2>
+            <p>SH • Sample</p>
+        </div>
+        <div class="name-card-content">
+            <div class="grid">
+                <div>
+                    <strong>Equipment: </strong>
+                    CT: 2, MRI: 1, ULTRASOUND: 4
+                </div>
+                <div>
+                    <strong>Key Staff: </strong>
+                    40.0 FTE (SMO/MIT/RA)
+                </div>
+                <div>
+                    <strong>Vacancy Rate: </strong>
+                    <span style="color: #ffc107; font-weight: bold; background-color: #ffc10720; padding: 2px 6px; border-radius: 3px;">
+                        25.0%
+                    </span>
+                </div>
+                <div>
+                    <strong>Annual Exams: </strong>
+                    75,000
+                </div>
+            </div>
+            <div class="manager-info">
+                Ops/Service Manager: Dr. Jane Smith
+            </div>
+        </div>
+    </div>
+
+    <div class="name-card">
+        <div class="name-card-header">
+            <h2>Critical Hospital - Red Zone</h2>
+            <p>CH • Critical</p>
+        </div>
+        <div class="name-card-content">
+            <div class="grid">
+                <div>
+                    <strong>Equipment: </strong>
+                    CT: 1, ULTRASOUND: 2
+                </div>
+                <div>
+                    <strong>Key Staff: </strong>
+                    20.0 FTE (SMO/MIT/RA)
+                </div>
+                <div>
+                    <strong>Vacancy Rate: </strong>
+                    <span style="color: #dc3545; font-weight: bold; background-color: #dc354520; padding: 2px 6px; border-radius: 3px;">
+                        45.0%
+                    </span>
+                </div>
+                <div>
+                    <strong>Annual Exams: </strong>
+                    35,000
+                </div>
+            </div>
+            <div class="manager-info">
+                Ops/Service Manager: Dr. Bob Jones
+            </div>
+        </div>
+    </div>
+
+    <h2>Key Changes Made:</h2>
+    <ul>
+        <li><strong>Equipment Display:</strong> Changed from "15 machines" to granular breakdown "CT: 4, MRI: 3, ULTRASOUND: 8"</li>
+        <li><strong>Staffing Focus:</strong> Now shows only SMO, MIT, RA totals instead of all staff</li>
+        <li><strong>Vacancy Indicator:</strong> Color-coded percentage with green (≤20%), orange (20-40%), red (>40%)</li>
+        <li><strong>CT Machine Editing:</strong> New CT machines now include interventional_only field</li>
+    </ul>
+</body>
+</html>
