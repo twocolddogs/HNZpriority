@@ -417,7 +417,7 @@ function ProfileCard({ siteKey, siteData, onClick }) {
                             {staffVacancyData.map((staff, index) => {
                                 const staffingColor = getStaffingColor(staff.filledPercentage);
                                 return (
-                                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                         <span style={{ width: '70px', fontSize: '0.85rem', fontWeight: '500', textAlign: 'right' }}>{staff.label}:</span>
                                         <div style={{ 
                                             width: '120px',
