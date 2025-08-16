@@ -377,16 +377,7 @@ function ProfileCard({ siteKey, siteData, onClick }) {
         return '#dc3545'; // Red
     };
 
-    // Determine archetype based on annual examinations (hard-coded logic)
-    const getArchetype = (annualExams) => {
-        if (annualExams >= 120000) return 'X-Large';
-        if (annualExams >= 80000) return 'Large';
-        if (annualExams >= 50000) return 'Medium';
-        if (annualExams >= 25000) return 'Small';
-        return 'X-Small';
-    };
-
-    const archetype = getArchetype(siteData.performance_metrics.annual_examinations);
+    const archetype = siteData.archetype || 'Medium';
 
     return (
         <div
@@ -407,7 +398,7 @@ function ProfileCard({ siteKey, siteData, onClick }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '0.75rem' }}>
                     {/* Equipment Section */}
                     <div>
-                        <strong style={{ fontSize: '0.9rem' }}><i className="fas fa-x-ray" style={{ marginRight: '0.5rem' }}></i>Equipment:</strong>
+                        <strong style={{ fontSize: '1rem' }}><i className="fas fa-x-ray" style={{ marginRight: '0.5rem' }}></i>Equipment:</strong>
                         <div style={{ marginTop: '0.25rem', lineHeight: '1.4' }}>
                             {Object.entries(equipmentBreakdown).length > 0 ? 
                                 Object.entries(equipmentBreakdown)
@@ -421,17 +412,17 @@ function ProfileCard({ siteKey, siteData, onClick }) {
                     
                     {/* Clinical Workforce Section */}
                     <div>
-                        <strong style={{ fontSize: '0.9rem' }}><i className="fas fa-user-md" style={{ marginRight: '0.5rem' }}></i>Clinical Workforce:</strong>
+                        <strong style={{ fontSize: '1rem' }}><i className="fas fa-user-md" style={{ marginRight: '0.5rem' }}></i>Clinical Workforce:</strong>
                         <div style={{ marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                             {staffVacancyData.map((staff, index) => {
                                 const staffingColor = getStaffingColor(staff.filledPercentage);
                                 return (
                                     <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                        <span style={{ minWidth: '45px', fontSize: '0.85rem', fontWeight: '500' }}>{staff.label}:</span>
+                                        <span style={{ width: '50px', fontSize: '0.85rem', fontWeight: '500', textAlign: 'right' }}>{staff.label}:</span>
                                         <div style={{ 
-                                            width: '80px',
+                                            width: '120px',
                                             height: '16px', 
-                                            backgroundColor: '#f0f0f0', 
+                                            backgroundColor: '#d0d0d0', 
                                             borderRadius: '8px',
                                             position: 'relative',
                                             overflow: 'hidden'
@@ -659,7 +650,10 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                 <div className='contact-grid'>
                     {renderEditableField('Site Code', editedProfile.site_code, 'site_code')}
                     {renderEditableField('Location', editedProfile.location, 'location')}
-                    {renderEditableField('Archetype', editedProfile.archetype || 'Medium', 'archetype', 'select')}
+                    <div className='contact-item'>
+                        <div className='contact-label'>Archetype</div>
+                        <div className='contact-value'>{editedProfile.archetype || 'Medium'}</div>
+                    </div>
                     {renderEditableField('Phone', editedProfile.contact.phone, 'contact.phone', 'tel')}
                 </div>
             </div>

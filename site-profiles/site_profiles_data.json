@@ -6,6 +6,7 @@
         "site_name": "Auckland City Hospital",
         "site_code": "ACH",
         "location": "Auckland",
+        "archetype": "X-Large",
         "contact": {
           "manager": "Dr. Sarah Johnson",
           "email": "sarah.johnson@health.nz",
@@ -306,6 +307,7 @@
         "site_name": "North Shore Hospital",
         "site_code": "NSH",
         "location": "Auckland",
+        "archetype": "Large",
         "contact": {
           "manager": "Dr. Michael Chen",
           "email": "michael.chen@health.nz",
@@ -420,6 +422,7 @@
         "site_name": "Waikato Hospital",
         "site_code": "WKH",
         "location": "Hamilton",
+        "archetype": "Large",
         "contact": {
           "manager": "Dr. Emma Thompson",
           "email": "emma.thompson@health.nz",
@@ -534,6 +537,7 @@
         "site_name": "Wellington Hospital",
         "site_code": "WGH",
         "location": "Wellington",
+        "archetype": "Large",
         "contact": {
           "manager": "Dr. James Wilson",
           "email": "james.wilson@health.nz",
@@ -648,6 +652,7 @@
         "site_name": "Christchurch Hospital",
         "site_code": "CCH",
         "location": "Christchurch",
+        "archetype": "Large",
         "contact": {
           "manager": "Dr. Lisa Anderson",
           "email": "lisa.anderson@health.nz",
@@ -757,6 +762,7 @@
         "site_name": "Dunedin Hospital",
         "site_code": "DNH",
         "location": "Dunedin",
+        "archetype": "Medium",
         "contact": {
           "manager": "Dr. Robert Taylor",
           "email": "robert.taylor@health.nz",
