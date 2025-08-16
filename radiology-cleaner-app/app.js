@@ -1510,8 +1510,72 @@ window.addEventListener('DOMContentLoaded', function() {
                     statusManager.show(successMessage + urlMessage, 'success', 10000);
                 }
             } else {
-                if (statusId) statusManager.remove(statusId);
-                statusManager.show('✅ Processing completed but no results URL available', 'warning', 5000);
+                // No R2 URL available, try to get results directly from the batch results if we have a batch_id
+                if (batchId && finalResult.processing_stats) {
+                    try {
+                        if (statusId) statusManager.remove(statusId);
+                        statusId = statusManager.show('Fetching results directly from batch processing...', 'progress');
+                        
+                        const directResultsResponse = await fetch(`${apiConfig.baseUrl}/get_batch_results/batch_results_${batchId}.jsonl`);
+                        if (directResultsResponse.ok) {
+                            const directResultsData = await directResultsResponse.json();
+                            const directResults = directResultsData.results || directResultsData;
+                            
+                            if (directResults && directResults.length > 0) {
+                                if (statusId) statusManager.remove(statusId);
+                                statusId = statusManager.show('Processing results and generating display...', 'progress');
+                                
+                                // Use the same mapping logic as the R2 URL path
+                                const mappedResults = directResults.map(item => ({
+                                    data_source: item.input?.DATA_SOURCE || item.input?.data_source || item.output?.data_source,
+                                    modality_code: item.input?.MODALITY_CODE || item.input?.modality_code || item.output?.modality_code,
+                                    exam_code: item.input?.EXAM_CODE || item.input?.exam_code || item.output?.exam_code,
+                                    exam_name: item.input?.EXAM_NAME || item.input?.exam_name || item.output?.exam_name,
+                                    clean_name: item.status === 'success' ? item.output?.clean_name : `ERROR: ${item.error}`,
+                                    snomed: item.status === 'success' ? item.output?.snomed || {} : {},
+                                    components: item.status === 'success' ? item.output?.components || {} : {},
+                                    all_candidates: item.status === 'success' ? item.output?.all_candidates || [] : [],
+                                    ambiguous: item.status === 'success' ? item.output?.ambiguous : false,
+                                    secondary_pipeline_applied: item.status === 'success' ? item.output?.secondary_pipeline_applied || false : false,
+                                    secondary_pipeline_details: item.status === 'success' ? item.output?.secondary_pipeline_details : undefined,
+                                    validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                                      (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                                    validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                                     (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                                    timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                                       (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
+                                }));
+                                
+                                allMappings = mappedResults;
+                                updatePageTitle(`Random Sample (${finalResult.processing_stats?.sample_size || finalResult.processing_stats?.total_processed} items)`);
+                                
+                                try {
+                                    runAnalysis(allMappings);
+                                    const successMessage = `✅ Random sample completed! ${finalResult.processing_stats?.processed_successfully || finalResult.processing_stats?.successful || 'Unknown'} items processed`;
+                                    statusManager.show(successMessage, 'success', 5000);
+                                    if (mainCard) mainCard.style.display = 'block';
+                                } catch (analysisError) {
+                                    console.error('Error during results analysis:', analysisError);
+                                    statusManager.show('❌ Error displaying results', 'error', 5000);
+                                    if (mainCard) mainCard.style.display = 'block';
+                                }
+                            } else {
+                                if (statusId) statusManager.remove(statusId);
+                                statusManager.show('✅ Processing completed but no results data found', 'warning', 5000);
+                            }
+                        } else {
+                            if (statusId) statusManager.remove(statusId);
+                            statusManager.show('✅ Processing completed but results could not be retrieved', 'warning', 5000);
+                        }
+                    } catch (directFetchError) {
+                        console.error('Failed to fetch results directly:', directFetchError);
+                        if (statusId) statusManager.remove(statusId);
+                        statusManager.show('✅ Processing completed but results could not be retrieved', 'warning', 5000);
+                    }
+                } else {
+                    if (statusId) statusManager.remove(statusId);
+                    statusManager.show('✅ Processing completed but no batch ID available for result retrieval', 'warning', 5000);
+                }
             }
         } catch (error) {
             console.error('Random sample failed:', error);
