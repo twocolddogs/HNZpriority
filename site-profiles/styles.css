@@ -1190,11 +1190,6 @@ input:checked + .toggle-slider:before {
   background-color: #FFF7E6;
 }
 
-.equipment-table tr.interventional-row .equipment-type::after {
-  content: ' ⚕️';
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
 
 .available-yes {
   color: #2E7D2E;

@@ -211,7 +211,7 @@ function Header({ isMenuOpen, toggleMenu, closeMenu, exportAllProfiles, setEditM
         <div className='lora-sticky-header'>
             <div className='lora-brand-bar'>
                 <img
-                    src='../images/HealthNZ_logo_v2.svg'
+                    src='./images/HealthNZ_logo_v2.svg'
                     alt='Health New Zealand Logo'
                     className='lora-app-logo'
                 />
@@ -237,7 +237,7 @@ function Header({ isMenuOpen, toggleMenu, closeMenu, exportAllProfiles, setEditM
                                         alert('New Profile functionality coming soon');
                                         closeMenu();
                                     }}
-                                >New Profile</button>
+                                ><i className="fas fa-plus" style={{ marginRight: '0.5rem' }}></i>New Profile</button>
                             </li>
                             <li>
                                 <button
@@ -245,12 +245,12 @@ function Header({ isMenuOpen, toggleMenu, closeMenu, exportAllProfiles, setEditM
                                         alert('Import functionality coming soon');
                                         closeMenu();
                                     }}
-                                >Import Profiles</button>
+                                ><i className="fas fa-upload" style={{ marginRight: '0.5rem' }}></i>Import Profiles</button>
                             </li>
                             <li>
                                 <button
                                     onClick={exportAllProfiles}
-                                >Export All Profiles</button>
+                                ><i className="fas fa-download" style={{ marginRight: '0.5rem' }}></i>Export All Profiles</button>
                             </li>
                             <li className='menu-divider'></li>
                             <li>
@@ -259,7 +259,7 @@ function Header({ isMenuOpen, toggleMenu, closeMenu, exportAllProfiles, setEditM
                                         setEditMode(false);
                                         closeMenu();
                                     }}
-                                >View Mode</button>
+                                ><i className="fas fa-eye" style={{ marginRight: '0.5rem' }}></i>View Mode</button>
                             </li>
                             <li>
                                 <button
@@ -267,6 +267,7 @@ function Header({ isMenuOpen, toggleMenu, closeMenu, exportAllProfiles, setEditM
                                     style={authenticatedRegions.has(currentRegion) ? 
                                         { color: '#2E7D2E', fontWeight: '600' } : {}}
                                 > 
+                                <i className="fas fa-edit" style={{ marginRight: '0.5rem' }}></i>
                                 {authenticatedRegions.has(currentRegion) ? 
                                     `Edit Mode (${currentRegion.charAt(0).toUpperCase() + currentRegion.slice(1)} ✓)` : 
                                     'Edit Mode (Authentication Required)'}
@@ -404,7 +405,7 @@ function ProfileCard({ siteKey, siteData, onClick }) {
             </div>
             <div className='name-card-content'>
                 <div>
-                    <strong>Equipment:</strong>
+                    <strong><i className="fas fa-x-ray" style={{ marginRight: '0.5rem' }}></i>Equipment:</strong>
                     <div style={{ marginTop: '0.25rem', lineHeight: '1.4' }}>
                         {Object.entries(equipmentBreakdown).length > 0 ? 
                             Object.entries(equipmentBreakdown)
@@ -418,7 +419,7 @@ function ProfileCard({ siteKey, siteData, onClick }) {
                 
                 {/* Clinical Workforce Section */}
                 <div style={{ marginTop: '1rem' }}>
-                    <strong>Clinical Workforce:</strong>
+                    <strong><i className="fas fa-user-md" style={{ marginRight: '0.5rem' }}></i>Clinical Workforce:</strong>
                     <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {staffVacancyData.map((staff, index) => {
                             const vacancyColor = getVacancyColor(staff.vacancyRate);
@@ -476,11 +477,11 @@ function ProfileModal({ profile, closeModal, exportProfile, editMode }) {
     const { data } = profile;
 
     const tabs = [
-        { id: 'contact', label: 'Contact' },
-        { id: 'equipment', label: 'Equipment' },
-        { id: 'staffing', label: 'Staffing' },
-        { id: 'productivity', label: 'Productivity' },
-        { id: 'digital', label: 'Digital' }
+        { id: 'contact', label: 'Contact', icon: 'fas fa-address-card' },
+        { id: 'equipment', label: 'Equipment', icon: 'fas fa-x-ray' },
+        { id: 'staffing', label: 'Staffing', icon: 'fas fa-users' },
+        { id: 'productivity', label: 'Productivity', icon: 'fas fa-chart-line' },
+        { id: 'digital', label: 'Digital', icon: 'fas fa-laptop-medical' }
     ];
 
     const handleOverlayClick = (event) => {
@@ -504,7 +505,7 @@ function ProfileModal({ profile, closeModal, exportProfile, editMode }) {
                             key={tab.id}
                             className={`modal-tab ${activeTab === tab.id ? 'active' : ''}`}
                             onClick={() => setActiveTab(tab.id)}
-                        >{tab.label}</button>
+                        ><i className={tab.icon} style={{ marginRight: '0.5rem' }}></i>{tab.label}</button>
                     )}
                 </div>
                 
@@ -515,15 +516,15 @@ function ProfileModal({ profile, closeModal, exportProfile, editMode }) {
                     <button
                         className='modal-btn modal-btn-cancel'
                         onClick={closeModal}
-                    >Close</button>
+                    ><i className="fas fa-times" style={{ marginRight: '0.5rem' }}></i>Close</button>
                     {editMode && <button
                         className='modal-btn modal-btn-confirm'
                         onClick={() => alert('Save functionality coming soon')}
-                    >Save Changes</button>}
+                    ><i className="fas fa-save" style={{ marginRight: '0.5rem' }}></i>Save Changes</button>}
                     <button
                         className='modal-btn modal-btn-confirm'
                         onClick={() => exportProfile(data)}
-                    >Export JSON</button>
+                    ><i className="fas fa-file-export" style={{ marginRight: '0.5rem' }}></i>Export JSON</button>
                 </div>
             </div>
         </div>
@@ -647,16 +648,35 @@ function ProfileDetails({ profile, editMode, activeTab }) {
 
     const renderContactTab = () => (
         <section className='profile-detail-section'>
-            <h4>Contact Information</h4>
-            <div className='contact-grid'>
-                {renderEditableField('Site Code', editedProfile.site_code, 'site_code')}
-                {renderEditableField('Location', editedProfile.location, 'location')}
-                {renderEditableField('Archetype', editedProfile.archetype || 'Medium', 'archetype', 'select')}
-                {renderEditableField('Ops/Service Manager', editedProfile.contact.ops_service_manager || editedProfile.contact.manager, 'contact.ops_service_manager')}
-                {renderEditableField('Ops/Service Manager Email', editedProfile.contact.ops_service_manager_email || editedProfile.contact.email, 'contact.ops_service_manager_email', 'email')}
-                {renderEditableField('Clinical Lead', editedProfile.contact.clinical_lead || '', 'contact.clinical_lead')}
-                {renderEditableField('Clinical Lead Email', editedProfile.contact.clinical_lead_email || '', 'contact.clinical_lead_email', 'email')}
-                {renderEditableField('Phone', editedProfile.contact.phone, 'contact.phone', 'tel')}
+            <h4>Site Information</h4>
+            
+            {/* Basic Site Details */}
+            <div style={{ marginBottom: '2rem' }}>
+                <h5 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}><i className="fas fa-info-circle" style={{ marginRight: '0.5rem' }}></i>Basic Details</h5>
+                <div className='contact-grid'>
+                    {renderEditableField('Site Code', editedProfile.site_code, 'site_code')}
+                    {renderEditableField('Location', editedProfile.location, 'location')}
+                    {renderEditableField('Archetype', editedProfile.archetype || 'Medium', 'archetype', 'select')}
+                    {renderEditableField('Phone', editedProfile.contact.phone, 'contact.phone', 'tel')}
+                </div>
+            </div>
+
+            {/* Management Contacts */}
+            <div style={{ marginBottom: '2rem' }}>
+                <h5 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}><i className="fas fa-user-tie" style={{ marginRight: '0.5rem' }}></i>Management Team</h5>
+                <div className='contact-grid'>
+                    {renderEditableField('Ops/Service Manager', editedProfile.contact.ops_service_manager || editedProfile.contact.manager, 'contact.ops_service_manager')}
+                    {renderEditableField('Ops/Service Manager Email', editedProfile.contact.ops_service_manager_email || editedProfile.contact.email, 'contact.ops_service_manager_email', 'email')}
+                </div>
+            </div>
+
+            {/* Clinical Contacts */}
+            <div>
+                <h5 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}><i className="fas fa-user-md" style={{ marginRight: '0.5rem' }}></i>Clinical Team</h5>
+                <div className='contact-grid'>
+                    {renderEditableField('Clinical Lead', editedProfile.contact.clinical_lead || '', 'contact.clinical_lead')}
+                    {renderEditableField('Clinical Lead Email', editedProfile.contact.clinical_lead_email || '', 'contact.clinical_lead_email', 'email')}
+                </div>
             </div>
         </section>
     );
@@ -669,29 +689,27 @@ function ProfileDetails({ profile, editMode, activeTab }) {
             if (!modalityData.machines) {
                 return (
                     <div key={modalityKey} style={{ marginBottom: '2rem' }}>
-                        <h5>{`${modalityKey.replace('_', ' ').toUpperCase()} (${modalityData.count || 0} machines)`}</h5>
+                        <h5>{`${modalityKey.replace('_', ' ').toUpperCase()} - ${modalityData.count || 0} machines`}</h5>
                         <div className='table-container'>
                             <table className='equipment-table'>
                                 <thead>
                                     <tr>
                                         <th>Count</th>
                                         <th>Models</th>
-                                        <th>Routine Hours/Day</th>
-                                        <th>Routine Days/Week</th>
+                                        <th>Routine Hours/Week</th>
                                         <th>Out of Hours Available</th>
-                                        <th>Out of Hours Days/Week</th>
+                                        <th>OOH/Week</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
                                         <td>{renderEditableNumber(modalityData.count, `equipment.${modalityKey}.count`)}</td>
                                         <td>{modalityData.models ? modalityData.models.join(', ') : ''}</td>
-                                        <td>{renderEditableNumber(modalityData.routine_hours_per_day, `equipment.${modalityKey}.routine_hours_per_day`)}</td>
-                                        <td>{renderEditableNumber(modalityData.routine_days_per_week, `equipment.${modalityKey}.routine_days_per_week`)}</td>
+                                        <td>{renderEditableNumber((modalityData.routine_hours_per_day || 0) * (modalityData.routine_days_per_week || 0), `equipment.${modalityKey}.routine_hours_per_week`)}</td>
                                         <td className={modalityData.out_of_hours_available ? 'available-yes' : 'available-no'}> 
                                             {renderEditableBoolean(modalityData.out_of_hours_available, `equipment.${modalityKey}.out_of_hours_available`)}
                                         </td>
-                                        <td>{renderEditableNumber(modalityData.out_of_hours_days_per_week, `equipment.${modalityKey}.out_of_hours_days_per_week`)}</td>
+                                        <td>{modalityData.out_of_hours_available ? renderEditableNumber(modalityData.out_of_hours_days_per_week, `equipment.${modalityKey}.out_of_hours_days_per_week`) : '-'}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -731,7 +749,7 @@ function ProfileDetails({ profile, editMode, activeTab }) {
             return (
                 <div key={modalityKey} style={{ marginBottom: '2rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                        <h5>{`${modalityKey.replace('_', ' ').toUpperCase()} (${modalityData.machines.length} machines)`}</h5>
+                        <h5>{`${modalityKey.replace('_', ' ').toUpperCase()} - ${modalityData.machines.length} machines`}</h5>
                         {editMode && (
                             <button
                                 onClick={() => addMachine(modalityKey)}
@@ -745,7 +763,7 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                                     fontSize: '0.9rem'
                                 }}
                             >
-                                + Add Machine
+                                <i className="fas fa-plus" style={{ marginRight: '0.5rem' }}></i>Add Machine
                             </button>
                         )}
                     </div>
@@ -756,10 +774,9 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                                     {[
                                         <th key="machine-name">Machine Name</th>,
                                         <th key="model">Model</th>,
-                                        <th key="routine-hours">Routine Hours/Day</th>,
-                                        <th key="routine-days">Routine Days/Week</th>,
+                                        <th key="routine-hours-week">Routine Hours/Week</th>,
                                         <th key="ooh-available">Out of Hours Available</th>,
-                                        <th key="ooh-days">Out of Hours Days/Week</th>,
+                                        <th key="ooh-days">OOH/Week</th>,
                                         modalityKey === 'ct' && <th key="interventional">Interventional Only</th>,
                                         editMode && <th key="actions">Actions</th>
                                     ].filter(Boolean)}
@@ -792,17 +809,20 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                                                     /> :
                                                     machine.model}
                                             </td>,
-                                            <td key="routine-hours"> 
-                                                {renderEditableNumber(machine.routine_hours_per_day, `equipment.${modalityKey}.machines.${index}.routine_hours_per_day`)}
-                                            </td>,
-                                            <td key="routine-days"> 
-                                                {renderEditableNumber(machine.routine_days_per_week, `equipment.${modalityKey}.machines.${index}.routine_days_per_week`)}
+                                            <td key="routine-hours-week"> 
+                                                {editMode ? 
+                                                    renderEditableNumber((machine.routine_hours_per_day || 0) * (machine.routine_days_per_week || 0), `equipment.${modalityKey}.machines.${index}.routine_hours_per_week`) :
+                                                    ((machine.routine_hours_per_day || 0) * (machine.routine_days_per_week || 0))
+                                                }
                                             </td>,
                                             <td key="ooh-available" className={machine.out_of_hours_available ? 'available-yes' : 'available-no'}> 
                                                 {renderEditableBoolean(machine.out_of_hours_available, `equipment.${modalityKey}.machines.${index}.out_of_hours_available`)}
                                             </td>,
                                             <td key="ooh-days"> 
-                                                {renderEditableNumber(machine.out_of_hours_days_per_week, `equipment.${modalityKey}.machines.${index}.out_of_hours_days_per_week`)}
+                                                {machine.out_of_hours_available ? 
+                                                    renderEditableNumber(machine.out_of_hours_days_per_week, `equipment.${modalityKey}.machines.${index}.out_of_hours_days_per_week`) :
+                                                    '-'
+                                                }
                                             </td>,
                                             modalityKey === 'ct' && <td key="interventional" className={machine.interventional_only ? 'available-yes' : 'available-no'}> 
                                                 {renderEditableBoolean(machine.interventional_only, `equipment.${modalityKey}.machines.${index}.interventional_only`)}
@@ -820,7 +840,7 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                                                         fontSize: '0.8rem'
                                                     }}
                                                 >
-                                                    Remove
+                                                    <i className="fas fa-trash" style={{ marginRight: '0.25rem' }}></i>Remove
                                                 </button>
                                             </td>
                                         ].filter(Boolean)}
@@ -1041,7 +1061,7 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                                     cursor: 'pointer'
                                 }}
                             >
-                                + Add Tool
+                                <i className="fas fa-plus" style={{ marginRight: '0.5rem' }}></i>Add Tool
                             </button>
                         )}
                     </div>
@@ -1105,7 +1125,7 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                                                         fontSize: '0.8rem'
                                                     }}
                                                 >
-                                                    Remove
+                                                    <i className="fas fa-trash" style={{ marginRight: '0.25rem' }}></i>Remove
                                                 </button>
                                             </td>
                                         )}
@@ -1246,11 +1266,11 @@ function PasswordModal({ closeModal, onPasswordSubmit, regionName, currentAuthRe
                             type='button'
                             className='modal-btn modal-btn-cancel'
                             onClick={handleCancel}
-                        >Cancel</button>
+                        ><i className="fas fa-times" style={{ marginRight: '0.5rem' }}></i>Cancel</button>
                         <button
                             type='submit'
                             className='modal-btn modal-btn-confirm'
-                        >Authenticate</button>
+                        ><i className="fas fa-lock" style={{ marginRight: '0.5rem' }}></i>Authenticate</button>
                     </div>
                 </form>
             </div>
