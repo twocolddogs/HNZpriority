@@ -296,7 +296,7 @@ class StatusManager {
             .exam-result { font-size: 13px; color: var(--color-success, #4caf50); font-weight: 500; margin-top: 2px; }
             .exam-error { font-size: 13px; color: var(--color-danger, #f44336); font-weight: 500; margin-top: 2px; }
             .progress-container { width: 100%; }
-            .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; padding-right: 30px; }
+            .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
             .progress-message { font-weight: 500; flex: 1; }
             .progress-counter { font-family: var(--font-family-mono, monospace); font-size: 13px; color: var(--color-gray-600, #666); flex-shrink: 0; }
             .progress-bar { width: 100%; height: 8px; background-color: var(--color-gray-200, #e0e0e0); border-radius: 4px; overflow: hidden; }
@@ -1497,17 +1497,85 @@ window.addEventListener('DOMContentLoaded', function() {
                                 if (mainCard) mainCard.style.display = 'block';
                             }
                         } else {
+                            console.error('No results found in R2 data. Full response structure:', resultsData);
+                            console.error('Available keys:', Object.keys(resultsData || {}));
                             throw new Error(`No results found in R2 data. Structure: ${JSON.stringify(Object.keys(resultsData || {}))}`);
                         }
                     } else {
-                        throw new Error(`Failed to fetch results: ${resultsResponse.statusText}`);
+                        console.error('Failed to fetch R2 results. Status:', resultsResponse.status, resultsResponse.statusText);
+                        console.error('R2 URL was:', finalResult.r2_url);
+                        throw new Error(`Failed to fetch results: ${resultsResponse.status} ${resultsResponse.statusText}`);
                     }
                 } catch (fetchError) {
                     console.error('Failed to fetch results from R2:', fetchError);
+                    console.error('R2 URL was:', finalResult.r2_url);
                     if (statusId) statusManager.remove(statusId);
-                    const successMessage = `✅ Random sample completed! ${finalResult.processing_stats?.successful} items processed`;
-                    const urlMessage = `<br><a href="${finalResult.r2_url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>`;
-                    statusManager.show(successMessage + urlMessage, 'success', 10000);
+                    statusId = statusManager.show('❌ Failed to fetch results from R2. Trying alternative method...', 'warning', 3000);
+                    
+                    // Try the direct batch results fallback even when R2 URL exists but fails
+                    if (batchId) {
+                        try {
+                            await new Promise(resolve => setTimeout(resolve, 3000));
+                            if (statusId) statusManager.remove(statusId);
+                            statusId = statusManager.show('Fetching results directly from batch processing...', 'progress');
+                            
+                            const directResultsResponse = await fetch(`${apiConfig.baseUrl}/get_batch_results/batch_results_${batchId}.jsonl`);
+                            if (directResultsResponse.ok) {
+                                const directResultsData = await directResultsResponse.json();
+                                const directResults = directResultsData.results || directResultsData;
+                                
+                                if (directResults && directResults.length > 0) {
+                                    if (statusId) statusManager.remove(statusId);
+                                    statusId = statusManager.show('Processing results and generating display...', 'progress');
+                                    
+                                    // Use the same mapping logic as the main path
+                                    const mappedResults = directResults.map(item => ({
+                                        data_source: item.input?.DATA_SOURCE || item.input?.data_source || item.output?.data_source,
+                                        modality_code: item.input?.MODALITY_CODE || item.input?.modality_code || item.output?.modality_code,
+                                        exam_code: item.input?.EXAM_CODE || item.input?.exam_code || item.output?.exam_code,
+                                        exam_name: item.input?.EXAM_NAME || item.input?.exam_name || item.output?.exam_name,
+                                        clean_name: item.status === 'success' ? item.output?.clean_name : `ERROR: ${item.error}`,
+                                        snomed: item.status === 'success' ? item.output?.snomed || {} : {},
+                                        components: item.status === 'success' ? item.output?.components || {} : {},
+                                        all_candidates: item.status === 'success' ? item.output?.all_candidates || [] : [],
+                                        ambiguous: item.status === 'success' ? item.output?.ambiguous : false,
+                                        secondary_pipeline_applied: item.status === 'success' ? item.output?.secondary_pipeline_applied || false : false,
+                                        secondary_pipeline_details: item.status === 'success' ? item.output?.secondary_pipeline_details : undefined,
+                                        validation_status: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'approved' : 
+                                                          (item.cached_skip && item.cache_type === 'rejected') ? 'rejected' : undefined,
+                                        validation_notes: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? 'Previously approved (cached)' : 
+                                                         (item.cached_skip && item.cache_type === 'rejected') ? 'Previously rejected (cached)' : undefined,
+                                        timestamp_reviewed: (item.status === 'success' && item.output?.cached_skip && item.output?.cache_type === 'approved') ? item.output?.cached_at : 
+                                                           (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
+                                    }));
+                                    
+                                    allMappings = mappedResults;
+                                    updatePageTitle(`Random Sample (${finalResult.processing_stats?.sample_size || finalResult.processing_stats?.total_processed} items)`);
+                                    
+                                    try {
+                                        runAnalysis(allMappings);
+                                        const successMessage = `✅ Random sample completed! ${finalResult.processing_stats?.processed_successfully || finalResult.processing_stats?.successful || mappedResults.length} items processed (via fallback)`;
+                                        statusManager.show(successMessage, 'success', 5000);
+                                        if (mainCard) mainCard.style.display = 'block';
+                                        return; // Success, exit here
+                                    } catch (analysisError) {
+                                        console.error('Error during results analysis:', analysisError);
+                                        statusManager.show('❌ Error displaying results after fallback fetch', 'error', 5000);
+                                        if (mainCard) mainCard.style.display = 'block';
+                                        return;
+                                    }
+                                }
+                            }
+                        } catch (fallbackError) {
+                            console.error('Fallback fetch also failed:', fallbackError);
+                        }
+                    }
+                    
+                    // Final fallback - show completion with link
+                    const successMessage = `✅ Random sample completed! ${finalResult.processing_stats?.successful || 'Unknown'} items processed`;
+                    const urlMessage = finalResult.r2_url ? `<br><a href="${finalResult.r2_url}" target="_blank" style="color: #4CAF50; text-decoration: underline;">View Results on R2</a>` : '';
+                    const debugMessage = `<br><small style="color: #666;">Debug: Batch ID ${batchId}, R2 available: ${!!finalResult.r2_url}</small>`;
+                    statusManager.show(successMessage + urlMessage + debugMessage, 'warning', 15000);
                 }
             } else {
                 // No R2 URL available, try to get results directly from the batch results if we have a batch_id
@@ -1561,20 +1629,24 @@ window.addEventListener('DOMContentLoaded', function() {
                                 }
                             } else {
                                 if (statusId) statusManager.remove(statusId);
-                                statusManager.show('✅ Processing completed but no results data found', 'warning', 5000);
+                                console.error('No results found in direct batch data. Response structure:', directResultsData);
+                                statusManager.show('❌ Processing completed but no results data found in batch file', 'warning', 8000);
                             }
                         } else {
                             if (statusId) statusManager.remove(statusId);
-                            statusManager.show('✅ Processing completed but results could not be retrieved', 'warning', 5000);
+                            console.error('Failed to fetch direct batch results. Status:', directResultsResponse.status, directResultsResponse.statusText);
+                            statusManager.show(`❌ Processing completed but results could not be retrieved (${directResultsResponse.status})`, 'warning', 8000);
                         }
                     } catch (directFetchError) {
                         console.error('Failed to fetch results directly:', directFetchError);
+                        console.error('Batch ID:', batchId, 'Processing stats:', finalResult.processing_stats);
                         if (statusId) statusManager.remove(statusId);
-                        statusManager.show('✅ Processing completed but results could not be retrieved', 'warning', 5000);
+                        statusManager.show('❌ Processing completed but results could not be retrieved from any source', 'error', 8000);
                     }
                 } else {
                     if (statusId) statusManager.remove(statusId);
-                    statusManager.show('✅ Processing completed but no batch ID available for result retrieval', 'warning', 5000);
+                    console.error('No batch ID available for result retrieval. Final result:', finalResult);
+                    statusManager.show('❌ Processing completed but no batch ID available for result retrieval', 'warning', 8000);
                 }
             }
         } catch (error) {
