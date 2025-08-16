@@ -338,31 +338,54 @@ function ProfileCard({ siteKey, siteData, onClick }) {
             count = eq.count;
         }
         if (count > 0) {
-            breakdown[modalityKey.toUpperCase()] = count;
+            // Proper capitalization for modalities
+            const modalityName = modalityKey === 'ultrasound' ? 'Ultrasound' : 
+                                modalityKey === 'mammography' ? 'Mammography' : 
+                                modalityKey.toUpperCase();
+            breakdown[modalityName] = count;
         }
         return breakdown;
     }, {});
 
-    // Calculate staffing for key roles only (SMO, MIT, RA)
-    const keyStaffingCategories = ['radiologist', 'mit', 'radiology_healthcare_assistant'];
-    const keyStaffData = keyStaffingCategories.reduce((data, category) => {
-        const staff = siteData.staffing[category];
-        if (staff) {
-            data.totalFTE += staff.total_fte;
-            data.totalVacancies += staff.current_vacancies;
+    // Calculate staffing for key roles only (Radiologist, MIT, RA)
+    const keyStaffingCategories = [
+        { key: 'radiologist', label: 'Radiologist' },
+        { key: 'mit', label: 'MIT' },
+        { key: 'radiology_healthcare_assistant', label: 'RA' }
+    ];
+    
+    const staffVacancyData = keyStaffingCategories.map(category => {
+        const staff = siteData.staffing[category.key] || siteData.staffing[category.key + 's'];
+        if (staff && staff.total_fte > 0) {
+            const vacancyRate = (staff.current_vacancies / staff.total_fte) * 100;
+            return {
+                label: category.label,
+                vacancyRate: vacancyRate,
+                totalFTE: staff.total_fte,
+                vacancies: staff.current_vacancies
+            };
         }
-        return data;
-    }, { totalFTE: 0, totalVacancies: 0 });
+        return null;
+    }).filter(Boolean);
 
-    // Calculate vacancy percentage and determine color
-    const vacancyPercentage = keyStaffData.totalFTE > 0 ? (keyStaffData.totalVacancies / keyStaffData.totalFTE) * 100 : 0;
-    const filledPercentage = 100 - vacancyPercentage;
-    let vacancyColor = '#dc3545'; // Red for <60%
-    if (filledPercentage >= 80) {
-        vacancyColor = '#28a745'; // Green for 80%+
-    } else if (filledPercentage >= 60) {
-        vacancyColor = '#ffc107'; // Orange for 60-80%
-    }
+    // Helper function to get color based on vacancy rate
+    const getVacancyColor = (rate) => {
+        const filledRate = 100 - rate;
+        if (filledRate >= 80) return '#28a745'; // Green
+        if (filledRate >= 60) return '#ffc107'; // Orange/Yellow
+        return '#dc3545'; // Red
+    };
+
+    // Determine archetype based on annual examinations (hard-coded logic)
+    const getArchetype = (annualExams) => {
+        if (annualExams >= 120000) return 'X-Large';
+        if (annualExams >= 80000) return 'Large';
+        if (annualExams >= 50000) return 'Medium';
+        if (annualExams >= 25000) return 'Small';
+        return 'X-Small';
+    };
+
+    const archetype = getArchetype(siteData.performance_metrics.annual_examinations);
 
     return (
         <div
@@ -373,42 +396,75 @@ function ProfileCard({ siteKey, siteData, onClick }) {
             <div className='name-card-header'>
                 <h2>{siteData.site_name}</h2>
                 <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.8 }}>
-                    {`${siteData.site_code} • ${siteData.location}`}
+                    {`${siteData.site_code} • ${siteData.location} • ${archetype}`}
                 </p>
             </div>
             <div className='name-card-content'>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                     <div>
-                        <strong>Equipment: </strong>
-                        {Object.entries(equipmentBreakdown).length > 0 ? 
-                            Object.entries(equipmentBreakdown)
-                                .map(([modality, count]) => `${modality}: ${count}`)
-                                .join(', ') :
-                            '0 machines'
-                        }
+                        <strong>Equipment:</strong>
+                        <div style={{ marginTop: '0.25rem', lineHeight: '1.4' }}>
+                            {Object.entries(equipmentBreakdown).length > 0 ? 
+                                Object.entries(equipmentBreakdown)
+                                    .map(([modality, count], index) => (
+                                        <div key={index}>{`${modality}: ${count}`}</div>
+                                    )) :
+                                '0 machines'
+                            }
+                        </div>
                     </div>
                     <div>
-                        <strong>Key Staff: </strong>
-                        {`${keyStaffData.totalFTE.toFixed(1)} FTE (SMO/MIT/RA)`}
-                    </div>
-                    <div>
-                        <strong>Vacancy Rate: </strong>
-                        <span style={{ 
-                            color: vacancyColor, 
-                            fontWeight: 'bold',
-                            backgroundColor: vacancyColor + '20',
-                            padding: '2px 6px',
-                            borderRadius: '3px'
-                        }}>
-                            {`${vacancyPercentage.toFixed(1)}%`}
-                        </span>
-                    </div>
-                    <div>
-                        <strong>Annual Exams: </strong>
-                        {`${siteData.performance_metrics.annual_examinations.toLocaleString()}`}
+                        <strong>Annual Exams:</strong>
+                        <div style={{ marginTop: '0.25rem' }}>
+                            {siteData.performance_metrics.annual_examinations.toLocaleString()}
+                        </div>
                     </div>
                 </div>
-                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
+                
+                {/* Clinical Workforce Section */}
+                <div style={{ marginTop: '1rem' }}>
+                    <strong>Clinical Workforce:</strong>
+                    <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {staffVacancyData.map((staff, index) => {
+                            const vacancyColor = getVacancyColor(staff.vacancyRate);
+                            return (
+                                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ minWidth: '80px', fontSize: '0.9rem' }}>{staff.label}:</span>
+                                    <div style={{ 
+                                        flex: 1, 
+                                        height: '20px', 
+                                        backgroundColor: '#f0f0f0', 
+                                        borderRadius: '10px',
+                                        position: 'relative',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <div style={{
+                                            height: '100%',
+                                            width: `${Math.max(0, 100 - staff.vacancyRate)}%`,
+                                            backgroundColor: vacancyColor,
+                                            borderRadius: '10px',
+                                            transition: 'width 0.3s ease'
+                                        }}></div>
+                                        <span style={{
+                                            position: 'absolute',
+                                            left: '50%',
+                                            top: '50%',
+                                            transform: 'translate(-50%, -50%)',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 'bold',
+                                            color: staff.vacancyRate > 50 ? '#333' : '#fff',
+                                            textShadow: staff.vacancyRate > 50 ? 'none' : '1px 1px 1px rgba(0,0,0,0.3)'
+                                        }}>
+                                            {staff.vacancyRate.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+                
+                <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#666' }}>
                     {`Ops/Service Manager: ${siteData.contact.ops_service_manager || siteData.contact.manager}`}
                 </div>
             </div>
