@@ -245,31 +245,53 @@
           }
         },
         "staffing": {
-          "radiologists": {
-            "total_fte": 15.5,
-            "current_vacancies": 2.0,
-            "breakdown": {
-              "consultant": 12.0,
-              "registrar": 3.5
-            }
+          "admin_scheduler": {
+            "total_fte": 6.0,
+            "current_vacancies": 0.5
           },
-          "radiographers": {
+          "business_analyst": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.0
+          },
+          "clinical_nurse": {
+            "total_fte": 4.0,
+            "current_vacancies": 1.0
+          },
+          "clinical_support": {
+            "total_fte": 3.0,
+            "current_vacancies": 0.0
+          },
+          "fellow": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.0
+          },
+          "mit": {
             "total_fte": 32.0,
-            "current_vacancies": 4.0,
-            "breakdown": {
-              "senior": 8.0,
-              "standard": 20.0,
-              "junior": 4.0
-            }
+            "current_vacancies": 4.0
           },
-          "support_staff": {
-            "total_fte": 12.0,
-            "current_vacancies": 1.0,
-            "breakdown": {
-              "admin": 6.0,
-              "technical": 4.0,
-              "porter": 2.0
-            }
+          "pacs": {
+            "total_fte": 3.0,
+            "current_vacancies": 0.0
+          },
+          "quality_lead": {
+            "total_fte": 1.0,
+            "current_vacancies": 0.0
+          },
+          "radiology_healthcare_assistant": {
+            "total_fte": 8.0,
+            "current_vacancies": 1.0
+          },
+          "radiologist": {
+            "total_fte": 15.5,
+            "current_vacancies": 2.0
+          },
+          "rmo": {
+            "total_fte": 4.0,
+            "current_vacancies": 1.0
+          },
+          "sho": {
+            "total_fte": 3.0,
+            "current_vacancies": 0.5
           }
         },
         "performance_metrics": {
@@ -332,31 +354,53 @@
           }
         },
         "staffing": {
-          "radiologists": {
-            "total_fte": 8.0,
-            "current_vacancies": 1.0,
-            "breakdown": {
-              "consultant": 6.5,
-              "registrar": 1.5
-            }
+          "admin_scheduler": {
+            "total_fte": 3.0,
+            "current_vacancies": 0.0
           },
-          "radiographers": {
+          "business_analyst": {
+            "total_fte": 1.0,
+            "current_vacancies": 0.0
+          },
+          "clinical_nurse": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.5
+          },
+          "clinical_support": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.0
+          },
+          "fellow": {
+            "total_fte": 1.0,
+            "current_vacancies": 0.0
+          },
+          "mit": {
             "total_fte": 18.0,
-            "current_vacancies": 2.0,
-            "breakdown": {
-              "senior": 4.0,
-              "standard": 12.0,
-              "junior": 2.0
-            }
+            "current_vacancies": 2.0
           },
-          "support_staff": {
-            "total_fte": 7.0,
-            "current_vacancies": 0.5,
-            "breakdown": {
-              "admin": 3.0,
-              "technical": 2.5,
-              "porter": 1.5
-            }
+          "pacs": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.0
+          },
+          "quality_lead": {
+            "total_fte": 1.0,
+            "current_vacancies": 0.0
+          },
+          "radiology_healthcare_assistant": {
+            "total_fte": 4.0,
+            "current_vacancies": 0.5
+          },
+          "radiologist": {
+            "total_fte": 8.0,
+            "current_vacancies": 1.0
+          },
+          "rmo": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.0
+          },
+          "sho": {
+            "total_fte": 1.5,
+            "current_vacancies": 0.0
           }
         },
         "performance_metrics": {
@@ -424,31 +468,53 @@
           }
         },
         "staffing": {
-          "radiologists": {
-            "total_fte": 10.0,
-            "current_vacancies": 1.5,
-            "breakdown": {
-              "consultant": 8.0,
-              "registrar": 2.0
-            }
+          "admin_scheduler": {
+            "total_fte": 4.0,
+            "current_vacancies": 0.5
           },
-          "radiographers": {
+          "business_analyst": {
+            "total_fte": 1.5,
+            "current_vacancies": 0.0
+          },
+          "clinical_nurse": {
+            "total_fte": 3.0,
+            "current_vacancies": 0.5
+          },
+          "clinical_support": {
+            "total_fte": 2.5,
+            "current_vacancies": 0.0
+          },
+          "fellow": {
+            "total_fte": 1.5,
+            "current_vacancies": 0.0
+          },
+          "mit": {
             "total_fte": 22.0,
-            "current_vacancies": 3.0,
-            "breakdown": {
-              "senior": 5.0,
-              "standard": 14.0,
-              "junior": 3.0
-            }
+            "current_vacancies": 3.0
           },
-          "support_staff": {
-            "total_fte": 8.0,
-            "current_vacancies": 1.0,
-            "breakdown": {
-              "admin": 4.0,
-              "technical": 3.0,
-              "porter": 1.0
-            }
+          "pacs": {
+            "total_fte": 2.5,
+            "current_vacancies": 0.0
+          },
+          "quality_lead": {
+            "total_fte": 1.0,
+            "current_vacancies": 0.0
+          },
+          "radiology_healthcare_assistant": {
+            "total_fte": 5.0,
+            "current_vacancies": 1.0
+          },
+          "radiologist": {
+            "total_fte": 10.0,
+            "current_vacancies": 1.5
+          },
+          "rmo": {
+            "total_fte": 2.5,
+            "current_vacancies": 0.5
+          },
+          "sho": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.0
           }
         },
         "performance_metrics": {
@@ -516,31 +582,53 @@
           }
         },
         "staffing": {
-          "radiologists": {
-            "total_fte": 12.0,
-            "current_vacancies": 2.0,
-            "breakdown": {
-              "consultant": 9.5,
-              "registrar": 2.5
-            }
+          "admin_scheduler": {
+            "total_fte": 4.5,
+            "current_vacancies": 0.0
           },
-          "radiographers": {
+          "business_analyst": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.0
+          },
+          "clinical_nurse": {
+            "total_fte": 3.5,
+            "current_vacancies": 1.0
+          },
+          "clinical_support": {
+            "total_fte": 3.0,
+            "current_vacancies": 0.0
+          },
+          "fellow": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.0
+          },
+          "mit": {
             "total_fte": 26.0,
-            "current_vacancies": 3.5,
-            "breakdown": {
-              "senior": 6.0,
-              "standard": 16.0,
-              "junior": 4.0
-            }
+            "current_vacancies": 3.5
           },
-          "support_staff": {
-            "total_fte": 9.0,
-            "current_vacancies": 0.5,
-            "breakdown": {
-              "admin": 4.5,
-              "technical": 3.0,
-              "porter": 1.5
-            }
+          "pacs": {
+            "total_fte": 2.5,
+            "current_vacancies": 0.0
+          },
+          "quality_lead": {
+            "total_fte": 1.0,
+            "current_vacancies": 0.0
+          },
+          "radiology_healthcare_assistant": {
+            "total_fte": 6.0,
+            "current_vacancies": 0.5
+          },
+          "radiologist": {
+            "total_fte": 12.0,
+            "current_vacancies": 2.0
+          },
+          "rmo": {
+            "total_fte": 3.0,
+            "current_vacancies": 0.5
+          },
+          "sho": {
+            "total_fte": 2.5,
+            "current_vacancies": 0.0
           }
         },
         "performance_metrics": {
@@ -608,31 +696,53 @@
           }
         },
         "staffing": {
-          "radiologists": {
-            "total_fte": 11.0,
-            "current_vacancies": 1.5,
-            "breakdown": {
-              "consultant": 8.5,
-              "registrar": 2.5
-            }
+          "admin_scheduler": {
+            "total_fte": 4.0,
+            "current_vacancies": 0.5
           },
-          "radiographers": {
+          "business_analyst": {
+            "total_fte": 1.5,
+            "current_vacancies": 0.0
+          },
+          "clinical_nurse": {
+            "total_fte": 3.0,
+            "current_vacancies": 0.5
+          },
+          "clinical_support": {
+            "total_fte": 2.5,
+            "current_vacancies": 0.0
+          },
+          "fellow": {
+            "total_fte": 1.5,
+            "current_vacancies": 0.0
+          },
+          "mit": {
             "total_fte": 24.0,
-            "current_vacancies": 2.5,
-            "breakdown": {
-              "senior": 5.5,
-              "standard": 15.0,
-              "junior": 3.5
-            }
+            "current_vacancies": 2.5
           },
-          "support_staff": {
-            "total_fte": 8.5,
-            "current_vacancies": 1.0,
-            "breakdown": {
-              "admin": 4.0,
-              "technical": 3.0,
-              "porter": 1.5
-            }
+          "pacs": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.0
+          },
+          "quality_lead": {
+            "total_fte": 1.0,
+            "current_vacancies": 0.0
+          },
+          "radiology_healthcare_assistant": {
+            "total_fte": 5.5,
+            "current_vacancies": 1.0
+          },
+          "radiologist": {
+            "total_fte": 11.0,
+            "current_vacancies": 1.5
+          },
+          "rmo": {
+            "total_fte": 2.5,
+            "current_vacancies": 0.5
+          },
+          "sho": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.0
           }
         },
         "performance_metrics": {
@@ -695,31 +805,53 @@
           }
         },
         "staffing": {
-          "radiologists": {
-            "total_fte": 6.0,
-            "current_vacancies": 1.0,
-            "breakdown": {
-              "consultant": 5.0,
-              "registrar": 1.0
-            }
+          "admin_scheduler": {
+            "total_fte": 2.5,
+            "current_vacancies": 0.0
           },
-          "radiographers": {
+          "business_analyst": {
+            "total_fte": 1.0,
+            "current_vacancies": 0.0
+          },
+          "clinical_nurse": {
+            "total_fte": 2.0,
+            "current_vacancies": 0.5
+          },
+          "clinical_support": {
+            "total_fte": 1.5,
+            "current_vacancies": 0.0
+          },
+          "fellow": {
+            "total_fte": 1.0,
+            "current_vacancies": 0.0
+          },
+          "mit": {
             "total_fte": 14.0,
-            "current_vacancies": 2.0,
-            "breakdown": {
-              "senior": 3.0,
-              "standard": 9.0,
-              "junior": 2.0
-            }
+            "current_vacancies": 2.0
           },
-          "support_staff": {
-            "total_fte": 5.5,
-            "current_vacancies": 0.5,
-            "breakdown": {
-              "admin": 2.5,
-              "technical": 2.0,
-              "porter": 1.0
-            }
+          "pacs": {
+            "total_fte": 1.5,
+            "current_vacancies": 0.0
+          },
+          "quality_lead": {
+            "total_fte": 0.5,
+            "current_vacancies": 0.0
+          },
+          "radiology_healthcare_assistant": {
+            "total_fte": 3.0,
+            "current_vacancies": 0.5
+          },
+          "radiologist": {
+            "total_fte": 6.0,
+            "current_vacancies": 1.0
+          },
+          "rmo": {
+            "total_fte": 1.5,
+            "current_vacancies": 0.0
+          },
+          "sho": {
+            "total_fte": 1.0,
+            "current_vacancies": 0.0
           }
         },
         "performance_metrics": {

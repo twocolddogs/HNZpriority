@@ -347,15 +347,15 @@ function ProfileCard({ siteKey, siteData, onClick }) {
         return breakdown;
     }, {});
 
-    // Calculate staffing for key roles only (Radiologist, MIT, RA)
+    // Calculate staffing for key roles only (Radiologist, MIT, RA/HCA)
     const keyStaffingCategories = [
         { key: 'radiologist', label: 'Radiologist' },
         { key: 'mit', label: 'MIT' },
-        { key: 'radiology_healthcare_assistant', label: 'RA' }
+        { key: 'radiology_healthcare_assistant', label: 'RA/HCA' }
     ];
     
     const staffVacancyData = keyStaffingCategories.map(category => {
-        const staff = siteData.staffing[category.key] || siteData.staffing[category.key + 's'];
+        const staff = siteData.staffing[category.key];
         if (staff && staff.total_fte > 0) {
             const vacancyRate = (staff.current_vacancies / staff.total_fte) * 100;
             return {
@@ -394,30 +394,25 @@ function ProfileCard({ siteKey, siteData, onClick }) {
             style={{ cursor: 'pointer', margin: '1rem 0' }}
         >
             <div className='name-card-header'>
-                <h2>{siteData.site_name}</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ margin: 0 }}>{siteData.site_name}</h2>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold', opacity: 0.9 }}>{archetype}</span>
+                </div>
                 <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.8 }}>
-                    {`${siteData.site_code} • ${siteData.location} • ${archetype}`}
+                    {`${siteData.site_code} • ${siteData.location}`}
                 </p>
             </div>
             <div className='name-card-content'>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-                    <div>
-                        <strong>Equipment:</strong>
-                        <div style={{ marginTop: '0.25rem', lineHeight: '1.4' }}>
-                            {Object.entries(equipmentBreakdown).length > 0 ? 
-                                Object.entries(equipmentBreakdown)
-                                    .map(([modality, count], index) => (
-                                        <div key={index}>{`${modality}: ${count}`}</div>
-                                    )) :
-                                '0 machines'
-                            }
-                        </div>
-                    </div>
-                    <div>
-                        <strong>Annual Exams:</strong>
-                        <div style={{ marginTop: '0.25rem' }}>
-                            {siteData.performance_metrics.annual_examinations.toLocaleString()}
-                        </div>
+                <div>
+                    <strong>Equipment:</strong>
+                    <div style={{ marginTop: '0.25rem', lineHeight: '1.4' }}>
+                        {Object.entries(equipmentBreakdown).length > 0 ? 
+                            Object.entries(equipmentBreakdown)
+                                .map(([modality, count], index) => (
+                                    <div key={index}>{`${modality}: ${count}`}</div>
+                                )) :
+                            '0 machines'
+                        }
                     </div>
                 </div>
                 
