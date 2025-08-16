@@ -1422,7 +1422,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     processing_stats: finalProgressData.processing_stats
                 };
                 console.log('Using final progress data for results');
-            } else if (batchId && !result.r2_url) {
+            } else if (batchId && !result.r2_url && !result.processing_stats) {
                 if (statusId) statusManager.remove(statusId);
                 statusId = statusManager.show('Fetching final results...', 'progress');
                 
@@ -1579,7 +1579,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
                 // No R2 URL available, try to get results directly from the batch results if we have a batch_id
-                if (batchId && finalResult.processing_stats) {
+                if (batchId) {
                     try {
                         if (statusId) statusManager.remove(statusId);
                         statusId = statusManager.show('Fetching results directly from batch processing...', 'progress');

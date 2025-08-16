@@ -2567,7 +2567,7 @@ a:focus-visible {
   border-radius: var(--radius-sm);
   overflow: hidden;
   margin-top: var(--space-4);
-  display: none;
+  display: block;
 }
 
 .progress-fill {
