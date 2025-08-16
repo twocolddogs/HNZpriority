@@ -413,7 +413,7 @@ function ProfileCard({ siteKey, siteData, onClick }) {
                     {/* Clinical Workforce Section */}
                     <div>
                         <strong style={{ fontSize: '1rem' }}><i className="fas fa-user-md" style={{ marginRight: '0.5rem' }}></i>Clinical Workforce:</strong>
-                        <div style={{ marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             {staffVacancyData.map((staff, index) => {
                                 const staffingColor = getStaffingColor(staff.filledPercentage);
                                 return (
