@@ -328,17 +328,41 @@ function ProfilesContainer({ siteData, currentRegion, openProfileModal }) {
 
 // Profile Card Component
 function ProfileCard({ siteKey, siteData, onClick }) {
-    const totalEquipment = Object.values(siteData.equipment).reduce((sum, eq) => {
+    // Calculate equipment breakdown by modality
+    const equipmentBreakdown = Object.entries(siteData.equipment).reduce((breakdown, [modalityKey, eq]) => {
+        let count = 0;
         // Handle both new machines array and legacy count structure
         if (eq.machines) {
-            return sum + eq.machines.length;
+            count = eq.machines.length;
         } else if (eq.count) {
-            return sum + eq.count;
+            count = eq.count;
         }
-        return sum;
-    }, 0);
-    const totalStaff = Object.values(siteData.staffing).reduce((sum, staff) => sum + staff.total_fte, 0);
-    const totalVacancies = Object.values(siteData.staffing).reduce((sum, staff) => sum + staff.current_vacancies, 0);
+        if (count > 0) {
+            breakdown[modalityKey.toUpperCase()] = count;
+        }
+        return breakdown;
+    }, {});
+
+    // Calculate staffing for key roles only (SMO, MIT, RA)
+    const keyStaffingCategories = ['radiologist', 'mit', 'radiology_healthcare_assistant'];
+    const keyStaffData = keyStaffingCategories.reduce((data, category) => {
+        const staff = siteData.staffing[category];
+        if (staff) {
+            data.totalFTE += staff.total_fte;
+            data.totalVacancies += staff.current_vacancies;
+        }
+        return data;
+    }, { totalFTE: 0, totalVacancies: 0 });
+
+    // Calculate vacancy percentage and determine color
+    const vacancyPercentage = keyStaffData.totalFTE > 0 ? (keyStaffData.totalVacancies / keyStaffData.totalFTE) * 100 : 0;
+    const filledPercentage = 100 - vacancyPercentage;
+    let vacancyColor = '#dc3545'; // Red for <60%
+    if (filledPercentage >= 80) {
+        vacancyColor = '#28a745'; // Green for 80%+
+    } else if (filledPercentage >= 60) {
+        vacancyColor = '#ffc107'; // Orange for 60-80%
+    }
 
     return (
         <div
@@ -356,15 +380,28 @@ function ProfileCard({ siteKey, siteData, onClick }) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                     <div>
                         <strong>Equipment: </strong>
-                        {`${totalEquipment} machines`}
+                        {Object.entries(equipmentBreakdown).length > 0 ? 
+                            Object.entries(equipmentBreakdown)
+                                .map(([modality, count]) => `${modality}: ${count}`)
+                                .join(', ') :
+                            '0 machines'
+                        }
                     </div>
                     <div>
-                        <strong>Staff: </strong>
-                        {`${totalStaff.toFixed(1)} FTE`}
+                        <strong>Key Staff: </strong>
+                        {`${keyStaffData.totalFTE.toFixed(1)} FTE (SMO/MIT/RA)`}
                     </div>
                     <div>
-                        <strong>Vacancies: </strong>
-                        {`${totalVacancies.toFixed(1)} FTE`}
+                        <strong>Vacancy Rate: </strong>
+                        <span style={{ 
+                            color: vacancyColor, 
+                            fontWeight: 'bold',
+                            backgroundColor: vacancyColor + '20',
+                            padding: '2px 6px',
+                            borderRadius: '3px'
+                        }}>
+                            {`${vacancyPercentage.toFixed(1)}%`}
+                        </span>
                     </div>
                     <div>
                         <strong>Annual Exams: </strong>
@@ -624,6 +661,7 @@ function ProfileDetails({ profile, editMode, activeTab }) {
                     out_of_hours_days_per_week: 0
                 };
                 
+                // Add interventional_only field for CT machines
                 if (modalityKey === 'ct') {
                     newMachine.interventional_only = false;
                 }
