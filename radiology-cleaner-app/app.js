@@ -1485,7 +1485,7 @@ window.addEventListener('DOMContentLoaded', function() {
                                                    (item.cached_skip && item.cache_type === 'rejected') ? item.cached_at : undefined
                             }));
                             allMappings = mappedResults;
-                            updatePageTitle(`Random Sample (${finalResult.processing_stats?.sample_size || finalResult.processing_stats?.total_processed} items)`);
+                            updatePageTitle(`Random Sample (${mappedResults.length} items)`);
                             try {
                                 runAnalysis(allMappings);
                                 const successMessage = `✅ Random sample completed! ${finalResult.processing_stats?.processed_successfully || finalResult.processing_stats?.successful || 'Unknown'} items processed`;
@@ -1550,7 +1550,7 @@ window.addEventListener('DOMContentLoaded', function() {
                                     }));
                                     
                                     allMappings = mappedResults;
-                                    updatePageTitle(`Random Sample (${finalResult.processing_stats?.sample_size || finalResult.processing_stats?.total_processed} items)`);
+                                    updatePageTitle(`Random Sample (${mappedResults.length} items)`);
                                     
                                     try {
                                         runAnalysis(allMappings);
@@ -1615,7 +1615,7 @@ window.addEventListener('DOMContentLoaded', function() {
                                 }));
                                 
                                 allMappings = mappedResults;
-                                updatePageTitle(`Random Sample (${finalResult.processing_stats?.sample_size || finalResult.processing_stats?.total_processed} items)`);
+                                updatePageTitle(`Random Sample (${mappedResults.length} items)`);
                                 
                                 try {
                                     runAnalysis(allMappings);
