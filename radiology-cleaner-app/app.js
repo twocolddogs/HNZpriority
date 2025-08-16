@@ -143,7 +143,7 @@ class StatusManager {
         messageElement.appendChild(iconElement);
         messageElement.appendChild(textElement);
         
-        if (autoHideDuration === 0) {
+        if (autoHideDuration === 0 && type !== 'progress') {
             const closeButton = document.createElement('button');
             closeButton.className = 'status-close';
             closeButton.innerHTML = '×';
