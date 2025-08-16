@@ -447,12 +447,16 @@ function ProfileDetails({ profile, editMode, activeTab }) {
     const [editedProfile, setEditedProfile] = useState(profile);
 
     const updateField = (path, value) => {
-        const newProfile = { ...editedProfile };
+        const newProfile = JSON.parse(JSON.stringify(editedProfile)); // Deep clone
         const keys = path.split('.');
         let current = newProfile;
         
         for (let i = 0; i < keys.length - 1; i++) {
-            current = current[keys[i]];
+            const key = keys[i];
+            if (!current[key]) {
+                current[key] = {};
+            }
+            current = current[key];
         }
         
         current[keys[keys.length - 1]] = value;
